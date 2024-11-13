@@ -1,9 +1,8 @@
-// This file is located at: lib/widgets/search_bar.dart
 import 'package:flutter/material.dart';
 
 class Searchbar extends StatelessWidget {
   final TextEditingController controller;
-  final VoidCallback onSearch;
+  final Function onSearch;
 
   const Searchbar({
     super.key,
@@ -13,28 +12,36 @@ class Searchbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    ThemeData themeContext = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.only(left: 10.0),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10.0),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromARGB(25, 0, 0, 0),
-            spreadRadius: 1,
-            blurRadius: 2,
-            offset: Offset(0, 2),
+        color: themeContext.highlightColor,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.search,
+            size: 30,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              keyboardType: TextInputType.text,
+              controller: controller,
+              onEditingComplete: () {
+                FocusScope.of(context).unfocus(); // Unfocus after submitting
+                onSearch();
+              },
+              style: themeContext.textTheme.bodyLarge,
+              decoration: const InputDecoration(
+                hintText: "Search Anime...",
+                border: InputBorder.none,
+              ),
+            ),
           ),
         ],
-      ),
-      child: TextField(
-        controller: controller,
-        onEditingComplete: onSearch,
-        decoration: const InputDecoration(
-          suffixIcon: Icon(Icons.search),
-          border: InputBorder.none,
-          hintText: "Search for Anime...",
-        ),
       ),
     );
   }

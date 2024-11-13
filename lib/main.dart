@@ -1,18 +1,30 @@
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:hive_flutter/adapters.dart';
-import 'package:nekoflow/data/models/settings_model.dart';
-import 'package:nekoflow/screens/browse_screen.dart';
-import 'package:nekoflow/screens/home_screen.dart';
-import 'package:nekoflow/screens/search_screen.dart';
-import 'package:nekoflow/screens/settings_screen.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:nekoflow/data/models/onboarding/onboarding_model.dart';
+import 'package:nekoflow/data/models/settings/settings_model.dart';
+import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
+import 'package:nekoflow/data/theme/theme_manager.dart';
+import 'package:nekoflow/screens/onboarding/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
-  Hive.registerAdapter(SettingsAdapter());
+
+  Hive.registerAdapter(SettingsModelAdapter());
+  Hive.registerAdapter(WatchlistModelAdapter());
+  Hive.registerAdapter(RecentlyWatchedItemAdapter());
+  Hive.registerAdapter(ContinueWatchingItemAdapter());
+  Hive.registerAdapter(AnimeItemAdapter());
+  Hive.registerAdapter(OnboardingModelAdapter());
+
+  await Hive.openBox<SettingsModel>('user_settings');
+  await Hive.openBox<WatchlistModel>('user_watchlist');
+  await Hive.openBox<OnboardingModel>('onboarding');
+
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
   runApp(const MainApp());
 }
 
@@ -24,124 +36,51 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainAppState extends State<MainApp> {
-  int _selectedIndex = 0;
-  bool _isDarkMode = true;
-  static const _screens = [
-    KeyedSubtree(key: ValueKey("Home"), child: HomeScreen()),
-    KeyedSubtree(key: ValueKey("Search"), child: SearchScreen()),
-    KeyedSubtree(key: ValueKey("Browse"), child: BrowseScreen()),
-    KeyedSubtree(key: ValueKey("Settings"), child: SettingsScreen()),
-  ];
+  late Box<SettingsModel> settingsBox;
+  ThemeType _theme = ThemeType.dark;
 
-  @override
-  void initState() {
-    super.initState();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
-    _initializeData();
-  }
+  Future<void> _loadTheme() async {
+    final userTheme = settingsBox.get('theme') ??
+        SettingsModel(theme: _theme.toString().split('.').last.toLowerCase());
+    String? themeName = userTheme.theme;
 
-  Future<void> _initializeData() async {
-    // Simulating a network call or heavy computation
-    await Future.delayed(const Duration(seconds: 1));
-
-    // Check if the widget is still mounted before calling setState
-    if (mounted) {
-      // You can perform additional state updates here if needed
-    }
-  }
-
-  void _toggleTheme() {
     setState(() {
-      _isDarkMode = !_isDarkMode;
+      _theme = ThemeManager.getThemeType(
+              themeName ?? _theme.toString().split('.').last.toLowerCase()) ??
+          ThemeType.dark;
     });
   }
 
   @override
+  void initState() {
+    super.initState();
+    _theme = ThemeType.light;
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+    settingsBox = Hive.box<SettingsModel>('user_settings');
+    _loadTheme();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.light().copyWith(
-        textTheme: GoogleFonts.robotoCondensedTextTheme(),
-      ),
-      darkTheme: ThemeData.dark().copyWith(
-          textTheme:
-              GoogleFonts.montserratTextTheme().apply(bodyColor: Colors.white)),
-      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: Scaffold(
-        appBar: AppBar(
-          title: RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: GoogleFonts.oswald(
-                color: Colors.white, // Default color for the main text
-                fontSize: 24.0, // Set your desired font size
-                fontStyle: FontStyle.italic,
-              ),
-              children: const <TextSpan>[
-                TextSpan(
-                    text: 'SHONEN',
-                    style: TextStyle(
-                        color: Colors.white)), // Default color for 'SHONEN'
-                TextSpan(
-                  text: 'X',
-                  style: TextStyle(
-                    color: Colors.red, // Red color for 'X'
-                  ),
-                ),
-              ],
-            ),
+    return ValueListenableBuilder(
+      valueListenable: settingsBox.listenable(keys: ['theme']),
+      builder: (context, Box<SettingsModel> box, child) {
+        // Update theme when 'theme' value changes in settingsBox
+        _theme = ThemeManager.getThemeType(
+                box.get('theme')?.theme ?? _theme.toString()) ??
+            ThemeType.light;
+
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: ThemeManager.getTheme(_theme),
+          home: Scaffold(
+            extendBody: true,
+            appBar: AppBar(toolbarHeight: 0),
+            body: OnboardingScreen(),
           ),
-          actions: [
-            IconButton(
-              icon: Icon(_isDarkMode ? Icons.dark_mode : Icons.light_mode),
-              onPressed: _toggleTheme,
-            ),
-          ],
-        ),
-        body: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          transitionBuilder: (child, animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-          child: IndexedStack(
-            index: _selectedIndex,
-            children: _screens,
-          ),
-        ),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: (index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-          selectedItemColor: _isDarkMode ? Colors.white : Colors.black,
-          unselectedItemColor: Colors.grey,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.search),
-              label: 'Search',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.widgets),
-              label: 'Browse',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
-              label: 'Settings',
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

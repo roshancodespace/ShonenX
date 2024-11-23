@@ -85,6 +85,8 @@ class ContinueWatchingItem extends HiveObject {
   @HiveField(9)
   final String duration;
 
+  @HiveField(10)
+  final List<String?>? watchedEpisodes;
   ContinueWatchingItem({
     required this.id,
     required this.name,
@@ -96,6 +98,7 @@ class ContinueWatchingItem extends HiveObject {
     this.isCompleted = false,
     this.duration = '0:00:00.000000',
     this.type,
+    this.watchedEpisodes
   });
 }
 

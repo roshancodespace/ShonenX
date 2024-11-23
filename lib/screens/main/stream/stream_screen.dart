@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:better_player/better_player.dart';
 import 'package:nekoflow/data/boxes/watchlist_box.dart';
 import 'package:nekoflow/data/models/episodes_model.dart';
 import 'package:nekoflow/data/models/stream_model.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
 import 'package:nekoflow/data/services/anime_service.dart';
-import 'package:better_player/better_player.dart';
-import 'package:shimmer/shimmer.dart';
 
 class StreamScreen extends StatefulWidget {
   final String title;
@@ -17,81 +16,117 @@ class StreamScreen extends StatefulWidget {
   final String name;
   final String? type;
 
-  const StreamScreen(
-      {super.key,
-      required this.title,
-      required this.id,
-      required this.episodeId,
-      required this.poster,
-      required this.episode,
-      required this.name,
-      this.type});
+  const StreamScreen({
+    super.key,
+    required this.title,
+    required this.id,
+    required this.episodeId,
+    required this.poster,
+    required this.episode,
+    required this.name,
+    this.type,
+  });
 
   @override
   State<StreamScreen> createState() => _StreamScreenState();
 }
 
 class _StreamScreenState extends State<StreamScreen> {
-  static const _defaultServer = "hd-1";
-  static const _defaultDubSub = "sub";
+  static const defaultServer = "hd-1";
+  static const defaultDubSub = "sub";
+  // static const progressThreshold = 0.05; // 5% threshold for recently watched
 
   final AnimeService _animeService = AnimeService();
-  final Map<String, EpisodeServersModel> _serversCache = {};
-  final Map<String, EpisodeStreamingLinksModel> _linksCache = {};
-
+  final _serversCache = <String, EpisodeServersModel>{};
+  final _linksCache = <String, EpisodeStreamingLinksModel>{};
   late final WatchlistBox _watchlistBox;
-  late String _selectedEpisodeId;
 
   BetterPlayerController? _playerController;
-  EpisodeServersModel? _episodeServers;
-  EpisodeStreamingLinksModel? _streamingLinks;
-
-  String _selectedServer = _defaultServer;
-  String _selectedDubSub = _defaultDubSub;
+  String _selectedServer = defaultServer;
+  String _selectedDubSub = defaultDubSub;
   String _currentPosition = '0:00:00.000000';
+
   bool _isLoading = true;
   bool _isPlayerInitializing = false;
+  EpisodeServersModel? _episodeServers;
+  EpisodeStreamingLinksModel? _streamingLinks;
 
   @override
   void initState() {
     super.initState();
-    _selectedEpisodeId = widget.episodeId;
-    _initializeBox();
+    _initializeScreen();
   }
 
-  Future<void> _initializeBox() async {
+  Future<void> _initializeScreen() async {
     _watchlistBox = WatchlistBox();
     await _watchlistBox.init();
-    _initializeData();
 
-    // Restore previous position if exists
-    final continueWatchingItem =
-        _watchlistBox.getContinueWatchingById(widget.id);
-    if (continueWatchingItem != null) {
-      if (continueWatchingItem.episodeId != widget.episodeId) return;
-      _currentPosition = continueWatchingItem.timestamp;
+    final continueWatching = _watchlistBox.getContinueWatchingById(widget.id);
+    if (continueWatching?.episodeId == widget.episodeId) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: Text(
+            'Continue Watching',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          content: Text(
+            'Continue where you left off?',
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _currentPosition = continueWatching!.timestamp;
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onSurface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      );
     }
+
+    await _loadInitialData();
   }
 
-  Future<void> _initializeData() async {
+  Future<void> _loadInitialData() async {
     try {
       await Future.wait([
-        _fetchEpisodeServers(_selectedEpisodeId),
-        _fetchStreamingLinks(_selectedEpisodeId),
+        _fetchEpisodeServers(widget.episodeId),
+        _fetchStreamingLinks(widget.episodeId),
       ]);
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _fetchEpisodeServers(String episodeId) async {
     if (!mounted) return;
+
     try {
       if (_serversCache.containsKey(episodeId)) {
-        _episodeServers = _serversCache[episodeId];
-        setState(() {});
+        setState(() => _episodeServers = _serversCache[episodeId]);
         return;
       }
 
@@ -111,9 +146,7 @@ class _StreamScreenState extends State<StreamScreen> {
   }
 
   Future<void> _fetchStreamingLinks(String episodeId) async {
-    final String finalEpisodeId =
-        episodeId.isEmpty ? widget.episodeId : episodeId;
-    final String cacheKey = '$finalEpisodeId-$_selectedServer-$_selectedDubSub';
+    final cacheKey = '$episodeId-$_selectedServer-$_selectedDubSub';
 
     try {
       if (_linksCache.containsKey(cacheKey)) {
@@ -123,7 +156,7 @@ class _StreamScreenState extends State<StreamScreen> {
       }
 
       final links = await _animeService.fetchEpisodeStreamingLinks(
-        animeEpisodeId: finalEpisodeId,
+        animeEpisodeId: episodeId,
         server: _selectedServer,
         category: _selectedDubSub,
       );
@@ -139,263 +172,158 @@ class _StreamScreenState extends State<StreamScreen> {
   }
 
   Future<void> _initializePlayer() async {
-    if (!mounted) return;
-    if (_isPlayerInitializing ||
-        _streamingLinks == null ||
-        _streamingLinks!.sources.isEmpty) {
-      return;
-    }
+    if (!mounted || _isPlayerInitializing || _streamingLinks == null) return;
+
     setState(() => _isPlayerInitializing = true);
 
     try {
-      await _disposeCurrentPlayer();
-      await _setupNewPlayer();
-    } catch (e) {
-      debugPrint("Error initializing player: $e");
-    } finally {
-      setState(() => _isPlayerInitializing = false);
-    }
-  }
+      _playerController?.dispose();
+      _playerController = null;
 
-  Future<void> _disposeCurrentPlayer() async {
-    _playerController?.dispose();
-    _playerController = null;
-  }
-
-  Future<void> _setupNewPlayer() async {
-    final sourceUrl = _streamingLinks!.sources[0].url;
-    final subtitleSources = _createSubtitleSources();
-
-    _playerController = BetterPlayerController(
-      _createPlayerConfiguration(),
-      betterPlayerDataSource: BetterPlayerDataSource(
-        BetterPlayerDataSourceType.network,
-        sourceUrl,
-        subtitles: subtitleSources,
-      ),
-    );
-
-    _setupSubtitles(subtitleSources);
-    _setupListener();
-  }
-
-  List<BetterPlayerSubtitlesSource> _createSubtitleSources() {
-    return _streamingLinks?.tracks
-            ?.where((track) => track.label != null)
-            .map((track) => BetterPlayerSubtitlesSource(
-                  type: BetterPlayerSubtitlesSourceType.network,
-                  urls: [track.file],
-                  name: track.label,
-                  selectedByDefault: track.isDefault ?? false,
-                ))
-            .toList() ??
-        [];
-  }
-
-  BetterPlayerConfiguration _createPlayerConfiguration() {
-    return const BetterPlayerConfiguration(
-      autoPlay: true,
-      autoDetectFullscreenAspectRatio: true,
-      fit: BoxFit.scaleDown,
-      deviceOrientationsOnFullScreen: [
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight
-      ],
-      deviceOrientationsAfterFullScreen: [
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.portraitDown
-      ],
-      controlsConfiguration: BetterPlayerControlsConfiguration(
-        playIcon: Icons.play_arrow,
-        pauseIcon: Icons.pause,
-        controlBarColor: Colors.black54,
-        enableProgressText: true,
-        enableAudioTracks: false,
-        enableSubtitles: true,
-      ),
-    );
-  }
-
-  void _setupSubtitles(List<BetterPlayerSubtitlesSource> subtitleSources) {
-    if (subtitleSources.isNotEmpty) {
-      final defaultSubtitle = subtitleSources.firstWhere(
-        (subtitle) => subtitle.selectedByDefault == true,
-        orElse: () => subtitleSources.first,
+      final controller = BetterPlayerController(
+        BetterPlayerConfiguration(
+          autoPlay: true,
+          fit: BoxFit.contain,
+          deviceOrientationsOnFullScreen: const [
+            DeviceOrientation.landscapeLeft,
+            DeviceOrientation.landscapeRight,
+          ],
+          deviceOrientationsAfterFullScreen: const [
+            DeviceOrientation.portraitUp,
+            DeviceOrientation.portraitDown,
+          ],
+          controlsConfiguration: const BetterPlayerControlsConfiguration(
+            controlBarColor: Colors.black54,
+            enableProgressText: true,
+            enableSubtitles: true,
+            loadingColor: Colors.white,
+          ),
+        ),
       );
-      _playerController?.setupSubtitleSource(defaultSubtitle);
-    }
-  }
 
-  void _setupListener() {
-    _playerController?.addEventsListener(_onPlayerEvent);
-  }
+      final subtitles = _streamingLinks!.tracks
+              ?.where((track) => track.label != null)
+              .map((track) => BetterPlayerSubtitlesSource(
+                    type: BetterPlayerSubtitlesSourceType.network,
+                    urls: [track.file],
+                    name: track.label,
+                    selectedByDefault: track.isDefault ?? false,
+                  ))
+              .toList() ??
+          [];
 
-  void _onPlayerEvent(BetterPlayerEvent event) async {
-    if (event.betterPlayerEventType == BetterPlayerEventType.initialized) {
-      // Set initial position if exists
-      if (_currentPosition != '0:00:00.000000') {
-        final parts = _currentPosition.split(':');
-        if (parts.length >= 3) {
-          final hours = int.parse(parts[0]);
-          final minutes = int.parse(parts[1]);
-          final seconds = double.parse(parts[2]);
-          final duration = Duration(
-            hours: hours,
-            minutes: minutes,
-            seconds: seconds.floor(),
-            milliseconds: ((seconds - seconds.floor()) * 1000).round(),
-          );
-          _playerController?.seekTo(duration);
-        }
+      await controller.setupDataSource(
+        BetterPlayerDataSource(
+          BetterPlayerDataSourceType.network,
+          _streamingLinks!.sources[0].url,
+          subtitles: subtitles,
+        ),
+      );
+
+      final existingItem = _watchlistBox.getContinueWatchingById(widget.id);
+      final watchedEpisodes =
+          List<String>.from(existingItem?.watchedEpisodes ?? []);
+      if (!watchedEpisodes.contains(widget.episodeId)) {
+        watchedEpisodes.add(widget.episodeId);
       }
-    }
 
-    if (event.betterPlayerEventType == BetterPlayerEventType.progress) {
-      debugPrint("PROGRESS");
-
-      final position = _playerController?.videoPlayerController?.value.position;
-      if (position == null || position.inSeconds == 0) return;
-
-      setState(() {
-        _currentPosition = position.toString();
-      });
-
-      // Update continue watching
-      final continueWatchingItem = ContinueWatchingItem(
-        title: widget.title,
-        id: widget.id,
-        name: widget.name,
-        poster: widget.poster,
-        episode: widget.episode,
-        episodeId: widget.episodeId,
-        timestamp: _currentPosition,
-        duration:
-            _playerController!.videoPlayerController!.value.duration.toString(),
-        type: widget.type, // Todo: Add appropriate type here
-      );
-      await _watchlistBox.addToContinueWatching(continueWatchingItem);
-
-      // Add to recently watched after 5% of video progress
-      final duration = _playerController?.videoPlayerController?.value.duration;
-      if (duration != null && position.inSeconds > duration.inSeconds * 0.05) {
-        final recentlyWatchedItem = RecentlyWatchedItem(
+      await _watchlistBox.updateContinueWatching(
+        ContinueWatchingItem(
+          title: widget.title,
           id: widget.id,
           name: widget.name,
           poster: widget.poster,
-          type: widget.type, // Add appropriate type here
-        );
-        await _watchlistBox.addToRecentlyWatched(recentlyWatchedItem);
+          episode: widget.episode,
+          episodeId: widget.episodeId,
+          timestamp: _currentPosition,
+          duration: _currentPosition,
+          type: widget.type,
+          watchedEpisodes: watchedEpisodes,
+        ),
+      );
+
+      controller.addEventsListener(_onPlayerEvent);
+
+      if (_currentPosition != '0:00:00.000000') {
+        final parts = _currentPosition.split(':');
+        if (parts.length >= 3) {
+          final duration = Duration(
+            hours: int.parse(parts[0]),
+            minutes: int.parse(parts[1]),
+            seconds: double.parse(parts[2]).floor(),
+            milliseconds: ((double.parse(parts[2]) % 1) * 1000).round(),
+          );
+          await controller.seekTo(duration);
+        }
       }
+
+      setState(() => _playerController = controller);
+    } finally {
+      _playerController?.pause();
+      if (mounted) setState(() => _isPlayerInitializing = false);
+    }
+  }
+
+  Future<void> _onPlayerEvent(BetterPlayerEvent event) async {
+    switch (event.betterPlayerEventType) {
+      case BetterPlayerEventType.progress:
+        // Handle progress updates
+        final position =
+            _playerController?.videoPlayerController?.value.position;
+        final duration =
+            _playerController?.videoPlayerController?.value.duration;
+        debugPrint("Progress: $position / $duration");
+        await _watchlistBox.updateEpisodeProgress(
+          widget.id,
+          episode: widget.episode,
+          episodeId: widget.episodeId,
+          timestamp: position.toString(),
+          duration: duration.toString(),
+        );
+        break;
+
+      // case BetterPlayerEventType.finished:
+      //   // Handle video finished playing
+      //   debugPrint("Video playback finished");
+      //   break;
+
+      // case BetterPlayerEventType.exception:
+      //   // Handle playback exceptions
+      //   debugPrint("Playback exception: ${event.parameters?['exception']}");
+      //   break;
+
+      // case BetterPlayerEventType.bufferingStart:
+      //   debugPrint("Buffering started");
+      //   break;
+
+      // case BetterPlayerEventType.bufferingEnd:
+      //   debugPrint("Buffering ended");
+      //   break;
+
+      default:
+        debugPrint("Event: ${event.betterPlayerEventType}");
     }
   }
 
   @override
   void dispose() {
-    _disposeCurrentPlayer();
+    _playerController?.dispose();
     _animeService.dispose();
     super.dispose();
   }
 
-  // UI Builders
-  Widget _buildShimmerLoading(double height) {
-    return Shimmer.fromColors(
-      baseColor: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-      highlightColor: Theme.of(context).colorScheme.secondary,
-      child: Container(
-        height: height,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPlayerSection() {
-    return Container(
-      color: Colors.black,
-      height: 230,
-      width: double.infinity,
-      child: _isPlayerInitializing || _playerController == null
-          ? Center(child: _buildShimmerLoading(230))
-          : BetterPlayer(controller: _playerController!),
-    );
-  }
-
-  Widget _buildDubSubSection() {
-    return Row(
-      children: [
-        _buildChoiceButton(
-          "Sub",
-          Theme.of(context).colorScheme.secondary,
-          _selectedDubSub == "sub",
-          () => _onDubSubChanged("sub"),
-        ),
-        const SizedBox(width: 15),
-        _buildChoiceButton(
-          "Dub",
-          Theme.of(context).colorScheme.secondary,
-          _selectedDubSub == "dub",
-          () => _onDubSubChanged("dub"),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildServersList() {
-    if (_isLoading) {
-      return _buildLoadingServersList();
-    }
-
-    final servers =
-        _selectedDubSub != "sub" ? _episodeServers?.dub : _episodeServers?.sub;
-    if (servers == null || servers.isEmpty) {
-      return const Center(child: Text('No servers available'));
-    }
-
-    return SizedBox(
-      height: 50,
-      child: ListView.builder(
-        itemCount: servers.length,
-        scrollDirection: Axis.horizontal,
-        itemBuilder: (context, index) {
-          final serverLabel = servers[index].serverName;
-          return _buildServerCard(
-            serverLabel,
-            serverLabel == _selectedServer,
-            () => _onServerChanged(serverLabel),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildLoadingServersList() {
-    return SizedBox(
-      height: 50,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 4,
-        itemBuilder: (context, index) => Padding(
-          padding: const EdgeInsets.only(right: 10),
-          child: _buildShimmerLoading(80),
-        ),
-      ),
-    );
-  }
-
-  // Event Handlers
+  // UI Methods
   void _onDubSubChanged(String value) {
     setState(() {
       _selectedDubSub = value;
-      _fetchStreamingLinks(_selectedEpisodeId);
+      _fetchStreamingLinks(widget.episodeId);
     });
   }
 
   void _onServerChanged(String value) {
     setState(() {
       _selectedServer = value;
-      _fetchStreamingLinks(_selectedEpisodeId);
+      _fetchStreamingLinks(widget.episodeId);
     });
   }
 
@@ -412,9 +340,9 @@ class _StreamScreenState extends State<StreamScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildPlayerSection(),
+            _buildPlayer(),
             const SizedBox(height: 20),
-            _buildDubSubSection(),
+            _buildDubSubButtons(),
             const SizedBox(height: 20),
             const Text(
               "Servers",
@@ -425,20 +353,68 @@ class _StreamScreenState extends State<StreamScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            _buildServersList(),
+            _buildServersSection(),
           ],
         ),
       ),
     );
   }
 
-  // Utility Widgets
-  Widget _buildChoiceButton(
-    String label,
-    Color color,
-    bool isSelected,
-    VoidCallback onTap,
-  ) {
+  // UI Components
+  Widget _buildPlayer() {
+    return Container(
+      color: Colors.black,
+      height: 230,
+      width: double.infinity,
+      child: _isPlayerInitializing || _playerController == null
+          ? const Center(child: CircularProgressIndicator())
+          : BetterPlayer(controller: _playerController!),
+    );
+  }
+
+  Widget _buildDubSubButtons() {
+    return Row(
+      children: [
+        _buildChoiceButton(
+            "Sub", _selectedDubSub == "sub", () => _onDubSubChanged("sub")),
+        const SizedBox(width: 15),
+        _buildChoiceButton(
+            "Dub", _selectedDubSub == "dub", () => _onDubSubChanged("dub")),
+      ],
+    );
+  }
+
+  Widget _buildServersSection() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final servers =
+        _selectedDubSub == "sub" ? _episodeServers?.sub : _episodeServers?.dub;
+
+    if (servers == null || servers.isEmpty) {
+      return const Center(child: Text('No servers available'));
+    }
+
+    return SizedBox(
+      height: 50,
+      child: ListView.builder(
+        itemCount: servers.length,
+        scrollDirection: Axis.horizontal,
+        itemBuilder: (context, index) {
+          final serverName = servers[index].serverName;
+          return _buildServerButton(
+            serverName,
+            serverName == _selectedServer,
+            () => _onServerChanged(serverName),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildChoiceButton(String label, bool isSelected, VoidCallback onTap) {
+    final theme = Theme.of(context);
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -446,11 +422,14 @@ class _StreamScreenState extends State<StreamScreen> {
           padding: const EdgeInsets.symmetric(vertical: 15),
           decoration: BoxDecoration(
             color: isSelected
-                ? Theme.of(context).colorScheme.primary
-                : color.withOpacity(0.7),
+                ? theme.colorScheme.primary
+                : theme.colorScheme.secondary.withOpacity(0.7),
             borderRadius: BorderRadius.circular(10),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5)
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 5,
+              ),
             ],
           ),
           child: Center(
@@ -467,7 +446,8 @@ class _StreamScreenState extends State<StreamScreen> {
     );
   }
 
-  Widget _buildServerCard(String label, bool isSelected, VoidCallback onTap) {
+  Widget _buildServerButton(String label, bool isSelected, VoidCallback onTap) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -475,11 +455,14 @@ class _StreamScreenState extends State<StreamScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
           color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.secondary,
+              ? theme.colorScheme.primary
+              : theme.colorScheme.secondary,
           borderRadius: BorderRadius.circular(10),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 5,
+            ),
           ],
         ),
         child: Center(

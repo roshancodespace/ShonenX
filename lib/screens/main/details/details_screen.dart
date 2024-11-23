@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -43,6 +41,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
   late final WatchlistBox _watchlistBox;
   final ScrollController _scrollController = ScrollController();
   ContinueWatchingItem? continueWatchingItem;
+  String? _nextEpisodeId;
+  String? _nextEpisodeTitle;
   AnimeData? info;
   String? error;
 
@@ -64,6 +64,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
     } finally {
       if (mounted) {
         _isLoadingEpisodes.value = false;
+        final Episode? nextEpisode = _getNextEpisode();
+        _nextEpisodeId = nextEpisode?.episodeId;
+        _nextEpisodeTitle = nextEpisode?.title;
+        setState(() {});
       }
     }
   }
@@ -76,10 +80,19 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
   void _loadContinueWatching() {
     continueWatchingItem = _watchlistBox.getContinueWatchingById(widget.id);
-    debugPrint("DETAIL : ${continueWatchingItem?.duration}");
+    print(continueWatchingItem?.episode);
     setState(() {});
   }
 
+  Episode? _getNextEpisode() {
+    int continueItemindex = _episodes.value.indexWhere(
+        (item) => item.episodeId == continueWatchingItem?.episodeId);
+    if (continueItemindex < _episodes.value.length) {
+      return _episodes.value[continueItemindex + 1];
+    }
+    return null;
+  }
+  
   Future<AnimeInfo?> fetchData() async {
     try {
       return await _animeService.fetchAnimeInfoById(id: widget.id);
@@ -282,6 +295,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
           poster: info?.anime?.info?.poster ?? widget.image,
           type: info?.anime?.info?.stats?.type ?? 'N/A',
           episodes: _episodes, // Pass the ValueNotifier directly
+          watchedEpisodes: continueWatchingItem?.watchedEpisodes,
           isLoading: _isLoadingEpisodes, // Pass the ValueNotifier directly
         ),
       ],
@@ -371,7 +385,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
         ),
       ),
       bottomNavigationBar: ValueListenableBuilder<Box<WatchlistModel>>(
-        valueListenable: _watchlistBox.listenToContinueWatching(),
+        valueListenable: _watchlistBox.listenable(),
         builder: (context, box, _) {
           // Get the continue watching item
           continueWatchingItem =
@@ -386,6 +400,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
             title: continueWatchingItem!.title,
             id: widget.id,
             image: widget.image,
+            type: widget.type,
+            nextEpisode: _nextEpisodeId,
+            nextEpisodeTitle: _nextEpisodeTitle,
             type: widget.type!,
           );
         },

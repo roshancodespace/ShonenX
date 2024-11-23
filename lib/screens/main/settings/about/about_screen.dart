@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -36,8 +37,17 @@ class AboutScreen extends StatelessWidget {
           children: [
             SizedBox(height: 24.0),
             Center(
-              child: Image.asset(
-                'lib/assets/images/onboarding/logo.png',
+              // child: Image.asset(
+              //   'lib/assets/images/onboarding/logo.png',
+              //   width: 120,
+              //   height: 120,
+              // ),
+              child: SvgPicture.asset(
+                'lib/assets/images/onboarding/logo.svg',
+                colorFilter: ColorFilter.mode(
+                  Theme.of(context).colorScheme.primary, // The desired color
+                  BlendMode.srcIn,
+                ),
                 width: 120,
                 height: 120,
               ),

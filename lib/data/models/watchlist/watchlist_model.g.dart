@@ -110,13 +110,15 @@ class ContinueWatchingItemAdapter extends TypeAdapter<ContinueWatchingItem> {
       isCompleted: fields[8] as bool?,
       duration: fields[9] as String,
       type: fields[6] as String?,
+      watchedEpisodes: (fields[10] as List?)?.cast<String?>(),
+
     );
   }
 
   @override
   void write(BinaryWriter writer, ContinueWatchingItem obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -136,7 +138,10 @@ class ContinueWatchingItemAdapter extends TypeAdapter<ContinueWatchingItem> {
       ..writeByte(8)
       ..write(obj.isCompleted)
       ..writeByte(9)
-      ..write(obj.duration);
+      ..write(obj.duration)
+      ..writeByte(10)
+      ..write(obj.watchedEpisodes);
+
   }
 
   @override

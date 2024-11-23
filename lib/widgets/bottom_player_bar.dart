@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
 import 'package:nekoflow/screens/main/stream/stream_screen.dart';
 
@@ -10,7 +11,9 @@ class BottomPlayerBar extends StatelessWidget {
   final String title;
   final String id;
   final String image;
-  final String type;
+  final String? type;
+  final String? nextEpisode;
+  final String? nextEpisodeTitle;
 
   const BottomPlayerBar({
     super.key,
@@ -19,6 +22,8 @@ class BottomPlayerBar extends StatelessWidget {
     required this.id,
     required this.image,
     required this.type,
+    this.nextEpisode,
+    this.nextEpisodeTitle
   });
 
  double _calculateProgress() {
@@ -67,15 +72,15 @@ class BottomPlayerBar extends StatelessWidget {
     }
   }
 
-  void _navigateToPlayer(BuildContext context) {
+  void _navigateToPlayer(BuildContext context, String episodeId, String episodeTitle) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => StreamScreen(
           name: item.name,
-          title: title,
+          title: episodeTitle,
           id: id,
-          episodeId: item.episodeId,
+          episodeId: episodeId,
           poster: image,
           episode: item.episode,
           type: type,
@@ -108,15 +113,15 @@ class BottomPlayerBar extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 1.0, sigmaY: 1.0),
           child: Container(
             color: theme.colorScheme.primary.withOpacity(0.1),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             child: Row(
               children: [
                 // Thumbnail/Poster
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 55,
+                  height: 55,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                     image: DecorationImage(
                       image: CachedNetworkImageProvider(image),
                       fit: BoxFit.cover,
@@ -181,17 +186,13 @@ class BottomPlayerBar extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.play_arrow,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      onPressed: () => _navigateToPlayer(context),
+                      icon: HugeIcon(icon: HugeIcons.strokeRoundedPlay, color: Colors.white),
+                      onPressed: () => _navigateToPlayer(context, item.episodeId, item.title),
                     ),
-                    // IconButton(
-                    //   icon: Icon(Icons.skip_next,
-                    //     color: theme.colorScheme.onSurface,
-                    //   ),
-                    //   onPressed: () => _navigateToPlayer(context),
-                    // ),
+                    if (nextEpisode != null && nextEpisodeTitle != null) IconButton(
+                      icon: HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, color: Colors.white),
+                      onPressed: () => _navigateToPlayer(context, nextEpisode!, nextEpisodeTitle!),
+                    ),
                   ],
                 ),
               ],

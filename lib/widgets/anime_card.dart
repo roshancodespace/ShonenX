@@ -47,7 +47,6 @@ class AnimeCard extends StatelessWidget {
         child: Container(
           width: cardWidth,
           height: cardHeight,
-          margin: const EdgeInsets.only(right: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             boxShadow: [

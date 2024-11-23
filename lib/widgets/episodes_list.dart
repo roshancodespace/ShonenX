@@ -11,6 +11,7 @@ class EpisodesList extends StatefulWidget {
   final ValueNotifier<List<Episode>> episodes;
   final ValueNotifier<bool> isLoading;
   final int rangeSize;
+  final List<String?>? watchedEpisodes;
 
   const EpisodesList({
     super.key,
@@ -21,6 +22,7 @@ class EpisodesList extends StatefulWidget {
     required this.episodes,
     required this.isLoading,
     this.rangeSize = 50,
+    this.watchedEpisodes = const [],
   });
 
   @override
@@ -96,6 +98,7 @@ class _EpisodesListState extends State<EpisodesList> {
                     ? _buildShimmerList(context)
                     : _EpisodesView(
                         episodes: episodes,
+                        watchedEpisodes: widget.watchedEpisodes,
                         groupedEpisodes: groupedEpisodes,
                         rangeSize: widget.rangeSize,
                         isGridLayout: _isGridLayout,
@@ -198,20 +201,21 @@ class _EpisodesHeader extends StatelessWidget {
 
 class _EpisodesView extends StatelessWidget {
   final List<Episode> episodes;
+  final List<String?>? watchedEpisodes;
   final List<Map<String, List<Episode>>> groupedEpisodes;
   final int rangeSize;
   final bool isGridLayout;
   final int selectedRangeIndex;
   final ValueChanged<Episode> onEpisodeSelected;
 
-  const _EpisodesView({
-    required this.episodes,
-    required this.groupedEpisodes,
-    required this.rangeSize,
-    required this.isGridLayout,
-    required this.selectedRangeIndex,
-    required this.onEpisodeSelected,
-  });
+  const _EpisodesView(
+      {required this.episodes,
+      required this.groupedEpisodes,
+      required this.rangeSize,
+      required this.isGridLayout,
+      required this.selectedRangeIndex,
+      required this.onEpisodeSelected,
+      required this.watchedEpisodes});
 
   @override
   Widget build(BuildContext context) {
@@ -231,10 +235,16 @@ class _EpisodesView extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: episodes.length,
-      itemBuilder: (context, index) => _EpisodeTile(
-        episode: episodes[index],
-        onTap: () => onEpisodeSelected(episodes[index]),
-      ),
+      itemBuilder: (context, index) {
+        final episode = episodes[index];
+        final isWatched = watchedEpisodes?.contains(episode.episodeId) ?? false;
+
+        return _EpisodeTile(
+          episode: episode,
+          onTap: () => onEpisodeSelected(episode),
+          isWatched: isWatched,
+        );
+      },
     );
   }
 
@@ -249,23 +259,30 @@ class _EpisodesView extends StatelessWidget {
         childAspectRatio: 1,
       ),
       itemCount: episodes.length,
-      itemBuilder: (context, index) => _EpisodeGridTile(
-        episode: episodes[index],
-        onTap: () => onEpisodeSelected(episodes[index]),
-      ),
+      itemBuilder: (context, index) {
+        final episode = episodes[index];
+        final isWatched = watchedEpisodes?.contains(episode.episodeId) ?? false;
+
+        return _EpisodeGridTile(
+          episode: episode,
+          onTap: () => onEpisodeSelected(episode),
+          isWatched: isWatched,
+        );
+      },
     );
   }
 }
 
-// Previous code remains the same until _EpisodesView...
-
 class _EpisodeGridTile extends StatelessWidget {
   final Episode episode;
   final VoidCallback onTap;
+  final bool isWatched;
+
 
   const _EpisodeGridTile({
     required this.episode,
     required this.onTap,
+    required this.isWatched,
   });
 
   @override
@@ -277,14 +294,19 @@ class _EpisodeGridTile extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8.0),
           gradient: LinearGradient(
-            colors: [
-              !episode.isFiller
-                  ? themeData.colorScheme.primary.withOpacity(0.5)
-                  : themeData.colorScheme.tertiary,
-              !episode.isFiller
-                  ? themeData.colorScheme.secondary.withOpacity(0.8)
-                  : themeData.colorScheme.tertiary,
-            ],
+            colors: isWatched
+                ? [
+                    Colors.green.withOpacity(0.5),
+                    Colors.greenAccent.withOpacity(0.7),
+                  ]
+                : [
+                    !episode.isFiller
+                        ? themeData.colorScheme.primary.withOpacity(0.5)
+                        : Colors.transparent,
+                    !episode.isFiller
+                        ? themeData.colorScheme.secondary.withOpacity(0.8)
+                        : Colors.transparent,
+                  ],
             begin: Alignment.bottomLeft,
             end: Alignment.topRight,
           ),
@@ -302,7 +324,7 @@ class _EpisodeGridTile extends StatelessWidget {
               ),
               if (episode.isFiller)
                 Text(
-                  "FILLER",
+                  " ${isWatched ? 'Watched' : 'FILLER'}",
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: Theme.of(context).colorScheme.error,
                       ),
@@ -319,10 +341,12 @@ class _EpisodeGridTile extends StatelessWidget {
 class _EpisodeTile extends StatelessWidget {
   final Episode episode;
   final VoidCallback onTap;
+  final bool isWatched;
 
   const _EpisodeTile({
     required this.episode,
     required this.onTap,
+    required this.isWatched,
   });
 
   @override
@@ -332,15 +356,23 @@ class _EpisodeTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 15.0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12.0),
+        border: !episode.isFiller
+            ? null
+            : Border.all(color: themeData.colorScheme.primary),
         gradient: LinearGradient(
-          colors: [
-            !episode.isFiller
-                ? themeData.colorScheme.primary.withOpacity(0.4)
-                : themeData.colorScheme.tertiary,
-            !episode.isFiller
-                ? themeData.colorScheme.secondary.withOpacity(0.7)
-                : themeData.colorScheme.tertiary,
-          ],
+          colors: isWatched
+              ? [
+                  themeData.colorScheme.surface,
+                  themeData.colorScheme.primary.withOpacity(0.2),
+                ]
+              : [
+                  !episode.isFiller
+                      ? themeData.colorScheme.primary.withOpacity(0.4)
+                      : themeData.colorScheme.surface,
+                  !episode.isFiller
+                      ? themeData.colorScheme.secondary.withOpacity(0.7)
+                      : themeData.colorScheme.surface,
+                ],
           begin: Alignment.bottomLeft,
           end: Alignment.topRight,
         ),
@@ -356,7 +388,7 @@ class _EpisodeTile extends StatelessWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16),
         title: Text(
-          "EP : ${episode.number}${episode.isFiller ? " : FILLER" : ""}",
+          "EP : ${episode.number} ${isWatched ? '- Watched' : episode.isFiller ? " : FILLER" : ""}",
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,

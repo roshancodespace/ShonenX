@@ -1,7 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nekoflow/data/boxes/watchlist_box.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
+import 'package:nekoflow/screens/main/watchlist/view_all_screen.dart';
 import 'package:nekoflow/widgets/anime_card.dart';
 
 class WatchlistScreen extends StatefulWidget {
@@ -23,6 +25,19 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
   Future<void> _initializeState() async {
     _watchlistBox = WatchlistBox();
     await _watchlistBox.init();
+  }
+
+  void _navigateToFullScreen(String title, List<BaseAnimeCard> items) {
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => ViewAllScreen(
+          title: title,
+          items: items,
+          watchlistBox: _watchlistBox,
+        ),
+      ),
+    );
   }
 
   @override
@@ -55,14 +70,6 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
                   padding: const EdgeInsets.all(16.0),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-                      // _buildSection(
-                      //   context,
-                      //   title: "Continue Watching",
-                      //   items: watchlistModel.continueWatching,
-                      //   emptyMessage: "No anime to continue watching",
-                      //   tag: "continue",
-                      // ),
-                      // const SizedBox(height: 24),
                       _buildSection(
                         context,
                         title: "Recently Watched",
@@ -99,7 +106,8 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, title, items.isNotEmpty),
+        _buildSectionHeader(context, title, items),
+
         const SizedBox(height: 8),
         if (items.isEmpty)
           Center(
@@ -123,7 +131,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
   }
 
   Widget _buildSectionHeader(
-      BuildContext context, String title, bool hasItems) {
+      BuildContext context, String title, List<BaseAnimeCard> items) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -133,11 +141,9 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
                 fontWeight: FontWeight.bold,
               ),
         ),
-        if (hasItems)
+        if (items.isNotEmpty)
           IconButton(
-            onPressed: () {
-              // Navigate to full section view
-            },
+            onPressed: () => _navigateToFullScreen(title, items),
             icon: const Icon(Icons.chevron_right),
           ),
       ],

@@ -278,6 +278,7 @@ class _EpisodeGridTile extends StatelessWidget {
   final VoidCallback onTap;
   final bool isWatched;
 
+
   const _EpisodeGridTile({
     required this.episode,
     required this.onTap,

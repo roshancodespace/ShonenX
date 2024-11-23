@@ -1,4 +1,3 @@
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -93,7 +92,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     }
     return null;
   }
-
+  
   Future<AnimeInfo?> fetchData() async {
     try {
       return await _animeService.fetchAnimeInfoById(id: widget.id);
@@ -404,6 +403,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
             type: widget.type,
             nextEpisode: _nextEpisodeId,
             nextEpisodeTitle: _nextEpisodeTitle,
+            type: widget.type!,
           );
         },
       ),

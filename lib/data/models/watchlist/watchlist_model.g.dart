@@ -111,6 +111,7 @@ class ContinueWatchingItemAdapter extends TypeAdapter<ContinueWatchingItem> {
       duration: fields[9] as String,
       type: fields[6] as String?,
       watchedEpisodes: (fields[10] as List?)?.cast<String?>(),
+
     );
   }
 
@@ -140,6 +141,7 @@ class ContinueWatchingItemAdapter extends TypeAdapter<ContinueWatchingItem> {
       ..write(obj.duration)
       ..writeByte(10)
       ..write(obj.watchedEpisodes);
+
   }
 
   @override

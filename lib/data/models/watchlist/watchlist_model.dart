@@ -87,7 +87,6 @@ class ContinueWatchingItem extends HiveObject {
 
   @HiveField(10)
   final List<String?>? watchedEpisodes;
-
   ContinueWatchingItem({
     required this.id,
     required this.name,

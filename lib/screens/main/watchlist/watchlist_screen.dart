@@ -27,7 +27,6 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
     await _watchlistBox.init();
   }
 
-
   void _navigateToFullScreen(String title, List<BaseAnimeCard> items) {
     Navigator.push(
       context,
@@ -108,6 +107,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader(context, title, items),
+
         const SizedBox(height: 8),
         if (items.isEmpty)
           Center(

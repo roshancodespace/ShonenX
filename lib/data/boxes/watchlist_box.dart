@@ -14,6 +14,7 @@ class WatchlistBox {
   Future<void> init() async {
     _box = Hive.box<WatchlistModel>(boxName);
     _watchlistModel = _box.get(0) ??
+
         WatchlistModel(
           recentlyWatched: [],
           continueWatching: [],
@@ -125,7 +126,6 @@ class WatchlistBox {
   List<AnimeItem> getFavorites() {
     return _watchlistModel?.favorites ?? [];
   }
-
   // Recently Watched Methods
   Future<void> addToRecentlyWatched(RecentlyWatchedItem item) async {
     var list = _watchlistModel?.recentlyWatched ?? [];

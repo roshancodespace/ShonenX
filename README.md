@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://i.postimg.cc/Fzm49sZc/Picsart-24-10-29-10-03-15-133.png" alt="ShonenX Logo" width="120"/>
+  <img src="https://i.postimg.cc/xC3MMMKr/Untitled-design-2.png" alt="ShonenX Logo" width="120"/>
   
   # ShonenX
   

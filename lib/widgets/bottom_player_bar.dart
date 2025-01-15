@@ -1,8 +1,10 @@
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:nekoflow/data/models/episodes_model.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
 import 'package:nekoflow/screens/main/stream/stream_screen.dart';
 
@@ -11,79 +13,77 @@ class BottomPlayerBar extends StatelessWidget {
   final String title;
   final String id;
   final String image;
+  final List<Episode> episodes;
   final String? type;
-  final String? nextEpisode;
+  final String? nextEpisodeId;
   final String? nextEpisodeTitle;
 
   const BottomPlayerBar({
     super.key,
+    required this.episodes,
     required this.item,
     required this.title,
     required this.id,
     required this.image,
     required this.type,
-    this.nextEpisode,
-    this.nextEpisodeTitle
+    this.nextEpisodeId,
+    this.nextEpisodeTitle,
   });
 
- double _calculateProgress() {
+  // Refactored method for more robust timestamp parsing
+  double _calculateProgress() {
     try {
-      // Parse timestamp (format: HH:mm:ss.ms)
-      List<String> timestampParts = item.timestamp.split(':');
-      int timestampSeconds = 0;
-      
-      if (timestampParts.length == 3) {
-        // Handle hours if present
-        timestampSeconds = int.parse(timestampParts[0]) * 3600 +
-            int.parse(timestampParts[1]) * 60 +
-            int.parse(timestampParts[2].split('.')[0]);
-      } else if (timestampParts.length == 2) {
-        // Handle mm:ss format
-        timestampSeconds = int.parse(timestampParts[0]) * 60 +
-            int.parse(timestampParts[1].split('.')[0]);
-      }
+      final timestampSeconds = _parseTimeToSeconds(item.timestamp);
+      final durationSeconds = _parseTimeToSeconds(item.duration);
 
-      // Parse duration (format: HH:mm:ss or mm:ss)
-      List<String> durationParts = item.duration.split(':');
-      int durationSeconds = 0;
-      
-      if (durationParts.length == 3) {
-        // Handle hours if present
-        durationSeconds = int.parse(durationParts[0]) * 3600 +
-            int.parse(durationParts[1]) * 60 +
-            int.parse(durationParts[2].split('.')[0]);
-      } else if (durationParts.length == 2) {
-        // Handle mm:ss format
-        durationSeconds = int.parse(durationParts[0]) * 60 +
-            int.parse(durationParts[1].split('.')[0]);
-      }
-
-      // Calculate progress ratio (between 0.0 and 1.0)
       if (durationSeconds > 0) {
-        double progress = timestampSeconds / durationSeconds;
-        // Ensure progress is between 0 and 1
-        return progress.clamp(0.0, 1.0);
+        return (timestampSeconds / durationSeconds).clamp(0.0, 1.0);
       }
 
       return 0.0;
     } catch (e) {
       debugPrint('Error calculating progress: $e');
-      return 0.0; // Return 0 progress in case of any parsing errors
+      return 0.0;
     }
   }
 
-  void _navigateToPlayer(BuildContext context, String episodeId, String episodeTitle) {
+  // Helper method to parse time strings consistently
+  int _parseTimeToSeconds(String timeString) {
+    final parts = timeString.split(':');
+    switch (parts.length) {
+      case 3: // HH:mm:ss format
+        return int.parse(parts[0]) * 3600 +
+            int.parse(parts[1]) * 60 +
+            int.parse(parts[2].split('.')[0]);
+      case 2: // mm:ss format
+        return int.parse(parts[0]) * 60 + int.parse(parts[1].split('.')[0]);
+      default:
+        throw FormatException('Invalid time format: $timeString');
+    }
+  }
+
+  // Extracted navigation logic for better separation of concerns
+  void _navigateToPlayer(
+      BuildContext context, String episodeId, String episodeTitle) {
     Navigator.push(
       context,
-      MaterialPageRoute(
+      CupertinoPageRoute(
         builder: (context) => StreamScreen(
-          name: item.name,
-          title: episodeTitle,
-          id: id,
-          episodeId: episodeId,
-          poster: image,
-          episode: item.episode,
-          type: type,
+          episodes: episodes,
+          anime: AnimeItem(name: item.name, poster: item.poster, id: id),
+          episode: Episode(
+              title: episodeTitle,
+              episodeId: episodeId,
+              number: item.episode,
+              isFiller: false),
+          continueWatchingItem: ContinueWatchingItem(
+            id: id,
+            name: item.name,
+            poster: item.poster,
+            episode: item.episode,
+            episodeId: episodeId,
+            title: episodeTitle,
+          ),
         ),
       ),
     );
@@ -92,108 +92,127 @@ class BottomPlayerBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    return Container(
-      height: 80,
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: theme.colorScheme.surface.withOpacity(0.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 1.0, sigmaY: 1.0),
-          child: Container(
-            color: theme.colorScheme.primary.withOpacity(0.1),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            child: Row(
+    final progress = _calculateProgress();
+
+    return SafeArea(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        height: 90,
+        margin: const EdgeInsets.only(left: 12, right: 12, bottom: 5),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          color: theme.colorScheme.surface.withOpacity(0.7),
+          boxShadow: [
+            BoxShadow(
+              color: theme.colorScheme.primary.withOpacity(0.2),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0),
+            child: Stack(
               children: [
-                // Thumbnail/Poster
-                Container(
-                  width: 55,
-                  height: 55,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    image: DecorationImage(
-                      image: CachedNetworkImageProvider(image),
-                      fit: BoxFit.cover,
+                // Progress Indicator as Background
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: theme.colorScheme.onSurface,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      theme.colorScheme.primary,
                     ),
+                    minHeight: 4,
                   ),
                 ),
-                const SizedBox(width: 12),
-                
-                // Episode Info and Progress
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      
+                // Content
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(
                     children: [
-                      // Title and Episode Number
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
+                      // Thumbnail
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          image: DecorationImage(
+                            image: CachedNetworkImageProvider(image),
+                            fit: BoxFit.cover,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+      
+                      // Episode Info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
                               item.title,
                               maxLines: 1,
                               style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
+                                color: theme.colorScheme.onSurface,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          Text(
-                            'EP ${item.episode}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.7),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Episode ${item.episode} • ${item.timestamp.split(':')[1]}:${item.timestamp.split(':')[2].split('.')[0]}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color:
+                                    theme.colorScheme.onSurface.withOpacity(0.7),
+                              ),
                             ),
+                          ],
+                        ),
+                      ),
+      
+                      // Action Buttons
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: HugeIcon(
+                              icon: HugeIcons.strokeRoundedPlay,
+                              color: theme.colorScheme.onSurface,
+                              size: 28,
+                            ),
+                            onPressed: () => _navigateToPlayer(
+                                context, item.episodeId, item.title),
                           ),
+                          if (nextEpisodeId != null && nextEpisodeTitle != null)
+                            IconButton(
+                              icon: HugeIcon(
+                                icon: HugeIcons.strokeRoundedArrowRight01,
+                                color: theme.colorScheme.onSurface,
+                                size: 28,
+                              ),
+                              onPressed: () => _navigateToPlayer(
+                                  context, nextEpisodeId!, nextEpisodeTitle!),
+                            ),
                         ],
-                      ),
-                      const SizedBox(height: 4),
-                      
-                      // Progress Bar
-                      LinearProgressIndicator(
-                        value: _calculateProgress(), // Calculate this based on timestamp/duration
-                        backgroundColor: theme.colorScheme.onSurface.withOpacity(0.1),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          theme.colorScheme.primary,
-                        ),
-                        minHeight: 3,
-                      ),
-                      const SizedBox(height: 4),
-                      
-                      // Timestamp
-                      Text(
-                        '${item.timestamp.split(':')[1]}:${item.timestamp.split(':')[2].split('.')[0]}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
-                        ),
                       ),
                     ],
                   ),
-                ),
-                
-                // Control Buttons
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: HugeIcon(icon: HugeIcons.strokeRoundedPlay, color: Colors.white),
-                      onPressed: () => _navigateToPlayer(context, item.episodeId, item.title),
-                    ),
-                    if (nextEpisode != null && nextEpisodeTitle != null) IconButton(
-                      icon: HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, color: Colors.white),
-                      onPressed: () => _navigateToPlayer(context, nextEpisode!, nextEpisodeTitle!),
-                    ),
-                  ],
                 ),
               ],
             ),

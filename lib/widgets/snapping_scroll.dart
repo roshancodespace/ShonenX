@@ -133,7 +133,7 @@ class _SnappingScrollerState extends State<SnappingScroller> {
               },
               itemBuilder: (context, index) {
                 final actualIndex = index % widget.children.length;
-                return Center(child: widget.children[actualIndex]);
+                return Padding(padding: EdgeInsets.only(right: 5),child: widget.children[actualIndex]);
               },
               itemCount: widget.loop ? null : widget.children.length,
             ),

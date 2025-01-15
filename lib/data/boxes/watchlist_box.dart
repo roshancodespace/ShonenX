@@ -26,7 +26,6 @@ class WatchlistBox {
   Future<void> updateContinueWatching(ContinueWatchingItem item) async {
     var list = _watchlistModel?.continueWatching ?? [];
     int index = list.indexWhere((element) => element.id == item.id);
-
     if (index != -1) {
       // Update existing item
       list[index] = item; // Replace with the updated item
@@ -45,13 +44,14 @@ class WatchlistBox {
     required String episodeId,
     required String timestamp,
     required String duration,
+    ContinueWatchingItem? item,
     bool markAsWatched = false,
   }) async {
     // Retrieve the existing item by ID
-    var item = getContinueWatchingById(id);
-    if (item != null) {
+    var cItem = getContinueWatchingById(id);
+    if (cItem != null) {
       // Copy the current list of watched episodes
-      List<String> watchedEpisodes = List.from(item.watchedEpisodes ?? []);
+      List<String> watchedEpisodes = List.from(cItem.watchedEpisodes ?? []);
 
       // Add the episode to the watched list if it is marked as watched
       if (markAsWatched && !watchedEpisodes.contains(episodeId)) {
@@ -59,7 +59,7 @@ class WatchlistBox {
       }
 
       var updatedItem = ContinueWatchingItem(
-        id: item.id,
+        id: item!.id,
         title: item.title,
         name: item.name,
         poster: item.poster,
@@ -67,15 +67,19 @@ class WatchlistBox {
         episodeId: episodeId, // Current episode ID
         timestamp: timestamp, // Current timestamp
         duration: duration, // Current duration
-        type: item.type, // Retain original type
+        type: cItem.type, // Retain original type
         watchedEpisodes: watchedEpisodes, // Preserved watched episodes
         isCompleted: markAsWatched
-            ? item.isCompleted
+            ? cItem.isCompleted
             : false, // Maintain completion logic
       );
 
       // Update the continue watching list
       await updateContinueWatching(updatedItem);
+    } else {
+      if (item != null) {
+        updateContinueWatching(item);
+      }
     }
   }
 

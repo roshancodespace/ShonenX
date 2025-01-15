@@ -2,35 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 enum ThemeType {
+  midnightNebula,
+  crimsonAnime,
+  etherealPurple,
+  deepOceanStream,
+  neonTokyo,
+  twilightCosmos,
+  shadowRealm,
+  cyberAnime,
+  moonlitSilver,
+  darkChroma,
+   // Dark Modes
   dark,
-  darkModernMint,
-  darkOceanBreeze,
-  darkMidnightPro,
-  darkRosePetal,
-  darkMonochrome,
-  darkTechMinimal,
-  darkNordicFrost,
-  darkWarmCoffee,
-  darkUltraViolet,
-  darkNeoTokyo,
-  darkEmeraldForest,
-  darkSunsetGold,
-  darkDigitalLavender,
-  darkMaterialGrey,
-  darkNightBlue,
-  darkForestMoss,
-  darkDesertSand,
-  darkArcticIce,
-  darkDeepSkyBlue,
-  darkLushLavender,
-  darkEarthyOlive,
-  darkVibrantCoral,
-  darkSerenityBlue,
-  darkLushGreen,
-  darkBoldRed,
-  darkSoftPink,
-  darkPaleYellow,
-  darkModernGrey,
+   
+  // Light Modes
+  softAnimeGlow,
+  light,
 }
 
 class ThemeManager {
@@ -44,6 +31,19 @@ class ThemeManager {
     return null;
   }
 
+  // Custom gradient color class for more complex color handling
+  static LinearGradient createLinearGradient(
+      {required Color begin,
+      required Color end,
+      Alignment startAlignment = Alignment.centerLeft,
+      Alignment endAlignment = Alignment.centerRight}) {
+    return LinearGradient(
+      colors: [begin, end],
+      begin: startAlignment,
+      end: endAlignment,
+    );
+  }
+
   static ThemeData getTheme(ThemeType themeType) {
     final textTheme = GoogleFonts.poppinsTextTheme();
 
@@ -53,7 +53,8 @@ class ThemeManager {
     );
   }
 
-  static ThemeData _createThemeData({required ColorScheme colorScheme, required TextTheme textTheme}) {
+  static ThemeData _createThemeData(
+      {required ColorScheme colorScheme, required TextTheme textTheme}) {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
@@ -61,194 +62,186 @@ class ThemeManager {
         bodyColor: colorScheme.onSurface,
         displayColor: colorScheme.onSurface,
       ),
+      extensions: [_createGradientExtension(colorScheme)],
+    );
+  }
+
+  // Create a custom theme extension for gradients
+  static ThemeExtension<GradientColors> _createGradientExtension(
+      ColorScheme colorScheme) {
+    return GradientColors(
+      primaryGradient: createLinearGradient(
+          begin: colorScheme.primary, end: colorScheme.secondary),
+      secondaryGradient: createLinearGradient(
+          begin: colorScheme.secondary, end: colorScheme.tertiary),
+      tertiaryGradient: createLinearGradient(
+          begin: colorScheme.tertiary, end: colorScheme.primary),
     );
   }
 
   static ColorScheme _getColorScheme(ThemeType themeType) {
     switch (themeType) {
+      case ThemeType.midnightNebula:
+        return ColorScheme.dark(
+          primary: Color(0xFF6A5ACD),      // Slate Blue
+          secondary: Color(0xFF483D8B),    // Dark Slate Blue
+          tertiary: Color(0xFF4B0082),     // Indigo
+          surface: Color(0xFF121026),      // Deep Dark Blue-Purple
+          onSurface: Color(0xFFE6E6FA),    // Lavender
+        );
+      case ThemeType.crimsonAnime:
+        return ColorScheme.dark(
+          primary: Color(0xFFDC143C),      // Crimson
+          secondary: Color(0xFF8B0000),    // Dark Red
+          tertiary: Color(0xFF4B0082),     // Indigo
+          surface: Color(0xFF1A0A0A),      // Very Dark Red-Black
+          onSurface: Color(0xFFF5F5F5),    // White Smoke
+        );
+      case ThemeType.etherealPurple:
+        return ColorScheme.dark(
+          primary: Color(0xFF8A2BE2),      // Blue Violet
+          secondary: Color(0xFF9400D3),    // Dark Violet
+          tertiary: Color(0xFF4B0082),     // Indigo
+          surface: Color(0xFF1A0A1E),      // Very Dark Purple
+          onSurface: Color(0xFFE6E6FA),    // Lavender
+        );
+      case ThemeType.deepOceanStream:
+        return ColorScheme.dark(
+          primary: Color(0xFF00CED1),      // Dark Turquoise
+          secondary: Color(0xFF008B8B),    // Dark Cyan
+          tertiary: Color(0xFF1E90FF),     // Dodger Blue
+          surface: Color(0xFF0A1828),      // Very Dark Blue
+          onSurface: Color(0xFFF0FFFF),    // Azure
+        );
+      case ThemeType.neonTokyo:
+        return ColorScheme.dark(
+          primary: Color(0xFF00FFFF),      // Cyan
+          secondary: Color(0xFF1E90FF),    // Dodger Blue
+          tertiary: Color(0xFF00FF00),     // Lime Green
+          surface: Color(0xFF0A1A2A),      // Dark Cyber Blue
+          onSurface: Color(0xFFF0F8FF),    // Alice Blue
+        );
+      case ThemeType.twilightCosmos:
+        return ColorScheme.dark(
+          primary: Color(0xFF9932CC),      // Dark Orchid
+          secondary: Color(0xFF8A2BE2),    // Blue Violet
+          tertiary: Color(0xFF4B0082),     // Indigo
+          surface: Color(0xFF121212),      // Almost Black
+          onSurface: Color(0xFFE6E6FA),    // Lavender
+        );
+      case ThemeType.shadowRealm:
+        return ColorScheme.dark(
+          primary: Color(0xFF2F4F4F),      // Dark Slate Gray
+          secondary: Color(0xFF708090),    // Slate Gray
+          tertiary: Color(0xFF3A3A3A),     // Dark Gray
+          surface: Color(0xFF121212),      // Almost Black
+          onSurface: Color(0xFFF5F5F5),    // White Smoke
+        );
+      case ThemeType.cyberAnime:
+        return ColorScheme.dark(
+          primary: Color(0xFF00FFFF),      // Cyan
+          secondary: Color(0xFF1E90FF),    // Dodger Blue
+          tertiary: Color(0xFF00FF00),     // Lime Green
+          surface: Color(0xFF0A1A2A),      // Dark Cyber Blue
+          onSurface: Color(0xFFF0F8FF),    // Alice Blue
+        );
+      case ThemeType.moonlitSilver:
+        return ColorScheme.dark(
+          primary: Color(0xFF708090),      // Slate Gray
+          secondary: Color(0xFF4682B4),    // Steel Blue
+          tertiary: Color(0xFF483D8B),     // Dark Slate Blue
+          surface: Color(0xFF121212),      // Almost Black
+          onSurface: Color(0xFFD3D3D3),    // Light Gray
+        );
+      case ThemeType.darkChroma:
+        return ColorScheme.dark(
+          primary: Color(0xFF8B008B),      // Dark Magenta
+          secondary: Color(0xFF4B0082),    // Indigo
+          tertiary: Color(0xFF9932CC),     // Dark Orchid
+          surface: Color(0xFF1A0A1E),      // Very Dark Purple
+          onSurface: Color(0xFFE6E6FA),    // Lavender
+        );
+      // Dark Modes
       case ThemeType.dark:
         return ColorScheme.dark(
-          primary: Color(0xFF121212),
-          secondary: Color(0xFF616161),
-          surface: Color.fromARGB(255, 13, 13, 13),
-          onSurface: Colors.white,
-          onPrimary: Colors.black,
-          onSecondary: Colors.black,
+          primary: Color(0xFF1A1A1A),      // Almost Black
+          secondary: Color(0xFF505050),    // Ultra Dark Gray
+          tertiary: Color(0xFF0A0A0A),     // Deepest Black
+          surface: Color(0xFF0C0C0C),      // Pitch Black
+          onSurface: Color(0xFFE0E0E0),    // Light Gray
         );
-      case ThemeType.darkModernMint:
-        return ColorScheme.dark(
-          primary: Color(0xFF00BFA5),
-          secondary: Color(0xFF1DE9B6),
-          surface: Color(0xFF0D0D0D),
+            
+      // Light Modes
+      case ThemeType.softAnimeGlow:
+        return ColorScheme.light(
+          primary: Color(0xFFFF69B4),      // Hot Pink
+          secondary: Color(0xFFFFC0CB),    // Pink
+          tertiary: Color(0xFFFFB6C1),     // Light Pink
+          surface: Color(0xFFFFF0F5),      // Lavender Blush
+          onSurface: Color(0xFF333333),    // Dark Gray
         );
-      case ThemeType.darkOceanBreeze:
-        return ColorScheme.dark(
-          primary: Color(0xFF0288D1),
-          secondary: Color(0xFF03A9F4),
-          surface: Color(0xFF0A0A0A),
+      
+      case ThemeType.light:
+        return ColorScheme.light(
+          primary: Color(0xFF8A2BE2),      // Blue Violet
+          secondary: Color(0xFF9370DB),    // Medium Purple
+          tertiary: Color(0xFFBA55D3),     // Medium Orchid
+          surface: Color(0xFFFFFAF0),      // Ivory
+          onSurface: Color(0xFF2F4F4F),    // Dark Slate Gray
         );
-      case ThemeType.darkMidnightPro:
-        return ColorScheme.dark(
-          primary: Color(0xFF3949AB),
-          secondary: Color(0xFF5C6BC0),
-          surface: Color(0xFF0D0D1A),
-        );
-      case ThemeType.darkRosePetal:
-        return ColorScheme.dark(
-          primary: Color(0xFFE91E63),
-          secondary: Color(0xFFEC407A),
-          surface: Color(0xFF180F16),
-        );
-      case ThemeType.darkMonochrome:
-        return ColorScheme.dark(
-          primary: Color(0xFF424242),
-          secondary: Color(0xFF616161),
-          surface: Color(0xFF0E0E0E),
-        );
-      case ThemeType.darkTechMinimal:
-        return ColorScheme.dark(
-          primary: Color(0xFF1976D2),
-          secondary: Color(0xFF2196F3),
-          surface: Color(0xFF050505),
-        );
-      case ThemeType.darkNordicFrost:
-        return ColorScheme.dark(
-          primary: Color(0xFF4FC3F7),
-          secondary: Color(0xFF81D4FA),
-          surface: Color(0xFF0E1113),
-        );
-      case ThemeType.darkWarmCoffee:
-        return ColorScheme.dark(
-          primary: Color(0xFF795548),
-          secondary: Color(0xFF8D6E63),
-          surface: Color(0xFF120F0E),
-        );
-      case ThemeType.darkUltraViolet:
-        return ColorScheme.dark(
-          primary: Color(0xFF6200EA),
-          secondary: Color(0xFF7C4DFF),
-          surface: Color(0xFF110F16),
-        );
-      case ThemeType.darkNeoTokyo:
-        return ColorScheme.dark(
-          primary: Color(0xFFE91E63),
-          secondary: Color(0xFF00BCD4),
-          surface: Color(0xFF1F1F1F),
-        );
-      case ThemeType.darkEmeraldForest:
-        return ColorScheme.dark(
-          primary: Color(0xFF2E7D32),
-          secondary: Color(0xFF388E3C),
-          surface: Color(0xFF0E1510),
-        );
-      case ThemeType.darkSunsetGold:
-        return ColorScheme.dark(
-          primary: Color(0xFFFF6F00),
-          secondary: Color(0xFFFF8F00),
-          surface: Color(0xFF170F00),
-        );
-      case ThemeType.darkDigitalLavender:
-        return ColorScheme.dark(
-          primary: Color(0xFF7B1FA2),
-          secondary: Color(0xFF9C27B0),
-          surface: Color(0xFF110F15),
-        );
-      case ThemeType.darkMaterialGrey:
-        return ColorScheme.dark(
-          primary: Color(0xFF455A64),
-          secondary: Color(0xFF546E7A),
-          surface: Color(0xFF0E0E0F),
-        );
-      case ThemeType.darkNightBlue:
-        return ColorScheme.dark(
-          primary: Color(0xFF1A237E),
-          secondary: Color(0xFF283593),
-          surface: Color(0xFF040407),
-        );
-      case ThemeType.darkForestMoss:
-        return ColorScheme.dark(
-          primary: Color(0xFF33691E),
-          secondary: Color(0xFF558B2F),
-          surface: Color(0xFF0E1510),
-        );
-      case ThemeType.darkDesertSand:
-        return ColorScheme.dark(
-          primary: Color(0xFFBF360C),
-          secondary: Color(0xFFD84315),
-          surface: Color(0xFF170D07),
-        );
-      case ThemeType.darkArcticIce:
-        return ColorScheme.dark(
-          primary: Color(0xFF00ACC1),
-          secondary: Color(0xFF00BCD4),
-          surface: Color(0xFF0E1113),
-        );
-      case ThemeType.darkDeepSkyBlue:
-        return ColorScheme.dark(
-          primary: Color(0xFF00B8D4),
-          secondary: Color(0xFF18FFFF),
-          surface: Color(0xFF0E1113),
-        );
-      case ThemeType.darkLushLavender:
-        return ColorScheme.dark(
-          primary: Color(0xFF9575CD),
-          secondary: Color(0xFFBA68C8),
-          surface: Color(0xFF110F15),
-        );
-      case ThemeType.darkEarthyOlive:
-        return ColorScheme.dark(
-          primary: Color(0xFF689F38),
-          secondary: Color(0xFF7CB342),
-          surface: Color(0xFF0E1510),
-        );
-      case ThemeType.darkVibrantCoral:
-        return ColorScheme.dark(
-          primary: Color(0xFFFF5722),
-          secondary: Color(0xFFE64A19),
-          surface: Color(0xFF170807),
-        );
-      case ThemeType.darkSerenityBlue:
-        return ColorScheme.dark(
-          primary: Color(0xFF42A5F5),
-          secondary: Color(0xFF64B5F6),
-          surface: Color(0xFF0A0A0A),
-        );
-      case ThemeType.darkLushGreen:
-        return ColorScheme.dark(
-          primary: Color(0xFF4CAF50),
-          secondary: Color(0xFF66BB6A),
-          surface: Color(0xFF0E1510),
-        );
-      case ThemeType.darkBoldRed:
-        return ColorScheme.dark(
-          primary: Color(0xFFE53935),
-          secondary: Color(0xFFC62828),
-          surface: Color(0xFF170708),
-        );
-      case ThemeType.darkSoftPink:
-        return ColorScheme.dark(
-          primary: Color(0xFFF06292),
-          secondary: Color(0xFFEC407A),
-          surface: Color(0xFF180F16),
-        );
-      case ThemeType.darkPaleYellow:
-        return ColorScheme.dark(
-          primary: Color(0xFFFFF176),
-          secondary: Color(0xFFFFF59D),
-          surface: Color(0xFF1A1A13),
-        );
-      case ThemeType.darkModernGrey:
-        return ColorScheme.dark(
-          primary: Color(0xFF546E7A),
-          secondary: Color(0xFF607D8B),
-          surface: Color(0xFF0E0E0F),
-        );
+      
       default:
         return ColorScheme.dark(
-          primary: Color(0xFF2196F3),
-          secondary: Color(0xFF03A9F4),
-          surface: Color(0xFF121212),
+          primary: Color(0xFF1A1A1A),      // Almost Black
+          secondary: Color(0xFF121212),    // Ultra Dark Gray
+          tertiary: Color(0xFF0A0A0A),     // Deepest Black
+          surface: Color(0xFF0C0C0C),      // Pitch Black
+          onSurface: Color(0xFFE0E0E0),    // Light Gray
         );
     }
+  }
+}
+
+// Custom theme extension for gradients (unchanged from previous version)
+class GradientColors extends ThemeExtension<GradientColors> {
+  final LinearGradient primaryGradient;
+  final LinearGradient secondaryGradient;
+  final LinearGradient tertiaryGradient;
+
+  GradientColors({
+    required this.primaryGradient,
+    required this.secondaryGradient,
+    required this.tertiaryGradient,
+  });
+
+  @override
+  ThemeExtension<GradientColors> copyWith({
+    LinearGradient? primaryGradient,
+    LinearGradient? secondaryGradient,
+    LinearGradient? tertiaryGradient,
+  }) {
+    return GradientColors(
+      primaryGradient: primaryGradient ?? this.primaryGradient,
+      secondaryGradient: secondaryGradient ?? this.secondaryGradient,
+      tertiaryGradient: tertiaryGradient ?? this.tertiaryGradient,
+    );
+  }
+
+  @override
+  ThemeExtension<GradientColors> lerp(
+    ThemeExtension<GradientColors>? other,
+    double t,
+  ) {
+    if (other is! GradientColors) {
+      return this;
+    }
+    return GradientColors(
+      primaryGradient:
+          LinearGradient.lerp(primaryGradient, other.primaryGradient, t)!,
+      secondaryGradient:
+          LinearGradient.lerp(secondaryGradient, other.secondaryGradient, t)!,
+      tertiaryGradient:
+          LinearGradient.lerp(tertiaryGradient, other.tertiaryGradient, t)!,
+    );
   }
 }

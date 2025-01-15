@@ -2,11 +2,24 @@ import 'package:hive/hive.dart';
 
 part 'watchlist_model.g.dart';
 
-abstract class BaseAnimeCard {
-  String get name;
-  String get poster;
-  String get id;
-  String? get type;
+class BaseAnimeCard {
+  final String id;
+  final String name;
+  final String poster;
+  final String? type;
+  final double? score;
+  final int? episodeCount;
+  final String? status;
+
+  BaseAnimeCard({
+    required this.id,
+    required this.name,
+    required this.poster,
+    this.type,
+    this.score,
+    this.episodeCount,
+    this.status,
+  });
 }
 
 @HiveType(typeId: 1)
@@ -51,6 +64,15 @@ class RecentlyWatchedItem extends HiveObject implements BaseAnimeCard {
     this.type,
     required this.id,
   });
+
+  @override
+  double? get score => null;
+
+  @override
+  int? get episodeCount => null;
+
+  @override
+  String? get status => null;
 }
 
 @HiveType(typeId: 3)
@@ -94,12 +116,12 @@ class ContinueWatchingItem extends HiveObject {
     required this.poster,
     required this.episode,
     required this.episodeId,
-    required this.timestamp,
     required this.title,
     this.isCompleted = false,
+    this.timestamp = '0:00:00.000000',
     this.duration = '0:00:00.000000',
     this.type,
-    this.watchedEpisodes
+    this.watchedEpisodes,
   });
 }
 
@@ -123,4 +145,13 @@ class AnimeItem extends HiveObject implements BaseAnimeCard {
 
   AnimeItem(
       {required this.name, required this.poster, required this.id, this.type});
+
+  @override
+  double? get score => null;
+
+  @override
+  int? get episodeCount => null;
+
+  @override
+  String? get status => null;
 }

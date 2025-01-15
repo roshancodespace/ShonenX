@@ -17,14 +17,14 @@ class AnimeInfo {
 
 class AnimeData {
   final Anime? anime;
-  // final List<AnimeBasic>? seasons;
+  final List<AnimeBasic>? seasons;
   // final List<AnimeBasic>? mostPopularAnimes;
   // final List<AnimeBasic>? relatedAnimes;
   // final List<AnimeBasic>? recommendedAnimes;
 
   AnimeData({
     this.anime,
-    // this.seasons,
+    this.seasons,
     // this.mostPopularAnimes,
     // this.relatedAnimes,
     // this.recommendedAnimes,
@@ -33,7 +33,7 @@ class AnimeData {
   factory AnimeData.fromJson(Map<String, dynamic> json) {
     return AnimeData(
       anime: json['anime'] != null ? Anime.fromJson(json['anime']) : null,
-      // // seasons: (json['seasons'] as List?)?.map((e) => AnimeBasic.fromJson(e)).toList(),
+      seasons: (json['seasons'] as List?)?.map((e) => AnimeBasic.fromJson(e)).toList(),
       // // mostPopularAnimes: (json['mostPopularAnimes'] as List?)?.map((e) => AnimeBasic.fromJson(e)).toList(),
       // // relatedAnimes: (json['relatedAnimes'] as List?)?.map((e) => AnimeBasic.fromJson(e)).toList(),
       // // recommendedAnimes: (json['recommendedAnimes'] as List?)?.map((e) => AnimeBasic.fromJson(e)).toList(),
@@ -252,28 +252,26 @@ class AnimeMoreInfo {
 class AnimeBasic {
   final String id;
   final String name;
-  final String jname;
+  final String title;
   final String poster;
-  final AnimeStats episodes;
-  final String type;
+  final bool isCurrent;
 
   AnimeBasic({
     required this.id,
     required this.name,
-    required this.jname,
+    required this.title,
     required this.poster,
-    required this.episodes,
-    required this.type,
+    required this.isCurrent,
+    
   });
 
   factory AnimeBasic.fromJson(Map<String, dynamic> json) {
     return AnimeBasic(
       id: json['id'],
       name: json['name'],
-      jname: json['jname'],
+      title: json['title'],
       poster: json['poster'],
-      episodes: AnimeStats.fromJson(json['episodes']),
-      type: json['type'],
+      isCurrent: json['isCurrent'] ?? false,
     );
   }
 }

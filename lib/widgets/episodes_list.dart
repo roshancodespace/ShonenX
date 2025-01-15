@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/models/episodes_model.dart';
+import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
 import 'package:nekoflow/screens/main/stream/stream_screen.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:dismissible_page/dismissible_page.dart';
 
 class EpisodesList extends StatefulWidget {
-  final String id;
-  final String name;
-  final String poster;
-  final String type;
+  final AnimeItem anime;
   final ValueNotifier<List<Episode>> episodes;
   final ValueNotifier<bool> isLoading;
   final int rangeSize;
@@ -15,10 +15,7 @@ class EpisodesList extends StatefulWidget {
 
   const EpisodesList({
     super.key,
-    required this.id,
-    required this.poster,
-    required this.name,
-    required this.type,
+    required this.anime,
     required this.episodes,
     required this.isLoading,
     this.rangeSize = 50,
@@ -34,19 +31,26 @@ class _EpisodesListState extends State<EpisodesList> {
   int _selectedRangeIndex = 0;
 
   void _navigateToStreamScreen(BuildContext context, Episode episode) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => StreamScreen(
-          id: widget.id,
-          name: widget.name,
-          episodeId: episode.episodeId,
-          poster: widget.poster,
-          episode: episode.number,
-          title: episode.title,
-        ),
+    context.pushTransparentRoute(
+      StreamScreen(
+        episodes: widget.episodes.value,
+        anime: AnimeItem(name: widget.anime.name, poster: widget.anime.poster, id: widget.anime.id),
+        episode: episode,
       ),
     );
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => StreamScreen(
+    //       id: widget.id,
+    //       name: widget.name,
+    //       episodeId: episode.episodeId,
+    //       poster: widget.poster,
+    //       episode: episode.number,
+    //       title: episode.title,
+    //     ),
+    //   ),
+    // );
   }
 
   List<Map<String, List<Episode>>> _getGroupedEpisodes(List<Episode> episodes) {
@@ -292,19 +296,22 @@ class _EpisodeGridTile extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8.0),
+          border: !episode.isFiller
+              ? null
+              : Border.all(color: themeData.colorScheme.secondary, width: 2),
           gradient: LinearGradient(
             colors: isWatched
                 ? [
-                    Colors.green.withOpacity(0.5),
-                    Colors.greenAccent.withOpacity(0.7),
+                    themeData.colorScheme.surface,
+                    themeData.colorScheme.primary.withOpacity(0.2),
                   ]
                 : [
                     !episode.isFiller
-                        ? themeData.colorScheme.primary.withOpacity(0.5)
-                        : Colors.transparent,
+                        ? themeData.colorScheme.primary.withOpacity(0.4)
+                        : themeData.colorScheme.surface,
                     !episode.isFiller
-                        ? themeData.colorScheme.secondary.withOpacity(0.8)
-                        : Colors.transparent,
+                        ? themeData.colorScheme.secondary.withOpacity(0.7)
+                        : themeData.colorScheme.surface,
                   ],
             begin: Alignment.bottomLeft,
             end: Alignment.topRight,
@@ -321,11 +328,11 @@ class _EpisodeGridTile extends StatelessWidget {
                     ),
                 textAlign: TextAlign.center,
               ),
-              if (episode.isFiller)
+              if (episode.isFiller || isWatched)
                 Text(
-                  " ${isWatched ? 'Watched' : 'FILLER'}",
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
+                  " ${isWatched ? 'WATCHED' : 'FILLER'}",
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                   textAlign: TextAlign.center,
                 ),
@@ -366,7 +373,7 @@ class _EpisodeTile extends StatelessWidget {
                 ]
               : [
                   !episode.isFiller
-                      ? themeData.colorScheme.primary.withOpacity(0.4)
+                      ? themeData.colorScheme.primary.withOpacity(0.6)
                       : themeData.colorScheme.surface,
                   !episode.isFiller
                       ? themeData.colorScheme.secondary.withOpacity(0.7)
@@ -375,14 +382,6 @@ class _EpisodeTile extends StatelessWidget {
           begin: Alignment.bottomLeft,
           end: Alignment.topRight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).shadowColor,
-            spreadRadius: 1,
-            blurRadius: 2,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -398,7 +397,10 @@ class _EpisodeTile extends StatelessWidget {
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.play_circle_fill),
+          icon: HugeIcon(
+            icon: HugeIcons.strokeRoundedPlay,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
           onPressed: onTap,
         ),
       ),

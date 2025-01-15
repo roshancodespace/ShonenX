@@ -1,5 +1,8 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
+import 'package:nekoflow/screens/main/settings/settings_screen.dart';
 import 'package:nekoflow/widgets/spotlight_card.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:nekoflow/data/models/anime_model.dart';
@@ -74,9 +77,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return SizedBox(
-      height: screenHeight * 0.3,
+      height: screenHeight * 0.2,
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Text(
             "Hello ${widget.name}, What's on your mind today?",
@@ -101,19 +104,22 @@ class _HomeScreenState extends State<HomeScreen> {
     return Shimmer.fromColors(
       baseColor: theme.colorScheme.primary.withOpacity(0.5),
       highlightColor: theme.colorScheme.secondary,
-      child: SizedBox(
-        height: screenSize.width * 0.6,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: 5,
-          padding: EdgeInsets.zero,
-          itemBuilder: (_, __) => Container(
-            height: double.infinity,
-            width: screenSize.width * factor,
-            margin: const EdgeInsets.only(right: 10),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(15),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: factor > 0.8 ? 20 : 0),
+        child: SizedBox(
+          height: screenSize.width * 0.6,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: 5,
+            padding: EdgeInsets.zero,
+            itemBuilder: (_, __) => Container(
+              height: double.infinity,
+              width: screenSize.width * factor,
+              margin: const EdgeInsets.only(right: 5),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(15),
+              ),
             ),
           ),
         ),
@@ -121,40 +127,39 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
- Widget? _buildSpotlightSection({
-  required String title,
-  required List<SpotlightAnime> animeList,
-  required String tag,
-  required ThemeData theme,
-}) {
-  if (animeList.isEmpty && !_isLoading) return null;
+  Widget? _buildSpotlightSection({
+    required String title,
+    required List<SpotlightAnime> animeList,
+    required String tag,
+    required ThemeData theme,
+  }) {
+    if (animeList.isEmpty && !_isLoading) return null;
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      if (title.isNotEmpty) ...[
-        Text(
-          title,
-          style: theme.textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 10),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (title.isNotEmpty) ...[
+          Text(
+            title,
+            style: theme.textTheme.headlineMedium,
+          ),
+          const SizedBox(height: 10),
+        ],
+        _isLoading
+            ? _buildShimmerLoading(theme, 0.9)
+            : SnappingScroller(
+                autoScroll: true,
+                widthFactor: 1,
+                children: animeList
+                    .map((anime) => SpotlightCard(
+                          anime: anime,
+                          tag: tag,
+                        ))
+                    .toList(),
+              ),
       ],
-      _isLoading
-          ? _buildShimmerLoading(theme, 0.9)
-          : SnappingScroller(
-              autoScroll: true,
-              widthFactor: 1,
-              children: animeList
-                  .map((anime) => SpotlightCard(
-                        anime: anime,
-                        tag: tag,
-                      ))
-                  .toList(),
-            ),
-    ],
-  );
-}
-
+    );
+  }
 
   Widget? _buildContentSection({
     required String title,
@@ -173,9 +178,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 10),
         _isLoading
-            ? _buildShimmerLoading(theme, 0.4)
+            ? _buildShimmerLoading(theme, 0.41)
             : SnappingScroller(
-              showIndicators: false,
+                showIndicators: false,
                 widthFactor: 0.48,
                 children: animeList
                     .map((anime) => AnimeCard(anime: anime, tag: tag))
@@ -250,7 +255,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(toolbarHeight: 0),
+      appBar: AppBar(
+        // leading: IconButton(
+        //   onPressed: () => Navigator.push(context,
+        //       CupertinoPageRoute(builder: (conotext) => SettingsScreen())),
+        //   icon: HugeIcon(
+        //       icon: HugeIcons.strokeRoundedUser,
+        //       color: theme.colorScheme.onSurface),
+        // ),
+        backgroundColor: Colors.transparent,
+        forceMaterialTransparency: true,
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.push(context,
+                CupertinoPageRoute(builder: (conotext) => SettingsScreen())),
+            icon: HugeIcon(
+                icon: HugeIcons.strokeRoundedSettings01,
+                color: theme.colorScheme.onSurface),
+          )
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: _fetchData,
         child: Padding(

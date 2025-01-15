@@ -121,9 +121,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       return const LoadingScreen();
     }
 
-    return Scaffold(
-      body: SafeArea(
-        child: PageView.builder(
+    return SafeArea(
+      maintainBottomViewPadding: true,
+      child: Scaffold(
+        body: PageView.builder(
           controller: _pageController,
           onPageChanged: (index) => setState(() => _currentPage = index),
           itemCount: onboardingData.length + 1,
@@ -134,8 +135,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             return _buildNameInputPage();
           },
         ),
+        bottomNavigationBar: _buildNavigationBar(),
       ),
-      bottomNavigationBar: _buildNavigationBar(),
     );
   }
 

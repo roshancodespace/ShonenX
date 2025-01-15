@@ -1,30 +1,25 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:better_player/better_player.dart';
+import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/boxes/watchlist_box.dart';
 import 'package:nekoflow/data/models/episodes_model.dart';
 import 'package:nekoflow/data/models/stream_model.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
 import 'package:nekoflow/data/services/anime_service.dart';
+import 'package:nekoflow/widgets/player/video_player.dart';
+import 'package:scroll_to_index/scroll_to_index.dart';
 
 class StreamScreen extends StatefulWidget {
-  final String title;
-  final String id;
-  final String episodeId;
-  final String poster;
-  final int episode;
-  final String name;
-  final String? type;
-
+  final List<Episode> episodes;
+  final Episode? episode;
+  final AnimeItem? anime;
+  final ContinueWatchingItem? continueWatchingItem;
   const StreamScreen({
     super.key,
-    required this.title,
-    required this.id,
-    required this.episodeId,
-    required this.poster,
-    required this.episode,
-    required this.name,
-    this.type,
+    required this.episodes,
+    this.anime,
+    this.episode,
+    this.continueWatchingItem,
   });
 
   @override
@@ -32,299 +27,271 @@ class StreamScreen extends StatefulWidget {
 }
 
 class _StreamScreenState extends State<StreamScreen> {
-  static const defaultServer = "hd-1";
-  static const defaultDubSub = "sub";
-  // static const progressThreshold = 0.05; // 5% threshold for recently watched
+  String _selectedServer = "hd-1";
+  String _selectedDuborSuborRaw = "sub";
+  int _selectedRangeIndex = 0;
 
-  final AnimeService _animeService = AnimeService();
-  final _serversCache = <String, EpisodeServersModel>{};
-  final _linksCache = <String, EpisodeStreamingLinksModel>{};
-  late final WatchlistBox _watchlistBox;
+  Duration? _position;
+  Duration? _duration;
+  List<Map<String, List<Episode>>> _groupedEpisodes = [];
 
+  EpisodeServersModel? _episodeServersModel;
+  EpisodeStreamingLinksModel? _episodeStreamingLinksModel;
+
+  bool _isPlayerInitializing = true;
+
+  late Episode _currentEpisode;
+  late AutoScrollController _autoScrollController;
+  late AnimeService _animeService;
+  late WatchlistBox _watchlistBox;
+
+  // Change to nullable and initialize as null
   BetterPlayerController? _playerController;
-  String _selectedServer = defaultServer;
-  String _selectedDubSub = defaultDubSub;
-  String _currentPosition = '0:00:00.000000';
-
-  bool _isLoading = true;
-  bool _isPlayerInitializing = false;
-  EpisodeServersModel? _episodeServers;
-  EpisodeStreamingLinksModel? _streamingLinks;
 
   @override
   void initState() {
     super.initState();
-    _initializeScreen();
+    _animeService = AnimeService();
+    _initializeBox();
+    _autoScrollController = AutoScrollController();
+    _initializeEpisode();
+    _initializePlayer();
+    _scrollToCurrentEpisode();
   }
 
-  Future<void> _initializeScreen() async {
+  @override
+  void dispose() {
+    _autoScrollController.dispose();
+    _animeService.dispose();
+    _playerController?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initializeEpisode() async {
+    _groupedEpisodes = _getGroupedEpisodes(widget.episodes);
+    _currentEpisode = widget.episode ?? widget.episodes.first;
+    _fetchEpisodeServers(_currentEpisode.episodeId);
+    _fetchStreamingLinks(_currentEpisode.episodeId);
+    if (widget.continueWatchingItem != null) {
+      final item = widget.continueWatchingItem;
+      List<String> timestampParts = item?.timestamp.split(":") ?? [];
+      _position = Duration(
+        minutes: int.parse(timestampParts[1]),
+        seconds: int.parse(timestampParts[2].split('.')[0]),
+      );
+    }
+  }
+
+  Future<void> _initializeBox() async {
     _watchlistBox = WatchlistBox();
     await _watchlistBox.init();
-
-    final continueWatching = _watchlistBox.getContinueWatchingById(widget.id);
-    if (continueWatching?.episodeId == widget.episodeId) {
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          title: Text(
-            'Continue Watching',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          content: Text(
-            'Continue where you left off?',
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _currentPosition = continueWatching!.timestamp;
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onSurface,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('Continue'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    await _loadInitialData();
-  }
-
-  Future<void> _loadInitialData() async {
-    try {
-      await Future.wait([
-        _fetchEpisodeServers(widget.episodeId),
-        _fetchStreamingLinks(widget.episodeId),
-      ]);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _fetchEpisodeServers(String episodeId) async {
-    if (!mounted) return;
-
-    try {
-      if (_serversCache.containsKey(episodeId)) {
-        setState(() => _episodeServers = _serversCache[episodeId]);
-        return;
-      }
-
-      final servers = await _animeService.fetchEpisodeServers(
-        animeEpisodeId: episodeId,
-      );
-
-      if (mounted) {
-        setState(() {
-          _episodeServers = servers;
-          _serversCache[episodeId] = servers;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error fetching episode servers: $e");
-    }
-  }
-
-  Future<void> _fetchStreamingLinks(String episodeId) async {
-    final cacheKey = '$episodeId-$_selectedServer-$_selectedDubSub';
-
-    try {
-      if (_linksCache.containsKey(cacheKey)) {
-        _streamingLinks = _linksCache[cacheKey];
-        await _initializePlayer();
-        return;
-      }
-
-      final links = await _animeService.fetchEpisodeStreamingLinks(
-        animeEpisodeId: episodeId,
-        server: _selectedServer,
-        category: _selectedDubSub,
-      );
-
-      if (mounted) {
-        _streamingLinks = links;
-        _linksCache[cacheKey] = links;
-        await _initializePlayer();
-      }
-    } catch (e) {
-      debugPrint("Error fetching streaming links: $e");
-    }
   }
 
   Future<void> _initializePlayer() async {
-    if (!mounted || _isPlayerInitializing || _streamingLinks == null) return;
+    // Dispose of existing controller if it exists
+    _playerController?.dispose();
 
-    setState(() => _isPlayerInitializing = true);
+    setState(() {
+      _isPlayerInitializing = true;
+    });
 
     try {
-      _playerController?.dispose();
-      _playerController = null;
-
-      final controller = BetterPlayerController(
+      // Create a new controller each time
+      _playerController = BetterPlayerController(
         BetterPlayerConfiguration(
           autoPlay: true,
+          autoDispose: true,
           fit: BoxFit.contain,
-          deviceOrientationsOnFullScreen: const [
-            DeviceOrientation.landscapeLeft,
-            DeviceOrientation.landscapeRight,
-          ],
-          deviceOrientationsAfterFullScreen: const [
-            DeviceOrientation.portraitUp,
-            DeviceOrientation.portraitDown,
-          ],
-          controlsConfiguration: const BetterPlayerControlsConfiguration(
-            controlBarColor: Colors.black54,
-            enableProgressText: true,
-            enableSubtitles: true,
-            loadingColor: Colors.white,
-          ),
+          startAt: _position,
+          // Add error handling configuration
+          errorBuilder: (context, errorMessage) {
+            return Center(
+              child: Text(
+                'Error loading video: $errorMessage',
+                style: TextStyle(color: Colors.red),
+              ),
+            );
+          },
         ),
       );
 
-      final subtitles = _streamingLinks!.tracks
-              ?.where((track) => track.label != null)
-              .map((track) => BetterPlayerSubtitlesSource(
-                    type: BetterPlayerSubtitlesSourceType.network,
-                    urls: [track.file],
-                    name: track.label,
-                    selectedByDefault: track.isDefault ?? false,
-                  ))
-              .toList() ??
-          [];
-
-      await controller.setupDataSource(
+      await _playerController?.setupDataSource(
         BetterPlayerDataSource(
           BetterPlayerDataSourceType.network,
-          _streamingLinks!.sources[0].url,
-          subtitles: subtitles,
+          _episodeStreamingLinksModel!.sources[0].url,
+          subtitles: _episodeStreamingLinksModel!.tracks
+              ?.map(
+                (track) => BetterPlayerSubtitlesSource(
+                  type: BetterPlayerSubtitlesSourceType.network,
+                  name: track.label,
+                  urls: [track.file],
+                  selectedByDefault: track.isDefault,
+                ),
+              )
+              .toList(),
         ),
       );
 
-      final existingItem = _watchlistBox.getContinueWatchingById(widget.id);
-      final watchedEpisodes =
-          List<String>.from(existingItem?.watchedEpisodes ?? []);
-      if (!watchedEpisodes.contains(widget.episodeId)) {
-        watchedEpisodes.add(widget.episodeId);
-      }
-
-      await _watchlistBox.updateContinueWatching(
-        ContinueWatchingItem(
-          title: widget.title,
-          id: widget.id,
-          name: widget.name,
-          poster: widget.poster,
-          episode: widget.episode,
-          episodeId: widget.episodeId,
-          timestamp: _currentPosition,
-          duration: _currentPosition,
-          type: widget.type,
-          watchedEpisodes: watchedEpisodes,
-        ),
-      );
-
-      controller.addEventsListener(_onPlayerEvent);
-
-      if (_currentPosition != '0:00:00.000000') {
-        final parts = _currentPosition.split(':');
-        if (parts.length >= 3) {
-          final duration = Duration(
-            hours: int.parse(parts[0]),
-            minutes: int.parse(parts[1]),
-            seconds: double.parse(parts[2]).floor(),
-            milliseconds: ((double.parse(parts[2]) % 1) * 1000).round(),
-          );
-          await controller.seekTo(duration);
-        }
-      }
-
-      setState(() => _playerController = controller);
+      _playerController?.addEventsListener(_onPlayerEvent);
+      setState(() {
+        _isPlayerInitializing = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isPlayerInitializing = false;
+      });
+      debugPrint("Player initialization failed: $e");
     } finally {
-      _playerController?.pause();
-      if (mounted) setState(() => _isPlayerInitializing = false);
+      // await _watchlistBox.updateContinueWatching(
+      //   ContinueWatchingItem(
+      //     id: widget.anime!.id,
+      //     name: widget.anime!.name,
+      //     poster: widget.anime!.poster,
+      //     episode: widget.episode!.number,
+      //     episodeId: widget.episode!.episodeId,
+      //     title: widget.episode!.title,
+      //   ),
+      // );
+      await _watchlistBox.addToRecentlyWatched(
+        RecentlyWatchedItem(
+          name: widget.anime!.name,
+          poster: widget.anime!.poster,
+          id: widget.anime!.id,
+        ),
+      );
     }
   }
 
   Future<void> _onPlayerEvent(BetterPlayerEvent event) async {
     switch (event.betterPlayerEventType) {
       case BetterPlayerEventType.progress:
-        // Handle progress updates
-        final position =
-            _playerController?.videoPlayerController?.value.position;
-        final duration =
-            _playerController?.videoPlayerController?.value.duration;
-        debugPrint("Progress: $position / $duration");
-        await _watchlistBox.updateEpisodeProgress(
-          widget.id,
-          episode: widget.episode,
-          episodeId: widget.episodeId,
-          timestamp: position.toString(),
-          duration: duration.toString(),
-        );
+        _position = _playerController?.videoPlayerController?.value.position;
+        _duration = _playerController?.videoPlayerController?.value.duration;
+        if (_position != null && _duration != null) {
+          await _watchlistBox.updateEpisodeProgress(
+            widget.anime!.id,
+            episode: _currentEpisode.number,
+            episodeId: _currentEpisode.episodeId,
+            timestamp: _position.toString(),
+            duration: _duration.toString(),
+            markAsWatched: true,
+            item: ContinueWatchingItem(
+              id: widget.anime!.id,
+              name: widget.anime!.name,
+              poster: widget.anime!.poster,
+              episode: _currentEpisode.number,
+              episodeId: _currentEpisode.episodeId,
+              title: _currentEpisode.title,
+            ),
+          );
+        }
         break;
-
-      // case BetterPlayerEventType.finished:
-      //   // Handle video finished playing
-      //   debugPrint("Video playback finished");
-      //   break;
-
-      // case BetterPlayerEventType.exception:
-      //   // Handle playback exceptions
-      //   debugPrint("Playback exception: ${event.parameters?['exception']}");
-      //   break;
-
-      // case BetterPlayerEventType.bufferingStart:
-      //   debugPrint("Buffering started");
-      //   break;
-
-      // case BetterPlayerEventType.bufferingEnd:
-      //   debugPrint("Buffering ended");
-      //   break;
-
       default:
-        debugPrint("Event: ${event.betterPlayerEventType}");
     }
   }
 
-  @override
-  void dispose() {
-    _playerController?.dispose();
-    _animeService.dispose();
-    super.dispose();
+  Future<void> _fetchEpisodeServers(String episodeId) async {
+    try {
+      _episodeServersModel =
+          await _animeService.fetchEpisodeServers(animeEpisodeId: episodeId);
+    } catch (err) {
+      debugPrint(err.toString());
+    }
   }
 
-  // UI Methods
-  void _onDubSubChanged(String value) {
+  Future<void> _fetchStreamingLinks(String episodeId) async {
+    try {
+      _episodeStreamingLinksModel =
+          await _animeService.fetchEpisodeStreamingLinks(
+        animeEpisodeId: episodeId,
+        server: _selectedServer,
+        category: _selectedDuborSuborRaw,
+      );
+      // Call _initializePlayer after fetching streaming links
+      await _initializePlayer();
+    } catch (err) {
+      debugPrint(err.toString());
+    }
+  }
+
+  List<String> _getAvailableServers(String type) {
+    // Map of types to their respective server lists
+    final serverMap = {
+      'sub': _episodeServersModel?.sub
+              .map((server) => server.serverName)
+              .toList() ??
+          [],
+      'dub': _episodeServersModel?.dub
+              .map((server) => server.serverName)
+              .toList() ??
+          [],
+      'raw': _episodeServersModel?.raw
+              .map((server) => server.serverName)
+              .toList() ??
+          [],
+    };
+
+    // Return the list for the requested type, or an empty list if not found
+    return serverMap[type] ?? [];
+  }
+
+  List<Map<String, List<Episode>>> _getGroupedEpisodes(List<Episode> episodes,
+      {int rangeSize = 50}) {
+    if (episodes.isEmpty) return [];
+    return List.generate(
+      (episodes.length / rangeSize).ceil(),
+      (index) {
+        final start = index * rangeSize + 1;
+        final end = (start + rangeSize - 1).clamp(1, episodes.length);
+        return {
+          '$start - $end': episodes.sublist(
+            index * rangeSize,
+            (index + 1) * rangeSize > episodes.length
+                ? episodes.length
+                : (index + 1) * rangeSize,
+          )
+        };
+      },
+    );
+  }
+
+  void _changeRange(int rangeIndex) {
     setState(() {
-      _selectedDubSub = value;
-      _fetchStreamingLinks(widget.episodeId);
+      _selectedRangeIndex = rangeIndex;
     });
   }
 
-  void _onServerChanged(String value) {
-    setState(() {
-      _selectedServer = value;
-      _fetchStreamingLinks(widget.episodeId);
-    });
+  void _playEpisode(Episode episode) {
+    _currentEpisode = episode;
+    _fetchStreamingLinks(_currentEpisode.episodeId);
+    _scrollToCurrentEpisode();
+    setState(() {});
+  }
+
+  void _scrollToCurrentEpisode() {
+    final int currentIndex = widget.episodes.indexWhere(
+      (episode) => episode.number == _currentEpisode.number,
+    );
+    if (currentIndex >= 50) {
+      _selectedRangeIndex = _groupedEpisodes.indexWhere(
+        (item) =>
+            int.parse(item.keys.first.split('-')[0].trim()) - 1 <
+                currentIndex &&
+            int.parse(item.keys.first.split('-')[1].trim()) >= currentIndex,
+      );
+      setState(() {});
+    }
+    final int currentIndexInGrouped =
+        _groupedEpisodes[_selectedRangeIndex].values.first.indexWhere(
+              (episode) => episode.number == _currentEpisode.number,
+            );
+    if (currentIndex != -1) {
+      _autoScrollController.scrollToIndex(
+        currentIndexInGrouped,
+        preferPosition: AutoScrollPosition.middle,
+        duration: Duration(milliseconds: 500),
+      );
+    }
   }
 
   @override
@@ -332,146 +299,299 @@ class _StreamScreenState extends State<StreamScreen> {
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,
-        title: Text(widget.title),
-        elevation: 0,
+        actions: [
+          // _buildDropAction(
+          //   currentValue: _selectedServer,
+          //   items: _getAvailableServers(_selectedDuborSuborRaw),
+          //   onChanged: (value) {
+          //     setState(() {
+          //       _selectedServer = value!;
+          //       _fetchStreamingLinks(_currentEpisode.episodeId);
+          //     });
+          //   },
+          // ),
+          // _buildDropAction(
+          //   currentValue: _selectedDuborSuborRaw,
+          //   items: ['sub', 'dub', 'raw'],
+          //   onChanged: (value) {
+          //     setState(() {
+          //       _selectedDuborSuborRaw = value!;
+          //       _fetchStreamingLinks(_currentEpisode.episodeId);
+          //     });
+          //   },
+          // ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildPlayer(),
-            const SizedBox(height: 20),
-            _buildDubSubButtons(),
-            const SizedBox(height: 20),
-            const Text(
-              "Servers",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+      floatingActionButton: Stack(
+        children: [
+        
+        ],
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 15),
+            child: _buildVideoPlayer(),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(15),
+            child: Text(
+              _currentEpisode.title,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 10),
-            _buildServersSection(),
-          ],
-        ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(15.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // _buildDropAction(
+                //   currentValue: _groupedEpisodes[_selectedRangeIndex].keys.first,
+                //   items: extractKeysFromList(_groupedEpisodes),
+                //   onChanged: (index) {
+                //     // Ensure index is properly parsed to int
+                //     _changeRange(int.parse(index ?? '0'));
+                //   },
+                // ),
+                Expanded(
+                  child: _buildDropAction(
+                    currentValue: _selectedDuborSuborRaw,
+                    items: ['sub', 'dub', 'raw'],
+                    isExpanded: true,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedDuborSuborRaw = value!;
+                        _fetchStreamingLinks(_currentEpisode.episodeId);
+                      });
+                    },
+                  ),
+                ),
+                SizedBox(
+                  width: 10,
+                ),
+                _buildDropAction(
+                  currentValue: _selectedServer,
+                  items: _getAvailableServers(_selectedDuborSuborRaw),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedServer = value!;
+                      _fetchStreamingLinks(_currentEpisode.episodeId);
+                    });
+                  },
+                ),
+                SizedBox(
+                  width: 10,
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                      border: Border.all(
+                          color: Theme.of(context).colorScheme.primary),
+                      borderRadius: BorderRadius.circular(15)),
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: DropdownButton<int>(
+                    value: _selectedRangeIndex,
+                    onChanged: (index) {
+                      _changeRange(index ?? _selectedRangeIndex);
+                    },
+                    icon: HugeIcon(
+                      icon: HugeIcons.strokeRoundedArrowDown01,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    iconSize: 24,
+                    items: _groupedEpisodes.asMap().entries.map((entry) {
+                      return DropdownMenuItem<int>(
+                        value: entry.key,
+                        child: Text(
+                          entry.value.keys.first,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+                controller: _autoScrollController,
+                padding: EdgeInsets.all(0),
+                itemCount:
+                    _groupedEpisodes[_selectedRangeIndex].values.first.length,
+                itemBuilder: (context, index) {
+                  final Episode episode =
+                      _groupedEpisodes[_selectedRangeIndex].values.first[index];
+                  return _buildEpisodeTile(episode, index);
+                }),
+          ),
+        ],
       ),
     );
   }
 
-  // UI Components
-  Widget _buildPlayer() {
+  Widget _buildDropAction(
+      {required String currentValue,
+      required List<String>? items,
+      required ValueChanged<String?> onChanged,
+      bool isExpanded = false}) {
+    if (items == null || items.isEmpty) return SizedBox.shrink();
+
+    // Ensure currentValue is valid
+    final validCurrentValue = items.contains(currentValue)
+        ? currentValue
+        : items.first; // Fallback to the first item if currentValue is invalid
+
     return Container(
-      color: Colors.black,
-      height: 230,
-      width: double.infinity,
-      child: _isPlayerInitializing || _playerController == null
-          ? const Center(child: CircularProgressIndicator())
-          : BetterPlayer(controller: _playerController!),
-    );
-  }
-
-  Widget _buildDubSubButtons() {
-    return Row(
-      children: [
-        _buildChoiceButton(
-            "Sub", _selectedDubSub == "sub", () => _onDubSubChanged("sub")),
-        const SizedBox(width: 15),
-        _buildChoiceButton(
-            "Dub", _selectedDubSub == "dub", () => _onDubSubChanged("dub")),
-      ],
-    );
-  }
-
-  Widget _buildServersSection() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    final servers =
-        _selectedDubSub == "sub" ? _episodeServers?.sub : _episodeServers?.dub;
-
-    if (servers == null || servers.isEmpty) {
-      return const Center(child: Text('No servers available'));
-    }
-
-    return SizedBox(
-      height: 50,
-      child: ListView.builder(
-        itemCount: servers.length,
-        scrollDirection: Axis.horizontal,
-        itemBuilder: (context, index) {
-          final serverName = servers[index].serverName;
-          return _buildServerButton(
-            serverName,
-            serverName == _selectedServer,
-            () => _onServerChanged(serverName),
-          );
+      decoration: BoxDecoration(
+          border: Border.all(color: Theme.of(context).colorScheme.primary),
+          borderRadius: BorderRadius.circular(15)),
+      padding: EdgeInsets.symmetric(horizontal: 10),
+      child: DropdownButton<String>(
+        underline: SizedBox(),
+        value: validCurrentValue,
+        isExpanded: isExpanded,
+        icon: HugeIcon(
+          icon: HugeIcons.strokeRoundedArrowDown01,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+        iconSize: 24,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+        onChanged: (value) {
+          if (value != null) {
+            onChanged(value);
+          }
         },
+        selectedItemBuilder: (context) => items.map((String option) {
+          return DropdownMenuItem<String>(
+            value: option,
+            child: Text(
+              option.toUpperCase(),
+            ),
+          );
+        }).toList(),
+        items: items.map((String option) {
+          return DropdownMenuItem<String>(
+            value: option,
+            child: Text(
+              option.toUpperCase(),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildChoiceButton(String label, bool isSelected, VoidCallback onTap) {
-    final theme = Theme.of(context);
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 15),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.secondary.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 5,
+  // Widget _buildActionButton(
+  //   IconData iconData, {
+  //   VoidCallback? action,
+  //   double? top,
+  //   double? right,
+  //   double? bottom,
+  //   double? left,
+  // }) {
+  //   return Positioned(
+  //     left: left,
+  //     right: right,
+  //     top: top,
+  //     bottom: bottom,
+  //     child: InkWell(
+  //       onTap: action,
+  //       child: Container(
+  //         height: 50,
+  //         width: 50,
+  //         decoration: BoxDecoration(
+  //           color: Theme.of(context).colorScheme.primary,
+  //           borderRadius: BorderRadius.circular(50),
+  //         ),
+  //         child: HugeIcon(
+  //           icon: iconData,
+  //           color: Theme.of(context).colorScheme.onTertiary,
+  //           size: 30,
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildVideoPlayer() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: AspectRatio(
+        aspectRatio: 1.8,
+        child: _isPlayerInitializing || _playerController == null
+            ? Container(
+                color: Theme.of(context).colorScheme.primary,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              )
+            : VideoPlayer(playerController: _playerController!),
+      ),
+    );
+  }
+
+  Widget _buildEpisodeTile(Episode episode, int index) {
+    final bool isCurrentEpisode = episode.number == _currentEpisode.number;
+
+    return AutoScrollTag(
+      key: ValueKey(index),
+      controller: _autoScrollController,
+      index: index,
+      child: Card(
+        color: isCurrentEpisode
+            ? Theme.of(context).colorScheme.primaryContainer
+            : null,
+        elevation: isCurrentEpisode ? 6 : 2,
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          title: Text(
+            episode.title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight:
+                      isCurrentEpisode ? FontWeight.bold : FontWeight.w600,
+                  color: isCurrentEpisode
+                      ? Theme.of(context).colorScheme.onPrimaryContainer
+                      : null,
+                ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Episode ${episode.number}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: isCurrentEpisode
+                          ? Theme.of(context).colorScheme.onPrimaryContainer
+                          : null,
+                    ),
               ),
             ],
           ),
-          child: Center(
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+          trailing: IconButton(
+            icon: HugeIcon(
+              icon: isCurrentEpisode
+                  ? HugeIcons.strokeRoundedPause
+                  : HugeIcons.strokeRoundedPlay,
+              color: isCurrentEpisode
+                  ? Theme.of(context).colorScheme.onPrimary
+                  : Theme.of(context).colorScheme.primary,
+              size: 36,
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildServerButton(String label, bool isSelected, VoidCallback onTap) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(right: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? theme.colorScheme.primary
-              : theme.colorScheme.secondary,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 5,
-            ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-            ),
+            onPressed: () => _playEpisode(episode),
           ),
         ),
       ),

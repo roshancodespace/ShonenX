@@ -10,12 +10,18 @@ abstract class BaseAnime {
 }
 
 class SpotlightAnime extends BaseAnime {
-  @override final String id;
-  @override final String name;
-  @override final String jname;
-  @override final String poster;
-  @override final AnimeEpisodes episodes;
-  @override final String type;
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final String jname;
+  @override
+  final String poster;
+  @override
+  final AnimeEpisodes episodes;
+  @override
+  final String type;
   final int rank;
   final String description;
   final List<String> otherInfo;
@@ -42,18 +48,27 @@ class SpotlightAnime extends BaseAnime {
       jname: json['jname'] ?? '',
       episodes: AnimeEpisodes.fromJson(json['episodes']),
       type: json['type'] ?? '',
-      otherInfo: (json['otherInfo'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+      otherInfo: (json['otherInfo'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
     );
   }
 }
 
 class TrendingAnime extends BaseAnime {
-  @override final String id;
-  @override final String name; 
-  @override final String jname;
-  @override final String poster;
-  @override final AnimeEpisodes episodes = AnimeEpisodes(sub: null, dub: null);
-  @override final String type = '';
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final String jname;
+  @override
+  final String poster;
+  @override
+  final AnimeEpisodes episodes = AnimeEpisodes(sub: null, dub: null);
+  @override
+  final String type = '';
   final int rank;
 
   TrendingAnime({
@@ -75,13 +90,19 @@ class TrendingAnime extends BaseAnime {
   }
 }
 
-class LatestEpisodeAnime extends BaseAnime {
-  @override final String id;
-  @override final String name;
-  @override final String jname;
-  @override final String poster;
-  @override final AnimeEpisodes episodes;
-  @override final String type;
+class LatestEpisodeAnime extends BaseAnime implements BaseAnimeCard {
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final String jname;
+  @override
+  final String poster;
+  @override
+  final AnimeEpisodes episodes;
+  @override
+  final String type;
   final String duration;
   final dynamic rating;
 
@@ -108,15 +129,30 @@ class LatestEpisodeAnime extends BaseAnime {
       episodes: AnimeEpisodes.fromJson(json['episodes']),
     );
   }
+
+  @override
+  double? get score => null;
+
+  @override
+  int? get episodeCount => episodes.sub;
+
+  @override
+  String? get status => null;
 }
 
-class UpcomingAnime extends BaseAnime {
-  @override final String id;
-  @override final String name;
-  @override final String jname;
-  @override final String poster;
-  @override final AnimeEpisodes episodes;
-  @override final String type;
+class UpcomingAnime extends BaseAnime implements BaseAnimeCard {
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final String jname;
+  @override
+  final String poster;
+  @override
+  final AnimeEpisodes episodes;
+  @override
+  final String type;
   final String duration;
   final dynamic rating;
 
@@ -143,6 +179,15 @@ class UpcomingAnime extends BaseAnime {
       episodes: AnimeEpisodes.fromJson(json['episodes']),
     );
   }
+
+  @override
+  double? get score => null;
+
+  @override
+  int? get episodeCount => episodes.sub;
+
+  @override
+  String? get status => null;
 }
 
 class TopAnimeList {
@@ -158,20 +203,32 @@ class TopAnimeList {
 
   factory TopAnimeList.fromJson(Map<String, dynamic> json) {
     return TopAnimeList(
-      today: (json['today'] as List<dynamic>).map((e) => TopAnime.fromJson(e)).toList(),
-      week: (json['week'] as List<dynamic>).map((e) => TopAnime.fromJson(e)).toList(),
-      month: (json['month'] as List<dynamic>).map((e) => TopAnime.fromJson(e)).toList(),
+      today: (json['today'] as List<dynamic>)
+          .map((e) => TopAnime.fromJson(e))
+          .toList(),
+      week: (json['week'] as List<dynamic>)
+          .map((e) => TopAnime.fromJson(e))
+          .toList(),
+      month: (json['month'] as List<dynamic>)
+          .map((e) => TopAnime.fromJson(e))
+          .toList(),
     );
   }
 }
 
 class TopAnime extends BaseAnime {
-  @override final String id;
-  @override final String name;
-  @override final String jname;
-  @override final String poster;
-  @override final AnimeEpisodes episodes;
-  @override final String type = '';
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final String jname;
+  @override
+  final String poster;
+  @override
+  final AnimeEpisodes episodes;
+  @override
+  final String type = '';
   final int rank;
 
   TopAnime({
@@ -196,12 +253,18 @@ class TopAnime extends BaseAnime {
 }
 
 class TopAiringAnime extends BaseAnime implements BaseAnimeCard {
-  @override final String id;
-  @override final String name;
-  @override final String jname;
-  @override final String poster;
-  @override final AnimeEpisodes episodes;
-  @override final String type;
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final String jname;
+  @override
+  final String poster;
+  @override
+  final AnimeEpisodes episodes;
+  @override
+  final String type;
 
   TopAiringAnime({
     required this.id,
@@ -234,12 +297,18 @@ class TopAiringAnime extends BaseAnime implements BaseAnimeCard {
 }
 
 class MostPopularAnime extends BaseAnime implements BaseAnimeCard {
-  @override final String id;
-  @override final String name;
-  @override final String jname;
-  @override final String poster;
-  @override final AnimeEpisodes episodes;
-  @override final String type;
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final String jname;
+  @override
+  final String poster;
+  @override
+  final AnimeEpisodes episodes;
+  @override
+  final String type;
 
   MostPopularAnime({
     required this.id,
@@ -272,12 +341,18 @@ class MostPopularAnime extends BaseAnime implements BaseAnimeCard {
 }
 
 class MostFavoriteAnime extends BaseAnime implements BaseAnimeCard {
-  @override final String id;
-  @override final String name;
-  @override final String jname;
-  @override final String poster;
-  @override final AnimeEpisodes episodes;
-  @override final String type;
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final String jname;
+  @override
+  final String poster;
+  @override
+  final AnimeEpisodes episodes;
+  @override
+  final String type;
 
   MostFavoriteAnime({
     required this.id,
@@ -310,12 +385,18 @@ class MostFavoriteAnime extends BaseAnime implements BaseAnimeCard {
 }
 
 class LatestCompletedAnime extends BaseAnime implements BaseAnimeCard {
-  @override final String id;
-  @override final String name;
-  @override final String jname;
-  @override final String poster;
-  @override final AnimeEpisodes episodes;
-  @override final String type;
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final String jname;
+  @override
+  final String poster;
+  @override
+  final AnimeEpisodes episodes;
+  @override
+  final String type;
 
   LatestCompletedAnime({
     required this.id,

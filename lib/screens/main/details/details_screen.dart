@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:dismissible_page/dismissible_page.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nekoflow/data/boxes/watchlist_box.dart';
@@ -324,7 +323,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                               ),
                               padding: EdgeInsets.all(8),
                               child: Text(
-                                season.title ?? 'Unknown',
+                                season.title,
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,

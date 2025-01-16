@@ -4,6 +4,7 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
 import 'package:nekoflow/screens/main/settings/settings_screen.dart';
 import 'package:nekoflow/widgets/spotlight_card.dart';
+import 'package:nekoflow/widgets/trending_animes.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:nekoflow/data/models/anime_model.dart';
 import 'package:nekoflow/data/services/anime_service.dart';
@@ -29,8 +30,12 @@ class _HomeScreenState extends State<HomeScreen> {
   List<LatestCompletedAnime> _completed = [];
   List<MostPopularAnime> _popular = [];
   List<SpotlightAnime> _spotlight = [];
+  List<LatestEpisodeAnime> _latestEpisode = [];
+  List<MostFavoriteAnime> _mostFavourite = [];
+  List<UpcomingAnime> _upcoming = [];
+  List<TrendingAnime> _trending = [];
+
   bool _isLoading = true;
-  // String? _error;
 
   @override
   void initState() {
@@ -41,10 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _fetchData() async {
     if (!mounted) return;
 
-    setState(() {
-      _isLoading = true;
-      // _error = null;
-    });
+    setState(() => _isLoading = true);
 
     try {
       final results = await _animeService.fetchHome();
@@ -55,15 +57,16 @@ class _HomeScreenState extends State<HomeScreen> {
         _topAiring = results.data.topAiringAnimes;
         _popular = results.data.mostPopularAnimes;
         _completed = results.data.latestCompletedAnimes;
+        _latestEpisode = results.data.latestEpisodeAnimes;
+        _mostFavourite = results.data.mostFavoriteAnimes;
+        _upcoming = results.data.topUpcomingAnimes;
+        _trending = results.data.trendingAnimes;
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
 
-      setState(() {
-        // _error = 'Something went wrong';
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
@@ -74,17 +77,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeaderSection(ThemeData theme) {
-    final screenHeight = MediaQuery.of(context).size.height;
-
     return SizedBox(
-      height: screenHeight * 0.2,
+      height: MediaQuery.of(context).size.height * 0.2,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Text(
             "Hello ${widget.name}, What's on your mind today?",
-            style: theme.textTheme.headlineLarge
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 10),
@@ -99,22 +99,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildShimmerLoading(ThemeData theme, double factor) {
-    final screenSize = MediaQuery.of(context).size;
-
     return Shimmer.fromColors(
       baseColor: theme.colorScheme.primary.withOpacity(0.5),
       highlightColor: theme.colorScheme.secondary,
       child: Padding(
         padding: EdgeInsets.only(bottom: factor > 0.8 ? 20 : 0),
         child: SizedBox(
-          height: screenSize.width * 0.6,
+          height: MediaQuery.of(context).size.width * 0.6,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: 5,
             padding: EdgeInsets.zero,
             itemBuilder: (_, __) => Container(
               height: double.infinity,
-              width: screenSize.width * factor,
+              width: MediaQuery.of(context).size.width * factor,
               margin: const EdgeInsets.only(right: 5),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
@@ -139,10 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (title.isNotEmpty) ...[
-          Text(
-            title,
-            style: theme.textTheme.headlineMedium,
-          ),
+          Text(title, style: theme.textTheme.headlineMedium),
           const SizedBox(height: 10),
         ],
         _isLoading
@@ -150,12 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
             : SnappingScroller(
                 autoScroll: true,
                 widthFactor: 1,
-                children: animeList
-                    .map((anime) => SpotlightCard(
-                          anime: anime,
-                          tag: tag,
-                        ))
-                    .toList(),
+                children: animeList.map((anime) => SpotlightCard(anime: anime, tag: tag)).toList(),
               ),
       ],
     );
@@ -172,19 +162,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: theme.textTheme.headlineMedium,
-        ),
+        Text(title, style: theme.textTheme.headlineMedium),
         const SizedBox(height: 10),
         _isLoading
             ? _buildShimmerLoading(theme, 0.41)
             : SnappingScroller(
                 showIndicators: false,
-                widthFactor: 0.48,
-                children: animeList
-                    .map((anime) => AnimeCard(anime: anime, tag: tag))
-                    .toList(),
+                widthFactor: 0.47,
+                autoScroll: true,
+                children: animeList.map((anime) => AnimeCard(anime: anime, tag: tag)).toList(),
               ),
       ],
     );
@@ -192,53 +178,40 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Widget> _buildContentSections(ThemeData theme) {
     final sections = <Widget>[];
-    Widget? section;
 
     // Spotlight Section
-    section = _buildSpotlightSection(
+    final spotlightSection = _buildSpotlightSection(
       title: "",
       animeList: _spotlight,
       tag: "spotlight",
       theme: theme,
     );
-    if (section != null) {
-      sections.add(section);
+    if (spotlightSection != null) {
+      sections.add(spotlightSection);
       sections.add(const SizedBox(height: HomeScreen._sectionSpacing));
     }
 
-    // Popular Section
-    section = _buildContentSection(
-      title: "Popular",
-      animeList: _popular,
-      tag: "popular",
-      theme: theme,
-    );
-    if (section != null) {
-      sections.add(section);
-      sections.add(const SizedBox(height: HomeScreen._sectionSpacing));
-    }
+    // Content Sections
+    final contentSections = [
+      {"title": "Popular", "animeList": _popular, "tag": "popular"},
+      {"title": "Top Airing", "animeList": _topAiring, "tag": "topairing"},
+      {"title": "Most Favourite", "animeList": _mostFavourite, "tag": "mostFavourite"},
+      {"title": "Latest Completed", "animeList": _completed, "tag": "latestcompleted"},
+      {"title": "Top Upcoming", "animeList": _upcoming, "tag": "upcoming"},
+      {"title": "Latest Episodes", "animeList": _latestEpisode, "tag": "latestEpisodes"},
+    ];
 
-    // Top Airing Section
-    section = _buildContentSection(
-      title: "Top Airing",
-      animeList: _topAiring,
-      tag: "topairing",
-      theme: theme,
-    );
-    if (section != null) {
-      sections.add(section);
-      sections.add(const SizedBox(height: HomeScreen._sectionSpacing));
-    }
-
-    // Latest Completed Section
-    section = _buildContentSection(
-      title: "Latest Completed",
-      animeList: _completed,
-      tag: "latestcompleted",
-      theme: theme,
-    );
-    if (section != null) {
-      sections.add(section);
+    for (var section in contentSections) {
+      final contentSection = _buildContentSection(
+        title: section['title'] as String,
+        animeList: section['animeList'] as List<BaseAnimeCard>,
+        tag: section['tag'] as String,
+        theme: theme,
+      );
+      if (contentSection != null) {
+        sections.add(contentSection);
+        sections.add(const SizedBox(height: HomeScreen._sectionSpacing));
+      }
     }
 
     // Remove last spacing if it exists
@@ -256,34 +229,27 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        // leading: IconButton(
-        //   onPressed: () => Navigator.push(context,
-        //       CupertinoPageRoute(builder: (conotext) => SettingsScreen())),
-        //   icon: HugeIcon(
-        //       icon: HugeIcons.strokeRoundedUser,
-        //       color: theme.colorScheme.onSurface),
-        // ),
         backgroundColor: Colors.transparent,
         forceMaterialTransparency: true,
         actions: [
           IconButton(
-            onPressed: () => Navigator.push(context,
-                CupertinoPageRoute(builder: (conotext) => SettingsScreen())),
-            icon: HugeIcon(
-                icon: HugeIcons.strokeRoundedSettings01,
-                color: theme.colorScheme.onSurface),
+            onPressed: () => Navigator.push(context, CupertinoPageRoute(builder: (context) => SettingsScreen())),
+            icon: HugeIcon(icon: HugeIcons.strokeRoundedSettings01, color: theme.colorScheme.onSurface),
           )
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _fetchData,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: HomeScreen._horizontalPadding),
+          padding: const EdgeInsets.symmetric(horizontal: HomeScreen._horizontalPadding),
           child: ListView(
             children: [
               _buildHeaderSection(theme),
               ..._buildContentSections(theme),
+              const SizedBox(height: 50),
+              Text("Trending Anime", style: theme.textTheme.headlineMedium),
+              const SizedBox(height: 10),
+              TrendingAnimes(trendingAnimes: _trending),
             ],
           ),
         ),

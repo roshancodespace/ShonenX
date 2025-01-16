@@ -8,7 +8,7 @@ part of 'user_model.dart';
 
 class UserModelAdapter extends TypeAdapter<UserModel> {
   @override
-  final int typeId = 5;
+  final int typeId = 6;
 
   @override
   UserModel read(BinaryReader reader) {
@@ -17,7 +17,7 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return UserModel(
-      name: fields[1] as String?,
+      name: fields[1] as String,
       onboardingStatus: fields[2] as bool,
     );
   }

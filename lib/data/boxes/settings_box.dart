@@ -5,25 +5,36 @@ import 'package:nekoflow/data/models/settings/settings_model.dart';
 class SettingsBox {
   static const String boxName = 'settings';
   late Box<SettingsModel> _box;
-  SettingsModel? _settingsModel;
+  late SettingsModel _settingsModel;
 
   // Get listenable for the box
   ValueListenable<Box<SettingsModel>> listenable() => _box.listenable();
 
   Future<void> init() async {
+    if (!Hive.isBoxOpen(boxName)) {
+      throw Exception(
+          "Box '$boxName' must be opened in main.dart before calling UserBox.init()");
+    }
+
     _box = Hive.box<SettingsModel>(boxName);
-    _settingsModel = _box.get(0) ?? SettingsModel();
-    await _box.put(0, _settingsModel!);
+    print(_box.get(0)?.theme?.themeMode);
+
+    _settingsModel = _box.get(0) ?? SettingsModel(theme: ThemeModel());
+    
+     if (_box.get(0) == null) {
+      await _box.put(0, _settingsModel);
+    }
   }
 
-  // Get the theme from SettingsBox
-  String? getTheme() {
-    return _settingsModel?.theme ?? 'dark';
-  }
+  // Get the settings model
+  SettingsModel? getSettingsModel() => _settingsModel;
 
-  // Update theme in SettingsBox
-  Future<void> updateTheme(String theme) async {
-    _settingsModel!.theme = theme;
-    await _box.put(0, _settingsModel!);
+  // Get the theme model
+  ThemeModel? getTheme() => _settingsModel.theme;
+
+  // Update Theme
+  Future<void> updateTheme(ThemeModel theme) async {
+    _settingsModel.theme = theme;
+    await _box.put(0, _settingsModel);
   }
 }

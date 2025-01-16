@@ -1,17 +1,19 @@
 name: nekoflow
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.1.5
+version: 0.1.7
 
 environment:
   sdk: '>=3.3.4 <4.0.0'
 
 dependencies:
+  animated_toggle_switch: ^0.8.4
   better_player: ^0.0.84
   cached_network_image: ^3.4.1
   crystal_navigation_bar: ^1.0.1
   dio: ^5.7.0
   dismissible_page: ^1.0.2
+  flex_color_scheme: ^8.0.2
   flutter:
     sdk: flutter
   flutter_launcher_icons: ^0.14.1

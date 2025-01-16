@@ -449,14 +449,13 @@ class _DetailsScreenState extends State<DetailsScreen> {
       maintainBottomViewPadding: true,
       child: Scaffold(
         extendBody: true,
-        backgroundColor: themeData.colorScheme.primary,
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                themeData.colorScheme.primary,
-                themeData.colorScheme.secondary,
-                themeData.colorScheme.tertiary, // End color
+                themeData.colorScheme.primaryContainer,
+                themeData.colorScheme.secondaryContainer,
+                // themeData.colorScheme.tertiary, // End color
               ],
               begin: Alignment.bottomLeft,
               end: Alignment.topRight,
@@ -496,7 +495,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                         top: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: themeData.scaffoldBackgroundColor,
+                        color: themeData.colorScheme.surface,
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(50),
                           topRight: Radius.circular(50),

@@ -62,8 +62,10 @@ class SpotlightCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      theme.colorScheme.surface.withOpacity(0.7),
-                      theme.colorScheme.surface.withOpacity(0.2),
+                      // theme.colorScheme.surface.withOpacity(0.7),
+                      // theme.colorScheme.surface.withOpacity(0.2),
+                      Colors.black.withOpacity(0.7),
+                      Colors.black.withOpacity(0.1),
                     ],
                     begin: Alignment.bottomCenter,
                     end: Alignment.center,
@@ -82,7 +84,7 @@ class SpotlightCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           vertical: 2, horizontal: 8),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.8),
+                        color: theme.colorScheme.primaryContainer.withOpacity(0.8),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -100,8 +102,15 @@ class SpotlightCard extends StatelessWidget {
                       anime.name,
                       style: theme.textTheme.headlineLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
+                        color: Colors.white,
                         fontSize: 22,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.5),
+                            offset: Offset(1, 1),
+                            blurRadius: 4,
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 8.0),
@@ -109,7 +118,7 @@ class SpotlightCard extends StatelessWidget {
                     Text(
                       anime.description,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.8),
+                        color: Colors.white,
                         fontSize: 14,
                       ),
                       maxLines: 2,

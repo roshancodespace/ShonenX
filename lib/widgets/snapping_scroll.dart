@@ -157,7 +157,7 @@ class _SnappingScrollerState extends State<SnappingScroller> {
                       decoration: BoxDecoration(
                         color: isActive
                             ? widget.activeIndicatorColor ??
-                                Theme.of(context).colorScheme.primary
+                                Theme.of(context).colorScheme.secondary
                             : widget.inactiveIndicatorColor?.withOpacity(0.5) ??
                                 Theme.of(context)
                                     .colorScheme

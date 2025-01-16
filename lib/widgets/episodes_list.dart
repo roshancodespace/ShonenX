@@ -38,19 +38,6 @@ class _EpisodesListState extends State<EpisodesList> {
         episode: episode,
       ),
     );
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => StreamScreen(
-    //       id: widget.id,
-    //       name: widget.name,
-    //       episodeId: episode.episodeId,
-    //       poster: widget.poster,
-    //       episode: episode.number,
-    //       title: episode.title,
-    //     ),
-    //   ),
-    // );
   }
 
   List<Map<String, List<Episode>>> _getGroupedEpisodes(List<Episode> episodes) {
@@ -132,7 +119,7 @@ class _EpisodesListState extends State<EpisodesList> {
           child: Container(
             height: 70.0,
             decoration: BoxDecoration(
-              color: Colors.grey[800]!,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12.0),
             ),
           ),
@@ -302,16 +289,16 @@ class _EpisodeGridTile extends StatelessWidget {
           gradient: LinearGradient(
             colors: isWatched
                 ? [
-                    themeData.colorScheme.surface,
-                    themeData.colorScheme.primary.withOpacity(0.2),
+                    themeData.colorScheme.secondaryContainer,
+                    themeData.colorScheme.primaryContainer.withOpacity(0.2),
                   ]
                 : [
                     !episode.isFiller
-                        ? themeData.colorScheme.primary.withOpacity(0.4)
-                        : themeData.colorScheme.surface,
+                        ? themeData.colorScheme.primaryContainer.withOpacity(0.4)
+                        : themeData.colorScheme.secondaryContainer,
                     !episode.isFiller
-                        ? themeData.colorScheme.secondary.withOpacity(0.7)
-                        : themeData.colorScheme.surface,
+                        ? themeData.colorScheme.secondaryContainer.withOpacity(0.7)
+                        : themeData.colorScheme.secondaryContainer,
                   ],
             begin: Alignment.bottomLeft,
             end: Alignment.topRight,
@@ -364,20 +351,20 @@ class _EpisodeTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12.0),
         border: !episode.isFiller
             ? null
-            : Border.all(color: themeData.colorScheme.primary),
+            : Border.all(color: themeData.colorScheme.primaryContainer),
         gradient: LinearGradient(
           colors: isWatched
               ? [
-                  themeData.colorScheme.surface,
-                  themeData.colorScheme.primary.withOpacity(0.2),
+                  themeData.colorScheme.secondaryContainer,
+                  themeData.colorScheme.primaryContainer.withOpacity(0.2),
                 ]
               : [
                   !episode.isFiller
-                      ? themeData.colorScheme.primary.withOpacity(0.6)
-                      : themeData.colorScheme.surface,
+                      ? themeData.colorScheme.primaryContainer.withOpacity(0.6)
+                      : themeData.colorScheme.secondaryContainer,
                   !episode.isFiller
-                      ? themeData.colorScheme.secondary.withOpacity(0.7)
-                      : themeData.colorScheme.surface,
+                      ? themeData.colorScheme.secondaryContainer.withOpacity(0.7)
+                      : themeData.colorScheme.secondaryContainer,
                 ],
           begin: Alignment.bottomLeft,
           end: Alignment.topRight,

@@ -1,12 +1,13 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:nekoflow/data/models/anime_model.dart'; // Adjusted import to use the correct model
+import 'package:nekoflow/data/models/anime_model.dart';
+import 'package:nekoflow/screens/main/details/details_screen.dart'; // Adjusted import to use the correct model
 
 class TrendingAnimes extends StatelessWidget {
   final List<TrendingAnime>
       trendingAnimes; // Accepting TrendingAnime list as a parameter
 
-  const TrendingAnimes({Key? key, required this.trendingAnimes})
-      : super(key: key);
+  const TrendingAnimes({super.key, required this.trendingAnimes});
 
   @override
   Widget build(BuildContext context) {
@@ -40,10 +41,9 @@ class TrendingAnimes extends StatelessWidget {
           ),
           onTap: () {
             // Navigate to anime details
-            Navigator.pushNamed(
+            Navigator.push(
               context,
-              '/anime-details',
-              arguments: anime,
+              CupertinoPageRoute(builder: (context) => DetailsScreen(name: anime.name, id: anime.id, image: anime.poster, tag: "trendingAnine"))
             );
           },
         );

@@ -8,7 +8,7 @@ part of 'watchlist_model.dart';
 
 class WatchlistModelAdapter extends TypeAdapter<WatchlistModel> {
   @override
-  final int typeId = 1;
+  final int typeId = 2;
 
   @override
   WatchlistModel read(BinaryReader reader) {
@@ -48,7 +48,7 @@ class WatchlistModelAdapter extends TypeAdapter<WatchlistModel> {
 
 class RecentlyWatchedItemAdapter extends TypeAdapter<RecentlyWatchedItem> {
   @override
-  final int typeId = 2;
+  final int typeId = 3;
 
   @override
   RecentlyWatchedItem read(BinaryReader reader) {
@@ -91,7 +91,7 @@ class RecentlyWatchedItemAdapter extends TypeAdapter<RecentlyWatchedItem> {
 
 class ContinueWatchingItemAdapter extends TypeAdapter<ContinueWatchingItem> {
   @override
-  final int typeId = 3;
+  final int typeId = 4;
 
   @override
   ContinueWatchingItem read(BinaryReader reader) {
@@ -155,7 +155,7 @@ class ContinueWatchingItemAdapter extends TypeAdapter<ContinueWatchingItem> {
 
 class AnimeItemAdapter extends TypeAdapter<AnimeItem> {
   @override
-  final int typeId = 4;
+  final int typeId = 5;
 
   @override
   AnimeItem read(BinaryReader reader) {

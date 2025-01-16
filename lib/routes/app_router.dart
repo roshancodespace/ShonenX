@@ -34,45 +34,39 @@ class _AppRouterState extends State<AppRouter> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return SafeArea(
-      maintainBottomViewPadding: true,
-      child: Scaffold(
-        extendBody: true,
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: _screens,
-        ),
-        bottomNavigationBar: CrystalNavigationBar(
-          backgroundColor: colorScheme.surface.withOpacity(0.5),
-          currentIndex: _selectedIndex,
-          onTap: (index) => setState(() => _selectedIndex = index),
-          selectedItemColor: colorScheme == ThemeData.light().colorScheme
-              ? colorScheme.surface
-              : colorScheme.onSurface,
-          unselectedItemColor: colorScheme == ThemeData.light().colorScheme
-              ? colorScheme.surface.withOpacity(0.5)
-              : colorScheme.onSurface.withOpacity(0.5),
-          enableFloatingNavBar: true,
-          // marginR: const EdgeInsets.symmetric(horizontal: 90, vertical: 20),
-          marginR: const EdgeInsets.symmetric(horizontal: 120, vertical: 20),
-          splashBorderRadius: 50,
-          borderRadius: 500,
-          enablePaddingAnimation: true,
-          items: [
-            CrystalNavigationBarItem(
-              icon: HugeIcons.strokeRoundedHome01,
-              unselectedIcon: HugeIcons.strokeRoundedHome02,
-            ),
-            CrystalNavigationBarItem(
-              icon: HugeIcons.strokeRoundedGlobalSearch,
-              unselectedIcon: HugeIcons.strokeRoundedGlobal,
-            ),
-            CrystalNavigationBarItem(
-              icon: HugeIcons.strokeRoundedCollectionsBookmark,
-              unselectedIcon: HugeIcons.strokeRoundedAllBookmark,
-            ),
-          ],
-        ),
+    return Scaffold(
+      extendBody: true,
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: CrystalNavigationBar(
+        backgroundColor: colorScheme.secondaryContainer.withOpacity(0.15),
+        currentIndex: _selectedIndex,
+        onTap: (index) => setState(() => _selectedIndex = index),
+        selectedItemColor: theme.colorScheme.primaryContainer,
+        unselectedItemColor:
+            theme.colorScheme.onSurface.withOpacity(0.5),
+        enableFloatingNavBar: true,
+        // marginR: const EdgeInsets.symmetric(horizontal: 90, vertical: 20),
+        marginR: const EdgeInsets.symmetric(horizontal: 120, vertical: 20),
+        splashBorderRadius: 50,
+        borderRadius: 500,
+        enablePaddingAnimation: true,
+        items: [
+          CrystalNavigationBarItem(
+            icon: HugeIcons.strokeRoundedHome01,
+            unselectedIcon: HugeIcons.strokeRoundedHome02,
+          ),
+          CrystalNavigationBarItem(
+            icon: HugeIcons.strokeRoundedGlobalSearch,
+            unselectedIcon: HugeIcons.strokeRoundedGlobal,
+          ),
+          CrystalNavigationBarItem(
+            icon: HugeIcons.strokeRoundedCollectionsBookmark,
+            unselectedIcon: HugeIcons.strokeRoundedAllBookmark,
+          ),
+        ],
       ),
     );
   }

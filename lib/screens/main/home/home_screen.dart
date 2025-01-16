@@ -90,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 10),
           Text(
             "Find your favourite anime and \nwatch it right away",
-            style: TextStyle(color: theme.colorScheme.secondary),
+            style: TextStyle(color: theme.colorScheme.primary),
             textAlign: TextAlign.center,
           ),
         ],
@@ -162,14 +162,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: theme.textTheme.headlineMedium),
+        Text(title, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 10),
         _isLoading
             ? _buildShimmerLoading(theme, 0.41)
             : SnappingScroller(
                 showIndicators: false,
                 widthFactor: 0.47,
-                autoScroll: true,
+                autoScroll: false,
                 children: animeList.map((anime) => AnimeCard(anime: anime, tag: tag)).toList(),
               ),
       ],

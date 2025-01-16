@@ -51,7 +51,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final user = _userBox.getUser();
       debugPrint(user.name);
 
-      if (user.name != null && mounted) {
+      if (user.name != 'Guest' && user.name != '' && mounted) {
         // If onboarding is completed, navigate to AppRouter
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(

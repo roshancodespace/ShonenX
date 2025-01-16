@@ -22,7 +22,7 @@ class BaseAnimeCard {
   });
 }
 
-@HiveType(typeId: 1)
+@HiveType(typeId: 2)
 class WatchlistModel extends HiveObject {
   @HiveField(0)
   List<RecentlyWatchedItem>? recentlyWatched;
@@ -40,7 +40,7 @@ class WatchlistModel extends HiveObject {
   });
 }
 
-@HiveType(typeId: 2)
+@HiveType(typeId: 3)
 class RecentlyWatchedItem extends HiveObject implements BaseAnimeCard {
   @override
   @HiveField(0)
@@ -75,7 +75,7 @@ class RecentlyWatchedItem extends HiveObject implements BaseAnimeCard {
   String? get status => null;
 }
 
-@HiveType(typeId: 3)
+@HiveType(typeId: 4)
 class ContinueWatchingItem extends HiveObject {
   @HiveField(0)
   final String name;
@@ -125,7 +125,7 @@ class ContinueWatchingItem extends HiveObject {
   });
 }
 
-@HiveType(typeId: 4)
+@HiveType(typeId: 5)
 class AnimeItem extends HiveObject implements BaseAnimeCard {
   @override
   @HiveField(0)

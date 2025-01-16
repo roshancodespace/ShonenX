@@ -17,28 +17,16 @@ class SettingsModelAdapter extends TypeAdapter<SettingsModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return SettingsModel(
-      defaultQuality: fields[0] as String?,
-      theme: fields[1] as String?,
-      defaultOrientation: fields[2] as String?,
-      layoutMode: fields[3] as String?,
-      isLabelEnabled: fields[4] as bool?,
+      theme: fields[0] as ThemeModel?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SettingsModel obj) {
     writer
-      ..writeByte(5)
-      ..writeByte(0)
-      ..write(obj.defaultQuality)
       ..writeByte(1)
-      ..write(obj.theme)
-      ..writeByte(2)
-      ..write(obj.defaultOrientation)
-      ..writeByte(3)
-      ..write(obj.layoutMode)
-      ..writeByte(4)
-      ..write(obj.isLabelEnabled);
+      ..writeByte(0)
+      ..write(obj.theme);
   }
 
   @override
@@ -48,6 +36,40 @@ class SettingsModelAdapter extends TypeAdapter<SettingsModel> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is SettingsModelAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class ThemeModelAdapter extends TypeAdapter<ThemeModel> {
+  @override
+  final int typeId = 1;
+
+  @override
+  ThemeModel read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return ThemeModel(
+      themeMode: fields[0] as String,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, ThemeModel obj) {
+    writer
+      ..writeByte(1)
+      ..writeByte(0)
+      ..write(obj.themeMode);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ThemeModelAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

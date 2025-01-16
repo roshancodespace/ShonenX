@@ -119,7 +119,7 @@ class AnimeCard extends StatelessWidget {
         ),
         errorWidget: (_, __, ___) => Container(
           color: theme.colorScheme.error,
-          child: const Icon(Icons.error, color: Colors.white),
+          child: const Icon(Icons.error),
         ),
       ),
     );
@@ -270,8 +270,9 @@ class AnimeCard extends StatelessWidget {
       top: 12,
       right: 12,
       child: _buildChip(
+        context,
         text: anime.type!,
-        color: Theme.of(context).colorScheme.secondary.withOpacity(0.8),
+        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.8),
       ),
     );
   }
@@ -281,9 +282,10 @@ class AnimeCard extends StatelessWidget {
       top: 48,
       right: 12,
       child: _buildChip(
+        context,
         text: '${anime.episodeCount} eps',
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
-        icon: const Icon(Icons.video_library, size: 16, color: Colors.white),
+        color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.8),
+        icon: Icon(Icons.video_library, size: 16, color: Theme.of(context).colorScheme.onSecondaryContainer),
       ),
     );
   }
@@ -293,9 +295,10 @@ class AnimeCard extends StatelessWidget {
       top: 12,
       left: 12,
       child: _buildChip(
+        context,
         text: anime.score.toString(),
         color: Colors.amber.withOpacity(0.9),
-        icon: const Icon(Icons.star, size: 16, color: Colors.white),
+        icon: const Icon(Icons.star, size: 16),
       ),
     );
   }
@@ -305,13 +308,14 @@ class AnimeCard extends StatelessWidget {
       bottom: 40,
       right: 12,
       child: _buildChip(
+        context,
         text: anime.status!,
         color: _getStatusColor(context, anime.status!),
       ),
     );
   }
 
-  Widget _buildChip({
+  Widget _buildChip(context,{
     required String text,
     required Color color,
     Widget? icon,
@@ -337,10 +341,10 @@ class AnimeCard extends StatelessWidget {
           ],
           Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
             ),
           ),
         ],

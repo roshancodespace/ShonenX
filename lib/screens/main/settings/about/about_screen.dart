@@ -21,6 +21,13 @@ class AboutScreen extends StatelessWidget {
     return Scaffold(
       extendBody: true,
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: Icon(
+            HugeIcons.strokeRoundedArrowLeft01,
+            size: 35,
+          ),
+        ),
         title: Hero(
           tag: ValueKey(title),
           child: Text(

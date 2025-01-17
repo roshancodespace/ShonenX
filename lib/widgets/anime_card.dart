@@ -71,7 +71,7 @@ class AnimeCard extends StatelessWidget {
 
   Widget _buildGridCardContent(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -97,16 +97,18 @@ class AnimeCard extends StatelessWidget {
         ),
         _buildGradientOverlay(),
         _buildTitle(context),
-  
         Positioned(
           top: 5,
           right: 5,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _buildEpisodeCount(context),
-              SizedBox(width: 5,),
-              _buildTypeChip(context),
+              if (anime.episodeCount != null && anime.episodeCount != 0)
+                _buildEpisodeCount(context),
+              SizedBox(
+                width: 5,
+              ),
+              if (anime.type != null) _buildTypeChip(context),
             ],
           ),
         ),
@@ -116,7 +118,7 @@ class AnimeCard extends StatelessWidget {
 
   Widget _buildListCardContent(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return SizedBox(
       height: 180,
       child: Row(
@@ -125,7 +127,8 @@ class AnimeCard extends StatelessWidget {
           Hero(
             tag: 'poster-${anime.id}-$tag',
             child: ClipRRect(
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
+              borderRadius:
+                  const BorderRadius.horizontal(left: Radius.circular(16)),
               child: CachedNetworkImage(
                 imageUrl: getHighResImage(anime.poster),
                 width: 120,
@@ -158,7 +161,8 @@ class AnimeCard extends StatelessWidget {
                         anime.type!,
                         style: const TextStyle(fontSize: 12),
                       ),
-                      backgroundColor: theme.colorScheme.primaryContainer.withOpacity(0.2),
+                      backgroundColor:
+                          theme.colorScheme.primaryContainer.withOpacity(0.2),
                     ),
                   if (anime.score != null) ...[
                     const SizedBox(height: 8),
@@ -186,7 +190,8 @@ class AnimeCard extends StatelessWidget {
                     children: [
                       if (anime.status != null)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: _getStatusColor(context, anime.status!),
                             borderRadius: BorderRadius.circular(12),
@@ -242,7 +247,8 @@ class AnimeCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.8),
+          color:
+              Theme.of(context).colorScheme.primaryContainer.withOpacity(0.8),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
@@ -271,7 +277,8 @@ class AnimeCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.8),
+          color:
+              Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.8),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(

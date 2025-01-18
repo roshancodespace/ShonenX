@@ -34,7 +34,10 @@ class _EpisodesListState extends State<EpisodesList> {
     context.pushTransparentRoute(
       StreamScreen(
         episodes: widget.episodes.value,
-        anime: AnimeItem(name: widget.anime.name, poster: widget.anime.poster, id: widget.anime.id),
+        anime: AnimeItem(
+            name: widget.anime.name,
+            poster: widget.anime.poster,
+            id: widget.anime.id),
         episode: episode,
       ),
     );
@@ -109,7 +112,8 @@ class _EpisodesListState extends State<EpisodesList> {
   Widget _buildShimmerList(BuildContext context) {
     return Shimmer.fromColors(
       baseColor: Theme.of(context).colorScheme.primaryContainer,
-      highlightColor: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
+      highlightColor:
+          Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
       child: ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -119,9 +123,10 @@ class _EpisodesListState extends State<EpisodesList> {
           child: Container(
             height: 70.0,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(12.0),
-            ),
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: (Theme.of(context).cardTheme.shape
+                        as RoundedRectangleBorder)
+                    .borderRadius),
           ),
         ),
       ),
@@ -281,11 +286,15 @@ class _EpisodeGridTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        padding: EdgeInsets.all(2),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius:
+              (Theme.of(context).cardTheme.shape as RoundedRectangleBorder)
+                  .borderRadius,
           border: !episode.isFiller
               ? null
-              : Border.all(color: themeData.colorScheme.secondaryContainer, width: 2),
+              : Border.all(
+                  color: themeData.colorScheme.secondaryContainer, width: 2),
           gradient: LinearGradient(
             colors: isWatched
                 ? [
@@ -294,10 +303,12 @@ class _EpisodeGridTile extends StatelessWidget {
                   ]
                 : [
                     !episode.isFiller
-                        ? themeData.colorScheme.primaryContainer.withOpacity(0.4)
+                        ? themeData.colorScheme.primaryContainer
+                            .withOpacity(0.4)
                         : themeData.colorScheme.primaryContainer,
                     !episode.isFiller
-                        ? themeData.colorScheme.secondaryContainer.withOpacity(0.7)
+                        ? themeData.colorScheme.secondaryContainer
+                            .withOpacity(0.7)
                         : themeData.colorScheme.secondaryContainer,
                   ],
             begin: Alignment.bottomRight,
@@ -308,21 +319,27 @@ class _EpisodeGridTile extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                "${episode.number}",
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              if (episode.isFiller || isWatched)
-                Text(
-                  " ${isWatched ? 'WATCHED' : 'FILLER'}",
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              Flexible(
+                child: Text(
+                  "${episode.number}",
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.onPrimaryContainer,
                       ),
                   textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (episode.isFiller || isWatched)
+                Flexible(
+                  child: Text(
+                    " ${isWatched ? 'DONE' : 'FILLER'}",
+                    style: TextStyle(
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
             ],
           ),
@@ -346,50 +363,57 @@ class _EpisodeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     ThemeData themeData = Theme.of(context);
-    return Container(
+    return Card(
       margin: const EdgeInsets.only(bottom: 15.0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12.0),
-        border: !episode.isFiller
-            ? null
-            : Border.all(color: themeData.colorScheme.primaryContainer),
-        gradient: LinearGradient(
-          colors: isWatched
-              ? [
-                  themeData.colorScheme.secondaryContainer,
-                  themeData.colorScheme.primaryContainer.withOpacity(0.2),
-                ]
-              : [
-                  !episode.isFiller
-                      ? themeData.colorScheme.primaryContainer.withOpacity(0.6)
-                      : themeData.colorScheme.secondaryContainer,
-                  !episode.isFiller
-                      ? themeData.colorScheme.secondaryContainer.withOpacity(0.7)
-                      : themeData.colorScheme.secondaryContainer,
-                ],
-          begin: Alignment.bottomLeft,
-          end: Alignment.topRight,
-        ),
+      shape: RoundedRectangleBorder(
+        borderRadius:
+            (Theme.of(context).cardTheme.shape as RoundedRectangleBorder)
+                .borderRadius,
+        side: !episode.isFiller
+            ? BorderSide.none
+            : BorderSide(color: themeData.colorScheme.primaryContainer),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-        title: Text(
-          "EP : ${episode.number} ${isWatched ? '- Watched' : episode.isFiller ? " : FILLER" : ""}",
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isWatched
+                ? [
+                    themeData.colorScheme.primaryContainer.withOpacity(0.5),
+                    themeData.colorScheme.primaryContainer.withOpacity(0.3),
+                  ]
+                : [
+                    !episode.isFiller
+                        ? themeData.colorScheme.primaryContainer
+                        : themeData.colorScheme.error.withOpacity(0.5),
+                    !episode.isFiller
+                        ? themeData.colorScheme.primaryContainer
+                            .withOpacity(0.6)
+                        : themeData.colorScheme.error.withOpacity(0.3),
+                  ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
-        subtitle: Text(
-          episode.title,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-        ),
-        trailing: IconButton(
-          icon: HugeIcon(
-            icon: HugeIcons.strokeRoundedPlay,
-            color: Theme.of(context).colorScheme.onSurface,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          title: Text(
+            "EP : ${episode.number} ${isWatched ? '- Watched' : episode.isFiller ? " : FILLER" : ""}",
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
           ),
-          onPressed: onTap,
+          subtitle: Text(
+            episode.title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+          trailing: IconButton(
+            icon: HugeIcon(
+              icon: HugeIcons.strokeRoundedPlay,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            onPressed: onTap,
+          ),
         ),
       ),
     );

@@ -13,19 +13,19 @@ class WatchlistBox {
   // Initialize the box
   Future<void> init() async {
     _box = Hive.box<WatchlistModel>(boxName);
-    _watchlistModel = _box.get(0) ??
-        WatchlistModel(
-          recentlyWatched: [],
-          continueWatching: [],
-          favorites: [],
-        );
+    _watchlistModel = _box.get(0) ?? WatchlistModel(
+      recentlyWatched: [],
+      continueWatching: [],
+      favorites: [],
+    );
     await _box.put(0, _watchlistModel!);
   }
 
   // Continue Watching Methods
   Future<void> updateContinueWatching(ContinueWatchingItem item) async {
-    var list = _watchlistModel?.continueWatching ?? [];
-    int index = list.indexWhere((element) => element.id == item.id);
+    final list = _watchlistModel?.continueWatching ?? [];
+    final index = list.indexWhere((element) => element.id == item.id);
+
     if (index != -1) {
       // Update existing item
       list[index] = item; // Replace with the updated item
@@ -47,63 +47,52 @@ class WatchlistBox {
     ContinueWatchingItem? item,
     bool markAsWatched = false,
   }) async {
-    // Retrieve the existing item by ID
-    var cItem = getContinueWatchingById(id);
+    final cItem = getContinueWatchingById(id);
     if (cItem != null) {
-      // Copy the current list of watched episodes
-      List<String> watchedEpisodes = List.from(cItem.watchedEpisodes ?? []);
+      final watchedEpisodes = List<String>.from(cItem.watchedEpisodes ?? []);
 
       // Add the episode to the watched list if it is marked as watched
       if (markAsWatched && !watchedEpisodes.contains(episodeId)) {
         watchedEpisodes.add(episodeId);
       }
 
-      var updatedItem = ContinueWatchingItem(
+      final updatedItem = ContinueWatchingItem(
         id: item!.id,
         title: item.title,
         name: item.name,
         poster: item.poster,
-        episode: episode, // Update to the current episode
-        episodeId: episodeId, // Current episode ID
-        timestamp: timestamp, // Current timestamp
-        duration: duration, // Current duration
-        type: cItem.type, // Retain original type
-        watchedEpisodes: watchedEpisodes, // Preserved watched episodes
-        isCompleted: markAsWatched
-            ? cItem.isCompleted
-            : false, // Maintain completion logic
+        episode: episode,
+        episodeId: episodeId,
+        timestamp: timestamp,
+        duration: duration,
+        type: cItem.type,
+        watchedEpisodes: watchedEpisodes,
+        isCompleted: markAsWatched ? cItem.isCompleted : false,
       );
 
-      // Update the continue watching list
       await updateContinueWatching(updatedItem);
-    } else {
-      if (item != null) {
-        updateContinueWatching(item);
-      }
+    } else if (item != null) {
+      await updateContinueWatching(item);
     }
   }
 
   ContinueWatchingItem? getContinueWatchingById(String id) {
-    try {
-      return _watchlistModel?.continueWatching?.firstWhere(
-        (item) => item.id == id,
-      );
-    } catch (e) {
-      return null;
-    }
+    return _watchlistModel?.continueWatching?.firstWhere(
+      (item) => item.id == id
+    );
   }
 
   List<ContinueWatchingItem> getContinueWatching() {
     return _watchlistModel?.continueWatching
-            ?.where((item) => !item.isCompleted!)
+            ?.where((item) => !(item.isCompleted ?? false))
             .toList() ??
         [];
   }
 
   // Favorites Methods
   Future<void> toggleFavorite(AnimeItem item) async {
-    var favorites = _watchlistModel?.favorites ?? [];
-    int index = favorites.indexWhere((element) => element.id == item.id);
+    final favorites = _watchlistModel?.favorites ?? [];
+    final index = favorites.indexWhere((element) => element.id == item.id);
 
     if (index != -1) {
       favorites.removeAt(index);
@@ -132,13 +121,13 @@ class WatchlistBox {
 
   // Recently Watched Methods
   Future<void> addToRecentlyWatched(RecentlyWatchedItem item) async {
-    var list = _watchlistModel?.recentlyWatched ?? [];
+    final list = _watchlistModel?.recentlyWatched ?? [];
     list.removeWhere((element) => element.id == item.id);
     list.insert(0, item);
 
     // Keep only last 20 items
     if (list.length > 20) {
-      list = list.sublist(0, 20);
+      list.removeRange(20, list.length);
     }
 
     _watchlistModel?.recentlyWatched = list;
@@ -148,8 +137,7 @@ class WatchlistBox {
   Future<void> removeRecentlyWatched(List<String> ids) async {
     if (_watchlistModel?.recentlyWatched == null || ids.isEmpty) return;
 
-    _watchlistModel?.recentlyWatched
-        ?.removeWhere((item) => ids.contains(item.id));
+    _watchlistModel?.recentlyWatched?.removeWhere((item) => ids.contains(item.id));
     await _box.put(0, _watchlistModel!);
   }
 

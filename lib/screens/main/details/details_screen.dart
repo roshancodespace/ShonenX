@@ -65,9 +65,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
     } finally {
       if (mounted) {
         _isLoadingEpisodes.value = false;
-        final Episode? nextEpisode = _getNextEpisode();
-        _nextEpisodeId = nextEpisode?.episodeId;
-        _nextEpisodeTitle = nextEpisode?.title;
         setState(() {});
       }
     }
@@ -82,16 +79,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
   void _loadContinueWatching() {
     continueWatchingItem = _watchlistBox!.getContinueWatchingById(widget.id);
     setState(() {});
-  }
-
-  Episode? _getNextEpisode() {
-    int continueItemIndex = _episodes.value.indexWhere(
-        (item) => item.episodeId == continueWatchingItem?.episodeId);
-    if (continueItemIndex == -1 ||
-        continueItemIndex + 1 >= _episodes.value.length) {
-      return null; // Return null if the index is invalid or out of range
-    }
-    return _episodes.value[continueItemIndex + 1];
   }
 
   Future<AnimeInfo?> fetchData() async {
@@ -541,14 +528,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
           }
 
           return BottomPlayerBar(
+            animeId: widget.id,
             episodes: _episodes.value,
-            item: continueWatchingItem!,
-            title: continueWatchingItem!.title,
-            id: widget.id,
-            image: widget.image,
+            continueWatchingItem: _watchlistBox.getContinueWatchingById(widget.id),
             type: widget.type,
-            nextEpisodeId: _nextEpisodeId,
-            nextEpisodeTitle: _nextEpisodeTitle,
           );
         },
       ),

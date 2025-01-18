@@ -25,13 +25,9 @@ class SettingsScreen extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-          ),
+        child: Card(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
             child: Row(
               children: [
                 Icon(
@@ -109,7 +105,6 @@ class SettingsScreen extends StatelessWidget {
               title: 'Theme'
             ),
           ),
-          SizedBox(height: 20,),
           _buildCustomTile(
             context: context,
             leadingIcon: HugeIcons.strokeRoundedInformationCircle,

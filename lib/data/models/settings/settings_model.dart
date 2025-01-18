@@ -16,12 +16,21 @@ class SettingsModel extends HiveObject {
 @HiveType(typeId: 1)
 class ThemeModel extends HiveObject {
   @HiveField(0)
-  String themeMode; // Changed from String? to String
+  String themeMode;
   @HiveField(1)
   FlexScheme flexScheme;
+  @HiveField(2)
+  bool trueBlack;
+  @HiveField(3)
+  bool swapColors;
+  @HiveField(4)
+  double cardRadius;
 
   ThemeModel({
     this.themeMode = 'dark',
     this.flexScheme = FlexScheme.red,
+    this.trueBlack = true,
+    this.swapColors = false,
+    this.cardRadius = 20.0,
   }); // Default value ensures it's never null
 }

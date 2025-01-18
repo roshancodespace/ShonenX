@@ -2,35 +2,36 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:nekoflow/data/adapters/flex_scheme_adapter.dart';
 import 'package:nekoflow/data/boxes/settings_box.dart';
 import 'package:nekoflow/data/models/settings/settings_model.dart';
 import 'package:nekoflow/data/models/user_model.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
 import 'package:nekoflow/screens/onboarding/onboarding_screen.dart';
-import 'package:nekoflow/themes/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
 
   // Register Adapters
   Hive.registerAdapter(SettingsModelAdapter());
   Hive.registerAdapter(ThemeModelAdapter());
+  Hive.registerAdapter(FlexSchemeAdapter());
   Hive.registerAdapter(WatchlistModelAdapter());
   Hive.registerAdapter(RecentlyWatchedItemAdapter());
   Hive.registerAdapter(ContinueWatchingItemAdapter());
   Hive.registerAdapter(AnimeItemAdapter());
   Hive.registerAdapter(UserModelAdapter());
 
-  // Await all boxes to be opened
+  // Open boxes concurrently
   await Future.wait([
     Hive.openBox<UserModel>("user"),
     Hive.openBox<WatchlistModel>("watchlist"),
     Hive.openBox<SettingsModel>("settings"),
   ]);
 
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   runApp(const MainApp());
 }
 
@@ -42,8 +43,8 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainAppState extends State<MainApp> {
-  late SettingsBox _settingsBox;
-  late String _themeMode;
+  late final SettingsBox _settingsBox;
+  late ThemeModel _themeModel;
   late FlexScheme _flexScheme;
 
   @override
@@ -53,13 +54,46 @@ class _MainAppState extends State<MainApp> {
     _initializeBox();
   }
 
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    super.dispose();
+  }
+
   Future<void> _initializeBox() async {
     _settingsBox = SettingsBox();
     await _settingsBox.init();
-    _themeMode = _settingsBox.getTheme()?.themeMode ??
-        'light'; // Default to 'light' if null
-    _flexScheme = _settingsBox.getTheme()?.flexScheme ??
-        FlexScheme.red; // Default to FlexScheme.blue if null
+    _updateThemeSettings();
+  }
+
+  void _updateThemeSettings() {
+    _themeModel = _settingsBox.getTheme()!;
+    _flexScheme = _themeModel.flexScheme;
+  }
+
+  ThemeData _buildThemeData(bool isDark) {
+    return isDark
+        ? FlexThemeData.dark(
+            scheme: _flexScheme,
+            blendLevel: 18,
+            darkIsTrueBlack: _themeModel.trueBlack,
+            swapColors: _themeModel.swapColors,
+            subThemesData: FlexSubThemesData(
+              interactionEffects: true,
+              cardRadius: _themeModel.cardRadius,
+            ),
+            textTheme: GoogleFonts.montserratTextTheme(),
+          )
+        : FlexThemeData.light(
+            scheme: _flexScheme,
+            blendLevel: 15,
+            swapColors: _themeModel.swapColors,
+            subThemesData: FlexSubThemesData(
+              interactionEffects: true,
+              cardRadius: _themeModel.cardRadius,
+            ),
+            textTheme: GoogleFonts.montserratTextTheme(),
+          );
   }
 
   @override
@@ -67,32 +101,21 @@ class _MainAppState extends State<MainApp> {
     return ValueListenableBuilder<Box<SettingsModel>>(
       valueListenable: _settingsBox.listenable(),
       builder: (context, box, child) {
-        final theme = _settingsBox.getTheme()?.themeMode;
-        _themeMode = theme == 'dark'
-            ? 'dark'
-            : theme == 'light'
-                ? 'light'
-                : (MediaQuery.of(context).platformBrightness == Brightness.dark
-                    ? 'dark'
-                    : 'light');
-
-        _flexScheme = _settingsBox.getTheme()?.flexScheme ?? FlexScheme.red;
+        _updateThemeSettings();
+        bool isDark = _themeModel.themeMode == 'dark' ||
+            (_themeModel.themeMode == 'system' &&
+                MediaQuery.of(context).platformBrightness == Brightness.dark);
 
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          theme: _themeMode == 'dark'
-              ? FlexThemeData.dark(
-                  scheme: _flexScheme,
-                  textTheme: GoogleFonts.montserratTextTheme()
-                )
-              : FlexThemeData.light(
-                  scheme: _flexScheme,
-                  textTheme: GoogleFonts.montserratTextTheme()
-                ),
+          theme: _buildThemeData(isDark),
           home: Scaffold(
             extendBody: true,
-            appBar: AppBar(toolbarHeight: 0),
-            body: const OnboardingScreen(),
+            appBar: PreferredSize(
+              preferredSize: Size.fromHeight(0),
+              child: AppBar(),
+            ),
+            body: OnboardingScreen(),
           ),
         );
       },

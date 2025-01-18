@@ -85,9 +85,13 @@ class _DetailsScreenState extends State<DetailsScreen> {
   }
 
   Episode? _getNextEpisode() {
-    int continueItemindex = _episodes.value.indexWhere(
+    int continueItemIndex = _episodes.value.indexWhere(
         (item) => item.episodeId == continueWatchingItem?.episodeId);
-    return _episodes.value[continueItemindex + 1];
+    if (continueItemIndex == -1 ||
+        continueItemIndex + 1 >= _episodes.value.length) {
+      return null; // Return null if the index is invalid or out of range
+    }
+    return _episodes.value[continueItemIndex + 1];
   }
 
   Future<AnimeInfo?> fetchData() async {
@@ -110,69 +114,77 @@ class _DetailsScreenState extends State<DetailsScreen> {
               begin: Alignment.bottomCenter,
               end: Alignment.center,
               colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                Theme.of(context).colorScheme.primaryContainer,
+                Theme.of(context)
+                    .colorScheme
+                    .secondaryContainer
+                    .withOpacity(0.15),
               ],
             ).createShader(rect),
             blendMode: BlendMode.srcATop,
             child: Hero(
               tag: 'poster-${widget.id}-${widget.tag}',
               child: Container(
-                margin: EdgeInsets.only(bottom: 60),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: info != null && widget.tag == 'spotlight'
-                      ? CachedNetworkImage(
-                          imageUrl: getHighResImage(info!.anime!.info!.poster),
-                          fit: BoxFit.cover,
-                          height: MediaQuery.of(context).size.width,
-                          width: 300,
-                          progressIndicatorBuilder:
-                              (context, child, loadingProgress) {
-                            return Shimmer.fromColors(
-                              baseColor: Theme.of(context).colorScheme.primary,
-                              highlightColor:
-                                  Theme.of(context).colorScheme.secondary,
-                              child: Container(
-                                height: 400,
-                                width: 260,
-                                color: Colors.grey[300],
-                              ),
-                            );
-                          },
-                          errorWidget: (_, __, ___) => Container(
-                            height: 400,
-                            color: Colors.grey[300],
-                            child: Icon(Icons.error,
-                                size: 50, color: Colors.grey[600]),
+                  margin: EdgeInsets.only(bottom: 60),
+                  child: Card(
+                    child: info != null && widget.tag == 'spotlight'
+                        ? CachedNetworkImage(
+                            imageUrl:
+                                getHighResImage(info!.anime!.info!.poster),
+                            fit: BoxFit.cover,
+                            height: MediaQuery.of(context).size.width,
+                            width: 300,
+                            progressIndicatorBuilder:
+                                (context, child, loadingProgress) {
+                              return Shimmer.fromColors(
+                                baseColor: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
+                                highlightColor: Theme.of(context)
+                                    .colorScheme
+                                    .secondaryContainer,
+                                child: Container(
+                                  height: 400,
+                                  width: 260,
+                                  color: Colors.grey[300],
+                                ),
+                              );
+                            },
+                            errorWidget: (_, __, ___) => Container(
+                              height: 400,
+                              color: Colors.grey[300],
+                              child: Icon(Icons.error,
+                                  size: 50, color: Colors.grey[600]),
+                            ),
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: getHighResImage(widget.image),
+                            fit: BoxFit.cover,
+                            height: MediaQuery.of(context).size.width,
+                            width: 300,
+                            progressIndicatorBuilder:
+                                (context, child, loadingProgress) {
+                              return Shimmer.fromColors(
+                                baseColor: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
+                                highlightColor: Theme.of(context)
+                                    .colorScheme
+                                    .secondaryContainer,
+                                child: Container(
+                                  height: 400,
+                                  color: Colors.grey[300],
+                                ),
+                              );
+                            },
+                            errorWidget: (_, __, ___) => Container(
+                              height: 400,
+                              color: Colors.grey[300],
+                              child: Icon(Icons.error,
+                                  size: 50, color: Colors.grey[600]),
+                            ),
                           ),
-                        )
-                      : CachedNetworkImage(
-                          imageUrl: getHighResImage(widget.image),
-                          fit: BoxFit.cover,
-                          height: MediaQuery.of(context).size.width,
-                          width: 300,
-                          progressIndicatorBuilder:
-                              (context, child, loadingProgress) {
-                            return Shimmer.fromColors(
-                              baseColor: Theme.of(context).colorScheme.primary,
-                              highlightColor:
-                                  Theme.of(context).colorScheme.secondary,
-                              child: Container(
-                                height: 400,
-                                color: Colors.grey[300],
-                              ),
-                            );
-                          },
-                          errorWidget: (_, __, ___) => Container(
-                            height: 400,
-                            color: Colors.grey[300],
-                            child: Icon(Icons.error,
-                                size: 50, color: Colors.grey[600]),
-                          ),
-                        ),
-                ),
-              ),
+                  )),
             ),
           ),
           Positioned(
@@ -187,6 +199,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   widget.name,
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
                       ),
                 ),
               ),
@@ -235,6 +248,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   value.isEmpty ? 'N/A' : value,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                 ),
         ],
@@ -248,7 +262,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
     }
 
     // Filter out current season
-    final filteredSeasons = info!.seasons!.where((season) => !season.isCurrent).toList();
+    final filteredSeasons =
+        info!.seasons!.where((season) => !season.isCurrent).toList();
 
     if (filteredSeasons.isEmpty) {
       return const SizedBox.shrink();
@@ -324,10 +339,13 @@ class _DetailsScreenState extends State<DetailsScreen> {
                               padding: EdgeInsets.all(8),
                               child: Text(
                                 season.title,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -373,13 +391,17 @@ class _DetailsScreenState extends State<DetailsScreen> {
               duration: const Duration(milliseconds: 300),
               firstChild: Text(
                 info?.anime?.info?.description ?? 'Description not available',
-                style: themeData.textTheme.bodyLarge,
+                style: themeData.textTheme.bodyLarge?.copyWith(
+                  color: themeData.colorScheme.onSurface,
+                ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
               secondChild: Text(
                 info?.anime?.info?.description ?? 'Description not available',
-                style: themeData.textTheme.bodyLarge,
+                style: themeData.textTheme.bodyLarge?.copyWith(
+                  color: themeData.colorScheme.onSurface,
+                ),
               ),
             );
           },
@@ -395,6 +417,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   isExpanded ? 'Show Less' : 'Show More',
                   style: themeData.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
+                    color: themeData.colorScheme.onSurface,
                   ),
                 ),
                 Icon(
@@ -407,7 +430,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
           ),
         ),
         const SizedBox(height: 10),
-         _buildSeasonsSection(),
+        _buildSeasonsSection(),
         const SizedBox(height: 10),
         ValueListenableBuilder<Box<WatchlistModel>>(
           valueListenable: _watchlistBox!.listenable(),
@@ -445,93 +468,89 @@ class _DetailsScreenState extends State<DetailsScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
     ThemeData themeData = Theme.of(context);
 
-    return SafeArea(
-      maintainBottomViewPadding: true,
-      child: Scaffold(
-        extendBody: true,
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                themeData.colorScheme.primaryContainer,
-                themeData.colorScheme.secondaryContainer,
-                // themeData.colorScheme.tertiary, // End color
-              ],
-              begin: Alignment.bottomLeft,
-              end: Alignment.topRight,
-            ),
-          ),
-          child: FutureBuilder<AnimeInfo?>(
-            future: fetchData(),
-            builder: (context, snapshot) {
-              final bool isLoading =
-                  snapshot.connectionState == ConnectionState.waiting;
-              info = snapshot.data?.data;
-      
-              return CustomScrollView(
-                controller: _scrollController,
-                slivers: [
-                  SliverAppBar(
-                    backgroundColor: Colors.transparent,
-                    expandedHeight: screenHeight * 0.6,
-                    flexibleSpace: FlexibleSpaceBar(
-                      background: _buildHeaderSection(),
-                    ),
-                    actions: [
-                      FavoriteButton(
-                        animeId: widget.id,
-                        title: widget.name,
-                        image: widget.image,
-                        type: widget.type,
-                      ),
-                      const SizedBox(width: 10),
-                    ],
-                  ),
-                  SliverToBoxAdapter(
-                    child: Container(
-                      padding: const EdgeInsets.only(
-                        left: 15,
-                        right: 15,
-                        top: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: themeData.colorScheme.surface,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(50),
-                          topRight: Radius.circular(50),
-                        ),
-                      ),
-                      child: _buildDetailsSection(isLoading: isLoading),
-                    ),
-                  ),
-                ],
-              );
-            },
+    return Scaffold(
+      extendBody: true,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              themeData.colorScheme.primaryContainer,
+              themeData.colorScheme.secondaryContainer,
+            ],
+            begin: Alignment.bottomLeft,
+            end: Alignment.topRight,
           ),
         ),
-        bottomNavigationBar: ValueListenableBuilder<Box<WatchlistModel>>(
-          valueListenable: _watchlistBox!.listenable(),
-          builder: (context, box, _) {
-            // Get the continue watching item
-            continueWatchingItem =
-                _watchlistBox.getContinueWatchingById(widget.id);
-      
-            if (continueWatchingItem == null || _episodes.value.length < 2) {
-              return const SizedBox.shrink();
-            }
-      
-            return BottomPlayerBar(
-              episodes: _episodes.value,
-              item: continueWatchingItem!,
-              title: continueWatchingItem!.title,
-              id: widget.id,
-              image: widget.image,
-              type: widget.type,
-              nextEpisodeId: _nextEpisodeId,
-              nextEpisodeTitle: _nextEpisodeTitle,
+        child: FutureBuilder<AnimeInfo?>(
+          future: fetchData(),
+          builder: (context, snapshot) {
+            final bool isLoading =
+                snapshot.connectionState == ConnectionState.waiting;
+            info = snapshot.data?.data;
+
+            return CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                SliverAppBar(
+                  backgroundColor: Colors.transparent,
+                  expandedHeight: screenHeight * 0.6,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: _buildHeaderSection(),
+                  ),
+                  actions: [
+                    FavoriteButton(
+                      animeId: widget.id,
+                      title: widget.name,
+                      image: widget.image,
+                      type: widget.type,
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                ),
+                SliverToBoxAdapter(
+                  child: Container(
+                    padding: const EdgeInsets.only(
+                      left: 15,
+                      right: 15,
+                      top: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: themeData.colorScheme.surface,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(50),
+                        topRight: Radius.circular(50),
+                      ),
+                    ),
+                    child: _buildDetailsSection(isLoading: isLoading),
+                  ),
+                ),
+              ],
             );
           },
         ),
+      ),
+      bottomNavigationBar: ValueListenableBuilder<Box<WatchlistModel>>(
+        valueListenable: _watchlistBox!.listenable(),
+        builder: (context, box, _) {
+          // Get the continue watching item
+          continueWatchingItem =
+              _watchlistBox.getContinueWatchingById(widget.id);
+
+          if (continueWatchingItem == null || _episodes.value.length < 2) {
+            return const SizedBox.shrink();
+          }
+
+          return BottomPlayerBar(
+            episodes: _episodes.value,
+            item: continueWatchingItem!,
+            title: continueWatchingItem!.title,
+            id: widget.id,
+            image: widget.image,
+            type: widget.type,
+            nextEpisodeId: _nextEpisodeId,
+            nextEpisodeTitle: _nextEpisodeTitle,
+          );
+        },
       ),
     );
   }

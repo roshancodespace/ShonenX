@@ -108,8 +108,8 @@ class _EpisodesListState extends State<EpisodesList> {
 
   Widget _buildShimmerList(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-      highlightColor: Theme.of(context).colorScheme.secondary,
+      baseColor: Theme.of(context).colorScheme.primaryContainer,
+      highlightColor: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
       child: ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -285,23 +285,23 @@ class _EpisodeGridTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(8.0),
           border: !episode.isFiller
               ? null
-              : Border.all(color: themeData.colorScheme.secondary, width: 2),
+              : Border.all(color: themeData.colorScheme.secondaryContainer, width: 2),
           gradient: LinearGradient(
             colors: isWatched
                 ? [
                     themeData.colorScheme.secondaryContainer,
-                    themeData.colorScheme.primaryContainer.withOpacity(0.2),
+                    themeData.colorScheme.secondaryContainer.withOpacity(0.2),
                   ]
                 : [
                     !episode.isFiller
                         ? themeData.colorScheme.primaryContainer.withOpacity(0.4)
-                        : themeData.colorScheme.secondaryContainer,
+                        : themeData.colorScheme.primaryContainer,
                     !episode.isFiller
                         ? themeData.colorScheme.secondaryContainer.withOpacity(0.7)
                         : themeData.colorScheme.secondaryContainer,
                   ],
-            begin: Alignment.bottomLeft,
-            end: Alignment.topRight,
+            begin: Alignment.bottomRight,
+            end: Alignment.topLeft,
           ),
         ),
         child: Center(
@@ -312,6 +312,7 @@ class _EpisodeGridTile extends StatelessWidget {
                 "${episode.number}",
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
                 textAlign: TextAlign.center,
               ),
@@ -319,7 +320,7 @@ class _EpisodeGridTile extends StatelessWidget {
                 Text(
                   " ${isWatched ? 'WATCHED' : 'FILLER'}",
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
                       ),
                   textAlign: TextAlign.center,
                 ),

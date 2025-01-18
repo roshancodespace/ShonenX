@@ -160,9 +160,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
 
     return Scaffold(
       extendBody: true,
-      appBar: AppBar(
-        toolbarHeight: 0,
-      ),
+      appBar: AppBar( backgroundColor: Colors.transparent,
+        forceMaterialTransparency: true,toolbarHeight: 0,),
       body: CustomScrollView(
         slivers: [
           // Search Bar

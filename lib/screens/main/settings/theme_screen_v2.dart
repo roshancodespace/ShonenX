@@ -1,4 +1,5 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/boxes/settings_box.dart';
@@ -16,6 +17,9 @@ class _ThemeScreenV2State extends State<ThemeScreenV2> {
   late SettingsBox _settingsBox;
   late String _themeMode;
   late FlexScheme _flexScheme;
+  late double _cardRadius;
+  late bool _trueBlack;
+  late bool _swapColors;
 
   @override
   void initState() {
@@ -29,7 +33,20 @@ class _ThemeScreenV2State extends State<ThemeScreenV2> {
     setState(() {
       _themeMode = theme.themeMode;
       _flexScheme = theme.flexScheme;
+      _trueBlack = theme.trueBlack;
+      _swapColors = theme.swapColors;
+      _cardRadius = theme.cardRadius;
     });
+  }
+
+  Future<void> _updateTheme() async {
+    await _settingsBox.updateTheme(ThemeModel(
+      themeMode: _themeMode,
+      flexScheme: _flexScheme,
+      trueBlack: _trueBlack,
+      swapColors: _swapColors,
+      cardRadius: _cardRadius,
+    ));
   }
 
   Future<void> initializeBox() async {
@@ -37,24 +54,109 @@ class _ThemeScreenV2State extends State<ThemeScreenV2> {
     await _settingsBox.init();
   }
 
+  void _showAdvancedSettingsModal() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Container(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Advanced Settings',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              _buildSwitchTile(
+                'Pitch Black',
+                'Optimized for AMOLED displays',
+                _trueBlack,
+                (value) async {
+                  setState(() => _trueBlack = value);
+                  this.setState(() {});
+                  await _updateTheme();
+                },
+              ),
+              _buildSwitchTile(
+                'Swap Colors',
+                'Invert primary and secondary colors',
+                _swapColors,
+                (value) async {
+                  setState(() => _swapColors = value);
+                  this.setState(() {});
+                  await _updateTheme();
+                },
+              ),
+              _buildRadiusSliderTile(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showColorSchemeModal() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Color Scheme',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: ClampingScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  childAspectRatio: 1.2,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                ),
+                itemCount: FlexScheme.values.length,
+                itemBuilder: (context, index) {
+                  final scheme = FlexScheme.values[index];
+                  return _buildColorSchemeCard(scheme);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
           icon: Icon(
             HugeIcons.strokeRoundedArrowLeft01,
-            size: 35,
+            size: 28,
           ),
         ),
         title: Hero(
           tag: ValueKey(widget.title),
           child: Text(
             'Theme',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  fontSize: 35,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
@@ -63,248 +165,184 @@ class _ThemeScreenV2State extends State<ThemeScreenV2> {
       body: ValueListenableBuilder(
         valueListenable: _settingsBox.listenable(),
         builder: (context, value, child) {
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Choose Theme',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildThemeModeContainer(),
-                  const SizedBox(height: 32),
-                  Text(
-                    'Color Schemes',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildColorSchemeGrid(),
-                ],
+          return ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            children: [
+              _buildThemeModeContainer(),
+              const SizedBox(height: 24),
+              Card(
+                child: Column(
+                  children: [
+                    ListTile(
+                      title: Text('Advanced Settings'),
+                      trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: _showAdvancedSettingsModal,
+                    ),
+                    Divider(height: 1),
+                    ListTile(
+                      title: Text('Color Scheme'),
+                      trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: _showColorSchemeModal,
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           );
         },
       ),
     );
   }
 
-  Widget _buildThemeModeContainer() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        children: [
-          _buildThemeModeButton(
-            'Dark',
-            Icons.dark_mode_rounded,
-            'dark',
-            description: 'Dark theme for low-light environments',
-          ),
-          _buildThemeModeButton(
-            'Light',
-            Icons.light_mode_rounded,
-            'light',
-            description: 'Light theme for better readability',
-          ),
-          _buildThemeModeButton(
-            'System',
-            Icons.settings_system_daydream_rounded,
-            'system',
-            description: 'Follows your system theme',
-          ),
-        ],
+  Widget _buildSwitchTile(
+      String title, String subtitle, bool value, Function(bool) onChanged) {
+    return ListTile(
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: Switch.adaptive(value: value, onChanged: onChanged),
+    );
+  }
+
+  Widget _buildRadiusSliderTile() {
+    return ListTile(
+      title: Text('Cards Roundness'),
+      subtitle: Slider(
+        value: _cardRadius,
+        min: 0,
+        max: 40,
+        divisions: 8,
+        label: _cardRadius.round().toString(),
+        onChanged: (value) async {
+          setState(() => _cardRadius = value);
+          await _updateTheme();
+        },
       ),
     );
   }
 
-  Widget _buildThemeModeButton(
-    String label,
-    IconData icon,
-    String mode, {
-    required String description,
-  }) {
-    final isSelected = _themeMode == mode;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Material(
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            _themeMode = mode;
-            _settingsBox.updateTheme(
-                ThemeModel(themeMode: _themeMode, flexScheme: _flexScheme));
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? colorScheme.primaryContainer.withOpacity(0.2)
-                : colorScheme.surface.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Row(
+  Widget _buildThemeModeContainer() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Appearance',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Column(
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? colorScheme.primaryContainer
-                      : colorScheme.surface.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  icon,
-                  color: isSelected
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
-                ),
+              _buildThemeModeTile(
+                'System',
+                Icons.brightness_auto,
+                'system',
+                'Follow system theme',
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected
-                            ? colorScheme.primary
-                            : colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
+              Divider(height: 1),
+              _buildThemeModeTile(
+                'Light',
+                Icons.light_mode,
+                'light',
+                'Always use light theme',
               ),
-              if (isSelected)
-                HugeIcon(
-                  icon: HugeIcons.strokeRoundedTick02,
-                  color: colorScheme.primary,
-                ),
+              Divider(height: 1),
+              _buildThemeModeTile(
+                'Dark',
+                Icons.dark_mode,
+                'dark',
+                'Always use dark theme',
+              ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildColorSchemeGrid() {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 1.9,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-      ),
-      itemCount: FlexScheme.values.length,
-      itemBuilder: (context, index) {
-        final scheme = FlexScheme.values[index];
-        return _ColorSchemeCard(
-          title: scheme.name,
-          scheme: scheme,
-          isSelected: _flexScheme == scheme,
-          onTap: () {
-            setState(() {
-              _flexScheme = scheme;
-              _settingsBox.updateTheme(
-                ThemeModel(
-                  themeMode: _themeMode,
-                  flexScheme: _flexScheme,
-                ),
-              );
-            });
-          },
-        );
+  Widget _buildThemeModeTile(
+      String title, IconData icon, String mode, String subtitle) {
+    final isSelected = _themeMode == mode;
+    return ListTile(
+      leading: Icon(icon,
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.onSurfaceVariant),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: isSelected
+          ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+          : null,
+      selected: isSelected,
+      onTap: () async {
+        setState(() => _themeMode = mode);
+        await _updateTheme();
       },
     );
   }
-}
 
-class _ColorSchemeCard extends StatelessWidget {
-  final String title;
-  final FlexScheme scheme;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ColorSchemeCard({
-    required this.title,
-    required this.scheme,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Widget _buildColorSchemeCard(FlexScheme scheme) {
+    final isSelected = _flexScheme == scheme;
     final schemeData = FlexThemeData.light(scheme: scheme).colorScheme;
 
     return Card(
-      margin: EdgeInsets.all(0),
-      color: isSelected ? colorScheme.primaryContainer : colorScheme.surface,
+      clipBehavior: Clip.antiAlias,
       elevation: isSelected ? 4 : 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Text(
-              //   title,
-              //   style: TextStyle(
-              //     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              //     color: isSelected ? colorScheme.primary : colorScheme.onSurface,
-              //   ),
-              // ),
-              const Spacer(),
-              Row(
-                children: [
-                  _buildColorDot(schemeData.primary),
-                  const SizedBox(width: 8),
-                  _buildColorDot(schemeData.secondary),
-                  const SizedBox(width: 8),
-                  _buildColorDot(schemeData.tertiary),
-                ],
-              ),
-            ],
-          ),
-        ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isSelected
+            ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)
+            : BorderSide.none,
       ),
-    );
-  }
-
-  Widget _buildColorDot(Color color) {
-    return Container(
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
+      child: InkWell(
+        onTap: () async {
+          setState(() => _flexScheme = scheme);
+          await _updateTheme();
+          Navigator.pop(context);
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 60,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    schemeData.primary,
+                    schemeData.secondary,
+                    schemeData.tertiary,
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        scheme.name.splitMapJoin(RegExp(r'(?=[A-Z])'), onMatch: (m) => ' ${m.group(0)}').trim().split(' ').map((word) => word[0].toUpperCase() + word.substring(1)).join(' '),
+                        style: Theme.of(context).textTheme.labelSmall,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isSelected)
+                      Icon(
+                        Icons.check_circle,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

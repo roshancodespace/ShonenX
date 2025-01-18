@@ -41,17 +41,15 @@ class _AppRouterState extends State<AppRouter> {
         children: _screens,
       ),
       bottomNavigationBar: CrystalNavigationBar(
-        backgroundColor: colorScheme.secondaryContainer.withOpacity(0.15),
+        backgroundColor: colorScheme.surface.withOpacity(0.8),
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
-        selectedItemColor: theme.colorScheme.primaryContainer,
-        unselectedItemColor:
-            theme.colorScheme.onSurface.withOpacity(0.5),
+        selectedItemColor: colorScheme.primary,
+        unselectedItemColor: colorScheme.onSurface.withOpacity(0.6),
         enableFloatingNavBar: true,
-        // marginR: const EdgeInsets.symmetric(horizontal: 90, vertical: 20),
-        marginR: const EdgeInsets.symmetric(horizontal: 120, vertical: 20),
-        splashBorderRadius: 50,
-        borderRadius: 500,
+        marginR: const EdgeInsets.symmetric(horizontal: 120, vertical: 16),
+        splashBorderRadius: 24,
+        borderRadius: 50,
         enablePaddingAnimation: true,
         items: [
           CrystalNavigationBarItem(

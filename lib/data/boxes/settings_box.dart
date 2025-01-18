@@ -1,3 +1,4 @@
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nekoflow/data/models/settings/settings_model.dart';
@@ -20,9 +21,19 @@ class SettingsBox {
     print(_box.get(0)?.theme?.themeMode);
 
     _settingsModel = _box.get(0) ?? SettingsModel(theme: ThemeModel());
-    
-     if (_box.get(0) == null) {
-      await _box.put(0, _settingsModel);
+
+    if (_box.get(0) == null) {
+      await _box.put(
+        0,
+        SettingsModel(
+          theme: ThemeModel(
+            themeMode: 'dark',
+            flexScheme: FlexScheme.red,
+            trueBlack: true,
+            swapColors: false,
+          ),
+        ),
+      );
     }
   }
 

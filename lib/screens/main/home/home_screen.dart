@@ -84,7 +84,8 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Text(
             "Hello ${widget.name}, What's on your mind today?",
-            style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.headlineLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 10),
@@ -99,24 +100,26 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildShimmerLoading(ThemeData theme, double factor) {
+    final width = MediaQuery.of(context).size.width;
     return Shimmer.fromColors(
-      baseColor: theme.colorScheme.primary.withOpacity(0.5),
-      highlightColor: theme.colorScheme.secondary,
+      baseColor: theme.colorScheme.primaryContainer,
+      highlightColor: theme.colorScheme.primaryContainer.withOpacity(0.5),
       child: Padding(
         padding: EdgeInsets.only(bottom: factor > 0.8 ? 20 : 0),
         child: SizedBox(
-          height: MediaQuery.of(context).size.width * 0.6,
+          height: width * 0.64,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: 5,
             padding: EdgeInsets.zero,
-            itemBuilder: (_, __) => Container(
-              height: double.infinity,
-              width: MediaQuery.of(context).size.width * factor,
-              margin: const EdgeInsets.only(right: 5),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(15),
+            itemBuilder: (_, __) => Card(
+              child: Container(
+                height: double.infinity,
+                width: width * factor,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(15),
+                ),
               ),
             ),
           ),
@@ -141,11 +144,18 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 10),
         ],
         _isLoading
-            ? _buildShimmerLoading(theme, 0.9)
+            ? Column(
+              children: [
+                _buildShimmerLoading(theme, 0.9),
+                SizedBox(height: 8,),
+              ],
+            )
             : SnappingScroller(
                 autoScroll: true,
                 widthFactor: 1,
-                children: animeList.map((anime) => SpotlightCard(anime: anime, tag: tag)).toList(),
+                children: animeList
+                    .map((anime) => SpotlightCard(anime: anime, tag: tag))
+                    .toList(),
               ),
       ],
     );
@@ -162,15 +172,19 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
+        Text(title,
+            style: theme.textTheme.headlineMedium
+                ?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 10),
         _isLoading
-            ? _buildShimmerLoading(theme, 0.41)
+            ? _buildShimmerLoading(theme, 0.42)
             : SnappingScroller(
                 showIndicators: false,
                 widthFactor: 0.47,
                 autoScroll: false,
-                children: animeList.map((anime) => AnimeCard(anime: anime, tag: tag)).toList(),
+                children: animeList
+                    .map((anime) => AnimeCard(anime: anime, tag: tag))
+                    .toList(),
               ),
       ],
     );
@@ -195,10 +209,22 @@ class _HomeScreenState extends State<HomeScreen> {
     final contentSections = [
       {"title": "Popular", "animeList": _popular, "tag": "popular"},
       {"title": "Top Airing", "animeList": _topAiring, "tag": "topairing"},
-      {"title": "Most Favourite", "animeList": _mostFavourite, "tag": "mostFavourite"},
-      {"title": "Latest Completed", "animeList": _completed, "tag": "latestcompleted"},
+      {
+        "title": "Most Favourite",
+        "animeList": _mostFavourite,
+        "tag": "mostFavourite"
+      },
+      {
+        "title": "Latest Completed",
+        "animeList": _completed,
+        "tag": "latestcompleted"
+      },
       {"title": "Top Upcoming", "animeList": _upcoming, "tag": "upcoming"},
-      {"title": "Latest Episodes", "animeList": _latestEpisode, "tag": "latestEpisodes"},
+      {
+        "title": "Latest Episodes",
+        "animeList": _latestEpisode,
+        "tag": "latestEpisodes"
+      },
     ];
 
     for (var section in contentSections) {
@@ -233,15 +259,19 @@ class _HomeScreenState extends State<HomeScreen> {
         forceMaterialTransparency: true,
         actions: [
           IconButton(
-            onPressed: () => Navigator.push(context, CupertinoPageRoute(builder: (context) => SettingsScreen())),
-            icon: HugeIcon(icon: HugeIcons.strokeRoundedSettings01, color: theme.colorScheme.onSurface),
+            onPressed: () => Navigator.push(context,
+                CupertinoPageRoute(builder: (context) => SettingsScreen())),
+            icon: HugeIcon(
+                icon: HugeIcons.strokeRoundedSettings01,
+                color: theme.colorScheme.onSurface),
           )
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _fetchData,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: HomeScreen._horizontalPadding),
+          padding: const EdgeInsets.symmetric(
+              horizontal: HomeScreen._horizontalPadding),
           child: ListView(
             children: [
               _buildHeaderSection(theme),

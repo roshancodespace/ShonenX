@@ -18,6 +18,12 @@ class SnappingScroller extends StatefulWidget {
   final Color? inactiveIndicatorColor;
   final bool reverseScrollDirection;
   final EdgeInsets? indicatorPadding;
+  final double indicatorSpacing;
+  final double indicatorHeight;
+  final double activeIndicatorWidth;
+  final double inactiveIndicatorWidth;
+  final BorderRadius? indicatorBorderRadius;
+  final bool enableGradientIndicators;
 
   const SnappingScroller({
     super.key,
@@ -37,25 +43,47 @@ class SnappingScroller extends StatefulWidget {
     this.inactiveIndicatorColor,
     this.reverseScrollDirection = false,
     this.indicatorPadding,
+    this.indicatorSpacing = 4.0,
+    this.indicatorHeight = 8.0,
+    this.activeIndicatorWidth = 24.0,
+    this.inactiveIndicatorWidth = 8.0,
+    this.indicatorBorderRadius,
+    this.enableGradientIndicators = false,
   });
 
   @override
   State<SnappingScroller> createState() => _SnappingScrollerState();
 }
 
-class _SnappingScrollerState extends State<SnappingScroller> {
+class _SnappingScrollerState extends State<SnappingScroller> with SingleTickerProviderStateMixin {
   late PageController _pageController;
   Timer? _autoScrollTimer;
   int _currentPage = 0;
   bool _isScrolling = false;
+  late AnimationController _indicatorAnimationController;
+  late Animation<double> _indicatorAnimation;
 
   @override
   void initState() {
     super.initState();
     _initPageController();
+    _initAnimationController();
     if (widget.autoScroll) {
       _startAutoScroll();
     }
+  }
+
+  void _initAnimationController() {
+    _indicatorAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _indicatorAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _indicatorAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
   }
 
   void _initPageController() {
@@ -98,6 +126,7 @@ class _SnappingScrollerState extends State<SnappingScroller> {
   void dispose() {
     _autoScrollTimer?.cancel();
     _pageController.dispose();
+    _indicatorAnimationController.dispose();
     super.dispose();
   }
 
@@ -108,16 +137,17 @@ class _SnappingScrollerState extends State<SnappingScroller> {
         ? screenSize.width * (widget.heightFactor ?? 0.65)
         : screenSize.height * (widget.heightFactor ?? 0.6);
 
-    return GestureDetector(
-      onPanDown: (_) => _autoScrollTimer?.cancel(),
-      onPanCancel: () {
-        if (widget.autoScroll) _startAutoScroll();
-      },
-      child: SizedBox(
-        height: containerHeight,
-        child: Stack(
-          children: [
-            PageView.builder(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onPanDown: (_) => _autoScrollTimer?.cancel(),
+          onPanCancel: () {
+            if (widget.autoScroll) _startAutoScroll();
+          },
+          child: SizedBox(
+            height: containerHeight,
+            child: PageView.builder(
               controller: _pageController,
               padEnds: false,
               physics: widget.disableBouncing
@@ -130,48 +160,70 @@ class _SnappingScrollerState extends State<SnappingScroller> {
                   _currentPage = actualIndex;
                 });
                 widget.onPageChanged?.call(actualIndex);
+                _indicatorAnimationController.forward(from: 0);
               },
               itemBuilder: (context, index) {
                 final actualIndex = index % widget.children.length;
-                return Padding(padding: EdgeInsets.only(right: 5),child: widget.children[actualIndex]);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 0),
+                  child: widget.children[actualIndex],
+                );
               },
               itemCount: widget.loop ? null : widget.children.length,
             ),
-
-            // Improved Page Indicators
-            if (widget.showIndicators)
-              Positioned(
-                bottom: 10,
-                left: 0,
-                right: 0,
-                child: Row(
+          ),
+        ),
+        if (widget.showIndicators)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: AnimatedBuilder(
+              animation: _indicatorAnimationController, // Changed from _indicatorAnimation to _indicatorAnimationController
+              builder: (context, child) {
+                return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(widget.children.length, (index) {
                     final isActive = index == _currentPage;
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       margin: widget.indicatorPadding ??
-                          const EdgeInsets.symmetric(horizontal: 4),
-                      height: 8,
-                      width: isActive ? 24 : 8,
+                          EdgeInsets.symmetric(horizontal: widget.indicatorSpacing),
+                      height: widget.indicatorHeight,
+                      width: isActive ? widget.activeIndicatorWidth : widget.inactiveIndicatorWidth,
                       decoration: BoxDecoration(
-                        color: isActive
-                            ? widget.activeIndicatorColor ??
-                                Theme.of(context).colorScheme.secondary
-                            : widget.inactiveIndicatorColor?.withOpacity(0.5) ??
-                                Theme.of(context)
-                                    .colorScheme
-                                    .secondary
-                                    .withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(4),
+                        gradient: widget.enableGradientIndicators && isActive
+                            ? LinearGradient(
+                                colors: [
+                                  widget.activeIndicatorColor ?? Theme.of(context).colorScheme.primaryContainer,
+                                  widget.activeIndicatorColor?.withOpacity(0.7) ??
+                                      Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7),
+                                ],
+                              )
+                            : null,
+                        color: !widget.enableGradientIndicators
+                            ? isActive
+                                ? widget.activeIndicatorColor ?? Theme.of(context).colorScheme.primaryContainer
+                                : widget.inactiveIndicatorColor?.withOpacity(0.5) ??
+                                    Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5)
+                            : null,
+                        borderRadius: widget.indicatorBorderRadius ?? BorderRadius.circular(4),
+                        boxShadow: isActive
+                            ? [
+                                BoxShadow(
+                                  color: (widget.activeIndicatorColor ?? Theme.of(context).colorScheme.secondaryContainer)
+                                      .withOpacity(0.3),
+                                  blurRadius: 4,
+                                  spreadRadius: 1,
+                                ),
+                              ]
+                            : null,
                       ),
                     );
                   }),
-                ),
-              ),
-          ],
-        ),
-      ),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 }

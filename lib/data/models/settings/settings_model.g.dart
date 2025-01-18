@@ -52,15 +52,27 @@ class ThemeModelAdapter extends TypeAdapter<ThemeModel> {
     };
     return ThemeModel(
       themeMode: fields[0] as String,
+      flexScheme: fields[1] as FlexScheme,
+      trueBlack: fields[2] as bool,
+      swapColors: fields[3] as bool,
+      cardRadius: fields[4] as double,
     );
   }
 
   @override
   void write(BinaryWriter writer, ThemeModel obj) {
     writer
-      ..writeByte(1)
+      ..writeByte(5)
       ..writeByte(0)
-      ..write(obj.themeMode);
+      ..write(obj.themeMode)
+      ..writeByte(1)
+      ..write(obj.flexScheme)
+      ..writeByte(2)
+      ..write(obj.trueBlack)
+      ..writeByte(3)
+      ..write(obj.swapColors)
+      ..writeByte(4)
+      ..write(obj.cardRadius);
   }
 
   @override

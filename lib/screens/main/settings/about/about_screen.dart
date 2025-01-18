@@ -25,15 +25,14 @@ class AboutScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
           icon: Icon(
             HugeIcons.strokeRoundedArrowLeft01,
-            size: 35,
+            size: 28,
           ),
         ),
         title: Hero(
           tag: ValueKey(title),
           child: Text(
             'About',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  fontSize: 35,
+             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),

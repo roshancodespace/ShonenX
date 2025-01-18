@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nekoflow/data/boxes/watchlist_box.dart';
@@ -10,87 +9,69 @@ class WatchlistScreen extends StatefulWidget {
   const WatchlistScreen({super.key});
 
   @override
-  State<WatchlistScreen> createState() => _WatchlistScreenState();
+  WatchlistScreenState createState() => WatchlistScreenState();
 }
 
-class _WatchlistScreenState extends State<WatchlistScreen> {
-  late final WatchlistBox _watchlistBox;
+class WatchlistScreenState extends State<WatchlistScreen> {
+  late Future<void> _initFuture;
+  final WatchlistBox _watchlistBox = WatchlistBox();
 
   @override
   void initState() {
     super.initState();
-    _initializeState();
+    _initFuture = _initializeWatchlistBox();
   }
 
-  Future<void> _initializeState() async {
-    _watchlistBox = WatchlistBox();
+  Future<void> _initializeWatchlistBox() async {
     await _watchlistBox.init();
-  }
-
-
-  void _navigateToFullScreen(String title, List<BaseAnimeCard> items) {
-    Navigator.push(
-      context,
-      CupertinoPageRoute(
-        builder: (context) => ViewAllScreen(
-          title: title,
-          items: items,
-          watchlistBox: _watchlistBox,
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
       appBar: AppBar(
-        forceMaterialTransparency: true,
-        title: Text(
-          "Watchlist",
-          style: Theme.of(context).textTheme.headlineLarge,
-        ),
+        title: const Text("My Watchlist"),
       ),
-      body: ValueListenableBuilder<Box<WatchlistModel>>(
-        valueListenable: _watchlistBox.listenable(),
-        builder: (context, box, _) {
-          final watchlistModel = box.get(0);
-
-          if (watchlistModel == null) {
+      body: FutureBuilder<void>(
+        future: _initFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              // Optional: Add refresh logic if needed
-            },
-            child: CustomScrollView(
-              slivers: [
-                SliverPadding(
+          return ValueListenableBuilder<Box<WatchlistModel>>(
+            valueListenable: _watchlistBox.listenable(),
+            builder: (context, box, _) {
+              final watchlistModel = box.get(0);
+
+              if (watchlistModel == null) {
+                return const Center(child: Text("No data available"));
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  // Optional: Add refresh logic if needed
+                },
+                child: ListView(
                   padding: const EdgeInsets.all(16.0),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _buildSection(
-                        context,
-                        title: "Recently Watched",
-                        items: watchlistModel.recentlyWatched ?? [],
-                        emptyMessage: "No recently watched anime",
-                        tag: "recent",
-                      ),
-                      const SizedBox(height: 24),
-                      _buildSection(
-                        context,
-                        title: "Favorites",
-                        items: watchlistModel.favorites ?? [],
-                        emptyMessage: "No favorite anime",
-                        tag: "favorite",
-                      ),
-                    ]),
-                  ),
+                  children: [
+                    _buildSection(
+                      context,
+                      title: "Recently Watched",
+                      items: watchlistModel.recentlyWatched ?? [],
+                      emptyMessage: "No recently watched anime",
+                    ),
+                    const SizedBox(height: 24),
+                    _buildSection(
+                      context,
+                      title: "Favorites",
+                      items: watchlistModel.favorites ?? [],
+                      emptyMessage: "No favorite anime",
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
@@ -102,7 +83,6 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
     required String title,
     required List<BaseAnimeCard> items,
     required String emptyMessage,
-    required String tag,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,7 +105,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
             ),
           )
         else
-          _buildAnimeList(items, tag),
+          _buildAnimeList(items, title),
       ],
     );
   }
@@ -135,18 +115,34 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+        Hero(
+          tag: title,
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
         ),
         if (items.isNotEmpty)
           IconButton(
-            onPressed: () => _navigateToFullScreen(title, items),
+            onPressed: () => _navigateToFullScreen(context, title, items),
             icon: const Icon(Icons.chevron_right),
           ),
       ],
+    );
+  }
+
+  void _navigateToFullScreen(BuildContext context, String title, List<BaseAnimeCard> items) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ViewAllScreen(
+          title: title,
+          items: items,
+          watchlistBox: _watchlistBox,
+        ),
+      ),
     );
   }
 
@@ -165,7 +161,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
             ),
             child: AnimeCard(
               anime: anime,
-              tag: '$tag-$index',
+              tag: tag,
             ),
           );
         },

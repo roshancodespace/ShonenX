@@ -7,6 +7,8 @@ abstract class BaseAnime {
   String get poster;
   AnimeEpisodes get episodes;
   String get type;
+  double? get score;
+  String? get rating;
 }
 
 class SpotlightAnime extends BaseAnime {
@@ -54,6 +56,11 @@ class SpotlightAnime extends BaseAnime {
           [],
     );
   }
+
+  @override
+  double? get score => null;
+  @override
+  String? get rating => null;
 }
 
 class TrendingAnime extends BaseAnime {
@@ -88,6 +95,11 @@ class TrendingAnime extends BaseAnime {
       poster: json['poster'],
     );
   }
+
+  @override
+  double? get score => null;
+  @override
+  String? get rating => null;
 }
 
 class LatestEpisodeAnime extends BaseAnime implements BaseAnimeCard {
@@ -104,7 +116,8 @@ class LatestEpisodeAnime extends BaseAnime implements BaseAnimeCard {
   @override
   final String type;
   final String duration;
-  final dynamic rating;
+  @override
+  final String? rating;
 
   LatestEpisodeAnime({
     required this.id,
@@ -154,7 +167,8 @@ class UpcomingAnime extends BaseAnime implements BaseAnimeCard {
   @override
   final String type;
   final String duration;
-  final dynamic rating;
+  @override
+  final String? rating;
 
   UpcomingAnime({
     required this.id,
@@ -250,6 +264,11 @@ class TopAnime extends BaseAnime {
       episodes: AnimeEpisodes.fromJson(json['episodes']),
     );
   }
+
+  @override
+  double? get score => null;
+  @override
+  String? get rating => null;
 }
 
 class TopAiringAnime extends BaseAnime implements BaseAnimeCard {
@@ -288,6 +307,9 @@ class TopAiringAnime extends BaseAnime implements BaseAnimeCard {
 
   @override
   double? get score => null;
+
+  @override
+  String? get rating => null;
 
   @override
   int? get episodeCount => episodes.sub;
@@ -334,6 +356,9 @@ class MostPopularAnime extends BaseAnime implements BaseAnimeCard {
   double? get score => null;
 
   @override
+  String? get rating => null;
+
+  @override
   int? get episodeCount => episodes.sub;
 
   @override
@@ -378,6 +403,9 @@ class MostFavoriteAnime extends BaseAnime implements BaseAnimeCard {
   double? get score => null;
 
   @override
+  String? get rating => null;
+
+  @override
   int? get episodeCount => episodes.sub;
 
   @override
@@ -420,6 +448,9 @@ class LatestCompletedAnime extends BaseAnime implements BaseAnimeCard {
 
   @override
   double? get score => null;
+  
+  @override
+  String? get rating => null;
 
   @override
   int? get episodeCount => episodes.sub;

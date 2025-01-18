@@ -17,6 +17,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_launcher_icons: ^0.14.1
+  flutter_staggered_animations: ^1.1.1
   flutter_svg: ^2.0.15
   google_fonts: ^6.2.1
   hive: ^2.2.3

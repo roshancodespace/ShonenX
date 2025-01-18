@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/boxes/watchlist_box.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
@@ -20,38 +21,36 @@ class ViewAllScreen extends StatefulWidget {
   State<ViewAllScreen> createState() => _ViewAllScreenState();
 }
 
-class _ViewAllScreenState extends State<ViewAllScreen> {
+class _ViewAllScreenState extends State<ViewAllScreen>
+    with TickerProviderStateMixin {
   final Set<String> _selectedIds = {};
   bool _isMultiselectMode = false;
+  late AnimationController _filterController;
+  String _searchQuery = '';
+  late List<BaseAnimeCard> _filteredItems;
 
-  void _onLongPress(BaseAnimeCard item) {
-    setState(() {
-      _isMultiselectMode = true;
-      _selectedIds.add(item.id);
-    });
+  @override
+  void initState() {
+    super.initState();
+    _filterController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _filteredItems = List.from(widget.items); // Optimize initialization
   }
 
-  void _onCardTap(BaseAnimeCard item) {
-    if (_isMultiselectMode) {
-      setState(() {
-        if (_selectedIds.contains(item.id)) {
-          _selectedIds.remove(item.id);
-        } else {
-          _selectedIds.add(item.id);
-        }
-
-        // Exit multiselect mode if no items are selected
-        if (_selectedIds.isEmpty) {
-          _isMultiselectMode = false;
-        }
-      });
-    }
+  @override
+  void dispose() {
+    _filterController.dispose();
+    super.dispose();
   }
 
-  void _exitMultiselectMode() {
+  void _filterItems(String query) {
     setState(() {
-      _isMultiselectMode = false;
-      _selectedIds.clear();
+      _searchQuery = query;
+      _filteredItems = widget.items
+          .where((item) => item.name.toLowerCase().contains(query.toLowerCase()))
+          .toList();
     });
   }
 
@@ -66,41 +65,40 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
         await widget.watchlistBox.removeFavorites(idsToDelete);
       }
 
-      // Refresh the state
       setState(() {
-        // Remove deleted items from the list
-        widget.items.removeWhere((item) => _selectedIds.contains(item.id));
+        _filteredItems.removeWhere((item) => _selectedIds.contains(item.id));
         _exitMultiselectMode();
       });
 
       if (!mounted) return;
-      // Show success snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${idsToDelete.length} item(s) removed successfully'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      _showSnackBar('${idsToDelete.length} item(s) removed successfully');
     } catch (e) {
-      // Show error snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to remove items: $e'),
-          duration: const Duration(seconds: 2),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnackBar('Failed to remove items: $e', isError: true);
     }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        backgroundColor: isError ? Colors.red : null,
+        action: SnackBarAction(
+          label: 'Dismiss',
+          onPressed: () {},
+        ),
+      ),
+    );
   }
 
   void _showDeleteConfirmationDialog() {
     final itemCount = _selectedIds.length;
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(20),
         ),
         title: Text(
           'Delete $itemCount Item${itemCount > 1 ? 's' : ''}',
@@ -120,21 +118,159 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
               style: TextStyle(color: Colors.grey[600]),
             ),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () {
               Navigator.of(context).pop();
               _performDeletion();
             },
-            style: ElevatedButton.styleFrom(
+            style: FilledButton.styleFrom(
               backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: Text('Delete'),
+            child: const Text('Delete'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _exitMultiselectMode() {
+    setState(() {
+      _isMultiselectMode = false;
+      _selectedIds.clear();
+      _filterController.reverse();
+    });
+  }
+
+  Widget _buildSearchBar() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: _isMultiselectMode ? 0 : 60,
+      child: SingleChildScrollView(
+        child: TextField(
+          onChanged: _filterItems,
+          decoration: InputDecoration(
+            hintText: 'Search ${widget.title}...',
+            prefixIcon: const Icon(Icons.search),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide.none,
+            ),
+            filled: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGridView() {
+    return GridView.builder(
+      physics: const BouncingScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 150,
+        childAspectRatio: 0.7,
+      ),
+      itemCount: _filteredItems.length,
+      itemBuilder: (context, index) {
+        return AnimationConfiguration.staggeredGrid(
+          position: index,
+          duration: const Duration(milliseconds: 375),
+          columnCount: (MediaQuery.of(context).size.width ~/ 150).toInt(),
+          child: ScaleAnimation(
+            child: FadeInAnimation(
+              child: _buildAnimeCard(_filteredItems[index]),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _onLongPress(BaseAnimeCard item) {
+    setState(() {
+      _isMultiselectMode = true;
+      _toggleSelection(item);
+    });
+  }
+
+  void _toggleSelection(BaseAnimeCard item) {
+    setState(() {
+      if (_selectedIds.contains(item.id)) {
+        _selectedIds.remove(item.id);
+        if (_selectedIds.isEmpty) {
+          _exitMultiselectMode();
+        }
+      } else {
+        _selectedIds.add(item.id);
+      }
+    });
+  }
+
+  void _sortItems() {
+    setState(() {
+      _filteredItems.sort((a, b) => a.name.compareTo(b.name));
+    });
+  }
+
+  void _onCardTap(BaseAnimeCard item) {
+    if (_isMultiselectMode) {
+      _toggleSelection(item);
+    } else {
+      // Handle single tap if needed
+    }
+  }
+
+  Widget _buildAnimeCard(BaseAnimeCard item) {
+    final isSelected = _selectedIds.contains(item.id);
+
+    return Card(
+      child: InkWell(
+        onLongPress: () => _onLongPress(item),
+        onTap: () => _onCardTap(item),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            AnimeCard(
+              anime: item,
+              tag: 'view_all',
+              disableInteraction: _isMultiselectMode,
+            ),
+            if (_isMultiselectMode)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
+                          .withOpacity(0.4)
+                      : Colors.transparent,
+                  border: isSelected
+                      ? Border.all(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          width: 3,
+                        )
+                      : null,
+                  borderRadius: (Theme.of(context).cardTheme.shape
+                          as RoundedRectangleBorder)
+                      .borderRadius,
+                ),
+                child: isSelected
+                    ? Center(
+                        child: HugeIcon(
+                          icon: HugeIcons.strokeRoundedTick02,
+                          size: 40,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                      )
+                    : null,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -147,104 +283,100 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
       maintainBottomViewPadding: true,
       child: Scaffold(
         appBar: AppBar(
-          title: _isMultiselectMode
-              ? Text(
-                  '${_selectedIds.length} Selected',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+          title: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _isMultiselectMode
+                ? Text(
+                    '${_selectedIds.length} Selected',
+                    key: const ValueKey('selected'),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )
+                : Hero(
+                    tag: widget.title,
+                    child: Text(
+                      widget.title,
+                      key: const ValueKey('title'),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                )
-              : Text(
-                  widget.title,
-                  style: theme.textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-          leading: _isMultiselectMode
-              ? IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: _exitMultiselectMode,
-                )
-              : IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => Navigator.pop(context),
-                ),
+          ),
+          leading: IconButton(
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: HugeIcon(
+                icon: _isMultiselectMode
+                    ? HugeIcons.strokeRoundedCancel01
+                    : HugeIcons.strokeRoundedArrowLeft01,
+                color: Theme.of(context).colorScheme.onSurface,
+                size: 28,
+                key: ValueKey(_isMultiselectMode),
+              ),
+            ),
+            onPressed: _isMultiselectMode
+                ? _exitMultiselectMode
+                : () => Navigator.pop(context),
+          ),
           actions: [
+            if (!_isMultiselectMode) ...[
+              IconButton(
+                icon: const Icon(Icons.sort),
+                onPressed: _sortItems,
+              ),
+            ],
             if (_isMultiselectMode)
               IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: _showDeleteConfirmationDialog,
+                icon: HugeIcon(
+                  icon: HugeIcons.strokeRoundedDelete01,
+                  color: _selectedIds.isNotEmpty
+                      ? theme.colorScheme.onSurface
+                      : Colors.grey,
+                ),
+                onPressed: _selectedIds.isNotEmpty
+                    ? _showDeleteConfirmationDialog
+                    : null,
               ),
           ],
         ),
-        body: widget.items.isEmpty
-            ? Center(
-                child: Text(
-                  "No items found in ${widget.title}",
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              )
-            : Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: GridView.builder(
-                  physics: const BouncingScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3,mainAxisExtent: 180, mainAxisSpacing: 15, crossAxisSpacing: 10),
-                  // gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  //   maxCrossAxisExtent: 200,
-                  //   mainAxisExtent: 260,
-                  //   mainAxisSpacing: 20,
-                  //   crossAxisSpacing: 15,
-                  // ),
-                  itemCount: widget.items.length,
-                  itemBuilder: (context, index) {
-                    final item = widget.items[index];
-                    final isSelected = _selectedIds.contains(item.id);
-      
-                    return GestureDetector(
-                      onLongPress: () => _onLongPress(item),
-                      onTap: () => _onCardTap(item),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: _isMultiselectMode && isSelected
-                              ? Border.all(
-                                  color: theme.colorScheme.primary,
-                                  width: 3,
-                                )
-                              : null,
-                        ),
-                        child: Stack(
-                          fit: StackFit.expand,
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              _buildSearchBar(),
+              Expanded(
+                child: _filteredItems.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            AnimeCard(
-                              anime: item,
-                              tag: 'view_all',
+                            Icon(
+                              Icons.search_off,
+                              size: 64,
+                              color:
+                                  theme.colorScheme.onSurface.withOpacity(0.5),
                             ),
-                            if (_isMultiselectMode && isSelected)
-                              Positioned.fill(
-                                child: Container(
-                                  color:
-                                      theme.colorScheme.primary.withOpacity(0.3),
-                                  child: Center(
-                                    child: HugeIcon(
-                                      icon: HugeIcons.strokeRoundedTick02,
-                                      size: 40,
-                                      color: Theme.of(context).colorScheme.onSurface,
-                                    ),
-                                  ),
-                                ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _searchQuery.isEmpty
+                                  ? "No items found in ${widget.title}"
+                                  : "No results found for '$_searchQuery'",
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: theme.colorScheme.onSurface
+                                    .withOpacity(0.7),
                               ),
+                              textAlign: TextAlign.center,
+                            ),
                           ],
                         ),
-                      ),
-                    );
-                  },
-                ),
+                      )
+                    : _buildGridView(),
               ),
+            ],
+          ),
+        ),
       ),
     );
   }

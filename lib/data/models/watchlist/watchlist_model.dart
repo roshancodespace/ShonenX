@@ -8,6 +8,7 @@ class BaseAnimeCard {
   final String poster;
   final String? type;
   final double? score;
+  final String? rating;
   final int? episodeCount;
   final String? status;
 
@@ -17,6 +18,7 @@ class BaseAnimeCard {
     required this.poster,
     this.type,
     this.score,
+    this.rating,
     this.episodeCount,
     this.status,
   });
@@ -64,9 +66,12 @@ class RecentlyWatchedItem extends HiveObject implements BaseAnimeCard {
     this.type,
     required this.id,
   });
-
+  
   @override
   double? get score => null;
+
+  @override
+  String? get rating => null;
 
   @override
   int? get episodeCount => null;
@@ -148,6 +153,9 @@ class AnimeItem extends HiveObject implements BaseAnimeCard {
 
   @override
   double? get score => null;
+  
+  @override
+  String? get rating => null;
 
   @override
   int? get episodeCount => null;

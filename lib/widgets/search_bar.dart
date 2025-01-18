@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class Searchbar extends StatefulWidget {
   final TextEditingController controller;
@@ -75,7 +76,7 @@ class _SearchbarState extends State<Searchbar> with SingleTickerProviderStateMix
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: themeContext.colorScheme.secondary.withOpacity(0.15),
+            color: themeContext.colorScheme.primaryContainer.withOpacity(0.15),
             borderRadius: BorderRadius.circular(15),
             border: Border.all(
               color: widget.isLoading
@@ -97,9 +98,10 @@ class _SearchbarState extends State<Searchbar> with SingleTickerProviderStateMix
                         strokeWidth: 2,
                       ),
                     )
-                  : const Icon(
-                      Icons.search,
+                  : HugeIcon(
+                      icon: HugeIcons.strokeRoundedSearch01,
                       size: 30,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
               const SizedBox(width: 10),
               Expanded(

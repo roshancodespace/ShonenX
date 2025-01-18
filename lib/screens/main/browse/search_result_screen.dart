@@ -33,7 +33,6 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
     _animeResults = widget.searchModel.animes;
     _currentPage = widget.searchModel.currentPage;
     _totalPages = widget.searchModel.totalPages;
-    
     _scrollController.addListener(_scrollListener);
   }
 
@@ -89,11 +88,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
       }
 
       setState(() {
-        if (page == 1) {
-          _animeResults = updatedSearchModel.animes;
-        } else {
-          _animeResults.addAll(updatedSearchModel.animes);
-        }
+        _animeResults = updatedSearchModel.animes;
         _currentPage = updatedSearchModel.currentPage;
         _totalPages = updatedSearchModel.totalPages;
         _isLoading = false;
@@ -120,20 +115,34 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
 
   Widget _buildPaginationIndicator() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           IconButton(
             icon: Icon(Icons.first_page),
             onPressed: _currentPage > 1 ? () => _loadPage(1) : null,
           ),
           IconButton(
-            icon: Icon(Icons.chevron_left),
+            icon: Icon(Icons.navigate_before),
             onPressed: _currentPage > 1 ? () => _loadPage(_currentPage - 1) : null,
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -150,14 +159,16 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                     ),
                   ),
                 Text(
-                  '$_currentPage / $_totalPages',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  'Page $_currentPage of $_totalPages',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
           ),
           IconButton(
-            icon: Icon(Icons.chevron_right),
+            icon: Icon(Icons.navigate_next),
             onPressed: _currentPage < _totalPages ? () => _loadPage(_currentPage + 1) : null,
           ),
           IconButton(
@@ -176,24 +187,19 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: themeData.colorScheme.surface,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: Icon(
-            Icons.arrow_back,
-            color: themeData.colorScheme.onSurface,
-          ),
-        ),
+        leading: BackButton(color: themeData.colorScheme.onSurface),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Search Results",
-              style: themeData.textTheme.titleMedium?.copyWith(
+              widget.searchModel.searchQuery,
+              style: themeData.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
+                color: themeData.colorScheme.onSurface,
               ),
             ),
             Text(
-              '"${widget.searchModel.searchQuery}"',
+              '${_animeResults.length} results found',
               style: themeData.textTheme.bodySmall?.copyWith(
                 color: themeData.colorScheme.onSurface.withOpacity(0.6),
               ),
@@ -204,7 +210,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
           IconButton(
             icon: Icon(
               _isGridLayout ? Icons.view_list : Icons.grid_view,
-              color: themeData.colorScheme.onSurface,
+              color: themeData.colorScheme.primary,
             ),
             onPressed: _toggleLayout,
             tooltip: _isGridLayout ? 'Switch to List View' : 'Switch to Grid View',
@@ -213,15 +219,6 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              '${_animeResults.length} results found',
-              style: themeData.textTheme.bodyMedium?.copyWith(
-                color: themeData.colorScheme.onSurface.withOpacity(0.8),
-              ),
-            ),
-          ),
           Expanded(
             child: RefreshIndicator(
               onRefresh: () => _loadPage(1),
@@ -239,30 +236,34 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   Widget _buildGridView(ThemeData themeData) {
     return GridView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(10),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.7,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        crossAxisCount: 3,
+        childAspectRatio: 0.75,
       ),
       itemCount: _animeResults.length,
       itemBuilder: (context, index) {
         final anime = _animeResults[index];
-        return AnimeCard(
-          anime: anime,
-          tag: 'search_grid_$index',
+        return Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: AnimeCard(
+            anime: anime,
+            tag: 'search_grid_$index',
+          ),
         );
       },
     );
   }
 
   Widget _buildListView(ThemeData themeData) {
-    return ListView.separated(
+    return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: _animeResults.length,
-      separatorBuilder: (context, index) => const Divider(height: 1),
+      itemExtent: 140,
+      
       itemBuilder: (context, index) {
         final anime = _animeResults[index];
         return AnimeCard(

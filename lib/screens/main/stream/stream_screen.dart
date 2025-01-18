@@ -8,6 +8,7 @@ import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
 import 'package:nekoflow/data/services/anime_service.dart';
 import 'package:nekoflow/widgets/player/video_player.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 class StreamScreen extends StatefulWidget {
   final List<Episode> episodes;
@@ -46,6 +47,9 @@ class StreamScreenState extends State<StreamScreen> {
   @override
   void initState() {
     super.initState();
+    // Enable wakelock when entering this screen
+    WakelockPlus.enable();
+
     _animeService = AnimeService();
     _watchlistBox = WatchlistBox();
     _autoScrollController = AutoScrollController();
@@ -580,6 +584,8 @@ class StreamScreenState extends State<StreamScreen> {
 
   @override
   void dispose() {
+    // Disable wakelock when leaving this screen
+    WakelockPlus.disable();
     _autoScrollController.dispose();
     _animeService.dispose();
     _playerController?.dispose();

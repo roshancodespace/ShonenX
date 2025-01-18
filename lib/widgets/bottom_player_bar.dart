@@ -145,7 +145,7 @@ class BottomPlayerBar extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Episode ${continueWatchingItem!.episode} • ${continueWatchingItem!.timestamp.split(':')[1]}:${continueWatchingItem!.timestamp.split(':')[2].split('.')[0]}',
+                              'Episode ${continueWatchingItem!.episode} • ${continueWatchingItem!.timestamp.split(':').length > 2 ? continueWatchingItem!.timestamp.split(':')[1] : '00'}:${continueWatchingItem!.timestamp.split(':').length > 2 ? continueWatchingItem!.timestamp.split(':')[2].split('.')[0] : '00'}',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurface.withOpacity(0.7),
                               ),

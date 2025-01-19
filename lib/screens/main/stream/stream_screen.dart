@@ -6,6 +6,7 @@ import 'package:nekoflow/data/models/episodes_model.dart';
 import 'package:nekoflow/data/models/stream_model.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
 import 'package:nekoflow/data/services/anime_service.dart';
+import 'package:nekoflow/widgets/player/custom_controls.dart';
 import 'package:nekoflow/widgets/player/video_player.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -161,15 +162,29 @@ class StreamScreenState extends State<StreamScreen> {
           _position ?? Duration.zero; // Capture the current position
       _playerController = BetterPlayerController(
         BetterPlayerConfiguration(
-          autoPlay: true,
-          autoDispose: true,
-          fit: BoxFit.contain,
-          startAt: startPosition, // Use the captured position
-          errorBuilder: (context, errorMessage) => Center(
-            child: Text('Error loading video: $errorMessage',
-                style: TextStyle(color: Colors.red)),
-          ),
-        ),
+            autoPlay: true,
+            autoDispose: true,
+            fit: BoxFit.contain,
+            startAt: startPosition, // Use the captured position
+            errorBuilder: (context, errorMessage) => Center(
+                  child: Text('Error loading video: $errorMessage',
+                      style: TextStyle(color: Colors.red)),
+                ),
+            controlsConfiguration: BetterPlayerControlsConfiguration(
+              playerTheme: BetterPlayerTheme.custom,
+              customControlsBuilder:
+                  (controller, onControlsVisibilityChanged) =>
+                      CustomControlsWidget(
+                controller: controller,
+                onControlsVisibilityChanged: onControlsVisibilityChanged,
+              ),
+            ),
+            subtitlesConfiguration: BetterPlayerSubtitlesConfiguration(
+              fontColor: Colors.white,
+                backgroundColor: Colors.black.withValues(alpha:0.0),
+                fontSize: 22,
+                fontFamily: 'Montserrat',
+            )),
       );
 
       await _playerController?.setupDataSource(
@@ -182,7 +197,7 @@ class StreamScreenState extends State<StreamScreen> {
                     name: track.label,
                     urls: [track.file],
                     selectedByDefault: track.isDefault,
-                  ))
+                  ),)
               .toList(),
         ),
       );

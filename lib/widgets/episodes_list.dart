@@ -3,9 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/models/episodes_model.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
-import 'package:nekoflow/screens/main/stream/stream_screen.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:dismissible_page/dismissible_page.dart';
 
 class EpisodesList extends StatefulWidget {
   final AnimeItem anime;

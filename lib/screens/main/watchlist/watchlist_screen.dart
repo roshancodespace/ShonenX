@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nekoflow/data/boxes/watchlist_box.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
-import 'package:nekoflow/screens/main/watchlist/view_all_screen.dart';
 import 'package:nekoflow/widgets/anime_card.dart';
 
 class WatchlistScreen extends StatefulWidget {

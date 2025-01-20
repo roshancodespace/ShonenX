@@ -1,9 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nekoflow/data/models/search_model.dart';
 import 'package:nekoflow/data/services/anime_service.dart';
-import 'package:nekoflow/screens/main/browse/search_result_screen.dart';
 import 'package:nekoflow/widgets/search_bar.dart';
 
 class BrowseScreen extends StatefulWidget {

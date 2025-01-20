@@ -1,8 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nekoflow/data/models/anime_model.dart';
-import 'package:nekoflow/screens/main/details/details_screen.dart'; // Adjusted import to use the correct model
+// Adjusted import to use the correct model
 
 class TrendingAnimes extends StatelessWidget {
   final List<TrendingAnime>

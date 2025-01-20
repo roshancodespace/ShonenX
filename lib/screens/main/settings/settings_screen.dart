@@ -1,9 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
-import 'package:nekoflow/screens/main/settings/about/about_screen.dart';
-import 'package:nekoflow/screens/main/settings/theme_screen_v2.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});

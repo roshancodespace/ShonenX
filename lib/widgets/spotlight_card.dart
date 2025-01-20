@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nekoflow/data/models/anime_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:nekoflow/screens/main/details/details_screen.dart';
-import 'package:dismissible_page/dismissible_page.dart';
 
 class SpotlightCard extends StatelessWidget {
   final SpotlightAnime anime;

@@ -75,6 +75,7 @@ class AppRouter {
           String? tag = state.uri.queryParameters['tag'];
           return CupertinoPage(
             child: DetailsScreen(
+              key: ValueKey(animeId),
               id: animeId!,
               image: image!,
               name: name!,
@@ -161,7 +162,7 @@ class _AppRouterScreenState extends State<AppRouterScreen> {
 
     // Listen to GoRouter location changes to update the navigation bar
     GoRouter.of(context).routeInformationProvider.addListener(() {
-      final location = GoRouter.of(context).state!.fullPath!;
+      final location = GoRouter.of(context).state!.path!;
       setState(() {
         _selectedIndex =
             _routes.indexWhere((route) => location.startsWith(route));

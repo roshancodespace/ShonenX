@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/boxes/watchlist_box.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
 
@@ -55,8 +56,9 @@ class _FavoriteButtonState extends State<FavoriteButton> {
   Widget build(BuildContext context) {
     return IconButton(
       onPressed: _toggleFavorite,
-      icon: Icon(
-        _isFavorite ? Icons.favorite : Icons.favorite_outline,
+      icon: HugeIcon(
+        icon: _isFavorite ? Icons.favorite : HugeIcons.strokeRoundedFavourite,
+        color: Theme.of(context).colorScheme.onSecondaryContainer,
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:nekoflow/data/boxes/user_box.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
 import 'package:nekoflow/widgets/spotlight_card.dart';
 import 'package:nekoflow/widgets/trending_animes.dart';
@@ -14,16 +15,16 @@ class HomeScreen extends StatefulWidget {
   static const double _horizontalPadding = 20.0;
   static const double _sectionSpacing = 50.0;
 
-  final String name;
-
-  const HomeScreen({super.key, this.name = 'Guest'});
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final AnimeService _animeService = AnimeService();
+  late AnimeService _animeService;
+  late UserBox _userBox;
+  String name = '';
 
   List<TopAiringAnime> _topAiring = [];
   List<LatestCompletedAnime> _completed = [];
@@ -39,7 +40,22 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _animeService = AnimeService();
+    _initUserBox();
     _fetchData();
+  }
+
+  Future<void> _initUserBox() async {
+    _userBox = UserBox();
+    await _userBox.init();
+    name = _userBox.getUser().name;
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _animeService.dispose();
   }
 
   Future<void> _fetchData() async {
@@ -69,12 +85,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _animeService.dispose();
-    super.dispose();
-  }
-
   Widget _buildHeaderSection(ThemeData theme) {
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.2,
@@ -82,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Text(
-            "Hello ${widget.name}, What's on your mind today?",
+            "Hello $name, What's on your mind today?",
             style: theme.textTheme.headlineLarge
                 ?.copyWith(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,

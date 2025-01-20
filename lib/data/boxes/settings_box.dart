@@ -6,34 +6,21 @@ import 'package:nekoflow/data/models/settings/settings_model.dart';
 class SettingsBox {
   static const String boxName = 'settings';
   late Box<SettingsModel> _box;
-  late SettingsModel _settingsModel;
+  SettingsModel? _settingsModel;
 
   // Get listenable for the box
   ValueListenable<Box<SettingsModel>> listenable() => _box.listenable();
 
   Future<void> init() async {
-    if (!Hive.isBoxOpen(boxName)) {
-      throw Exception(
-          "Box '$boxName' must be opened in main.dart before calling UserBox.init()");
-    }
-
-    _box = Hive.box<SettingsModel>(boxName);
-    print(_box.get(0)?.theme?.themeMode);
-
-    _settingsModel = _box.get(0) ?? SettingsModel(theme: ThemeModel());
-
-    if (_box.get(0) == null) {
-      await _box.put(
-        0,
-        SettingsModel(
-          theme: ThemeModel(
-            themeMode: 'dark',
-            flexScheme: FlexScheme.red,
-            trueBlack: true,
-            swapColors: false,
-          ),
-        ),
-      );
+    try {
+      _box = Hive.box<SettingsModel>(boxName);
+      _settingsModel = _box.get(0) ??
+          SettingsModel(
+            theme: ThemeModel(),
+          );
+      await _box.put(0, _settingsModel!);
+    } catch (e) {
+      // Handle initialization error (e.g., log the error)
     }
   }
 
@@ -41,11 +28,11 @@ class SettingsBox {
   SettingsModel? getSettingsModel() => _settingsModel;
 
   // Get the theme model
-  ThemeModel? getTheme() => _settingsModel.theme;
+  ThemeModel? getTheme() => _settingsModel?.theme;
 
   // Update Theme
   Future<void> updateTheme(ThemeModel theme) async {
-    _settingsModel.theme = theme;
-    await _box.put(0, _settingsModel);
+    _settingsModel?.theme = theme;
+    await _box.put(0, _settingsModel!);
   }
 }

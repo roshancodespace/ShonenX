@@ -1,8 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
-import 'package:nekoflow/screens/main/settings/settings_screen.dart';
 import 'package:nekoflow/widgets/spotlight_card.dart';
 import 'package:nekoflow/widgets/trending_animes.dart';
 import 'package:shimmer/shimmer.dart';
@@ -261,8 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
         forceMaterialTransparency: true,
         actions: [
           IconButton(
-            onPressed: () => Navigator.push(context,
-                CupertinoPageRoute(builder: (context) => SettingsScreen())),
+            onPressed: () => context.push('/settings'),
             icon: HugeIcon(
                 icon: HugeIcons.strokeRoundedSettings01,
                 color: theme.colorScheme.onSurface),

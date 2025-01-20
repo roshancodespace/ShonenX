@@ -5,13 +5,11 @@ import 'package:nekoflow/widgets/anime_card.dart';
 
 class SearchResultScreen extends StatefulWidget {
   final SearchModel searchModel;
-  final AnimeService animeService;
   final String searchType;
 
   const SearchResultScreen({
     super.key,
     required this.searchModel,
-    required this.animeService,
     this.searchType = 'query',
   });
 
@@ -25,7 +23,8 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   List<AnimeResult> _animeResults = [];
   int _currentPage = 1;
   int _totalPages = 1;
-  final ScrollController _scrollController = ScrollController();
+  late AnimeService _animeService;
+  // final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -33,21 +32,22 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
     _animeResults = widget.searchModel.animes;
     _currentPage = widget.searchModel.currentPage;
     _totalPages = widget.searchModel.totalPages;
-    _scrollController.addListener(_scrollListener);
+    _animeService = AnimeService();
+    // _scrollController.addListener(_scrollListener);
   }
 
-  void _scrollListener() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent) {
-      if (_currentPage < _totalPages) {
-        _loadPage(_currentPage + 1);
-      }
-    }
-  }
+  // void _scrollListener() {
+  //   if (_scrollController.position.pixels ==
+  //       _scrollController.position.maxScrollExtent) {
+  //     if (_currentPage < _totalPages) {
+  //       _loadPage(_currentPage + 1);
+  //     }
+  //   }
+  // }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    // _scrollController.dispose();
     super.dispose();
   }
 
@@ -61,10 +61,10 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
     try {
       SearchModel updatedSearchModel;
       if (widget.searchType == 'query') {
-        updatedSearchModel = await widget.animeService
-            .fetchByQuery(query: widget.searchModel.searchQuery, page: page);
+        updatedSearchModel = await _animeService.fetchByQuery(
+            query: widget.searchModel.searchQuery, page: page);
       } else {
-        final genreDetail = await widget.animeService
+        final genreDetail = await _animeService
             .fetchGenreAnime(widget.searchModel.searchQuery, page: page);
 
         updatedSearchModel = SearchModel(
@@ -115,74 +115,78 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   }
 
   Widget _buildPaginationIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          IconButton(
-            icon: Icon(Icons.first_page),
-            onPressed: _currentPage > 1 ? () => _loadPage(1) : null,
-          ),
-          IconButton(
-            icon: Icon(Icons.navigate_before),
-            onPressed:
-                _currentPage > 1 ? () => _loadPage(_currentPage - 1) : null,
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: Offset(0, -2),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_isLoading)
-                  Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Theme.of(context).colorScheme.primary,
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            IconButton(
+              icon: Icon(Icons.first_page),
+              onPressed: _currentPage > 1 ? () => _loadPage(1) : null,
+            ),
+            IconButton(
+              icon: Icon(Icons.navigate_before),
+              onPressed:
+                  _currentPage > 1 ? () => _loadPage(_currentPage - 1) : null,
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isLoading)
+                    Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Theme.of(context).colorScheme.primary,
+                        ),
                       ),
                     ),
+                  Text(
+                    'Page $_currentPage of $_totalPages',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
-                Text(
-                  'Page $_currentPage of $_totalPages',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          IconButton(
-            icon: Icon(Icons.navigate_next),
-            onPressed: _currentPage < _totalPages
-                ? () => _loadPage(_currentPage + 1)
-                : null,
-          ),
-          IconButton(
-            icon: Icon(Icons.last_page),
-            onPressed: _currentPage < _totalPages
-                ? () => _loadPage(_totalPages)
-                : null,
-          ),
-        ],
+            IconButton(
+              icon: Icon(Icons.navigate_next),
+              onPressed: _currentPage < _totalPages
+                  ? () => _loadPage(_currentPage + 1)
+                  : null,
+            ),
+            IconButton(
+              icon: Icon(Icons.last_page),
+              onPressed: _currentPage < _totalPages
+                  ? () => _loadPage(_totalPages)
+                  : null,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -243,7 +247,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
 
   Widget _buildGridView(ThemeData themeData) {
     return GridView.builder(
-      controller: _scrollController,
+      // controller: _scrollController,
       padding: const EdgeInsets.all(10),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
@@ -252,15 +256,9 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
       itemCount: _animeResults.length,
       itemBuilder: (context, index) {
         final anime = _animeResults[index];
-        return Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: AnimeCard(
-            anime: anime,
-            tag: 'search_grid_$index',
-          ),
+        return AnimeCard(
+          anime: anime,
+          tag: 'search_grid_$index',
         );
       },
     );
@@ -268,7 +266,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
 
   Widget _buildListView(ThemeData themeData) {
     return ListView.builder(
-      controller: _scrollController,
+      // controller: _scrollController,
       itemCount: _animeResults.length,
       itemExtent: 140,
       itemBuilder: (context, index) {

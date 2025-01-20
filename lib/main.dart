@@ -7,7 +7,7 @@ import 'package:nekoflow/data/boxes/settings_box.dart';
 import 'package:nekoflow/data/models/settings/settings_model.dart';
 import 'package:nekoflow/data/models/user_model.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
-import 'package:nekoflow/screens/onboarding/onboarding_screen.dart';
+import 'package:nekoflow/routes/app_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 Future<void> main() async {
@@ -106,17 +106,10 @@ class _MainAppState extends State<MainApp> {
             (_themeModel.themeMode == 'system' &&
                 MediaQuery.of(context).platformBrightness == Brightness.dark);
 
-        return MaterialApp(
+        return MaterialApp.router(
           debugShowCheckedModeBanner: false,
           theme: _buildThemeData(isDark),
-          home: Scaffold(
-            extendBody: true,
-            appBar: PreferredSize(
-              preferredSize: Size.fromHeight(0),
-              child: AppBar(),
-            ),
-            body: OnboardingScreen(),
-          ),
+          routerConfig: AppRouter.router,
         );
       },
     );

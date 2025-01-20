@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nekoflow/data/boxes/watchlist_box.dart';
 import 'package:nekoflow/data/models/episodes_model.dart';
@@ -270,19 +271,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
               return Padding(
                 padding: EdgeInsets.only(right: 12),
                 child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DetailsScreen(
-                          name: season.title,
-                          id: season.id,
-                          image: season.poster,
-                          tag: 'season-$index',
-                        ),
-                      ),
-                    );
-                  },
+                  onTap: () => context.pushReplacement(
+                      '/details?id=${season.id}&tag=season-$index&image=${season.poster}&name=${season.title}'),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

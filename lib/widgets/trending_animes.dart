@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nekoflow/data/models/anime_model.dart';
 import 'package:nekoflow/screens/main/details/details_screen.dart'; // Adjusted import to use the correct model
 
@@ -40,11 +41,8 @@ class TrendingAnimes extends StatelessWidget {
                 color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 17),
           ),
           onTap: () {
-            // Navigate to anime details
-            Navigator.push(
-              context,
-              CupertinoPageRoute(builder: (context) => DetailsScreen(name: anime.name, id: anime.id, image: anime.poster, tag: "trendingAnine"))
-            );
+            context.push(
+                '/details?id=${anime.id}&tag=trendingAnime&image=${anime.poster}&name=${anime.name}&type=${anime.type}');
           },
         );
       },

@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/screens/main/settings/about/about_screen.dart';
 import 'package:nekoflow/screens/main/settings/theme_screen_v2.dart';
@@ -13,16 +14,11 @@ class SettingsScreen extends StatelessWidget {
     required IconData leadingIcon,
     required String title,
     required String subtitle,
-    required Widget destination,
+    required String destination,
   }) {
     final theme = Theme.of(context);
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        CupertinoPageRoute(
-          builder: (context) => destination,
-        ),
-      ),
+      onTap: () => context.push(destination),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Card(
@@ -44,7 +40,7 @@ class SettingsScreen extends StatelessWidget {
                         tag: ValueKey(title),
                         child: Text(
                           title,
-                          style: theme.textTheme.titleMedium?.copyWith(
+                          style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -81,7 +77,7 @@ class SettingsScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         toolbarHeight: 200,
         leading: IconButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
           icon: HugeIcon(
             icon: HugeIcons.strokeRoundedCancel01,
             size: 30,
@@ -101,18 +97,14 @@ class SettingsScreen extends StatelessWidget {
             leadingIcon: Icons.color_lens,
             title: "Theme",
             subtitle: "Customize your app's appearance",
-            destination: const ThemeScreenV2(
-              title: 'Theme'
-            ),
+            destination: '/settings/Theme',
           ),
           _buildCustomTile(
             context: context,
             leadingIcon: HugeIcons.strokeRoundedInformationCircle,
             title: "About",
             subtitle: "Learn more about the developer",
-            destination: const AboutScreen(
-              title: 'About',
-            ),
+            destination: '/settings/About',
           ),
         ],
       ),

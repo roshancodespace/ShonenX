@@ -1,5 +1,6 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/boxes/settings_box.dart';
 import 'package:nekoflow/data/models/settings/settings_model.dart';
@@ -145,7 +146,7 @@ class _ThemeScreenV2State extends State<ThemeScreenV2> {
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
           icon: Icon(
             HugeIcons.strokeRoundedArrowLeft01,
             size: 28,

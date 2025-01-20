@@ -1,5 +1,6 @@
 import 'package:better_player/better_player.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/boxes/watchlist_box.dart';
 import 'package:nekoflow/data/models/episodes_model.dart';
@@ -97,11 +98,11 @@ class StreamScreenState extends State<StreamScreen> {
             content: Text('Would you like to resume from where you left off?'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
+                onPressed: () => context.pop(true),
                 child: Text('Resume'),
               ),
               TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
+                onPressed: () => context.pop(false),
                 child: Text('Start Over'),
               ),
             ],
@@ -430,7 +431,7 @@ class StreamScreenState extends State<StreamScreen> {
                 ),
                 onTap: () {
                   onChanged(item);
-                  Navigator.of(context).pop();
+                  context.pop();
                 },
               );
             }).toList(),
@@ -496,7 +497,7 @@ class StreamScreenState extends State<StreamScreen> {
                   setState(() {
                     _selectedRangeIndex = index;
                   });
-                  Navigator.of(context).pop();
+                  context.pop();
                 },
                 child: Card(
                   color: isSelected

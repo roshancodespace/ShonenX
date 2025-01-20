@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nekoflow/data/models/search_model.dart';
 import 'package:nekoflow/data/services/anime_service.dart';
 import 'package:nekoflow/screens/main/browse/search_result_screen.dart';
@@ -89,16 +90,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
 
       if (!mounted) return;
 
-      Navigator.push(
-        context,
-        CupertinoPageRoute(
-          builder: (context) => SearchResultScreen(
-            searchModel: result,
-            animeService: _animeService,
-            searchType: 'query',
-          ),
-        ),
-      );
+      context.push('/search?type=query', extra: result);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -150,16 +142,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
           mostPopularAnimes: [],
         );
 
-        Navigator.push(
-          context,
-          CupertinoPageRoute(
-            builder: (context) => SearchResultScreen(
-              searchModel: searchResult,
-              animeService: _animeService,
-              searchType: 'genre',
-            ),
-          ),
-        );
+        
+        context.push('/search?type=genre', extra: searchResult,);
       } else {
         setState(() {
           _error = 'Failed to fetch genre anime. Please try again later.';

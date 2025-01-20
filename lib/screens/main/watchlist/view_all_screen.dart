@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/boxes/watchlist_box.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
@@ -113,7 +114,7 @@ class _ViewAllScreenState extends State<ViewAllScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => context.pop(),
             child: Text(
               'Cancel',
               style: TextStyle(color: Colors.grey[600]),
@@ -121,7 +122,7 @@ class _ViewAllScreenState extends State<ViewAllScreen>
           ),
           FilledButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              context.pop();
               _performDeletion();
             },
             style: FilledButton.styleFrom(
@@ -317,9 +318,8 @@ class _ViewAllScreenState extends State<ViewAllScreen>
                 key: ValueKey(_isMultiselectMode),
               ),
             ),
-            onPressed: _isMultiselectMode
-                ? _exitMultiselectMode
-                : () => Navigator.pop(context),
+            onPressed:
+                _isMultiselectMode ? _exitMultiselectMode : () => context.pop(),
           ),
           actions: [
             if (!_isMultiselectMode) ...[

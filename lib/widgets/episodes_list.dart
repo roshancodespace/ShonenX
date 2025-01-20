@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/models/episodes_model.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
@@ -31,15 +32,13 @@ class _EpisodesListState extends State<EpisodesList> {
   int _selectedRangeIndex = 0;
 
   void _navigateToStreamScreen(BuildContext context, Episode episode) {
-    context.pushTransparentRoute(
-      StreamScreen(
-        episodes: widget.episodes.value,
-        anime: AnimeItem(
-            name: widget.anime.name,
-            poster: widget.anime.poster,
-            id: widget.anime.id),
-        episode: episode,
-      ),
+    context.push(
+      '/stream',
+      extra: {
+        'episodes': widget.episodes.value,
+        'anime': widget.anime,
+        'episode': episode,
+      },
     );
   }
 

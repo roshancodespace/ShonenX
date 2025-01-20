@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nekoflow/data/boxes/user_box.dart';
-import 'package:nekoflow/routes/app_router.dart';
 import 'package:nekoflow/screens/onboarding/loading_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -53,11 +53,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
       if (user.name != 'Guest' && user.name != '' && mounted) {
         // If onboarding is completed, navigate to AppRouter
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => AppRouter(name: user.name),
-          ),
-        );
+        context.go('/home');
       } else {
         // If onboarding is not completed, show onboarding screens
         setState(() {
@@ -83,12 +79,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     try {
       await _userBox.updateUser(name: name.trim());
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AppRouter(name: name.trim()),
-          ),
-        );
+        context.go('/home');
       }
     } catch (e) {
       if (mounted) {

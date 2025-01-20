@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nekoflow/data/boxes/watchlist_box.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
@@ -119,7 +120,7 @@ class WatchlistScreenState extends State<WatchlistScreen> {
           tag: title,
           child: Text(
             title,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
@@ -135,15 +136,9 @@ class WatchlistScreenState extends State<WatchlistScreen> {
 
   void _navigateToFullScreen(
       BuildContext context, String title, List<BaseAnimeCard> items) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ViewAllScreen(
-          title: title,
-          items: items,
-          watchlistBox: _watchlistBox,
-        ),
-      ),
+    context.push(
+      '/watchlist/$title',
+      extra: {'items': items, 'box': _watchlistBox},
     );
   }
 

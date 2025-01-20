@@ -137,7 +137,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Expanded(
-            flex: 3,
             child: onboardingData[index]['image']!.endsWith('.svg')
                 ? SvgPicture.asset(
                     onboardingData[index]['image']!,
@@ -149,9 +148,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                     fit: BoxFit.contain,
                   )
-                : Image.asset(
-                    onboardingData[index]['image']!,
-                    fit: BoxFit.contain,
+                : Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Image.asset(
+                          onboardingData[index]['image']!,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      Image.asset(
+                        'lib/assets/images/onboarding/mocup.png',
+                        fit: BoxFit.contain,
+                      )
+                    ],
                   ),
           ),
           const SizedBox(height: 32),

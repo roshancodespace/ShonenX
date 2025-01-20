@@ -113,7 +113,7 @@ class _EpisodesListState extends State<EpisodesList> {
     return Shimmer.fromColors(
       baseColor: Theme.of(context).colorScheme.primaryContainer,
       highlightColor:
-          Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
+          Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
       child: ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -299,16 +299,17 @@ class _EpisodeGridTile extends StatelessWidget {
             colors: isWatched
                 ? [
                     themeData.colorScheme.secondaryContainer,
-                    themeData.colorScheme.secondaryContainer.withOpacity(0.2),
+                    themeData.colorScheme.secondaryContainer
+                        .withValues(alpha: 0.2),
                   ]
                 : [
                     !episode.isFiller
                         ? themeData.colorScheme.primaryContainer
-                            .withOpacity(0.4)
+                            .withValues(alpha: 0.4)
                         : themeData.colorScheme.primaryContainer,
                     !episode.isFiller
                         ? themeData.colorScheme.secondaryContainer
-                            .withOpacity(0.7)
+                            .withValues(alpha: 0.7)
                         : themeData.colorScheme.secondaryContainer,
                   ],
             begin: Alignment.bottomRight,
@@ -335,9 +336,8 @@ class _EpisodeGridTile extends StatelessWidget {
                   child: Text(
                     " ${isWatched ? 'DONE' : 'FILLER'}",
                     style: TextStyle(
-                          color:
-                              Theme.of(context).colorScheme.onPrimaryContainer,
-                        ),
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -378,17 +378,19 @@ class _EpisodeTile extends StatelessWidget {
           gradient: LinearGradient(
             colors: isWatched
                 ? [
-                    themeData.colorScheme.primaryContainer.withOpacity(0.5),
-                    themeData.colorScheme.primaryContainer.withOpacity(0.3),
+                    themeData.colorScheme.primaryContainer
+                        .withValues(alpha: 0.5),
+                    themeData.colorScheme.primaryContainer
+                        .withValues(alpha: 0.3),
                   ]
                 : [
                     !episode.isFiller
                         ? themeData.colorScheme.primaryContainer
-                        : themeData.colorScheme.error.withOpacity(0.5),
+                        : themeData.colorScheme.error.withValues(alpha: 0.5),
                     !episode.isFiller
                         ? themeData.colorScheme.primaryContainer
-                            .withOpacity(0.6)
-                        : themeData.colorScheme.error.withOpacity(0.3),
+                            .withValues(alpha: 0.6)
+                        : themeData.colorScheme.error.withValues(alpha: 0.3),
                   ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,

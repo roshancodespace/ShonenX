@@ -103,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final width = MediaQuery.of(context).size.width;
     return Shimmer.fromColors(
       baseColor: theme.colorScheme.primaryContainer,
-      highlightColor: theme.colorScheme.primaryContainer.withOpacity(0.5),
+      highlightColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
       child: Padding(
         padding: EdgeInsets.only(bottom: factor > 0.8 ? 20 : 0),
         child: SizedBox(
@@ -145,11 +145,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
         _isLoading
             ? Column(
-              children: [
-                _buildShimmerLoading(theme, 0.9),
-                SizedBox(height: 8,),
-              ],
-            )
+                children: [
+                  _buildShimmerLoading(theme, 0.9),
+                  SizedBox(
+                    height: 8,
+                  ),
+                ],
+              )
             : SnappingScroller(
                 autoScroll: true,
                 widthFactor: 1,

@@ -52,6 +52,7 @@ class AnimeResult implements BaseAnimeCard{
   final String? duration;
   @override
   final String type;
+  @override
   final String? rating;
   final bool? nsfw;
   final AnimeEpisodes episodes;

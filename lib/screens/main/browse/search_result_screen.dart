@@ -37,7 +37,8 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   }
 
   void _scrollListener() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
       if (_currentPage < _totalPages) {
         _loadPage(_currentPage + 1);
       }
@@ -120,7 +121,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: Offset(0, -2),
           ),
@@ -135,12 +136,14 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
           ),
           IconButton(
             icon: Icon(Icons.navigate_before),
-            onPressed: _currentPage > 1 ? () => _loadPage(_currentPage - 1) : null,
+            onPressed:
+                _currentPage > 1 ? () => _loadPage(_currentPage - 1) : null,
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -161,19 +164,23 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                 Text(
                   'Page $_currentPage of $_totalPages',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
               ],
             ),
           ),
           IconButton(
             icon: Icon(Icons.navigate_next),
-            onPressed: _currentPage < _totalPages ? () => _loadPage(_currentPage + 1) : null,
+            onPressed: _currentPage < _totalPages
+                ? () => _loadPage(_currentPage + 1)
+                : null,
           ),
           IconButton(
             icon: Icon(Icons.last_page),
-            onPressed: _currentPage < _totalPages ? () => _loadPage(_totalPages) : null,
+            onPressed: _currentPage < _totalPages
+                ? () => _loadPage(_totalPages)
+                : null,
           ),
         ],
       ),
@@ -201,7 +208,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
             Text(
               '${_animeResults.length} results found',
               style: themeData.textTheme.bodySmall?.copyWith(
-                color: themeData.colorScheme.onSurface.withOpacity(0.6),
+                color: themeData.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -213,7 +220,8 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
               color: themeData.colorScheme.primary,
             ),
             onPressed: _toggleLayout,
-            tooltip: _isGridLayout ? 'Switch to List View' : 'Switch to Grid View',
+            tooltip:
+                _isGridLayout ? 'Switch to List View' : 'Switch to Grid View',
           ),
         ],
       ),
@@ -263,7 +271,6 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
       controller: _scrollController,
       itemCount: _animeResults.length,
       itemExtent: 140,
-      
       itemBuilder: (context, index) {
         final anime = _animeResults[index];
         return AnimeCard(

@@ -181,9 +181,9 @@ class StreamScreenState extends State<StreamScreen> {
             ),
             subtitlesConfiguration: BetterPlayerSubtitlesConfiguration(
               fontColor: Colors.white,
-                backgroundColor: Colors.black.withValues(alpha:0.0),
-                fontSize: 22,
-                fontFamily: 'Montserrat',
+              backgroundColor: Colors.black.withValues(alpha: 0.0),
+              fontSize: 22,
+              fontFamily: 'Montserrat',
             )),
       );
 
@@ -192,12 +192,14 @@ class StreamScreenState extends State<StreamScreen> {
           BetterPlayerDataSourceType.network,
           _episodeStreamingLinksModel!.sources[0].url,
           subtitles: _episodeStreamingLinksModel!.tracks
-              ?.map((track) => BetterPlayerSubtitlesSource(
-                    type: BetterPlayerSubtitlesSourceType.network,
-                    name: track.label,
-                    urls: [track.file],
-                    selectedByDefault: track.isDefault,
-                  ),)
+              ?.map(
+                (track) => BetterPlayerSubtitlesSource(
+                  type: BetterPlayerSubtitlesSourceType.network,
+                  name: track.label,
+                  urls: [track.file],
+                  selectedByDefault: track.isDefault,
+                ),
+              )
               .toList(),
         ),
       );
@@ -504,7 +506,7 @@ class StreamScreenState extends State<StreamScreen> {
                       : Theme.of(context)
                           .colorScheme
                           .primaryContainer
-                          .withOpacity(0.8),
+                          .withValues(alpha: 0.8),
                   child: Center(
                     child: Text(
                       _groupedEpisodes[index].keys.first,

@@ -1,5 +1,4 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/boxes/settings_box.dart';
@@ -299,6 +298,7 @@ class _ThemeScreenV2State extends State<ThemeScreenV2> {
         onTap: () async {
           setState(() => _flexScheme = scheme);
           await _updateTheme();
+          if (!mounted) return;
           Navigator.pop(context);
         },
         child: Column(
@@ -325,7 +325,14 @@ class _ThemeScreenV2State extends State<ThemeScreenV2> {
                   children: [
                     Flexible(
                       child: Text(
-                        scheme.name.splitMapJoin(RegExp(r'(?=[A-Z])'), onMatch: (m) => ' ${m.group(0)}').trim().split(' ').map((word) => word[0].toUpperCase() + word.substring(1)).join(' '),
+                        scheme.name
+                            .splitMapJoin(RegExp(r'(?=[A-Z])'),
+                                onMatch: (m) => ' ${m.group(0)}')
+                            .trim()
+                            .split(' ')
+                            .map((word) =>
+                                word[0].toUpperCase() + word.substring(1))
+                            .join(' '),
                         style: Theme.of(context).textTheme.labelSmall,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,

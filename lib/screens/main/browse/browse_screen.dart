@@ -14,14 +14,47 @@ class BrowseScreen extends StatefulWidget {
 
 class _BrowseScreenState extends State<BrowseScreen> {
   static const List<String> _genres = [
-    "Action", "Adventure", "Cars", "Comedy", "Dementia", "Demons", 
-    "Drama", "Ecchi", "Fantasy", "Game", "Harem", "Historical", 
-    "Horror", "Isekai", "Josei", "Kids", "Magic", "Martial Arts", 
-    "Mecha", "Military", "Music", "Mystery", "Parody", "Police", 
-    "Psychological", "Romance", "Samurai", "School", "Sci-Fi", 
-    "Seinen", "Shoujo", "Shoujo Ai", "Shounen", "Shounen Ai", 
-    "Slice of Life", "Space", "Sports", "Super Power", 
-    "Supernatural", "Thriller", "Vampire"
+    "Action",
+    "Adventure",
+    "Cars",
+    "Comedy",
+    "Dementia",
+    "Demons",
+    "Drama",
+    "Ecchi",
+    "Fantasy",
+    "Game",
+    "Harem",
+    "Historical",
+    "Horror",
+    "Isekai",
+    "Josei",
+    "Kids",
+    "Magic",
+    "Martial Arts",
+    "Mecha",
+    "Military",
+    "Music",
+    "Mystery",
+    "Parody",
+    "Police",
+    "Psychological",
+    "Romance",
+    "Samurai",
+    "School",
+    "Sci-Fi",
+    "Seinen",
+    "Shoujo",
+    "Shoujo Ai",
+    "Shounen",
+    "Shounen Ai",
+    "Slice of Life",
+    "Space",
+    "Sports",
+    "Super Power",
+    "Supernatural",
+    "Thriller",
+    "Vampire"
   ];
 
   late AnimeService _animeService;
@@ -69,7 +102,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'An error occurred. Please check your connection or try again.';
+        _error =
+            'An error occurred. Please check your connection or try again.';
       });
     } finally {
       setState(() {
@@ -78,10 +112,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
     }
   }
 
-  Future<void> _fetchGenreAnimes({
-    required String genreName, 
-    int page = 1
-  }) async {
+  Future<void> _fetchGenreAnimes(
+      {required String genreName, int page = 1}) async {
     setState(() {
       _isLoading = true;
       _error = null;
@@ -89,15 +121,10 @@ class _BrowseScreenState extends State<BrowseScreen> {
 
     try {
       // Transform genre name to URL-friendly format
-      final formattedGenreName = genreName
-        .toLowerCase()
-        .split(' ')
-        .join('-');
+      final formattedGenreName = genreName.toLowerCase().split(' ').join('-');
 
-      final genreDetail = await _animeService.fetchGenreAnime(
-        formattedGenreName,
-        page: page
-      );
+      final genreDetail =
+          await _animeService.fetchGenreAnime(formattedGenreName, page: page);
 
       if (!mounted) return;
 
@@ -108,17 +135,19 @@ class _BrowseScreenState extends State<BrowseScreen> {
           hasNextPage: genreDetail.data.hasNextPage,
           totalPages: genreDetail.data.totalPages,
           searchQuery: formattedGenreName, // Use formatted genre name
-          searchFilters: {}, 
-          animes: genreDetail.data.animes.map((genreAnime) => AnimeResult(
-            id: genreAnime.id,
-            name: genreAnime.name,
-            poster: genreAnime.poster,
-            duration: genreAnime.duration,
-            type: genreAnime.type,
-            rating: genreAnime.rating,
-            episodes: genreAnime.episodes,
-          )).toList(),
-          mostPopularAnimes: [], 
+          searchFilters: {},
+          animes: genreDetail.data.animes
+              .map((genreAnime) => AnimeResult(
+                    id: genreAnime.id,
+                    name: genreAnime.name,
+                    poster: genreAnime.poster,
+                    duration: genreAnime.duration,
+                    type: genreAnime.type,
+                    rating: genreAnime.rating,
+                    episodes: genreAnime.episodes,
+                  ))
+              .toList(),
+          mostPopularAnimes: [],
         );
 
         Navigator.push(
@@ -160,8 +189,11 @@ class _BrowseScreenState extends State<BrowseScreen> {
 
     return Scaffold(
       extendBody: true,
-      appBar: AppBar( backgroundColor: Colors.transparent,
-        forceMaterialTransparency: true,toolbarHeight: 0,),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        forceMaterialTransparency: true,
+        toolbarHeight: 0,
+      ),
       body: CustomScrollView(
         slivers: [
           // Search Bar
@@ -208,7 +240,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
                   Text(
                     'Explore anime across different genres',
                     style: themeData.textTheme.bodyMedium?.copyWith(
-                      color: themeData.colorScheme.onSurface.withOpacity(0.6),
+                      color: themeData.colorScheme.onSurface
+                          .withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -245,7 +278,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
                               ),
                               Icon(
                                 Icons.chevron_right,
-                                color: themeData.colorScheme.onSurface.withOpacity(0.5),
+                                color: themeData.colorScheme.onSurface
+                                    .withValues(alpha: 0.5),
                               ),
                             ],
                           ),

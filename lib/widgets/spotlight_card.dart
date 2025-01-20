@@ -49,10 +49,10 @@ class SpotlightCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      // theme.colorScheme.surface.withOpacity(0.7),
-                      // theme.colorScheme.surface.withOpacity(0.2),
-                      Colors.black.withOpacity(0.7),
-                      Colors.black.withOpacity(0.1),
+                      // theme.colorScheme.surface.withValues(alpha:0.7),
+                      // theme.colorScheme.surface.withValues(alpha:0.2),
+                      Colors.black.withValues(alpha: 0.7),
+                      Colors.black.withValues(alpha: 0.1),
                     ],
                     begin: Alignment.bottomCenter,
                     end: Alignment.center,
@@ -71,7 +71,8 @@ class SpotlightCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           vertical: 2, horizontal: 8),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withOpacity(0.8),
+                        color: theme.colorScheme.primaryContainer
+                            .withValues(alpha: 0.8),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -83,7 +84,7 @@ class SpotlightCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8.0), // Spacer between rank and name
-          
+
                     // Anime name
                     Text(
                       anime.name,
@@ -93,7 +94,7 @@ class SpotlightCard extends StatelessWidget {
                         fontSize: 22,
                         shadows: [
                           Shadow(
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black.withValues(alpha: 0.5),
                             offset: Offset(1, 1),
                             blurRadius: 4,
                           ),

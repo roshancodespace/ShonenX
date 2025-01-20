@@ -99,7 +99,7 @@ class WatchlistScreenState extends State<WatchlistScreen> {
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withOpacity(0.6),
+                          .withValues(alpha: 0.6),
                     ),
               ),
             ),
@@ -133,7 +133,8 @@ class WatchlistScreenState extends State<WatchlistScreen> {
     );
   }
 
-  void _navigateToFullScreen(BuildContext context, String title, List<BaseAnimeCard> items) {
+  void _navigateToFullScreen(
+      BuildContext context, String title, List<BaseAnimeCard> items) {
     Navigator.push(
       context,
       MaterialPageRoute(

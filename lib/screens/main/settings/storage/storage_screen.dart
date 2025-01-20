@@ -29,31 +29,31 @@ class _StorageScreenState extends State<StorageScreen> {
     return Scaffold(
       extendBody: true,
       appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          leading: IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Icon(
-              Icons.navigate_before,
-              size: 35,
-            ),
+        backgroundColor: Colors.transparent,
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: Icon(
+            Icons.navigate_before,
+            size: 35,
           ),
-          title: Text(
-            "Storage",
-            style: themeData.textTheme.headlineLarge?.copyWith(
-              fontSize: 35,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          forceMaterialTransparency: true,
         ),
+        title: Text(
+          "Storage",
+          style: themeData.textTheme.headlineLarge?.copyWith(
+            fontSize: 35,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        forceMaterialTransparency: true,
+      ),
       body: Container(
         decoration: BoxDecoration(
-          // gradient: LinearGradient(
-          //   colors: [themeData.colorScheme.primary, themeData.colorScheme.secondary],
-          //   begin: Alignment.topLeft,
-          //   end: Alignment.bottomRight,
-          // ),
-        ),
+            // gradient: LinearGradient(
+            //   colors: [themeData.colorScheme.primary, themeData.colorScheme.secondary],
+            //   begin: Alignment.topLeft,
+            //   end: Alignment.bottomRight,
+            // ),
+            ),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -64,7 +64,7 @@ class _StorageScreenState extends State<StorageScreen> {
                 Text(
                   "Manage your data with ease—export or import your saved settings and files.",
                   style: themeData.textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -86,7 +86,7 @@ class _StorageScreenState extends State<StorageScreen> {
                 Text(
                   "Ensure your data is secure before performing these actions.",
                   style: themeData.textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                     fontStyle: FontStyle.italic,
                   ),
                   textAlign: TextAlign.center,
@@ -116,7 +116,7 @@ class _StorageScreenState extends State<StorageScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),

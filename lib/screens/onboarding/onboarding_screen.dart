@@ -55,16 +55,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         // If onboarding is completed, navigate to AppRouter
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => AppRouter(name: user.name ?? ''),
+            builder: (context) => AppRouter(name: user.name),
           ),
         );
       } else {
         // If onboarding is not completed, show onboarding screens
         setState(() {
           _isLoading = false;
-          if (user.name != null) {
-            name = user.name!;
-          }
+          name = user.name;
         });
       }
     } catch (e) {
@@ -211,9 +209,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             style: const TextStyle(color: Colors.white, fontSize: 18),
             decoration: InputDecoration(
               filled: true,
-              fillColor: Colors.white.withOpacity(0.1),
+              fillColor: Colors.white.withValues(alpha: 0.1),
               hintText: 'Name',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -243,7 +241,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 decoration: BoxDecoration(
                   color: _currentPage == index
                       ? Colors.white
-                      : Colors.white.withOpacity(0.3),
+                      : Colors.white.withValues(alpha: 0.3),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -261,7 +259,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 color: (name.trim().isNotEmpty ||
                         _currentPage < onboardingData.length)
                     ? Colors.white
-                    : Colors.white.withOpacity(0.5),
+                    : Colors.white.withValues(alpha: 0.5),
                 fontWeight: FontWeight.bold,
               ),
             ),

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class MediumCard extends StatelessWidget {
   const MediumCard({super.key});
 
- @override
+  @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -13,7 +13,7 @@ class MediumCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

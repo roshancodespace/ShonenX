@@ -17,7 +17,8 @@ class Searchbar extends StatefulWidget {
   State<Searchbar> createState() => _SearchbarState();
 }
 
-class _SearchbarState extends State<Searchbar> with SingleTickerProviderStateMixin {
+class _SearchbarState extends State<Searchbar>
+    with SingleTickerProviderStateMixin {
   late FocusNode _focusNode;
   late AnimationController _animationController;
   late Animation<Color?> _borderColorAnimation;
@@ -76,7 +77,8 @@ class _SearchbarState extends State<Searchbar> with SingleTickerProviderStateMix
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: themeContext.colorScheme.primaryContainer.withOpacity(0.15),
+            color: themeContext.colorScheme.primaryContainer
+                .withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(15),
             border: Border.all(
               color: widget.isLoading

@@ -1,10 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
 import 'package:nekoflow/screens/main/details/details_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:dismissible_page/dismissible_page.dart';
 import 'package:nekoflow/utils/converter.dart';
 
 class AnimeCard extends StatelessWidget {
@@ -99,8 +97,8 @@ class AnimeCard extends StatelessWidget {
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
                 colors: [
-                  Colors.black.withOpacity(0.95),
-                  Colors.black.withOpacity(0.2),
+                  Colors.black.withValues(alpha: 0.95),
+                  Colors.black.withValues(alpha: 0.2),
                   Colors.transparent
                 ],
                 stops: const [0.0, 0.4, 1.0],
@@ -136,7 +134,8 @@ class AnimeCard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         if (anime.score != null) _buildScoreContainer(theme),
-        if (anime.type != null && anime.rating == null) _buildTypeContainer(theme),
+        if (anime.type != null && anime.rating == null)
+          _buildTypeContainer(theme),
         if (anime.rating != null) _buildRatingContainer(context),
       ],
     );
@@ -146,10 +145,10 @@ class AnimeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.9),
+        color: Colors.amber.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 4)
         ],
       ),
       child: Row(
@@ -171,10 +170,10 @@ class AnimeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withOpacity(0.7),
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 4)
         ],
       ),
       child: Text(
@@ -186,14 +185,14 @@ class AnimeCard extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildRatingContainer(BuildContext context) {
     if (anime.rating == null) return const SizedBox.shrink();
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.8),
+        color: Colors.red.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
@@ -305,7 +304,7 @@ class AnimeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withOpacity(0.2),
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

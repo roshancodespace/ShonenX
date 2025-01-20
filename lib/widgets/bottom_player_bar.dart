@@ -68,8 +68,11 @@ class BottomPlayerBar extends StatelessWidget {
   Episode? _getNextEpisode() {
     if (continueWatchingItem == null) return null;
 
-    final currentIndex = episodes.indexWhere((ep) => ep.episodeId == continueWatchingItem!.episodeId);
-    return (currentIndex != -1 && currentIndex + 1 < episodes.length) ? episodes[currentIndex + 1] : null;
+    final currentIndex = episodes
+        .indexWhere((ep) => ep.episodeId == continueWatchingItem!.episodeId);
+    return (currentIndex != -1 && currentIndex + 1 < episodes.length)
+        ? episodes[currentIndex + 1]
+        : null;
   }
 
   @override
@@ -86,7 +89,10 @@ class BottomPlayerBar extends StatelessWidget {
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 13),
         elevation: 0,
-        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+        color: Theme.of(context)
+            .colorScheme
+            .primaryContainer
+            .withValues(alpha: 0.3),
         child: SizedBox(
           height: 100,
           child: BackdropFilter(
@@ -99,7 +105,8 @@ class BottomPlayerBar extends StatelessWidget {
                   right: 0,
                   child: LinearProgressIndicator(
                     value: progress,
-                    backgroundColor: theme.colorScheme.onPrimary.withOpacity(0.7),
+                    backgroundColor:
+                        theme.colorScheme.onPrimary.withValues(alpha: 0.7),
                     valueColor: AlwaysStoppedAnimation<Color>(
                       theme.colorScheme.primary,
                     ),
@@ -107,7 +114,8 @@ class BottomPlayerBar extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     children: [
                       Container(
@@ -116,12 +124,13 @@ class BottomPlayerBar extends StatelessWidget {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           image: DecorationImage(
-                            image: CachedNetworkImageProvider(continueWatchingItem!.poster),
+                            image: CachedNetworkImageProvider(
+                                continueWatchingItem!.poster),
                             fit: BoxFit.cover,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withValues(alpha: 0.3),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -147,7 +156,8 @@ class BottomPlayerBar extends StatelessWidget {
                             Text(
                               'Episode ${continueWatchingItem!.episode} • ${continueWatchingItem!.timestamp.split(':').length > 2 ? continueWatchingItem!.timestamp.split(':')[1] : '00'}:${continueWatchingItem!.timestamp.split(':').length > 2 ? continueWatchingItem!.timestamp.split(':')[2].split('.')[0] : '00'}',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.7),
                               ),
                             ),
                           ],
@@ -161,12 +171,14 @@ class BottomPlayerBar extends StatelessWidget {
                               color: theme.colorScheme.onSurface,
                               size: 30,
                             ),
-                            onPressed: () => _navigateToPlayer(context, Episode(
-                              title: continueWatchingItem!.title,
-                              episodeId: continueWatchingItem!.episodeId,
-                              number: continueWatchingItem!.episode,
-                              isFiller: false,
-                            )),
+                            onPressed: () => _navigateToPlayer(
+                                context,
+                                Episode(
+                                  title: continueWatchingItem!.title,
+                                  episodeId: continueWatchingItem!.episodeId,
+                                  number: continueWatchingItem!.episode,
+                                  isFiller: false,
+                                )),
                           ),
                           if (nextEpisode != null)
                             IconButton(
@@ -175,7 +187,8 @@ class BottomPlayerBar extends StatelessWidget {
                                 color: theme.colorScheme.onSurface,
                                 size: 30,
                               ),
-                              onPressed: () => _navigateToPlayer(context, nextEpisode),
+                              onPressed: () =>
+                                  _navigateToPlayer(context, nextEpisode),
                             ),
                         ],
                       ),

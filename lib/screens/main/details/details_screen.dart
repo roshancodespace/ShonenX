@@ -41,8 +41,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
   late final WatchlistBox? _watchlistBox;
   final ScrollController _scrollController = ScrollController();
   ContinueWatchingItem? continueWatchingItem;
-  String? _nextEpisodeId;
-  String? _nextEpisodeTitle;
   AnimeData? info;
   String? error;
 
@@ -105,7 +103,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 Theme.of(context)
                     .colorScheme
                     .secondaryContainer
-                    .withOpacity(0.15),
+                    .withValues(alpha: 0.15),
               ],
             ).createShader(rect),
             blendMode: BlendMode.srcATop,
@@ -205,7 +203,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
           CircleAvatar(
             radius: 20,
             backgroundColor:
-                Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
             child: Icon(icon,
                 size: 24, color: Theme.of(context).colorScheme.onSurface),
           ),
@@ -295,7 +293,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: CachedNetworkImage(
-                                imageUrl: season.poster ?? '',
+                                imageUrl: season.poster,
                                 height: 150,
                                 width: 100,
                                 fit: BoxFit.cover,
@@ -318,7 +316,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                                   begin: Alignment.bottomCenter,
                                   end: Alignment.topCenter,
                                   colors: [
-                                    Colors.black.withOpacity(0.8),
+                                    Colors.black.withValues(alpha: 0.8),
                                     Colors.transparent,
                                   ],
                                 ),
@@ -530,7 +528,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
           return BottomPlayerBar(
             animeId: widget.id,
             episodes: _episodes.value,
-            continueWatchingItem: _watchlistBox.getContinueWatchingById(widget.id),
+            continueWatchingItem:
+                _watchlistBox.getContinueWatchingById(widget.id),
             type: widget.type,
           );
         },

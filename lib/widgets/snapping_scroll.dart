@@ -55,13 +55,14 @@ class SnappingScroller extends StatefulWidget {
   State<SnappingScroller> createState() => _SnappingScrollerState();
 }
 
-class _SnappingScrollerState extends State<SnappingScroller> with SingleTickerProviderStateMixin {
+class _SnappingScrollerState extends State<SnappingScroller>
+    with SingleTickerProviderStateMixin {
   late PageController _pageController;
   Timer? _autoScrollTimer;
   int _currentPage = 0;
   bool _isScrolling = false;
   late AnimationController _indicatorAnimationController;
-  late Animation<double> _indicatorAnimation;
+  // late Animation<double> _indicatorAnimation;
 
   @override
   void initState() {
@@ -78,12 +79,12 @@ class _SnappingScrollerState extends State<SnappingScroller> with SingleTickerPr
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _indicatorAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _indicatorAnimationController,
-        curve: Curves.easeInOut,
-      ),
-    );
+    // _indicatorAnimation = Tween<double>(begin: 0, end: 1).animate(
+    //   CurvedAnimation(
+    //     parent: _indicatorAnimationController,
+    //     curve: Curves.easeInOut,
+    //   ),
+    // );
   }
 
   void _initPageController() {
@@ -177,7 +178,8 @@ class _SnappingScrollerState extends State<SnappingScroller> with SingleTickerPr
           Padding(
             padding: const EdgeInsets.only(top: 16),
             child: AnimatedBuilder(
-              animation: _indicatorAnimationController, // Changed from _indicatorAnimation to _indicatorAnimationController
+              animation:
+                  _indicatorAnimationController, // Changed from _indicatorAnimation to _indicatorAnimationController
               builder: (context, child) {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -186,31 +188,52 @@ class _SnappingScrollerState extends State<SnappingScroller> with SingleTickerPr
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       margin: widget.indicatorPadding ??
-                          EdgeInsets.symmetric(horizontal: widget.indicatorSpacing),
+                          EdgeInsets.symmetric(
+                              horizontal: widget.indicatorSpacing),
                       height: widget.indicatorHeight,
-                      width: isActive ? widget.activeIndicatorWidth : widget.inactiveIndicatorWidth,
+                      width: isActive
+                          ? widget.activeIndicatorWidth
+                          : widget.inactiveIndicatorWidth,
                       decoration: BoxDecoration(
                         gradient: widget.enableGradientIndicators && isActive
                             ? LinearGradient(
                                 colors: [
-                                  widget.activeIndicatorColor ?? Theme.of(context).colorScheme.primaryContainer,
-                                  widget.activeIndicatorColor?.withOpacity(0.7) ??
-                                      Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7),
+                                  widget.activeIndicatorColor ??
+                                      Theme.of(context)
+                                          .colorScheme
+                                          .primaryContainer,
+                                  widget.activeIndicatorColor
+                                          ?.withValues(alpha: 0.7) ??
+                                      Theme.of(context)
+                                          .colorScheme
+                                          .primaryContainer
+                                          .withValues(alpha: 0.7),
                                 ],
                               )
                             : null,
                         color: !widget.enableGradientIndicators
                             ? isActive
-                                ? widget.activeIndicatorColor ?? Theme.of(context).colorScheme.primaryContainer
-                                : widget.inactiveIndicatorColor?.withOpacity(0.5) ??
-                                    Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5)
+                                ? widget.activeIndicatorColor ??
+                                    Theme.of(context)
+                                        .colorScheme
+                                        .primaryContainer
+                                : widget.inactiveIndicatorColor
+                                        ?.withValues(alpha: 0.5) ??
+                                    Theme.of(context)
+                                        .colorScheme
+                                        .primaryContainer
+                                        .withValues(alpha: 0.5)
                             : null,
-                        borderRadius: widget.indicatorBorderRadius ?? BorderRadius.circular(4),
+                        borderRadius: widget.indicatorBorderRadius ??
+                            BorderRadius.circular(4),
                         boxShadow: isActive
                             ? [
                                 BoxShadow(
-                                  color: (widget.activeIndicatorColor ?? Theme.of(context).colorScheme.secondaryContainer)
-                                      .withOpacity(0.3),
+                                  color: (widget.activeIndicatorColor ??
+                                          Theme.of(context)
+                                              .colorScheme
+                                              .secondaryContainer)
+                                      .withValues(alpha: 0.3),
                                   blurRadius: 4,
                                   spreadRadius: 1,
                                 ),

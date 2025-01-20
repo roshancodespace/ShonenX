@@ -49,7 +49,8 @@ class _ViewAllScreenState extends State<ViewAllScreen>
     setState(() {
       _searchQuery = query;
       _filteredItems = widget.items
-          .where((item) => item.name.toLowerCase().contains(query.toLowerCase()))
+          .where(
+              (item) => item.name.toLowerCase().contains(query.toLowerCase()))
           .toList();
     });
   }
@@ -246,7 +247,7 @@ class _ViewAllScreenState extends State<ViewAllScreen>
                       ? Theme.of(context)
                           .colorScheme
                           .primaryContainer
-                          .withOpacity(0.4)
+                          .withValues(alpha: 0.4)
                       : Colors.transparent,
                   border: isSelected
                       ? Border.all(
@@ -355,8 +356,8 @@ class _ViewAllScreenState extends State<ViewAllScreen>
                             Icon(
                               Icons.search_off,
                               size: 64,
-                              color:
-                                  theme.colorScheme.onSurface.withOpacity(0.5),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -365,7 +366,7 @@ class _ViewAllScreenState extends State<ViewAllScreen>
                                   : "No results found for '$_searchQuery'",
                               style: theme.textTheme.bodyLarge?.copyWith(
                                 color: theme.colorScheme.onSurface
-                                    .withOpacity(0.7),
+                                    .withValues(alpha: 0.7),
                               ),
                               textAlign: TextAlign.center,
                             ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:shimmer/shimmer.dart';
 
 class LoadingScreen extends StatelessWidget {
   const LoadingScreen({super.key});
@@ -6,57 +8,73 @@ class LoadingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // backgroundColor: Colors.black,
+      backgroundColor: Colors.black,
       body: Container(
         decoration: BoxDecoration(
-          // gradient: LinearGradient(
-          //   begin: Alignment.topCenter,
-          //   end: Alignment.bottomCenter,
-          //   colors: [
-          //     Colors.black,
-          //     Colors.blue.shade900.withOpacity(0.3),
-          //     Colors.black,
-          //   ],
-          // ),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.primaryContainer,
+              Theme.of(context).colorScheme.surface,
+            ],
+          ),
         ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // App Logo
-              Image.asset(
-                'lib/assets/images/onboarding/logo.png',
+              SvgPicture.asset(
+                'lib/assets/images/onboarding/logo.svg',
+                allowDrawingOutsideViewBox: true,
+                colorFilter: ColorFilter.mode(
+                  Theme.of(context)
+                      .colorScheme
+                      .onPrimaryContainer, // The desired color
+                  BlendMode.srcIn,
+                ),
                 width: 120,
                 height: 120,
+                fit: BoxFit.contain,
               ),
               const SizedBox(height: 40),
-              
+
               // Custom Animated Loading Indicator
               SizedBox(
                 width: 160,
                 child: Column(
                   children: [
                     // Primary loader
-                    const LinearProgressIndicator(
-                      // backgroundColor: Colors.white24,
-                      // valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                    LinearProgressIndicator(
+                      backgroundColor:
+                          Theme.of(context).colorScheme.primaryContainer,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          Theme.of(context).colorScheme.onPrimaryContainer),
                     ),
                     const SizedBox(height: 16),
-                    
+
                     // Loading text with shimmer effect
-                    ShimmerText(
-                      text: "Setting up your anime world...",
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.white70,
+                    Shimmer.fromColors(
+                      baseColor: Colors.white.withValues(alpha: 0.5),
+                      highlightColor: Colors.white,
+                      child: Text(
+                        "Setting up your anime world...",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 80),
-              
+
               // Random anime quote
               const RandomAnimeQuote(),
             ],
@@ -130,10 +148,11 @@ class RandomAnimeQuote extends StatefulWidget {
 }
 
 class _RandomAnimeQuoteState extends State<RandomAnimeQuote> {
- final List<Map<String, String>> quotes = [
+  final List<Map<String, String>> quotes = [
     // One Piece Quotes
     {
-      'quote': "I don't want to conquer anything. I just think the one with the most freedom is the Pirate King.",
+      'quote':
+          "I don't want to conquer anything. I just think the one with the most freedom is the Pirate King.",
       'character': 'Monkey D. Luffy',
       'anime': 'One Piece'
     },
@@ -167,7 +186,8 @@ class _RandomAnimeQuoteState extends State<RandomAnimeQuote> {
 
     // Attack on Titan Quotes
     {
-      'quote': "If you win, you live. If you lose, you die. If you don't fight, you can't win!",
+      'quote':
+          "If you win, you live. If you lose, you die. If you don't fight, you can't win!",
       'character': 'Eren Yeager',
       'anime': 'Attack on Titan'
     },
@@ -184,7 +204,8 @@ class _RandomAnimeQuoteState extends State<RandomAnimeQuote> {
 
     // Naruto Quotes
     {
-      'quote': "In the ninja world, those who break the rules are scum, but those who abandon their friends are worse than scum.",
+      'quote':
+          "In the ninja world, those who break the rules are scum, but those who abandon their friends are worse than scum.",
       'character': 'Kakashi Hatake',
       'anime': 'Naruto'
     },
@@ -194,36 +215,42 @@ class _RandomAnimeQuoteState extends State<RandomAnimeQuote> {
       'anime': 'Naruto'
     },
     {
-      'quote': "The moment people come to know love, they run the risk of carrying hate.",
+      'quote':
+          "The moment people come to know love, they run the risk of carrying hate.",
       'character': 'Obito Uchiha',
       'anime': 'Naruto'
     },
 
     // My Hero Academia Quotes
     {
-      'quote': "If you feel yourself hitting up against your limit, remember for what cause you clench your fists.",
+      'quote':
+          "If you feel yourself hitting up against your limit, remember for what cause you clench your fists.",
       'character': 'All Might',
       'anime': 'My Hero Academia'
     },
     {
-      'quote': "Sometimes I do feel like I'm a failure. Like there's no hope for me. But even so, I'm not gonna give up.",
+      'quote':
+          "Sometimes I do feel like I'm a failure. Like there's no hope for me. But even so, I'm not gonna give up.",
       'character': 'Izuku Midoriya',
       'anime': 'My Hero Academia'
     },
     {
-      'quote': "If all the villains out there hurt people, then I'll accept the challenge to protect everyone!",
+      'quote':
+          "If all the villains out there hurt people, then I'll accept the challenge to protect everyone!",
       'character': 'Ochaco Uraraka',
       'anime': 'My Hero Academia'
     },
 
     // Demon Slayer Quotes (Added for more variety)
     {
-      'quote': "No matter how many people you may lose, you have no choice but to go on living.",
+      'quote':
+          "No matter how many people you may lose, you have no choice but to go on living.",
       'character': 'Tanjiro Kamado',
       'anime': 'Demon Slayer'
     },
     {
-      'quote': "Don't ever give up. Even if it's painful, even if it's agonizing, don't try to take the easy way out.",
+      'quote':
+          "Don't ever give up. Even if it's painful, even if it's agonizing, don't try to take the easy way out.",
       'character': 'Giyu Tomioka',
       'anime': 'Demon Slayer'
     }

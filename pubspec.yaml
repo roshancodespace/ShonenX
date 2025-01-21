@@ -10,7 +10,6 @@ dependencies:
   animated_toggle_switch: ^0.8.4
   better_player: ^0.0.84
   cached_network_image: ^3.4.1
-  crystal_navigation_bar: ^1.0.1
   dio: ^5.7.0
   dismissible_page: ^1.0.2
   flex_color_scheme: ^8.0.2
@@ -25,6 +24,7 @@ dependencies:
   hive_flutter: ^1.1.0
   http: ^1.2.2
   hugeicons: ^0.0.7
+  lottie: ^3.3.1
   path_provider: ^2.1.2
   permission_handler: ^11.3.1
   scroll_to_index: ^3.0.1
@@ -44,7 +44,6 @@ flutter:
   uses-material-design: true
   assets:
     - lib/assets/images/onboarding/
-    - lib/assets/images/onboarding/logo.svg
-    - lib/assets/images/profile/
+    - lib/assets/lotties/
     # - assets/images/home/
     # - assets/icons/app_icon.png

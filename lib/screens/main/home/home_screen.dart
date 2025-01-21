@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:lottie/lottie.dart';
 import 'package:nekoflow/data/boxes/user_box.dart';
 import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
 import 'package:nekoflow/widgets/spotlight_card.dart';
@@ -85,6 +86,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good Morning';
+    } else if (hour < 17) {
+      return 'Good Afternoon';
+    } else {
+      return 'Good Evening';
+    }
+  }
+
   Widget _buildHeaderSection(ThemeData theme) {
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.2,
@@ -92,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Text(
-            "Hello $name, What's on your mind today?",
+            "${_getGreeting()}, $name! Ready to explore anime?",
             style: theme.textTheme.headlineLarge
                 ?.copyWith(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
@@ -183,15 +195,30 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            style: theme.textTheme.headlineMedium
-                ?.copyWith(fontWeight: FontWeight.w700)),
+        Row(
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.headlineMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const Spacer(),
+            IconButton(
+                onPressed: () {},
+                icon: HugeIcon(
+                  icon: HugeIcons.strokeRoundedArrowRight01,
+                  color: theme.colorScheme.onSurface,
+                  size: 28,
+                )),
+          ],
+        ),
         const SizedBox(height: 10),
         _isLoading
-            ? _buildShimmerLoading(theme, 0.42)
+            ? _buildShimmerLoading(theme, 0.405)
             : SnappingScroller(
                 showIndicators: false,
                 widthFactor: 0.47,
+                loop: false,
                 autoScroll: false,
                 children: animeList
                     .map((anime) => AnimeCard(anime: anime, tag: tag))
@@ -271,9 +298,13 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             onPressed: () => context.push('/settings'),
-            icon: HugeIcon(
-                icon: HugeIcons.strokeRoundedSettings01,
-                color: theme.colorScheme.onSurface),
+            icon: ColorFiltered(
+              colorFilter: ColorFilter.mode(
+                  theme.colorScheme.onSurface, BlendMode.srcIn),
+              child: Lottie.asset(
+                'lib/assets/lotties/settings.json',
+              ),
+            ),
           )
         ],
       ),

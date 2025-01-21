@@ -41,7 +41,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeBoxAndCheckStatus();
+    Future.delayed(const Duration(milliseconds: 5000), () => _initializeBoxAndCheckStatus());
   }
 
   Future<void> _initializeBoxAndCheckStatus() async {
@@ -140,6 +140,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: onboardingData[index]['image']!.endsWith('.svg')
                 ? SvgPicture.asset(
                     onboardingData[index]['image']!,
+                    allowDrawingOutsideViewBox: true,
                     colorFilter: ColorFilter.mode(
                       Theme.of(context)
                           .colorScheme
@@ -149,17 +150,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     fit: BoxFit.contain,
                   )
                 : Stack(
+                    alignment: Alignment.center,
                     children: [
-                      Positioned.fill(
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.63,
+                        width: MediaQuery.of(context).size.width * 0.65, 
+                        // constraints: BoxConstraints(
+                        //   maxWidth: MediaQuery.of(context).size.width * 0.7,
+                        //   maxHeight: MediaQuery.of(context).size.height * 0.6,
+                        // ),
                         child: Image.asset(
                           onboardingData[index]['image']!,
-                          fit: BoxFit.contain,
+                          fit: BoxFit.cover,
                         ),
                       ),
                       Image.asset(
                         'lib/assets/images/onboarding/mocup.png',
                         fit: BoxFit.contain,
-                      )
+                      ),
                     ],
                   ),
           ),

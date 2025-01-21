@@ -37,7 +37,7 @@ class SettingsScreen extends StatelessWidget {
                         tag: ValueKey(title),
                         child: Text(
                           title,
-                          style: theme.textTheme.titleLarge?.copyWith(
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                           overflow: TextOverflow.ellipsis,

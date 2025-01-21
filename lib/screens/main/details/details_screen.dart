@@ -309,7 +309,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
             Text('Seasons', style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
             SizedBox(
-              height: 150,
+              height: 180,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: filteredSeasons.length,
@@ -339,8 +339,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
               children: [
                 Hero(
                   tag: 'season-poster-$index',
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                  child: Card(
                     child: CachedNetworkImage(
                       imageUrl: season.poster,
                       height: 150,

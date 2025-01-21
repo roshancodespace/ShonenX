@@ -1,8 +1,11 @@
-import 'package:crystal_navigation_bar/crystal_navigation_bar.dart';
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
+
+// Import statements consolidated and organized by feature
 import 'package:nekoflow/data/boxes/watchlist_box.dart';
 import 'package:nekoflow/data/models/episodes_model.dart';
 import 'package:nekoflow/data/models/search_model.dart';
@@ -20,132 +23,137 @@ import 'package:nekoflow/screens/main/watchlist/watchlist_screen.dart';
 import 'package:nekoflow/screens/onboarding/onboarding_screen.dart';
 
 class AppRouter {
+  // Constants moved to class level
+  static const _routes = ['/home', '/browse', '/watchlist'];
+
+  // Router configuration
   static final router = GoRouter(
     initialLocation: '/',
+    debugLogDiagnostics: false,
     routes: [
-      GoRoute(
+      _buildOnboardingRoute(),
+      _buildMainNavigationRoute(),
+      _buildSettingsRoute(),
+      _buildSearchRoute(),
+      _buildDetailsRoute(),
+      _buildSettingsSubRoute(),
+      _buildWatchlistCategoryRoute(),
+      _buildStreamRoute(),
+    ],
+  );
+
+  // Route builders
+  static GoRoute _buildOnboardingRoute() => GoRoute(
         path: '/',
-        builder: (context, state) => const OnboardingScreen(),
-      ),
-      ShellRoute(
-        builder: (context, state, child) => AppRouterScreen(
-          child: child,
+        builder: (_, __) => const OnboardingScreen(),
+      );
+
+  static StatefulShellRoute _buildMainNavigationRoute() =>
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) => AppRouterScreen(
+          child: navigationShell,
         ),
+        branches: [
+          _buildBranch('/home', const HomeScreen()),
+          _buildBranch('/browse', const BrowseScreen()),
+          _buildBranch('/watchlist', const WatchlistScreen()),
+        ],
+      );
+
+  static StatefulShellBranch _buildBranch(String path, Widget screen) =>
+      StatefulShellBranch(
         routes: [
           GoRoute(
-            path: '/home',
-            builder: (context, state) => const HomeScreen(),
-          ),
-          GoRoute(
-            path: '/browse',
-            builder: (context, state) => const BrowseScreen(),
-          ),
-          GoRoute(
-            path: '/watchlist',
-            builder: (context, state) => const WatchlistScreen(),
+            path: path,
+            builder: (_, __) => screen,
           ),
         ],
-      ),
-      GoRoute(
+      );
+
+  static GoRoute _buildSettingsRoute() => GoRoute(
         path: '/settings',
-        pageBuilder: (context, state) =>
-            const CupertinoPage(child: SettingsScreen()),
-      ),
-      GoRoute(
+        pageBuilder: (_, __) => const CupertinoPage(child: SettingsScreen()),
+      );
+
+  static GoRoute _buildSearchRoute() => GoRoute(
         path: '/search',
-        builder: (context, state) {
-          String? searchType = state.uri.queryParameters['type'];
-          SearchModel? searchModel = state.extra as SearchModel?;
-          if (searchType != null || searchModel != null) {
+        builder: (_, state) {
+          final searchType = state.uri.queryParameters['type'];
+          final searchModel = state.extra as SearchModel?;
+
+          if (searchType != null && searchModel != null) {
             return SearchResultScreen(
-              searchModel: searchModel!,
-              searchType: searchType!,
+              searchModel: searchModel,
+              searchType: searchType,
             );
           }
           return const BrowseScreen();
         },
-      ),
-      GoRoute(
+      );
+
+  static GoRoute _buildDetailsRoute() => GoRoute(
         path: '/details',
-        pageBuilder: (context, state) {
-          String? animeId = state.uri.queryParameters['id'];
-          String? image = state.uri.queryParameters['image'];
-          String? name = state.uri.queryParameters['name'];
-          String? type = state.uri.queryParameters['type'];
-          String? tag = state.uri.queryParameters['tag'];
+        pageBuilder: (_, state) {
+          final params = state.uri.queryParameters;
           return CupertinoPage(
             child: DetailsScreen(
-              key: ValueKey(animeId),
-              id: animeId!,
-              image: image!,
-              name: name!,
-              type: type,
-              tag: tag,
+              key: ValueKey(params['id']),
+              id: params['id']!,
+              image: params['image']!,
+              name: params['name']!,
+              type: params['type'],
+              tag: params['tag'],
             ),
           );
         },
-      ),
-      GoRoute(
+      );
+
+  static GoRoute _buildSettingsSubRoute() => GoRoute(
         path: '/settings/:screen',
-        pageBuilder: (context, state) {
-          final String? title = state.pathParameters['screen'];
-          switch (title) {
-            case 'About':
-              return CupertinoPage(
-                  child: AboutScreen(
-                title: title!,
-              ));
-            case 'Theme':
-              return CupertinoPage(
-                  child: ThemeScreenV2(
-                title: title!,
-              ));
-            default:
-              return CupertinoPage(child: SettingsScreen());
-          }
+        pageBuilder: (_, state) {
+          final title = state.pathParameters['screen'];
+          return CupertinoPage(
+            child: switch (title) {
+              'About' => AboutScreen(title: title!),
+              'Theme' => ThemeScreenV2(title: title!),
+              _ => const SettingsScreen(),
+            },
+          );
         },
-      ),
-      GoRoute(
+      );
+
+  static GoRoute _buildWatchlistCategoryRoute() => GoRoute(
         path: '/watchlist/:category',
-        pageBuilder: (context, state) {
-          final Map<String, dynamic>? extras =
-              state.extra as Map<String, dynamic>?;
-          final String? category = state.pathParameters['category'];
-          final WatchlistBox box = extras?['box'] as WatchlistBox;
-          final List<BaseAnimeCard> items =
-              extras?['items'] as List<BaseAnimeCard>;
+        pageBuilder: (_, state) {
+          final extras = state.extra as Map<String, dynamic>?;
           return CupertinoPage(
             child: ViewAllScreen(
-              title: category!,
-              items: items,
-              watchlistBox: box,
+              title: state.pathParameters['category']!,
+              items: extras?['items'] as List<BaseAnimeCard>,
+              watchlistBox: extras?['box'] as WatchlistBox,
             ),
           );
         },
-      ),
-      GoRoute(
+      );
+
+  static GoRoute _buildStreamRoute() => GoRoute(
         path: '/stream',
-        pageBuilder: (context, state) {
-          final Map<String, dynamic>? extras =
-              state.extra as Map<String, dynamic>?;
-          final List<Episode> episodes = extras?['episodes'] as List<Episode>;
-          final Episode episode = extras?['episode'] as Episode;
-          final AnimeItem anime = extras?['anime'] as AnimeItem;
+        pageBuilder: (_, state) {
+          final extras = state.extra as Map<String, dynamic>?;
           return CupertinoPage(
             child: StreamScreen(
-              anime: anime,
-              episodes: episodes,
-              episode: episode,
+              anime: extras?['anime'] as AnimeItem,
+              episodes: extras?['episodes'] as List<Episode>,
+              episode: extras?['episode'] as Episode,
             ),
           );
         },
-      ),
-    ],
-  );
+      );
 }
 
 class AppRouterScreen extends StatefulWidget {
   final Widget child;
+
   const AppRouterScreen({super.key, required this.child});
 
   @override
@@ -153,59 +161,103 @@ class AppRouterScreen extends StatefulWidget {
 }
 
 class _AppRouterScreenState extends State<AppRouterScreen> {
-  static const List<String> _routes = ['/home', '/browse', '/watchlist'];
   int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _initializeSelectedIndex();
+  }
 
-    // Listen to GoRouter location changes to update the navigation bar
-    GoRouter.of(context).routeInformationProvider.addListener(() {
+  void _initializeSelectedIndex() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       final location = GoRouter.of(context).state!.path!;
-      setState(() {
-        _selectedIndex =
-            _routes.indexWhere((route) => location.startsWith(route));
-      });
+      final index =
+          AppRouter._routes.indexWhere((route) => location.startsWith(route));
+
+      if (index != -1) {
+        setState(() => _selectedIndex = index);
+      }
     });
+  }
+
+  void _onNavBarTap(int index) {
+    if (_selectedIndex != index) {
+      context.go(AppRouter._routes[index]);
+      setState(() => _selectedIndex = index);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Scaffold(
       extendBody: true,
       body: widget.child,
-      bottomNavigationBar: CrystalNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          if (_selectedIndex != index) {
-            context.go(_routes[index]);
-          }
-        },
-        backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.8),
-        selectedItemColor: theme.colorScheme.primary,
-        unselectedItemColor: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-        enableFloatingNavBar: true,
-        marginR: const EdgeInsets.symmetric(horizontal: 120, vertical: 16),
-        splashBorderRadius: 24,
-        borderRadius: 50,
-        enablePaddingAnimation: true,
-        items: [
-          CrystalNavigationBarItem(
-            icon: HugeIcons.strokeRoundedHome01,
-            unselectedIcon: HugeIcons.strokeRoundedHome02,
-          ),
-          CrystalNavigationBarItem(
-            icon: HugeIcons.strokeRoundedGlobalSearch,
-            unselectedIcon: HugeIcons.strokeRoundedGlobal,
-          ),
-          CrystalNavigationBarItem(
-            icon: HugeIcons.strokeRoundedCollectionsBookmark,
-            unselectedIcon: HugeIcons.strokeRoundedAllBookmark,
-          ),
-        ],
-      ),
+      bottomNavigationBar: _buildNavigationBar(theme),
     );
   }
+
+  Widget _buildNavigationBar(ThemeData theme) => Align(
+        alignment: Alignment.bottomCenter,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(50),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Material(
+                color: theme.colorScheme.surface.withValues(alpha: 0.8),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildNavItem(
+                        icon: HugeIcons.strokeRoundedHome02,
+                        activeIcon: HugeIcons.strokeRoundedHome01,
+                        isSelected: _selectedIndex == 0,
+                        onTap: () => _onNavBarTap(0),
+                        theme: theme,
+                      ),
+                      _buildNavItem(
+                        icon: HugeIcons.strokeRoundedGlobal,
+                        activeIcon: HugeIcons.strokeRoundedGlobalSearch,
+                        isSelected: _selectedIndex == 1,
+                        onTap: () => _onNavBarTap(1),
+                        theme: theme,
+                      ),
+                      _buildNavItem(
+                        icon: HugeIcons.strokeRoundedAllBookmark,
+                        activeIcon: HugeIcons.strokeRoundedCollectionsBookmark,
+                        isSelected: _selectedIndex == 2,
+                        onTap: () => _onNavBarTap(2),
+                        theme: theme,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required IconData activeIcon,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required ThemeData theme,
+  }) =>
+      IconButton(
+        onPressed: onTap,
+        icon: Icon(
+          isSelected ? activeIcon : icon,
+          color: isSelected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
+      );
 }

@@ -1,0 +1,329 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:skeletonizer/skeletonizer.dart';
+import 'package:shonenx/api/models/anime/anime_model.dart';
+import 'package:uuid/uuid.dart';
+
+class AnimeCard extends StatelessWidget {
+  final BaseAnimeModel? anime;
+  final String mode;
+  const AnimeCard({super.key, required this.anime, this.mode = 'card'});
+
+  Widget _buildEpisodesInfo(
+      BuildContext context, Episodes? episodes, TextStyle? baseStyle) {
+    if (episodes == null) return SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final List<Widget> episodeWidgets = [];
+
+    // Total episodes
+    if (episodes.total != null) {
+      episodeWidgets.add(
+        Text(
+          '${episodes.total} eps',
+          style: baseStyle,
+        ),
+      );
+    }
+
+    // Sub episodes
+    if (episodes.sub != null) {
+      episodeWidgets.add(
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            'Sub: ${episodes.sub}',
+            style: baseStyle?.copyWith(
+              color: theme.colorScheme.onPrimaryContainer,
+              fontSize: (baseStyle.fontSize ?? 12) - 1,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Dub episodes
+    if (episodes.dub != null) {
+      episodeWidgets.add(
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.tertiaryContainer,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            'Dub: ${episodes.dub}',
+            style: baseStyle?.copyWith(
+              color: theme.colorScheme.onTertiaryContainer,
+              fontSize: (baseStyle.fontSize ?? 12) - 1,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: episodeWidgets,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tag = Uuid().v4();
+
+    if (mode == 'expanded') {
+      return Hero(
+        tag: tag,
+        child: SizedBox(
+          height: 140,
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: SizedBox(
+                  width: 100,
+                  child: Stack(
+                    children: [
+                      CachedNetworkImage(
+                        imageUrl: anime?.poster ?? '',
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) =>
+                            const Center(child: CircularProgressIndicator()),
+                        errorWidget: (context, url, error) {
+                          return Skeletonizer.zone(
+                            enabled: true,
+                            effect: ShimmerEffect(
+                              baseColor: theme.colorScheme.primaryContainer,
+                              highlightColor: theme.colorScheme.primary,
+                              duration: Duration(seconds: 1),
+                            ),
+                            child: Container(
+                              color: theme.colorScheme.primary,
+                              padding: const EdgeInsets.all(10),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Bone.text(),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      if (anime?.rank != null)
+                        Positioned(
+                          top: 4,
+                          left: 4,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '#${anime!.rank}',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          anime?.name ?? '',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                      ),
+                      if (anime?.jname != null) ...[
+                        SizedBox(height: 2),
+                        Text(
+                          anime!.jname!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontStyle: FontStyle.italic,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.secondaryContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              anime?.type?.toUpperCase() ?? 'N/A',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onSecondaryContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 4),
+                      _buildEpisodesInfo(
+                          context, anime?.episodes, theme.textTheme.bodySmall),
+                      SizedBox(height: 4),
+                      if (anime?.description != null)
+                        Text(
+                          anime!.description!,
+                          style: theme.textTheme.bodySmall,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Hero(
+      tag: tag,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: SizedBox(
+          width: 160,
+          child: CachedNetworkImage(
+            imageUrl: anime?.poster ?? '',
+            fit: BoxFit.cover,
+            placeholder: (context, url) =>
+                const Center(child: CircularProgressIndicator()),
+            errorWidget: (context, url, error) {
+              return Skeletonizer.zone(
+                enabled: true,
+                effect: ShimmerEffect(
+                  baseColor: theme.colorScheme.primaryContainer,
+                  highlightColor: theme.colorScheme.primary,
+                  duration: Duration(seconds: 1),
+                ),
+                child: Container(
+                  width: 160,
+                  color: theme.colorScheme.primary,
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Bone.text(),
+                    ],
+                  ),
+                ),
+              );
+            },
+            imageBuilder: (context, imageProvider) => Container(
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: imageProvider,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      theme.colorScheme.surface.withValues(alpha: 0.8),
+                      theme.colorScheme.surface,
+                    ],
+                    stops: [0.6, 0.8, 1],
+                  ),
+                ),
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (anime?.rank != null)
+                      Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '#${anime!.rank}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    SizedBox(height: 4),
+                    Text(
+                      anime!.name ?? '',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                    SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Container(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.secondaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            anime?.type?.toUpperCase() ?? 'N/A',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSecondaryContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    _buildEpisodesInfo(
+                      context,
+                      anime?.episodes,
+                      theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

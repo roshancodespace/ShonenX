@@ -1,0 +1,525 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_carousel_widget/flutter_carousel_widget.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:shonenx/api/models/anilist/anilist_user.dart';
+import 'package:shonenx/api/models/anime/anime_model.dart';
+import 'package:shonenx/api/models/anime/page_model.dart';
+import 'package:shonenx/helpers/navigation.dart';
+import 'package:shonenx/providers/anilist/anilist_user_provider.dart';
+import 'package:shonenx/api/providers/homepage_provider.dart';
+import 'package:shonenx/api/providers/selected_provider.dart';
+import 'package:shonenx/utils/greeting_methods.dart';
+import 'package:shonenx/widgets/anime/anime_card.dart';
+import 'package:shonenx/widgets/anime/anime_spotlight_card.dart';
+import 'package:shonenx/widgets/ui/slide_indicator.dart';
+import 'package:uuid/uuid.dart';
+
+class HomeScreen extends ConsumerWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final selectedKey =
+        ref.watch(selectedProviderKeyProvider)?.selectedProviderKey;
+    if (selectedKey == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('No provider selected'),
+        ),
+      );
+    }
+    final homePageAsync = ref.watch(homePageProvider(selectedKey));
+    final userState = ref.watch(userProvider);
+    final isDesktop = MediaQuery.sizeOf(context).width > 900;
+
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      body: SafeArea(
+        child: homePageAsync.when(
+          data: (homePage) =>
+              _buildHomeContent(context, theme, homePage, user: userState),
+          error: (error, stack) =>
+              _buildHomeContent(context, theme, null, user: userState),
+          loading: () => _buildHomeContent(context, theme, null),
+        ),
+      ),
+      floatingActionButton: isDesktop
+          ? FloatingActionButton(
+              onPressed: () => _toggleSearchBar(context),
+              child: const Icon(Iconsax.search_normal),
+            )
+          : null,
+    );
+  }
+
+  void _toggleSearchBar(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          contentPadding: EdgeInsets.all(10),
+          content: TextField(
+            autofocus: true,
+            autocorrect: false,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'Search for anime...',
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide:
+                      BorderSide(color: Theme.of(context).colorScheme.primary)),
+            ),
+            onSubmitted: (value) {
+              // Handle search action
+              context.go('/browse?keyword=$value');
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHomeContent(
+      BuildContext context, ThemeData theme, HomePage? homePage,
+      {User? user}) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth > 900;
+        return CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  _buildHeader(context, theme, user, isDesktop),
+                  _buildSpotlightSection(context, homePage, constraints),
+                ],
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 30,
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              sliver: isDesktop
+                  ? _buildDesktopContent(context, homePage, constraints)
+                  : _buildMobileContent(context, homePage, theme),
+            ),
+            SliverToBoxAdapter(
+              child: isDesktop
+                  ? null
+                  : SizedBox(
+                      height: 100,
+                    ),
+            )
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildHeader(
+      BuildContext context, ThemeData theme, User? user, bool isDesktop) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        user == null
+                            ? Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Iconsax.user,
+                                  color: theme.colorScheme.primary,
+                                  size: 20,
+                                ),
+                              )
+                            : ClipRRect(
+                                borderRadius: BorderRadius.circular(50),
+                                child: CachedNetworkImage(
+                                  imageUrl: user.avatar ?? '',
+                                  fit: BoxFit.cover,
+                                  height: 42,
+                                  width: 42,
+                                  alignment: Alignment.center,
+                                ),
+                              ),
+                        const SizedBox(width: 12),
+                        Text(
+                          getGreeting(),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      user?.name ?? 'Guest',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                children: [
+                  if (!isDesktop) ...[
+                    IconButton(
+                      onPressed: () => _toggleSearchBar(context),
+                      icon: const Icon(Iconsax.search_normal),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  InkWell(
+                    onTap: () => context.push('/settings'),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        Iconsax.setting_2,
+                        color: theme.colorScheme.secondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () => context.go('/browse'),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary.withValues(alpha: 0.15),
+                    theme.colorScheme.primary.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Iconsax.discover_1,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Discover Anime',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Explore your next favorite series',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Iconsax.arrow_right_3,
+                    color: theme.colorScheme.primary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpotlightSection(
+      BuildContext context, HomePage? homePage, BoxConstraints constraints) {
+    if (homePage != null && homePage.spotlight.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final spotlightAnimes =
+        homePage?.spotlight ?? List.filled(9, BaseAnimeModel());
+    final theme = Theme.of(context);
+    final carouselHeight = constraints.maxWidth > 900 ? 500.0 : 230.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+          child: Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Iconsax.star5,
+                      size: 18,
+                      color: theme.colorScheme.tertiary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'SPOTLIGHT ',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.tertiary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        FlutterCarousel(
+          options: FlutterCarouselOptions(
+            height: carouselHeight,
+            showIndicator: true,
+            autoPlay: true,
+            enlargeCenterPage: true,
+            floatingIndicator: false,
+            enlargeStrategy: CenterPageEnlargeStrategy.height,
+            autoPlayInterval: const Duration(seconds: 5),
+            enableInfiniteScroll: true,
+            slideIndicator: CustomSlideIndicator(context),
+            viewportFraction: constraints.maxWidth > 900 ? 0.7 : 0.85,
+          ),
+          items: spotlightAnimes.map((anime) {
+            return Builder(
+              builder: (BuildContext context) {
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.shadowColor.withValues(alpha: 0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: AnimeSpotlightCard(
+                      anime: anime.id == null ? null : anime,
+                    ),
+                  ),
+                );
+              },
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileContent(
+      BuildContext context, HomePage? homePage, ThemeData theme) {
+    final sections = _createSections(homePage);
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final section = sections[index];
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader(section['title'] as String, theme),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 240,
+                child: ListView.builder(
+                  addAutomaticKeepAlives: true,
+                  addRepaintBoundaries: true,
+                  scrollDirection: Axis.horizontal,
+                  physics: BouncingScrollPhysics(),
+                  itemCount:
+                      (section['animes'] as List<BaseAnimeModel>?)?.length ?? 5,
+                  itemBuilder: (context, idx) {
+                    final anime = section['animes']?[idx] as BaseAnimeModel?;
+                    final tag = Uuid().v4();
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 16),
+                      child: GestureDetector(
+                          onTap: () => navigateToDetail(context, anime!, tag),
+                          child: AnimeCard(anime: anime)),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+          );
+        },
+        childCount: sections.length,
+      ),
+    );
+  }
+
+  Widget _buildDesktopContent(
+      BuildContext context, HomePage? homePage, BoxConstraints constraints) {
+    final sections = _createSections(homePage);
+    final theme = Theme.of(context);
+
+    return SliverGrid(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 0.52,
+        mainAxisSpacing: 32,
+        crossAxisSpacing: 32,
+      ),
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final section = sections[index];
+          return Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: theme.colorScheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: theme.shadowColor.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: _buildSectionHeader(section['title'] as String, theme),
+                ),
+                Expanded(
+                  child: GridView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 1,
+                      childAspectRatio:
+                          MediaQuery.sizeOf(context).width * 0.002,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                    ),
+                    itemCount: section['animes']?.length ?? 5,
+                    itemBuilder: (context, idx) {
+                      final anime = section['animes']?[idx] as BaseAnimeModel?;
+                      final tag = Uuid().v4();
+                      return GestureDetector(
+                        onTap: () => navigateToDetail(context, anime!, tag),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.shadowColor.withValues(alpha: 0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: AnimeCard(
+                            anime: anime,
+                            mode: 'expanded',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+        childCount: sections.length,
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, ThemeData theme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        TextButton.icon(
+          onPressed: () {},
+          icon: const Icon(Iconsax.arrow_right_3, size: 20),
+          label: const Text('See All'),
+          style: TextButton.styleFrom(
+            foregroundColor: theme.colorScheme.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Map<String, dynamic>> _createSections(HomePage? homePage) {
+    if (homePage == null || homePage.featured == null) {
+      return [];
+    }
+    return homePage.featured!.entries.map((section) {
+      return {
+        'title': section.key,
+        'animes': section.value,
+      };
+    }).toList();
+  }
+}

@@ -1,165 +1,181 @@
 <div align="center">
-   <img src="https://i.postimg.cc/xC3MMMKr/Untitled-design-2.png" alt="ShonenX Logo" width="120"/>
+   <img src="assets/icons/app_icon-modified-2.png" alt="ShonenX Logo" width="120"/>
   
-  # ShonenX
-  
-  [![Flutter Version](https://img.shields.io/badge/Flutter-≥3.3.4-blue.svg)](https://flutter.dev/)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Darkx-dev/ShonenX/pulls)
+# ShonenX
 
-A modern, feature-rich anime streaming application built with Flutter
+[![Flutter](https://img.shields.io/badge/Flutter-≥3.2.6-02569B?logo=flutter)](https://flutter.dev/)
+[![Dart](https://img.shields.io/badge/Dart-≥3.2.6-0175C2?logo=dart)](https://dart.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/Darkx-dev/ShonenX?style=social)](https://github.com/Darkx-dev/ShonenX/stargazers)
+
+
+A modern, feature-rich anime streaming application built with Flutter, offering a seamless experience across mobile and desktop platforms.
+
+
+🚧 **Revamp In Progress**  
+I'm currently working on a major revamp to improve the app's design, functionality, and overall experience. Stay tuned for updates!
+
+[Features](#-features) • [Screenshots](#-screenshots) • [Installation](#-installation) • [Contributing](#-contributing) • [Support](#-support)
 
 </div>
 
 ## ✨ Features
 
-- 🎯 **Intuitive Interface** - Clean and user-friendly design for seamless navigation
-- 📺 **High-Quality Streaming** - Multiple quality options from 320p to 1080p
-- 🌓 **Theme Customization** - Toggle between light and dark themes
-- 📱 **Adaptive Layout** - Configurable player orientation for optimal viewing
-- 🔍 **Search** - Find anime by title
-- 📌 **Watchlist** - Keep track of your favorite shows
+### Core Features
+- 🎯 **Intuitive Interface** - Material 3 design with smooth animations and transitions
+- 📺 **Advanced Video Player** - Built with MediaKit for superior performance
+- 🌐 **Cross-Platform** - Seamless experience on both mobile and desktop
+- 🔄 **Offline Support** - Download and watch anime without internet (Pending)
+- 🎨 **Theme System** - Dynamic color theming with light/dark mode support (Ultra theme system very soon)
+
+### Streaming Features
+- 📊 **Multiple Quality Options** - From 360p to 1080p
+- 🎯 **Subtitle Selection** - Select desired subtitle
+- ⏯️ **Remember Position** - Resume from where you left off (Pending)
+- 📝 **Episode Tracking** - Keep track of watched episodes (Pending)
+
+### User Features
+- 🔍 **Advanced Search** - Find anime by title, genre, or season (pending genre & season)
+- 📌 **Watchlist Management** - Organize your favorite shows (Only anilist and favorite toggle for now)
+- 📱 **Responsive Design** - Optimized for all screen sizes
 
 ## 📸 Screenshots
 
+### 📱 Mobile Views
 <div align="center">
 <table>
   <tr>
-    <td><img src="screenshots/home_screen.png" width="200" alt="Home Screen"/></td>
-    <td><img src="screenshots/search_screen.png" width="200" alt="Search Screen"/></td>
-    <td><img src="screenshots/watchlist_screen.png" width="200" alt="Watchlist Screen"/></td>
-    <td><img src="screenshots/details_screen.png" width="200" alt="Details Screen"/></td>
-  </tr>
-  <tr>
-    <td><img src="screenshots/stream_screen.png" width="200" alt="Stream Screen"/></td>
-    <td><img src="screenshots/settings_screen.png" width="200" alt="Settings Screen"/></td>
-    <td><img src="screenshots/theme_screen.png" width="200" alt="Theme Screen"/></td>
-    <td><img src="screenshots/about_screen.png" width="200" alt="About Screen"/></td>
+    <td><img src="screenshots/mobile/home.jpg" width="200" alt="Home Screen"/></td>
+    <td><img src="screenshots/mobile/details.jpg" width="200" alt="Search Screen"/></td>
+    <td><img src="screenshots/mobile/stream.jpg" width="200" alt="Watchlist Screen"/></td>
+    <td><img src="screenshots/mobile/anilist.jpg" width="200" alt="Watchlist Screen"/></td>
   </tr>
 </table>
+
+<details>
+<summary>🖥️ Desktop Views</summary>
+
+### Desktop Views
+<table>
+  <tr>
+    <td><img src="screenshots/desktop/home.jpg" width="400" alt="Desktop Home Screen"/></td>
+    <td><img src="screenshots/desktop/details.jpg" width="400" alt="Desktop Home Screen"/></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/desktop/stream.jpg" width="400" alt="Desktop Home Screen"/></td>
+    <td><img src="screenshots/desktop/anilist.jpg" width="400" alt="Desktop Home Screen"/></td>
+  </tr>
+</table>
+</details>
 </div>
 
-## 🛠️ Tech Stack
+## 🛠️ Technology Stack
 
-### Core
-
-- **Framework**: Flutter (≥3.3.4)
-- **Language**: Dart
-- **State Management**: Hive flutter
-- **Database**: Hive
+### Core Technologies
+- **Framework**: Flutter (≥3.2.6)
+- **Language**: Dart (≥3.2.6)
+- **State Management**: Flutter Riverpod
+- **Local Storage**: Hive
+- **Video Player**: MediaKit
+- **Navigation**: Go Router
+- **API Integration**: GraphQL
 
 ### Key Dependencies
-
 ```yaml
 dependencies:
-  better_player: ^0.0.84
-  crystal_navigation_bar: ^1.0.1
-  flutter:
-    sdk: flutter
-  flutter_launcher_icons: ^0.14.1
-  google_fonts: ^6.2.1
-  hive: ^2.2.3
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.7.1
   hive_flutter: ^1.1.0
-  http: ^1.2.2
-  hugeicons: ^0.0.7
-  shimmer: ^3.0.0
-  url_launcher: ^6.3.1
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^5.0.0
-  hive_generator: ^2.0.1
-  build_runner: ^2.4.13
+  media_kit: ^1.1.10+1
+  graphql_flutter: ^5.2.0
+  google_fonts: ^6.2.1
+  cached_network_image: ^3.4.1
+  flutter_staggered_animations: ^1.1.1
 ```
 
-## 🚀 Getting Started
+## 🚀 Installation
 
 ### Prerequisites
-
-- Flutter SDK (≥3.3.4)
-- Dart SDK
+- Flutter SDK (≥3.2.6)
+- Dart SDK (≥3.2.6)
 - Android Studio / VS Code
 - Git
 
-### Installation
+### Setup Steps
 
-1. **Clone the repository**
-
+1. **Clone the Repository**
 ```bash
 git clone https://github.com/Darkx-dev/ShonenX.git
 cd ShonenX
 ```
 
-2. **Install dependencies**
-
+2. **Install Dependencies**
 ```bash
 flutter pub get
 ```
 
-3. **Run the app**
-
+3. **Run Code Generation**
 ```bash
-flutter run
+flutter pub run build_runner build --delete-conflicting-outputs
 ```
 
-### Configuration
+4. **Run the Application**
+```bash
+# For debug mode
+flutter run
 
-1. **Build Configuration**
-   - Modify `android/app/build.gradle` for Android settings
-   - Update `ios/Runner.xcworkspace` for iOS settings
+# For release mode
+flutter run --release
+```
 
-## 🎯 Usage Guide
+### Building for Production
 
-### First-time Setup
+#### Android
+```bash
+flutter build apk --release
+```
 
-1. Launch the app
-2. Choose your preferred theme
+#### Windows
+```bash
+flutter build windows --release
+```
 
-### Watching Anime
+## 💡 Usage Guide
 
-1. Select an anime
-2. Choose episode and quality settings
-3. Enjoy streaming!
+### Initial Setup
+1. Launch ShonenX
+2. Grant necessary permissions
+3. Choose your preferred theme
+4. Optional: Log in to sync your watchlist
 
-### Managing Watchlist
+### Basic Features
+- Browse anime from the home screen
+- Search for specific titles
+- Add shows to your watchlist
+- Download episodes for offline viewing
 
-- Tap the favorite icon to add/remove shows
-- Access your watchlist from the bottom navigator
-- Auto add to recent/continue
-- More features coming soon with development
+### Player Controls
+- Double-tap to seek
+- Swipe for volume/brightness
+- Long press for playback speed
+- Pinch to zoom (mobile)
 
 ## 🤝 Contributing
 
 We welcome contributions! Here's how you can help:
 
-1. **Fork the Repository**
+### Development Process
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-   ```bash
-   git clone https://github.com/your-username/ShonenX.git
-   ```
-
-2. **Create a Branch**
-
-   ```bash
-   git checkout -b feature/YourFeature
-   ```
-
-3. **Make Changes**
-
-   - Write clean, documented code
-   - Follow the project's coding style
-   - Add tests if applicable
-
-4. **Submit a Pull Request**
-   - Describe your changes in detail
-   - Link any related issues
-
-### Development Guidelines
-
-- Follow Flutter's style guide
+### Contribution Guidelines
+- Follow Flutter/Dart style guidelines
 - Write meaningful commit messages
+- Add tests for new features
 - Update documentation as needed
-- Add comments for complex logic
 
 ## 📄 License
 
@@ -167,23 +183,22 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
+- [MediaKit](https://github.com/media-kit/media-kit) for the video player
+- [Consumet API](https://github.com/consumet/api.consumet.org) for anime data
 - Flutter team for the amazing framework
-- [Aniwatch API](https://github.com/ghoshRitesh12/aniwatch-api) for anime data
 
-## 📞 Contact & Support
+## 📞 Support
 
+### Contact Information
 - **Developer**: Roshan Kumar
 - **GitHub**: [@Darkx-dev](https://github.com/Darkx-dev)
 - **Email**: [darkx.dev.23@gmail.com](mailto:darkx.dev.23@gmail.com)
 
-### Reporting Issues
-
-- Use the GitHub issue tracker
-- Include steps to reproduce
-- Attach relevant screenshots/logs
-
 ---
 
 <div align="center">
-  Made with ❤️ by <a href="https://github.com/Darkx-dev">Darkx-dev</a>
+  
+### Star the repo if you like what you see! ⭐
+
+Made with ❤️ by [Darkx-dev](https://github.com/Darkx-dev)
 </div>

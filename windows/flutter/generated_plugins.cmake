@@ -3,11 +3,21 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  connectivity_plus
+  desktop_webview_window
+  flutter_secure_storage_windows
+  media_kit_libs_windows_video
+  media_kit_video
   permission_handler_windows
+  screen_brightness_windows
+  screen_retriever_windows
   url_launcher_windows
+  window_manager
+  window_to_front
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  media_kit_native_event_loop
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

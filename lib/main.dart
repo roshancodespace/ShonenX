@@ -1,117 +1,120 @@
-import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'dart:developer';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:nekoflow/data/adapters/flex_scheme_adapter.dart';
-import 'package:nekoflow/data/boxes/settings_box.dart';
-import 'package:nekoflow/data/models/settings/settings_model.dart';
-import 'package:nekoflow/data/models/user_model.dart';
-import 'package:nekoflow/data/models/watchlist/watchlist_model.dart';
-import 'package:nekoflow/routes/app_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hive_flutter/adapters.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:shonenx/data/hive/models/settings_offline_model.dart';
+import 'package:shonenx/providers/hive/appearance_provider.dart';
+import 'package:shonenx/router/router.dart';
+import 'package:window_manager/window_manager.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
+bool windowManagerInitialized = false;
 
-  // Register Adapters
-  Hive.registerAdapter(SettingsModelAdapter());
-  Hive.registerAdapter(ThemeModelAdapter());
-  Hive.registerAdapter(FlexSchemeAdapter());
-  Hive.registerAdapter(WatchlistModelAdapter());
-  Hive.registerAdapter(RecentlyWatchedItemAdapter());
-  Hive.registerAdapter(ContinueWatchingItemAdapter());
-  Hive.registerAdapter(AnimeItemAdapter());
-  Hive.registerAdapter(UserModelAdapter());
+class AppInitializer {
+  static Future<void> initialize() async {
+    log("🚀 Main() Called");
 
-  // Open boxes concurrently
-  await Future.wait([
-    Hive.openBox<UserModel>("user"),
-    Hive.openBox<WatchlistModel>("watchlist"),
-    Hive.openBox<SettingsModel>("settings"),
-  ]);
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      log("⚠️ Running in test mode, exiting main.");
+      return;
+    }
 
-  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  runApp(const MainApp());
-}
+    WidgetsFlutterBinding.ensureInitialized();
+    log("✅ Flutter bindings initialized.");
 
-class MainApp extends StatefulWidget {
-  const MainApp({super.key});
-
-  @override
-  State<MainApp> createState() => _MainAppState();
-}
-
-class _MainAppState extends State<MainApp> {
-  late final SettingsBox _settingsBox;
-  late ThemeModel _themeModel;
-  late FlexScheme _flexScheme;
-
-  @override
-  void initState() {
-    super.initState();
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    _initializeBox();
+    await _initializeMediaKit();
+    await _initializeHive();
+    await _initializeWindowManager();
   }
 
-  @override
-  void dispose() {
-    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-    super.dispose();
+  static Future<void> _initializeMediaKit() async {
+    MediaKit.ensureInitialized();
+    log("✅ MediaKit initialized.");
   }
 
-  Future<void> _initializeBox() async {
-    _settingsBox = SettingsBox();
-    await _settingsBox.init();
-    _updateThemeSettings();
+  static Future<void> _initializeHive() async {
+    await Hive.initFlutter();
+    log("✅ Hive initialized.");
+
+    Hive.registerAdapter(SettingsModelAdapter());
+    Hive.registerAdapter(ProviderSettingsModelAdapter());
+    Hive.registerAdapter(AppearanceSettingsModelAdapter());
+    log("✅ Hive adapters registered.");
   }
 
-  void _updateThemeSettings() {
-    _themeModel = _settingsBox.getTheme()!;
-    _flexScheme = _themeModel.flexScheme;
-  }
+  static Future<void> _initializeWindowManager() async {
+    if (!kIsWeb && !Platform.isAndroid && !Platform.isIOS) {
+      try {
+        if (!windowManagerInitialized) {
+          await windowManager.ensureInitialized();
+          windowManagerInitialized = true;
 
-  ThemeData _buildThemeData(bool isDark) {
-    return isDark
-        ? FlexThemeData.dark(
-            scheme: _flexScheme,
-            blendLevel: 18,
-            darkIsTrueBlack: _themeModel.trueBlack,
-            swapColors: _themeModel.swapColors,
-            subThemesData: FlexSubThemesData(
-              interactionEffects: true,
-              cardRadius: _themeModel.cardRadius,
-            ),
-            textTheme: GoogleFonts.montserratTextTheme(),
-          )
-        : FlexThemeData.light(
-            scheme: _flexScheme,
-            blendLevel: 15,
-            swapColors: _themeModel.swapColors,
-            subThemesData: FlexSubThemesData(
-              interactionEffects: true,
-              cardRadius: _themeModel.cardRadius,
-            ),
-            textTheme: GoogleFonts.montserratTextTheme(),
+          WindowOptions windowOptions = WindowOptions(
+            center: true,
+            backgroundColor: Colors.black,
+            skipTaskbar: false,
+            title: "ShonenX Beta",
           );
+
+          await windowManager.waitUntilReadyToShow(windowOptions, () async {
+            await windowManager.show();
+            await windowManager.focus();
+          });
+
+          log("✅ Window Manager Initialized");
+        }
+      } catch (e) {
+        log("❌ Window Manager Initialization Error: $e");
+      }
+    } else {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+      log("✅ System UI Mode set to edge-to-edge.");
+    }
   }
+}
+
+void main(List<String> args) async {
+  await AppInitializer.initialize();
+  log("🏃 Running App");
+  runApp(const ProviderScope(child: MyApp()));
+}
+
+class MyApp extends ConsumerWidget {
+  const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<Box<SettingsModel>>(
-      valueListenable: _settingsBox.listenable(),
-      builder: (context, box, child) {
-        _updateThemeSettings();
-        bool isDark = _themeModel.themeMode == 'dark' ||
-            (_themeModel.themeMode == 'system' &&
-                MediaQuery.of(context).platformBrightness == Brightness.dark);
-
-        return MaterialApp.router(
-          debugShowCheckedModeBanner: false,
-          theme: _buildThemeData(isDark),
-          routerConfig: AppRouter.router,
-        );
-      },
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appearanceState = ref.watch(appearanceProvider).appearanceSettings;
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        brightness: appearanceState?.themeMode == 'light'
+            ? Brightness.light
+            : Brightness.dark,
+        textTheme: GoogleFonts.montserratTextTheme(
+            appearanceState?.themeMode == 'light'
+                ? ThemeData.light().textTheme
+                : ThemeData.dark().textTheme),
+                
+        iconTheme: const IconThemeData(color: Colors.white),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.lime,
+          brightness: appearanceState?.themeMode == 'light'
+              ? Brightness.light
+              : Brightness.dark,
+        ),
+      ),
+      routerConfig: router,
     );
   }
 }

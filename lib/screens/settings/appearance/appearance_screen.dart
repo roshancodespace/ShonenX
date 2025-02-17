@@ -1,12 +1,10 @@
-import 'dart:ui';
-
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/data/hive/boxes/settings_box.dart';
 import 'package:shonenx/data/hive/models/settings_offline_model.dart';
-import 'package:shonenx/providers/hive/appearance_provider.dart';
 
 class AppearanceSettingsScreen extends ConsumerStatefulWidget {
   const AppearanceSettingsScreen({super.key});
@@ -18,6 +16,7 @@ class AppearanceSettingsScreen extends ConsumerStatefulWidget {
 
 class _AppearanceSettingsScreenState
     extends ConsumerState<AppearanceSettingsScreen> {
+  late SettingsBox? _settingsBox;
   bool _isDarkMode = false;
   bool _useAmoledBlack = false;
   FlexScheme _flexScheme = FlexScheme.deepPurple;
@@ -28,8 +27,10 @@ class _AppearanceSettingsScreenState
     _loadSettings();
   }
 
-  void _loadSettings() {
-    final settings = ref.read(appearanceProvider).appearanceSettings;
+  Future<void> _loadSettings() async {
+    _settingsBox = SettingsBox();
+    await _settingsBox?.init();
+    final settings = _settingsBox?.getSettings()?.appearanceSettings;
     setState(() {
       _isDarkMode = settings?.themeMode != 'light';
       _useAmoledBlack = settings?.amoled ?? false;
@@ -38,13 +39,12 @@ class _AppearanceSettingsScreenState
   }
 
   void _updateAppearanceSettings() {
-    ref.read(appearanceProvider.notifier).updateAppearance(
-          AppearanceSettingsModel(
-            themeMode: _isDarkMode ? 'dark' : 'light',
-            amoled: _useAmoledBlack,
-            colorScheme: _flexScheme
-          ),
-        );
+    _settingsBox?.updateAppearanceSettings(
+      AppearanceSettingsModel(
+          themeMode: _isDarkMode ? 'dark' : 'light',
+          amoled: _useAmoledBlack,
+          colorScheme: _flexScheme),
+    );
   }
 
   @override
@@ -131,9 +131,9 @@ class _AppearanceSettingsScreenState
       padding: const EdgeInsets.all(15),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final crossAxisCount = isWideScreen
-              ? (constraints.maxWidth / 200).floor()
-              : (constraints.maxWidth / 130).floor();
+          // final crossAxisCount = isWideScreen
+          //     ? (constraints.maxWidth / 200).floor()
+          //     : (constraints.maxWidth / 130).floor();
 
           return GridView.builder(
             shrinkWrap: true,
@@ -188,7 +188,7 @@ class _SettingsSwitchTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: colorScheme.primary.withOpacity(0.1),
+                color: colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -214,7 +214,7 @@ class _SettingsSwitchTile extends StatelessWidget {
                     subtitle,
                     style: TextStyle(
                       fontSize: 14,
-                      color: colorScheme.onSurface.withOpacity(0.7),
+                      color: colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -246,7 +246,8 @@ class _ColorSchemeCard extends StatefulWidget {
   State<_ColorSchemeCard> createState() => _ColorSchemeCardState();
 }
 
-class _ColorSchemeCardState extends State<_ColorSchemeCard> with SingleTickerProviderStateMixin {
+class _ColorSchemeCardState extends State<_ColorSchemeCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   bool _isHovered = false;
@@ -296,7 +297,8 @@ class _ColorSchemeCardState extends State<_ColorSchemeCard> with SingleTickerPro
   @override
   Widget build(BuildContext context) {
     final schemeData = FlexThemeData.light(scheme: widget.scheme).colorScheme;
-    final darkSchemeData = FlexThemeData.dark(scheme: widget.scheme).colorScheme;
+    final darkSchemeData =
+        FlexThemeData.dark(scheme: widget.scheme).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentScheme = isDark ? darkSchemeData : schemeData;
 
@@ -318,7 +320,7 @@ class _ColorSchemeCardState extends State<_ColorSchemeCard> with SingleTickerPro
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: currentScheme.primary.withOpacity(0.1),
+                  color: currentScheme.primary.withValues(alpha: 0.1),
                   blurRadius: _isHovered ? 16 : 8,
                   spreadRadius: _isHovered ? 2 : 0,
                   offset: const Offset(0, 4),
@@ -358,7 +360,7 @@ class _ColorSchemeCardState extends State<_ColorSchemeCard> with SingleTickerPro
                             ),
                           ),
                         ),
-                        
+
                         // Content
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -368,13 +370,13 @@ class _ColorSchemeCardState extends State<_ColorSchemeCard> with SingleTickerPro
                               flex: 1,
                               child: _buildColorPreview(currentScheme),
                             ),
-                            
+
                             // Scheme Name Section
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: (isDark ? Colors.black : Colors.white)
-                                    .withOpacity(0.9),
+                                    .withValues(alpha: 0.9),
                                 borderRadius: const BorderRadius.vertical(
                                   bottom: Radius.circular(18),
                                 ),
@@ -385,7 +387,7 @@ class _ColorSchemeCardState extends State<_ColorSchemeCard> with SingleTickerPro
                                     child: Text(
                                       _formatSchemeName(widget.scheme.name),
                                       style: TextStyle(
-                                        color: currentScheme.onBackground,
+                                        color: currentScheme.onSurface,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -467,7 +469,7 @@ class _ColorBubble extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.4),
+            color: color.withValues(alpha: 0.4),
             blurRadius: isAnimated ? 12 : 6,
             spreadRadius: isAnimated ? 2 : 0,
           ),
@@ -504,8 +506,8 @@ class _SchemePatternPainter extends CustomPainter {
 
     // Create subtle pattern with theme colors
     for (int i = 0; i < colors.length; i++) {
-      paint.color = colors[i].withOpacity(0.1);
-      
+      paint.color = colors[i].withValues(alpha: 0.1);
+
       // Draw diagonal lines
       for (double x = -size.width; x < size.width; x += 20) {
         canvas.drawLine(
@@ -523,9 +525,9 @@ class _SchemePatternPainter extends CustomPainter {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          colors[0].withOpacity(0.1),
-          colors[1].withOpacity(0.05),
-          colors[2].withOpacity(0.1),
+          colors[0].withValues(alpha: 0.1),
+          colors[1].withValues(alpha: 0.05),
+          colors[2].withValues(alpha: 0.1),
         ],
       ).createShader(rect);
 

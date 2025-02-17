@@ -99,8 +99,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       floatingActionButton: isDesktop
           ? FloatingActionButton.extended(
+              backgroundColor: theme.colorScheme.primaryContainer,
               onPressed: () => _toggleSearchBar(context),
-              label: const Text('Search anime...'),
+              label: Text(
+                'Search anime...',
+                style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+              ),
               icon: Icon(
                 Iconsax.search_normal,
                 color: theme.colorScheme.onPrimaryContainer,

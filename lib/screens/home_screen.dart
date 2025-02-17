@@ -7,12 +7,14 @@ import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
 import 'package:shonenx/api/models/anilist/anilist_user.dart';
 import 'package:shonenx/api/models/anime/page_model.dart';
+import 'package:shonenx/data/hive/boxes/continue_watching_box.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/providers/anilist/anilist_user_provider.dart';
 import 'package:shonenx/providers/homepage_provider.dart';
 import 'package:shonenx/utils/greeting_methods.dart';
 import 'package:shonenx/widgets/anime/anime_card.dart';
 import 'package:shonenx/widgets/anime/anime_spotlight_card.dart';
+import 'package:shonenx/widgets/anime/continue_watching_view.dart';
 import 'package:shonenx/widgets/ui/slide_indicator.dart';
 import 'package:uuid/uuid.dart';
 
@@ -25,12 +27,24 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
+  final ContinueWatchingBox continueWatchingBox = ContinueWatchingBox();
+  bool _isBoxInitialized = false;
   bool _isScrolled = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _initializeContinueWatchingBox();
+  }
+
+  Future<void> _initializeContinueWatchingBox() async {
+    await continueWatchingBox.init();
+    if (mounted) {
+      setState(() {
+        _isBoxInitialized = true;
+      });
+    }
   }
 
   void _onScroll() {
@@ -61,14 +75,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             final homePageAsync = ref.watch(homePageProvider);
             return homePageAsync.when(
               data: (homePage) => _HomeContent(
+                continueWatchingBox:
+                    _isBoxInitialized ? continueWatchingBox : null,
                 homePage: homePage,
                 isDesktop: isDesktop,
               ),
               error: (error, stack) => _HomeContent(
+                continueWatchingBox:
+                    _isBoxInitialized ? continueWatchingBox : null,
                 homePage: null,
                 isDesktop: isDesktop,
               ),
               loading: () => _HomeContent(
+                continueWatchingBox:
+                    _isBoxInitialized ? continueWatchingBox : null,
                 homePage: null,
                 isDesktop: isDesktop,
                 isLoading: true,
@@ -123,12 +143,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
 class _HomeContent extends ConsumerWidget {
   final HomePage? homePage;
+  final ContinueWatchingBox? continueWatchingBox;
   final bool isDesktop;
   final bool isLoading;
 
   const _HomeContent({
     required this.homePage,
     required this.isDesktop,
+    required this.continueWatchingBox,
     this.isLoading = false,
   });
 
@@ -146,6 +168,10 @@ class _HomeContent extends ConsumerWidget {
             isLoading: isLoading,
           ),
           const SizedBox(height: 30),
+          if (continueWatchingBox != null)
+            ContinueWatchingView(
+              continueWatchingBox: continueWatchingBox!,
+            ),
           _HorizontalAnimeSection(
             title: 'Popular',
             animes: homePage?.popularAnime,
@@ -182,7 +208,7 @@ class _HeaderSection extends ConsumerWidget {
           end: Alignment.bottomCenter,
           colors: [
             theme.colorScheme.surface,
-            theme.colorScheme.surface.withOpacity(0),
+            Colors.transparent,
           ],
         ),
       ),
@@ -221,7 +247,7 @@ class _UserInfo extends StatelessWidget {
             Text(
               getGreeting(),
               style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -370,8 +396,8 @@ class _DiscoverAnimeButton extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              theme.colorScheme.primary.withOpacity(0.3),
-              theme.colorScheme.primary.withOpacity(0.1),
+              theme.colorScheme.primary.withValues(alpha: 0.3),
+              theme.colorScheme.primary.withValues(alpha: 0.1),
             ],
           ),
           borderRadius: BorderRadius.circular(20),
@@ -381,7 +407,7 @@ class _DiscoverAnimeButton extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.1),
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -405,7 +431,7 @@ class _DiscoverAnimeButton extends StatelessWidget {
                   Text(
                     'Explore your next favorite series',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -436,7 +462,7 @@ class _SpotlightSection extends StatelessWidget {
     final trendingAnimes = isLoading
         ? List.filled(9, null)
         : homePage?.trendingAnime ?? List.filled(9, Media(id: null));
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
     final carouselHeight =
         MediaQuery.sizeOf(context).width > 900 ? 500.0 : 230.0;
 

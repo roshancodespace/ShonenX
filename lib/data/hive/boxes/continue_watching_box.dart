@@ -1,4 +1,5 @@
-import 'package:hive/hive.dart';
+import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:shonenx/data/hive/models/continue_watching_model.dart';
 
 class ContinueWatchingBox {
@@ -11,9 +12,12 @@ class ContinueWatchingBox {
     } else {
       _box = Hive.box<ContinueWatchingEntry>(boxName);
     }
+
   }
 
   bool get isInitialized => _box != null;
+
+  ValueListenable<Box<ContinueWatchingEntry>> get boxValueListenable => _box!.listenable();
 
   /// Get a single entry by animeId
   ContinueWatchingEntry? getEntry(int animeId) {
@@ -37,6 +41,6 @@ class ContinueWatchingBox {
 
   /// Clear all entries
   Future<void> clearAll() async {
-    await _box?.clear();
+    await _box?.deleteAll([_box!.keys]);
   }
 }

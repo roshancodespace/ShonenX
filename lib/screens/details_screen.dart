@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/anilist/services/anilist_service.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/data/hive/boxes/continue_watching_box.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/helpers/provider.dart';
 import 'package:shonenx/providers/anilist/anilist_medialist_provider.dart';
@@ -24,15 +25,28 @@ class AnimeDetailsScreen extends ConsumerStatefulWidget {
 class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     with SingleTickerProviderStateMixin {
   late ScrollController _scrollController;
+  late ContinueWatchingBox continueWatchingBox;
+  bool _isBoxInitialized = false;
   bool _isLoading = false;
   bool? _isFavourite;
 
   @override
   void initState() {
     super.initState();
+    _initializeContinueWatchingBox();
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     _checkFavorite();
     _scrollController = ScrollController();
+  }
+
+  Future<void> _initializeContinueWatchingBox() async {
+    continueWatchingBox = ContinueWatchingBox();
+    await continueWatchingBox.init();
+    if (mounted) {
+      setState(() {
+        _isBoxInitialized = true;
+      });
+    }
   }
 
   Future<void> _checkFavorite() async {
@@ -82,7 +96,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
 
       final response = await animeProvider?.getSearch(
         title!.replaceAll(' ', '+'),
-        widget.anime.format!,
+        widget.anime.format,
         1,
       );
 
@@ -120,7 +134,8 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
       // Direct navigation for high confidence matches
       if (matchedResults.isNotEmpty && matchedResults.first.$2 >= 0.8) {
         final bestMatch = matchedResults.first.$1;
-        context.push('/watch/${bestMatch.id}?animeName=${bestMatch.name}');
+        context.push('/watch/${bestMatch.id}?animeName=${bestMatch.name}',
+            extra: widget.anime);
         return;
       }
 
@@ -172,7 +187,8 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
                           onTap: () {
                             Navigator.of(context).pop();
                             context.push(
-                                '/watch/${result.id}?animeName=${result.name}');
+                                '/watch/${result.id}?animeName=${result.name}',
+                                extra: widget.anime);
                           },
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
@@ -195,7 +211,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
                                         height: 70,
                                         color: Theme.of(context)
                                             .colorScheme
-                                            .surfaceVariant,
+                                            .surfaceContainerHighest,
                                         child: const Center(
                                           child: SizedBox(
                                             width: 20,
@@ -212,7 +228,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
                                         height: 70,
                                         color: Theme.of(context)
                                             .colorScheme
-                                            .surfaceVariant,
+                                            .surfaceContainerHighest,
                                         child: const Icon(Icons.broken_image,
                                             size: 20),
                                       ),
@@ -348,7 +364,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      theme.colorScheme.surface.withOpacity(0.5),
+                      theme.colorScheme.surface.withValues(alpha: 0.5),
                       theme.colorScheme.surface
                     ],
                     begin: Alignment.topCenter,
@@ -366,6 +382,24 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
                 children: [
                   _buildGenreTags(theme),
                   const SizedBox(height: 16),
+                  _isBoxInitialized
+                      ? ValueListenableBuilder(
+                          valueListenable:
+                              continueWatchingBox.boxValueListenable,
+                          builder: (context, box, child) {
+                            final continueWatchingEntry =
+                                continueWatchingBox.getEntry(widget.anime.id!);
+                            return Text(
+                              '${continueWatchingEntry?.progressInSeconds ?? 0} / ${continueWatchingEntry?.durationInSeconds ?? 0}',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                                fontSize: 16,
+                              ),
+                            );
+                          },
+                        )
+                      : const CircularProgressIndicator(), // Or some loading state
+
                   Text(
                     widget.anime.title?.english ??
                         widget.anime.title?.romaji ??
@@ -380,7 +414,8 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
                     Text(
                       widget.anime.title!.native!,
                       style: TextStyle(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.7),
                         fontSize: 18,
                       ),
                     ),
@@ -409,7 +444,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.2),
+        color: theme.colorScheme.primary.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -427,13 +462,13 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         genre,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.9),
+          color: Colors.white.withValues(alpha: 0.9),
         ),
       ),
     );
@@ -444,7 +479,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withOpacity(0.1),
+        color: theme.colorScheme.surface.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -496,7 +531,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
         Text(
           label,
           style: TextStyle(
-            color: theme.colorScheme.onSurface.withOpacity(0.5),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             fontSize: 12,
           ),
         ),
@@ -537,7 +572,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     return Material(
       color: isPrimary
           ? theme.colorScheme.primary
-          : theme.colorScheme.onSurface.withOpacity(0.1),
+          : theme.colorScheme.onSurface.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -589,7 +624,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
           Text(
             widget.anime.description ?? 'No description available.',
             style: TextStyle(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               fontSize: 16,
               height: 1.6,
             ),
@@ -676,7 +711,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withOpacity(0.2),
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -718,7 +753,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
                 Text(
                   'Based on user ratings and popularity',
                   style: TextStyle(
-                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     fontSize: 12,
                   ),
                 ),

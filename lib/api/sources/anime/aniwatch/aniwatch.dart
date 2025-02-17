@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:html/dom.dart';
 import 'package:http/http.dart' as http;
@@ -90,12 +91,13 @@ class AniwatchProvider extends AnimeProvider {
   }
 
   @override
-  Future<SearchPage> getSearch(String keyword, String type, int page) async {
-    final hianimeType = _mapTypeToHianimeType(type.toLowerCase());
+  Future<SearchPage> getSearch(String keyword, String? type, int page) async {
+    final hianimeType =
+        type != null ? _mapToAniwatchType(type.toLowerCase()) : null;
     final url = hianimeType != null
         ? '$baseUrl/search?keyword=$keyword&type=$hianimeType&page=$page'
         : '$baseUrl/search?keyword=$keyword&page=$page';
-    debugPrint(url);
+    log(url);
     final response = await http.get(Uri.parse(url), headers: _getHeaders());
     final document = parse(response.body);
     return parseSearch(document, baseUrl, keyword: keyword, page: page);
@@ -109,7 +111,7 @@ class AniwatchProvider extends AnimeProvider {
     return parsePage(document, baseUrl, route: route, page: page);
   }
 
-  int? _mapTypeToHianimeType(String type) {
+  int? _mapToAniwatchType(String type) {
     return switch (type) {
       'movie' => 1,
       'tv' => 2,

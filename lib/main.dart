@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:shonenx/data/hive/models/continue_watching_model.dart';
 import 'package:shonenx/data/hive/models/settings_offline_model.dart';
 import 'package:shonenx/providers/hive/appearance_provider.dart';
 import 'package:shonenx/router/router.dart';
@@ -37,14 +39,29 @@ class AppInitializer {
   }
 
   static Future<void> _initializeHive() async {
-    await Hive.initFlutter();
-    log("✅ Hive initialized.");
+  String customPath;
 
-    Hive.registerAdapter(SettingsModelAdapter());
-    Hive.registerAdapter(ProviderSettingsModelAdapter());
-    Hive.registerAdapter(AppearanceSettingsModelAdapter());
-    log("✅ Hive adapters registered.");
+  if (Platform.isWindows) {
+    // Custom folder inside the user's Documents directory (or any path you prefer)
+    customPath = '${Directory.current.path}\\hive_data'; // Or any other path
+  } else {
+    // Default for other platforms
+    customPath = (await getApplicationDocumentsDirectory()).path;
   }
+
+  Hive.init(customPath);
+  log("✅ Hive initialized at: $customPath");
+
+  // Register your adapters as usual
+  Hive.registerAdapter(SettingsModelAdapter());
+  Hive.registerAdapter(ProviderSettingsModelAdapter());
+  Hive.registerAdapter(AppearanceSettingsModelAdapter());
+  Hive.registerAdapter(PlayerSettingsModelAdapter());
+  Hive.registerAdapter(ContinueWatchingEntryAdapter());
+
+  log("✅ Hive adapters registered.");
+}
+
 
   static Future<void> _initializeWindowManager() async {
     if (!kIsWeb && !Platform.isAndroid && !Platform.isIOS) {
@@ -105,7 +122,6 @@ class MyApp extends ConsumerWidget {
             appearanceState?.themeMode == 'light'
                 ? ThemeData.light().textTheme
                 : ThemeData.dark().textTheme),
-                
         iconTheme: const IconThemeData(color: Colors.white),
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.lime,

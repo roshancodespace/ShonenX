@@ -1,19 +1,30 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/api/models/anime/episode_model.dart';
+import 'package:shonenx/data/hive/boxes/continue_watching_box.dart';
+import 'package:shonenx/data/hive/models/continue_watching_model.dart';
 
 class CustomControls extends StatefulWidget {
   final VideoState state;
+  final Media animeMedia;
   final List<Map<String, String>> qualityOptions;
   final Function(String) changeQuality;
+  final int currentEpisodeIndex;
+  final List<EpisodeDataModel> episodes;
 
   const CustomControls({
     super.key,
     required this.state,
+    required this.animeMedia,
     required this.changeQuality,
     required this.qualityOptions,
+    required this.currentEpisodeIndex,
+    required this.episodes,
   });
 
   @override
@@ -21,6 +32,8 @@ class CustomControls extends StatefulWidget {
 }
 
 class _CustomControlsState extends State<CustomControls> {
+  late Timer? progressSaveTimer;
+  late ContinueWatchingBox? continueWatchingBox;
   bool isBuffering = true;
   bool isPlaying = true;
   bool showControls = true;
@@ -48,9 +61,46 @@ class _CustomControlsState extends State<CustomControls> {
   @override
   void initState() {
     super.initState();
+    _initializeContinueWatchingBox();
     _initializeState();
     _attachListeners();
     _startHideTimer();
+    _startProgressSaveTimer();
+  }
+
+  Future<void> _initializeContinueWatchingBox() async {
+    continueWatchingBox = ContinueWatchingBox();
+    await continueWatchingBox?.init();
+  }
+
+  Future<void> _startProgressSaveTimer() async {
+    progressSaveTimer = Timer.periodic(Duration(seconds: 10), (timer) async {
+      final thumbnail = await widget.state.widget.controller.player
+          .screenshot(format: 'image/png');
+      if (continueWatchingBox != null) {
+        final episode = widget.episodes[widget.currentEpisodeIndex];
+        continueWatchingBox?.setEntry(
+          ContinueWatchingEntry(
+            animeId: widget.animeMedia.id!,
+            animeTitle: widget.animeMedia.title?.english ??
+                widget.animeMedia.title?.native ??
+                widget.animeMedia.title?.romaji ??
+                '',
+            animeCover: widget.animeMedia.coverImage?.large ??
+                widget.animeMedia.coverImage?.medium ??
+                '',
+            animeFormat: widget.animeMedia.format,
+            episodeThumbnail: thumbnail != null ? base64Encode(thumbnail) : '',
+            episodeNumber: episode.number!,
+            episodeTitle: episode.title!,
+            totalEpisodes: widget.episodes.length,
+            progressInSeconds: position.inSeconds,
+            durationInSeconds: duration.inSeconds,
+            lastUpdated: DateTime.now().toIso8601String(),
+          ),
+        );
+      }
+    });
   }
 
   void _initializeState() {
@@ -84,8 +134,9 @@ class _CustomControlsState extends State<CustomControls> {
     });
 
     player.stream.volume.listen((vol) {
-      if (mounted)
+      if (mounted) {
         setState(() => volume = vol / 100); // Convert to 0.0-1.0 range
+      }
     });
   }
 
@@ -116,6 +167,7 @@ class _CustomControlsState extends State<CustomControls> {
   @override
   void dispose() {
     _hideTimer?.cancel();
+    progressSaveTimer?.cancel();
     super.dispose();
   }
 
@@ -370,7 +422,9 @@ class _CustomControlsState extends State<CustomControls> {
         _buildSettingsItem(
           icon: Icons.high_quality,
           title: 'Quality',
-          subtitle:  widget.state.widget.controller.player.state.width != null ? '${widget.state.widget.controller.player.state.height}p' : 'Auto',
+          subtitle: widget.state.widget.controller.player.state.width != null
+              ? '${widget.state.widget.controller.player.state.height}p'
+              : 'Auto',
           onTap: () => setState(() => _currentSettingsPage = 'quality'),
         ),
         _buildSettingsItem(

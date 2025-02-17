@@ -10,15 +10,24 @@ class SettingsModel {
   @HiveField(1)
   final AppearanceSettingsModel? appearanceSettings;
 
-  SettingsModel({this.providerSettings, this.appearanceSettings});
+  @HiveField(2)
+  final PlayerSettingsModel? playerSettings; // ✅ Added
+
+  SettingsModel({
+    this.providerSettings,
+    this.appearanceSettings,
+    this.playerSettings,
+  });
 
   SettingsModel copyWith({
     ProviderSettingsModel? providerSettings,
     AppearanceSettingsModel? appearanceSettings,
+    PlayerSettingsModel? playerSettings,
   }) {
     return SettingsModel(
       providerSettings: providerSettings ?? this.providerSettings,
       appearanceSettings: appearanceSettings ?? this.appearanceSettings,
+      playerSettings: playerSettings ?? this.playerSettings,
     );
   }
 }
@@ -30,7 +39,6 @@ class ProviderSettingsModel {
 
   ProviderSettingsModel({this.selectedProviderName = 'hianime'});
 
-  // Copy method to create a new instance with the same values
   ProviderSettingsModel copyWith({String? selectedProviderName}) {
     return ProviderSettingsModel(
       selectedProviderName: selectedProviderName ?? this.selectedProviderName,
@@ -47,7 +55,6 @@ class AppearanceSettingsModel {
 
   AppearanceSettingsModel copyWith({
     String? theme,
-    bool? isDarkMode,
   }) {
     return AppearanceSettingsModel(
       themeMode: theme ?? themeMode,
@@ -64,10 +71,40 @@ class AnilistSettings {
 
   AnilistSettings copyWith({
     String? theme,
-    bool? isDarkMode,
   }) {
     return AnilistSettings(
       themeMode: theme ?? themeMode,
+    );
+  }
+}
+
+@HiveType(typeId: 4)
+class PlayerSettingsModel {
+  @HiveField(0)
+  final double episodeCompletionThreshold;
+
+  @HiveField(1)
+  final bool autoPlayNextEpisode;
+
+  @HiveField(2)
+  final bool preferSubtitles;
+
+  PlayerSettingsModel({
+    this.episodeCompletionThreshold = 0.9,
+    this.autoPlayNextEpisode = true,
+    this.preferSubtitles = false,
+  });
+
+  PlayerSettingsModel copyWith({
+    double? episodeCompletionThreshold,
+    bool? autoPlayNextEpisode,
+    bool? preferSubtitles,
+  }) {
+    return PlayerSettingsModel(
+      episodeCompletionThreshold:
+          episodeCompletionThreshold ?? this.episodeCompletionThreshold,
+      autoPlayNextEpisode: autoPlayNextEpisode ?? this.autoPlayNextEpisode,
+      preferSubtitles: preferSubtitles ?? this.preferSubtitles,
     );
   }
 }

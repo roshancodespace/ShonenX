@@ -62,7 +62,6 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -84,8 +83,8 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
           ],
         ),
       ),
@@ -296,7 +295,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
           Icon(
             Icons.movie_creation_outlined,
             size: 64,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 24),
           Text(
@@ -308,8 +307,10 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
           Text(
             "Start exploring and add some anime to your collection!",
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.7),
                 ),
             textAlign: TextAlign.center,
           ),

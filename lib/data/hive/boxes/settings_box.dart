@@ -37,6 +37,15 @@ class SettingsBox {
     }
   }
 
+  Future<void> updatePlayerSettings(PlayerSettingsModel playerSettings) async {
+    final currentSettings = getSettings();
+    if (currentSettings != null) {
+      final updatedSettings =
+          currentSettings.copyWith(playerSettings: playerSettings);
+      await saveSettings(updatedSettings);
+    }
+  }
+
   SettingsModel? getSettings() {
     return _settingsBox?.get(0);
   }

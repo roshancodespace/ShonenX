@@ -170,7 +170,7 @@ class AnilistQueries {
   static const String toggleFavoriteQuery = '''
     mutation (\$animeId: Int!) {
       ToggleFavourite(animeId: \$animeId) {
-        anime {\
+        anime {
           nodes {
             $mediaFields
           }

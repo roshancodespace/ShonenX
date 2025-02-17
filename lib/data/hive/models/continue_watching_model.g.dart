@@ -8,7 +8,7 @@ part of 'continue_watching_model.dart';
 
 class ContinueWatchingEntryAdapter extends TypeAdapter<ContinueWatchingEntry> {
   @override
-  final int typeId = 4;
+  final int typeId = 5;
 
   @override
   ContinueWatchingEntry read(BinaryReader reader) {
@@ -17,33 +17,42 @@ class ContinueWatchingEntryAdapter extends TypeAdapter<ContinueWatchingEntry> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return ContinueWatchingEntry(
-      animeId: fields[0] as int,
-      animeTitle: fields[1] as String,
-      animeImage: fields[2] as String,
-      episodeNumber: fields[3] as int,
-      totalEpisodes: fields[4] as int,
-      progressInSeconds: fields[5] as int,
-      lastUpdated: fields[6] as String,
+      animeId: fields[0] as int?,
+      animeTitle: fields[1] as String?,
+      episodeTitle: fields[2] as String?,
+      episodeNumber: fields[3] as int?,
+      episodeThumbnail: fields[4] as String?,
+      animeCover: fields[5] as String?,
+      totalEpisodes: fields[6] as int?,
+      progressInSeconds: fields[7] as int?,
+      durationInSeconds: fields[8] as int?,
+      lastUpdated: fields[9] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ContinueWatchingEntry obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.animeId)
       ..writeByte(1)
       ..write(obj.animeTitle)
       ..writeByte(2)
-      ..write(obj.animeImage)
+      ..write(obj.episodeTitle)
       ..writeByte(3)
       ..write(obj.episodeNumber)
       ..writeByte(4)
-      ..write(obj.totalEpisodes)
+      ..write(obj.episodeThumbnail)
       ..writeByte(5)
-      ..write(obj.progressInSeconds)
+      ..write(obj.animeCover)
       ..writeByte(6)
+      ..write(obj.totalEpisodes)
+      ..writeByte(7)
+      ..write(obj.progressInSeconds)
+      ..writeByte(8)
+      ..write(obj.durationInSeconds)
+      ..writeByte(9)
       ..write(obj.lastUpdated);
   }
 

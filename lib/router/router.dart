@@ -196,6 +196,7 @@ GoRoute _buildWatchRoute() {
           },
           child: WatchScreen(
             animeId: state.pathParameters['id']!,
+            animeMedia: state.extra as Media,
             animeName: state.uri.queryParameters['animeName']!,
           ),
         ),
@@ -410,7 +411,8 @@ class _AppRouterScreenState extends State<AppRouterScreen> {
   }
 }
 
-void showExitConfirmationDialog(BuildContext context, {bool isSystemExit = false}) {
+void showExitConfirmationDialog(BuildContext context,
+    {bool isSystemExit = false}) {
   showDialog(
     context: context,
     builder: (BuildContext context) {

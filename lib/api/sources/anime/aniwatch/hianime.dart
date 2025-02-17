@@ -142,13 +142,13 @@ class HiAnimeProvider extends AnimeProvider {
           'https://animaze-swart.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category}'),
       headers: _getHeaders(),
     );
-    log('${response.body}');
     return BaseSourcesModel.fromJson(json.decode(response.body));
   }
 
   @override
-  Future<SearchPage> getSearch(String keyword, String type, int page) async {
-    final hianimeType = _mapTypeToHianimeType(type.toLowerCase());
+  Future<SearchPage> getSearch(String keyword, String? type, int page) async {
+    final hianimeType =
+        type != null ? _mapTypeToHianimeType(type.toLowerCase()) : null;
     final url = hianimeType != null
         ? '$baseUrl/search?keyword=$keyword&type=$hianimeType&page=$page'
         : '$baseUrl/search?keyword=$keyword&page=$page';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:shonenx/data/hive/boxes/settings_box.dart';
+import 'package:shonenx/data/hive/models/settings_offline_model.dart';
 
 class PlayerSettingsScreen extends StatefulWidget {
   const PlayerSettingsScreen({super.key});
@@ -10,19 +11,31 @@ class PlayerSettingsScreen extends StatefulWidget {
 }
 
 class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
-  late final Box settingsBox;
-  late int episodeCompletionThreshold;
+  late final SettingsBox settingsBox;
+  double episodeCompletionThreshold = 0.9;
 
   @override
   void initState() {
     super.initState();
-    episodeCompletionThreshold = 70;
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    settingsBox = SettingsBox();
+    await settingsBox.init();
+    final settings = settingsBox.getSettings();
+    if (settings != null) {
+      final playerSettings = settings.playerSettings;
+      episodeCompletionThreshold =
+          playerSettings?.episodeCompletionThreshold ?? 0.9;
+      setState(() {});
+    }
   }
 
   Future<void> _setEpisodeCompletionThreshold() async {
-    int tempValue = episodeCompletionThreshold;
+    double tempValue = episodeCompletionThreshold;
 
-    final newThreshold = await showDialog<int>(
+    final newThreshold = await showDialog<double>(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -34,13 +47,13 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
                 children: [
                   Slider(
                     value: tempValue.toDouble(),
-                    min: 50,
-                    max: 100,
+                    min: 0.5,
+                    max: 1,
                     divisions: 10,
                     label: '$tempValue%',
                     onChanged: (value) {
                       setDialogState(() {
-                        tempValue = value.toInt();
+                        tempValue = value;
                       });
                     },
                   ),
@@ -70,7 +83,8 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
       setState(() {
         episodeCompletionThreshold = newThreshold;
       });
-      await settingsBox.put('episodeCompletionThreshold', newThreshold);
+      await settingsBox.updatePlayerSettings(PlayerSettingsModel(
+          episodeCompletionThreshold: episodeCompletionThreshold));
     }
   }
 
@@ -174,7 +188,8 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
             context,
             title: 'Episode Completion',
             icon: Iconsax.timer_1,
-            subtitle: 'Mark as watched at $episodeCompletionThreshold% completion',
+            subtitle:
+                'Mark as watched at $episodeCompletionThreshold% completion',
             onTap: _setEpisodeCompletionThreshold,
           ),
           _buildSettingsTile(
@@ -186,7 +201,6 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
             onTap: () {},
           ),
           const Divider(height: 1),
-          
           _sectionTitle(context, 'Subtitles'),
           _buildSettingsTile(
             context,
@@ -205,7 +219,6 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
             onTap: () {},
           ),
           const Divider(height: 1),
-
           _sectionTitle(context, 'Quality'),
           _buildSettingsTile(
             context,
@@ -215,7 +228,6 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
             notAvailable: true,
             onTap: () {},
           ),
-          
           const SizedBox(height: 24),
         ],
       ),

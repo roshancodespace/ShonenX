@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
+    as anilist_media;
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/api/models/anime/server_model.dart';
@@ -16,12 +18,14 @@ import 'package:shonenx/widgets/player/controls.dart';
 
 class WatchScreen extends ConsumerStatefulWidget {
   final String animeId;
+  final anilist_media.Media animeMedia;
   final String animeName;
   final int? episode;
 
   const WatchScreen({
     super.key,
     required this.animeId,
+    required this.animeMedia,
     required this.animeName,
     this.episode = 1,
   });
@@ -65,8 +69,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   Future<void> _initializePlayer() async {
     _player = Player();
     _controller = VideoController(_player);
-    _playerSubscription = _player.stream.error.listen(
-        (error) => _handleError('Player error: ${error.toString()}'));
+    _playerSubscription = _player.stream.error
+        .listen((error) => _handleError('Player error: ${error.toString()}'));
     setState(() => _isPlayerInitialized = true);
   }
 
@@ -209,7 +213,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
             child: Row(
               children: [
                 IconButton(
-                    onPressed: () => context.pop(), // Directly pop without confirmation
+                    onPressed: () =>
+                        context.pop(), // Directly pop without confirmation
                     icon: const Icon(Iconsax.arrow_left_1, size: 35)),
                 if (_episodes.isNotEmpty)
                   Flexible(
@@ -234,9 +239,12 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                   Video(
                     controller: _controller,
                     controls: (state) => CustomControls(
+                      animeMedia: widget.animeMedia,
                       state: state,
                       qualityOptions: _qualityOptions,
                       changeQuality: _changeQuality,
+                      episodes: _episodes,
+                      currentEpisodeIndex: _selectedEpIdx,
                     ),
                     subtitleViewConfiguration: SubtitleViewConfiguration(
                       style: TextStyle(

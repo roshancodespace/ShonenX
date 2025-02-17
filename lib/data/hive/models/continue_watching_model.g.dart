@@ -19,40 +19,43 @@ class ContinueWatchingEntryAdapter extends TypeAdapter<ContinueWatchingEntry> {
     return ContinueWatchingEntry(
       animeId: fields[0] as int?,
       animeTitle: fields[1] as String?,
-      episodeTitle: fields[2] as String?,
-      episodeNumber: fields[3] as int?,
-      episodeThumbnail: fields[4] as String?,
-      animeCover: fields[5] as String?,
-      totalEpisodes: fields[6] as int?,
-      progressInSeconds: fields[7] as int?,
-      durationInSeconds: fields[8] as int?,
-      lastUpdated: fields[9] as String?,
+      animeFormat: fields[2] as String?,
+      episodeTitle: fields[3] as String?,
+      episodeNumber: fields[4] as int?,
+      episodeThumbnail: fields[5] as String?,
+      animeCover: fields[6] as String?,
+      totalEpisodes: fields[7] as int?,
+      progressInSeconds: fields[8] as int?,
+      durationInSeconds: fields[9] as int?,
+      lastUpdated: fields[10] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ContinueWatchingEntry obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.animeId)
       ..writeByte(1)
       ..write(obj.animeTitle)
       ..writeByte(2)
-      ..write(obj.episodeTitle)
+      ..write(obj.animeFormat)
       ..writeByte(3)
-      ..write(obj.episodeNumber)
+      ..write(obj.episodeTitle)
       ..writeByte(4)
-      ..write(obj.episodeThumbnail)
+      ..write(obj.episodeNumber)
       ..writeByte(5)
-      ..write(obj.animeCover)
+      ..write(obj.episodeThumbnail)
       ..writeByte(6)
-      ..write(obj.totalEpisodes)
+      ..write(obj.animeCover)
       ..writeByte(7)
-      ..write(obj.progressInSeconds)
+      ..write(obj.totalEpisodes)
       ..writeByte(8)
-      ..write(obj.durationInSeconds)
+      ..write(obj.progressInSeconds)
       ..writeByte(9)
+      ..write(obj.durationInSeconds)
+      ..writeByte(10)
       ..write(obj.lastUpdated);
   }
 

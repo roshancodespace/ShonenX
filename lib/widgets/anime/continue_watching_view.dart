@@ -103,7 +103,7 @@ class _EmptyWatchingState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'No shows in progress',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.montserrat(
               fontSize: 16,
               color: Theme.of(context).colorScheme.outline,
             ),
@@ -347,7 +347,7 @@ class _ContinueWatchingCard extends ConsumerWidget {
                                                       english: title,
                                                       romaji: title!),
                                                   format: continueWatchingEntry
-                                                      .animeFormat!,
+                                                      .animeFormat,
                                                   coverImage: anime_media.CoverImage(
                                                       large:
                                                           continueWatchingEntry
@@ -599,9 +599,9 @@ class _ContinueWatchingCard extends ConsumerWidget {
                   continueWatchingEntry.animeTitle ?? 'Unknown Anime',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.montserrat(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -610,7 +610,7 @@ class _ContinueWatchingCard extends ConsumerWidget {
                       'Episode ${continueWatchingEntry.episodeNumber}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.montserrat(
                     fontSize: 14,
                     color: colorScheme.onSurface.withValues(alpha: 0.7),
                   ),

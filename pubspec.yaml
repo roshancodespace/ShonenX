@@ -20,7 +20,6 @@ dependencies:
   flutter_carousel_widget: ^3.1.0
   grouped_list: ^6.0.0
   cached_network_image: ^3.4.1
-  salomon_bottom_bar: ^3.3.2
   media_kit: ^1.1.10+1
   media_kit_video: ^1.2.4
   media_kit_libs_video: ^1.0.4
@@ -28,7 +27,6 @@ dependencies:
   permission_handler: ^11.3.1
   device_info_plus: ^11.2.1
   window_manager: ^0.4.3
-  convex_bottom_bar: ^3.2.0
   iconsax: ^0.0.8
   uuid: ^4.5.1
   smooth_page_indicator: ^1.2.0+3
@@ -43,8 +41,8 @@ dependencies:
   awesome_snackbar_content: ^0.1.5
   path_provider: ^2.1.5
   package_info_plus: ^8.2.1
-  crypto: ^3.0.6
-  cryptography: ^2.7.0
+  flutter_image_compress: ^2.4.0
+  flex_color_scheme: ^8.1.1
 
 
 dev_dependencies:

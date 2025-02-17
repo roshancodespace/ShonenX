@@ -196,7 +196,13 @@ GoRoute _buildWatchRoute() {
           },
           child: WatchScreen(
             animeId: state.pathParameters['id']!,
+            episode: state.uri.queryParameters['episode'] != null
+                ? int.tryParse(state.uri.queryParameters['episode']!)
+                : 1,
             animeMedia: state.extra as Media,
+            startAt: Duration(
+                seconds:
+                    int.tryParse(state.uri.queryParameters['startAt']!) ?? 0),
             animeName: state.uri.queryParameters['animeName']!,
           ),
         ),

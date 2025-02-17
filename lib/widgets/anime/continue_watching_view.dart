@@ -42,10 +42,9 @@ class ContinueWatchingView extends StatelessWidget {
                   const SizedBox(width: 12),
                   Text(
                     'Continue Watching',
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ],
               ),
@@ -179,6 +178,14 @@ class _ContinueWatchingCard extends ConsumerWidget {
                     height: 150,
                     width: double.infinity,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return CachedNetworkImage(
+                        imageUrl: continueWatchingEntry.animeCover!,
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      );
+                    },
                   ),
                   Container(
                     height: 6,
@@ -193,18 +200,10 @@ class _ContinueWatchingCard extends ConsumerWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
+                            colorScheme.tertiary,
                             colorScheme.primary,
-                            colorScheme.primary.withValues(alpha: 0.8),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(3),
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                colorScheme.primary.withValues(alpha: 0.3),
-                            blurRadius: 4,
-                          ),
-                        ],
                       ),
                     ),
                   ),
@@ -269,12 +268,13 @@ class _ContinueWatchingCard extends ConsumerWidget {
                         final bestMatch = matchedResults.first.$1;
                         ref.read(loadingProvider(index).notifier).state = false;
                         context.push(
-                          '/watch/${bestMatch.id}?animeName=${bestMatch.name}',
+                          '/watch/${bestMatch.id}?animeName=${bestMatch.name}&episode=${continueWatchingEntry.episodeNumber}&startAt=${continueWatchingEntry.progressInSeconds}',
                           extra: anime_media.Media(
                             id: continueWatchingEntry.animeId,
                             title: anime_media.Title(
                                 english: title, romaji: title!),
-                            format: continueWatchingEntry.animeFormat!,
+                            format: continueWatchingEntry.animeFormat ??
+                                bestMatch.type,
                             coverImage: anime_media.CoverImage(
                                 large: continueWatchingEntry.animeCover!,
                                 medium: continueWatchingEntry.animeCover!),
@@ -339,7 +339,7 @@ class _ContinueWatchingCard extends ConsumerWidget {
                                             onTap: () {
                                               Navigator.of(context).pop();
                                               context.push(
-                                                '/watch/${result.id}?animeName=${result.name}',
+                                                '/watch/${result.id}?animeName=${result.name}&episode=${continueWatchingEntry.episodeNumber}&startAt=${continueWatchingEntry.progressInSeconds}',
                                                 extra: anime_media.Media(
                                                   id: continueWatchingEntry
                                                       .animeId,
@@ -491,9 +491,10 @@ class _ContinueWatchingCard extends ConsumerWidget {
                       child: isLoading
                           ? CircularProgressIndicator()
                           : Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: colorScheme.primary,
+                                color:
+                                    colorScheme.primary.withValues(alpha: 0.8),
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
@@ -507,7 +508,7 @@ class _ContinueWatchingCard extends ConsumerWidget {
                               child: const Icon(
                                 Iconsax.play,
                                 color: Colors.white,
-                                size: 32,
+                                size: 24,
                               ),
                             ),
                     ),
@@ -525,7 +526,7 @@ class _ContinueWatchingCard extends ConsumerWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.8),
+                    color: colorScheme.tertiaryContainer.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.2),
@@ -534,19 +535,18 @@ class _ContinueWatchingCard extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Iconsax.video_circle,
-                        color: Colors.white,
                         size: 16,
+                        color: colorScheme.onTertiaryContainer,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         'EP ${continueWatchingEntry.episodeNumber}',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelMedium
+                            ?.copyWith(color: colorScheme.onTertiaryContainer),
                       ),
                     ],
                   ),
@@ -568,10 +568,10 @@ class _ContinueWatchingCard extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Iconsax.timer_1,
-                        color: Colors.white,
                         size: 16,
+                        color: colorScheme.onPrimary,
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -579,11 +579,10 @@ class _ContinueWatchingCard extends ConsumerWidget {
                           continueWatchingEntry.progressInSeconds ?? 0,
                           continueWatchingEntry.durationInSeconds ?? 0,
                         ),
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelMedium
+                            ?.copyWith(color: colorScheme.onPrimary),
                       ),
                     ],
                   ),

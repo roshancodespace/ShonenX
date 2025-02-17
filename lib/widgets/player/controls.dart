@@ -3,16 +3,18 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
+    as anime_media;
 import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/data/hive/boxes/continue_watching_box.dart';
 import 'package:shonenx/data/hive/models/continue_watching_model.dart';
-import 'package:shonenx/utils/compression.dart';
 
 class CustomControls extends StatefulWidget {
   final VideoState state;
-  final Media animeMedia;
+  final anime_media.Media animeMedia;
+  final List<SubtitleTrack> subtitles;
   final List<Map<String, String>> qualityOptions;
   final Function(String) changeQuality;
   final int currentEpisodeIndex;
@@ -20,6 +22,7 @@ class CustomControls extends StatefulWidget {
 
   const CustomControls({
     super.key,
+    required this.subtitles,
     required this.state,
     required this.animeMedia,
     required this.changeQuality,
@@ -78,7 +81,6 @@ class _CustomControlsState extends State<CustomControls> {
     progressSaveTimer = Timer.periodic(Duration(seconds: 10), (timer) async {
       final thumbnail = await widget.state.widget.controller.player
           .screenshot(format: 'image/png');
-      final thumbnailCompressed = await compressUint8ListToBase64(thumbnail!);
       if (continueWatchingBox != null) {
         final episode = widget.episodes[widget.currentEpisodeIndex];
         continueWatchingBox?.setEntry(
@@ -92,7 +94,7 @@ class _CustomControlsState extends State<CustomControls> {
                 widget.animeMedia.coverImage?.medium ??
                 '',
             animeFormat: widget.animeMedia.format,
-            episodeThumbnail: thumbnailCompressed,
+            episodeThumbnail: thumbnail != null ? base64Encode(thumbnail) : '',
             episodeNumber: episode.number!,
             episodeTitle: episode.title!,
             totalEpisodes: widget.episodes.length,
@@ -243,6 +245,22 @@ class _CustomControlsState extends State<CustomControls> {
             icon: const Icon(Icons.arrow_back, color: Colors.white),
           ),
           const Spacer(),
+          PopupMenuButton(
+              tooltip: "Subtitles",
+              child: Text(
+                  '${widget.subtitles.isNotEmpty ? widget.subtitles.first.title : 'No subs'}'),
+              itemBuilder: (context) {
+                return widget.subtitles.map((sub) {
+                  return PopupMenuItem(
+                    onTap: () async {
+                      await widget.state.widget.controller.player
+                          .setSubtitleTrack(sub);
+                      _showSettings = false;
+                    },
+                    child: Text(sub.language ?? 'No subs'),
+                  );
+                }).toList();
+              }),
           IconButton(
             onPressed: () => setState(() => _showSettings = true),
             icon: const Icon(Icons.settings, color: Colors.white),

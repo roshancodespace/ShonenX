@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/api/models/anime/server_model.dart';
+import 'package:shonenx/api/models/anime/source_model.dart';
 import 'package:shonenx/api/sources/anime/anime_provider.dart';
 import 'package:shonenx/helpers/provider.dart';
 import 'package:shonenx/widgets/player/controls.dart';
@@ -45,6 +47,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   List<EpisodeDataModel> _episodes = [];
   BaseServerModel _servers = BaseServerModel();
+  List<SubtitleTrack> _subtitles = [];
   String? _selectedCategory = 'sub';
   int _selectedEpIdx = 0;
   int _selectedRangeStart = 1;
@@ -106,9 +109,26 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
           widget.animeId, episodeId, serverName!, _selectedCategory!);
       if (sources.sources.isEmpty) throw Exception('No sources available');
       await _extractQualities(sources.sources.first.url!);
+      await _configureSubtitles(sources.tracks);
     } catch (e) {
       _handleError('Stream load failed: ${e.toString()}');
     }
+  }
+
+  Future<void> _configureSubtitles(List<Subtitle> subtitles) async {
+    _subtitles.addAll(
+      subtitles.map(
+        (subtitle) => SubtitleTrack.uri(subtitle.url!,
+            language: subtitle.lang, title: subtitle.lang),
+      ),
+    );
+    final englishSub = subtitles.firstWhere(
+        (subtitle) => subtitle.lang!.toLowerCase().contains('english'));
+    log('English subtitle: ${englishSub.url}', name: 'English Subtitle');
+    await _player.setSubtitleTrack(
+      SubtitleTrack.uri(englishSub.url!,
+          language: englishSub.lang, title: englishSub.lang),
+    );
   }
 
   Future<void> _extractQualities(String m3u8Url) async {
@@ -158,8 +178,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     if (!_isPlayerInitialized) return;
     try {
       await _player.open(Media(url));
-      _player.play();
-      _player.seek(widget.startAt);
+      await _player.play();
+      await _player.seek(widget.startAt);
     } catch (e) {
       _handleError('Source update failed: ${e.toString()}');
     }
@@ -244,6 +264,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                     controls: (state) => CustomControls(
                       animeMedia: widget.animeMedia,
                       state: state,
+                      subtitles: _subtitles,
                       qualityOptions: _qualityOptions,
                       changeQuality: _changeQuality,
                       episodes: _episodes,
@@ -320,6 +341,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   Widget _buildCategorySelector(ThemeData theme) {
     return PopupMenuButton<String>(
+      tooltip: "Select Category",
       child: Chip(
         avatar: Icon(Iconsax.language_circle, color: theme.colorScheme.primary),
         label: Text(_selectedCategory!.toUpperCase(),

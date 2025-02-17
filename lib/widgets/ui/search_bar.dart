@@ -111,8 +111,11 @@ class _SearchbarState extends State<Searchbar>
                   focusNode: _focusNode,
                   onEditingComplete: _handleSearch,
                   style: theme.textTheme.bodyLarge,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: "Search Anime...",
+                    fillColor: Colors.transparent,
+                    focusColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
                     border: InputBorder.none,
                   ),
                 ),

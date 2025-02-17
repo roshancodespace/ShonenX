@@ -1,4 +1,5 @@
-import 'package:hive/hive.dart';
+import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:shonenx/data/hive/models/settings_offline_model.dart';
 
 class SettingsBox {
@@ -12,6 +13,8 @@ class SettingsBox {
       _settingsBox = Hive.box<SettingsModel>(boxName);
     }
   }
+
+  ValueListenable<Box<SettingsModel>> get settingsBoxListenable => _settingsBox!.listenable();
 
   Future<void> saveSettings(SettingsModel settings) async {
     await _settingsBox?.put(0, settings); // Use null safety

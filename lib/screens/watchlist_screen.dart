@@ -164,7 +164,9 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           categories[selectedCategory] ?? '',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).appBarTheme.foregroundColor),
         ),
         titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
         expandedTitleScale: 1.8,
@@ -230,9 +232,6 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
 
     return SliverLayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount =
-            _calculateCrossAxisCount(constraints.crossAxisExtent);
-
         return SliverGrid(
           gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: 140,
@@ -274,17 +273,17 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
     return [];
   }
 
-  int _calculateCrossAxisCount(double width) {
-    if (width <= 400) {
-      return 3; // Small screens
-    } else if (width <= 700) {
-      return 3; // Medium screens
-    } else if (width <= 1000) {
-      return 7; // Large screens
-    } else {
-      return 8; // Extra large screens
-    }
-  }
+  // int _calculateCrossAxisCount(double width) {
+  //   if (width <= 400) {
+  //     return 3; // Small screens
+  //   } else if (width <= 700) {
+  //     return 3; // Medium screens
+  //   } else if (width <= 1000) {
+  //     return 7; // Large screens
+  //   } else {
+  //     return 8; // Extra large screens
+  //   }
+  // }
 
   Widget _buildEmptyState(String status, AnimeListState animeListState) {
     return Container(

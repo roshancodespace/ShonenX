@@ -186,9 +186,20 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
                         return InkWell(
                           onTap: () {
                             Navigator.of(context).pop();
-                            context.push(
-                                '/watch/${result.id}?animeName=${result.name}',
-                                extra: widget.anime);
+                            if (_isBoxInitialized) {
+                              _isBoxInitialized = false;
+                              final continueWatchingEntry = continueWatchingBox
+                                  .getEntry(widget.anime.id!);
+                              if (continueWatchingEntry != null) {
+                                context.push(
+                                    '/watch/${result.id}?animeName=${result.name}?episode=${continueWatchingEntry.episodeNumber}&startAt=${continueWatchingEntry.progressInSeconds}',
+                                    extra: widget.anime);
+                              } else {
+                                context.push(
+                                    '/watch/${result.id}?animeName=${result.name}',
+                                    extra: widget.anime);
+                              }
+                            }
                           },
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
@@ -313,6 +324,66 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        forceMaterialTransparency: true,
+        elevation: 0,
+        leading: _buildNavButton(
+          icon: Iconsax.arrow_left_1,
+          onTap: () => context.pop(),
+        ),
+        actions: [
+          _buildNavButton(
+            icon: Iconsax.more,
+            onTap: () async {
+              final List<_StatusOption> statusOptions = [
+                _StatusOption(
+                  title: 'Watching',
+                  icon: Icons.visibility,
+                  color: Colors.blue,
+                ),
+                _StatusOption(
+                  title: 'Completed',
+                  icon: Icons.check_circle,
+                  color: Colors.green,
+                ),
+                _StatusOption(
+                  title: 'Planning',
+                  icon: Icons.calendar_today,
+                  color: Colors.orange,
+                ),
+                _StatusOption(
+                  title: 'Paused',
+                  icon: Icons.pause_circle,
+                  color: Colors.amber,
+                ),
+                _StatusOption(
+                  title: 'Dropped',
+                  icon: Icons.cancel,
+                  color: Colors.red,
+                ),
+              ];
+
+              await showMenu<String>(
+                context: context,
+                position: RelativeRect.fromSize(
+                    Rect.fromLTRB(55, 55, 55, 55), Size(55, 55)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 8,
+                items: statusOptions.map((status) {
+                  return PopupMenuItem<String>(
+                    value: status.title.toLowerCase(),
+                    child: _StatusMenuItem(status: status),
+                  );
+                }).toList(),
+              );
+            },
+          ),
+        ],
+      ),
       body: Stack(
         children: [
           CustomScrollView(
@@ -332,7 +403,6 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
               ),
             ],
           ),
-          _buildFloatingNavBar(theme),
           _buildWatchButton(theme),
         ],
       ),
@@ -634,35 +704,6 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     );
   }
 
-  Widget _buildFloatingNavBar(ThemeData theme) {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + 16,
-          bottom: 16,
-          left: 16,
-          right: 16,
-        ),
-        child: Row(
-          children: [
-            _buildNavButton(
-              icon: Iconsax.arrow_left_1,
-              onTap: () => context.pop(),
-            ),
-            const Spacer(),
-            _buildNavButton(
-              icon: Iconsax.more,
-              onTap: () {},
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildNavButton({
     required IconData icon,
     required VoidCallback onTap,
@@ -799,14 +840,26 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
                             size: 24,
                           ),
                           SizedBox(width: 12),
-                          Text(
-                            'Watch Now',
-                            style: TextStyle(
-                              color: theme.colorScheme.onPrimary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          _isBoxInitialized &&
+                                  continueWatchingBox
+                                          .getEntry(widget.anime.id!) !=
+                                      null
+                              ? Text(
+                                  '${continueWatchingBox.getEntry(widget.anime.id!)?.episodeTitle}',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onPrimary,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                )
+                              : Text(
+                                  'Watch Now',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onPrimary,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                         ],
                       ),
               ),
@@ -821,5 +874,53 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+}
+
+class _StatusOption {
+  final String title;
+  final IconData icon;
+  final Color color;
+
+  _StatusOption({
+    required this.title,
+    required this.icon,
+    required this.color,
+  });
+}
+
+class _StatusMenuItem extends StatelessWidget {
+  final _StatusOption status;
+
+  const _StatusMenuItem({
+    required this.status,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: status.color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            status.icon,
+            color: status.color,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          status.title,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
   }
 }

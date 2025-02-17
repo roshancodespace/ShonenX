@@ -47,6 +47,9 @@ class AnimeListNotifier extends StateNotifier<AnimeListState> {
     required this.userId,
   })  : _anilistService = anilistService,
         super(AnimeListState()) {
+    if (accessToken.isEmpty || userId.isEmpty) {
+      log('Access token or user ID is empty', error: true);
+    }
     fetchInitialData();
   }
 

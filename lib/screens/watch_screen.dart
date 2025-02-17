@@ -21,12 +21,14 @@ class WatchScreen extends ConsumerStatefulWidget {
   final anilist_media.Media animeMedia;
   final String animeName;
   final int? episode;
+  final Duration startAt;
 
   const WatchScreen({
     super.key,
     required this.animeId,
     required this.animeMedia,
     required this.animeName,
+    this.startAt = Duration.zero,
     this.episode = 1,
   });
 
@@ -157,6 +159,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     try {
       await _player.open(Media(url));
       _player.play();
+      _player.seek(widget.startAt);
     } catch (e) {
       _handleError('Source update failed: ${e.toString()}');
     }

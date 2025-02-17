@@ -93,15 +93,21 @@ class AppearanceSettingsModelAdapter
     };
     return AppearanceSettingsModel(
       themeMode: fields[0] as String,
+      amoled: fields[1] as bool,
+      colorScheme: fields[2] as FlexScheme,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppearanceSettingsModel obj) {
     writer
-      ..writeByte(1)
+      ..writeByte(3)
       ..writeByte(0)
-      ..write(obj.themeMode);
+      ..write(obj.themeMode)
+      ..writeByte(1)
+      ..write(obj.amoled)
+      ..writeByte(2)
+      ..write(obj.colorScheme);
   }
 
   @override

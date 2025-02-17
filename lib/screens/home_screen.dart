@@ -202,16 +202,6 @@ class _HeaderSection extends ConsumerWidget {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            theme.colorScheme.surface,
-            Colors.transparent,
-          ],
-        ),
-      ),
       child: Column(
         children: [
           Row(

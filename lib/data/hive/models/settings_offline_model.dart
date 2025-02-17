@@ -1,3 +1,5 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:hive/hive.dart';
 
 part 'settings_offline_model.g.dart';
@@ -50,14 +52,21 @@ class ProviderSettingsModel {
 class AppearanceSettingsModel {
   @HiveField(0)
   final String themeMode;
+  @HiveField(1)
+  final bool amoled;
+  @HiveField(2)
+  final FlexScheme colorScheme;
 
-  AppearanceSettingsModel({this.themeMode = 'system'});
+  AppearanceSettingsModel({this.themeMode = 'system', this.amoled = false, this.colorScheme = FlexScheme.red});
+
 
   AppearanceSettingsModel copyWith({
-    String? theme,
+    String? themeMode,
+    bool? amoled,
   }) {
     return AppearanceSettingsModel(
-      themeMode: theme ?? themeMode,
+      themeMode: themeMode ?? this.themeMode,
+      amoled: amoled ?? this.amoled,
     );
   }
 }

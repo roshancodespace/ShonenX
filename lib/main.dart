@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shonenx/data/hive/adapters/flex_scheme_adapter.dart';
 import 'package:shonenx/data/hive/models/continue_watching_model.dart';
 import 'package:shonenx/data/hive/models/settings_offline_model.dart';
 import 'package:shonenx/providers/hive/appearance_provider.dart';
@@ -39,29 +41,29 @@ class AppInitializer {
   }
 
   static Future<void> _initializeHive() async {
-  String customPath;
+    String customPath;
 
-  if (Platform.isWindows) {
-    // Custom folder inside the user's Documents directory (or any path you prefer)
-    customPath = '${Directory.current.path}\\hive_data'; // Or any other path
-  } else {
-    // Default for other platforms
-    customPath = (await getApplicationDocumentsDirectory()).path;
+    if (Platform.isWindows) {
+      // Custom folder inside the user's Documents directory (or any path you prefer)
+      customPath = '${Directory.current.path}\\hive_data'; // Or any other path
+    } else {
+      // Default for other platforms
+      customPath = (await getApplicationDocumentsDirectory()).path;
+    }
+
+    Hive.init(customPath);
+    log("✅ Hive initialized at: $customPath");
+
+    // Register your adapters as usual
+    Hive.registerAdapter(SettingsModelAdapter());
+    Hive.registerAdapter(ProviderSettingsModelAdapter());
+    Hive.registerAdapter(AppearanceSettingsModelAdapter());
+    Hive.registerAdapter(PlayerSettingsModelAdapter());
+    Hive.registerAdapter(ContinueWatchingEntryAdapter());
+    Hive.registerAdapter(FlexSchemeAdapter());
+
+    log("✅ Hive adapters registered.");
   }
-
-  Hive.init(customPath);
-  log("✅ Hive initialized at: $customPath");
-
-  // Register your adapters as usual
-  Hive.registerAdapter(SettingsModelAdapter());
-  Hive.registerAdapter(ProviderSettingsModelAdapter());
-  Hive.registerAdapter(AppearanceSettingsModelAdapter());
-  Hive.registerAdapter(PlayerSettingsModelAdapter());
-  Hive.registerAdapter(ContinueWatchingEntryAdapter());
-
-  log("✅ Hive adapters registered.");
-}
-
 
   static Future<void> _initializeWindowManager() async {
     if (!kIsWeb && !Platform.isAndroid && !Platform.isIOS) {
@@ -114,22 +116,169 @@ class MyApp extends ConsumerWidget {
     final appearanceState = ref.watch(appearanceProvider).appearanceSettings;
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: appearanceState?.themeMode == 'light'
-            ? Brightness.light
-            : Brightness.dark,
-        textTheme: GoogleFonts.montserratTextTheme(
-            appearanceState?.themeMode == 'light'
-                ? ThemeData.light().textTheme
-                : ThemeData.dark().textTheme),
-        iconTheme: const IconThemeData(color: Colors.white),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.lime,
-          brightness: appearanceState?.themeMode == 'light'
-              ? Brightness.light
-              : Brightness.dark,
+      theme: FlexThemeData.light(
+        scheme: appearanceState?.colorScheme,
+        appBarStyle: FlexAppBarStyle.primary,
+        appBarElevation: 4.0,
+        bottomAppBarElevation: 8.0,
+        tabBarStyle: FlexTabBarStyle.forAppBar,
+        textTheme: GoogleFonts.montserratTextTheme(),
+        subThemesData: const FlexSubThemesData(
+          useM2StyleDividerInM3: true,
+          adaptiveElevationShadowsBack: FlexAdaptive.all(),
+          adaptiveAppBarScrollUnderOff: FlexAdaptive.all(),
+          defaultRadius: 4.0,
+          elevatedButtonSchemeColor: SchemeColor.onPrimary,
+          elevatedButtonSecondarySchemeColor: SchemeColor.primary,
+          inputDecoratorSchemeColor: SchemeColor.onSurface,
+          inputDecoratorIsFilled: true,
+          inputDecoratorBackgroundAlpha: 13,
+          inputDecoratorBorderSchemeColor: SchemeColor.primary,
+          inputDecoratorBorderType: FlexInputBorderType.outline,
+          listTileContentPadding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 0),
+          listTileMinVerticalPadding: 4.0,
+          fabUseShape: true,
+          fabAlwaysCircular: true,
+          fabSchemeColor: SchemeColor.secondary,
+          chipSchemeColor: SchemeColor.primary,
+          chipRadius: 20.0,
+          popupMenuElevation: 8.0,
+          alignedDropdown: true,
+          tooltipRadius: 4,
+          dialogElevation: 24.0,
+          datePickerHeaderBackgroundSchemeColor: SchemeColor.primary,
+          snackBarBackgroundSchemeColor: SchemeColor.inverseSurface,
+          appBarScrolledUnderElevation: 4.0,
+          tabBarIndicatorSize: TabBarIndicatorSize.tab,
+          tabBarIndicatorWeight: 2,
+          tabBarIndicatorTopRadius: 0,
+          tabBarDividerColor: Color(0x00000000),
+          drawerElevation: 16.0,
+          drawerWidth: 304.0,
+          bottomSheetElevation: 10.0,
+          bottomSheetModalElevation: 20.0,
+          bottomNavigationBarSelectedLabelSchemeColor: SchemeColor.primary,
+          bottomNavigationBarMutedUnselectedLabel: true,
+          bottomNavigationBarSelectedIconSchemeColor: SchemeColor.primary,
+          bottomNavigationBarMutedUnselectedIcon: true,
+          bottomNavigationBarElevation: 8.0,
+          menuElevation: 8.0,
+          menuBarRadius: 0.0,
+          menuBarElevation: 1.0,
+          navigationBarSelectedLabelSchemeColor: SchemeColor.onSurface,
+          navigationBarUnselectedLabelSchemeColor: SchemeColor.onSurface,
+          navigationBarMutedUnselectedLabel: true,
+          navigationBarSelectedIconSchemeColor: SchemeColor.onSurface,
+          navigationBarUnselectedIconSchemeColor: SchemeColor.onSurface,
+          navigationBarMutedUnselectedIcon: true,
+          navigationBarIndicatorSchemeColor: SchemeColor.secondary,
+          navigationBarBackgroundSchemeColor: SchemeColor.surfaceContainer,
+          navigationBarElevation: 0.0,
+          navigationRailSelectedLabelSchemeColor: SchemeColor.onSurface,
+          navigationRailUnselectedLabelSchemeColor: SchemeColor.onSurface,
+          navigationRailMutedUnselectedLabel: true,
+          navigationRailSelectedIconSchemeColor: SchemeColor.onSurface,
+          navigationRailUnselectedIconSchemeColor: SchemeColor.onSurface,
+          navigationRailMutedUnselectedIcon: true,
+          navigationRailUseIndicator: true,
+          navigationRailIndicatorSchemeColor: SchemeColor.secondary,
+          navigationRailLabelType: NavigationRailLabelType.all,
         ),
+        visualDensity: FlexColorScheme.comfortablePlatformDensity,
       ),
+      darkTheme: FlexThemeData.dark(
+        scheme: appearanceState?.colorScheme,
+        appBarStyle: FlexAppBarStyle.material,
+        appBarElevation: 4.0,
+        darkIsTrueBlack: appearanceState?.amoled ?? false,
+        blendLevel: 15,
+        bottomAppBarElevation: 8.0,
+        tabBarStyle: FlexTabBarStyle.forAppBar,
+        textTheme: GoogleFonts.montserratTextTheme(),
+        subThemesData: const FlexSubThemesData(
+          useM2StyleDividerInM3: true,
+          adaptiveElevationShadowsBack: FlexAdaptive.all(),
+          adaptiveAppBarScrollUnderOff: FlexAdaptive.all(),
+          defaultRadius: 4.0,
+          elevatedButtonSchemeColor: SchemeColor.onPrimary,
+          elevatedButtonSecondarySchemeColor: SchemeColor.primary,
+          inputDecoratorSchemeColor: SchemeColor.onSurface,
+          inputDecoratorIsFilled: true,
+          inputDecoratorBackgroundAlpha: 20,
+          inputDecoratorBorderSchemeColor: SchemeColor.primary,
+          inputDecoratorBorderType: FlexInputBorderType.outline,
+          listTileContentPadding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 0),
+          listTileMinVerticalPadding: 4.0,
+          fabUseShape: true,
+          fabAlwaysCircular: true,
+          fabSchemeColor: SchemeColor.secondary,
+          chipSchemeColor: SchemeColor.primary,
+          chipRadius: 20.0,
+          popupMenuElevation: 8.0,
+          alignedDropdown: true,
+          tooltipRadius: 4,
+          dialogElevation: 24.0,
+          datePickerHeaderBackgroundSchemeColor: SchemeColor.primary,
+          snackBarBackgroundSchemeColor: SchemeColor.inverseSurface,
+          appBarScrolledUnderElevation: 4.0,
+          tabBarIndicatorSize: TabBarIndicatorSize.tab,
+          tabBarIndicatorWeight: 2,
+          tabBarIndicatorTopRadius: 0,
+          tabBarDividerColor: Color(0x00000000),
+          drawerElevation: 16.0,
+          drawerWidth: 304.0,
+          bottomSheetElevation: 10.0,
+          bottomSheetModalElevation: 20.0,
+          bottomNavigationBarSelectedLabelSchemeColor: SchemeColor.primary,
+          bottomNavigationBarMutedUnselectedLabel: true,
+          bottomNavigationBarSelectedIconSchemeColor: SchemeColor.primary,
+          bottomNavigationBarMutedUnselectedIcon: true,
+          bottomNavigationBarElevation: 8.0,
+          menuElevation: 8.0,
+          menuBarRadius: 0.0,
+          menuBarElevation: 1.0,
+          navigationBarSelectedLabelSchemeColor: SchemeColor.onSurface,
+          navigationBarUnselectedLabelSchemeColor: SchemeColor.onSurface,
+          navigationBarMutedUnselectedLabel: true,
+          navigationBarSelectedIconSchemeColor: SchemeColor.onSurface,
+          navigationBarUnselectedIconSchemeColor: SchemeColor.onSurface,
+          navigationBarMutedUnselectedIcon: true,
+          navigationBarIndicatorSchemeColor: SchemeColor.secondary,
+          navigationBarBackgroundSchemeColor: SchemeColor.surfaceContainer,
+          navigationBarElevation: 0.0,
+          navigationRailSelectedLabelSchemeColor: SchemeColor.onSurface,
+          navigationRailUnselectedLabelSchemeColor: SchemeColor.onSurface,
+          navigationRailMutedUnselectedLabel: true,
+          navigationRailSelectedIconSchemeColor: SchemeColor.onSurface,
+          navigationRailUnselectedIconSchemeColor: SchemeColor.onSurface,
+          navigationRailMutedUnselectedIcon: true,
+          navigationRailUseIndicator: true,
+          navigationRailIndicatorSchemeColor: SchemeColor.secondary,
+          navigationRailLabelType: NavigationRailLabelType.all,
+        ),
+        visualDensity: FlexColorScheme.comfortablePlatformDensity,
+      ),
+      themeMode: appearanceState?.themeMode == 'light'
+          ? ThemeMode.light
+          : appearanceState?.themeMode == 'dark'
+              ? ThemeMode.dark
+              : ThemeMode.system,
+      // theme: ThemeData(
+      //   brightness: appearanceState?.themeMode == 'light'
+      //       ? Brightness.light
+      //       : Brightness.dark,
+      //   textTheme: GoogleFonts.montserratTextTheme(
+      //       appearanceState?.themeMode == 'light'
+      //           ? ThemeData.light().textTheme
+      //           : ThemeData.dark().textTheme),
+      //   iconTheme: const IconThemeData(color: Colors.white),
+      //   colorScheme: ColorScheme.fromSeed(
+      //     seedColor: Colors.lime,
+      //     brightness: appearanceState?.themeMode == 'light'
+      //         ? Brightness.light
+      //         : Brightness.dark,
+      //   ),
+      // ),
       routerConfig: router,
     );
   }

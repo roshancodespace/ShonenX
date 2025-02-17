@@ -202,7 +202,7 @@ GoRoute _buildWatchRoute() {
             animeMedia: state.extra as Media,
             startAt: Duration(
                 seconds:
-                    int.tryParse(state.uri.queryParameters['startAt']!) ?? 0),
+                    int.tryParse(state.uri.queryParameters['startAt']?? '0') ?? 0),
             animeName: state.uri.queryParameters['animeName']!,
           ),
         ),

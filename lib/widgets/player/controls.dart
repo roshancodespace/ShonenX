@@ -8,6 +8,7 @@ import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
 import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/data/hive/boxes/continue_watching_box.dart';
 import 'package:shonenx/data/hive/models/continue_watching_model.dart';
+import 'package:shonenx/utils/compression.dart';
 
 class CustomControls extends StatefulWidget {
   final VideoState state;
@@ -77,6 +78,7 @@ class _CustomControlsState extends State<CustomControls> {
     progressSaveTimer = Timer.periodic(Duration(seconds: 10), (timer) async {
       final thumbnail = await widget.state.widget.controller.player
           .screenshot(format: 'image/png');
+      final thumbnailCompressed = await compressUint8ListToBase64(thumbnail!);
       if (continueWatchingBox != null) {
         final episode = widget.episodes[widget.currentEpisodeIndex];
         continueWatchingBox?.setEntry(
@@ -90,7 +92,7 @@ class _CustomControlsState extends State<CustomControls> {
                 widget.animeMedia.coverImage?.medium ??
                 '',
             animeFormat: widget.animeMedia.format,
-            episodeThumbnail: thumbnail != null ? base64Encode(thumbnail) : '',
+            episodeThumbnail: thumbnailCompressed,
             episodeNumber: episode.number!,
             episodeTitle: episode.title!,
             totalEpisodes: widget.episodes.length,

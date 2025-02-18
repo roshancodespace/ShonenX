@@ -19,7 +19,28 @@ class _AppearanceSettingsScreenState
   late SettingsBox? _settingsBox;
   bool _isDarkMode = false;
   bool _useAmoledBlack = false;
+  bool _useMaterial3 = true;
   FlexScheme _flexScheme = FlexScheme.deepPurple;
+  bool _useSubThemes = true;
+  double _surfaceModeLight = 0;
+  double _surfaceModeDark = 0;
+  bool _useKeyColors = true;
+  bool _useAppbarColors = false;
+  bool _isColorSchemesExpanded = false;
+
+  // New settings
+  bool _swapLightColors = false;
+  bool _swapDarkColors = false;
+  bool _useTertiary = true;
+  int _blendLevel = 0;
+  double _appBarOpacity = 1.0;
+  bool _transparentStatusBar = false;
+  double _tabBarOpacity = 1.0;
+  double _bottomBarOpacity = 1.0;
+  bool _tooltipsMatchBackground = false;
+  double _defaultRadius = 12.0;
+  bool _useTextTheme = true;
+  FlexTabBarStyle _tabBarStyle = FlexTabBarStyle.forBackground;
 
   @override
   void initState() {
@@ -34,16 +55,55 @@ class _AppearanceSettingsScreenState
     setState(() {
       _isDarkMode = settings?.themeMode != 'light';
       _useAmoledBlack = settings?.amoled ?? false;
-      _flexScheme = settings?.colorScheme ?? FlexScheme.red;
+      _flexScheme = settings?.flexSchemeEnum ?? FlexScheme.red;
+      _useMaterial3 = settings?.useMaterial3 ?? true;
+      _useSubThemes = settings?.useSubThemes ?? true;
+      _surfaceModeLight = settings?.surfaceModeDark ?? 0;
+      _surfaceModeDark = settings?.surfaceModeDark ?? 0;
+      _useKeyColors = settings?.useKeyColors ?? true;
+      _useAppbarColors = settings?.useAppbarColors ?? false;
+      _swapLightColors = settings?.swapLightColors ?? false;
+      _swapDarkColors = settings?.swapDarkColors ?? false;
+      _useTertiary = settings?.useTertiary ?? true;
+      _blendLevel = settings?.blendLevel ?? 0;
+      _appBarOpacity = settings?.appBarOpacity ?? 1.0;
+      _transparentStatusBar = settings?.transparentStatusBar ?? false;
+      _tabBarOpacity = settings?.tabBarOpacity ?? 1.0;
+      _bottomBarOpacity = settings?.bottomBarOpacity ?? 1.0;
+      _tooltipsMatchBackground = settings?.tooltipsMatchBackground ?? false;
+      _defaultRadius = settings?.defaultRadius ?? 12.0;
+      _useTextTheme = settings?.useTextTheme ?? true;
+      _tabBarStyle =
+          settings?.flexTabBarStyleEnum ?? FlexTabBarStyle.forBackground;
     });
   }
 
   void _updateAppearanceSettings() {
+    setState(() {});
     _settingsBox?.updateAppearanceSettings(
       AppearanceSettingsModel(
-          themeMode: _isDarkMode ? 'dark' : 'light',
-          amoled: _useAmoledBlack,
-          colorScheme: _flexScheme),
+        themeMode: _isDarkMode ? 'dark' : 'light',
+        amoled: _useAmoledBlack,
+        colorScheme: _flexScheme.name,
+        useMaterial3: _useMaterial3,
+        useSubThemes: _useSubThemes,
+        surfaceModeLight: _surfaceModeLight,
+        surfaceModeDark: _surfaceModeDark,
+        useKeyColors: _useKeyColors,
+        useAppbarColors: _useAppbarColors,
+        swapLightColors: _swapLightColors,
+        swapDarkColors: _swapDarkColors,
+        useTertiary: _useTertiary,
+        blendLevel: _blendLevel,
+        appBarOpacity: _appBarOpacity,
+        transparentStatusBar: _transparentStatusBar,
+        tabBarOpacity: _tabBarOpacity,
+        bottomBarOpacity: _bottomBarOpacity,
+        tooltipsMatchBackground: _tooltipsMatchBackground,
+        defaultRadius: _defaultRadius,
+        useTextTheme: _useTextTheme,
+        tabBarStyle: _tabBarStyle.name,
+      ),
     );
   }
 
@@ -55,25 +115,33 @@ class _AppearanceSettingsScreenState
           onPressed: () => context.pop(),
           icon: const Icon(Iconsax.arrow_left_1),
         ),
-        title: const Text(
-          'Appearance',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Appearance',
+            style: TextStyle(fontWeight: FontWeight.bold)),
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildThemeSection(),
-                _buildSectionHeader('Color Schemes'),
-                _buildColorSchemeGrid(constraints.maxWidth > 600),
-              ],
-            ),
-          );
-        },
+      body: ListView(
+        children: [
+          _buildThemeSection(),
+          _buildColorSchemeSection(),
+          _buildMaterialSection(),
+          _buildColorsSection(),
+          _buildComponentsSection(),
+          _buildTypographySection(),
+          SizedBox(height: 120),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 10),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: Theme.of(context).colorScheme.primary,
+        ),
       ),
     );
   }
@@ -112,50 +180,243 @@ class _AppearanceSettingsScreenState
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 10),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: Theme.of(context).colorScheme.primary,
+  Widget _buildMaterialSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Material Design'),
+        _SettingsSwitchTile(
+          title: 'Material 3',
+          subtitle: 'Use Material 3 design',
+          icon: Iconsax.designtools,
+          value: _useMaterial3,
+          onChanged: (value) {
+            setState(() {
+              _useMaterial3 = value;
+              _updateAppearanceSettings();
+            });
+          },
         ),
-      ),
+        _SettingsSwitchTile(
+          title: 'Sub-themes',
+          subtitle: 'Apply theme to all components',
+          icon: Iconsax.brush_2,
+          value: _useSubThemes,
+          onChanged: (value) {
+            setState(() {
+              _useSubThemes = value;
+              _updateAppearanceSettings();
+            });
+          },
+        ),
+      ],
     );
   }
 
-  Widget _buildColorSchemeGrid(bool isWideScreen) {
-    return Padding(
-      padding: const EdgeInsets.all(15),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // final crossAxisCount = isWideScreen
-          //     ? (constraints.maxWidth / 200).floor()
-          //     : (constraints.maxWidth / 130).floor();
+  Widget _buildColorsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Colors'),
+        _SettingsSwitchTile(
+          title: 'Use Key Colors',
+          subtitle: 'Use key colors for surfaces',
+          icon: Iconsax.color_swatch,
+          value: _useKeyColors,
+          onChanged: (value) {
+            setState(() {
+              _useKeyColors = value;
+              _updateAppearanceSettings();
+            });
+          },
+        ),
+        _SettingsSwitchTile(
+          title: 'Use Tertiary Colors',
+          subtitle: 'Enable tertiary color variations',
+          icon: Iconsax.colorfilter,
+          value: _useTertiary,
+          onChanged: (value) {
+            setState(() {
+              _useTertiary = value;
+              _updateAppearanceSettings();
+            });
+          },
+        ),
+        _SettingsSwitchTile(
+          title: 'Swap Light Colors',
+          subtitle: 'Swap primary and secondary in light mode',
+          icon: Iconsax.arrange_square,
+          value: _swapLightColors,
+          onChanged: (value) {
+            setState(() {
+              _swapLightColors = value;
+              _updateAppearanceSettings();
+            });
+          },
+        ),
+        if (_isDarkMode)
+          _SettingsSwitchTile(
+            title: 'Swap Dark Colors',
+            subtitle: 'Swap primary and secondary in dark mode',
+            icon: Iconsax.arrange_square,
+            value: _swapDarkColors,
+            onChanged: (value) {
+              setState(() {
+                _swapDarkColors = value;
+                _updateAppearanceSettings();
+              });
+            },
+          ),
+        _SettingsSliderTile(
+          title: 'Color Blend Level',
+          value: _blendLevel.toDouble(),
+          min: 0,
+          max: 40,
+          divisions: 40,
+          onChanged: (value) {
+            setState(() {
+              _blendLevel = value.toInt();
+              _updateAppearanceSettings();
+            });
+          },
+        ),
+      ],
+    );
+  }
 
-          return GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: isWideScreen ? 200 : 130,
-              childAspectRatio: 1.2,
+  Widget _buildComponentsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Components'),
+        _SettingsSwitchTile(
+          title: 'Colored App Bar',
+          subtitle: 'Use theme colors for app bar',
+          icon: Iconsax.arrow_circle_up,
+          value: _useAppbarColors,
+          onChanged: (value) {
+            setState(() {
+              _useAppbarColors = value;
+              _updateAppearanceSettings();
+            });
+          },
+        ),
+        _SettingsSliderTile(
+          title: 'App Bar Opacity',
+          value: _appBarOpacity,
+          min: 0,
+          max: 1,
+          divisions: 20,
+          onChanged: (value) {
+            setState(() {
+              _appBarOpacity = value;
+              _updateAppearanceSettings();
+            });
+          },
+        ),
+        _SettingsSwitchTile(
+          title: 'Transparent Status Bar',
+          subtitle: 'Make status bar transparent',
+          icon: Iconsax.status,
+          value: _transparentStatusBar,
+          onChanged: (value) {
+            setState(() {
+              _transparentStatusBar = value;
+              _updateAppearanceSettings();
+            });
+          },
+        ),
+        _SettingsSliderTile(
+          title: 'Border Radius',
+          value: _defaultRadius,
+          min: 0,
+          max: 24,
+          divisions: 24,
+          onChanged: (value) {
+            setState(() {
+              _defaultRadius = value;
+              _updateAppearanceSettings();
+            });
+          },
+        ),
+        _SettingsSwitchTile(
+          title: 'Tooltip Background',
+          subtitle: 'Match tooltips with background color',
+          icon: Iconsax.message_question,
+          value: _tooltipsMatchBackground,
+          onChanged: (value) {
+            setState(() {
+              _tooltipsMatchBackground = value;
+              _updateAppearanceSettings();
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTypographySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Typography'),
+        _SettingsSwitchTile(
+          title: 'Custom Typography',
+          subtitle: 'Use custom text theme',
+          icon: Iconsax.text,
+          value: _useTextTheme,
+          onChanged: (value) {
+            setState(() {
+              _useTextTheme = value;
+              _updateAppearanceSettings();
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildColorSchemeSection() {
+    return ListTile(
+      title: const Text('Color Scheme'),
+      leading: Icon(Iconsax.colorfilter, color: Theme.of(context).colorScheme.primary),
+      trailing: Icon(Iconsax.arrow_right_3, color: Theme.of(context).colorScheme.primary),
+      onTap: () => _showColorSchemeModal(),
+    );
+  }
+
+  void _showColorSchemeModal() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          height: 400,
+          child: GridView.builder(
+            padding: const EdgeInsets.all(8),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
             ),
             itemCount: FlexScheme.values.length,
-            itemBuilder: (context, index) => _ColorSchemeCard(
-              scheme: FlexScheme.values[index],
-              isSelected: _flexScheme == FlexScheme.values[index],
-              onSelected: (scheme) {
-                setState(() => _flexScheme = scheme);
-                _updateAppearanceSettings();
-              },
-            ),
-          );
-        },
-      ),
+            itemBuilder: (context, index) {
+              final scheme = FlexScheme.values[index];
+              return _SimpleColorSchemeCard(
+                scheme: scheme,
+                isSelected: _flexScheme == scheme,
+                onSelected: (selectedScheme) {
+                  setState(() {
+                    _flexScheme = selectedScheme;
+                    _updateAppearanceSettings();
+                  });
+                  Navigator.pop(context);
+                },
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -177,98 +438,71 @@ class _SettingsSwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return InkWell(
+    return ListTile(
       onTap: () => onChanged(!value),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: colorScheme.primary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-            ),
-          ],
-        ),
+      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: Switch(
+        value: value,
+        onChanged: onChanged,
       ),
     );
   }
 }
 
-class _ColorSchemeCard extends StatefulWidget {
+class _SettingsSliderTile extends StatelessWidget {
+  final String title;
+  final double value;
+  final double min;
+  final double max;
+  final int divisions;
+  final ValueChanged<double> onChanged;
+
+  const _SettingsSliderTile({
+    required this.title,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.divisions,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 16),
+          ),
+        ),
+        Slider(
+          value: value,
+          min: min,
+          max: max,
+          divisions: divisions,
+          label: value.toStringAsFixed(1),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+}
+
+class _SimpleColorSchemeCard extends StatelessWidget {
   final FlexScheme scheme;
   final bool isSelected;
   final ValueChanged<FlexScheme> onSelected;
 
-  const _ColorSchemeCard({
+  const _SimpleColorSchemeCard({
     required this.scheme,
     required this.isSelected,
     required this.onSelected,
   });
-
-  @override
-  State<_ColorSchemeCard> createState() => _ColorSchemeCardState();
-}
-
-class _ColorSchemeCardState extends State<_ColorSchemeCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  bool _isHovered = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   String _formatSchemeName(String name) {
     return name
@@ -282,259 +516,63 @@ class _ColorSchemeCardState extends State<_ColorSchemeCard>
         .join(' ');
   }
 
-  void _handleTapDown(TapDownDetails details) {
-    _controller.forward();
-  }
-
-  void _handleTapUp(TapUpDetails details) {
-    _controller.reverse();
-  }
-
-  void _handleTapCancel() {
-    _controller.reverse();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final schemeData = FlexThemeData.light(scheme: widget.scheme).colorScheme;
-    final darkSchemeData =
-        FlexThemeData.dark(scheme: widget.scheme).colorScheme;
+    final schemeData = FlexThemeData.light(scheme: scheme).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currentScheme = isDark ? darkSchemeData : schemeData;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTapDown: _handleTapDown,
-        onTapUp: _handleTapUp,
-        onTapCancel: _handleTapCancel,
-        child: AnimatedBuilder(
-          animation: _scaleAnimation,
-          builder: (context, child) => Transform.scale(
-            scale: _scaleAnimation.value,
-            child: child,
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: currentScheme.primary.withValues(alpha: 0.1),
-                  blurRadius: _isHovered ? 16 : 8,
-                  spreadRadius: _isHovered ? 2 : 0,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onSelected(scheme),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected ? schemeData.primary : Colors.transparent,
+              width: 2,
             ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => widget.onSelected(widget.scheme),
-                borderRadius: BorderRadius.circular(20),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: widget.isSelected
-                          ? currentScheme.primary
-                          : Colors.transparent,
-                      width: 2,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: schemeData.primary,
+                      shape: BoxShape.circle,
                     ),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
-                    child: Stack(
-                      children: [
-                        // Background Pattern
-                        Positioned.fill(
-                          child: CustomPaint(
-                            painter: _SchemePatternPainter(
-                              colors: [
-                                currentScheme.primary,
-                                currentScheme.secondary,
-                                currentScheme.tertiary,
-                              ],
-                              isDark: isDark,
-                            ),
-                          ),
-                        ),
-
-                        // Content
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Color Preview Section
-                            Expanded(
-                              flex: 1,
-                              child: _buildColorPreview(currentScheme),
-                            ),
-
-                            // Scheme Name Section
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: (isDark ? Colors.black : Colors.white)
-                                    .withValues(alpha: 0.9),
-                                borderRadius: const BorderRadius.vertical(
-                                  bottom: Radius.circular(18),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _formatSchemeName(widget.scheme.name),
-                                      style: TextStyle(
-                                        color: currentScheme.onSurface,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (widget.isSelected)
-                                    Icon(
-                                      Icons.check_circle,
-                                      size: 18,
-                                      color: currentScheme.primary,
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                  const SizedBox(width: 4),
+                  Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: schemeData.secondary,
+                      shape: BoxShape.circle,
                     ),
                   ),
-                ),
+                ],
               ),
-            ),
+              const SizedBox(height: 4),
+              Text(
+                _formatSchemeName(scheme.name),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ),
       ),
     );
   }
-
-  Widget _buildColorPreview(ColorScheme scheme) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _ColorBubble(
-          color: scheme.primary,
-          label: 'P',
-          isAnimated: _isHovered,
-        ),
-        _ColorBubble(
-          color: scheme.secondary,
-          label: 'S',
-          isAnimated: _isHovered,
-          delay: const Duration(milliseconds: 50),
-        ),
-        _ColorBubble(
-          color: scheme.tertiary,
-          label: 'T',
-          isAnimated: _isHovered,
-          delay: const Duration(milliseconds: 100),
-        ),
-      ],
-    );
-  }
-}
-
-class _ColorBubble extends StatelessWidget {
-  final Color color;
-  final String label;
-  final bool isAnimated;
-  final Duration delay;
-
-  const _ColorBubble({
-    required this.color,
-    required this.label,
-    required this.isAnimated,
-    this.delay = Duration.zero,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-      height: isAnimated ? 32 : 28,
-      width: isAnimated ? 32 : 29,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.4),
-            blurRadius: isAnimated ? 12 : 6,
-            spreadRadius: isAnimated ? 2 : 0,
-          ),
-        ],
-      ),
-      child: Center(
-        child: Text(
-          label,
-          style: TextStyle(
-            color: color.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SchemePatternPainter extends CustomPainter {
-  final List<Color> colors;
-  final bool isDark;
-
-  _SchemePatternPainter({
-    required this.colors,
-    required this.isDark,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    // Create subtle pattern with theme colors
-    for (int i = 0; i < colors.length; i++) {
-      paint.color = colors[i].withValues(alpha: 0.1);
-
-      // Draw diagonal lines
-      for (double x = -size.width; x < size.width; x += 20) {
-        canvas.drawLine(
-          Offset(x + (i * 10), 0),
-          Offset(x + size.width + (i * 10), size.height),
-          paint,
-        );
-      }
-    }
-
-    // Add subtle gradient overlay
-    final Rect rect = Offset.zero & size;
-    final paint2 = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          colors[0].withValues(alpha: 0.1),
-          colors[1].withValues(alpha: 0.05),
-          colors[2].withValues(alpha: 0.1),
-        ],
-      ).createShader(rect);
-
-    canvas.drawRect(rect, paint2);
-  }
-
-  @override
-  bool shouldRepaint(_SchemePatternPainter oldDelegate) =>
-      colors != oldDelegate.colors || isDark != oldDelegate.isDark;
 }

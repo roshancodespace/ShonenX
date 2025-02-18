@@ -41,14 +41,14 @@ class SelectedProviderNotifier extends StateNotifier<SelectedProviderState> {
 
     // If no settings exist, create and save the default settings, then re-read them
     if (settingsModel == null) {
-      log("No settings found, creating default settings.");
-      final newSettings = SettingsModel(
-        providerSettings:
-            ProviderSettingsModel(selectedProviderName: 'hianime'),
-      );
-      await _settingsBox.saveSettings(newSettings);
-      // Re-read the settings from the box after saving
-      settingsModel = _settingsBox.getSettings();
+      // log("No settings found, creating default settings.");
+      // final newSettings = SettingsModel(
+      //   providerSettings:
+      //       ProviderSettingsModel(selectedProviderName: 'hianime'),
+      // );
+      // await _settingsBox.saveSettings(newSettings);
+      // // Re-read the settings from the box after saving
+      // settingsModel = _settingsBox.getSettings();
     }
 
     // Now extract the provider key (will be 'hianime' by default if still null)

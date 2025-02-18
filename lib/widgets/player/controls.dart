@@ -35,7 +35,9 @@ class CustomControls extends StatefulWidget {
   State<CustomControls> createState() => _CustomControlsState();
 }
 
-class _CustomControlsState extends State<CustomControls> {
+class _CustomControlsState extends State<CustomControls>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _fadeController;
   late Timer? progressSaveTimer;
   late ContinueWatchingBox? continueWatchingBox;
   bool isBuffering = true;
@@ -65,6 +67,10 @@ class _CustomControlsState extends State<CustomControls> {
   @override
   void initState() {
     super.initState();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
     _initializeContinueWatchingBox();
     _initializeState();
     _attachListeners();
@@ -194,104 +200,171 @@ class _CustomControlsState extends State<CustomControls> {
       behavior: HitTestBehavior.opaque,
       child: Stack(
         children: [
-          // Gradient overlay
+          // Gradient overlays
           if (showControls)
-            AnimatedOpacity(
-              opacity: showControls ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
+            FadeTransition(
+              opacity: _fadeController,
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black54,
+                      Colors.black.withValues(alpha: 0.7),
                       Colors.transparent,
                       Colors.transparent,
-                      Colors.black54,
+                      Colors.black.withValues(alpha: 0.7),
                     ],
+                    stops: const [0.0, 0.2, 0.8, 1.0],
                   ),
                 ),
               ),
             ),
 
-          // Controls
+          // Main controls
           if (showControls)
             SafeArea(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildTopBar(),
-                  _buildCenterControls(),
-                  _buildBottomControls(),
+                  _buildModernTopBar(),
+                  const Spacer(),
+                  _buildModernCenterControls(),
+                  const Spacer(),
+                  _buildModernBottomControls(),
                 ],
               ),
             ),
 
-          // Settings overlay
-          if (_showSettings) _buildSettingsOverlay(),
+          // Settings panel
+          if (_showSettings) _buildModernSettingsPanel(),
         ],
       ),
     );
   }
 
-  Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
+  Widget _buildModernTopBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+          _buildIconButton(
+            Icons.arrow_back,
+            () => context.pop(),
+            size: 28,
           ),
-          const Spacer(),
-          PopupMenuButton(
-              tooltip: "Subtitles",
-              child: Text(
-                  '${widget.subtitles.isNotEmpty ? widget.subtitles.first.title : 'No subs'}'),
-              itemBuilder: (context) {
-                return widget.subtitles.map((sub) {
-                  return PopupMenuItem(
-                    onTap: () async {
-                      await widget.state.widget.controller.player
-                          .setSubtitleTrack(sub);
-                      _showSettings = false;
-                    },
-                    child: Text(sub.language ?? 'No subs'),
-                  );
-                }).toList();
-              }),
-          IconButton(
-            onPressed: () => setState(() => _showSettings = true),
-            icon: const Icon(Icons.settings, color: Colors.white),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.animeMedia.title?.english ?? '',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  'Episode ${widget.episodes[widget.currentEpisodeIndex].number}',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _buildSubtitleButton(),
+          _buildIconButton(
+            Icons.settings,
+            () => setState(() => _showSettings = true),
+            size: 28,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCenterControls() {
+  Widget _buildModernCenterControls() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        IconButton(
-          iconSize: 40,
-          onPressed: () {
-            final player = widget.state.widget.controller.player;
-            player.seek(Duration(seconds: position.inSeconds - 10));
-          },
-          icon: const Icon(Iconsax.backward_10_seconds, color: Colors.white),
+        _buildIconButton(
+          Iconsax.backward_10_seconds,
+          () => widget.state.widget.controller.player
+              .seek(Duration(seconds: position.inSeconds - 10)),
+          size: 36,
         ),
-        const SizedBox(width: 24),
+        const SizedBox(width: 32),
         _buildPlayPauseButton(),
-        const SizedBox(width: 24),
-        IconButton(
-          iconSize: 40,
-          onPressed: () {
-            final player = widget.state.widget.controller.player;
-            player.seek(Duration(seconds: position.inSeconds + 10));
-          },
-          icon: const Icon(Iconsax.forward_10_seconds, color: Colors.white),
+        const SizedBox(width: 32),
+        _buildIconButton(
+          Iconsax.forward_10_seconds,
+          () => widget.state.widget.controller.player
+              .seek(Duration(seconds: position.inSeconds + 10)),
+          size: 36,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernBottomControls() {
+    return Container(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        children: [
+          _buildProgressBar(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Row(
+              children: [
+                _buildTimeDisplay(),
+                const Spacer(),
+                _buildVolumeControl(),
+                const SizedBox(width: 16),
+                _buildFullscreenButton(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressBar() {
+    return Stack(
+      children: [
+        SliderTheme(
+          data: SliderThemeData(
+            trackHeight: 4,
+            thumbShape: const RoundSliderThumbShape(
+              enabledThumbRadius: 6,
+              elevation: 4,
+            ),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+            activeTrackColor: Theme.of(context).primaryColor,
+            inactiveTrackColor: Colors.white24,
+            thumbColor: Theme.of(context).primaryColor,
+            overlayColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
+          ),
+          child: Slider(
+            value: staticPositionDrag?.inSeconds.toDouble() ??
+                position.inSeconds.toDouble(),
+            max: duration.inSeconds.toDouble(),
+            onChanged: (value) {
+              setState(
+                  () => staticPositionDrag = Duration(seconds: value.toInt()));
+            },
+            onChangeEnd: (value) async {
+              await widget.state.widget.controller.player
+                  .seek(Duration(seconds: value.toInt()));
+              setState(() => staticPositionDrag = null);
+            },
+          ),
         ),
       ],
     );
@@ -299,127 +372,135 @@ class _CustomControlsState extends State<CustomControls> {
 
   Widget _buildPlayPauseButton() {
     if (isBuffering) {
-      return const SizedBox(
-        width: 48,
-        height: 48,
-        child: CircularProgressIndicator(
-          color: Colors.white,
-          strokeWidth: 2,
+      return Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          color: Colors.black38,
+          borderRadius: BorderRadius.circular(32),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 3,
+          ),
         ),
       );
     }
 
-    return IconButton(
-      iconSize: 48,
-      onPressed: () {
-        final player = widget.state.widget.controller.player;
-        if (isPlaying) {
-          player.pause();
-        } else {
-          player.play();
-        }
-      },
-      icon: Icon(
-        isPlaying ? Icons.pause : Icons.play_arrow,
-        color: Colors.white,
+    return Container(
+      width: 64,
+      height: 64,
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor,
+        borderRadius: BorderRadius.circular(32),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(32),
+          onTap: () {
+            final player = widget.state.widget.controller.player;
+            isPlaying ? player.pause() : player.play();
+          },
+          child: Icon(
+            isPlaying ? Icons.pause : Icons.play_arrow,
+            color: Colors.white,
+            size: 36,
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildBottomControls() {
-    return Column(
-      children: [
-        // Progress bar
-        SliderTheme(
-          data: SliderThemeData(
-            trackHeight: 2,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-            activeTrackColor: Colors.white,
-            inactiveTrackColor: Colors.white38,
-            thumbColor: Colors.white,
-          ),
-          child: Slider(
-            value: staticPositionDrag == null
-                ? position.inSeconds.toDouble()
-                : staticPositionDrag!.inSeconds.toDouble(),
-            max: duration.inSeconds.toDouble(),
-            onChanged: (value) {
-              staticPositionDrag = Duration(seconds: value.toInt());
-            },
-            onChangeEnd: (value) async {
-              final player = widget.state.widget.controller.player;
-              await player.seek(Duration(seconds: value.toInt()));
-              staticPositionDrag = null;
-            },
+  Widget _buildIconButton(IconData icon, VoidCallback onPressed,
+      {double size = 24}) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: size,
           ),
         ),
+      ),
+    );
+  }
 
-        // Bottom row
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 5),
-          child: Row(
-            children: [
-              Text(
-                _formatDuration(position),
-                style: const TextStyle(color: Colors.white),
-              ),
-              const Text(
-                ' / ',
-                style: TextStyle(color: Colors.white54),
-              ),
-              Text(
-                _formatDuration(duration),
-                style: const TextStyle(color: Colors.white54),
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: _toggleFullScreen,
-                icon: Icon(
-                  isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
-                  color: Colors.white,
-                ),
-              ),
-            ],
+  Widget _buildTimeDisplay() {
+    return Text(
+      '${_formatDuration(position)} / ${_formatDuration(duration)}',
+      style: const TextStyle(
+        color: Colors.white70,
+        fontSize: 14,
+      ),
+    );
+  }
+
+  Widget _buildVolumeControl() {
+    return Row(
+      children: [
+        Icon(
+          volume == 0
+              ? Icons.volume_off
+              : volume < 0.5
+                  ? Icons.volume_down
+                  : Icons.volume_up,
+          color: Colors.white,
+          size: 24,
+        ),
+        SizedBox(
+          width: 100,
+          child: SliderTheme(
+            data: SliderThemeData(
+              trackHeight: 2,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+              activeTrackColor: Theme.of(context).primaryColor,
+              inactiveTrackColor: Colors.white24,
+              thumbColor: Theme.of(context).primaryColor,
+            ),
+            child: Slider(
+              value: volume,
+              onChanged: (value) {
+                setState(() => volume = value);
+                widget.state.widget.controller.player.setVolume(value * 100);
+              },
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSettingsOverlay() {
-    return Container(
-      color: Colors.black87,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSettingsHeader(),
-          Expanded(
-            child: _currentSettingsPage == 'main'
-                ? _buildMainSettingsMenu()
-                : _buildSettingsSubPage(_currentSettingsPage),
-          ),
-        ],
-      ),
+  Widget _buildSubtitleButton() {
+    return PopupMenuButton(
+      tooltip: "Subtitles",
+      icon: const Icon(Icons.subtitles, color: Colors.white, size: 28),
+      itemBuilder: (context) {
+        return widget.subtitles.map((sub) {
+          return PopupMenuItem(
+            onTap: () async {
+              await widget.state.widget.controller.player.setSubtitleTrack(sub);
+              setState(() => _showSettings = false);
+            },
+            child: Text(sub.language ?? 'No subtitles'),
+          );
+        }).toList();
+      },
     );
   }
 
-  Widget _buildSettingsHeader() {
-    return ListTile(
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () {
-          if (_currentSettingsPage == 'main') {
-            setState(() => _showSettings = false);
-          } else {
-            setState(() => _currentSettingsPage = 'main');
-          }
-        },
-      ),
-      title: Text(
-        _getSettingsTitle(),
-        style: const TextStyle(color: Colors.white, fontSize: 18),
-      ),
+  Widget _buildFullscreenButton() {
+    return _buildIconButton(
+      isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
+      _toggleFullScreen,
+      size: 28,
     );
   }
 
@@ -436,45 +517,155 @@ class _CustomControlsState extends State<CustomControls> {
     }
   }
 
+  Widget _buildModernSettingsPanel() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      color: Colors.black.withValues(alpha: 0.95),
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSettingsHeader(),
+            Expanded(
+              child: ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
+                child: Container(
+                  color: Colors.black87,
+                  child: _currentSettingsPage == 'main'
+                      ? _buildMainSettingsMenu()
+                      : _buildSettingsSubPage(_currentSettingsPage),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          _buildIconButton(
+            Icons.arrow_back,
+            () {
+              if (_currentSettingsPage == 'main') {
+                setState(() => _showSettings = false);
+              } else {
+                setState(() => _currentSettingsPage = 'main');
+              }
+            },
+            size: 24,
+          ),
+          const SizedBox(width: 16),
+          Text(
+            _getSettingsTitle(),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMainSettingsMenu() {
     return ListView(
+      padding: const EdgeInsets.only(top: 8),
       children: [
-        _buildSettingsItem(
-          icon: Icons.high_quality,
+        _buildSettingsMenuItem(
+          icon: Icons.high_quality_rounded,
           title: 'Quality',
           subtitle: widget.state.widget.controller.player.state.width != null
               ? '${widget.state.widget.controller.player.state.height}p'
               : 'Auto',
           onTap: () => setState(() => _currentSettingsPage = 'quality'),
         ),
-        _buildSettingsItem(
-          icon: Icons.speed,
+        _buildSettingsMenuItem(
+          icon: Icons.speed_rounded,
           title: 'Playback Speed',
           subtitle: '${playbackSpeed}x',
           onTap: () => setState(() => _currentSettingsPage = 'speed'),
         ),
-        _buildSettingsItem(
-          icon: Icons.volume_up,
-          title: 'Volume',
+        _buildSettingsMenuItem(
+          icon: Icons.volume_up_rounded,
+          title: 'Volume & Audio',
           subtitle: '${(volume * 100).round()}%',
           onTap: () => setState(() => _currentSettingsPage = 'audio'),
+        ),
+        _buildSettingsMenuItem(
+          icon: Icons.subtitles_rounded,
+          title: 'Subtitles',
+          subtitle: widget.subtitles.isNotEmpty
+              ? widget.subtitles.first.language ?? 'Default'
+              : 'None available',
+          onTap: () => setState(() => _currentSettingsPage = 'subtitles'),
         ),
       ],
     );
   }
 
-  Widget _buildSettingsItem({
+  Widget _buildSettingsMenuItem({
     required IconData icon,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.white70),
-      title: Text(title, style: const TextStyle(color: Colors.white)),
-      subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70)),
-      trailing: const Icon(Icons.chevron_right, color: Colors.white70),
-      onTap: onTap,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(icon, color: Theme.of(context).primaryColor),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -486,82 +677,192 @@ class _CustomControlsState extends State<CustomControls> {
         return _buildSpeedSettings();
       case 'audio':
         return _buildAudioSettings();
+      case 'subtitles':
+        return _buildSubtitleSettings();
       default:
         return const SizedBox.shrink();
     }
   }
 
   Widget _buildQualitySettings() {
-    return ListView(
-      children: widget.qualityOptions.map((quality) {
-        return ListTile(
-          title: Text(
-            quality['quality']!,
-            style: const TextStyle(color: Colors.white),
-          ),
-          trailing: Icon(
-            Icons.check,
-            color: quality['quality'] == 'Auto'
-                ? Colors.white
-                : Colors.transparent,
-          ),
+    return ListView.builder(
+      itemCount: widget.qualityOptions.length,
+      itemBuilder: (context, index) {
+        final quality = widget.qualityOptions[index];
+        final isSelected = quality['quality'] == 'Auto';
+
+        return _buildSettingsOptionItem(
+          title: quality['quality']!,
+          isSelected: isSelected,
           onTap: () {
             widget.changeQuality(quality['url']!);
             setState(() => _showSettings = false);
           },
         );
-      }).toList(),
+      },
     );
   }
 
   Widget _buildSpeedSettings() {
-    return ListView(
-      children: _playbackSpeeds.map((speed) {
-        return ListTile(
-          title: Text(
-            '${speed}x',
-            style: const TextStyle(color: Colors.white),
-          ),
-          trailing: Icon(
-            Icons.check,
-            color: speed == playbackSpeed ? Colors.white : Colors.transparent,
-          ),
+    return ListView.builder(
+      itemCount: _playbackSpeeds.length,
+      itemBuilder: (context, index) {
+        final speed = _playbackSpeeds[index];
+        final isSelected = speed == playbackSpeed;
+
+        return _buildSettingsOptionItem(
+          title: '${speed}x',
+          isSelected: isSelected,
           onTap: () {
             setState(() => playbackSpeed = speed);
             widget.state.widget.controller.player.setRate(speed);
           },
         );
-      }).toList(),
+      },
     );
   }
 
   Widget _buildAudioSettings() {
     return Column(
       children: [
-        ListTile(
-          leading: const Icon(Icons.volume_up, color: Colors.white),
-          title: const Text('Volume', style: TextStyle(color: Colors.white)),
-          subtitle: SliderTheme(
-            data: SliderThemeData(
-              trackHeight: 4,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
-              activeTrackColor: Colors.blueAccent,
-              inactiveTrackColor: Colors.white38,
-              thumbColor: Colors.blueAccent,
-            ),
-            child: Slider(
-              value: volume,
-              min: 0.0,
-              max: 1.0,
-              onChanged: (value) {
-                setState(() => volume = value);
-                widget.state.widget.controller.player.setVolume(value * 100);
-              },
-            ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Volume',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(
+                    volume == 0
+                        ? Icons.volume_off_rounded
+                        : volume < 0.5
+                            ? Icons.volume_down_rounded
+                            : Icons.volume_up_rounded,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderThemeData(
+                        trackHeight: 4,
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 8,
+                          elevation: 4,
+                        ),
+                        overlayShape: const RoundSliderOverlayShape(
+                          overlayRadius: 16,
+                        ),
+                        activeTrackColor: Theme.of(context).primaryColor,
+                        inactiveTrackColor: Colors.white24,
+                        thumbColor: Theme.of(context).primaryColor,
+                      ),
+                      child: Slider(
+                        value: volume,
+                        min: 0.0,
+                        max: 1.0,
+                        onChanged: (value) {
+                          setState(() => volume = value);
+                          widget.state.widget.controller.player
+                              .setVolume(value * 100);
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    '${(volume * 100).round()}%',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSubtitleSettings() {
+    return ListView.builder(
+      itemCount: widget.subtitles.length,
+      itemBuilder: (context, index) {
+        final subtitle = widget.subtitles[index];
+        final isSelected = index == 0; // Assuming first is selected
+
+        return _buildSettingsOptionItem(
+          title: subtitle.language ?? 'Unknown',
+          subtitle: subtitle.title,
+          isSelected: isSelected,
+          onTap: () async {
+            await widget.state.widget.controller.player
+                .setSubtitleTrack(subtitle);
+            setState(() => _showSettings = false);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSettingsOptionItem({
+    required String title,
+    String? subtitle,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (isSelected)
+                Icon(
+                  Icons.check_rounded,
+                  color: Theme.of(context).primaryColor,
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

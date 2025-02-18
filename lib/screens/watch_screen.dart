@@ -72,7 +72,10 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   void _initializeProviders() => _animeProvider = getAnimeProvider(ref)!;
 
   Future<void> _initializePlayer() async {
-    _player = Player();
+    _player = Player(
+        configuration: PlayerConfiguration(
+      bufferSize: 64 * 1024 * 1024,
+    ));
     _controller = VideoController(_player);
     _playerSubscription = _player.stream.error
         .listen((error) => _handleError('Player error: ${error.toString()}'));
@@ -230,27 +233,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   Widget _buildVideoPlayer() {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Expanded(
-            child: Row(
-              children: [
-                IconButton(
-                    onPressed: () =>
-                        context.pop(), // Directly pop without confirmation
-                    icon: const Icon(Iconsax.arrow_left_1, size: 35)),
-                if (_episodes.isNotEmpty)
-                  Flexible(
-                    child: Text(
-                      _episodes[_selectedEpIdx].title ?? 'Untitled',
-                      style: Theme.of(context).textTheme.titleMedium,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ]),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: ClipRRect(
@@ -272,6 +256,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                     ),
                     subtitleViewConfiguration: SubtitleViewConfiguration(
                       style: TextStyle(
+                          color: Colors.white,
                           backgroundColor: Colors.black.withValues(alpha: 0.2)),
                       textScaleFactor:
                           MediaQuery.sizeOf(context).width > 400 ? 1.5 : 2,
@@ -357,7 +342,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
         if (_servers.raw.isNotEmpty)
           PopupMenuItem(value: 'raw', child: Text('RAW')),
       ],
-      onSelected: (quality) {
+      onSelected: (category) {
         _player.pause();
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           elevation: 0,
@@ -366,12 +351,12 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
           content: AwesomeSnackbarContent(
             title: "Message",
             message:
-                "Changed category to ${quality.toUpperCase()}, please wait for the server to respond.",
+                "Changed category to ${category.toUpperCase()}, please wait for the server to respond.",
             contentType: ContentType.success,
           ),
         ));
         setState(() {
-          _selectedCategory = quality;
+          _selectedCategory = category;
         });
         _fetchStreamData();
       },

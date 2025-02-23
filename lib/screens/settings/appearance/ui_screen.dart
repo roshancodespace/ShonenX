@@ -47,7 +47,7 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
   }
 
   @override 
-  void dispoose() {
+  void dispose() {
     _saveSettings();
     super.dispose();
   }

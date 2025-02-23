@@ -5,38 +5,43 @@ import 'package:hive/hive.dart';
 
 part 'settings_offline_model.g.dart';
 
-@HiveType(typeId: 0)
+@HiveType(typeId: 1)
 class SettingsModel {
   @HiveField(0)
-  final ProviderSettingsModel
-      providerSettings; // Make sure this is non-nullable!
+  final ProviderSettingsModel providerSettings;
 
   @HiveField(1)
-  final AppearanceSettingsModel appearanceSettings;
+  final ThemeSettingsModel themeSettings;
 
   @HiveField(2)
   final PlayerSettingsModel playerSettings;
 
+  @HiveField(3)
+  final UISettingsModel? uiSettings; // New UI Settings field
+
   SettingsModel({
-    required this.providerSettings, // Ensure this is required
-    required this.appearanceSettings, // Same for this field
-    required this.playerSettings, // Same for this field
+    required this.providerSettings,
+    required this.themeSettings,
+    required this.playerSettings,
+    this.uiSettings,
   });
 
   SettingsModel copyWith({
     ProviderSettingsModel? providerSettings,
-    AppearanceSettingsModel? appearanceSettings,
+    ThemeSettingsModel? themeSettings,
     PlayerSettingsModel? playerSettings,
+    UISettingsModel? uiSettings,
   }) {
     return SettingsModel(
       providerSettings: providerSettings ?? this.providerSettings,
-      appearanceSettings: appearanceSettings ?? this.appearanceSettings,
+      themeSettings: themeSettings ?? this.themeSettings,
       playerSettings: playerSettings ?? this.playerSettings,
+      uiSettings: uiSettings ?? this.uiSettings,
     );
   }
 }
 
-@HiveType(typeId: 1)
+@HiveType(typeId: 2)
 class ProviderSettingsModel {
   @HiveField(0)
   final String selectedProviderName;
@@ -50,8 +55,8 @@ class ProviderSettingsModel {
   }
 }
 
-@HiveType(typeId: 2)
-class AppearanceSettingsModel {
+@HiveType(typeId: 3)
+class ThemeSettingsModel {
   @HiveField(0)
   final String themeMode;
   @HiveField(1)
@@ -95,7 +100,7 @@ class AppearanceSettingsModel {
   @HiveField(20)
   final String tabBarStyle;
 
-  AppearanceSettingsModel({
+  ThemeSettingsModel({
     this.themeMode = 'system',
     this.amoled = false,
     this.colorScheme = 'red',
@@ -119,7 +124,7 @@ class AppearanceSettingsModel {
     this.tabBarStyle = 'forBackground',
   });
 
-  AppearanceSettingsModel copyWith({
+  ThemeSettingsModel copyWith({
     String? themeMode,
     bool? amoled,
     String? colorScheme,
@@ -142,7 +147,7 @@ class AppearanceSettingsModel {
     bool? useTextTheme,
     String? tabBarStyle,
   }) {
-    return AppearanceSettingsModel(
+    return ThemeSettingsModel(
       themeMode: themeMode ?? this.themeMode,
       amoled: amoled ?? this.amoled,
       colorScheme: colorScheme ?? this.colorScheme,
@@ -168,20 +173,18 @@ class AppearanceSettingsModel {
     );
   }
 
-  // Helper method to get the actual FlexScheme
   FlexScheme get flexSchemeEnum => FlexScheme.values.firstWhere(
         (e) => e.name == colorScheme,
         orElse: () => FlexScheme.red,
       );
 
-  // Helper method to get the actual FlexTabBarStyle
   FlexTabBarStyle get flexTabBarStyleEnum => FlexTabBarStyle.values.firstWhere(
         (e) => e.name == tabBarStyle,
         orElse: () => FlexTabBarStyle.forBackground,
       );
 }
 
-@HiveType(typeId: 3)
+@HiveType(typeId: 4)
 class AnilistSettings {
   @HiveField(0)
   final String themeMode;
@@ -197,7 +200,7 @@ class AnilistSettings {
   }
 }
 
-@HiveType(typeId: 4)
+@HiveType(typeId: 5)
 class PlayerSettingsModel {
   @HiveField(0)
   final double episodeCompletionThreshold;
@@ -224,6 +227,48 @@ class PlayerSettingsModel {
           episodeCompletionThreshold ?? this.episodeCompletionThreshold,
       autoPlayNextEpisode: autoPlayNextEpisode ?? this.autoPlayNextEpisode,
       preferSubtitles: preferSubtitles ?? this.preferSubtitles,
+    );
+  }
+}
+
+@HiveType(typeId: 6)
+class UISettingsModel {
+  @HiveField(0)
+  final bool compactMode;
+
+  @HiveField(1)
+  final String defaultTab;
+
+  @HiveField(2)
+  final bool showThumbnails;
+
+  @HiveField(3)
+  final String cardStyle;
+
+  @HiveField(4)
+  final String layoutStyle;
+
+  UISettingsModel({
+    this.compactMode = false,
+    this.defaultTab = 'Home',
+    this.showThumbnails = true,
+    this.cardStyle = 'Classic',
+    this.layoutStyle = 'Grid',
+  });
+
+  UISettingsModel copyWith({
+    bool? compactMode,
+    String? defaultTab,
+    bool? showThumbnails,
+    String? cardStyle,
+    String? layoutStyle,
+  }) {
+    return UISettingsModel(
+      compactMode: compactMode ?? this.compactMode,
+      defaultTab: defaultTab ?? this.defaultTab,
+      showThumbnails: showThumbnails ?? this.showThumbnails,
+      cardStyle: cardStyle ?? this.cardStyle,
+      layoutStyle: layoutStyle ?? this.layoutStyle,
     );
   }
 }

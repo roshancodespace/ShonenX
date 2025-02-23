@@ -8,8 +8,8 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
     as anime_media;
 import 'package:shonenx/api/models/anime/episode_model.dart';
-import 'package:shonenx/data/hive/boxes/continue_watching_box.dart';
-import 'package:shonenx/data/hive/models/continue_watching_model.dart';
+import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
+import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 
 class CustomControls extends StatefulWidget {
   final VideoState state;
@@ -39,7 +39,7 @@ class _CustomControlsState extends State<CustomControls>
     with SingleTickerProviderStateMixin {
   late AnimationController _fadeController;
   late Timer? progressSaveTimer;
-  late ContinueWatchingBox? continueWatchingBox;
+  late AnimeWatchProgressBox? animeWatchProgressBox;
   bool isBuffering = true;
   bool isPlaying = true;
   bool showControls = true;
@@ -79,36 +79,45 @@ class _CustomControlsState extends State<CustomControls>
   }
 
   Future<void> _initializeContinueWatchingBox() async {
-    continueWatchingBox = ContinueWatchingBox();
-    await continueWatchingBox?.init();
+    animeWatchProgressBox = AnimeWatchProgressBox();
+    await animeWatchProgressBox?.init();
+    if (animeWatchProgressBox?.isInitialized == true) {
+      await animeWatchProgressBox?.setEntry(
+        AnimeWatchProgressEntry(
+          animeId: widget.animeMedia.id!,
+          animeTitle: widget.animeMedia.title?.english ??
+              widget.animeMedia.title?.romaji ??
+              widget.animeMedia.title?.native ??
+              '',
+          animeFormat: widget.animeMedia.format ?? '',
+          animeCover: widget.animeMedia.coverImage?.large ??
+              widget.animeMedia.coverImage?.medium ??
+              '',
+          totalEpisodes: widget.episodes.length,
+        ),
+      );
+    }
   }
 
   Future<void> _startProgressSaveTimer() async {
-    progressSaveTimer = Timer.periodic(Duration(seconds: 10), (timer) async {
-      final thumbnail = await widget.state.widget.controller.player
-          .screenshot(format: 'image/png');
-      if (continueWatchingBox != null) {
-        final episode = widget.episodes[widget.currentEpisodeIndex];
-        continueWatchingBox?.setEntry(
-          ContinueWatchingEntry(
+    progressSaveTimer =
+        Timer.periodic(const Duration(seconds: 10), (timer) async {
+      if (isPlaying) {
+        await Future.delayed(
+            const Duration(milliseconds: 500)); // Ensure frame is rendered
+        final thumbnail = await widget.state.widget.controller.player
+            .screenshot(format: 'image/png');
+        if (thumbnail != null && animeWatchProgressBox != null) {
+          final episode = widget.episodes[widget.currentEpisodeIndex];
+          animeWatchProgressBox?.updateEpisodeProgress(
             animeId: widget.animeMedia.id!,
-            animeTitle: widget.animeMedia.title?.english ??
-                widget.animeMedia.title?.native ??
-                widget.animeMedia.title?.romaji ??
-                '',
-            animeCover: widget.animeMedia.coverImage?.large ??
-                widget.animeMedia.coverImage?.medium ??
-                '',
-            animeFormat: widget.animeMedia.format,
-            episodeThumbnail: thumbnail != null ? base64Encode(thumbnail) : '',
             episodeNumber: episode.number!,
-            episodeTitle: episode.title!,
-            totalEpisodes: widget.episodes.length,
+            episodeTitle: episode.title ?? 'Untitled',
+            episodeThumbnail: base64Encode(thumbnail),
             progressInSeconds: position.inSeconds,
             durationInSeconds: duration.inSeconds,
-            lastUpdated: DateTime.now().toIso8601String(),
-          ),
-        );
+          );
+        }
       }
     });
   }
@@ -268,13 +277,14 @@ class _CustomControlsState extends State<CustomControls>
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                Text(
-                  'Episode ${widget.episodes[widget.currentEpisodeIndex].number}',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 14,
+                if (widget.episodes.isNotEmpty)
+                  Text(
+                    'Episode ${widget.episodes[widget.currentEpisodeIndex].number}',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 14,
+                    ),
                   ),
-                ),
               ],
             ),
           ),

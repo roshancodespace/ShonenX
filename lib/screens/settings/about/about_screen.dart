@@ -14,61 +14,79 @@ class AboutScreen extends StatelessWidget {
     Widget buildInfoTile({
       required String title,
       required String subtitle,
-      bool notAvailable = false,
       required IconData icon,
       VoidCallback? onTap,
+      bool disabled = false,
     }) {
-      return InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+      return Card(
+        elevation: 0,
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: colorScheme.outline.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+        child: InkWell(
+          onTap: disabled ? null : onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: disabled
+                        ? colorScheme.onSurface.withOpacity(0.1)
+                        : colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: disabled
+                        ? colorScheme.onSurface.withOpacity(0.4)
+                        : colorScheme.primary,
+                    size: 20,
+                  ),
                 ),
-                child: Icon(
-                  icon,
-                  color: colorScheme.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        decorationStyle: TextDecorationStyle.solid,
-                        decoration:
-                            notAvailable ? TextDecoration.lineThrough : null,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: disabled
+                              ? colorScheme.onSurface.withOpacity(0.4)
+                              : colorScheme.onSurface,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: disabled
+                              ? colorScheme.onSurface.withOpacity(0.3)
+                              : colorScheme.onSurface.withOpacity(0.7),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              if (onTap != null)
-                Icon(
-                  Iconsax.arrow_right_3,
-                  color: colorScheme.onSurface.withValues(alpha: 0.5),
-                  size: 20,
-                ),
-            ],
+                if (onTap != null && !disabled)
+                  Icon(
+                    Iconsax.arrow_right_3,
+                    color: colorScheme.onSurface.withOpacity(0.5),
+                    size: 20,
+                  ),
+              ],
+            ),
           ),
         ),
       );
@@ -81,54 +99,57 @@ class AboutScreen extends StatelessWidget {
           if (!snapshot.hasData) return const SizedBox.shrink();
 
           final info = snapshot.data!;
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+          return Card(
+            elevation: 0,
+            margin: const EdgeInsets.only(bottom: 16),
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              color: colorScheme.primary.withValues(alpha: 0.05),
-              border: Border.all(
-                color: colorScheme.primary,
-                width: 2,
+              side: BorderSide(
+                color: colorScheme.outline.withOpacity(0.1),
+                width: 1,
               ),
             ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Iconsax.mobile,
+                      color: colorScheme.primary,
+                      size: 24,
+                    ),
                   ),
-                  child: Icon(
-                    Iconsax.mobile,
-                    color: colorScheme.primary,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'ShonenX',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'ShonenX',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Version ${info.version} (${info.buildNumber})',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.onSurface.withValues(alpha: 0.7),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Version ${info.version} (${info.buildNumber})',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: colorScheme.onSurface.withOpacity(0.7),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },
@@ -137,24 +158,29 @@ class AboutScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
         leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(Iconsax.arrow_left_1),
+          onPressed: () => Navigator.pop(context),
+          icon: Icon(Iconsax.arrow_left_1, color: colorScheme.onSurface),
+          style: IconButton.styleFrom(
+            backgroundColor: colorScheme.surfaceVariant.withOpacity(0.5),
+            padding: const EdgeInsets.all(10),
+          ),
         ),
         title: const Text(
           'About',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
       ),
-      body: ListView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        children: [
-          buildAppInfo(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 24, 0, 12),
-            child: Text(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            buildAppInfo(),
+            const SizedBox(height: 16),
+            Text(
               'Legal',
               style: TextStyle(
                 fontSize: 14,
@@ -162,28 +188,29 @@ class AboutScreen extends StatelessWidget {
                 color: colorScheme.primary,
               ),
             ),
-          ),
-          buildInfoTile(
-            title: 'Terms of Service',
-            subtitle: 'Read our terms of service',
-            icon: Iconsax.document_text,
-            onTap: () => context.push('/settings/about/terms'),
-          ),
-          buildInfoTile(
-            title: 'Privacy Policy',
-            subtitle: 'Learn how we handle your data',
-            icon: Iconsax.shield_tick,
-            onTap: () => context.push('/settings/about/privacy'),
-          ),
-          buildInfoTile(
-            title: 'Licenses',
-            subtitle: 'Open source licenses',
-            icon: Iconsax.code,
-            onTap: () => showLicensePage(context: context),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 24, 0, 12),
-            child: Text(
+            const SizedBox(height: 8),
+            buildInfoTile(
+              title: 'Terms of Service',
+              subtitle: 'Read our terms of service',
+              icon: Iconsax.document_text,
+              onTap: () => context.push('/settings/about/terms'),
+              disabled: true
+            ),
+            buildInfoTile(
+              title: 'Privacy Policy',
+              subtitle: 'Learn how we handle your data',
+              icon: Iconsax.shield_tick,
+              onTap: () => context.push('/settings/about/privacy'),
+              disabled: true
+            ),
+            buildInfoTile(
+              title: 'Licenses',
+              subtitle: 'Open source licenses',
+              icon: Iconsax.code,
+              onTap: () => showLicensePage(context: context),
+            ),
+            const SizedBox(height: 24),
+            Text(
               'Links',
               style: TextStyle(
                 fontSize: 14,
@@ -191,28 +218,24 @@ class AboutScreen extends StatelessWidget {
                 color: colorScheme.primary,
               ),
             ),
-          ),
-          buildInfoTile(
-            title: 'GitHub Repository',
-            subtitle: 'View source code and contribute',
-            icon: Iconsax.code,
-            onTap: () =>
-                launchUrl(Uri.parse('https://github.com/Darkx-dev/ShonenX')),
-          ),
-          buildInfoTile(
-            title: 'Report an Issue',
-            subtitle: 'Help us improve the app',
-            icon: Iconsax.message_question,
-            onTap: () => launchUrl(
-                Uri.parse('https://github.com/Darkx-dev/ShonenX/issues')),
-          ),
-          // buildInfoTile(
-          //   title: 'Join Discord',
-          //   subtitle: 'Connect with the community',
-          //   icon: Iconsax.message,
-          //   onTap: () => launchUrl(Uri.parse('https://discord.gg/your-server')),
-          // ),
-        ],
+            const SizedBox(height: 8),
+            buildInfoTile(
+              title: 'GitHub Repository',
+              subtitle: 'View source code and contribute',
+              icon: Iconsax.code,
+              onTap: () =>
+                  launchUrl(Uri.parse('https://github.com/Darkx-dev/ShonenX')),
+            ),
+            buildInfoTile(
+              title: 'Report an Issue',
+              subtitle: 'Help us improve the app',
+              icon: Iconsax.message_question,
+              onTap: () => launchUrl(
+                  Uri.parse('https://github.com/Darkx-dev/ShonenX/issues')),
+              disabled: false, // Set to true to disable this item
+            ),
+          ],
+        ),
       ),
     );
   }

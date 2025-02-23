@@ -28,194 +28,384 @@ class ProfileSettingsScreen extends ConsumerWidget {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to connect to AniList. Please try again.'),
+            content: const Text('Failed to connect to AniList. Please try again.'),
             backgroundColor: colorScheme.error,
             behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         );
         debugPrint('Error during login: $e');
       }
     }
 
-    Widget buildProfileCard() {
-      if (user != null) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: colorScheme.surface,
-            border: Border.all(
-              color: colorScheme.primary,
-              width: 2,
-            ),
+    return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        leading: IconButton(
+          onPressed: () => context.pop(),
+          icon: Icon(Iconsax.arrow_left_1, color: colorScheme.onSurface),
+          style: IconButton.styleFrom(
+            backgroundColor: colorScheme.surfaceVariant.withOpacity(0.5),
+            padding: const EdgeInsets.all(10),
           ),
-          child: Row(
-            children: [
-              Hero(
-                tag: 'profile_avatar',
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: colorScheme.primary,
-                      width: 2,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(50),
-                    child: user.avatar != null
-                        ? CachedNetworkImage(
-                            imageUrl: user.avatar!,
-                            fit: BoxFit.cover,
-                            width: 42,
-                            height: 42,
-                          )
-                        : Container(
-                            width: 42,
-                            height: 42,
-                            color: colorScheme.primary.withValues(alpha: 0.1),
-                            child: Icon(
-                              Iconsax.user,
-                              color: colorScheme.primary,
-                              size: 20,
-                            ),
-                          ),
-                  ),
-                ),
+        ),
+        title: const Text(
+          'Profile Settings',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildProfileCard(context, ref, user, loginAnilist),
+          if (user != null) ...[
+            const SizedBox(height: 24),
+            _buildSettingsSection(context, 'Sync', [
+              _SettingsItem(
+                icon: Iconsax.refresh_circle,
+                title: 'Sync Settings',
+                description: 'Configure AniList sync behavior',
+                onTap: () => context.push('/settings/profile/sync'),
+                disabled: true,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.name ?? 'Guest',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+              _SettingsItem(
+                icon: Iconsax.timer_1,
+                title: 'Auto Sync',
+                description: 'Manage background sync settings',
+                onTap: () => context.push('/settings/profile/auto-sync'),
+                disabled: true,
+              ),
+            ]),
+            _buildSettingsSection(context, 'Lists', [
+              _SettingsItem(
+                icon: Iconsax.task_square,
+                title: 'List Settings',
+                description: 'Customize your anime lists',
+                onTap: () => context.push('/settings/profile/lists'),
+                disabled: true,
+              ),
+              _SettingsItem(
+                icon: Iconsax.import,
+                title: 'Import Lists',
+                description: 'Import lists from other services',
+                onTap: () => context.push('/settings/profile/import'),
+                disabled: true,
+              ),
+            ]),
+            _buildSettingsSection(context, 'Account', [
+              _SettingsItem(
+                icon: Iconsax.shield_tick,
+                title: 'Privacy',
+                description: 'Manage your privacy settings',
+                onTap: () => context.push('/settings/profile/privacy'),
+                disabled: true,
+              ),
+              _SettingsItem(
+                icon: Iconsax.document_download,
+                title: 'Data & Storage',
+                description: 'Manage app data and cache',
+                onTap: () => context.push('/settings/profile/data'),
+                disabled: true,
+              ),
+            ]),
+          ],
+          const SizedBox(height: 48),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileCard(
+    BuildContext context,
+    WidgetRef ref,
+    dynamic user,
+    Future<void> Function() loginAnilist,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      elevation: 4,
+      shadowColor: colorScheme.shadow.withOpacity(0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [
+              colorScheme.surface,
+              colorScheme.surfaceVariant.withOpacity(0.5),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: user != null
+            ? Row(
+                children: [
+                  Hero(
+                    tag: 'profile_avatar',
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: colorScheme.primary, width: 2),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(50),
+                        child: user.avatar != null
+                            ? CachedNetworkImage(
+                                imageUrl: user.avatar!,
+                                fit: BoxFit.cover,
+                                width: 48,
+                                height: 48,
+                                placeholder: (context, url) => Container(
+                                  width: 48,
+                                  height: 48,
+                                  color: colorScheme.primary.withOpacity(0.1),
+                                ),
+                              )
+                            : Container(
+                                width: 48,
+                                height: 48,
+                                color: colorScheme.primary.withOpacity(0.1),
+                                child: Icon(
+                                  Iconsax.user,
+                                  color: colorScheme.primary,
+                                  size: 24,
+                                ),
+                              ),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Iconsax.verify5,
-                          size: 16,
-                          color: colorScheme.primary,
-                        ),
-                        const SizedBox(width: 4),
                         Text(
-                          'Connected to AniList',
+                          user.name ?? 'Guest',
                           style: TextStyle(
-                            color: colorScheme.primary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(
+                              Iconsax.verify5,
+                              size: 18,
+                              color: colorScheme.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Connected to AniList',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton.filled(
+                    onPressed: () async {
+                      await ref.read(userProvider.notifier).logout(context: context);
+                    },
+                    icon: const Icon(Iconsax.logout),
+                    style: IconButton.styleFrom(
+                      backgroundColor: colorScheme.error.withOpacity(0.1),
+                      foregroundColor: colorScheme.error,
+                      padding: const EdgeInsets.all(10),
+                    ),
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          colorScheme.primary.withOpacity(0.2),
+                          colorScheme.primary.withOpacity(0.1),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Iconsax.profile_add,
+                      color: colorScheme.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Connect to AniList',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Sync your anime progress and lists',
+                          style: TextStyle(
                             fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                            color: colorScheme.onSurface.withOpacity(0.7),
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-              IconButton.filled(
-                onPressed: () async {
-                  await ref
-                      .read(userProvider.notifier)
-                      .logout(context: context);
-                },
-                icon: const Icon(Iconsax.logout),
-                style: IconButton.styleFrom(
-                  backgroundColor: colorScheme.error.withValues(alpha: 0.1),
-                  foregroundColor: colorScheme.error,
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: colorScheme.primary.withValues(alpha: 0.05),
-          border: Border.all(
-            color: colorScheme.primary,
-            width: 2,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Iconsax.profile_add,
-                color: colorScheme.primary,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Connect to AniList',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Sync your anime progress and lists',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  IconButton.filled(
+                    onPressed: loginAnilist,
+                    icon: const Icon(Iconsax.login),
+                    style: IconButton.styleFrom(
+                      backgroundColor: colorScheme.primary.withOpacity(0.1),
+                      foregroundColor: colorScheme.primary,
+                      padding: const EdgeInsets.all(10),
                     ),
                   ),
                 ],
               ),
-            ),
-            IconButton.filled(
-              onPressed: loginAnilist,
-              icon: const Icon(Iconsax.login),
-              style: IconButton.styleFrom(
-                backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-                foregroundColor: colorScheme.primary,
+      ),
+    );
+  }
+
+  Widget _buildSettingsSection(BuildContext context, String title, List<Widget> items) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 8, bottom: 12),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.primary,
+                letterSpacing: 0.5,
               ),
             ),
-          ],
-        ),
-      );
-    }
+          ),
+          Card(
+            elevation: 2,
+            shadowColor: colorScheme.shadow.withOpacity(0.1),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Column(
+              children: items.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                return Column(
+                  children: [
+                    if (index > 0)
+                      Divider(
+                        height: 1,
+                        indent: 60,
+                        endIndent: 16,
+                        color: colorScheme.onSurface.withOpacity(0.1),
+                      ),
+                    item,
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-    Widget buildSettingsTile({
-      required String title,
-      required String subtitle,
-      required IconData icon,
-      required VoidCallback onTap,
-    }) {
-      return InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+class _SettingsItem extends StatefulWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+  final bool disabled;
+
+  const _SettingsItem({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+    this.disabled = false,
+  });
+
+  @override
+  State<_SettingsItem> createState() => _SettingsItemState();
+}
+
+class _SettingsItemState extends State<_SettingsItem> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return MouseRegion(
+      onEnter: (_) {
+        if (!widget.disabled) {
+          setState(() => _isHovered = true);
+        }
+      },
+      onExit: (_) {
+        if (!widget.disabled) {
+          setState(() => _isHovered = false);
+        }
+      },
+      child: InkWell(
+        onTap: widget.disabled ? null : widget.onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: _isHovered && !widget.disabled
+                ? colorScheme.surfaceVariant.withOpacity(0.3)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  gradient: LinearGradient(
+                    colors: [
+                      colorScheme.primary.withOpacity(widget.disabled ? 0.05 : 0.2),
+                      colorScheme.primary.withOpacity(widget.disabled ? 0.03 : 0.1),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  icon,
-                  color: colorScheme.primary,
+                  widget.icon,
+                  color: widget.disabled
+                      ? colorScheme.onSurface.withOpacity(0.4)
+                      : colorScheme.primary,
                   size: 20,
                 ),
               ),
@@ -225,18 +415,21 @@ class ProfileSettingsScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
-                      style: const TextStyle(
+                      widget.title,
+                      style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
+                        color: widget.disabled
+                            ? colorScheme.onSurface.withOpacity(0.4)
+                            : colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
-                      subtitle,
+                      widget.description,
                       style: TextStyle(
                         fontSize: 14,
-                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: colorScheme.onSurface.withOpacity(widget.disabled ? 0.3 : 0.7),
                       ),
                     ),
                   ],
@@ -244,104 +437,12 @@ class ProfileSettingsScreen extends ConsumerWidget {
               ),
               Icon(
                 Iconsax.arrow_right_3,
-                color: colorScheme.onSurface.withValues(alpha: 0.5),
+                color: colorScheme.onSurface.withOpacity(widget.disabled ? 0.2 : 0.5),
                 size: 20,
               ),
             ],
           ),
         ),
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(Iconsax.arrow_left_1),
-        ),
-        title: const Text(
-          'Profile Settings',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        children: [
-          buildProfileCard(),
-          if (user != null) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 24, 0, 12),
-              child: Text(
-                'Sync',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.primary,
-                ),
-              ),
-            ),
-            buildSettingsTile(
-              title: 'Sync Settings',
-              subtitle: 'Configure AniList sync behavior',
-              icon: Iconsax.refresh_circle,
-              onTap: () => context.push('/settings/profile/sync'),
-            ),
-            buildSettingsTile(
-              title: 'Auto Sync',
-              subtitle: 'Manage background sync settings',
-              icon: Iconsax.timer_1,
-              onTap: () => context.push('/settings/profile/auto-sync'),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 24, 0, 12),
-              child: Text(
-                'Lists',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.primary,
-                ),
-              ),
-            ),
-            buildSettingsTile(
-              title: 'List Settings',
-              subtitle: 'Customize your anime lists',
-              icon: Iconsax.task_square,
-              onTap: () => context.push('/settings/profile/lists'),
-            ),
-            buildSettingsTile(
-              title: 'Import Lists',
-              subtitle: 'Import lists from other services',
-              icon: Iconsax.import,
-              onTap: () => context.push('/settings/profile/import'),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 24, 0, 12),
-              child: Text(
-                'Account',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.primary,
-                ),
-              ),
-            ),
-            buildSettingsTile(
-              title: 'Privacy',
-              subtitle: 'Manage your privacy settings',
-              icon: Iconsax.shield_tick,
-              onTap: () => context.push('/settings/profile/privacy'),
-            ),
-            buildSettingsTile(
-              title: 'Data & Storage',
-              subtitle: 'Manage app data and cache',
-              icon: Iconsax.document_download,
-              onTap: () => context.push('/settings/profile/data'),
-            ),
-          ],
-        ],
       ),
     );
   }

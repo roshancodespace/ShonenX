@@ -80,60 +80,71 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
+            Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            Theme.of(context).colorScheme.secondary.withOpacity(0.05),
           ],
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Center(
-          child: Card(
-            elevation: 8,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Container(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.movie_outlined,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.primary,
+      child: Center(
+        child: Card(
+          elevation: 0,
+          color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+            ),
+          ),
+          child: Container(
+            width: 320,
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    "Access Your Anime Collection",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                  child: Icon(
+                    Iconsax.video_play,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  "Track Your Anime Journey",
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "Connect with Anilist to manage your watchlist and discover new anime.",
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                FilledButton.icon(
+                  onPressed: () => context.push('/settings/profile'),
+                  icon: const Icon(Iconsax.login),
+                  label: const Text("Connect with Anilist"),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "Sign in with Anilist to track and manage your anime watchlist.",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-                  FilledButton.icon(
-                    onPressed: () => context.push('/settings/profile'),
-                    icon: const Icon(Iconsax.login),
-                    label: const Text("Sign In"),
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(200, 48),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -143,41 +154,97 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
 
   Widget _buildMainContent(
       String selectedCategory, AnimeListState animeListState) {
-    return CustomScrollView(
-      slivers: [
-        _buildAppBar(selectedCategory),
+    return NestedScrollView(
+      headerSliverBuilder: (context, innerBoxIsScrolled) => [
+        _buildAppBar(selectedCategory, innerBoxIsScrolled),
         SliverToBoxAdapter(
           child: _buildCategorySelector(selectedCategory),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.all(16.0),
-          sliver: _buildAnimeGrid(selectedCategory, animeListState),
-        ),
       ],
+      body: _buildAnimeList(selectedCategory, animeListState),
     );
   }
 
-  Widget _buildAppBar(String selectedCategory) {
-    return SliverAppBar.large(
+  Widget _buildAppBar(String selectedCategory, bool innerBoxIsScrolled) {
+    final theme = Theme.of(context);
+    return SliverAppBar(
+      expandedHeight: 140,
       pinned: true,
-      expandedHeight: 80,
+      stretch: true,
+      backgroundColor: theme.colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
       flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          categories[selectedCategory] ?? '',
-          style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).appBarTheme.foregroundColor),
+        expandedTitleScale: 1.3,
+        titlePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        title: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              categories[selectedCategory] ?? '',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            if (!innerBoxIsScrolled) ...[
+              const SizedBox(height: 4),
+              Text(
+                _getCategorySubtitle(selectedCategory),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
         ),
-        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-        expandedTitleScale: 1.8,
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                theme.colorScheme.primaryContainer.withOpacity(0.2),
+                theme.colorScheme.surface,
+              ],
+            ),
+          ),
+        ),
       ),
+      actions: [
+        IconButton(
+          color: theme.colorScheme.onSurface,
+          icon: const Icon(Iconsax.sort),
+          tooltip: 'Sort',
+          onPressed: () {
+            // Implement sort functionality
+          },
+        ),
+        IconButton(
+          color: theme.colorScheme.onSurface,
+          icon: const Icon(Iconsax.filter),
+          tooltip: 'Filter',
+          onPressed: () {
+            // Implement filter functionality
+          },
+        ),
+        IconButton(
+          color: theme.colorScheme.onSurface,
+          icon: const Icon(Iconsax.search_normal),
+          tooltip: 'Search',
+          onPressed: () {
+            // Implement search functionality
+          },
+        ),
+        const SizedBox(width: 8),
+      ],
     );
   }
 
   Widget _buildCategorySelector(String selectedCategory) {
     return Container(
-      height: 48,
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      height: 50,
+      margin: const EdgeInsets.symmetric(vertical: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -188,25 +255,25 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              child: FilledButton.tonal(
-                onPressed: () {
+            child: FilterChip(
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
                   ref.read(selectedCategoryProvider.notifier).state = entry.key;
-                },
-                style: FilledButton.styleFrom(
-                  foregroundColor: isSelected
-                      ? Theme.of(context).colorScheme.onPrimaryContainer
-                      : Theme.of(context).colorScheme.onSurface,
-                  backgroundColor: isSelected
-                      ? Theme.of(context).colorScheme.primaryContainer
-                      : Theme.of(context).colorScheme.surfaceContainerHighest,
-                ).copyWith(
-                  elevation: isSelected
-                      ? WidgetStateProperty.all(4)
-                      : WidgetStateProperty.all(0),
-                ),
-                child: Text(entry.value),
+                }
+              },
+              label: Text(entry.value),
+              labelStyle: TextStyle(
+                color: isSelected
+                    ? Theme.of(context).colorScheme.onPrimaryContainer
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+              selectedColor: Theme.of(context).colorScheme.primaryContainer,
+              side: BorderSide.none,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
             ),
           );
@@ -215,43 +282,40 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
     );
   }
 
-  Widget _buildAnimeGrid(String status, AnimeListState animeListState) {
+  Widget _buildAnimeList(String status, AnimeListState animeListState) {
     if (animeListState.isLoading) {
-      return const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
+      return const Center(
+        child: CircularProgressIndicator(),
       );
     }
 
     final animeList = _getAnimeList(status, animeListState);
 
     if (animeList.isEmpty) {
-      return SliverFillRemaining(
-        child: _buildEmptyState(status, animeListState),
-      );
+      return _buildEmptyState(status, animeListState);
     }
 
-    return SliverLayoutBuilder(
-      builder: (context, constraints) {
-        return SliverGrid(
-          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 140,
-            childAspectRatio: 0.7,
-            crossAxisSpacing: 15.0,
-            mainAxisSpacing: 15.0,
-          ),
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final anime = animeList[index];
-              final tag = Uuid().v4();
-              return GestureDetector(
-                onTap: () => navigateToDetail(context, anime, tag),
-                child: AnimeCard(
-                  tag: tag,
-                  anime: anime,
-                ),
-              );
-            },
-            childCount: animeList.length,
+    return GridView.builder(
+      padding: const EdgeInsets.fromLTRB(15, 0, 15, 100),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 160,
+        childAspectRatio: 0.7,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: animeList.length,
+      itemBuilder: (context, index) {
+        final anime = animeList[index];
+        final tag = const Uuid().v4();
+        return Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: () => navigateToDetail(context, anime, tag),
+            borderRadius: BorderRadius.circular(12),
+            child: AnimeCard(
+              tag: tag,
+              anime: anime,
+            ),
           ),
         );
       },
@@ -262,71 +326,82 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
     if (status == 'FAVORITES') {
       return animeListState.favorites;
     }
-
     final mediaListGroups = animeListState.mediaListGroups[status];
-    if (mediaListGroups != null) {
-      return mediaListGroups
-          .expand((group) => group.entries)
-          .map((e) => e.media)
-          .toList();
-    }
-    return [];
+    return mediaListGroups
+            ?.expand((group) => group.entries)
+            .map((e) => e.media)
+            .toList() ??
+        [];
   }
 
-  // int _calculateCrossAxisCount(double width) {
-  //   if (width <= 400) {
-  //     return 3; // Small screens
-  //   } else if (width <= 700) {
-  //     return 3; // Medium screens
-  //   } else if (width <= 1000) {
-  //     return 7; // Large screens
-  //   } else {
-  //     return 8; // Extra large screens
-  //   }
-  // }
-
   Widget _buildEmptyState(String status, AnimeListState animeListState) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.movie_creation_outlined,
-            size: 64,
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            "No anime in ${categories[status]?.toLowerCase()}",
-            style: Theme.of(context).textTheme.titleLarge,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "Start exploring and add some anime to your collection!",
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.7),
-                ),
-            textAlign: TextAlign.center,
-          ),
-          if (animeListState.errors[status] != null) ...[
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () {
-                ref
-                    .read(animeListProvider.notifier)
-                    .fetchAnimeListByStatus(status);
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text("Retry"),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceVariant,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
+                Iconsax.video_play,
+                size: 48,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
+            const SizedBox(height: 24),
+            Text(
+              "No Anime Found",
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Start building your ${categories[status]?.toLowerCase()} list by exploring new anime!",
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            if (animeListState.errors[status] != null) ...[
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: () {
+                  ref
+                      .read(animeListProvider.notifier)
+                      .fetchAnimeListByStatus(status);
+                },
+                icon: const Icon(Iconsax.refresh),
+                label: const Text("Try Again"),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
+  }
+
+  String _getCategorySubtitle(String category) {
+    switch (category) {
+      case 'CURRENT':
+        return 'Keep track of what you\'re watching';
+      case 'COMPLETED':
+        return 'Anime you\'ve finished watching';
+      case 'PAUSED':
+        return 'Taking a break from these shows';
+      case 'DROPPED':
+        return 'Shows you\'ve stopped watching';
+      case 'PLANNING':
+        return 'Your anime watchlist';
+      case 'FAVORITES':
+        return 'Your all-time favorite anime';
+      default:
+        return '';
+    }
   }
 }

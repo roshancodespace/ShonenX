@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
 import 'package:shonenx/screens/browse_screen.dart';
+import 'package:shonenx/screens/continue_all_screen.dart';
 import 'package:shonenx/screens/details_screen.dart';
 import 'package:shonenx/screens/error_screen.dart';
 import 'package:shonenx/screens/home_screen.dart';
@@ -38,6 +40,7 @@ final GoRouter router = GoRouter(
     ),
     _buildSettingsRoute(),
     _buildSeeAllRoute(),
+    _buildContinueAllRoute(),
     _buildDetailsRoute(),
     _buildWatchRoute(),
     _buildCatchAllRoute(),
@@ -75,6 +78,15 @@ StatefulShellBranch _buildWatchlistBranch() {
           const MaterialPage(child: WatchlistScreen()),
     ),
   ]);
+}
+
+GoRoute _buildContinueAllRoute() {
+  return GoRoute(
+    path: '/continue-all',
+    builder: (context, state) => ContinueAllScreen(
+      animeWatchProgressBox: AnimeWatchProgressBox()..init(),
+    ),
+  );
 }
 
 GoRoute _buildSettingsRoute() {
@@ -124,6 +136,7 @@ GoRoute _buildThemeSettingsRoute() {
         const MaterialPage(child: ThemeSettingsScreen()),
   );
 }
+
 GoRoute _buildUiSettingsRoute() {
   return GoRoute(
     path: 'ui',

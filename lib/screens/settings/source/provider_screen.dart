@@ -17,17 +17,19 @@ class ProviderSettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
         leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(Iconsax.arrow_left_1),
-        ),
-        title: Text(
-          'Anime Sources',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            letterSpacing: -0.5,
+          onPressed: () => Navigator.pop(context),
+          icon: Icon(Iconsax.arrow_left_1, color: colorScheme.onSurface),
+          style: IconButton.styleFrom(
+            backgroundColor: colorScheme.surfaceVariant.withOpacity(0.5),
+            padding: const EdgeInsets.all(10),
           ),
+        ),
+        title: const Text(
+          'Anime Sources',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
       ),
       body: Column(
@@ -51,80 +53,79 @@ class ProviderSettingsScreen extends ConsumerWidget {
                   'Choose your preferred anime source from the options below',
                   style: TextStyle(
                     fontSize: 14,
-                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: colorScheme.onSurface.withOpacity(0.7),
                   ),
                 ),
               ],
             ),
           ),
           Expanded(
-            child: ListView.builder(
+            child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: availableKeys.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final provider = availableKeys[index];
                 final isSelected = provider.providerName == selectedKey.selectedProviderKey;
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isSelected
-                            ? colorScheme.primary
-                            : colorScheme.outline,
-                        width: 2,
-                      ),
+                return Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
                       color: isSelected
-                          ? colorScheme.primaryContainer
-                          : colorScheme.surface,
+                          ? colorScheme.primary
+                          : colorScheme.outline,
+                      width: 1.5,
                     ),
-                    child: InkWell(
-                      onTap: () {
-                        ref
-                            .watch(selectedProviderKeyProvider.notifier)
-                            .updateSelectedProvider(provider.providerName);
-                      },
-                      borderRadius: BorderRadius.circular(16),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                  ),
+                  color: isSelected
+                      ? colorScheme.primaryContainer
+                      : colorScheme.surface,
+                  child: InkWell(
+                    onTap: () {
+                      ref
+                          .watch(selectedProviderKeyProvider.notifier)
+                          .updateSelectedProvider(provider.providerName);
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  provider.providerName.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: isSelected
+                                        ? colorScheme.primary
+                                        : colorScheme.onSurface,
+                                  ),
+                                ),
+                                if (isSelected) ...[
+                                  const SizedBox(height: 4),
                                   Text(
-                                    provider.providerName.toUpperCase(),
+                                    'Current Source',
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: isSelected
-                                          ? colorScheme.primary
-                                          : colorScheme.onSurface,
+                                      fontSize: 12,
+                                      color: colorScheme.primary,
                                     ),
                                   ),
-                                  if (isSelected) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Current Source',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: colorScheme.primary,
-                                      ),
-                                    ),
-                                  ],
                                 ],
-                              ),
+                              ],
                             ),
-                            if (isSelected)
-                              Icon(
-                                Icons.check_circle,
-                                color: colorScheme.primary,
-                              ),
-                          ],
-                        ),
+                          ),
+                          if (isSelected)
+                            Icon(
+                              Icons.check_circle,
+                              color: colorScheme.primary,
+                            ),
+                        ],
                       ),
                     ),
                   ),
@@ -132,6 +133,7 @@ class ProviderSettingsScreen extends ConsumerWidget {
               },
             ),
           ),
+          const SizedBox(height: 20),
         ],
       ),
     );

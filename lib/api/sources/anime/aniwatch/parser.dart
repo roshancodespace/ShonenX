@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/cupertino.dart';
 import 'package:html/dom.dart' as dom;
@@ -63,7 +64,7 @@ BaseAnimeModel _parseAnime(dom.Element element, String baseUrl) {
 }
 
 String? _extractAnimeId(dom.Element element) {
-  return element.querySelector('a')?.attributes['href']?.split('/').last;
+  return element.querySelector('a')?.attributes['href']?.split('/').last.split('?').first;
 }
 
 List<BaseAnimeModel> parseTrending(dom.Document document, String baseUrl) {
@@ -319,6 +320,9 @@ EpisodeDataModel _parseEpisode(dom.Element episode, String baseUrl) {
 BaseServerModel parseServers(dom.Document document, String baseUrl) {
   final subServers = _extractServers(document, 'sub');
   final dubServers = _extractServers(document, 'dub');
+
+  log("Sub servers: ${subServers.length}");
+  log("Dub servers: ${dubServers.length}");
 
   return BaseServerModel(
     sub: subServers,

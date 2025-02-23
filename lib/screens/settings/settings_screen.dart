@@ -7,167 +7,280 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
+        backgroundColor: colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Iconsax.arrow_left_1),
+          icon: Icon(Iconsax.arrow_left_2, color: colorScheme.onSurface),
+          style: IconButton.styleFrom(
+            backgroundColor: colorScheme.surfaceVariant.withValues(alpha: 0.5),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.all(10),
+          ),
         ),
         title: const Text(
           'Settings',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
-      body: ListView(
-        children: [
-          _sectionTitle(context, 'Account & Sync'),
-          _buildSettingsTile(
-            context,
-            title: 'Account & Profile',
-            icon: Iconsax.user,
-            subtitle: 'AniList integration, profile settings',
-            onTap: () => context.push('/settings/profile'),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              child: Text(
+                'Customize Your Experience',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ),
           ),
-          const Divider(height: 1),
-
-          _sectionTitle(context, 'Playback & Content'),
-          _buildSettingsTile(
-            context,
-            title: 'Video Player',
-            icon: Iconsax.video_play,
-            subtitle: 'Playback preferences, subtitles, episode threshold',
-            onTap: () => context.push('/settings/player'),
+          SliverList(
+            delegate: SliverChildListDelegate([
+              _buildSettingsGroup(
+                context,
+                title: 'Account',
+                items: [
+                  SettingsItem(
+                    icon: Iconsax.user,
+                    title: 'Profile Settings',
+                    description: 'AniList integration, account preferences',
+                    onTap: () => context.push('/settings/profile'),
+                  ),
+                ],
+              ),
+              _buildSettingsGroup(
+                context,
+                title: 'Content & Playback',
+                items: [
+                  SettingsItem(
+                    icon: Iconsax.video_play,
+                    title: 'Video Player',
+                    description: 'Playback settings, subtitles configuration',
+                    onTap: () => context.push('/settings/player'),
+                  ),
+                  SettingsItem(
+                    icon: Iconsax.play,
+                    title: 'Anime Sources',
+                    description: 'Manage content providers',
+                    onTap: () => context.push('/settings/providers'),
+                  ),
+                ],
+              ),
+              _buildSettingsGroup(
+                context,
+                title: 'Appearance',
+                items: [
+                  SettingsItem(
+                    icon: Iconsax.brush_2,
+                    title: 'Theme Settings',
+                    description: 'Customize app colors and appearance',
+                    onTap: () => context.push('/settings/theme'),
+                  ),
+                  SettingsItem(
+                    icon: Iconsax.brush_2,
+                    title: 'UI Settings',
+                    description: 'Customize the interface and layout',
+                    onTap: () => context.push('/settings/ui'),
+                  ),
+                ],
+              ),
+              _buildSettingsGroup(
+                context,
+                title: 'Support',
+                items: [
+                  SettingsItem(
+                    icon: Iconsax.message_question,
+                    title: 'Help Center',
+                    description: 'FAQs and support resources',
+                    onTap: () => context.push('/settings/support'),
+                  ),
+                  SettingsItem(
+                    icon: Iconsax.info_circle,
+                    title: 'About',
+                    description: 'App information and licenses',
+                    onTap: () => context.push('/settings/about'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 48),
+            ]),
           ),
-          const Divider(height: 1),
-
-          _sectionTitle(context, 'Sources & Downloads'),
-          _buildSettingsTile(
-            context,
-            title: 'Anime Sources',
-            icon: Iconsax.play,
-            subtitle: 'Anime providers configuration',
-            onTap: () => context.push('/settings/providers'),
-          ),
-          // Uncomment when downloads are ready
-          // _buildSettingsTile(
-          //   context,
-          //   title: 'Download Settings',
-          //   icon: Iconsax.document_download,
-          //   subtitle: 'Video quality, storage location',
-          //   notAvailable: true,
-          //   onTap: () => context.push('/settings/downloads'),
-          // ),
-          const Divider(height: 1),
-
-          _sectionTitle(context, 'Appearance'),
-          _buildSettingsTile(
-            context,
-            title: 'Appearance',
-            icon: Iconsax.brush_2,
-            subtitle: 'Theme and display settings',
-            onTap: () => context.push('/settings/appearance'),
-          ),
-          const Divider(height: 1),
-
-          _sectionTitle(context, 'Other'),
-          _buildSettingsTile(
-            context,
-            title: 'About',
-            icon: Iconsax.info_circle,
-            subtitle: 'App version, licenses',
-            onTap: () => context.push('/settings/about'),
-          ),
-          _buildSettingsTile(
-            context,
-            title: 'Help & Support',
-            icon: Iconsax.message_question,
-            subtitle: 'FAQs, contact support',
-            onTap: () => context.push('/settings/support'),
-          ),
-
-          const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _sectionTitle(BuildContext context, String title) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: colorScheme.primary,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingsTile(
+  Widget _buildSettingsGroup(
     BuildContext context, {
     required String title,
-    bool notAvailable = false,
-    required IconData icon,
-    required String subtitle,
-    required VoidCallback onTap,
+    required List<SettingsItem> items,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return InkWell(
-      onTap: notAvailable ? null : onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12, left: 8),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
                 color: colorScheme.primary,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          Card(
+            elevation: 3,
+            shadowColor: colorScheme.shadow.withValues(alpha: 0.1),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            surfaceTintColor: Colors.transparent,
+            color: colorScheme.surface,
+            child: Column(
+              children: items.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                return Column(
+                  children: [
+                    if (index > 0)
+                      Divider(
+                        height: 1,
+                        indent: 60,
+                        endIndent: 16,
+                        color: colorScheme.onSurface.withValues(alpha: 0.1),
+                      ),
+                    item,
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SettingsItem extends StatefulWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+  final bool disabled;
+
+  const SettingsItem({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+    this.disabled = false,
+  });
+
+  @override
+  State<SettingsItem> createState() => _SettingsItemState();
+}
+
+class _SettingsItemState extends State<SettingsItem> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: InkWell(
+        onTap: widget.disabled ? null : widget.onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: _isHovered && !widget.disabled
+                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      colorScheme.primary.withValues(alpha: 0.2),
+                      colorScheme.primary.withValues(alpha: 0.1),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  widget.icon,
+                  size: 22,
+                  color: widget.disabled
+                      ? colorScheme.onSurface.withValues(alpha: 0.4)
+                      : colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: widget.disabled
+                            ? colorScheme.onSurface.withValues(alpha: 0.4)
+                            : colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.description,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Iconsax.arrow_right_3,
                 size: 20,
+                color: widget.disabled
+                    ? colorScheme.onSurface.withValues(alpha: 0.2)
+                    : colorScheme.onSurface.withValues(alpha: 0.5),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      decoration: notAvailable
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Iconsax.arrow_right_3,
-              color: colorScheme.onSurface.withValues(alpha: 0.5),
-              size: 20,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

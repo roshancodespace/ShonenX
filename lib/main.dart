@@ -10,7 +10,7 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/data/hive/boxes/settings_box.dart';
-import 'package:shonenx/data/hive/models/continue_watching_model.dart';
+import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/data/hive/models/settings_offline_model.dart';
 import 'package:shonenx/router/router.dart';
 import 'package:window_manager/window_manager.dart';
@@ -42,12 +42,22 @@ class AppInitializer {
   static Future<void> _initializeHive() async {
     String customPath;
 
-    if (Platform.isWindows) {
-      // Custom folder inside the user's Documents directory (or any path you prefer)
-      customPath = '${Directory.current.path}\\hive_data'; // Or any other path
+    if (kDebugMode) {
+      // In debug mode, use a local directory in the project for convenience
+      customPath =
+          '${Directory.current.path}${Platform.pathSeparator}hive_data';
+    } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      // On Desktop, use a custom directory inside Documents or preferred location
+      final appDocDir = await getApplicationDocumentsDirectory();
+      customPath = '${appDocDir.path}${Platform.pathSeparator}ShonenX_Hive';
+    } else if (Platform.isAndroid || Platform.isIOS) {
+      // On Mobile, use the default app documents directory
+      final appDocDir = await getApplicationDocumentsDirectory();
+      customPath = '${appDocDir.path}${Platform.pathSeparator}hive_data';
     } else {
-      // Default for other platforms
-      customPath = (await getApplicationDocumentsDirectory()).path;
+      // Fallback for other platforms
+      final appDocDir = await getApplicationDocumentsDirectory();
+      customPath = appDocDir.path;
     }
 
     Hive.init(customPath);
@@ -56,9 +66,11 @@ class AppInitializer {
     // Register your adapters as usual
     Hive.registerAdapter(SettingsModelAdapter());
     Hive.registerAdapter(ProviderSettingsModelAdapter());
-    Hive.registerAdapter(AppearanceSettingsModelAdapter());
+    Hive.registerAdapter(ThemeSettingsModelAdapter());
+    Hive.registerAdapter(UISettingsModelAdapter());
     Hive.registerAdapter(PlayerSettingsModelAdapter());
-    Hive.registerAdapter(ContinueWatchingEntryAdapter());
+    Hive.registerAdapter(AnimeWatchProgressEntryAdapter());
+    Hive.registerAdapter(EpisodeProgressAdapter());
 
     log("✅ Hive adapters registered.");
   }
@@ -139,7 +151,7 @@ class _MyAppState extends State<MyApp> {
         valueListenable: _settingsBox!.settingsBoxListenable,
         builder: (context, box, child) {
           final appearanceSettings = _settingsBox?.getAppearanceSettings() ??
-              AppearanceSettingsModel();
+              ThemeSettingsModel();
           return MaterialApp.router(
             debugShowCheckedModeBanner: false,
             theme: FlexThemeData.light(

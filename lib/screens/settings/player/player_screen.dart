@@ -26,9 +26,9 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
     final settings = settingsBox.getSettings();
     if (settings != null) {
       final playerSettings = settings.playerSettings;
-      episodeCompletionThreshold =
-          playerSettings?.episodeCompletionThreshold ?? 0.9;
-      setState(() {});
+      setState(() {
+        episodeCompletionThreshold = playerSettings?.episodeCompletionThreshold ?? 0.9;
+      });
     }
   }
 
@@ -38,19 +38,26 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
     final newThreshold = await showDialog<double>(
       context: context,
       builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
         return AlertDialog(
-          title: const Text('Episode Completion Threshold'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            'Episode Completion Threshold',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           content: StatefulBuilder(
             builder: (context, setDialogState) {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Slider(
-                    value: tempValue.toDouble(),
+                    value: tempValue,
                     min: 0.5,
-                    max: 1,
+                    max: 1.0,
                     divisions: 10,
-                    label: '$tempValue%',
+                    label: '${(tempValue * 100).toStringAsFixed(0)}%',
+                    activeColor: colorScheme.primary,
+                    inactiveColor: colorScheme.surfaceVariant,
                     onChanged: (value) {
                       setDialogState(() {
                         tempValue = value;
@@ -58,8 +65,12 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
                     },
                   ),
                   Text(
-                    'Threshold: $tempValue%',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    'Mark as watched at ${(tempValue * 100).toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ],
               );
@@ -68,11 +79,11 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text('Cancel', style: TextStyle(color: colorScheme.onSurface)),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, tempValue),
-              child: const Text('Save'),
+              child: Text('Save', style: TextStyle(color: colorScheme.primary)),
             ),
           ],
         );
@@ -84,152 +95,217 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
         episodeCompletionThreshold = newThreshold;
       });
       await settingsBox.updatePlayerSettings(PlayerSettingsModel(
-          episodeCompletionThreshold: episodeCompletionThreshold));
+        episodeCompletionThreshold: episodeCompletionThreshold,
+      ));
     }
-  }
-
-  Widget _sectionTitle(BuildContext context, String title) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: colorScheme.primary,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingsTile(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required String subtitle,
-    bool notAvailable = false,
-    required VoidCallback onTap,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return InkWell(
-      onTap: notAvailable ? null : onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: colorScheme.primary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      decoration: notAvailable
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Iconsax.arrow_right_3,
-              color: colorScheme.onSurface.withValues(alpha: 0.5),
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Iconsax.arrow_left_1),
+          icon: Icon(Iconsax.arrow_left_1, color: colorScheme.onSurface),
+          style: IconButton.styleFrom(
+            backgroundColor: colorScheme.surfaceVariant.withOpacity(0.5),
+            padding: const EdgeInsets.all(10),
+          ),
         ),
         title: const Text(
           'Video Player Settings',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
       ),
       body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          _sectionTitle(context, 'Playback'),
-          _buildSettingsTile(
-            context,
-            title: 'Episode Completion',
-            icon: Iconsax.timer_1,
-            subtitle:
-                'Mark as watched at $episodeCompletionThreshold% completion',
-            onTap: _setEpisodeCompletionThreshold,
-          ),
-          _buildSettingsTile(
-            context,
-            title: 'Playback Speed',
-            icon: Iconsax.forward,
-            subtitle: 'Set default video playback speed',
-            notAvailable: true,
-            onTap: () {},
-          ),
-          const Divider(height: 1),
-          _sectionTitle(context, 'Subtitles'),
-          _buildSettingsTile(
-            context,
-            title: 'Subtitle Appearance',
-            icon: Iconsax.text,
-            subtitle: 'Font style, size, and colors',
-            notAvailable: true,
-            onTap: () {},
-          ),
-          _buildSettingsTile(
-            context,
-            title: 'Subtitle Timing',
-            icon: Iconsax.clock,
-            subtitle: 'Adjust subtitle sync and delay',
-            notAvailable: true,
-            onTap: () {},
-          ),
-          const Divider(height: 1),
-          _sectionTitle(context, 'Quality'),
-          _buildSettingsTile(
-            context,
-            title: 'Video Quality',
-            icon: Iconsax.video_tick,
-            subtitle: 'Default streaming quality settings',
-            notAvailable: true,
-            onTap: () {},
-          ),
-          const SizedBox(height: 24),
+          _buildSettingsSection(context, 'Playback', [
+            _SettingsItem(
+              icon: Iconsax.timer_1,
+              title: 'Episode Completion',
+              description: 'Mark as watched at ${(episodeCompletionThreshold * 100).toStringAsFixed(0)}% completion',
+              onTap: _setEpisodeCompletionThreshold,
+            ),
+            _SettingsItem(
+              icon: Iconsax.forward,
+              title: 'Playback Speed',
+              description: 'Set default video playback speed',
+              disabled: true,
+              onTap: () {},
+            ),
+          ]),
+          _buildSettingsSection(context, 'Subtitles', [
+            _SettingsItem(
+              icon: Iconsax.text,
+              title: 'Subtitle Appearance',
+              description: 'Font style, size, and colors',
+              disabled: true,
+              onTap: () {},
+            ),
+            _SettingsItem(
+              icon: Iconsax.clock,
+              title: 'Subtitle Timing',
+              description: 'Adjust subtitle sync and delay',
+              disabled: true,
+              onTap: () {},
+            ),
+          ]),
+          _buildSettingsSection(context, 'Quality', [
+            _SettingsItem(
+              icon: Iconsax.video_tick,
+              title: 'Video Quality',
+              description: 'Default streaming quality settings',
+              disabled: true,
+              onTap: () {},
+            ),
+          ]),
+          const SizedBox(height: 48),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsSection(BuildContext context, String title, List<Widget> items) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 8, bottom: 12),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.primary,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          Card(
+            elevation: 2,
+            shadowColor: colorScheme.shadow.withOpacity(0.1),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Column(
+              children: items.asMap().entries.map((entry) {
+                // final index = entry.key;
+                final item = entry.value;
+                return item;
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsItem extends StatefulWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+  final bool disabled;
+
+  const _SettingsItem({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+    this.disabled = false,
+  });
+
+  @override
+  State<_SettingsItem> createState() => _SettingsItemState();
+}
+
+class _SettingsItemState extends State<_SettingsItem> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: InkWell(
+        onTap: widget.disabled ? null : widget.onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: _isHovered && !widget.disabled
+                ? colorScheme.surfaceVariant.withOpacity(0.3)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      colorScheme.primary.withOpacity(widget.disabled ? 0.05 : 0.2),
+                      colorScheme.primary.withOpacity(widget.disabled ? 0.03 : 0.1),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  widget.icon,
+                  color: widget.disabled
+                      ? colorScheme.onSurface.withOpacity(0.4)
+                      : colorScheme.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: widget.disabled
+                            ? colorScheme.onSurface.withOpacity(0.4)
+                            : colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.description,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurface.withOpacity(widget.disabled ? 0.3 : 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Iconsax.arrow_right_3,
+                color: colorScheme.onSurface.withOpacity(widget.disabled ? 0.2 : 0.5),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -7,7 +7,6 @@ import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
 import 'package:shonenx/data/constants/constants.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/helpers/provider.dart';
-import 'package:shonenx/helpers/responsiveness.dart';
 import 'package:shonenx/widgets/anime/anime_card.dart';
 import 'package:shonenx/widgets/ui/search_bar.dart';
 import 'package:uuid/uuid.dart';
@@ -24,9 +23,8 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   late TextEditingController _searchController;
   String _lastSearch = '';
   List<Media>? _searchResults = [];
-  // ignore: unused_field
   int _currentPage = 1;
-  bool _isLoading = false; // Track loading state
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -67,15 +65,15 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
 
     setState(() {
       _lastSearch = _searchController.text;
-      _currentPage = 1; // Reset to first page on new search
-      _isLoading = true; // Set loading state
+      _currentPage = 1;
+      _isLoading = true;
     });
 
     final animeProvider = getAnimeProvider(ref);
     final anilistService = AnilistService();
     if (animeProvider == null) {
       setState(() {
-        _isLoading = false; // Reset loading state
+        _isLoading = false;
       });
       return;
     }
@@ -84,7 +82,6 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
       _searchResults = await anilistService.searchAnime(_searchController.text);
     } catch (error) {
       if (!mounted) return;
-      // Handle error (e.g., show a snackbar or dialog)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           elevation: 0,
@@ -99,7 +96,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
       );
     } finally {
       setState(() {
-        _isLoading = false; // Reset loading state
+        _isLoading = false;
       });
     }
   }
@@ -112,20 +109,24 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        extendBody: true,
-        body: Padding(
-          padding: const EdgeInsets.all(10.0),
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      extendBody: true,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              // Search Bar
               Searchbar(
-                  controller: _searchController,
-                  onSearch: () {
-                    _onSearch();
-                  },
-                  onClear: onClear),
-              const SizedBox(height: 15),
+                controller: _searchController,
+                onSearch: _onSearch,
+                onClear: onClear,
+              ),
+              const SizedBox(height: 16),
+
+              // Main Content
               Expanded(
                 child: _searchController.text.isNotEmpty
                     ? _isLoading
@@ -133,45 +134,23 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                CircularProgressIndicator(),
-                                const SizedBox(height: 10),
+                                CircularProgressIndicator(
+                                  color: colorScheme.primary,
+                                ),
+                                const SizedBox(height: 16),
                                 Text(
                                   'Searching for "${_searchController.text}"',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSurface,
                                   ),
                                 ),
                               ],
                             ),
                           )
-                        : ClipRRect(
-                            borderRadius: BorderRadius.circular(15),
-                            child: SingleChildScrollView(
-                              child: Column(
-                                children: [
-                                  _buildSearchResultGrid(),
-                                  const SizedBox(
-                                      height: 120), // Added space for scrolling
-                                ],
-                              ),
-                            ),
-                          )
-                    : SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // _buildGenresSection(),
-                            SizedBox(
-                              height: 10,
-                            ),
-                            _buildCategoriesSection(),
-                            SizedBox(
-                              height: 120,
-                            )
-                          ],
-                        ),
-                      ),
+                        : _buildSearchResults()
+                    : _buildDefaultContent(),
               ),
             ],
           ),
@@ -180,18 +159,15 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     );
   }
 
-  Widget _buildSearchResultGrid() {
-    final size = MediaQuery.sizeOf(context);
+  Widget _buildSearchResults() {
     return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: (size.width /
-                getResponsiveSize(context, mobileSize: 120, dektopSize: 180))
-            .floor(),
+        crossAxisCount: _getCrossAxisCount(context),
         childAspectRatio: 0.7,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
       ),
       itemCount: _searchResults?.length,
       itemBuilder: (context, index) {
@@ -207,42 +183,74 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     );
   }
 
-  Widget _buildCategoriesSection() {
-    return _buildSection(
-        "Categories",
-        Wrap(
-            direction: Axis.horizontal,
-            runAlignment: WrapAlignment.spaceBetween,
-            alignment: WrapAlignment.start,
-            spacing: 8.0,
-            runSpacing: 8.0,
-            children: categories.entries
-                .map((category) =>
-                    _buildCategoryButton(category.key, category.value))
-                .toList()));
+  Widget _buildDefaultContent() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 16),
+          _buildSection(
+            "Categories",
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: categories.entries
+                  .map((category) => _buildCategoryButton(
+                        category.key,
+                        category.value,
+                      ))
+                  .toList(),
+            ),
+          ),
+          const SizedBox(height: 120), // Space for scrolling
+        ],
+      ),
+    );
   }
 
-  Widget _buildCategoryButton(path, title) {
+  Widget _buildCategoryButton(String path, String title) {
     return OutlinedButton(
       onPressed: () {
         context.push('/all/$path?title=$title');
       },
-      child: Text(title),
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: Theme.of(context).colorScheme.outline),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+      ),
     );
   }
 
   Widget _buildSection(String title, Widget child) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.headlineSmall,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 16),
         child,
       ],
     );
+  }
+
+  int _getCrossAxisCount(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    if (width > 1200) return 6;
+    if (width > 800) return 6;
+    if (width > 600) return 4;
+    if (width > 400) return 3;
+    return 2;
   }
 }

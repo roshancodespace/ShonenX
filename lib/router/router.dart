@@ -11,9 +11,10 @@ import 'package:shonenx/screens/home_screen.dart';
 import 'package:shonenx/screens/see_all_screen.dart';
 import 'package:shonenx/screens/settings/about/privacy_policy_screen.dart';
 import 'package:shonenx/screens/settings/about/terms_screen.dart';
+import 'package:shonenx/screens/settings/appearance/ui_screen.dart';
 import 'package:shonenx/screens/settings/settings_screen.dart';
 import 'package:shonenx/screens/settings/about/about_screen.dart';
-import 'package:shonenx/screens/settings/appearance/appearance_screen.dart';
+import 'package:shonenx/screens/settings/appearance/theme_screen.dart';
 import 'package:shonenx/screens/settings/about/help_support_screen.dart';
 import 'package:shonenx/screens/settings/profile/profile_screen.dart';
 import 'package:shonenx/screens/settings/source/provider_screen.dart';
@@ -84,7 +85,8 @@ GoRoute _buildSettingsRoute() {
     routes: [
       _buildProfileSettingsRoute(),
       _buildProviderSettingsRoute(),
-      _buildAppearanceSettingsRoute(),
+      _buildThemeSettingsRoute(),
+      _buildUiSettingsRoute(),
       _buildAboutSettingsRoute(),
       _buildPlayerSettingsRoute(),
       _buildSupportSettingsRoute(),
@@ -115,11 +117,18 @@ GoRoute _buildProviderSettingsRoute() {
   );
 }
 
-GoRoute _buildAppearanceSettingsRoute() {
+GoRoute _buildThemeSettingsRoute() {
   return GoRoute(
-    path: 'appearance',
+    path: 'theme',
     pageBuilder: (context, state) =>
-        const MaterialPage(child: AppearanceSettingsScreen()),
+        const MaterialPage(child: ThemeSettingsScreen()),
+  );
+}
+GoRoute _buildUiSettingsRoute() {
+  return GoRoute(
+    path: 'ui',
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: UISettingsScreen()),
   );
 }
 
@@ -202,7 +211,8 @@ GoRoute _buildWatchRoute() {
             animeMedia: state.extra as Media,
             startAt: Duration(
                 seconds:
-                    int.tryParse(state.uri.queryParameters['startAt']?? '0') ?? 0),
+                    int.tryParse(state.uri.queryParameters['startAt'] ?? '0') ??
+                        0),
             animeName: state.uri.queryParameters['animeName']!,
           ),
         ),

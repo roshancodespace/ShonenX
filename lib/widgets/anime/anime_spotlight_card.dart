@@ -1,10 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 
-class AnimeSpotlightCard extends StatelessWidget {
+class AnimeSpotlightCard extends StatefulWidget {
   final Media? anime;
   final Function(Media)? onTap;
   final String heroTag;
@@ -17,329 +17,285 @@ class AnimeSpotlightCard extends StatelessWidget {
   });
 
   @override
+  State<AnimeSpotlightCard> createState() => _AnimeSpotlightCardState();
+}
+
+class _AnimeSpotlightCardState extends State<AnimeSpotlightCard> {
+  bool isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: InkWell(
-        onTap: anime != null ? () => onTap?.call(anime!) : null,
-        child: SizedBox(
-          height: isSmallScreen ? 250 : 300,
-          child: _buildCardContent(context, theme, isSmallScreen),
+    return MouseRegion(
+      onEnter: (_) => setState(() => isHovered = true),
+      onExit: (_) => setState(() => isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: isSmallScreen ? 250 : 300,
+        margin: EdgeInsets.only(
+          top: isHovered ? 0 : 8,
+          bottom: isHovered ? 8 : 0,
+        ),
+        child: Card(
+          elevation: isHovered ? 8 : 2,
+          shadowColor: theme.shadowColor.withOpacity(0.3),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: widget.anime != null ? () => widget.onTap?.call(widget.anime!) : null,
+            child: _buildCardContent(context, theme, isSmallScreen),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildCardContent(
-      BuildContext context, ThemeData theme, bool isSmallScreen) {
-    if (anime == null) {
+  Widget _buildCardContent(BuildContext context, ThemeData theme, bool isSmallScreen) {
+    if (widget.anime == null) {
       return _buildSkeleton(theme);
     }
 
-    if (anime!.id == null) {
-      return Center(
-          child: CircularProgressIndicator(color: theme.primaryColor));
+    if (widget.anime!.id == null) {
+      return Center(child: CircularProgressIndicator(color: theme.primaryColor));
     }
 
-    return _buildAnimeCard(context, theme, isSmallScreen);
+    return _buildAnimeContent(context, theme, isSmallScreen);
   }
 
   Widget _buildSkeleton(ThemeData theme) {
-    return Skeletonizer.zone(
-      enabled: true,
-      effect: ShimmerEffect(
-        baseColor: theme.colorScheme.primaryContainer,
-        highlightColor: theme.colorScheme.primary,
-        duration: const Duration(seconds: 2),
-      ),
-      child: _SkeletonContent(theme: theme),
-    );
-  }
-
-  Widget _buildAnimeCard(
-      BuildContext context, ThemeData theme, bool isSmallScreen) {
-    final imageUrl = anime?.bannerImage?.isNotEmpty == true
-        ? anime!.bannerImage!
-        : (anime?.coverImage?.large ?? anime!.coverImage?.medium ?? '');
-
-    return CachedNetworkImage(
-      imageUrl: imageUrl,
-      fit: BoxFit.cover,
-      placeholder: (_, __) => _buildImagePlaceholder(theme),
-      errorWidget: (_, url, error) => _buildImageError(theme, error, url),
-      imageBuilder: (context, imageProvider) => _buildImageContent(
-        context,
-        theme,
-        imageProvider,
-        isSmallScreen,
-      ),
-    );
-  }
-
-  Widget _buildImagePlaceholder(ThemeData theme) {
     return Container(
-      color: theme.colorScheme.surface.withValues(alpha: 0.1),
-      child: Center(
-        child: CircularProgressIndicator(color: theme.primaryColor),
-      ),
-    );
-  }
-
-  Widget _buildImageError(ThemeData theme, dynamic error, String url) {
-    debugPrint('Image Load Error: $error for URL: $url');
-    return Container(
-      color: theme.colorScheme.error.withValues(alpha: 0.1),
-      child:
-          Icon(Icons.error_outline, color: theme.colorScheme.error, size: 40),
-    );
-  }
-
-  Widget _buildImageContent(
-    BuildContext context,
-    ThemeData theme,
-    ImageProvider imageProvider,
-    bool isSmallScreen,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(isSmallScreen ? 12 : 15),
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            radius: 0.9,
-            colors: [
-              Colors.transparent,
-              theme.shadowColor.withValues(alpha: 0.6)
-            ],
-          ),
-        ),
-        child: _AnimeContent(
-          anime: anime!,
-          isSmallScreen: isSmallScreen,
-          theme: theme,
-        ),
-      ),
-    );
-  }
-}
-
-class _SkeletonContent extends StatelessWidget {
-  final ThemeData theme;
-
-  const _SkeletonContent({required this.theme});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: theme.colorScheme.primary,
-      padding: const EdgeInsets.all(10),
+      color: theme.colorScheme.surfaceVariant,
+      padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Bone.text(),
-          SizedBox(height: 10),
-          Row(
-            children: [
-              Bone.text(words: 1),
-              SizedBox(width: 10),
-              Bone.text(words: 1),
-            ],
+        children: [
+          Container(
+            width: 100,
+            height: 24,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-          SizedBox(height: 10),
-          Bone.multiText(lines: 2),
+          const Spacer(),
+          Container(
+            width: double.infinity,
+            height: 32,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            height: 48,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
         ],
       ),
     );
   }
+
+  Widget _buildAnimeContent(BuildContext context, ThemeData theme, bool isSmallScreen) {
+    final imageUrl = widget.anime?.bannerImage?.isNotEmpty == true
+        ? widget.anime!.bannerImage!
+        : (widget.anime?.coverImage?.large ?? widget.anime!.coverImage?.medium ?? '');
+
+    return Stack(
+      children: [
+        // Background Image
+        Hero(
+          tag: widget.heroTag,
+          child: CachedNetworkImage(
+            imageUrl: imageUrl,
+            height: double.infinity,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            placeholder: (_, __) => Container(
+              color: theme.colorScheme.surfaceVariant,
+              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+            errorWidget: (_, __, ___) => Container(
+              color: theme.colorScheme.errorContainer,
+              child: Icon(Icons.broken_image, color: theme.colorScheme.error),
+            ),
+          ),
+        ),
+
+        // Gradient Overlay
+        AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: isHovered ? 0.9 : 0.7,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.8),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Content
+        Padding(
+          padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTopRow(theme),
+              const Spacer(),
+              _buildBottomContent(theme, isSmallScreen),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopRow(ThemeData theme) {
+    return Row(
+      children: [
+        if (widget.anime?.format != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              widget.anime!.format.toString().split('.').last,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        const Spacer(),
+        if (widget.anime?.averageScore != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Iconsax.star1, size: 14, color: Colors.amber),
+                const SizedBox(width: 6),
+                Text(
+                  '${widget.anime!.averageScore}%',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildBottomContent(ThemeData theme, bool isSmallScreen) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.anime?.title?.english ??
+              widget.anime?.title?.romaji ??
+              widget.anime?.title?.native ??
+              'Unknown Title',
+          style: TextStyle(
+            fontSize: isSmallScreen ? 20 : 24,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            if (widget.anime?.episodes != null)
+              _InfoChip(
+                icon: Icons.play_circle_outline,
+                label: '${widget.anime!.episodes} Episodes',
+              ),
+            if (widget.anime?.duration != null) ...[
+              const SizedBox(width: 8),
+              _InfoChip(
+                icon: Icons.timer_outlined,
+                label: '${widget.anime!.duration}m',
+              ),
+            ],
+          ],
+        ),
+        if (!isSmallScreen && widget.anime?.description != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            widget.anime!.description!,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.8),
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
+    );
+  }
 }
 
-class _AnimeContent extends StatelessWidget {
-  final Media anime;
-  final bool isSmallScreen;
-  final ThemeData theme;
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
 
-  const _AnimeContent({
-    required this.anime,
-    required this.isSmallScreen,
-    required this.theme,
+  const _InfoChip({
+    required this.icon,
+    required this.label,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(context),
-        const Spacer(),
-        _buildTitle(),
-        const SizedBox(height: 4),
-        if (isSmallScreen) ...[
-          _buildSmallScreenInfo(),
-          const SizedBox(height: 4),
-        ],
-        _buildDescription(),
-      ],
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        _buildScoreChip(),
-        const Spacer(),
-        if (!isSmallScreen) _buildDetailedInfo(Theme.of(context)),
-      ],
-    );
-  }
-
-  Widget _buildScoreChip() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.8),
+        color: Colors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Iconsax.star,
-              color: theme.colorScheme.onPrimaryContainer, size: 15),
+          Icon(icon, size: 14, color: Colors.white),
           const SizedBox(width: 4),
           Text(
-            "${anime.averageScore ?? 'N/A'}",
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onPrimaryContainer,
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildDetailedInfo(ThemeData theme) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _InfoItem(
-          icon: Icon(
-            Iconsax.play_circle,
-            size: 15,
-            color: theme.colorScheme.onPrimaryContainer,
-          ),
-          label: anime.format ?? 'N/A',
-          theme: theme,
-        ),
-        if (anime.duration != null) ...[
-          const SizedBox(width: 10),
-          _InfoItem(
-            icon: Icon(
-              Icons.timelapse_rounded,
-              size: 15,
-              color: theme.colorScheme.onPrimaryContainer,
-            ),
-            label: '${anime.duration}m',
-            theme: theme,
-          ),
-        ],
-        if (anime.startDate?.year != null) ...[
-          const SizedBox(width: 10),
-          _InfoItem(
-            icon: const Icon(Icons.date_range, size: 15),
-            label: '${anime.startDate!.year}',
-            theme: theme,
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildTitle() {
-    return Text(
-      anime.title?.english ??
-          anime.title?.native ??
-          anime.title?.romaji ??
-          'Untitled',
-      style: (isSmallScreen
-              ? theme.textTheme.titleMedium
-              : theme.textTheme.titleLarge)
-          ?.copyWith(
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
-      maxLines: isSmallScreen ? 1 : 2,
-      overflow: TextOverflow.ellipsis,
-    );
-  }
-
-  Widget _buildSmallScreenInfo() {
-    return Row(
-      children: [
-        _InfoItem(
-          icon: const Icon(Icons.play_circle_fill, size: 14),
-          label: anime.format ?? 'N/A',
-          theme: theme,
-        ),
-        const SizedBox(width: 8),
-        if (anime.duration != null)
-          _InfoItem(
-            icon: const Icon(Icons.timelapse, size: 14),
-            label: anime.duration.toString(),
-            theme: theme,
-          ),
-      ],
-    );
-  }
-
-  Widget _buildDescription() {
-    return Text(
-      anime.description ?? 'N/A',
-      style: (isSmallScreen
-              ? theme.textTheme.bodySmall
-              : theme.textTheme.bodyMedium)
-          ?.copyWith(color: Colors.white.withValues(alpha: 0.9)),
-      maxLines: isSmallScreen ? 2 : 3,
-      overflow: TextOverflow.ellipsis,
-    );
-  }
-}
-
-class _InfoItem extends StatelessWidget {
-  final Widget icon;
-  final String label;
-  final ThemeData theme;
-
-  const _InfoItem({
-    required this.icon,
-    required this.label,
-    required this.theme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconTheme(
-          data: IconThemeData(color: theme.colorScheme.primary),
-          child: icon,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.white.withValues(alpha: 0.9),
-          ),
-        ),
-      ],
     );
   }
 }

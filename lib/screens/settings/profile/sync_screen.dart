@@ -24,7 +24,6 @@ class SyncSettingsScreen extends ConsumerWidget {
             Switch(
               value: value,
               onChanged: onChanged,
-              activeColor: colorScheme.primary,
             ),
             const SizedBox(width: 12),
             Expanded(

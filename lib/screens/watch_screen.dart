@@ -59,15 +59,15 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   @override
   void initState() {
     super.initState();
-    _setupSystemUI();
+    // _setupSystemUI();
     _initializeProviders();
     _initializePlayer();
     _selectedEpIdx = widget.episode! - 1;
     _fetchEpisodes();
   }
 
-  void _setupSystemUI() =>
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  // void _setupSystemUI() =>
+  //     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   void _initializeProviders() => _animeProvider = getAnimeProvider(ref)!;
 
@@ -91,6 +91,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
         _episodes = baseEpisodeModel.episodes ?? [];
       });
       if (_episodes.isEmpty) throw Exception('No episodes found');
+      log("First episode : ${_episodes.first.id}");
       await _fetchStreamData();
     } catch (e) {
       _handleError('Episode load failed: ${e.toString()}');

@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
@@ -46,7 +44,7 @@ class AnimeWatchProgressBox {
     required int animeId,
     required int episodeNumber,
     required String episodeTitle,
-    required String episodeThumbnail,
+    required String? episodeThumbnail,
     required int progressInSeconds,
     required int durationInSeconds,
     bool isCompleted = false,

@@ -5,16 +5,15 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
-    as anilist_media;
+import 'package:shonenx/api/models/anilist/anilist_media_list.dart' as anilist_media;
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/api/models/anime/server_model.dart';
 import 'package:shonenx/api/models/anime/source_model.dart';
 import 'package:shonenx/api/sources/anime/anime_provider.dart';
+import 'package:shonenx/api/sources/anime/aniwatch/kaido.dart';
 import 'package:shonenx/helpers/provider.dart';
 import 'package:shonenx/widgets/player/controls.dart';
 
@@ -38,8 +37,7 @@ class WatchScreen extends ConsumerStatefulWidget {
   ConsumerState<WatchScreen> createState() => _WatchScreenState();
 }
 
-class _WatchScreenState extends ConsumerState<WatchScreen>
-    with SingleTickerProviderStateMixin {
+class _WatchScreenState extends ConsumerState<WatchScreen> with SingleTickerProviderStateMixin {
   late final Player _player;
   late final VideoController _controller;
   late final AnimeProvider _animeProvider;
@@ -51,7 +49,6 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   String? _selectedCategory = 'sub';
   int _selectedEpIdx = 0;
   int _selectedRangeStart = 1;
-  bool _isPlayerInitialized = false;
   String? _errorMessage;
   List<Map<String, String>> _qualityOptions = [];
   String? _selectedQuality;
@@ -59,139 +56,94 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   @override
   void initState() {
     super.initState();
-    // _setupSystemUI();
+    _selectedEpIdx = (widget.episode ?? 1) - 1;
     _initializeProviders();
-    _initializePlayer();
-    _selectedEpIdx = widget.episode! - 1;
-    _fetchEpisodes();
+    _initializePlayer().then((_) => _fetchEpisodes());
   }
-
-  // void _setupSystemUI() =>
-  //     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   void _initializeProviders() => _animeProvider = getAnimeProvider(ref)!;
 
   Future<void> _initializePlayer() async {
-    _player = Player(
-        configuration: PlayerConfiguration(
-      bufferSize: 64 * 1024 * 1024,
-    ));
+    _player = Player(configuration: const PlayerConfiguration(bufferSize: 64 * 1024 * 1024));
     _controller = VideoController(_player);
-    _playerSubscription = _player.stream.error
-        .listen((error) => _handleError('Player error: ${error.toString()}'));
-    setState(() => _isPlayerInitialized = true);
+    _playerSubscription = _player.stream.error.listen((error) => _handleError('Player error: $error'));
   }
 
   Future<void> _fetchEpisodes() async {
     if (!mounted) return;
-    setState(() => _isPlayerInitialized = true);
     try {
       final baseEpisodeModel = await _animeProvider.getEpisodes(widget.animeId);
+      if ((baseEpisodeModel.episodes ?? []).isEmpty) throw Exception('No episodes found');
       setState(() {
-        _episodes = baseEpisodeModel.episodes ?? [];
+        _episodes = baseEpisodeModel.episodes!;
       });
-      if (_episodes.isEmpty) throw Exception('No episodes found');
-      log("First episode : ${_episodes.first.id}");
       await _fetchStreamData();
     } catch (e) {
-      _handleError('Episode load failed: ${e.toString()}');
+      _handleError('Episode load failed: $e');
     }
   }
 
   Future<void> _fetchStreamData() async {
-    if (_selectedEpIdx >= _episodes.length) {
-      _handleError('No episodes available to fetch stream data.');
+    if (!mounted || _selectedEpIdx >= _episodes.length) {
+      _handleError('No episodes available.');
       return;
     }
     try {
-      final episodeId = _episodes[_selectedEpIdx].id;
-      _servers = await _animeProvider.getServers(episodeId!);
-      final serverName = _selectedCategory == 'sub'
-          ? _servers.sub.first.name
-          : _servers.dub.first.name;
-      final sources = await _animeProvider.getSources(
-          widget.animeId, episodeId, serverName!, _selectedCategory!);
+      final episodeId = _episodes[_selectedEpIdx].id!;
+      _servers = await _animeProvider.getServers(episodeId);
+      final serverName = _selectedCategory == 'sub' ? _servers.sub.first.name : _servers.dub.first.name;
+      final sources = await _animeProvider.getSources(widget.animeId, episodeId, serverName!, _selectedCategory!);
       if (sources.sources.isEmpty) throw Exception('No sources available');
       await _extractQualities(sources.sources.first.url!);
       await _configureSubtitles(sources.tracks);
     } catch (e) {
-      _handleError('Stream load failed: ${e.toString()}');
+      _handleError('Stream load failed: $e');
     }
   }
 
   Future<void> _configureSubtitles(List<Subtitle> subtitles) async {
-    _subtitles.addAll(
-      subtitles.map(
-        (subtitle) => SubtitleTrack.uri(subtitle.url!,
-            language: subtitle.lang, title: subtitle.lang),
-      ),
-    );
-    final englishSub = subtitles.firstWhere(
-        (subtitle) => subtitle.lang!.toLowerCase().contains('english'));
+    _subtitles = subtitles.map((s) => SubtitleTrack.uri(s.url!, language: s.lang, title: s.lang)).toList();
+    final englishSub = subtitles.firstWhere((s) => s.lang!.toLowerCase().contains('english'));
     log('English subtitle: ${englishSub.url}', name: 'English Subtitle');
-    await _player.setSubtitleTrack(
-      SubtitleTrack.uri(englishSub.url!,
-          language: englishSub.lang, title: englishSub.lang),
-    );
+    await _player.setSubtitleTrack(SubtitleTrack.uri(englishSub.url!, language: englishSub.lang, title: englishSub.lang));
   }
 
   Future<void> _extractQualities(String m3u8Url) async {
     try {
-      debugPrint('M3U8 URL: $m3u8Url');
       final response = await http.get(Uri.parse(m3u8Url));
       if (response.statusCode != 200) throw Exception('Failed to load M3U8');
-
       final lines = response.body.split('\n');
       final qualities = <Map<String, String>>[];
-
-      for (int i = 0; i < lines.length - 1; i++) {
+      for (var i = 0; i < lines.length - 1; i++) {
         if (lines[i].contains('#EXT-X-STREAM-INF')) {
-          final resolutionMatch =
-              RegExp(r'RESOLUTION=(\d+x\d+)').firstMatch(lines[i]);
-          final resolution =
-              resolutionMatch != null ? resolutionMatch.group(1) : 'Unknown';
-          qualities.add({
-            'quality': resolution!,
-            'url': m3u8Url.replaceAll('master.m3u8', lines[i + 1])
-          });
+          final resolution = RegExp(r'RESOLUTION=(\d+x\d+)').firstMatch(lines[i])?.group(1) ?? 'Unknown';
+          qualities.add({'quality': resolution, 'url': m3u8Url.replaceAll('master.m3u8', lines[i + 1])});
         }
       }
-
       setState(() {
         _qualityOptions = qualities;
-        _selectedQuality =
-            _qualityOptions.isNotEmpty ? _qualityOptions.first['url'] : null;
+        _selectedQuality = qualities.isNotEmpty ? qualities.first['url'] : null;
       });
-      debugPrint('Qualities extracted: $_qualityOptions');
-
-      if (_selectedQuality != null) {
-        await _updateVideoSource(_selectedQuality!);
-      }
+      if (_selectedQuality != null) await _updateVideoSource(_selectedQuality!);
     } catch (e) {
-      _handleError('Quality extraction failed: ${e.toString()}');
+      _handleError('Quality extraction failed: $e');
     }
   }
 
-  void _changeQuality(String url) {
-    setState(() => _selectedQuality = url);
-    _updateVideoSource(url);
-  }
-
   Future<void> _updateVideoSource(String url) async {
-    debugPrint('Updating video source to: $url');
-    if (!_isPlayerInitialized) return;
     try {
       await _player.open(Media(url));
       await _player.play();
       await _player.seek(widget.startAt);
     } catch (e) {
-      _handleError('Source update failed: ${e.toString()}');
+      _handleError('Source update failed: $e');
     }
   }
 
   void _handleError(String message) {
     if (!mounted) return;
     setState(() => _errorMessage = message);
+    log(message, level: 1000); // Error level logging
   }
 
   @override
@@ -204,35 +156,47 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   void _playEpisode(int index) {
     if (index < 0 || index >= _episodes.length) return;
-    setState(() {
-      _selectedEpIdx = index;
-    });
+    setState(() => _selectedEpIdx = index);
     _fetchStreamData();
+  }
+
+  void _changeQuality(String url) {
+    setState(() => _selectedQuality = url);
+    _updateVideoSource(url);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isWideScreen = MediaQuery.sizeOf(context).width > 600;
     return Scaffold(
       body: SafeArea(
-        child: MediaQuery.sizeOf(context).width > 600
+        child: isWideScreen
             ? Row(
                 children: [
-                  Flexible(flex: 2, child: _buildVideoPlayer()),
-                  Expanded(flex: 1, child: _buildEpisodesPanel(theme)),
+                  Flexible(flex: 2, child: _VideoPlayerSection(this)),
+                  Expanded(flex: 1, child: _EpisodesPanel(this, theme)),
                 ],
               )
             : Column(
                 children: [
-                  _buildVideoPlayer(),
-                  Expanded(child: _buildEpisodesPanel(theme)),
+                  _VideoPlayerSection(this),
+                  Expanded(child: _EpisodesPanel(this, theme)),
                 ],
               ),
       ),
     );
   }
+}
 
-  Widget _buildVideoPlayer() {
+// Video Player Section
+class _VideoPlayerSection extends StatelessWidget {
+  final _WatchScreenState state;
+
+  const _VideoPlayerSection(this.state);
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -242,28 +206,24 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
             borderRadius: BorderRadius.circular(10),
             child: AspectRatio(
               aspectRatio: 16 / 10,
-              child: Stack(
-                children: [
-                  Video(
-                    controller: _controller,
-                    controls: (state) => CustomControls(
-                      animeMedia: widget.animeMedia,
-                      state: state,
-                      subtitles: _subtitles,
-                      qualityOptions: _qualityOptions,
-                      changeQuality: _changeQuality,
-                      episodes: _episodes,
-                      currentEpisodeIndex: _selectedEpIdx,
-                    ),
-                    subtitleViewConfiguration: SubtitleViewConfiguration(
-                      style: TextStyle(
-                          color: Colors.white,
-                          backgroundColor: Colors.black.withValues(alpha: 0.2)),
-                      textScaleFactor:
-                          MediaQuery.sizeOf(context).width > 400 ? 1.5 : 2,
-                    ),
+              child: Video(
+                controller: state._controller,
+                controls: (videoState) => CustomControls(
+                  animeMedia: state.widget.animeMedia,
+                  state: videoState,
+                  subtitles: state._subtitles,
+                  qualityOptions: state._qualityOptions,
+                  changeQuality: state._changeQuality,
+                  episodes: state._episodes,
+                  currentEpisodeIndex: state._selectedEpIdx,
+                ),
+                subtitleViewConfiguration: SubtitleViewConfiguration(
+                  style: TextStyle(
+                    color: Colors.white,
+                    backgroundColor: Colors.black.withValues(alpha: 0.2),
                   ),
-                ],
+                  textScaleFactor: MediaQuery.sizeOf(context).width > 400 ? 1.5 : 2,
+                ),
               ),
             ),
           ),
@@ -271,22 +231,40 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       ],
     );
   }
+}
 
-  Widget _buildEpisodesPanel(ThemeData theme) {
+// Episodes Panel
+class _EpisodesPanel extends StatelessWidget {
+  final _WatchScreenState state;
+  final ThemeData theme;
+
+  const _EpisodesPanel(this.state, this.theme);
+
+  @override
+  Widget build(BuildContext context) {
     return Material(
       color: theme.colorScheme.surface,
       elevation: 4,
       child: Column(
         children: [
-          _buildInfoHeader(theme),
-          _buildEpisodesTabs(theme),
-          Expanded(child: _buildEpisodesGrid(theme)),
+          _InfoHeader(state, theme),
+          _EpisodesTabs(state, theme),
+          Expanded(child: _EpisodesGrid(state, theme)),
         ],
       ),
     );
   }
+}
 
-  Widget _buildInfoHeader(ThemeData theme) {
+// Info Header
+class _InfoHeader extends StatelessWidget {
+  final _WatchScreenState state;
+  final ThemeData theme;
+
+  const _InfoHeader(this.state, this.theme);
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -298,74 +276,81 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(widget.animeName,
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold)),
-                    if (_episodes.isNotEmpty) ...[
+                    Text(state.widget.animeName, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    if (state._episodes.isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      Text('Episode ${_episodes[_selectedEpIdx].number}',
-                          style: theme.textTheme.titleMedium
-                              ?.copyWith(color: theme.colorScheme.primary)),
+                      Text('Episode ${state._episodes[state._selectedEpIdx].number}',
+                          style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.primary)),
                     ],
                   ],
                 ),
               ),
-              _buildCategorySelector(theme),
+              _CategorySelector(state, theme),
             ],
           ),
-          if (_episodes.isNotEmpty) ...[
+          if (state._episodes.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text(_episodes[_selectedEpIdx].title ?? 'Untitled',
-                style: theme.textTheme.bodyMedium,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis),
+            Text(state._episodes[state._selectedEpIdx].title ?? 'Untitled',
+                style: theme.textTheme.bodyMedium, maxLines: 2, overflow: TextOverflow.ellipsis),
           ],
         ],
       ),
     );
   }
+}
 
-  Widget _buildCategorySelector(ThemeData theme) {
+// Category Selector
+class _CategorySelector extends StatelessWidget {
+  final _WatchScreenState state;
+  final ThemeData theme;
+
+  const _CategorySelector(this.state, this.theme);
+
+  @override
+  Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       tooltip: "Select Category",
       child: Chip(
         avatar: Icon(Iconsax.language_circle, color: theme.colorScheme.primary),
-        label: Text(_selectedCategory!.toUpperCase(),
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.primary)),
+        label: Text(state._selectedCategory!.toUpperCase(), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary)),
         backgroundColor: theme.colorScheme.surface,
       ),
       itemBuilder: (context) => [
-        if (_servers.sub.isNotEmpty)
-          PopupMenuItem(value: 'sub', child: Text('SUB')),
-        if (_servers.dub.isNotEmpty)
-          PopupMenuItem(value: 'dub', child: Text('DUB')),
-        if (_servers.raw.isNotEmpty)
-          PopupMenuItem(value: 'raw', child: Text('RAW')),
+        if (state._servers.sub.isNotEmpty) PopupMenuItem(value: 'sub', child: Text('SUB')),
+        if (state._servers.dub.isNotEmpty) PopupMenuItem(value: 'dub', child: Text('DUB')),
+        if (state._servers.raw.isNotEmpty) PopupMenuItem(value: 'raw', child: Text('RAW')),
       ],
       onSelected: (category) {
-        _player.pause();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          elevation: 0,
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.transparent,
-          content: AwesomeSnackbarContent(
-            title: "Message",
-            message:
-                "Changed category to ${category.toUpperCase()}, please wait for the server to respond.",
-            contentType: ContentType.success,
+        state._player.pause();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            elevation: 0,
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.transparent,
+            content: AwesomeSnackbarContent(
+              title: "Message",
+              message: "Changed category to ${category.toUpperCase()}, please wait for the server to respond.",
+              contentType: ContentType.success,
+            ),
           ),
-        ));
-        setState(() {
-          _selectedCategory = category;
-        });
-        _fetchStreamData();
+        );
+        state.setState(() => state._selectedCategory = category);
+        state._fetchStreamData();
       },
     );
   }
+}
 
-  Widget _buildEpisodesTabs(ThemeData theme) {
-    final totalEpisodes = _episodes.length;
+// Episodes Tabs
+class _EpisodesTabs extends StatelessWidget {
+  final _WatchScreenState state;
+  final ThemeData theme;
+
+  const _EpisodesTabs(this.state, this.theme);
+
+  @override
+  Widget build(BuildContext context) {
+    final totalEpisodes = state._episodes.length;
     final segments = (totalEpisodes / 50).ceil();
 
     return Container(
@@ -377,37 +362,39 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
         itemBuilder: (context, index) {
           final start = index * 50 + 1;
           final end = (start + 49) > totalEpisodes ? totalEpisodes : start + 49;
-          final isSelected = _selectedRangeStart == start;
+          final isSelected = state._selectedRangeStart == start;
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
               selected: isSelected,
               label: Text('$start-$end'),
-              onSelected: (_) {
-                setState(() {
-                  _selectedRangeStart = start;
-                });
-              },
+              onSelected: (_) => state.setState(() => state._selectedRangeStart = start),
             ),
           );
         },
       ),
     );
   }
+}
 
-  Widget _buildEpisodesGrid(ThemeData theme) {
-    final visibleEpisodes = _episodes
-        .where((e) =>
-            e.number! >= _selectedRangeStart &&
-            e.number! < _selectedRangeStart + 50)
+// Episodes Grid
+class _EpisodesGrid extends StatelessWidget {
+  final _WatchScreenState state;
+  final ThemeData theme;
+
+  const _EpisodesGrid(this.state, this.theme);
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleEpisodes = state._episodes
+        .where((e) => e.number! >= state._selectedRangeStart && e.number! < state._selectedRangeStart + 50)
         .toList();
 
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount:
-            _calculateCrossAxisCount(MediaQuery.of(context).size.width),
+        crossAxisCount: _calculateCrossAxisCount(MediaQuery.of(context).size.width),
         childAspectRatio: 1.3,
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
@@ -415,35 +402,26 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       itemCount: visibleEpisodes.length,
       itemBuilder: (context, index) {
         final episode = visibleEpisodes[index];
-        final isSelected = episode.number == _episodes[_selectedEpIdx].number;
+        final isSelected = episode.number == state._episodes[state._selectedEpIdx].number;
 
         return Material(
-          color: isSelected
-              ? theme.colorScheme.primaryContainer
-              : theme.colorScheme.surfaceContainer,
+          color: isSelected ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap: () =>
-                _playEpisode(_episodes.indexWhere((e) => e.id == episode.id)),
+            onTap: () => state._playEpisode(state._episodes.indexWhere((e) => e.id == episode.id)),
             child: Tooltip(
-              message: "${episode.title}",
+              message: episode.title ?? '',
               child: Container(
                 padding: const EdgeInsets.all(8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '${episode.number}',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: isSelected
-                            ? theme.colorScheme.onPrimaryContainer
-                            : theme.colorScheme.onSurfaceVariant,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
+                child: Center(
+                  child: Text(
+                    '${episode.number}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: isSelected ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurfaceVariant,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),

@@ -72,7 +72,7 @@ class EpisodeProgressAdapter extends TypeAdapter<EpisodeProgress> {
     return EpisodeProgress(
       episodeNumber: fields[0] as int,
       episodeTitle: fields[1] as String,
-      episodeThumbnail: fields[2] as String,
+      episodeThumbnail: fields[2] as String?,
       progressInSeconds: fields[3] as int?,
       durationInSeconds: fields[4] as int?,
       isCompleted: fields[5] as bool,

@@ -38,7 +38,6 @@ class CustomControls extends StatefulWidget {
 class _CustomControlsState extends State<CustomControls>
     with SingleTickerProviderStateMixin {
   late AnimationController _fadeController;
-  late Timer? progressSaveTimer;
   late AnimeWatchProgressBox? animeWatchProgressBox;
   bool isBuffering = true;
   bool isPlaying = true;
@@ -75,7 +74,7 @@ class _CustomControlsState extends State<CustomControls>
     _initializeState();
     _attachListeners();
     _startHideTimer();
-    _startProgressSaveTimer();
+    _startRecursiveProgressSave();
   }
 
   Future<void> _initializeContinueWatchingBox() async {
@@ -99,25 +98,31 @@ class _CustomControlsState extends State<CustomControls>
     }
   }
 
-  Future<void> _startProgressSaveTimer() async {
-    progressSaveTimer =
-        Timer.periodic(const Duration(seconds: 10), (timer) async {
-      if (isPlaying) {
-        await Future.delayed(
-            const Duration(milliseconds: 500)); // Ensure frame is rendered
-        final thumbnail = await widget.state.widget.controller.player
-            .screenshot(format: 'image/png');
-        if (thumbnail != null && animeWatchProgressBox != null) {
-          final episode = widget.episodes[widget.currentEpisodeIndex];
-          animeWatchProgressBox?.updateEpisodeProgress(
-            animeId: widget.animeMedia.id!,
-            episodeNumber: episode.number!,
-            episodeTitle: episode.title ?? 'Untitled',
-            episodeThumbnail: base64Encode(thumbnail),
-            progressInSeconds: position.inSeconds,
-            durationInSeconds: duration.inSeconds,
-          );
-        }
+  Future<void> _startRecursiveProgressSave() async {
+    if (isPlaying) {
+      await _saveProgress(screenshot: true);
+    }
+  }
+
+  Future<void> _saveProgress({bool screenshot = false}) async {
+    if (animeWatchProgressBox != null) {
+      final episode = widget.episodes[widget.currentEpisodeIndex];
+      final thumbnail = await widget.state.widget.controller.player
+          .screenshot(format: 'image/png');
+      animeWatchProgressBox?.updateEpisodeProgress(
+        animeId: widget.animeMedia.id!,
+        episodeNumber: episode.number!,
+        episodeTitle: episode.title ?? 'Untitled',
+        episodeThumbnail: screenshot == true && thumbnail != null
+            ? base64Encode(thumbnail)
+            : null,
+        progressInSeconds: position.inSeconds,
+        durationInSeconds: duration.inSeconds,
+      );
+    }
+    await Future.delayed(const Duration(seconds: 10), () async {
+      if (mounted) {
+        await _saveProgress();
       }
     });
   }
@@ -186,7 +191,7 @@ class _CustomControlsState extends State<CustomControls>
   @override
   void dispose() {
     _hideTimer?.cancel();
-    progressSaveTimer?.cancel();
+    _saveProgress(screenshot: true);
     super.dispose();
   }
 

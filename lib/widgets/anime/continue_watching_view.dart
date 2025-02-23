@@ -185,17 +185,29 @@ class _ContinueWatchingCard extends ConsumerWidget {
       child: Stack(
         children: [
           // Background image
-          Image.memory(
-            base64Decode(episode.episodeThumbnail),
-            height: double.infinity,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: colorScheme.surfaceVariant,
-              child: Icon(Icons.image, color: colorScheme.onSurfaceVariant),
+          if (episode.episodeThumbnail != null)
+            Image.memory(
+              base64Decode(episode.episodeThumbnail!),
+              height: double.infinity,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: colorScheme.surfaceVariant,
+                child: Icon(Icons.image, color: colorScheme.onSurfaceVariant),
+              ),
+            )
+          else
+            CachedNetworkImage(
+              imageUrl: anime.animeCover,
+              height: double.infinity,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorWidget: (context, error, stackTrace) => Container(
+                color: colorScheme.surfaceVariant,
+                child: Icon(Icons.image, color: colorScheme.onSurfaceVariant),
+              ),
             ),
-          ),
-          
+
           // Dark overlay for text readability
           Container(
             decoration: BoxDecoration(

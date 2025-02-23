@@ -46,6 +46,12 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
     _initializeSettingsBox();
   }
 
+  @override 
+  void dispoose() {
+    _saveSettings();
+    super.dispose();
+  }
+
   Future<void> _initializeSettingsBox() async {
     _settingsBox = SettingsBox();
     await _settingsBox?.init();

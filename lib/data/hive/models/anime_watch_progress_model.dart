@@ -58,7 +58,7 @@ class EpisodeProgress {
   @HiveField(1)
   final String episodeTitle;
   @HiveField(2)
-  final String episodeThumbnail;
+  final String? episodeThumbnail;
   @HiveField(3)
   final int? progressInSeconds; // For continue watching
   @HiveField(4)

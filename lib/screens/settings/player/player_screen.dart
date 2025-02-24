@@ -27,7 +27,7 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
     if (settings != null) {
       final playerSettings = settings.playerSettings;
       setState(() {
-        episodeCompletionThreshold = playerSettings?.episodeCompletionThreshold ?? 0.9;
+        episodeCompletionThreshold = playerSettings.episodeCompletionThreshold ?? 0.9;
       });
     }
   }
@@ -57,7 +57,7 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
                     divisions: 10,
                     label: '${(tempValue * 100).toStringAsFixed(0)}%',
                     activeColor: colorScheme.primary,
-                    inactiveColor: colorScheme.surfaceVariant,
+                    inactiveColor: colorScheme.surfaceContainerHighest,
                     onChanged: (value) {
                       setDialogState(() {
                         tempValue = value;
@@ -112,7 +112,7 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
           onPressed: () => Navigator.pop(context),
           icon: Icon(Iconsax.arrow_left_1, color: colorScheme.onSurface),
           style: IconButton.styleFrom(
-            backgroundColor: colorScheme.surfaceVariant.withOpacity(0.5),
+            backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
             padding: const EdgeInsets.all(10),
           ),
         ),
@@ -245,7 +245,7 @@ class _SettingsItemState extends State<_SettingsItem> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: _isHovered && !widget.disabled
-                ? colorScheme.surfaceVariant.withOpacity(0.3)
+                ? colorScheme.surfaceContainerHighest.withOpacity(0.3)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
           ),

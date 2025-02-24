@@ -19,7 +19,7 @@ class SettingsScreen extends StatelessWidget {
           onPressed: () => context.pop(),
           icon: Icon(Iconsax.arrow_left_2, color: colorScheme.onSurface),
           style: IconButton.styleFrom(
-            backgroundColor: colorScheme.surfaceVariant.withValues(alpha: 0.5),
+            backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.all(10),

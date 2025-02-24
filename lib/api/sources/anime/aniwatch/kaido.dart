@@ -11,13 +11,15 @@ import 'package:shonenx/api/sources/anime/anime_provider.dart';
 import 'package:html/parser.dart' show parse;
 
 class KaidoProvider extends AnimeProvider {
-  KaidoProvider()
-      : super(baseUrl: 'https://kaido.to', providerName: 'kaido');
+  KaidoProvider() : super(baseUrl: 'https://kaido.to', providerName: 'kaido');
 
   Map<String, String> _getHeaders() {
     return {
+      // 'Accept-Encoding': 'gzip, deflate, br, zstd',
+      'Accept-Language': 'en-US,en;q=0.8',
+      'Cache-Control': 'no-cache',
       'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+          'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36',
     };
   }
 
@@ -83,69 +85,33 @@ class KaidoProvider extends AnimeProvider {
   @override
   Future<BaseSourcesModel> getSources(String animeId, String episodeId,
       String serverName, String category) async {
-    // log('Starting scrapeAnimeEpisodeSources with episodeId: $episodeId, server: $serverName, category: $category');
-    // if (episodeId.startsWith('http')) {
-    //   log('episodeId is a URL, processing accordingly');
-    //   final serverUrl = episodeId;
-    //   log('Processing MegaCloud');
-    //   final megaCloud = Megacloud();
-    //   final extractedData = await megaCloud.extract(videoUrl: serverUrl);
-    //   // log(extractedData);
-    //   return BaseSourcesModel();
-    // }
-
-    // final epId = Uri.parse('$baseUrl/watch/$episodeId').toString();
-    // log('Constructed epId: $epId');
-
-    // final episodeIdParam =
-    //     Uri.encodeComponent(epId.split("?ep=").lastOrNull ?? '');
-    // final serverUrl =
-    //     Uri.parse('$baseUrl/ajax/episode/servers?episodeId=$episodeIdParam');
-    // log('Fetching episode servers from: $serverUrl');
-
-    // final resp = await http.get(serverUrl);
-    // if (resp.statusCode != 200) {
-    //   log('Failed to fetch episode servers. Status code: ${resp.statusCode}');
-    //   throw HttpException(
-    //     'Failed to fetch episode servers',
-    //   );
-    // }
-
-    // final jsonResponse = json.decode(resp.body);
-    // final document = parse(jsonResponse['html']);
-    // log('Parsed HTML document');
-
-    // String? serverId;
-    // log('Attempting to retrieve server ID for $serverName');
-    // serverId = retrieveServerId(document, 1, category);
-    // if (serverId == null) throw Exception('MegaCloud not found');
-    // log('Retrieved serverId: $serverId');
-
-    // final sourceUrl =
-    //     Uri.parse('$baseUrl/ajax/episode/sources?id=$serverId');
-    // log('Fetching episode sources from: $sourceUrl');
-
-    // final sourceResp = await http.get(sourceUrl);
-    // if (sourceResp.statusCode != 200) {
-    //   log('Failed to fetch episode sources. Status code: ${sourceResp.statusCode}');
-    //   throw HttpException('Failed to fetch episode sources');
-    // }
-
-    // final sourceJson = json.decode(sourceResp.body);
-    // final link = sourceJson['link'];
-    // log('Retrieved source link: $link');
-    // if (link != null) {
-    //   return getSources(link, serverName, category);
-    // }
-    // return BaseSourcesModel();
-    log('Fetching: https://shonenx-consumet-api.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category');
+    final getCategory =
+        category == 'sub' ? 'both' : category; // Fixed to respect 'raw'
+    final epId = [
+      animeId,
+      r'''$''',
+      'episode',
+      r'''$''',
+      episodeId,
+      r'''$''',
+      getCategory
+    ].join('');
+    // final url = Uri.https(
+    //   'shonenx-consumet-api.vercel.app',
+    //   '/anime/zoro/watch',
+    //   {'episodeId': epId},
+    // );
+    // log('Fetching sources - animeId: $animeId, episodeId: $episodeId, serverName: $serverName, category: $category, mapped to: $getCategory');
+    // log('URL: $url');
     final response = await http.get(
       Uri.parse(
-          'https://shonenx-consumet-api.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category'),
-      headers: _getHeaders(),
+          'https://animaze-swart.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category'),
     );
+    final responseBody = json.decode(response.body);
+    log('Sources: ${responseBody['sources']}', name: "Sources");
+    log('Subtitles: ${responseBody['subtitles']}', name: "Subtitles");
     log("Response status code: ${response.statusCode}");
-    return BaseSourcesModel.fromJson(json.decode(response.body));
+    return BaseSourcesModel.fromJson(responseBody);
   }
 
   @override

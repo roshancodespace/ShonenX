@@ -7,14 +7,18 @@ class CustomSlideIndicator implements SlideIndicator {
   CustomSlideIndicator(this.context);
   @override
   Widget build(int currentPage, double pageDelta, int itemCount) {
-    return AnimatedSmoothIndicator(
-      activeIndex: currentPage,
-      count: itemCount,
-      effect: ExpandingDotsEffect(
-        dotHeight: 10,
-        dotWidth: 15,
-        activeDotColor: Theme.of(context).colorScheme.primary,
-        dotColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: AnimatedSmoothIndicator(
+        activeIndex: currentPage,
+        count: itemCount,
+        effect: ExpandingDotsEffect(
+          dotHeight: 10,
+          dotWidth: 15,
+          activeDotColor: Theme.of(context).colorScheme.primary,
+          dotColor:
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+        ),
       ),
     );
   }

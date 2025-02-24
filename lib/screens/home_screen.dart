@@ -29,32 +29,34 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
-  bool isBoxInitialized = false;
   late final AnimeWatchProgressBox _animeWatchProgressBox;
   late final SettingsBox _settingsBox;
-  late final UISettingsModel _uiSettings;
+  late UISettingsModel _uiSettings;
+  bool _isBoxInitialized = false;
   bool _isScrolled = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _initializeBox();
+    _initializeBoxes();
   }
 
-  Future<void> _initializeBox() async {
+  Future<void> _initializeBoxes() async {
     _animeWatchProgressBox = AnimeWatchProgressBox();
     _settingsBox = SettingsBox();
-    await _animeWatchProgressBox.init();
-    await _settingsBox.init();
+    await Future.wait([
+      _animeWatchProgressBox.init(),
+      _settingsBox.init(),
+    ]);
     _uiSettings = _settingsBox.getUISettings();
-    isBoxInitialized = true;
+    _isBoxInitialized = true;
     if (mounted) setState(() {});
   }
 
   void _onScroll() {
-    final offset = _scrollController.offset;
-    setState(() => _isScrolled = offset > 20);
+    _isScrolled = _scrollController.offset > 20;
+    if (mounted) setState(() {});
   }
 
   @override
@@ -67,83 +69,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.sizeOf(context).width > 900;
     final theme = Theme.of(context);
-    if (!isBoxInitialized) return const SizedBox.shrink();
+
+    if (!_isBoxInitialized) return const SizedBox.shrink();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
+      floatingActionButton: isDesktop ? _buildFAB(theme) : null,
       body: SafeArea(
         child: Consumer(
-          builder: (context, ref, child) {
-            final homePageAsync = ref.watch(homePageProvider);
-            return homePageAsync.when(
-              data: (homePage) => ValueListenableBuilder(
-                valueListenable: _settingsBox.settingsBoxListenable,
-                builder: (context, box, child) {
-                  final uiSettings = _settingsBox.getUISettings();
-                  return _HomeContent(
-                    animeWatchProgressBox:
-                        isBoxInitialized ? _animeWatchProgressBox : null,
-                    homePage: homePage,
-                    isDesktop: isDesktop,
-                    uiSettings: uiSettings,
-                  );
-                },
+          builder: (context, ref, _) => ref.watch(homePageProvider).when(
+                data: (homePage) => _HomeContent(
+                  animeWatchProgressBox: _animeWatchProgressBox,
+                  homePage: homePage,
+                  isDesktop: isDesktop,
+                  uiSettings: _uiSettings,
+                  onRefresh: () => ref.refresh(homePageProvider),
+                ),
+                error: (_, __) => _HomeContent(
+                  animeWatchProgressBox: _animeWatchProgressBox,
+                  homePage: null,
+                  isDesktop: isDesktop,
+                  uiSettings: _uiSettings,
+                  onRefresh: () => ref.refresh(homePageProvider),
+                ),
+                loading: () => const _HomeContentLoading(),
               ),
-              error: (error, stack) => _HomeContent(
-                animeWatchProgressBox:
-                    isBoxInitialized ? _animeWatchProgressBox : null,
-                homePage: null,
-                isDesktop: isDesktop,
-                uiSettings: _uiSettings,
-              ),
-              loading: () => _HomeContent(
-                animeWatchProgressBox:
-                    isBoxInitialized ? _animeWatchProgressBox : null,
-                homePage: null,
-                isDesktop: isDesktop,
-                isLoading: true,
-                uiSettings: _uiSettings,
-              ),
-            );
-          },
         ),
       ),
-      floatingActionButton:
-          isDesktop ? _buildFloatingActionButton(theme) : null,
     );
   }
 
-  FloatingActionButton _buildFloatingActionButton(ThemeData theme) {
-    return FloatingActionButton.extended(
-      backgroundColor: theme.colorScheme.primaryContainer,
-      onPressed: () => _toggleSearchBar(context),
-      label: Text(
-        'Search anime...',
-        style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
-      ),
-      icon: Icon(
-        Iconsax.search_normal,
-        color: theme.colorScheme.onPrimaryContainer,
-      ),
-    );
-  }
+  FloatingActionButton _buildFAB(ThemeData theme) =>
+      FloatingActionButton.extended(
+        backgroundColor: theme.colorScheme.primaryContainer,
+        onPressed: () => _showSearchDialog(context),
+        label: Text('Search anime...',
+            style: TextStyle(color: theme.colorScheme.onPrimaryContainer)),
+        icon: Icon(Iconsax.search_normal,
+            color: theme.colorScheme.onPrimaryContainer),
+      );
 
-  void _toggleSearchBar(BuildContext context) {
+  void _showSearchDialog(BuildContext context) {
     showDialog(
       context: context,
       barrierColor: Colors.black54,
-      builder: (context) => _buildSearchDialog(context),
+      builder: (_) => _SearchDialog(),
     );
   }
+}
 
-  AlertDialog _buildSearchDialog(BuildContext context) {
+class _SearchDialog extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AlertDialog(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       backgroundColor: theme.colorScheme.primaryContainer,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
       content: SearchBar(
-        padding: WidgetStatePropertyAll(EdgeInsets.only(left: 15)),
+        padding: const WidgetStatePropertyAll(EdgeInsets.only(left: 15)),
         leading:
             Icon(Iconsax.search_normal, color: theme.colorScheme.onSurface),
         autoFocus: true,
@@ -157,53 +141,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-class _HomeContent extends ConsumerWidget {
+class _HomeContent extends StatelessWidget {
   final HomePage? homePage;
-  final AnimeWatchProgressBox? animeWatchProgressBox;
+  final AnimeWatchProgressBox animeWatchProgressBox;
   final bool isDesktop;
-  final bool isLoading;
   final UISettingsModel uiSettings;
+  final VoidCallback onRefresh;
 
   const _HomeContent({
     required this.homePage,
-    required this.uiSettings,
     required this.animeWatchProgressBox,
     required this.isDesktop,
-    this.isLoading = false,
+    required this.uiSettings,
+    required this.onRefresh,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(homePageProvider);
-      },
-      child: ListView(
-        children: [
-          _HeaderSection(isDesktop: isDesktop),
-          _SpotlightSection(homePage: homePage, isLoading: isLoading),
-          const SizedBox(height: 30),
-          if (animeWatchProgressBox != null)
-            ContinueWatchingView(animeWatchProgressBox: animeWatchProgressBox!),
+      onRefresh: () async => onRefresh(),
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _HeaderSection(isDesktop: isDesktop)),
+          SliverToBoxAdapter(child: _SpotlightSection(homePage: homePage)),
+          const SliverToBoxAdapter(child: SizedBox(height: 30)),
+          SliverToBoxAdapter(
+              child: ContinueWatchingView(
+                  animeWatchProgressBox: animeWatchProgressBox)),
           _HorizontalAnimeSection(
-            title: 'Popular',
-            animes: homePage?.popularAnime,
-            uiSettings: uiSettings,
-          ),
+              title: 'Popular',
+              animes: homePage?.popularAnime,
+              uiSettings: uiSettings),
           _HorizontalAnimeSection(
-            title: 'Trending',
-            animes: homePage?.trendingAnime,
-            uiSettings: uiSettings,
-          ),
+              title: 'Trending',
+              animes: homePage?.trendingAnime,
+              uiSettings: uiSettings),
           _HorizontalAnimeSection(
-            title: 'Recently Updated',
-            animes: homePage?.recentlyUpdated,
-            uiSettings: uiSettings,
-          ),
-          const SizedBox(height: 100),
+              title: 'Recently Updated',
+              animes: homePage?.recentlyUpdated,
+              uiSettings: uiSettings),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
+  }
+}
+
+class _HomeContentLoading extends StatelessWidget {
+  const _HomeContentLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(child: CircularProgressIndicator());
   }
 }
 
@@ -217,16 +206,14 @@ class _HeaderSection extends ConsumerWidget {
     final theme = Theme.of(context);
     final user = ref.watch(userProvider);
 
-    return Container(
+    return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: UserProfileCard(user: user),
-              ),
+              Expanded(child: UserProfileCard(user: user)),
               const SizedBox(width: 16),
               ActionPanel(isDesktop: isDesktop),
             ],
@@ -247,16 +234,13 @@ class UserProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Card(
       margin: EdgeInsets.zero,
       elevation: 0,
       color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: theme.colorScheme.outline.withOpacity(0.1),
-        ),
+        side: BorderSide(color: theme.colorScheme.outline.withOpacity(0.1)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -268,19 +252,15 @@ class UserProfileCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    getGreeting(),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                  ),
+                  Text(getGreeting(),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7))),
                   const SizedBox(height: 4),
                   Text(
                     user?.name ?? 'Guest',
                     style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface),
                   ),
                 ],
               ),
@@ -293,57 +273,46 @@ class UserProfileCard extends StatelessWidget {
 
   Widget _buildAvatar(BuildContext context) {
     final theme = Theme.of(context);
-
-    if (user == null) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Icon(
-          Iconsax.user,
-          size: 24,
-          color: theme.colorScheme.primary,
-        ),
-      );
-    }
-
-    return Hero(
-      tag: 'user-avatar',
-      child: Material(
-        elevation: 2,
-        shadowColor: theme.shadowColor.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: () => context.push('/settings/profile'),
-          borderRadius: BorderRadius.circular(16),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: CachedNetworkImage(
-              imageUrl: user!.avatar ?? '',
-              width: 48,
-              height: 48,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                color: theme.colorScheme.surfaceVariant,
-                child: Icon(
-                  Icons.person_outline,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              errorWidget: (context, url, error) => Container(
-                color: theme.colorScheme.errorContainer,
-                child: Icon(
-                  Icons.error_outline,
-                  color: theme.colorScheme.error,
+    return user == null
+        ? Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(16)),
+            child:
+                Icon(Iconsax.user, size: 24, color: theme.colorScheme.primary),
+          )
+        : Hero(
+            tag: 'user-avatar',
+            child: Material(
+              elevation: 2,
+              shadowColor: theme.shadowColor.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                onTap: () => context.push('/settings/profile'),
+                borderRadius: BorderRadius.circular(16),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: CachedNetworkImage(
+                    imageUrl: user!.avatar ?? '',
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: Icon(Icons.person_outline,
+                          color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                    errorWidget: (_, __, ___) => Container(
+                      color: theme.colorScheme.errorContainer,
+                      child: Icon(Icons.error_outline,
+                          color: theme.colorScheme.error),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
+          );
   }
 }
 
@@ -358,17 +327,37 @@ class ActionPanel extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (!isDesktop) ...[
-          _ActionButton(
-            icon: Iconsax.search_normal,
-            onTap: () => _showSearch(context),
-          ),
+          const _ActionButton(icon: Iconsax.search_normal, route: null),
           const SizedBox(width: 12),
         ],
-        _ActionButton(
-          icon: Iconsax.setting_2,
-          onTap: () => context.push('/settings'),
-        ),
+        const _ActionButton(icon: Iconsax.setting_2, route: '/settings'),
       ],
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String? route;
+
+  const _ActionButton({required this.icon, this.route});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.secondaryContainer,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: route != null
+            ? () => context.push(route!)
+            : () => _showSearch(context),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Icon(icon, color: theme.colorScheme.secondary),
+        ),
+      ),
     );
   }
 
@@ -379,61 +368,9 @@ class ActionPanel extends StatelessWidget {
       barrierLabel: "Search",
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return ScaleTransition(
-          scale: animation,
-          child: AlertDialog(
-            contentPadding: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28),
-            ),
-            content: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.9,
-              child: SearchBar(
-                padding: const MaterialStatePropertyAll(
-                  EdgeInsets.symmetric(horizontal: 16),
-                ),
-                leading: const Icon(Icons.search),
-                hintText: 'Search anime...',
-                onSubmitted: (value) {
-                  Navigator.pop(context);
-                  context.go('/browse?keyword=$value');
-                },
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Material(
-      color: theme.colorScheme.secondaryContainer,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          child: Icon(
-            icon,
-            color: theme.colorScheme.secondary,
-          ),
-        ),
+      pageBuilder: (_, animation, __) => ScaleTransition(
+        scale: animation,
+        child: _SearchDialog(),
       ),
     );
   }
@@ -445,73 +382,50 @@ class DiscoverCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: InkWell(
-        onTap: () => context.go('/browse'),
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                theme.colorScheme.primary.withOpacity(0.15),
-                theme.colorScheme.primary.withOpacity(0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  Icons.explore,
-                  color: theme.colorScheme.primary,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Discover Anime',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Find your next favorite series',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: theme.colorScheme.primary,
-                size: 20,
-              ),
+    return GestureDetector(
+      onTap: () => context.go('/browse'),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              theme.colorScheme.primary.withOpacity(0.15),
+              theme.colorScheme.primary.withOpacity(0.05)
             ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16)),
+              child: Icon(Icons.explore,
+                  color: theme.colorScheme.primary, size: 28),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Discover Anime',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary)),
+                  const SizedBox(height: 4),
+                  Text('Find your next favorite series',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7))),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios,
+                color: theme.colorScheme.primary, size: 20),
+          ],
         ),
       ),
     );
@@ -520,18 +434,13 @@ class DiscoverCard extends StatelessWidget {
 
 class _SpotlightSection extends StatelessWidget {
   final HomePage? homePage;
-  final bool isLoading;
 
-  const _SpotlightSection({
-    required this.homePage,
-    this.isLoading = false,
-  });
+  const _SpotlightSection({required this.homePage});
 
   @override
   Widget build(BuildContext context) {
-    final trendingAnimes = isLoading
-        ? List<Media?>.filled(9, null)
-        : homePage?.trendingAnime ?? List<Media?>.filled(9, null);
+    final trendingAnimes =
+        homePage?.trendingAnime ?? List<Media?>.filled(9, null);
     final carouselHeight =
         MediaQuery.sizeOf(context).width > 900 ? 500.0 : 260.0;
 
@@ -545,15 +454,26 @@ class _SpotlightSection extends StatelessWidget {
             showIndicator: true,
             autoPlay: true,
             enlargeCenterPage: true,
-            floatingIndicator: false,
             autoPlayInterval: const Duration(seconds: 5),
+            enlargeStrategy: CenterPageEnlargeStrategy.height,
             enableInfiniteScroll: true,
+            floatingIndicator: false,
             slideIndicator: CustomSlideIndicator(context),
             viewportFraction:
-                MediaQuery.sizeOf(context).width > 900 ? 0.75 : 0.9,
+                MediaQuery.sizeOf(context).width > 900 ? 0.9 : 0.9,
+            pageSnapping: true,
           ),
           items: trendingAnimes
-              .map((anime) => _SpotlightCard(anime: anime))
+              .map((anime) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                child: AnimeSpotlightCard(
+                      onTap: (media) => anime?.id != null
+                          ? navigateToDetail(context, media, anime!.id.toString())
+                          : null,
+                      anime: anime,
+                      heroTag: anime?.id.toString() ?? 'loading',
+                    ),
+              ))
               .toList(),
         ),
       ],
@@ -569,136 +489,69 @@ class _SpotlightHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.tertiaryContainer,
-              borderRadius: BorderRadius.circular(30),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+            color: theme.colorScheme.tertiaryContainer,
+            borderRadius: BorderRadius.circular(30)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Iconsax.star5, size: 18, color: theme.colorScheme.tertiary),
+            const SizedBox(width: 8),
+            Text(
+              'Trending ${homePage?.trendingAnime.length ?? 0}',
+              style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.tertiary,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Iconsax.star5,
-                    size: 18, color: theme.colorScheme.tertiary),
-                const SizedBox(width: 8),
-                Text(
-                  'Trending ${homePage?.trendingAnime.length ?? 0}',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.tertiary,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SpotlightCard extends StatelessWidget {
-  final Media? anime;
-
-  const _SpotlightCard({required this.anime});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(24)),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: AnimeSpotlightCard(
-          onTap: (media) => anime?.id != null
-              ? navigateToDetail(context, media, anime!.id.toString())
-              : null,
-          anime: anime,
-          heroTag: anime?.id.toString() ?? 'loading',
+          ],
         ),
       ),
     );
   }
 }
 
-class _HorizontalAnimeSection extends StatelessWidget {
+class _HorizontalAnimeSection extends SliverToBoxAdapter {
   final String title;
-  final String? subtitle;
   final List<Media>? animes;
-  final VoidCallback? onViewAll;
   final UISettingsModel uiSettings;
 
-  const _HorizontalAnimeSection({
-    super.key,
-    required this.title,
-    required this.animes,
-    required this.uiSettings,
-    this.subtitle,
-    this.onViewAll,
-  });
+  const _HorizontalAnimeSection(
+      {required this.title, required this.animes, required this.uiSettings});
 
   @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final String cardStyle = uiSettings.cardStyle;
-        final double cardHeight = cardStyle == 'Minimal'
-            ? 240
-            : cardStyle == 'Compact'
-                ? 200
-                : 280; // Adjust card height based on width
+  Widget get child {
+    return Builder(
+      builder: (context) {
+        final cardStyle = uiSettings.cardStyle;
+        // final cardHeight = cardStyle == 'Minimal'
+        //     ? 240.0
+        //     : cardStyle == 'Compact'
+        //         ? 200.0
+        //         : 280.0;
+        final cardHeight = 200.0;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        if (subtitle != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            subtitle!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  if (onViewAll != null)
-                    IconButton.filledTonal(
-                      onPressed: onViewAll,
-                      icon: const Icon(Iconsax.arrow_right_3),
-                      tooltip: 'View all',
-                    ),
-                ],
+              child: Text(
+                title,
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface),
               ),
             ),
             SizedBox(
-              height: cardHeight, // Use dynamic height based on card size
+              height: cardHeight,
               child: ListView.builder(
+                physics: const ClampingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 scrollDirection: Axis.horizontal,
                 itemCount: animes?.length ?? 10,

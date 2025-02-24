@@ -84,8 +84,7 @@ class AniwatchProvider extends AnimeProvider {
       String serverName, String category) async {
     final response = await http.get(
       Uri.parse(
-          'https://aniwatch-api-instance.vercel.app/api/v2/hianime/episode/sources?animeEpisodeId=$episodeId&server=${serverName.toLowerCase()}&category=${category.toLowerCase()}'),
-      headers: _getHeaders(),
+          'https://animaze-swart.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category'),
     );
     return BaseSourcesModel.fromJson(json.decode(response.body)['data']);
   }

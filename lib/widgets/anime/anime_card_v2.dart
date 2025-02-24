@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
 
@@ -8,14 +7,14 @@ class AnimatedAnimeCard extends StatefulWidget {
   final Media? anime;
   final String tag;
   final VoidCallback? onTap;
-  final String mode; // New mode parameter
+  final String mode;
 
   const AnimatedAnimeCard({
     super.key,
     required this.anime,
     required this.tag,
     this.onTap,
-    this.mode = 'Classic', // Default to 'Classic'
+    this.mode = 'Classic',
   });
 
   @override
@@ -23,329 +22,392 @@ class AnimatedAnimeCard extends StatefulWidget {
 }
 
 class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
-  bool isHovered = false;
+  bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
+    final theme = Theme.of(context);
+    final width = _getWidth(widget.mode);
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => isHovered = true),
-      onExit: (_) => setState(() => isHovered = false),
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: _getWidth(widget.mode),
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+          width: width,
+          height: _getHeight(widget.mode),
           margin: EdgeInsets.only(
-            top: isHovered ? 0 : 8,
-            bottom: isHovered ? 8 : 0,
+              top: _isHovered ? 0 : 4, bottom: _isHovered ? 4 : 0),
+          child: _CardBuilder(
+            mode: widget.mode,
+            anime: widget.anime,
+            tag: widget.tag,
+            isHovered: _isHovered,
           ),
-          child: _buildCardByMode(context, colorScheme),
         ),
       ),
     );
   }
 
   double _getWidth(String mode) {
-    switch (mode) {
-      case 'Compact':
-        return 150;
-      case 'Poster':
-        return 180;
-      case 'Minimal':
-      case 'Outlined':
-      case 'Classic':
-      default:
-        return 200;
-    }
+    return switch (mode) {
+      'Compact' => 150.0,
+      'Poster' || 'PosterV2' => 150.0,
+      _ => 150.0,
+    };
   }
 
-  Widget _buildCardByMode(BuildContext context, ColorScheme colorScheme) {
-    switch (widget.mode) {
-      case 'Minimal':
-        return _buildMinimalCard(context, colorScheme);
-      case 'Compact':
-        return _buildCompactCard(context, colorScheme);
-      case 'Poster':
-        return _buildPosterCard(context, colorScheme);
-      case 'Outlined':
-        return _buildOutlinedCard(context, colorScheme);
-      case 'Classic':
-      default:
-        return _buildClassicCard(context, colorScheme);
-    }
+  double _getHeight(String mode) {
+    return switch (mode) {
+      'Compact' => 180.0,
+      'Poster' || 'PosterV2' => 180.0,
+      _ => 180.0,
+    };
   }
+}
 
-  // Classic (Original) Style
-  Widget _buildClassicCard(BuildContext context, ColorScheme colorScheme) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: isHovered ? 8 : 2,
-      shadowColor: colorScheme.shadow.withValues(alpha: 0.2),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildImage(height: 180),
-          _buildDetails(context, fontSize: 14),
-        ],
-      ),
-    );
+class _CardBuilder extends StatelessWidget {
+  final String mode;
+  final Media? anime;
+  final String tag;
+  final bool isHovered;
+
+  const _CardBuilder({
+    required this.mode,
+    required this.anime,
+    required this.tag,
+    required this.isHovered,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (mode) {
+      'Compact' => _CompactCard(anime: anime, tag: tag, isHovered: isHovered),
+      'Poster' => _PosterCard(anime: anime, tag: tag, isHovered: isHovered),
+      'PosterV2' => _PosterV2Card(anime: anime, tag: tag, isHovered: isHovered),
+      'Outlined' => _OutlinedCard(anime: anime, tag: tag, isHovered: isHovered),
+      'Classic' ||
+      _ =>
+        _ClassicCard(anime: anime, tag: tag, isHovered: isHovered),
+    };
   }
+}
 
-  // Minimal Style
-  Widget _buildMinimalCard(BuildContext context, ColorScheme colorScheme) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildImage(height: 180, showBadges: false),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Text(
-              widget.anime?.title?.english ??
-                  widget.anime?.title?.romaji ??
-                  widget.anime?.title?.native ??
-                  'Unknown Title',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.montserrat(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+class _ClassicCard extends StatelessWidget {
+  final Media? anime;
+  final String tag;
+  final bool isHovered;
+
+  const _ClassicCard(
+      {required this.anime, required this.tag, required this.isHovered});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow
+                .withValues(alpha: isHovered ? 0.15 : 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
-    );
-  }
-
-  // Compact Style
-  Widget _buildCompactCard(BuildContext context, ColorScheme colorScheme) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: isHovered ? 6 : 1,
-      shadowColor: colorScheme.shadow.withValues(alpha: 0.15),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildImage(height: 120),
-          _buildDetails(context, fontSize: 12, padding: 8),
-        ],
-      ),
-    );
-  }
-
-  // Poster Style
-  Widget _buildPosterCard(BuildContext context, ColorScheme colorScheme) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: isHovered ? 10 : 4,
-      shadowColor: colorScheme.shadow.withValues(alpha: 0.25),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          _buildImage(height: 260, showBadges: false),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.8),
-                  ],
-                ),
-              ),
-              child: Text(
-                widget.anime?.title?.english ??
-                    widget.anime?.title?.romaji ??
-                    widget.anime?.title?.native ??
-                    'Unknown Title',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.montserrat(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Outlined Style
-  Widget _buildOutlinedCard(BuildContext context, ColorScheme colorScheme) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: isHovered ? 4 : 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: isHovered
-              ? colorScheme.primary
-              : colorScheme.onSurface.withValues(alpha: 0.3),
-          width: 1.5,
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildImage(height: 190),
-          _buildDetails(context, fontSize: 13),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImage({
-    required double height,
-    bool showBadges = true,
-  }) {
-    return Stack(
-      children: [
-        Hero(
-          tag: widget.tag,
-          child: CachedNetworkImage(
-            imageUrl: widget.anime?.coverImage?.large ?? '',
-            height: height,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => ShimmerPlaceholder(height: height),
-            errorWidget: (context, url, error) =>
-                ErrorPlaceholder(height: height),
-          ),
-        ),
-        if (widget.anime != null && showBadges) ...[
-          _buildGradientOverlay(),
-          _buildScore(),
-          if (widget.anime?.format != null) _buildFormatBadge(),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildGradientOverlay() {
-    return Positioned.fill(
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: isHovered ? 0.8 : 0.5,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.transparent,
-                Colors.black.withValues(alpha: 0.7),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildScore() {
-    if (widget.anime?.averageScore == null) return const SizedBox.shrink();
-
-    return Positioned(
-      top: 12,
-      right: 12,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Iconsax.star1, size: 14, color: Colors.amber),
-            const SizedBox(width: 6),
-            Text(
-              '${widget.anime!.averageScore}%',
-              style: GoogleFonts.montserrat(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+            _AnimeImage(anime: anime, tag: tag, height: 180),
+            _AnimeDetails(anime: anime),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactCard extends StatelessWidget {
+  final Media? anime;
+  final String tag;
+  final bool isHovered;
+
+  const _CompactCard(
+      {required this.anime, required this.tag, required this.isHovered});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow
+                .withValues(alpha: isHovered ? 0.1 : 0.03),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _AnimeImage(anime: anime, tag: tag, height: 120),
+            _AnimeDetails(anime: anime, padding: 6),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PosterCard extends StatelessWidget {
+  final Media? anime;
+  final String tag;
+  final bool isHovered;
+
+  const _PosterCard(
+      {required this.anime, required this.tag, required this.isHovered});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow
+                .withValues(alpha: isHovered ? 0.2 : 0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: Stack(
+          children: [
+            _AnimeImage(anime: anime, tag: tag, height: 260, showBadges: false),
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      theme.colorScheme.surface
+                          .withValues(alpha: isHovered ? 0.7 : 0.5),
+                    ],
+                  ),
+                ),
               ),
+            ),
+            Positioned(
+              bottom: 8,
+              left: 8,
+              right: 8,
+              child: _AnimeTitle(anime: anime, maxLines: 2),
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildFormatBadge() {
-    return Positioned(
-      top: 12,
-      left: 12,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          widget.anime!.format.toString().split('.').last,
-          style: GoogleFonts.montserrat(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
+class _PosterV2Card extends StatelessWidget {
+  final Media? anime;
+  final String tag;
+  final bool isHovered;
+
+  const _PosterV2Card(
+      {required this.anime, required this.tag, required this.isHovered});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow
+                .withValues(alpha: isHovered ? 0.2 : 0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: SizedBox(
+          width: 180,
+          height: 260,
+          child: Stack(
+            children: [
+              _AnimeImage(
+                  anime: anime, tag: tag, height: 260, showBadges: false),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        theme.colorScheme.surface
+                            .withValues(alpha: isHovered ? 0.7 : 0.5),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (anime != null && anime!.format != null)
+                      _Tag(
+                        text: anime!.format!.split('.').last,
+                        color: theme.colorScheme.primary,
+                      ),
+                    const SizedBox(height: 4),
+                    _AnimeTitle(anime: anime, maxLines: 2),
+                    if (anime != null) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          if (anime!.episodes != null)
+                            _Tag(
+                              text: '${anime!.episodes} Ep',
+                              color: theme.colorScheme.secondary,
+                              icon: Iconsax.play,
+                            ),
+                          if (anime!.averageScore != null) ...[
+                            const SizedBox(width: 6),
+                            _Tag(
+                              text: '${anime!.averageScore}%',
+                              color: theme.colorScheme.secondary,
+                              icon: Iconsax.star1,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildDetails(BuildContext context,
-      {required double fontSize, double padding = 12}) {
+class _OutlinedCard extends StatelessWidget {
+  final Media? anime;
+  final String tag;
+  final bool isHovered;
+
+  const _OutlinedCard(
+      {required this.anime, required this.tag, required this.isHovered});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isHovered
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurface.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _AnimeImage(anime: anime, tag: tag, height: 190),
+            _AnimeDetails(anime: anime),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimeImage extends StatelessWidget {
+  final Media? anime;
+  final String tag;
+  final double height;
+  final bool showBadges;
+
+  const _AnimeImage({
+    required this.anime,
+    required this.tag,
+    required this.height,
+    this.showBadges = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: Hero(
+        tag: tag,
+        child: CachedNetworkImage(
+          imageUrl: anime?.coverImage?.large ?? '',
+          fit: BoxFit.cover,
+          fadeInDuration: const Duration(milliseconds: 100),
+          placeholder: (_, __) => const _ShimmerPlaceholder(),
+          errorWidget: (_, __, ___) => const _ErrorPlaceholder(),
+          memCacheHeight: height.toInt(),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimeDetails extends StatelessWidget {
+  final Media? anime;
+  final double padding;
+
+  const _AnimeDetails({required this.anime, this.padding = 8});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: EdgeInsets.all(padding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            widget.anime?.title?.english ??
-                widget.anime?.title?.romaji ??
-                widget.anime?.title?.native ??
-                'Unknown Title',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.montserrat(
-              fontSize: fontSize,
-              fontWeight: FontWeight.w600,
-              height: 1.3,
-            ),
-          ),
-          if (widget.anime?.episodes != null) ...[
+          _AnimeTitle(anime: anime, maxLines: 2),
+          if (anime?.episodes != null) ...[
             const SizedBox(height: 4),
             Text(
-              '${widget.anime!.episodes} Episodes',
-              style: GoogleFonts.montserrat(
-                fontSize: fontSize - 2,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              '${anime!.episodes} Ep',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -355,37 +417,97 @@ class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
   }
 }
 
-class ShimmerPlaceholder extends StatelessWidget {
-  final double height;
-  const ShimmerPlaceholder({super.key, required this.height});
+class _AnimeTitle extends StatelessWidget {
+  final Media? anime;
+  final int maxLines;
+
+  const _AnimeTitle({required this.anime, required this.maxLines});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: height,
-      color: Theme.of(context).colorScheme.surfaceVariant,
-      child: const Center(
-        child: CircularProgressIndicator(strokeWidth: 2),
+    final theme = Theme.of(context);
+    final title = anime?.title?.english ??
+        anime?.title?.romaji ??
+        anime?.title?.native ??
+        'Unknown Title';
+    return Text(
+      title,
+      maxLines: maxLines,
+      overflow: TextOverflow.ellipsis,
+      style: theme.textTheme.titleSmall?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: theme.colorScheme.onSurface,
       ),
     );
   }
 }
 
-class ErrorPlaceholder extends StatelessWidget {
-  final double height;
-  const ErrorPlaceholder({super.key, required this.height});
+class _Tag extends StatelessWidget {
+  final String text;
+  final Color color;
+  final IconData? icon;
+
+  const _Tag({required this.text, required this.color, this.icon});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      height: height,
-      color: Theme.of(context).colorScheme.errorContainer,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 2),
+          ],
+          Text(
+            text,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w500,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShimmerPlaceholder extends StatelessWidget {
+  const _ShimmerPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
       child: Center(
-        child: Icon(
-          Icons.broken_image,
-          size: 32,
-          color: Theme.of(context).colorScheme.onErrorContainer,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: theme.colorScheme.primary,
         ),
+      ),
+    );
+  }
+}
+
+class _ErrorPlaceholder extends StatelessWidget {
+  const _ErrorPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      color: theme.colorScheme.errorContainer.withValues(alpha: 0.5),
+      child: Icon(
+        Icons.broken_image,
+        size: 32,
+        color: theme.colorScheme.error,
       ),
     );
   }

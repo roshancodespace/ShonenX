@@ -125,7 +125,7 @@ class ThemeSettingsScreenState
           onPressed: () => context.pop(),
           icon: Icon(Iconsax.arrow_left_1, color: colorScheme.onSurface),
           style: IconButton.styleFrom(
-            backgroundColor: colorScheme.surfaceVariant.withOpacity(0.5),
+            backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
             padding: const EdgeInsets.all(10),
           ),
         ),
@@ -569,7 +569,7 @@ class _SettingsSliderTile extends StatelessWidget {
             max: max,
             divisions: divisions,
             activeColor: colorScheme.primary,
-            inactiveColor: colorScheme.surfaceVariant,
+            inactiveColor: colorScheme.surfaceContainerHighest,
             onChanged: onChanged,
           ),
         ],

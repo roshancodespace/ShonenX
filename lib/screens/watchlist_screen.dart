@@ -269,7 +269,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
                     : Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
-              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               selectedColor: Theme.of(context).colorScheme.primaryContainer,
               side: BorderSide.none,
               shape: RoundedRectangleBorder(
@@ -344,7 +344,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceVariant,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(

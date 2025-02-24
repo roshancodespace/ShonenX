@@ -136,14 +136,14 @@ class HiAnimeProvider extends AnimeProvider {
     //   return getSources(link, serverName, category);
     // }
     // return BaseSourcesModel();
-    log('Fetching: https://animaze-swart.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category');
+    // final getCategory = category == 'sub' ? 'sub' : 'both';
+    // final epId = '$animeId\$episode\$$episodeId\$$getCategory';
+    // log('Fetching: ${Uri.parse("https://shonenx-consumet-api.vercel.app/anime/zoro/watch?episodeId=$epId")}');
     final response = await http.get(
       Uri.parse(
           'https://animaze-swart.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category'),
-      headers: _getHeaders(),
     );
     log("Response status code: ${response.statusCode}");
-    log("Response body: ${response.body}");
     return BaseSourcesModel.fromJson(json.decode(response.body));
   }
 

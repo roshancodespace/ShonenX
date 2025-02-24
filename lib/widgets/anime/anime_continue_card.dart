@@ -4,7 +4,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
     as anime_media;
@@ -12,21 +11,29 @@ import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/helpers/provider.dart';
 
+final loadingProvider = StateProvider.family<bool, int>((ref, index) => false);
+
 class ContinueWatchingCard extends ConsumerWidget {
   final AnimeWatchProgressEntry anime;
   final EpisodeProgress episode;
   final int index;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final bool multiSelectMode;
 
   const ContinueWatchingCard({
     super.key,
     required this.anime,
     required this.episode,
     required this.index,
+    this.isSelected = false,
+    required this.onTap,
+    this.multiSelectMode = false,
   });
 
   String _formatRemainingTime(int current, int total) {
     final remaining = (total - current).clamp(0, double.infinity) ~/ 60;
-    return remaining > 0 ? '$remaining min left' : 'Almost done';
+    return remaining > 0 ? '$remaining min' : 'Done';
   }
 
   double _calculateProgress() {
@@ -36,168 +43,227 @@ class ContinueWatchingCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
     final progress = _calculateProgress().clamp(0.0, 1.0);
     final remainingTime = _formatRemainingTime(
-      episode.progressInSeconds ?? 0,
-      episode.durationInSeconds ?? 0,
-    );
+        episode.progressInSeconds ?? 0, episode.durationInSeconds ?? 0);
     final isLoading = ref.watch(loadingProvider(index));
 
-    return SizedBox(
-      width: 280,
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        clipBehavior: Clip.antiAlias,
-        child: SizedBox(
-          height: 160,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: episode.episodeThumbnail != null
-                    ? Image.memory(
-                        base64Decode(episode.episodeThumbnail!),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: colorScheme.surfaceVariant,
-                          child: Icon(Icons.image,
-                              color: colorScheme.onSurfaceVariant),
-                        ),
-                      )
-                    : CachedNetworkImage(
-                        imageUrl: anime.animeCover,
-                        fit: BoxFit.cover,
-                        errorWidget: (context, error, stackTrace) => Container(
-                          color: colorScheme.surfaceVariant,
-                          child: Icon(Icons.image,
-                              color: colorScheme.onSurfaceVariant),
-                        ),
-                      ),
+    final memoryImage = episode.episodeThumbnail != null
+        ? base64Decode(episode.episodeThumbnail!)
+        : null;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        child: Card(
+          elevation: 0,
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: theme.colorScheme.outline.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+          child: InkWell(
+            onTap: multiSelectMode
+                ? onTap
+                : (isLoading ? null : () => _handleTap(context, ref)),
+            child: Container(
+              width: 320,
+              height: 200,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
               ),
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withValues(alpha: 0.1),
-                        Colors.black.withValues(alpha: 0.8),
-                      ],
-                      stops: const [0.3, 1.0],
-                    ),
+              child: Stack(
+                children: [
+                  // Background Image
+                  Positioned.fill(
+                    child: memoryImage != null
+                        ? Image.memory(
+                            memoryImage,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                _ImageFallback(colorScheme: theme.colorScheme),
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: anime.animeCover,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => _ImagePlaceholder(
+                                colorScheme: theme.colorScheme),
+                            errorWidget: (_, __, ___) =>
+                                _ImageFallback(colorScheme: theme.colorScheme),
+                          ),
                   ),
-                ),
-              ),
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: isLoading ? null : () => _handleTap(context, ref),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color:
-                                    colorScheme.primary.withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                'EP ${episode.episodeNumber}',
-                                style: GoogleFonts.montserrat(
-                                  color: colorScheme.onPrimary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              remainingTime,
-                              style: GoogleFonts.montserrat(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                fontSize: 12,
-                              ),
-                            ),
-                            const Spacer(),
-                            isLoading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Icon(
-                                    Iconsax.play_circle,
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    size: 28,
-                                  ),
+
+                  // Gradient Overlay
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            theme.colorScheme.surface.withOpacity(0.9),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          anime.animeTitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.montserrat(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withValues(alpha: 0.5),
-                                offset: const Offset(1, 1),
-                                blurRadius: 2,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        LinearProgressIndicator(
-                          value: progress,
-                          backgroundColor: Colors.white.withValues(alpha: 0.3),
-                          valueColor:
-                              AlwaysStoppedAnimation(colorScheme.primary),
-                          minHeight: 4,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+
+                  // Content
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            anime.animeTitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          Text(
+                            episode.episodeTitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'EP ${episode.episodeNumber}',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.onPrimaryContainer,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                remainingTime,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const Spacer(),
+                              // if (!multiSelectMode && !isLoading)
+                              //   Container(
+                              //     padding: const EdgeInsets.all(8),
+                              //     decoration: BoxDecoration(
+                              //       color: theme.colorScheme.primaryContainer,
+                              //       borderRadius: BorderRadius.circular(6),
+                              //     ),
+                              //     child: Text(
+                              //       "Continue",
+                              //       style: theme.textTheme.labelSmall?.copyWith(
+                              //       color: theme.colorScheme.onPrimaryContainer,
+                              //       fontWeight: FontWeight.bold,
+                              //     ),
+                              //     ),
+                              //   ),
+                              // if (!multiSelectMode && !isLoading)
+                              // Container(
+                              //   padding: const EdgeInsets.all(8),
+                              //   decoration: BoxDecoration(
+                              //     color: theme.colorScheme.primaryContainer,
+                              //     shape: BoxShape.circle,
+                              //   ),
+                              //   child: Icon(
+                              //     Iconsax.play,
+                              //     size: 16,
+                              //     color: theme.colorScheme.onPrimaryContainer,
+                              //   ),
+                              // ),
+                              if (isLoading)
+                                SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(2),
+                            child: LinearProgressIndicator(
+                              value: progress,
+                              backgroundColor:
+                                  theme.colorScheme.surfaceContainerHighest,
+                              valueColor: AlwaysStoppedAnimation(
+                                  theme.colorScheme.primary),
+                              minHeight: 3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  if (multiSelectMode)
+                    Positioned.fill(
+                      child: Container(
+                        color: isSelected
+                            ? theme.colorScheme.primary.withOpacity(0.2)
+                            : Colors.transparent,
+                        child: isSelected
+                            ? Center(
+                                child: Icon(
+                                  Icons.check_circle,
+                                  color: theme.colorScheme.primary,
+                                  size: 40,
+                                ),
+                              )
+                            : null,
+                      ),
+                    ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  // Keep existing methods (_handleTap, _showErrorSnackBar, _navigateToWatch, _showSelectionDialog)...
   Future<void> _handleTap(BuildContext context, WidgetRef ref) async {
     ref.read(loadingProvider(index).notifier).state = true;
     final animeProvider = getAnimeProvider(ref);
     final title = anime.animeTitle;
 
-    if (title.isNotEmpty || animeProvider == null) {
+    if (title.isEmpty || animeProvider == null) {
       ref.read(loadingProvider(index).notifier).state = false;
       return;
     }
 
     final response = await animeProvider.getSearch(
-      title.replaceAll(' ', '+'),
-      anime.animeFormat,
-      1,
-    );
+        title.replaceAll(' ', '+'), anime.animeFormat, 1);
 
     if (response.results.isEmpty && context.mounted) {
       ref.read(loadingProvider(index).notifier).state = false;
@@ -239,6 +305,7 @@ class ContinueWatchingCard extends ConsumerWidget {
   }
 
   void _showErrorSnackBar(BuildContext context) {
+    final theme = Theme.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         elevation: 0,
@@ -248,6 +315,7 @@ class ContinueWatchingCard extends ConsumerWidget {
           title: 'Anime Not Found',
           message: 'We couldn\'t locate the anime with the selected provider.',
           contentType: ContentType.failure,
+          color: theme.colorScheme.error,
         ),
       ),
     );
@@ -272,55 +340,69 @@ class ContinueWatchingCard extends ConsumerWidget {
   void _showSelectionDialog(BuildContext context, List<dynamic> results) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: _SelectionDialog(
-              content: results, episode: episode, anime: anime),
-        );
-      },
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child:
+            _SelectionDialog(content: results, episode: episode, anime: anime),
+      ),
     );
   }
 }
 
-final loadingProvider = StateProvider.family<bool, int>((ref, index) => false);
+// Keep existing helper widgets (_Tag, _SelectionDialog, _DialogItem, _ImagePlaceholder, _ImageFallback)...
+class _Tag extends StatelessWidget {
+  final String text;
+  final Color color;
 
-// Assuming _SelectionDialog and _DialogItem remain unchanged
+  const _Tag({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onPrimary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
 class _SelectionDialog extends StatelessWidget {
   final List<dynamic> content;
   final EpisodeProgress episode;
   final AnimeWatchProgressEntry anime;
 
-  const _SelectionDialog({
-    required this.content,
-    required this.episode,
-    required this.anime,
-  });
+  const _SelectionDialog(
+      {required this.content, required this.episode, required this.anime});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 320, maxHeight: 450),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
               children: [
                 Text(
                   'Select Anime',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
+                  style: theme.textTheme.titleLarge,
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: Icon(Iconsax.close_circle, color: colorScheme.error),
+                  icon: Icon(Icons.close, color: theme.colorScheme.error),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -330,31 +412,12 @@ class _SelectionDialog extends StatelessWidget {
           Flexible(
             child: ListView.builder(
               shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: content.length,
-              itemBuilder: (context, index) {
-                final result = content[index];
-                return _DialogItem(
-                  result: result,
-                  episode: episode,
-                  anime: anime,
-                );
-              },
-            ),
-          ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                foregroundColor: colorScheme.primary,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.montserrat(fontWeight: FontWeight.w500),
+              itemBuilder: (context, index) => _DialogItem(
+                result: content[index],
+                episode: episode,
+                anime: anime,
               ),
             ),
           ),
@@ -369,89 +432,45 @@ class _DialogItem extends StatelessWidget {
   final EpisodeProgress episode;
   final AnimeWatchProgressEntry anime;
 
-  const _DialogItem({
-    required this.result,
-    required this.episode,
-    required this.anime,
-  });
+  const _DialogItem(
+      {required this.result, required this.episode, required this.anime});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _handleTap(context),
-        hoverColor: colorScheme.surfaceContainerHighest,
+    final theme = Theme.of(context);
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              if (result.poster != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: CachedNetworkImage(
-                    imageUrl: result.poster!,
-                    width: 50,
-                    height: 75,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: colorScheme.surfaceContainerHighest,
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: colorScheme.errorContainer,
-                      child: const Icon(Icons.broken_image, size: 20),
-                    ),
-                  ),
-                )
-              else
-                Container(
-                  width: 50,
-                  height: 75,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.image, size: 24),
-                ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      result.name ?? 'Unknown',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.onSurface,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (result.releaseDate != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        result.releaseDate!,
-                        style: GoogleFonts.montserrat(
-                          fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              Icon(Iconsax.arrow_right_3,
-                  size: 20, color: colorScheme.onSurfaceVariant),
-            ],
-          ),
-        ),
+        child: result.poster != null
+            ? CachedNetworkImage(
+                imageUrl: result.poster!,
+                width: 50,
+                height: 75,
+                fit: BoxFit.cover,
+                placeholder: (_, __) =>
+                    _ImagePlaceholder(colorScheme: theme.colorScheme),
+                errorWidget: (_, __, ___) =>
+                    _ImageFallback(colorScheme: theme.colorScheme),
+              )
+            : _ImageFallback(
+                colorScheme: theme.colorScheme, width: 50, height: 75),
       ),
+      title: Text(
+        result.name ?? 'Unknown',
+        style: theme.textTheme.titleMedium,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: result.releaseDate != null
+          ? Text(
+              result.releaseDate!,
+              style: theme.textTheme.bodySmall,
+            )
+          : null,
+      trailing:
+          Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
+      onTap: () => _handleTap(context),
     );
   }
 
@@ -462,17 +481,54 @@ class _DialogItem extends StatelessWidget {
       extra: anime_media.Media(
         id: anime.animeId,
         title: anime_media.Title(
-          english: anime.animeTitle,
-          romaji: anime.animeTitle,
-        ),
+            english: anime.animeTitle, romaji: anime.animeTitle),
         format: anime.animeFormat,
         coverImage: anime_media.CoverImage(
-          large: anime.animeCover,
-          medium: anime.animeCover,
-        ),
+            large: anime.animeCover, medium: anime.animeCover),
         episodes: episode.episodeNumber,
         duration: episode.durationInSeconds,
       ),
+    );
+  }
+}
+
+class _ImagePlaceholder extends StatelessWidget {
+  final ColorScheme colorScheme;
+  final double? width;
+  final double? height;
+
+  const _ImagePlaceholder({required this.colorScheme, this.width, this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width ?? double.infinity,
+      height: height ?? double.infinity,
+      color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
+      child: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: colorScheme.primary,
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageFallback extends StatelessWidget {
+  final ColorScheme colorScheme;
+  final double? width;
+  final double? height;
+
+  const _ImageFallback({required this.colorScheme, this.width, this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width ?? double.infinity,
+      height: height ?? double.infinity,
+      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      child: Icon(Icons.image, color: colorScheme.onSurfaceVariant),
     );
   }
 }

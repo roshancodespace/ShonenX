@@ -46,7 +46,7 @@ class ProfileSettingsScreen extends ConsumerWidget {
           onPressed: () => context.pop(),
           icon: Icon(Iconsax.arrow_left_1, color: colorScheme.onSurface),
           style: IconButton.styleFrom(
-            backgroundColor: colorScheme.surfaceVariant.withOpacity(0.5),
+            backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
             padding: const EdgeInsets.all(10),
           ),
         ),
@@ -136,7 +136,7 @@ class ProfileSettingsScreen extends ConsumerWidget {
           gradient: LinearGradient(
             colors: [
               colorScheme.surface,
-              colorScheme.surfaceVariant.withOpacity(0.5),
+              colorScheme.surfaceContainerHighest.withOpacity(0.5),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -382,7 +382,7 @@ class _SettingsItemState extends State<_SettingsItem> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: _isHovered && !widget.disabled
-                ? colorScheme.surfaceVariant.withOpacity(0.3)
+                ? colorScheme.surfaceContainerHighest.withOpacity(0.3)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
           ),

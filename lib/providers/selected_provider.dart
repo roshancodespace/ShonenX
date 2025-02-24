@@ -37,7 +37,7 @@ class SelectedProviderNotifier extends StateNotifier<SelectedProviderState> {
 
     // Log the current saved provider (likely null on first run)
     log(
-        'Before saving, provider: ${settingsModel?.providerSettings?.selectedProviderName}');
+        'Before saving, provider: ${settingsModel?.providerSettings.selectedProviderName}');
 
     // If no settings exist, create and save the default settings, then re-read them
     if (settingsModel == null) {
@@ -53,7 +53,7 @@ class SelectedProviderNotifier extends StateNotifier<SelectedProviderState> {
 
     // Now extract the provider key (will be 'hianime' by default if still null)
     final selectedProviderKey =
-        settingsModel?.providerSettings?.selectedProviderName ?? 'hianime';
+        settingsModel?.providerSettings.selectedProviderName ?? 'hianime';
 
     log("Loaded Provider from Hive: $selectedProviderKey");
 

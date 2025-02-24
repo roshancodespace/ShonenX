@@ -23,7 +23,7 @@ class ProviderSettingsScreen extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
           icon: Icon(Iconsax.arrow_left_1, color: colorScheme.onSurface),
           style: IconButton.styleFrom(
-            backgroundColor: colorScheme.surfaceVariant.withOpacity(0.5),
+            backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
             padding: const EdgeInsets.all(10),
           ),
         ),

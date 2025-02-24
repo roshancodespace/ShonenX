@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 
 // AnimeWatchProgressBox (unchanged from your provided code)
@@ -32,7 +33,7 @@ class AnimeWatchProgressBox {
   Future<void> clearAll() async => await _box?.clear();
 
   Future<void> updateEpisodeProgress({
-    required int animeId,
+    required Media animeMedia,
     required int episodeNumber,
     required String episodeTitle,
     required String? episodeThumbnail,
@@ -40,7 +41,7 @@ class AnimeWatchProgressBox {
     required int durationInSeconds,
     bool isCompleted = false,
   }) async {
-    final existingEntry = getEntry(animeId);
+    final existingEntry = getEntry(animeMedia.id!);
 
     if (existingEntry != null) {
       final updatedEpisodes =
@@ -72,10 +73,13 @@ class AnimeWatchProgressBox {
       await setEntry(updatedEntry);
     } else {
       final newEntry = AnimeWatchProgressEntry(
-        animeId: animeId,
-        animeTitle: 'Unknown Title',
-        animeFormat: 'Unknown Format',
-        animeCover: '',
+        animeId: animeMedia.id!,
+        animeTitle: animeMedia.title?.english ??
+            animeMedia.title?.romaji ??
+            animeMedia.title?.native ??
+            '',
+        animeFormat: animeMedia.format ?? '',
+        animeCover: animeMedia.coverImage?.large ?? '',
         totalEpisodes: 0,
         episodesProgress: {
           episodeNumber: EpisodeProgress(
@@ -98,8 +102,8 @@ class AnimeWatchProgressBox {
   AnimeWatchProgressEntry? getMostRecentEntry() {
     final allEntries = getAllEntries();
     if (allEntries.isEmpty) return null;
-    allEntries.sort((a, b) => (b.lastUpdated ?? DateTime(0))
-        .compareTo(a.lastUpdated ?? DateTime(0)));
+    allEntries.sort((a, b) =>
+        (b.lastUpdated ?? DateTime(0)).compareTo(a.lastUpdated ?? DateTime(0)));
     return allEntries.first;
   }
 

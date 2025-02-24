@@ -46,7 +46,7 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
     _initializeSettingsBox();
   }
 
-  @override 
+  @override
   void dispose() {
     _saveSettings();
     super.dispose();
@@ -92,7 +92,7 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
           },
           icon: Icon(Iconsax.arrow_left_2, color: colorScheme.onSurface),
           style: IconButton.styleFrom(
-            backgroundColor: colorScheme.surfaceVariant.withValues(alpha: 0.5),
+            backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.all(10),
@@ -267,7 +267,6 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: ['Home', 'Search', 'Library', 'Watchlist'].map((tab) {
                   return ListTile(
-                    
                     title: Text(
                       tab,
                       style: GoogleFonts.montserrat(
@@ -332,11 +331,11 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
                         ),
                       ),
                       filled: true,
-                      fillColor: colorScheme.surfaceVariant,
+                      fillColor: colorScheme.surfaceContainerHighest,
                     ),
-                    dropdownColor: colorScheme.surfaceVariant,
-                    icon:
-                        Icon(Iconsax.arrow_down_1, color: colorScheme.onSurface),
+                    dropdownColor: colorScheme.surfaceContainerHighest,
+                    icon: Icon(Iconsax.arrow_down_1,
+                        color: colorScheme.onSurface),
                     style: TextStyle(color: colorScheme.onSurface),
                     onChanged: (String? newValue) {
                       setDialogState(() {
@@ -346,14 +345,16 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
                     items: [
                       'Classic',
                       'Compact',
-                      'Minimal',
                       'Poster',
+                      'PosterV2',
                       'Outlined'
                     ].map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
-                        child: Text(value, style: GoogleFonts.montserrat(),),
-                        
+                        child: Text(
+                          value,
+                          style: GoogleFonts.montserrat(),
+                        ),
                       );
                     }).toList(),
                   ),
@@ -399,7 +400,7 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -520,7 +521,7 @@ class _SettingsItemState extends State<_SettingsItem> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: _isHovered && !widget.disabled
-                ? colorScheme.surfaceVariant.withOpacity(0.3)
+                ? colorScheme.surfaceContainerHighest.withOpacity(0.3)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
           ),
@@ -531,8 +532,10 @@ class _SettingsItemState extends State<_SettingsItem> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      colorScheme.primary.withOpacity(widget.disabled ? 0.05 : 0.2),
-                      colorScheme.primary.withOpacity(widget.disabled ? 0.03 : 0.1),
+                      colorScheme.primary
+                          .withOpacity(widget.disabled ? 0.05 : 0.2),
+                      colorScheme.primary
+                          .withOpacity(widget.disabled ? 0.03 : 0.1),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -567,7 +570,8 @@ class _SettingsItemState extends State<_SettingsItem> {
                       widget.description,
                       style: TextStyle(
                         fontSize: 14,
-                        color: colorScheme.onSurface.withOpacity(widget.disabled ? 0.3 : 0.7),
+                        color: colorScheme.onSurface
+                            .withOpacity(widget.disabled ? 0.3 : 0.7),
                       ),
                     ),
                   ],
@@ -575,7 +579,8 @@ class _SettingsItemState extends State<_SettingsItem> {
               ),
               Icon(
                 Iconsax.arrow_right_3,
-                color: colorScheme.onSurface.withOpacity(widget.disabled ? 0.2 : 0.5),
+                color: colorScheme.onSurface
+                    .withOpacity(widget.disabled ? 0.2 : 0.5),
                 size: 20,
               ),
             ],

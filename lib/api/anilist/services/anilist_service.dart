@@ -222,4 +222,73 @@ class AnilistService {
     );
     return (data?['Media']?['isFavourite'] as bool);
   }
+
+  /// **Update the status of an anime in the user's list**
+  Future<void> updateAnimeStatus({
+    required int mediaId,
+    required String accessToken,
+    required String newStatus, // Example: "CURRENT", "COMPLETED", etc.
+  }) async {
+    final data = await _executeGraphQLOperation(
+      accessToken: accessToken,
+      query: AnilistQueries.updateAnimeStatusMutation,
+      variables: {
+        'mediaId': mediaId,
+        'status': newStatus, // Must be one of "CURRENT", "COMPLETED", etc.
+      },
+      isMutation: true,
+    );
+
+    if (data != null) {
+      debugPrint('✅ Anime status updated successfully: $data');
+    } else {
+      throw Exception('❌ Failed to update anime status.');
+    }
+  }
+
+  /// **Remove an anime from the user's list**
+  Future<void> deleteAnimeEntry({
+    required int entryId, // The ID of the MediaList entry
+    required String accessToken,
+  }) async {
+    final data = await _executeGraphQLOperation(
+      accessToken: accessToken,
+      query: '''
+      mutation DeleteMediaListEntry(\$id: Int!) {
+        DeleteMediaListEntry(id: \$id) {
+          deleted
+        }
+      }
+    ''',
+      variables: {'id': entryId},
+      isMutation: true,
+    );
+
+    if (data?['DeleteMediaListEntry']?['deleted'] != true) {
+      throw Exception('Failed to delete anime entry');
+    }
+    debugPrint('✅ Anime entry deleted successfully');
+  }
+
+  /// **Fetch the current status of an anime for a user**
+  Future<Map<String, dynamic>?> getAnimeStatus({
+    required String accessToken,
+    required int userId,
+    required int animeId,
+  }) async {
+    final data = await _executeGraphQLOperation(
+      accessToken: accessToken,
+      query: '''
+      query GetAnimeStatus(\$userId: Int!, \$animeId: Int!) {
+        MediaList(userId: \$userId, mediaId: \$animeId) {
+          id
+          status
+        }
+      }
+    ''',
+      variables: {'userId': userId, 'animeId': animeId},
+    );
+
+    return data?['MediaList'] as Map<String, dynamic>?;
+  }
 }

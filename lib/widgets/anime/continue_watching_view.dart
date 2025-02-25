@@ -137,7 +137,7 @@ class _Header extends StatelessWidget {
             ),
           ),
           FloatingActionButton.small(
-            heroTag: 'continue-all',
+            heroTag: 'continue-all-button',
             onPressed: () => context.push('/continue-all'),
             backgroundColor: theme.colorScheme.primary,
             tooltip: 'View All',

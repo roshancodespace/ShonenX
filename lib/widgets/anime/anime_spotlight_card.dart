@@ -191,12 +191,12 @@ class _TopDetails extends StatelessWidget {
         if (anime.format != null)
           _Tag(
             text: anime.format!.split('.').last,
-            color: colorScheme.primary,
+            color: colorScheme.primaryContainer,
           ),
         if (anime.averageScore != null)
           _Tag(
             text: '${anime.averageScore}%',
-            color: colorScheme.secondary,
+            color: colorScheme.secondaryContainer,
             icon: Iconsax.star1,
           ),
       ],
@@ -234,19 +234,19 @@ class _BottomDetails extends StatelessWidget {
             if (anime.episodes != null)
               _Tag(
                 text: '${anime.episodes} Ep',
-                color: colorScheme.secondary,
+                color: colorScheme.secondaryContainer,
                 icon: Iconsax.play,
               ),
             if (anime.duration != null)
               _Tag(
                 text: '${anime.duration}m',
-                color: colorScheme.secondary,
+                color: colorScheme.secondaryContainer,
                 icon: Iconsax.timer,
               ),
             if (anime.status != null)
               _Tag(
                 text: anime.status!.split('.').last,
-                color: colorScheme.primary,
+                color: colorScheme.primaryContainer,
               ),
           ],
         ),
@@ -291,14 +291,18 @@ class _Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: colorScheme.surface.withOpacity(0.1),
+        border: Border.all(
+          color: color,
+          width: 1,
+        ),
+        color: color.withOpacity(0.2),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 14, color: color),
+            Icon(icon, size: 14, color: colorScheme.onPrimaryContainer),
             const SizedBox(width: 4),
           ],
           Text(
@@ -306,7 +310,7 @@ class _Tag extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: color,
+              color: colorScheme.onPrimaryContainer,
             ),
           ),
         ],

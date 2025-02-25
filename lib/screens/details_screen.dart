@@ -30,6 +30,9 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
   late final Future<AnimeWatchProgressBox> _boxFuture;
   bool _isFavourite = false;
   bool _isLoading = false;
+  bool _isToggeling = false;
+  String? _currentStatus; // e.g., "CURRENT", "COMPLETED", etc.
+  int? _currentEntryId; // The ID of the MediaList entry
 
   @override
   void initState() {
@@ -38,6 +41,24 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
     _boxFuture = _initializeBox();
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     _checkFavorite();
+    _fetchCurrentStatus(); // Fetch status on initialization
+  }
+
+  Future<void> _fetchCurrentStatus() async {
+    final user = ref.read(userProvider);
+    if (user != null && user.accessToken.isNotEmpty) {
+      final statusData = await AnilistService().getAnimeStatus(
+        accessToken: user.accessToken,
+        userId: user.id!,
+        animeId: widget.anime.id!,
+      );
+      if (mounted && statusData != null) {
+        setState(() {
+          _currentStatus = statusData['status'] as String?;
+          _currentEntryId = statusData['id'] as int?;
+        });
+      }
+    }
   }
 
   Future<AnimeWatchProgressBox> _initializeBox() async {
@@ -62,17 +83,29 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
     }
   }
 
+  bool _isToggling = false;
+
   Future<void> _toggleFavorite() async {
+    if (_isToggling) return;
+    _isToggling = true;
     final accessToken = ref.read(userProvider)?.accessToken;
     if (accessToken != null) {
-      await AnilistService().toggleFavorite(
-        animeId: widget.anime.id!,
-        accessToken: accessToken,
-      );
-      ref
-          .read(animeListProvider.notifier)
-          .toggleFavoritesStatic([widget.anime]);
-      setState(() => _isFavourite = !_isFavourite);
+      try {
+        await AnilistService().toggleFavorite(
+          animeId: widget.anime.id!,
+          accessToken: accessToken,
+        );
+        ref
+            .read(animeListProvider.notifier)
+            .toggleFavoritesStatic([widget.anime]);
+        setState(() => _isFavourite = !_isFavourite);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to toggle favorite: $e')),
+        );
+      } finally {
+        _isToggling = false;
+      }
     }
   }
 
@@ -105,12 +138,18 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
           CustomScrollView(
             controller: _scrollController,
             slivers: [
-              _Header(anime: widget.anime, tag: widget.tag),
+              _Header(
+                anime: widget.anime,
+                tag: widget.tag,
+                currentStatus: _currentStatus, // Pass current status
+                onStatusChanged: _fetchCurrentStatus, // Callback to refresh
+              ),
               SliverToBoxAdapter(
                 child: _Content(
-                    anime: widget.anime,
-                    isFavourite: _isFavourite,
-                    onToggleFavorite: _toggleFavorite),
+                  anime: widget.anime,
+                  isFavourite: _isFavourite,
+                  onToggleFavorite: _toggleFavorite,
+                ),
               ),
             ],
           ),
@@ -130,8 +169,15 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
 class _Header extends StatelessWidget {
   final Media anime;
   final String tag;
+  final String? currentStatus; // Current status from AniList
+  final VoidCallback onStatusChanged; // Callback to refresh status
 
-  const _Header({required this.anime, required this.tag});
+  const _Header({
+    required this.anime,
+    required this.tag,
+    required this.currentStatus,
+    required this.onStatusChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -224,8 +270,7 @@ class _Header extends StatelessWidget {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 8,
-          onSelected: (value) =>
-              log('Selected status: $value'), // Add status handling logic here
+          onSelected: (value) => log('Selected status: $value'),
           itemBuilder: (context) => [
             _StatusOption('Watching', Icons.visibility, Colors.blue),
             _StatusOption('Completed', Icons.check_circle, Colors.green),
@@ -235,7 +280,12 @@ class _Header extends StatelessWidget {
           ]
               .map((option) => PopupMenuItem<String>(
                     value: option.title.toLowerCase(),
-                    child: _StatusMenuItem(status: option),
+                    child: _StatusMenuItem(
+                      status: option,
+                      animeMedia: anime,
+                      currentStatus: currentStatus,
+                      onStatusChanged: onStatusChanged,
+                    ),
                   ))
               .toList(),
         ),
@@ -662,26 +712,141 @@ class _StatusOption {
 }
 
 // Status Menu Item
-class _StatusMenuItem extends StatelessWidget {
+class _StatusMenuItem extends ConsumerWidget {
   final _StatusOption status;
+  final Media animeMedia;
+  final String? currentStatus;
+  final VoidCallback onStatusChanged;
 
-  const _StatusMenuItem({required this.status});
+  const _StatusMenuItem({
+    required this.status,
+    required this.animeMedia,
+    required this.currentStatus,
+    required this.onStatusChanged,
+  });
+
+  String _mapToAnilistStatus(String displayStatus) {
+    switch (displayStatus.toLowerCase()) {
+      case 'watching':
+        return 'CURRENT';
+      case 'completed':
+        return 'COMPLETED';
+      case 'planning':
+        return 'PLANNING';
+      case 'paused':
+        return 'PAUSED';
+      case 'dropped':
+        return 'DROPPED';
+      default:
+        return displayStatus.toUpperCase();
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: status.color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userState = ref.read(userProvider);
+    final anilistStatus = _mapToAnilistStatus(status.title);
+    final isCurrent = currentStatus == anilistStatus;
+    final theme = Theme.of(context);
+
+    return InkWell(
+      onTap: () async {
+        if (userState == null || userState.accessToken.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Please log in to update status')),
+          );
+          return;
+        }
+
+        final anilistService = AnilistService();
+        final currentData = await anilistService.getAnimeStatus(
+          accessToken: userState.accessToken,
+          userId: userState.id!,
+          animeId: animeMedia.id!,
+        );
+        final entryId = currentData?['id'] as int?;
+
+        try {
+          if (isCurrent && entryId != null) {
+            final shouldRemove = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('Remove from ${status.title}?'),
+                content: Text(
+                    'Do you want to remove "${animeMedia.title?.english ?? animeMedia.title?.romaji}" from your ${status.title} list?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text('Remove'),
+                  ),
+                ],
+              ),
+            );
+
+            if (shouldRemove == true) {
+              await anilistService.deleteAnimeEntry(
+                entryId: entryId,
+                accessToken: userState.accessToken,
+              );
+              ref.read(animeListProvider.notifier).toggleStatusStatic(
+                    media: animeMedia,
+                    newStatus: null, // Remove from list
+                  );
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Removed from ${status.title}')),
+              );
+            }
+          } else {
+            await anilistService.updateAnimeStatus(
+              mediaId: animeMedia.id!,
+              accessToken: userState.accessToken,
+              newStatus: anilistStatus,
+            );
+            ref.read(animeListProvider.notifier).toggleStatusStatic(
+                  media: animeMedia,
+                  newStatus: anilistStatus,
+                );
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Added to ${status.title}')),
+            );
+          }
+          onStatusChanged(); // Refresh current status
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to update status: $e')),
+          );
+        }
+        Navigator.pop(context); // Close the popup menu
+      },
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: status.color.withOpacity(isCurrent ? 0.3 : 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(status.icon, color: status.color, size: 20),
           ),
-          child: Icon(status.icon, color: status.color, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Text(status.title, style: const TextStyle(fontWeight: FontWeight.w500)),
-      ],
+          const SizedBox(width: 12),
+          Text(
+            status.title,
+            style: TextStyle(
+              fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+              color:
+                  isCurrent ? status.color : theme.textTheme.bodyLarge?.color,
+            ),
+          ),
+          if (isCurrent) ...[
+            const SizedBox(width: 8),
+            Icon(Icons.check, size: 16, color: status.color),
+          ],
+        ],
+      ),
     );
   }
 }

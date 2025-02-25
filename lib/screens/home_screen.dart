@@ -80,6 +80,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           builder: (context, ref, _) => ref.watch(homePageProvider).when(
                 data: (homePage) => _HomeContent(
                   animeWatchProgressBox: _animeWatchProgressBox,
+                  settingsBox: _settingsBox,
                   homePage: homePage,
                   isDesktop: isDesktop,
                   uiSettings: _uiSettings,
@@ -87,6 +88,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 error: (_, __) => _HomeContent(
                   animeWatchProgressBox: _animeWatchProgressBox,
+                  settingsBox: _settingsBox,
                   homePage: null,
                   isDesktop: isDesktop,
                   uiSettings: _uiSettings,
@@ -103,8 +105,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       FloatingActionButton.extended(
         backgroundColor: theme.colorScheme.primaryContainer,
         onPressed: () => _showSearchDialog(context),
-        label: Text('Search anime...',
-            style: TextStyle(color: theme.colorScheme.onPrimaryContainer)),
+        label: SizedBox(
+          width: MediaQuery.sizeOf(context).width * 0.3,
+          child: Text('Search anime...',
+              style: TextStyle(color: theme.colorScheme.onPrimaryContainer)),
+        ),
         icon: Icon(Iconsax.search_normal,
             color: theme.colorScheme.onPrimaryContainer),
       );
@@ -144,6 +149,7 @@ class _SearchDialog extends StatelessWidget {
 class _HomeContent extends StatelessWidget {
   final HomePage? homePage;
   final AnimeWatchProgressBox animeWatchProgressBox;
+  final SettingsBox settingsBox;
   final bool isDesktop;
   final UISettingsModel uiSettings;
   final VoidCallback onRefresh;
@@ -151,6 +157,7 @@ class _HomeContent extends StatelessWidget {
   const _HomeContent({
     required this.homePage,
     required this.animeWatchProgressBox,
+    required this.settingsBox,
     required this.isDesktop,
     required this.uiSettings,
     required this.onRefresh,
@@ -169,14 +176,17 @@ class _HomeContent extends StatelessWidget {
               child: ContinueWatchingView(
                   animeWatchProgressBox: animeWatchProgressBox)),
           _HorizontalAnimeSection(
+              settingsBox: settingsBox,
               title: 'Popular',
               animes: homePage?.popularAnime,
               uiSettings: uiSettings),
           _HorizontalAnimeSection(
+              settingsBox: settingsBox,
               title: 'Trending',
               animes: homePage?.trendingAnime,
               uiSettings: uiSettings),
           _HorizontalAnimeSection(
+              settingsBox: settingsBox,
               title: 'Recently Updated',
               animes: homePage?.recentlyUpdated,
               uiSettings: uiSettings),
@@ -465,15 +475,17 @@ class _SpotlightSection extends StatelessWidget {
           ),
           items: trendingAnimes
               .map((anime) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-                child: AnimeSpotlightCard(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                    child: AnimeSpotlightCard(
                       onTap: (media) => anime?.id != null
-                          ? navigateToDetail(context, media, anime!.id.toString())
+                          ? navigateToDetail(
+                              context, media, anime!.id.toString())
                           : null,
                       anime: anime,
                       heroTag: anime?.id.toString() ?? 'loading',
                     ),
-              ))
+                  ))
               .toList(),
         ),
       ],
@@ -517,11 +529,15 @@ class _SpotlightHeader extends StatelessWidget {
 
 class _HorizontalAnimeSection extends SliverToBoxAdapter {
   final String title;
+  final SettingsBox settingsBox;
   final List<Media>? animes;
   final UISettingsModel uiSettings;
 
   const _HorizontalAnimeSection(
-      {required this.title, required this.animes, required this.uiSettings});
+      {required this.title,
+      required this.animes,
+      required this.uiSettings,
+      required this.settingsBox});
 
   @override
   Widget get child {
@@ -560,14 +576,20 @@ class _HorizontalAnimeSection extends SliverToBoxAdapter {
                   final tag = const Uuid().v4();
                   return Padding(
                     padding: const EdgeInsets.only(right: 16),
-                    child: AnimatedAnimeCard(
-                      anime: anime,
-                      tag: tag,
-                      mode: uiSettings.cardStyle,
-                      onTap: () => anime != null
-                          ? navigateToDetail(context, anime, tag)
-                          : null,
-                    ),
+                    child: ValueListenableBuilder(
+                        valueListenable: settingsBox.settingsBoxListenable,
+                        builder: (context, value, child) {
+                          final cardMode =
+                              settingsBox.getUISettings().cardStyle;
+                          return AnimatedAnimeCard(
+                            anime: anime,
+                            tag: tag,
+                            mode: cardMode,
+                            onTap: () => anime != null
+                                ? navigateToDetail(context, anime, tag)
+                                : null,
+                          );
+                        }),
                   );
                 },
               ),

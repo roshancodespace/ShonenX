@@ -89,6 +89,23 @@ class AnilistQueries {
     }
   ''';
 
+  static const String updateAnimeStatusMutation = '''
+    mutation UpdateAnimeStatus(\$mediaId: Int!, \$status: MediaListStatus!) {
+      SaveMediaListEntry(mediaId: \$mediaId, status: \$status) {
+        $mediaFields
+      }
+    }
+  ''';
+
+  /// **Query to get the anime status from the user's list**
+  static const String getAnimeStatusQuery = '''
+    query GetAnimeStatus(\$userId: Int, \$animeId: Int) {
+      MediaList(userId: \$userId, mediaId: \$animeId) {
+        status
+      }
+    }
+  ''';  
+
   // Query: Fetch detailed anime information by ID
   static const String animeDetailsQuery = '''
     query (\$id: Int) {

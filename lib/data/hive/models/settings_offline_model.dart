@@ -6,7 +6,7 @@ import 'package:hive/hive.dart';
 part 'settings_offline_model.g.dart';
 
 @HiveType(typeId: 1)
-class SettingsModel {
+class SettingsModel extends HiveObject {
   @HiveField(0)
   final ProviderSettingsModel providerSettings;
 
@@ -42,7 +42,7 @@ class SettingsModel {
 }
 
 @HiveType(typeId: 2)
-class ProviderSettingsModel {
+class ProviderSettingsModel extends HiveObject {
   @HiveField(0)
   final String selectedProviderName;
 
@@ -56,7 +56,7 @@ class ProviderSettingsModel {
 }
 
 @HiveType(typeId: 3)
-class ThemeSettingsModel {
+class ThemeSettingsModel extends HiveObject {
   @HiveField(0)
   final String themeMode;
   @HiveField(1)
@@ -185,7 +185,7 @@ class ThemeSettingsModel {
 }
 
 @HiveType(typeId: 4)
-class AnilistSettings {
+class AnilistSettings extends HiveObject {
   @HiveField(0)
   final String themeMode;
 
@@ -201,7 +201,7 @@ class AnilistSettings {
 }
 
 @HiveType(typeId: 5)
-class PlayerSettingsModel {
+class PlayerSettingsModel extends HiveObject {
   @HiveField(0)
   final double episodeCompletionThreshold;
 
@@ -232,7 +232,7 @@ class PlayerSettingsModel {
 }
 
 @HiveType(typeId: 6)
-class UISettingsModel {
+class UISettingsModel extends HiveObject {
   @HiveField(0)
   final bool compactMode;
 

@@ -124,7 +124,7 @@ class _ClassicCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _AnimeImage(anime: anime, tag: tag, height: 180),
+            _AnimeImage(anime: anime, tag: tag, height: 100),
             _AnimeDetails(anime: anime),
           ],
         ),
@@ -282,7 +282,7 @@ class _PosterV2Card extends StatelessWidget {
                     if (anime != null && anime!.format != null)
                       _Tag(
                         text: anime!.format!.split('.').last,
-                        color: theme.colorScheme.primary,
+                        color: theme.colorScheme.primaryContainer,
                       ),
                     const SizedBox(height: 4),
                     _AnimeTitle(anime: anime, maxLines: 2),
@@ -293,14 +293,14 @@ class _PosterV2Card extends StatelessWidget {
                           if (anime!.episodes != null)
                             _Tag(
                               text: '${anime!.episodes} Ep',
-                              color: theme.colorScheme.secondary,
+                              color: theme.colorScheme.secondaryContainer,
                               icon: Iconsax.play,
                             ),
                           if (anime!.averageScore != null) ...[
                             const SizedBox(width: 6),
                             _Tag(
                               text: '${anime!.averageScore}%',
-                              color: theme.colorScheme.secondary,
+                              color: theme.colorScheme.secondaryContainer,
                               icon: Iconsax.star1,
                             ),
                           ],
@@ -455,6 +455,7 @@ class _Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
+        border: Border.all(color: color, width: 1),
         color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(4),
       ),
@@ -469,7 +470,7 @@ class _Tag extends StatelessWidget {
             text,
             style: theme.textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w500,
-              color: theme.colorScheme.onSurface,
+              color: theme.colorScheme.onPrimaryContainer,
             ),
           ),
         ],

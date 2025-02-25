@@ -126,6 +126,13 @@ class ContinueWatchingCard extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
+                            '${progress.toStringAsFixed(3)}%',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                            ),
+                          ),
+                          Text(
                             anime.animeTitle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -150,7 +157,10 @@ class ContinueWatchingCard extends ConsumerWidget {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.primaryContainer,
+                                  border: Border.all(
+                                    color: theme.colorScheme.primaryContainer,
+                                  ),
+                                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -214,9 +224,9 @@ class ContinueWatchingCard extends ConsumerWidget {
                             child: LinearProgressIndicator(
                               value: progress,
                               backgroundColor:
-                                  theme.colorScheme.surfaceContainerHighest,
+                                  theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
                               valueColor: AlwaysStoppedAnimation(
-                                  theme.colorScheme.primary),
+                                  theme.colorScheme.primaryContainer),
                               minHeight: 3,
                             ),
                           ),
@@ -344,33 +354,6 @@ class ContinueWatchingCard extends ConsumerWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child:
             _SelectionDialog(content: results, episode: episode, anime: anime),
-      ),
-    );
-  }
-}
-
-// Keep existing helper widgets (_Tag, _SelectionDialog, _DialogItem, _ImagePlaceholder, _ImageFallback)...
-class _Tag extends StatelessWidget {
-  final String text;
-  final Color color;
-
-  const _Tag({required this.text, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        text,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onPrimary,
-          fontWeight: FontWeight.bold,
-        ),
       ),
     );
   }

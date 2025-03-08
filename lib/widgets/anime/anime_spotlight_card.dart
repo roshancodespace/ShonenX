@@ -25,17 +25,17 @@ class AnimeSpotlightCard extends StatelessWidget {
       child: Container(
         height: isSmallScreen ? 260 : 320,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(15), // Match 'Card' mode
           boxShadow: [
             BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.1),
-              blurRadius: 6,
+              color: colorScheme.shadow.withOpacity(0.1), // Match 'Card' shadow
+              blurRadius: 8,
               offset: const Offset(0, 2),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(15), // Match 'Card' mode
           child: _CardContent(
             anime: anime,
             heroTag: heroTag,
@@ -77,18 +77,18 @@ class _Skeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
-      padding: const EdgeInsets.all(12),
+      color: colorScheme.surfaceContainerHighest.withOpacity(0.3), // Match AnimatedAnimeCard
+      padding: const EdgeInsets.all(8), // Match padding
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _SkeletonBar(width: 100, height: 16),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           const _SkeletonBar(width: 150, height: 12),
           const Spacer(),
           const _SkeletonBar(width: double.infinity, height: 20),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           const _SkeletonBar(width: double.infinity, height: 32),
         ],
       ),
@@ -109,7 +109,7 @@ class _SkeletonBar extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: colorScheme.onSurface.withOpacity(0.1),
+        color: colorScheme.onSurface.withOpacity(0.2),
         borderRadius: BorderRadius.circular(8),
       ),
     );
@@ -142,10 +142,11 @@ class _AnimeContent extends StatelessWidget {
           child: CachedNetworkImage(
             imageUrl: imageUrl,
             fit: BoxFit.cover,
-            fadeInDuration: const Duration(milliseconds: 100),
+            fadeInDuration: const Duration(milliseconds: 150), // Match AnimatedAnimeCard
             placeholder: (_, __) => const _ImagePlaceholder(),
             errorWidget: (_, __, ___) => const _ImageError(),
-            memCacheHeight: (isSmallScreen ? 260 : 320).toInt(),
+            filterQuality: FilterQuality.high, // Match AnimatedAnimeCard
+            useOldImageOnUrlChange: true, // Match AnimatedAnimeCard
           ),
         ),
         Container(
@@ -155,13 +156,15 @@ class _AnimeContent extends StatelessWidget {
               end: Alignment.bottomCenter,
               colors: [
                 Colors.transparent,
-                colorScheme.surface.withOpacity(0.7),
+                colorScheme.shadow.withOpacity(0.8), // Match 'Card' gradient
+                colorScheme.shadow,
               ],
+              stops: const [0.3, 0.9, 1.0], // Match 'Card' gradient stops
             ),
           ),
         ),
         Padding(
-          padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+          padding: EdgeInsets.all(isSmallScreen ? 8 : 12), // Adjusted padding
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -184,20 +187,14 @@ class _TopDetails extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
         if (anime.format != null)
           _Tag(
             text: anime.format!.split('.').last,
-            color: colorScheme.primaryContainer,
-          ),
-        if (anime.averageScore != null)
-          _Tag(
-            text: '${anime.averageScore}%',
-            color: colorScheme.secondaryContainer,
-            icon: Iconsax.star1,
+            color: colorScheme.tertiaryContainer, // Match 'Card' format tag
+            textColor: colorScheme.onTertiaryContainer,
           ),
       ],
     );
@@ -216,37 +213,56 @@ class _BottomDetails extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (anime.averageScore != null)
+          _Tag(
+            text: '${anime.averageScore}',
+            color: colorScheme.primary, // Match 'Card' score tag
+            textColor: colorScheme.onPrimary,
+          ),
+        const SizedBox(height: 4),
         Text(
           anime.title?.english ?? anime.title?.romaji ?? anime.title?.native ?? 'Unknown Title',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: isSmallScreen ? 20 : 24,
-            fontWeight: FontWeight.w700,
-            color: colorScheme.onSurface,
+            fontWeight: FontWeight.bold, // Match 'Card' boldness
+            color: Colors.white, // Match 'Card' color
+            shadows: const [
+              Shadow(
+                color: Colors.black54, // Match 'Card' shadow
+                offset: Offset(0, 1),
+                blurRadius: 2,
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Wrap(
-          spacing: 8,
+          spacing: 6,
           runSpacing: 6,
           children: [
             if (anime.episodes != null)
-              _Tag(
-                text: '${anime.episodes} Ep',
-                color: colorScheme.secondaryContainer,
-                icon: Iconsax.play,
+              Text(
+                '${anime.episodes} eps', // Match 'Card' episode style
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white, // Match 'Card'
+                ),
               ),
             if (anime.duration != null)
               _Tag(
                 text: '${anime.duration}m',
-                color: colorScheme.secondaryContainer,
+                color: colorScheme.secondaryContainer.withOpacity(0.2),
+                textColor: colorScheme.onPrimaryContainer,
                 icon: Iconsax.timer,
               ),
             if (anime.status != null)
               _Tag(
                 text: anime.status!.split('.').last,
-                color: colorScheme.primaryContainer,
+                color: colorScheme.primaryContainer.withOpacity(0.2),
+                textColor: colorScheme.onPrimaryContainer,
               ),
           ],
         ),
@@ -257,20 +273,9 @@ class _BottomDetails extends StatelessWidget {
             runSpacing: 6,
             children: anime.genres!.take(3).map((genre) => _Tag(
               text: genre,
-              color: colorScheme.onSurfaceVariant,
+              color: colorScheme.onSurfaceVariant.withOpacity(0.2),
+              textColor: Colors.white,
             )).toList(),
-          ),
-        ],
-        if (!isSmallScreen && anime.description != null) ...[
-          const SizedBox(height: 12),
-          Text(
-            anime.description!,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 14,
-              color: colorScheme.onSurface.withOpacity(0.8),
-            ),
           ),
         ],
       ],
@@ -281,36 +286,38 @@ class _BottomDetails extends StatelessWidget {
 class _Tag extends StatelessWidget {
   final String text;
   final Color color;
+  final Color textColor;
   final IconData? icon;
 
-  const _Tag({required this.text, required this.color, this.icon});
+  const _Tag({
+    required this.text,
+    required this.color,
+    required this.textColor,
+    this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), // Match 'Card' padding
       decoration: BoxDecoration(
-        border: Border.all(
-          color: color,
-          width: 1,
-        ),
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(6),
+        color: color, // Match 'Card' solid background
+        borderRadius: BorderRadius.circular(8), // Match 'Card' radius
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 14, color: colorScheme.onPrimaryContainer),
-            const SizedBox(width: 4),
+            Icon(icon, size: 12, color: textColor), // Match 'Card' icon size
+            const SizedBox(width: 2),
           ],
           Text(
             text,
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: colorScheme.onPrimaryContainer,
+              fontSize: 12, // Match 'Card' font size
+              fontWeight: FontWeight.bold, // Match 'Card' boldness
+              color: textColor, // Match 'Card' color
             ),
           ),
         ],
@@ -326,8 +333,13 @@ class _ImagePlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
-      child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.primary)),
+      color: colorScheme.surfaceContainerHighest.withOpacity(0.3), // Match AnimatedAnimeCard
+      child: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: colorScheme.primary,
+        ),
+      ),
     );
   }
 }
@@ -339,8 +351,12 @@ class _ImageError extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: colorScheme.errorContainer.withOpacity(0.5),
-      child: Icon(Icons.broken_image, size: 48, color: colorScheme.error),
+      color: colorScheme.errorContainer.withOpacity(0.6), // Match AnimatedAnimeCard
+      child: Icon(
+        Icons.broken_image,
+        size: 40, // Match AnimatedAnimeCard
+        color: colorScheme.error,
+      ),
     );
   }
 }

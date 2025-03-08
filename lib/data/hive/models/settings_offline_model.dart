@@ -46,7 +46,7 @@ class ProviderSettingsModel extends HiveObject {
   @HiveField(0)
   final String selectedProviderName;
 
-  ProviderSettingsModel({this.selectedProviderName = 'hianime'});
+  ProviderSettingsModel({this.selectedProviderName = 'animekai'});
 
   ProviderSettingsModel copyWith({String? selectedProviderName}) {
     return ProviderSettingsModel(
@@ -252,7 +252,7 @@ class UISettingsModel extends HiveObject {
     this.compactMode = false,
     this.defaultTab = 'Home',
     this.showThumbnails = true,
-    this.cardStyle = 'Classic',
+    this.cardStyle = 'Card',
     this.layoutStyle = 'Grid',
   });
 

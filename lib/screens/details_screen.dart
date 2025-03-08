@@ -1,9 +1,11 @@
 import 'dart:developer';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/anilist/services/anilist_service.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
@@ -103,13 +105,44 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
         setState(() => _isFavourite = !_isFavourite);
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to toggle favorite: $e')),
+        final snackBar = SnackBar(
+          elevation: 0,
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.transparent,
+          duration: Duration(seconds: 5),
+          content: AwesomeSnackbarContent(
+            title: 'Toggling failed',
+            message: 'Failed to toggle favorite: $e',
+            contentType: ContentType.warning,
+            titleTextStyle: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w700),
+            messageTextStyle: Theme.of(context).textTheme.labelLarge,
+          ),
         );
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
       } finally {
         setState(() => _isToggling = false);
       }
     } else {
+      final snackBar = SnackBar(
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.transparent,
+        duration: Duration(seconds: 5),
+        content: AwesomeSnackbarContent(
+          title: 'Login required',
+          message: 'You need to login to use this feature',
+          contentType: ContentType.warning,
+          titleTextStyle: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w700),
+          messageTextStyle: Theme.of(context).textTheme.labelLarge,
+        ),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
       setState(() => _isToggling = false);
     }
   }
@@ -206,7 +239,7 @@ class _Header extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.3),
+                    Colors.black.withValues(alpha: 0.3),
                     theme.colorScheme.surface,
                   ],
                   stops: const [0.0, 1.0],
@@ -255,7 +288,7 @@ class _Header extends StatelessWidget {
                       child: Text(
                         anime.title!.native!,
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                         ),
                       ),
                     ),
@@ -339,13 +372,14 @@ class _Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color?.withOpacity(0.2) ?? Colors.white.withOpacity(0.1),
+        color: color?.withValues(alpha: 0.2) ??
+            Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         text,
         style: TextStyle(
-          color: color ?? Colors.white.withOpacity(0.9),
+          color: color ?? Colors.white.withValues(alpha: 0.9),
           fontWeight: isStatus ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
@@ -757,9 +791,23 @@ class _StatusMenuItem extends ConsumerWidget {
     return InkWell(
       onTap: () async {
         if (userState == null || userState.accessToken.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Please log in to update status')),
+          final snackBar = SnackBar(
+            elevation: 0,
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.transparent,
+            duration: Duration(seconds: 5),
+            content: AwesomeSnackbarContent(
+              title: 'Login required',
+              message: 'Please log in to update status',
+              contentType: ContentType.warning,
+              titleTextStyle: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w700),
+              messageTextStyle: Theme.of(context).textTheme.labelLarge,
+            ),
           );
+          ScaffoldMessenger.of(context).showSnackBar(snackBar);
           return;
         }
 
@@ -803,9 +851,23 @@ class _StatusMenuItem extends ConsumerWidget {
                     newStatus: null, // Remove from list
                   );
               if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Removed from ${status.title}')),
+              final snackBar = SnackBar(
+                elevation: 0,
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Colors.transparent,
+                duration: Duration(seconds: 5),
+                content: AwesomeSnackbarContent(
+                  title: 'Removed',
+                  message: 'Removed from ${status.title}',
+                  contentType: ContentType.warning,
+                  titleTextStyle: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                  messageTextStyle: Theme.of(context).textTheme.labelLarge,
+                ),
               );
+              ScaffoldMessenger.of(context).showSnackBar(snackBar);
             }
           } else {
             await anilistService.updateAnimeStatus(
@@ -818,15 +880,44 @@ class _StatusMenuItem extends ConsumerWidget {
                   newStatus: anilistStatus,
                 );
             if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Added to ${status.title}')),
+            final snackBar = SnackBar(
+              elevation: 0,
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.transparent,
+              duration: Duration(seconds: 5),
+              content: AwesomeSnackbarContent(
+                title: '${status.title} updated',
+                message: 'Added to ${status.title}',
+                contentType: ContentType.warning,
+                titleTextStyle: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w700),
+                messageTextStyle: Theme.of(context).textTheme.labelLarge,
+              ),
             );
+            ScaffoldMessenger.of(context).showSnackBar(snackBar);
           }
           onStatusChanged(); // Refresh current status
         } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to update status: $e')),
+          if (!context.mounted) return;
+          final snackBar = SnackBar(
+            elevation: 0,
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.transparent,
+            duration: Duration(seconds: 5),
+            content: AwesomeSnackbarContent(
+              title: 'Update failed',
+              message: 'Failed to update status: $e',
+              contentType: ContentType.warning,
+              titleTextStyle: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w700),
+              messageTextStyle: Theme.of(context).textTheme.labelLarge,
+            ),
           );
+          ScaffoldMessenger.of(context).showSnackBar(snackBar);
         }
         if (!context.mounted) return;
         Navigator.pop(context); // Close the popup menu
@@ -836,7 +927,7 @@ class _StatusMenuItem extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: status.color.withOpacity(isCurrent ? 0.3 : 0.1),
+              color: status.color.withValues(alpha: isCurrent ? 0.3 : 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(status.icon, color: status.color, size: 20),

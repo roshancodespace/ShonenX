@@ -40,8 +40,8 @@ class _CustomControlsState extends State<CustomControls>
   late final Player _player;
   AnimeWatchProgressBox? _animeWatchProgressBox;
   Timer? _hideTimer;
-  Timer? _updateTimer;
-  Timer? _progressSaveTimer;
+  Timer? _saveProgressTimer;
+  StreamSubscription? _playerStateSubscription;
   bool _isFullScreen = false;
   bool _showSettings = false;
   String _currentSettingsPage = 'main';
@@ -69,16 +69,15 @@ class _CustomControlsState extends State<CustomControls>
   void initState() {
     super.initState();
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    )..forward();
+        duration: const Duration(milliseconds: 300), vsync: this)
+      ..forward();
     _player = widget.state.widget.controller.player;
     _isFullScreen = isFullscreen(widget.state.context);
     _initializeProgressBox();
     _startHideTimer();
-    _startUpdateTimer();
     _startProgressSaveTimer();
-    _syncInitialState();
+    _subscribeToPlayerState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncInitialState());
   }
 
   void _syncInitialState() {
@@ -87,7 +86,8 @@ class _CustomControlsState extends State<CustomControls>
       _isBuffering = _player.state.buffering;
       _position = _player.state.position;
       _duration = _player.state.duration;
-      _volume = _player.state.volume / 100.0;
+      _volume = _player.state.volume /
+          100.0; // Player uses 0-100, we normalize to 0.0-1.0
       _playbackSpeed = _player.state.rate;
     });
   }
@@ -95,22 +95,6 @@ class _CustomControlsState extends State<CustomControls>
   Future<void> _initializeProgressBox() async {
     _animeWatchProgressBox = AnimeWatchProgressBox();
     await _animeWatchProgressBox?.init();
-    // if (_animeWatchProgressBox?.isInitialized == true) {
-    //   await _animeWatchProgressBox?.setEntry(
-    //     AnimeWatchProgressEntry(
-    //       animeId: widget.animeMedia.id!,
-    //       animeTitle: widget.animeMedia.title?.english ??
-    //           widget.animeMedia.title?.romaji ??
-    //           widget.animeMedia.title?.native ??
-    //           '',
-    //       animeFormat: widget.animeMedia.format ?? '',
-    //       animeCover: widget.animeMedia.coverImage?.large ??
-    //           widget.animeMedia.coverImage?.medium ??
-    //           '',
-    //       totalEpisodes: widget.episodes.length,
-    //     ),
-    //   );
-    // }
   }
 
   void _startHideTimer() {
@@ -121,6 +105,17 @@ class _CustomControlsState extends State<CustomControls>
     });
   }
 
+  void _startProgressSaveTimer() {
+    int tickCount = 0;
+    _saveProgressTimer = Timer.periodic(Duration(seconds: 10), (timer) async {
+      tickCount++;
+
+      if (tickCount == 5) {
+        await _saveProgress(screenshot: true);
+      }
+    });
+  }
+
   void _resetHideTimer() {
     if (mounted) {
       _fadeController.forward();
@@ -128,31 +123,34 @@ class _CustomControlsState extends State<CustomControls>
     }
   }
 
-  void _startUpdateTimer() {
-    _updateTimer?.cancel();
-    _updateTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
-      if (mounted) {
-        setState(() {
-          _isPlaying = _player.state.playing;
-          _isBuffering = _player.state.buffering;
-          _position = _player.state.position;
-          _duration = _player.state.duration;
-          _volume = _player.state.volume / 100.0;
-          _playbackSpeed = _player.state.rate;
-        });
-      }
+  void _subscribeToPlayerState() {
+    _playerStateSubscription?.cancel();
+    _playerStateSubscription = _player.stream.playing.listen((playing) {
+      if (mounted) setState(() => _isPlaying = playing);
     });
-  }
-
-  void _startProgressSaveTimer() {
-    _progressSaveTimer?.cancel();
-    _progressSaveTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted && _isPlaying) _saveProgress(screenshot: true);
+    _player.stream.buffering.listen((buffering) {
+      if (mounted) setState(() => _isBuffering = buffering);
+    });
+    _player.stream.position.listen((position) {
+      if (mounted) setState(() => _position = position);
+    });
+    _player.stream.duration.listen((duration) {
+      if (mounted) setState(() => _duration = duration);
+    });
+    _player.stream.volume.listen((volume) {
+      if (mounted) setState(() => _volume = volume / 100.0);
+    });
+    _player.stream.rate.listen((rate) {
+      if (mounted) setState(() => _playbackSpeed = rate);
     });
   }
 
   Future<void> _saveProgress({bool screenshot = false}) async {
-    if (_animeWatchProgressBox == null || widget.episodes.isEmpty) return;
+    if (_animeWatchProgressBox == null ||
+        widget.episodes.isEmpty ||
+        _duration.inSeconds < 10) {
+      return;
+    }
     final episode = widget.episodes[widget.currentEpisodeIndex];
     final thumbnail =
         screenshot ? await _player.screenshot(format: 'image/png') : null;
@@ -180,9 +178,7 @@ class _CustomControlsState extends State<CustomControls>
   void dispose() {
     _fadeController.dispose();
     _hideTimer?.cancel();
-    _updateTimer?.cancel();
-    _progressSaveTimer?.cancel();
-    _saveProgress(screenshot: true);
+    _playerStateSubscription?.cancel();
     super.dispose();
   }
 
@@ -438,9 +434,7 @@ class _CenterControls extends StatelessWidget {
                 width: 64,
                 height: 64,
                 child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 3,
-                ),
+                    color: Colors.white, strokeWidth: 3),
               )
             : _PlayPauseButton(state: state, isPlaying: isPlaying),
         const SizedBox(width: 32),
@@ -468,9 +462,8 @@ class _PlayPauseButton extends StatelessWidget {
       width: 64,
       height: 64,
       decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
-        borderRadius: BorderRadius.circular(32),
-      ),
+          color: Theme.of(context).primaryColor,
+          borderRadius: BorderRadius.circular(32)),
       child: _IconButton(
         icon: isPlaying ? Iconsax.pause : Iconsax.play,
         onPressed: () => isPlaying
@@ -517,7 +510,7 @@ class _BottomControlsState extends State<_BottomControls> {
         .clamp(0.0, maxDuration);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Column(
         children: [
           SliderTheme(
@@ -545,7 +538,7 @@ class _BottomControlsState extends State<_BottomControls> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
             child: Row(
               children: [
                 Text(
@@ -629,11 +622,8 @@ class _IconButton extends StatelessWidget {
   final VoidCallback onPressed;
   final double size;
 
-  const _IconButton({
-    required this.icon,
-    required this.onPressed,
-    required this.size,
-  });
+  const _IconButton(
+      {required this.icon, required this.onPressed, required this.size});
 
   @override
   Widget build(BuildContext context) {
@@ -739,10 +729,7 @@ class _SettingsPanel extends StatelessWidget {
           Text(
             _getSettingsTitle(),
             style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
+                color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -823,9 +810,9 @@ class _SettingsPanel extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
+                    color:
+                        Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20)),
                 child: Icon(icon, color: Theme.of(context).primaryColor),
               ),
               const SizedBox(width: 16),
@@ -836,26 +823,22 @@ class _SettingsPanel extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 14,
-                      ),
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 14),
                     ),
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: Colors.white.withValues(alpha: 0.7),
-              ),
+              Icon(Icons.chevron_right_rounded,
+                  color: Colors.white.withValues(alpha: 0.7)),
             ],
           ),
         ),
@@ -927,10 +910,9 @@ class _SettingsPanel extends StatelessWidget {
               const Text(
                 'Volume',
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
               Row(
@@ -967,10 +949,7 @@ class _SettingsPanel extends StatelessWidget {
                   const SizedBox(width: 16),
                   Text(
                     '${(volume * 100).round()}%',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ],
               ),
@@ -986,7 +965,7 @@ class _SettingsPanel extends StatelessWidget {
       itemCount: subtitles.length,
       itemBuilder: (context, index) {
         final subtitle = subtitles[index];
-        final isSelected = index == 0; // Adjust selection logic as needed
+        final isSelected = index == 0; // TODO: Implement proper selection logic
         return _buildSettingsOptionItem(
           context: context,
           title: subtitle.language ?? 'Unknown',
@@ -1023,29 +1002,25 @@ class _SettingsPanel extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500),
                     ),
                     if (subtitle != null) ...[
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 14,
-                        ),
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 14),
                       ),
                     ],
                   ],
                 ),
               ),
               if (isSelected)
-                Icon(
-                  Icons.check_rounded,
-                  color: Theme.of(context).primaryColor,
-                ),
+                Icon(Icons.check_rounded,
+                    color: Theme.of(context).primaryColor),
             ],
           ),
         ),

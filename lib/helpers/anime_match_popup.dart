@@ -26,29 +26,22 @@ Future<void> providerAnimeMatchSearch({
         animeMedia.title?.romaji ??
         animeMedia.title?.native;
 
-    final response = await animeProvider?.getSearch(
-      title!.replaceAll(' ', '+'),
+    if (title == null || animeProvider == null) {
+      throw Exception('Invalid title or anime provider');
+    }
+
+    // Clean and encode the title for search
+    final searchTitle = Uri.encodeComponent(title.trim());
+
+    final response = await animeProvider.getSearch(
+      searchTitle,
       animeMedia.format,
       1,
     );
 
-    if (!context.mounted || response == null) return;
-
-    final matchedResults = response.results
-        .map((result) {
-          final similarity = calculateSimilarity(
-            result.name?.toLowerCase(),
-            title?.toLowerCase(),
-          );
-          return (result, similarity);
-        })
-        .where((pair) => pair.$2 > 0)
-        .toList()
-      ..sort((a, b) => b.$2.compareTo(a.$2));
-
     if (!context.mounted) return;
 
-    if (matchedResults.isEmpty && response.results.isEmpty) {
+    if (response.results.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         elevation: 0,
         behavior: SnackBarBehavior.floating,
@@ -62,19 +55,37 @@ Future<void> providerAnimeMatchSearch({
       return;
     }
 
+    final matchedResults = response.results
+        .where((result) => result.name != null && result.id != null) // Filter out null names and IDs
+        .map((result) {
+          final similarity = calculateSimilarity(
+            result.name!.toLowerCase(),
+            title.toLowerCase(),
+          );
+          return (result, similarity);
+        })
+        .where((pair) => pair.$2 > 0)
+        .toList()
+      ..sort((a, b) => b.$2.compareTo(a.$2));
+
+    if (!context.mounted) return;
+
     // Direct navigation for high confidence matches
     if (matchedResults.isNotEmpty && matchedResults.first.$2 >= 0.8) {
       final bestMatch = matchedResults.first.$1;
       log("Best match found: ${bestMatch.id}");
-      context.push('/watch/${bestMatch.id}?animeName=${bestMatch.name}',
+      final encodedAnimeName = Uri.encodeComponent(bestMatch.name ?? '');
+      context.push('/watch/${bestMatch.id}?animeName=$encodedAnimeName',
           extra: animeMedia);
       return;
     }
 
     // Show selection dialog for multiple matches
     final results = matchedResults.isEmpty
-        ? response.results
+        ? response.results.where((result) => result.id != null).toList()
         : matchedResults.map((r) => r.$1).toList();
+
+    if (!context.mounted) return;
 
     showDialog(
       context: context,
@@ -121,13 +132,15 @@ Future<void> providerAnimeMatchSearch({
                           final continueWatchingEntry = animeWatchProgressBox
                               .getMostRecentEpisodeProgressByAnimeId(
                                   animeMedia.id!);
+                          
+                          final encodedAnimeName = Uri.encodeComponent(result.name ?? '');
                           if (continueWatchingEntry != null) {
                             context.push(
-                                '/watch/${result.id}?animeName=${result.name}&episode=${continueWatchingEntry.episodeNumber}&startAt=${continueWatchingEntry.progressInSeconds}',
+                                '/watch/${result.id}?animeName=$encodedAnimeName&episode=${continueWatchingEntry.episodeNumber}&startAt=${continueWatchingEntry.progressInSeconds}',
                                 extra: animeMedia);
                           } else {
                             context.push(
-                                '/watch/${result.id}?animeName=${result.name}',
+                                '/watch/${result.id}?animeName=$encodedAnimeName',
                                 extra: animeMedia);
                           }
                         },
@@ -229,6 +242,7 @@ Future<void> providerAnimeMatchSearch({
       },
     );
   } catch (e) {
+    log("Error in anime match search: $e");
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         elevation: 0,

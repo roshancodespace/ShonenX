@@ -1,3 +1,4 @@
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -92,7 +93,8 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
           },
           icon: Icon(Iconsax.arrow_left_2, color: colorScheme.onSurface),
           style: IconButton.styleFrom(
-            backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            backgroundColor:
+                colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.all(10),
@@ -298,11 +300,24 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
   void _showCardStyleDialog(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    // Define valid card styles
+    final List<String> cardStyles = [
+      'Card',
+      'Compact',
+      'Poster',
+      'Glass',
+      'Neon',
+      'Minimal',
+      'Cinematic',
+    ];
+
     showDialog(
       context: context,
       builder: (context) {
-        String selectedStyle =
-            _uiSettings.cardStyle; // Track the selected style
+        // Ensure selectedStyle is a valid option; default to 'Card' if not
+        String selectedStyle = cardStyles.contains(_uiSettings.cardStyle)
+            ? _uiSettings.cardStyle
+            : 'Card';
 
         return AlertDialog(
           backgroundColor: colorScheme.surface,
@@ -327,7 +342,7 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                          color: colorScheme.outline.withOpacity(0.2),
+                          color: colorScheme.outline.withValues(alpha: 0.2),
                         ),
                       ),
                       filled: true,
@@ -342,18 +357,13 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
                         selectedStyle = newValue!; // Update the selected style
                       });
                     },
-                    items: [
-                      'Classic',
-                      'Compact',
-                      'Poster',
-                      'PosterV2',
-                      'Outlined'
-                    ].map<DropdownMenuItem<String>>((String value) {
+                    items: cardStyles
+                        .map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
                         child: Text(
                           value,
-                          style: GoogleFonts.montserrat(),
+                          style: Theme.of(context).textTheme.labelLarge,
                         ),
                       );
                     }).toList(),
@@ -368,7 +378,7 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // Close the dialog
+                Navigator.pop(context); // Close the dialog without saving
               },
               child: Text(
                 'Cancel',
@@ -378,10 +388,27 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
             TextButton(
               onPressed: () {
                 setState(() {
-                  _uiSettings = _uiSettings.copyWith(
-                      cardStyle: selectedStyle); // Save the selected style
+                  _uiSettings = _uiSettings.copyWith(cardStyle: selectedStyle);
                 });
-                Navigator.pop(context); // Close the dialog
+
+                final snackBar = SnackBar(
+                  elevation: 0,
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: Colors.transparent,
+                  duration: Duration(seconds: 5),
+                  content: AwesomeSnackbarContent(
+                    title: 'Restart required',
+                    message: 'You need to restart to avoid UI glitches once',
+                    contentType: ContentType.warning,
+                    titleTextStyle: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                    messageTextStyle: Theme.of(context).textTheme.labelLarge,
+                  ),
+                );
+                ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                Navigator.pop(context); // Close the dialog and save
               },
               child: Text(
                 'Save',
@@ -411,7 +438,7 @@ class _UISettingsScreenState extends State<UISettingsScreen> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface.withOpacity(0.8),
+              color: colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 8),
@@ -521,7 +548,7 @@ class _SettingsItemState extends State<_SettingsItem> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: _isHovered && !widget.disabled
-                ? colorScheme.surfaceContainerHighest.withOpacity(0.3)
+                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
           ),
@@ -533,9 +560,9 @@ class _SettingsItemState extends State<_SettingsItem> {
                   gradient: LinearGradient(
                     colors: [
                       colorScheme.primary
-                          .withOpacity(widget.disabled ? 0.05 : 0.2),
+                          .withValues(alpha: widget.disabled ? 0.05 : 0.2),
                       colorScheme.primary
-                          .withOpacity(widget.disabled ? 0.03 : 0.1),
+                          .withValues(alpha: widget.disabled ? 0.03 : 0.1),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -545,7 +572,7 @@ class _SettingsItemState extends State<_SettingsItem> {
                 child: Icon(
                   widget.icon,
                   color: widget.disabled
-                      ? colorScheme.onSurface.withOpacity(0.4)
+                      ? colorScheme.onSurface.withValues(alpha: 0.4)
                       : colorScheme.primary,
                   size: 20,
                 ),
@@ -561,7 +588,7 @@ class _SettingsItemState extends State<_SettingsItem> {
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: widget.disabled
-                            ? colorScheme.onSurface.withOpacity(0.4)
+                            ? colorScheme.onSurface.withValues(alpha: 0.4)
                             : colorScheme.onSurface,
                       ),
                     ),
@@ -571,7 +598,7 @@ class _SettingsItemState extends State<_SettingsItem> {
                       style: TextStyle(
                         fontSize: 14,
                         color: colorScheme.onSurface
-                            .withOpacity(widget.disabled ? 0.3 : 0.7),
+                            .withValues(alpha: widget.disabled ? 0.3 : 0.7),
                       ),
                     ),
                   ],
@@ -580,7 +607,7 @@ class _SettingsItemState extends State<_SettingsItem> {
               Icon(
                 Iconsax.arrow_right_3,
                 color: colorScheme.onSurface
-                    .withOpacity(widget.disabled ? 0.2 : 0.5),
+                    .withValues(alpha: widget.disabled ? 0.2 : 0.5),
                 size: 20,
               ),
             ],

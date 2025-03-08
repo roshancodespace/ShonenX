@@ -82,24 +82,6 @@ class KaidoProvider extends AnimeProvider {
   @override
   Future<BaseSourcesModel> getSources(String animeId, String episodeId,
       String serverName, String category) async {
-    final getCategory =
-        category == 'sub' ? 'both' : category; // Fixed to respect 'raw'
-    final epId = [
-      animeId,
-      r'''$''',
-      'episode',
-      r'''$''',
-      episodeId,
-      r'''$''',
-      getCategory
-    ].join('');
-    // final url = Uri.https(
-    //   'shonenx-consumet-api.vercel.app',
-    //   '/anime/zoro/watch',
-    //   {'episodeId': epId},
-    // );
-    // log('Fetching sources - animeId: $animeId, episodeId: $episodeId, serverName: $serverName, category: $category, mapped to: $getCategory');
-    // log('URL: $url');
     final response = await http.get(
       Uri.parse(
           'https://animaze-swart.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category'),

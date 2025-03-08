@@ -11,6 +11,7 @@ import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
 import 'package:shonenx/data/hive/boxes/settings_box.dart';
 import 'package:shonenx/data/hive/models/settings_offline_model.dart';
 import 'package:shonenx/helpers/navigation.dart';
+import 'package:shonenx/helpers/provider.dart';
 import 'package:shonenx/providers/anilist/anilist_user_provider.dart';
 import 'package:shonenx/providers/homepage_provider.dart';
 import 'package:shonenx/utils/greeting_methods.dart';
@@ -67,6 +68,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    getAnimeProvider(ref); // Initialized here for now will change later
     final isDesktop = MediaQuery.sizeOf(context).width > 900;
     final theme = Theme.of(context);
 
@@ -533,23 +535,48 @@ class _HorizontalAnimeSection extends SliverToBoxAdapter {
   final List<Media>? animes;
   final UISettingsModel uiSettings;
 
-  const _HorizontalAnimeSection(
-      {required this.title,
-      required this.animes,
-      required this.uiSettings,
-      required this.settingsBox});
+  const _HorizontalAnimeSection({
+    required this.title,
+    required this.animes,
+    required this.uiSettings,
+    required this.settingsBox,
+  });
+
+  double _getCardWidth(BuildContext context, String mode) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return switch (mode) {
+      'Card' => screenWidth < 600 ? 140.0 : 160.0,
+      'Compact' => screenWidth < 600 ? 100.0 : 120.0,
+      'Poster' => screenWidth < 600 ? 160.0 : 180.0,
+      'Glass' => screenWidth < 600 ? 150.0 : 170.0,
+      'Neon' => screenWidth < 600 ? 140.0 : 160.0,
+      'Minimal' => screenWidth < 600 ? 130.0 : 150.0,
+      'Cinematic' => screenWidth < 600 ? 200.0 : 240.0,
+      _ => screenWidth < 600 ? 140.0 : 160.0, // Default to Card
+    };
+  }
+
+  double _getCardHeight(BuildContext context, String mode) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return switch (mode) {
+      'Card' => screenWidth < 600 ? 200.0 : 240.0,
+      'Compact' => screenWidth < 600 ? 150.0 : 180.0,
+      'Poster' => screenWidth < 600 ? 260.0 : 300.0,
+      'Glass' => screenWidth < 600 ? 220.0 : 260.0,
+      'Neon' => screenWidth < 600 ? 200.0 : 240.0,
+      'Minimal' => screenWidth < 600 ? 180.0 : 220.0,
+      'Cinematic' => screenWidth < 600 ? 100.0 : 160.0,
+      _ => screenWidth < 600 ? 200.0 : 240.0, // Default to Card
+    };
+  }
 
   @override
   Widget get child {
     return Builder(
       builder: (context) {
         final cardStyle = uiSettings.cardStyle;
-        // final cardHeight = cardStyle == 'Minimal'
-        //     ? 240.0
-        //     : cardStyle == 'Compact'
-        //         ? 200.0
-        //         : 280.0;
-        final cardHeight = 200.0;
+        final cardWidth = _getCardWidth(context, cardStyle);
+        final cardHeight = _getCardHeight(context, cardStyle);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -559,9 +586,10 @@ class _HorizontalAnimeSection extends SliverToBoxAdapter {
               child: Text(
                 title,
                 style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface),
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ),
             SizedBox(
@@ -577,19 +605,22 @@ class _HorizontalAnimeSection extends SliverToBoxAdapter {
                   return Padding(
                     padding: const EdgeInsets.only(right: 16),
                     child: ValueListenableBuilder(
-                        valueListenable: settingsBox.settingsBoxListenable,
-                        builder: (context, value, child) {
-                          final cardMode =
-                              settingsBox.getUISettings().cardStyle;
-                          return AnimatedAnimeCard(
+                      valueListenable: settingsBox.settingsBoxListenable,
+                      builder: (context, value, child) {
+                        final cardMode = settingsBox.getUISettings().cardStyle;
+                        return SizedBox(
+                          width: cardWidth,
+                          child: AnimatedAnimeCard(
                             anime: anime,
                             tag: tag,
                             mode: cardMode,
                             onTap: () => anime != null
                                 ? navigateToDetail(context, anime, tag)
                                 : null,
-                          );
-                        }),
+                          ),
+                        );
+                      },
+                    ),
                   );
                 },
               ),

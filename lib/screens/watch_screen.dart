@@ -11,7 +11,6 @@ import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
     as anilist_media;
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shonenx/api/models/anime/episode_model.dart';
-import 'package:shonenx/api/models/anime/server_model.dart';
 import 'package:shonenx/api/models/anime/source_model.dart';
 import 'package:shonenx/api/sources/anime/anime_provider.dart';
 import 'package:shonenx/helpers/provider.dart';
@@ -46,11 +45,10 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   StreamSubscription? _positionSubscription;
 
   List<EpisodeDataModel> _episodes = [];
-  BaseServerModel _servers = BaseServerModel();
   List<SubtitleTrack> _subtitles = [];
   final Map<String, List<SubtitleTrack>> _subtitleCache = {};
   final Map<String, List<Map<String, String>>> _qualityCache = {};
-  String? _selectedCategory = 'dub';
+  String? _selectedCategory = 'sub';
   int _selectedEpIdx = 0;
   int _selectedRangeStart = 1;
   String? _errorMessage;
@@ -107,18 +105,13 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     }
     try {
       final episodeId = _episodes[_selectedEpIdx].id!;
-      _servers = await _animeProvider.getServers(episodeId);
-      final serverList =
-          _selectedCategory == 'sub' ? _servers.sub : _servers.dub;
-      if (serverList.isEmpty)
-        throw Exception('No servers available for $_selectedCategory.');
-      final serverName = serverList.first.name;
       final sources = await _animeProvider.getSources(
-          widget.animeId, episodeId, serverName!, _selectedCategory!);
+          widget.animeId, episodeId, '', _selectedCategory!);
       if (sources.sources.isEmpty)
         throw Exception('No video sources available.');
       await _extractQualities(sources.sources.first.url!);
       await _configureSubtitles(sources.tracks);
+      await _updateVideoSource(sources.sources.first.url ?? '');
     } catch (e) {
       _handleError('Failed to load stream data: $e', onRetry: _fetchStreamData);
     }
@@ -189,7 +182,6 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       _selectedQuality =
           _qualityOptions.isNotEmpty ? _qualityOptions.first['url'] : null;
     });
-    if (_selectedQuality != null) await _updateVideoSource(_selectedQuality!);
   }
 
   Future<void> _updateVideoSource(String url,
@@ -438,12 +430,8 @@ class _EpisodesPanel extends StatelessWidget {
           ),
         ),
         itemBuilder: (context) => [
-          if (state._servers.sub.isNotEmpty)
             PopupMenuItem(value: 'sub', child: const Text('SUB')),
-          if (state._servers.dub.isNotEmpty)
             PopupMenuItem(value: 'dub', child: const Text('DUB')),
-          if (state._servers.raw.isNotEmpty)
-            PopupMenuItem(value: 'raw', child: const Text('RAW')),
         ],
         onSelected: (category) {
           state._player.pause();

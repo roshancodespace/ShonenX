@@ -126,7 +126,7 @@ class ContinueWatchingCard extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${progress.toStringAsFixed(3)}%',
+                            '${(progress * 100).toStringAsFixed(1)}%',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.labelSmall?.copyWith(

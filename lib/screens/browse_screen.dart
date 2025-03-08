@@ -57,6 +57,10 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
             message: "You can't search for nothing!",
             contentType: ContentType.warning,
             color: Colors.red.shade300,
+            titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700
+            ),
+            messageTextStyle: Theme.of(context).textTheme.labelLarge,
           ),
         ),
       );

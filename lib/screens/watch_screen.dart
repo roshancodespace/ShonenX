@@ -43,21 +43,27 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   late final VideoController _controller;
   late final AnimeProvider _animeProvider;
   StreamSubscription? _playerSubscription;
+  StreamSubscription? _positionSubscription;
 
   List<EpisodeDataModel> _episodes = [];
   BaseServerModel _servers = BaseServerModel();
   List<SubtitleTrack> _subtitles = [];
+  final Map<String, List<SubtitleTrack>> _subtitleCache = {};
+  final Map<String, List<Map<String, String>>> _qualityCache = {};
   String? _selectedCategory = 'dub';
   int _selectedEpIdx = 0;
   int _selectedRangeStart = 1;
   String? _errorMessage;
   List<Map<String, String>> _qualityOptions = [];
   String? _selectedQuality;
+  Timer? _debounceTimer;
+  Duration _lastPosition = Duration.zero;
 
   @override
   void initState() {
     super.initState();
     _selectedEpIdx = (widget.episode ?? 1) - 1;
+    _lastPosition = widget.startAt;
     _initializeProviders();
     _initializePlayer().then((_) => _fetchEpisodes());
   }
@@ -70,103 +76,156 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     _controller = VideoController(_player);
     _playerSubscription = _player.stream.error
         .listen((error) => _handleError('Player error: $error'));
+    _positionSubscription = _player.stream.position.listen((position) {
+      _lastPosition = position; // Continuously update last position
+    });
   }
 
   Future<void> _fetchEpisodes() async {
     if (!mounted) return;
     try {
       final baseEpisodeModel = await _animeProvider.getEpisodes(widget.animeId);
-      if ((baseEpisodeModel.episodes ?? []).isEmpty) {
-        throw Exception('No episodes found');
-      }
-      setState(() {
-        _episodes = baseEpisodeModel.episodes!;
-      });
-      await _fetchStreamData();
+      if ((baseEpisodeModel.episodes ?? []).isEmpty)
+        throw Exception('No episodes found for this anime.');
+      setState(() => _episodes = baseEpisodeModel.episodes!);
+      _debounceFetchStreamData();
     } catch (e) {
-      _handleError('Episode load failed: $e');
+      _handleError('Failed to load episodes: $e', onRetry: _fetchEpisodes);
     }
+  }
+
+  void _debounceFetchStreamData() {
+    _debounceTimer?.cancel();
+    _debounceTimer =
+        Timer(const Duration(milliseconds: 500), () => _fetchStreamData());
   }
 
   Future<void> _fetchStreamData() async {
     if (!mounted || _selectedEpIdx >= _episodes.length) {
-      _handleError('No episodes available.');
+      _handleError('No episodes available for streaming.');
       return;
     }
     try {
       final episodeId = _episodes[_selectedEpIdx].id!;
       _servers = await _animeProvider.getServers(episodeId);
-      final serverName = _selectedCategory == 'sub'
-          ? _servers.sub.first.name
-          : _servers.dub.first.name;
+      final serverList =
+          _selectedCategory == 'sub' ? _servers.sub : _servers.dub;
+      if (serverList.isEmpty)
+        throw Exception('No servers available for $_selectedCategory.');
+      final serverName = serverList.first.name;
       final sources = await _animeProvider.getSources(
           widget.animeId, episodeId, serverName!, _selectedCategory!);
-      log("Source url: ${sources.sources.first.url}", name: "Source Url");
-      if (sources.sources.isEmpty) throw Exception('No sources available');
+      if (sources.sources.isEmpty)
+        throw Exception('No video sources available.');
       await _extractQualities(sources.sources.first.url!);
       await _configureSubtitles(sources.tracks);
     } catch (e) {
-      _handleError('Stream load failed: $e');
+      _handleError('Failed to load stream data: $e', onRetry: _fetchStreamData);
     }
   }
 
   Future<void> _configureSubtitles(List<Subtitle> subtitles) async {
-    _subtitles = subtitles
-        .map((s) => SubtitleTrack.uri(s.url!, language: s.lang, title: s.lang))
-        .toList();
-    final englishSub =
-        subtitles.firstWhere((s) => s.lang!.toLowerCase().contains('english'));
-    log('English subtitle: ${englishSub.url}', name: 'English Subtitle');
-    await _player.setSubtitleTrack(SubtitleTrack.uri(englishSub.url!,
-        language: englishSub.lang, title: englishSub.lang));
+    final episodeId = _episodes[_selectedEpIdx].id!;
+    if (_subtitleCache[episodeId] == null ||
+        _subtitleCache[episodeId]!.length != subtitles.length) {
+      _subtitles = subtitles
+          .map(
+              (s) => SubtitleTrack.uri(s.url!, language: s.lang, title: s.lang))
+          .toList();
+      _subtitleCache[episodeId] = _subtitles;
+      try {
+        final englishSub = subtitles
+            .firstWhere((s) => s.lang!.toLowerCase().contains('english'));
+        await _player.setSubtitleTrack(SubtitleTrack.uri(englishSub.url!,
+            language: englishSub.lang, title: englishSub.lang));
+      } catch (e) {
+        if (subtitles.isNotEmpty) {
+          await _player.setSubtitleTrack(SubtitleTrack.uri(subtitles.first.url!,
+              language: subtitles.first.lang, title: subtitles.first.lang));
+          log('Falling back to first available subtitle: ${subtitles.first.url}',
+              name: 'Subtitle Fallback');
+        } else {
+          await _player.setSubtitleTrack(SubtitleTrack.no());
+          log('No subtitles available, disabling subtitles.',
+              name: 'Subtitle Fallback');
+        }
+      }
+    }
   }
 
   Future<void> _extractQualities(String m3u8Url) async {
-    try {
-      final response = await http.get(Uri.parse(m3u8Url));
-      if (response.statusCode != 200) throw Exception('Failed to load M3U8');
-      final lines = response.body.split('\n');
-      final qualities = <Map<String, String>>[];
-      for (var i = 0; i < lines.length - 1; i++) {
-        if (lines[i].contains('#EXT-X-STREAM-INF')) {
-          final resolution =
-              RegExp(r'RESOLUTION=(\d+x\d+)').firstMatch(lines[i])?.group(1) ??
-                  'Unknown';
-          qualities.add({
-            'quality': resolution,
-            'url': m3u8Url.replaceAll('master.m3u8', lines[i + 1])
-          });
+    final episodeId = _episodes[_selectedEpIdx].id!;
+    if (_qualityCache[episodeId] == null) {
+      try {
+        final response = await http.get(Uri.parse(m3u8Url));
+        if (response.statusCode != 200)
+          throw Exception(
+              'Failed to load M3U8 playlist (HTTP ${response.statusCode}).');
+        final lines = response.body.split('\n');
+        final qualities = <Map<String, String>>[];
+        for (var i = 0; i < lines.length - 1; i++) {
+          if (lines[i].contains('#EXT-X-STREAM-INF')) {
+            final resolution = RegExp(r'RESOLUTION=(\d+x\d+)')
+                    .firstMatch(lines[i])
+                    ?.group(1) ??
+                'Unknown';
+            qualities.add({
+              'quality': resolution,
+              'url': m3u8Url.replaceAll('master.m3u8', lines[i + 1])
+            });
+          }
         }
+        if (qualities.isEmpty)
+          throw Exception('No quality options found in M3U8.');
+        _qualityCache[episodeId] = qualities;
+      } catch (e) {
+        _handleError('Failed to extract quality options: $e',
+            onRetry: () => _extractQualities(m3u8Url));
+        return;
       }
-      setState(() {
-        _qualityOptions = qualities;
-        _selectedQuality = qualities.isNotEmpty ? qualities.first['url'] : null;
-      });
-      if (_selectedQuality != null) await _updateVideoSource(_selectedQuality!);
-    } catch (e) {
-      _handleError('Quality extraction failed: $e');
     }
+    setState(() {
+      _qualityOptions = _qualityCache[episodeId]!;
+      _selectedQuality =
+          _qualityOptions.isNotEmpty ? _qualityOptions.first['url'] : null;
+    });
+    if (_selectedQuality != null) await _updateVideoSource(_selectedQuality!);
   }
 
-  Future<void> _updateVideoSource(String url) async {
+  Future<void> _updateVideoSource(String url,
+      {bool fromQualityChange = false}) async {
     try {
       await _player.open(Media(url));
       await _player.play();
-      await _player.seek(widget.startAt);
+      if (fromQualityChange) {
+        await _player.seek(_lastPosition);
+      } else {
+        await _player.seek(Duration.zero); // For new episodes
+      }
     } catch (e) {
-      _handleError('Source update failed: $e');
+      _handleError('Failed to update video source: $e');
     }
   }
 
-  void _handleError(String message) {
+  void _handleError(String message, {VoidCallback? onRetry}) {
     if (!mounted) return;
     setState(() => _errorMessage = message);
-    log(message, level: 1000); // Error level logging
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: onRetry != null
+            ? SnackBarAction(label: 'Retry', onPressed: onRetry)
+            : null,
+      ),
+    );
+    log(message, level: 1000);
   }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _playerSubscription?.cancel();
+    _positionSubscription?.cancel();
     _player.dispose();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
@@ -174,13 +233,19 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   void _playEpisode(int index) {
     if (index < 0 || index >= _episodes.length) return;
-    setState(() => _selectedEpIdx = index);
-    _fetchStreamData();
+    setState(() {
+      _selectedEpIdx = index;
+      _lastPosition = Duration.zero; // Reset for new episode
+    });
+    _debounceFetchStreamData();
   }
 
   void _changeQuality(String url) {
+    final currentPosition = _lastPosition;
     setState(() => _selectedQuality = url);
-    _updateVideoSource(url);
+    _updateVideoSource(url, fromQualityChange: true).then((_) {
+      _player.seek(currentPosition); // Ensure position is restored
+    });
   }
 
   @override
@@ -207,7 +272,6 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   }
 }
 
-// Video Player Section
 class _VideoPlayerSection extends StatelessWidget {
   final _WatchScreenState state;
 
@@ -224,26 +288,33 @@ class _VideoPlayerSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: AspectRatio(
               aspectRatio: 16 / 10,
-              child: Video(
-                controller: state._controller,
-                controls: (videoState) => CustomControls(
-                  animeMedia: state.widget.animeMedia,
-                  state: videoState,
-                  subtitles: state._subtitles,
-                  qualityOptions: state._qualityOptions,
-                  changeQuality: state._changeQuality,
-                  episodes: state._episodes,
-                  currentEpisodeIndex: state._selectedEpIdx,
-                ),
-                subtitleViewConfiguration: SubtitleViewConfiguration(
-                  style: TextStyle(
-                    color: Colors.white,
-                    backgroundColor: Colors.black.withValues(alpha: 0.2),
-                  ),
-                  textScaleFactor:
-                      MediaQuery.sizeOf(context).width > 400 ? 1.5 : 2,
-                ),
-              ),
+              child: state._errorMessage != null
+                  ? Center(child: Text(state._errorMessage!))
+                  : state._selectedQuality == null
+                      ? const Center(child: CircularProgressIndicator())
+                      : Video(
+                          controller: state._controller,
+                          controls: (videoState) => CustomControls(
+                            animeMedia: state.widget.animeMedia,
+                            state: videoState,
+                            subtitles: state._subtitles,
+                            qualityOptions: state._qualityOptions,
+                            changeQuality: state._changeQuality,
+                            episodes: state._episodes,
+                            currentEpisodeIndex: state._selectedEpIdx,
+                          ),
+                          subtitleViewConfiguration: SubtitleViewConfiguration(
+                            style: TextStyle(
+                              color: Colors.white,
+                              backgroundColor:
+                                  Colors.black.withValues(alpha: 0.2),
+                            ),
+                            textScaleFactor:
+                                MediaQuery.sizeOf(context).width > 400
+                                    ? 1.5
+                                    : 2,
+                          ),
+                        ),
             ),
           ),
         ),
@@ -252,7 +323,6 @@ class _VideoPlayerSection extends StatelessWidget {
   }
 }
 
-// Episodes Panel
 class _EpisodesPanel extends StatelessWidget {
   final _WatchScreenState state;
   final ThemeData theme;
@@ -263,12 +333,14 @@ class _EpisodesPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: theme.colorScheme.surface,
-      child: Column(
-        children: [
-          _buildHeader(context),
-          Expanded(child: _buildEpisodesList(context)),
-        ],
-      ),
+      child: state._episodes.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                _buildHeader(context),
+                Expanded(child: _buildEpisodesList(context)),
+              ],
+            ),
     );
   }
 
@@ -367,11 +439,11 @@ class _EpisodesPanel extends StatelessWidget {
         ),
         itemBuilder: (context) => [
           if (state._servers.sub.isNotEmpty)
-            PopupMenuItem(value: 'sub', child: Text('SUB')),
+            PopupMenuItem(value: 'sub', child: const Text('SUB')),
           if (state._servers.dub.isNotEmpty)
-            PopupMenuItem(value: 'dub', child: Text('DUB')),
+            PopupMenuItem(value: 'dub', child: const Text('DUB')),
           if (state._servers.raw.isNotEmpty)
-            PopupMenuItem(value: 'raw', child: Text('RAW')),
+            PopupMenuItem(value: 'raw', child: const Text('RAW')),
         ],
         onSelected: (category) {
           state._player.pause();
@@ -382,13 +454,14 @@ class _EpisodesPanel extends StatelessWidget {
               backgroundColor: Colors.transparent,
               content: AwesomeSnackbarContent(
                 title: "Message",
-                message: "Changed category to ${category.toUpperCase()}, please wait for the server to respond.",
+                message:
+                    "Changed category to ${category.toUpperCase()}, please wait for the server to respond.",
                 contentType: ContentType.success,
               ),
             ),
           );
           state.setState(() => state._selectedCategory = category);
-          state._fetchStreamData();
+          state._debounceFetchStreamData();
         },
       ),
     );
@@ -396,7 +469,10 @@ class _EpisodesPanel extends StatelessWidget {
 
   Widget _buildEpisodesList(BuildContext context) {
     final totalEpisodes = state._episodes.length;
-    final segments = (totalEpisodes / 100).ceil();
+    final startIdx = state._selectedRangeStart - 1;
+    final endIdx =
+        (startIdx + 100 > totalEpisodes) ? totalEpisodes : startIdx + 100;
+    final episodesInRange = state._episodes.sublist(startIdx, endIdx);
 
     return Column(
       children: [
@@ -405,10 +481,11 @@ class _EpisodesPanel extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 5),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: segments,
+            itemCount: (totalEpisodes / 100).ceil(),
             itemBuilder: (context, index) {
               final start = index * 100 + 1;
-              final end = (start + 99) > totalEpisodes ? totalEpisodes : start + 99;
+              final end =
+                  (start + 99) > totalEpisodes ? totalEpisodes : start + 99;
               final isSelected = state._selectedRangeStart == start;
 
               return Padding(
@@ -416,13 +493,14 @@ class _EpisodesPanel extends StatelessWidget {
                 child: FilterChip(
                   selected: isSelected,
                   label: Text('$start-$end'),
-                  onSelected: (_) => state.setState(() => state._selectedRangeStart = start),
+                  onSelected: (_) =>
+                      state.setState(() => state._selectedRangeStart = start),
                   backgroundColor: theme.colorScheme.surfaceContainerHighest,
                   selectedColor: theme.colorScheme.primaryContainer,
                   labelStyle: TextStyle(
-                    color: isSelected 
-                      ? theme.colorScheme.onPrimaryContainer
-                      : theme.colorScheme.onSurface,
+                    color: isSelected
+                        ? theme.colorScheme.onPrimaryContainer
+                        : theme.colorScheme.onSurface,
                   ),
                 ),
               );
@@ -431,45 +509,46 @@ class _EpisodesPanel extends StatelessWidget {
         ),
         Expanded(
           child: ListView.builder(
-            
-            itemCount: state._episodes.length,
+            itemCount: episodesInRange.length,
             itemBuilder: (context, index) {
-              final episode = state._episodes[index];
-              if (episode.number! < state._selectedRangeStart || 
-                  episode.number! >= state._selectedRangeStart + 100) {
-                return const SizedBox.shrink();
-              }
-
-              final isSelected = index == state._selectedEpIdx;
+              final episode = episodesInRange[index];
+              final globalIndex = startIdx + index;
+              final isSelected = globalIndex == state._selectedEpIdx;
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  tileColor: isSelected 
-                    ? theme.colorScheme.primaryContainer 
-                    : theme.colorScheme.surfaceContainerHighest,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  tileColor: isSelected
+                      ? theme.colorScheme.primaryContainer
+                      : theme.colorScheme.surfaceContainerHighest,
                   title: Text(
                     'Episode ${episode.number}',
                     style: TextStyle(
                       color: isSelected
-                        ? theme.colorScheme.onPrimaryContainer
-                        : theme.colorScheme.onSurface,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ? theme.colorScheme.onPrimaryContainer
+                          : theme.colorScheme.onSurface,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
-                  subtitle: episode.title != null ? Text(
-                    episode.title!,
-                    style: TextStyle(
-                      color: isSelected
-                        ? theme.colorScheme.onPrimaryContainer.withOpacity(0.8)
-                        : theme.colorScheme.onSurfaceVariant,
-                      fontSize: 12,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ) : null,
-                  onTap: () => state._playEpisode(index),
+                  subtitle: episode.title != null
+                      ? Text(
+                          episode.title!,
+                          style: TextStyle(
+                            color: isSelected
+                                ? theme.colorScheme.onPrimaryContainer
+                                    .withValues(alpha: 0.8)
+                                : theme.colorScheme.onSurfaceVariant,
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : null,
+                  onTap: () => state._playEpisode(globalIndex),
                 ),
               );
             },

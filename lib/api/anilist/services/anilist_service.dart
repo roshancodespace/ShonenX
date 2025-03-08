@@ -76,6 +76,7 @@ class AnilistService {
     required String type, // e.g., 'ANIME' or 'MANGA'
     required String status, // e.g., 'CURRENT', 'COMPLETED', etc.
   }) async {
+    if (accessToken.isEmpty) return MediaListCollection(lists: []);
     debugPrint(
         'Fetching anime list: User ID: $userId, Type: $type, Status: $status');
 

@@ -363,7 +363,11 @@ class _TopBar extends StatelessWidget {
         children: [
           _IconButton(
             icon: Iconsax.arrow_left_1,
-            onPressed: () => context.pop(),
+            onPressed: () async {
+              await toggleFullscreen(context);
+              if (!context.mounted) return;
+              context.pop();
+            },
             size: 28,
           ),
           const SizedBox(width: 16),

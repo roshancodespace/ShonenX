@@ -1,0 +1,2 @@
+C:/Coding/Flutter/ShonenX/android/app/.cxx/RelWithDebInfo/145f471a/x86_64/CMakeFiles/edit_cache.dir
+C:/Coding/Flutter/ShonenX/android/app/.cxx/RelWithDebInfo/145f471a/x86_64/CMakeFiles/rebuild_cache.dir

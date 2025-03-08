@@ -1,5 +1,4 @@
 import 'dart:developer';
-import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
@@ -10,8 +9,6 @@ import 'package:shonenx/api/anilist/services/anilist_service.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
-import 'package:shonenx/helpers/matcher.dart';
-import 'package:shonenx/helpers/provider.dart';
 import 'package:shonenx/providers/anilist/anilist_medialist_provider.dart';
 import 'package:shonenx/providers/anilist/anilist_user_provider.dart';
 
@@ -57,6 +54,11 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
           _currentStatus = statusData['status'] as String?;
           _currentEntryId = statusData['id'] as int?;
         });
+        // Update local state on initial fetch
+        ref.read(animeListProvider.notifier).toggleStatusStatic(
+              media: widget.anime,
+              newStatus: _currentStatus,
+            );
       }
     }
   }
@@ -87,7 +89,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
 
   Future<void> _toggleFavorite() async {
     if (_isToggling) return;
-    _isToggling = true;
+    setState(() => _isToggling = true);
     final accessToken = ref.read(userProvider)?.accessToken;
     if (accessToken != null) {
       try {
@@ -100,12 +102,15 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
             .toggleFavoritesStatic([widget.anime]);
         setState(() => _isFavourite = !_isFavourite);
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to toggle favorite: $e')),
         );
       } finally {
-        _isToggling = false;
+        setState(() => _isToggling = false);
       }
+    } else {
+      setState(() => _isToggling = false);
     }
   }
 
@@ -768,6 +773,7 @@ class _StatusMenuItem extends ConsumerWidget {
 
         try {
           if (isCurrent && entryId != null) {
+            if (!context.mounted) return;
             final shouldRemove = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
@@ -796,6 +802,7 @@ class _StatusMenuItem extends ConsumerWidget {
                     media: animeMedia,
                     newStatus: null, // Remove from list
                   );
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Removed from ${status.title}')),
               );
@@ -810,6 +817,7 @@ class _StatusMenuItem extends ConsumerWidget {
                   media: animeMedia,
                   newStatus: anilistStatus,
                 );
+            if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Added to ${status.title}')),
             );
@@ -820,6 +828,7 @@ class _StatusMenuItem extends ConsumerWidget {
             SnackBar(content: Text('Failed to update status: $e')),
           );
         }
+        if (!context.mounted) return;
         Navigator.pop(context); // Close the popup menu
       },
       child: Row(

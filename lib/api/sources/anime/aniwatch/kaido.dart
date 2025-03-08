@@ -15,9 +15,6 @@ class KaidoProvider extends AnimeProvider {
 
   Map<String, String> _getHeaders() {
     return {
-      // 'Accept-Encoding': 'gzip, deflate, br, zstd',
-      'Accept-Language': 'en-US,en;q=0.8',
-      'Cache-Control': 'no-cache',
       'User-Agent':
           'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36',
     };

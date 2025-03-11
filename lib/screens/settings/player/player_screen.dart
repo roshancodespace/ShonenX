@@ -1,4 +1,3 @@
-import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,8 +43,7 @@ class PlayerSettingsNotifier extends StateNotifier<PlayerSettingsState> {
   void _loadSettings() {
     final settings = _settingsBox?.getSettings();
     if (settings != null) {
-      state = state.copyWith(
-          playerSettings: settings.playerSettings ?? PlayerSettingsModel());
+      state = state.copyWith(playerSettings: settings.playerSettings);
     }
   }
 
@@ -70,7 +68,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildContent(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
+    // final colorScheme = Theme.of(context).colorScheme;
     final playerSettings = ref.watch(playerSettingsProvider).playerSettings;
 
     return ListView(

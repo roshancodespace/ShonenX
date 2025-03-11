@@ -128,7 +128,9 @@ class ContinueWatchingCard extends ConsumerWidget {
                             '${(progress * 100).toStringAsFixed(1)}%',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: Colors.white
+                            ),
                           ),
                           Text(
                             anime.animeTitle,
@@ -136,7 +138,7 @@ class ContinueWatchingCard extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface,
+                              color: Colors.white
                             ),
                           ),
                           Text(
@@ -145,7 +147,7 @@ class ContinueWatchingCard extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurfaceVariant,
+                              color:  theme.colorScheme.secondary
                             ),
                           ),
                           const SizedBox(height: 8),

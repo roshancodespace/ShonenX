@@ -2,148 +2,111 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:go_router/go_router.dart';
 import 'package:shonenx/data/hive/boxes/settings_box.dart';
 import 'package:shonenx/data/hive/models/settings_offline_model.dart';
 
-class ThemeSettingsScreen extends ConsumerStatefulWidget {
+// Riverpod provider for theme settings
+final themeSettingsProvider =
+    StateNotifierProvider<ThemeSettingsNotifier, ThemeSettingsState>((ref) {
+  return ThemeSettingsNotifier();
+});
+
+class ThemeSettingsState {
+  final ThemeSettingsModel themeSettings;
+  final bool isLoading;
+
+  ThemeSettingsState({required this.themeSettings, this.isLoading = false});
+
+  ThemeSettingsState copyWith(
+      {ThemeSettingsModel? themeSettings, bool? isLoading}) {
+    return ThemeSettingsState(
+      themeSettings: themeSettings ?? this.themeSettings,
+      isLoading: isLoading ?? this.isLoading,
+    );
+  }
+}
+
+class ThemeSettingsNotifier extends StateNotifier<ThemeSettingsState> {
+  SettingsBox? _settingsBox;
+
+  ThemeSettingsNotifier()
+      : super(ThemeSettingsState(themeSettings: ThemeSettingsModel()));
+
+  Future<void> initializeSettings() async {
+    state = state.copyWith(isLoading: true);
+    _settingsBox = SettingsBox();
+    await _settingsBox?.init();
+    _loadSettings();
+    state = state.copyWith(isLoading: false);
+  }
+
+  void _loadSettings() {
+    final settings = _settingsBox?.getSettings();
+    if (settings != null) {
+      state = state.copyWith(themeSettings: settings.themeSettings);
+    }
+  }
+
+  void updateThemeSettings(ThemeSettingsModel settings) {
+    state = state.copyWith(themeSettings: settings);
+    _settingsBox?.updateThemeSettings(settings);
+  }
+}
+
+class ThemeSettingsScreen extends ConsumerWidget {
   const ThemeSettingsScreen({super.key});
 
   @override
-  ConsumerState<ThemeSettingsScreen> createState() =>
-      ThemeSettingsScreenState();
-}
-
-class ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
-  late SettingsBox? _settingsBox;
-  bool _isDarkMode = false;
-  bool _useAmoledBlack = false;
-  bool _useMaterial3 = true;
-  FlexScheme _flexScheme = FlexScheme.deepPurple;
-  bool _useSubThemes = true;
-  double _surfaceModeLight = 0;
-  double _surfaceModeDark = 0;
-  bool _useKeyColors = true;
-  bool _useAppbarColors = false;
-  bool _swapLightColors = false;
-  bool _swapDarkColors = false;
-  bool _useTertiary = true;
-  int _blendLevel = 0;
-  double _appBarOpacity = 1.0;
-  bool _transparentStatusBar = false;
-  double _tabBarOpacity = 1.0;
-  double _bottomBarOpacity = 1.0;
-  bool _tooltipsMatchBackground = false;
-  double _defaultRadius = 12.0;
-  bool _useTextTheme = true;
-  FlexTabBarStyle _tabBarStyle = FlexTabBarStyle.forBackground;
-
-  // Expansion states
-  final Map<String, bool> _expandedSections = {
-    'Theme': true,
-    'Material Design': false,
-    'Colors': false,
-    'Components': false,
-    'Typography': false,
-  };
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
-  }
-
-  Future<void> _loadSettings() async {
-    _settingsBox = SettingsBox();
-    await _settingsBox?.init();
-    final settings = _settingsBox?.getSettings()?.themeSettings;
-    setState(() {
-      _isDarkMode = settings?.themeMode != 'light';
-      _useAmoledBlack = settings?.amoled ?? false;
-      _flexScheme = settings?.flexSchemeEnum ?? FlexScheme.red;
-      _useMaterial3 = settings?.useMaterial3 ?? true;
-      _useSubThemes = settings?.useSubThemes ?? true;
-      _surfaceModeLight = settings?.surfaceModeLight ?? 0;
-      _surfaceModeDark = settings?.surfaceModeDark ?? 0;
-      _useKeyColors = settings?.useKeyColors ?? true;
-      _useAppbarColors = settings?.useAppbarColors ?? false;
-      _swapLightColors = settings?.swapLightColors ?? false;
-      _swapDarkColors = settings?.swapDarkColors ?? false;
-      _useTertiary = settings?.useTertiary ?? true;
-      _blendLevel = settings?.blendLevel ?? 0;
-      _appBarOpacity = settings?.appBarOpacity ?? 1.0;
-      _transparentStatusBar = settings?.transparentStatusBar ?? false;
-      _tabBarOpacity = settings?.tabBarOpacity ?? 1.0;
-      _bottomBarOpacity = settings?.bottomBarOpacity ?? 1.0;
-      _tooltipsMatchBackground = settings?.tooltipsMatchBackground ?? false;
-      _defaultRadius = settings?.defaultRadius ?? 12.0;
-      _useTextTheme = settings?.useTextTheme ?? true;
-      _tabBarStyle =
-          settings?.flexTabBarStyleEnum ?? FlexTabBarStyle.forBackground;
-    });
-  }
-
-  void _updateAppearanceSettings() {
-    _settingsBox?.updateThemeSettings(
-      ThemeSettingsModel(
-        themeMode: _isDarkMode ? 'dark' : 'light',
-        amoled: _useAmoledBlack,
-        colorScheme: _flexScheme.name,
-        useMaterial3: _useMaterial3,
-        useSubThemes: _useSubThemes,
-        surfaceModeLight: _surfaceModeLight,
-        surfaceModeDark: _surfaceModeDark,
-        useKeyColors: _useKeyColors,
-        useAppbarColors: _useAppbarColors,
-        swapLightColors: _swapLightColors,
-        swapDarkColors: _swapDarkColors,
-        useTertiary: _useTertiary,
-        blendLevel: _blendLevel,
-        appBarOpacity: _appBarOpacity,
-        transparentStatusBar: _transparentStatusBar,
-        tabBarOpacity: _tabBarOpacity,
-        bottomBarOpacity: _bottomBarOpacity,
-        tooltipsMatchBackground: _tooltipsMatchBackground,
-        defaultRadius: _defaultRadius,
-        useTextTheme: _useTextTheme,
-        tabBarStyle: _tabBarStyle.name,
-      ),
-    );
-    setState(() {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingsState = ref.watch(themeSettingsProvider);
+    final notifier = ref.read(themeSettingsProvider.notifier);
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildExpandableSection('Theme', _buildThemeSection()),
-        _buildExpandableSection('Material Design', _buildMaterialSection()),
-        _buildExpandableSection('Colors', _buildColorsSection()),
-        _buildExpandableSection('Components', _buildComponentsSection()),
-        _buildExpandableSection('Typography', _buildTypographySection()),
-        _buildColorSchemeTile(),
+        _buildExpandableSection(
+          context,
+          'Theme',
+          _buildThemeSection(context, settingsState.themeSettings, notifier),
+        ),
+        _buildExpandableSection(
+          context,
+          'Material Design',
+          _buildMaterialSection(context, settingsState.themeSettings, notifier),
+        ),
+        _buildExpandableSection(
+          context,
+          'Colors',
+          _buildColorsSection(context, settingsState.themeSettings, notifier),
+        ),
+        _buildExpandableSection(
+          context,
+          'Components',
+          _buildComponentsSection(
+              context, settingsState.themeSettings, notifier),
+        ),
+        _buildExpandableSection(
+          context,
+          'Typography',
+          _buildTypographySection(
+              context, settingsState.themeSettings, notifier),
+        ),
+        _buildColorSchemeTile(context, settingsState.themeSettings, notifier),
         const SizedBox(height: 120),
       ],
     );
   }
 
-  Widget _buildExpandableSection(String title, Widget content) {
+  Widget _buildExpandableSection(
+      BuildContext context, String title, Widget content) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isExpanded = _expandedSections[title] ?? false;
 
     return Card(
       elevation: 2,
       shadowColor: colorScheme.shadow.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ExpansionTile(
-        shape: ShapeBorder.lerp(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
-          1,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           title,
           style: TextStyle(
@@ -152,226 +115,208 @@ class ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
             color: colorScheme.primary,
           ),
         ),
-        initiallyExpanded: isExpanded,
-        onExpansionChanged: (expanded) {
-          setState(() => _expandedSections[title] = expanded);
-        },
+        initiallyExpanded: title == 'Theme', // Only 'Theme' expanded by default
         childrenPadding: const EdgeInsets.all(8),
         children: [content],
       ),
     );
   }
 
-  Widget _buildThemeSection() {
+  Widget _buildThemeSection(BuildContext context, ThemeSettingsModel settings,
+      ThemeSettingsNotifier notifier) {
     return Column(
       children: [
-        _SettingsSwitchTile(
-          title: 'Dark Mode',
-          subtitle: 'Switch to dark theme',
-          icon: Iconsax.moon,
-          value: _isDarkMode,
-          onChanged: (value) {
-            _isDarkMode = value;
-            _updateAppearanceSettings();
-          },
+        _buildSwitchItem(
+          context,
+          'Dark Mode',
+          'Switch to dark theme',
+          Iconsax.moon,
+          settings.themeMode != 'light',
+          (value) => notifier.updateThemeSettings(
+              settings.copyWith(themeMode: value ? 'dark' : 'light')),
         ),
-        if (_isDarkMode)
-          _SettingsSwitchTile(
-            title: 'AMOLED Dark',
-            subtitle: 'Use pure black for dark mode',
-            icon: Iconsax.colorfilter,
-            value: _useAmoledBlack,
-            onChanged: (value) {
-              _useAmoledBlack = value;
-              _updateAppearanceSettings();
-            },
+        if (settings.themeMode != 'light')
+          _buildSwitchItem(
+            context,
+            'AMOLED Dark',
+            'Use pure black for dark mode',
+            Iconsax.colorfilter,
+            settings.amoled,
+            (value) =>
+                notifier.updateThemeSettings(settings.copyWith(amoled: value)),
           ),
       ],
     );
   }
 
-  Widget _buildMaterialSection() {
+  Widget _buildMaterialSection(BuildContext context,
+      ThemeSettingsModel settings, ThemeSettingsNotifier notifier) {
     return Column(
       children: [
-        _SettingsSwitchTile(
-          title: 'Material 3',
-          subtitle: 'Enable Material 3 design',
-          icon: Iconsax.designtools,
-          value: _useMaterial3,
-          onChanged: (value) {
-            _useMaterial3 = value;
-            _updateAppearanceSettings();
-          },
+        _buildSwitchItem(
+          context,
+          'Material 3',
+          'Enable Material 3 design',
+          Iconsax.designtools,
+          settings.useMaterial3,
+          (value) => notifier
+              .updateThemeSettings(settings.copyWith(useMaterial3: value)),
         ),
-        _SettingsSwitchTile(
-          title: 'Sub-themes',
-          subtitle: 'Apply theme to all components',
-          icon: Iconsax.brush_2,
-          value: _useSubThemes,
-          onChanged: (value) {
-            _useSubThemes = value;
-            _updateAppearanceSettings();
-          },
+        _buildSwitchItem(
+          context,
+          'Sub-themes',
+          'Apply theme to all components',
+          Iconsax.brush_2,
+          settings.useSubThemes,
+          (value) => notifier
+              .updateThemeSettings(settings.copyWith(useSubThemes: value)),
         ),
       ],
     );
   }
 
-  Widget _buildColorsSection() {
+  Widget _buildColorsSection(BuildContext context, ThemeSettingsModel settings,
+      ThemeSettingsNotifier notifier) {
     return Column(
       children: [
-        _SettingsSwitchTile(
-          title: 'Use Key Colors',
-          subtitle: 'Apply key colors to surfaces',
-          icon: Iconsax.color_swatch,
-          value: _useKeyColors,
-          onChanged: (value) {
-            _useKeyColors = value;
-            _updateAppearanceSettings();
-          },
+        _buildSwitchItem(
+          context,
+          'Use Key Colors',
+          'Apply key colors to surfaces',
+          Iconsax.color_swatch,
+          settings.useKeyColors,
+          (value) => notifier
+              .updateThemeSettings(settings.copyWith(useKeyColors: value)),
         ),
-        _SettingsSwitchTile(
-          title: 'Use Tertiary Colors',
-          subtitle: 'Enable tertiary color palette',
-          icon: Iconsax.colorfilter,
-          value: _useTertiary,
-          onChanged: (value) {
-            _useTertiary = value;
-            _updateAppearanceSettings();
-          },
+        _buildSwitchItem(
+          context,
+          'Use Tertiary Colors',
+          'Enable tertiary color palette',
+          Iconsax.colorfilter,
+          settings.useTertiary,
+          (value) => notifier
+              .updateThemeSettings(settings.copyWith(useTertiary: value)),
         ),
-        _SettingsSwitchTile(
-          title: 'Swap Light Colors',
-          subtitle: 'Swap primary/secondary in light mode',
-          icon: Iconsax.arrange_square,
-          value: _swapLightColors,
-          onChanged: (value) {
-            _swapLightColors = value;
-            _updateAppearanceSettings();
-          },
+        _buildSwitchItem(
+          context,
+          'Swap Light Colors',
+          'Swap primary/secondary in light mode',
+          Iconsax.arrange_square,
+          settings.swapLightColors,
+          (value) => notifier
+              .updateThemeSettings(settings.copyWith(swapLightColors: value)),
         ),
-        if (_isDarkMode)
-          _SettingsSwitchTile(
-            title: 'Swap Dark Colors',
-            subtitle: 'Swap primary/secondary in dark mode',
-            icon: Iconsax.arrange_square,
-            value: _swapDarkColors,
-            onChanged: (value) {
-              _swapDarkColors = value;
-              _updateAppearanceSettings();
-            },
+        if (settings.themeMode != 'light')
+          _buildSwitchItem(
+            context,
+            'Swap Dark Colors',
+            'Swap primary/secondary in dark mode',
+            Iconsax.arrange_square,
+            settings.swapDarkColors,
+            (value) => notifier
+                .updateThemeSettings(settings.copyWith(swapDarkColors: value)),
           ),
-        _SettingsSliderTile(
-          title: 'Color Blend Level',
-          value: _blendLevel.toDouble(),
-          min: 0,
-          max: 40,
-          divisions: 40,
-          suffix: '',
-          onChanged: (value) {
-            _blendLevel = value.toInt();
-            _updateAppearanceSettings();
-          },
+        _buildSliderItem(
+          context,
+          'Color Blend Level',
+          settings.blendLevel.toDouble(),
+          0,
+          40,
+          40,
+          '',
+          (value) => notifier.updateThemeSettings(
+              settings.copyWith(blendLevel: value.toInt())),
         ),
       ],
     );
   }
 
-  Widget _buildComponentsSection() {
+  Widget _buildComponentsSection(BuildContext context,
+      ThemeSettingsModel settings, ThemeSettingsNotifier notifier) {
     return Column(
       children: [
-        _SettingsSwitchTile(
-          title: 'Colored App Bar',
-          subtitle: 'Apply theme colors to app bar',
-          icon: Iconsax.arrow_circle_up,
-          value: _useAppbarColors,
-          onChanged: (value) {
-            _useAppbarColors = value;
-            _updateAppearanceSettings();
-          },
+        _buildSwitchItem(
+          context,
+          'Colored App Bar',
+          'Apply theme colors to app bar',
+          Iconsax.arrow_circle_up,
+          settings.useAppbarColors,
+          (value) => notifier
+              .updateThemeSettings(settings.copyWith(useAppbarColors: value)),
         ),
-        _SettingsSliderTile(
-          title: 'App Bar Opacity',
-          value: _appBarOpacity,
-          min: 0,
-          max: 1,
-          divisions: 20,
-          suffix: '%',
-          onChanged: (value) {
-            _appBarOpacity = value;
-            _updateAppearanceSettings();
-          },
+        _buildSliderItem(
+          context,
+          'App Bar Opacity',
+          settings.appBarOpacity,
+          0,
+          1,
+          20,
+          '%',
+          (value) => notifier
+              .updateThemeSettings(settings.copyWith(appBarOpacity: value)),
         ),
-        _SettingsSwitchTile(
-          title: 'Transparent Status Bar',
-          subtitle: 'Make status bar transparent',
-          icon: Iconsax.status,
-          value: _transparentStatusBar,
-          onChanged: (value) {
-            _transparentStatusBar = value;
-            _updateAppearanceSettings();
-          },
+        _buildSwitchItem(
+          context,
+          'Transparent Status Bar',
+          'Make status bar transparent',
+          Iconsax.status,
+          settings.transparentStatusBar,
+          (value) => notifier.updateThemeSettings(
+              settings.copyWith(transparentStatusBar: value)),
         ),
-        _SettingsSliderTile(
-          title: 'Border Radius',
-          value: _defaultRadius,
-          min: 0,
-          max: 24,
-          divisions: 24,
-          suffix: 'dp',
-          onChanged: (value) {
-            _defaultRadius = value;
-            _updateAppearanceSettings();
-          },
+        _buildSliderItem(
+          context,
+          'Border Radius',
+          settings.defaultRadius,
+          0,
+          24,
+          24,
+          'dp',
+          (value) => notifier
+              .updateThemeSettings(settings.copyWith(defaultRadius: value)),
         ),
-        _SettingsSwitchTile(
-          title: 'Tooltip Background',
-          subtitle: 'Match tooltips to background',
-          icon: Iconsax.message_question,
-          value: _tooltipsMatchBackground,
-          onChanged: (value) {
-            _tooltipsMatchBackground = value;
-            _updateAppearanceSettings();
-          },
+        _buildSwitchItem(
+          context,
+          'Tooltip Background',
+          'Match tooltips to background',
+          Iconsax.message_question,
+          settings.tooltipsMatchBackground,
+          (value) => notifier.updateThemeSettings(
+              settings.copyWith(tooltipsMatchBackground: value)),
         ),
       ],
     );
   }
 
-  Widget _buildTypographySection() {
-    return Column(
-      children: [
-        _SettingsSwitchTile(
-          title: 'Custom Typography',
-          subtitle: 'Use custom text theme',
-          icon: Iconsax.text,
-          value: _useTextTheme,
-          onChanged: (value) {
-            _useTextTheme = value;
-            _updateAppearanceSettings();
-          },
-        ),
-      ],
+  Widget _buildTypographySection(BuildContext context,
+      ThemeSettingsModel settings, ThemeSettingsNotifier notifier) {
+    return _buildSwitchItem(
+      context,
+      'Custom Typography',
+      'Use custom text theme',
+      Iconsax.text,
+      settings.useTextTheme,
+      (value) =>
+          notifier.updateThemeSettings(settings.copyWith(useTextTheme: value)),
     );
   }
 
-  Widget _buildColorSchemeTile() {
+  Widget _buildColorSchemeTile(BuildContext context,
+      ThemeSettingsModel settings, ThemeSettingsNotifier notifier) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ListTile(
-        leading: Icon(Iconsax.colorfilter,
-            color: Theme.of(context).colorScheme.primary),
-        title: const Text('Color Scheme',
-            style: TextStyle(fontWeight: FontWeight.w600)),
-        trailing: Icon(Iconsax.arrow_right_3,
-            color: Theme.of(context).colorScheme.onSurface),
-        onTap: _showColorSchemeModal,
+      child: SettingsItem(
+        icon: Iconsax.colorfilter,
+        title: 'Color Scheme',
+        description: 'Select a color scheme',
+        onTap: () => _showColorSchemeModal(context, settings, notifier),
       ),
     );
   }
 
-  void _showColorSchemeModal() {
+  void _showColorSchemeModal(BuildContext context, ThemeSettingsModel settings,
+      ThemeSettingsNotifier notifier) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -393,10 +338,10 @@ class ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
               final scheme = FlexScheme.values[index];
               return _SimpleColorSchemeCard(
                 scheme: scheme,
-                isSelected: _flexScheme == scheme,
+                isSelected: settings.flexSchemeEnum == scheme,
                 onSelected: (selectedScheme) {
-                  _flexScheme = selectedScheme;
-                  _updateAppearanceSettings();
+                  notifier.updateThemeSettings(
+                      settings.copyWith(colorScheme: selectedScheme.name));
                   Navigator.pop(context);
                 },
               );
@@ -406,141 +351,51 @@ class ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
       },
     );
   }
-}
 
-class _SettingsSwitchTile extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _SettingsSwitchTile({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildSwitchItem(
+      BuildContext context,
+      String title,
+      String description,
+      IconData icon,
+      bool value,
+      ValueChanged<bool> onChanged) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => onChanged(!value),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        colorScheme.primary.withValues(alpha: 0.2),
-                        colorScheme.primary.withValues(alpha: 0.1),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, color: colorScheme.primary, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Switch(
-                  value: value,
-                  onChanged: onChanged,
-                ),
-              ],
-            ),
-          ),
-        ),
+    return SettingsItem(
+      icon: icon,
+      title: title,
+      description: description,
+      onTap: () => onChanged(!value),
+      child: Switch(
+        value: value,
+        onChanged: onChanged,
+        activeColor: colorScheme.primary,
       ),
     );
   }
-}
 
-class _SettingsSliderTile extends StatelessWidget {
-  final String title;
-  final double value;
-  final double min;
-  final double max;
-  final int divisions;
-  final String suffix;
-  final ValueChanged<double> onChanged;
-
-  const _SettingsSliderTile({
-    required this.title,
-    required this.value,
-    required this.min,
-    required this.max,
-    required this.divisions,
-    required this.suffix,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildSliderItem(
+      BuildContext context,
+      String title,
+      double value,
+      double min,
+      double max,
+      int divisions,
+      String suffix,
+      ValueChanged<double> onChanged) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                Text(
-                  '${value.toStringAsFixed(1)}$suffix',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Slider(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SettingsItem(
+          icon: Iconsax.slider,
+          title: title,
+          description: '${value.toStringAsFixed(1)}$suffix',
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Slider(
             value: value,
             min: min,
             max: max,
@@ -549,12 +404,92 @@ class _SettingsSliderTile extends StatelessWidget {
             inactiveColor: colorScheme.surfaceContainerHighest,
             onChanged: onChanged,
           ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+// Reused SettingsItem from previous screens
+class SettingsItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback? onTap;
+  final bool disabled;
+  final Widget? child;
+
+  const SettingsItem({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.description,
+    this.onTap,
+    this.disabled = false,
+    this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return InkWell(
+      onTap: disabled ? null : onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: disabled
+                    ? colorScheme.onSurface.withValues(alpha: 0.38)
+                    : colorScheme.primary,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: disabled
+                          ? colorScheme.onSurface.withValues(alpha: 0.38)
+                          : colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: disabled
+                          ? colorScheme.onSurface.withValues(alpha: 0.38)
+                          : colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (child != null) child!,
+          ],
+        ),
       ),
     );
   }
 }
 
+// _SimpleColorSchemeCard remains unchanged
 class _SimpleColorSchemeCard extends StatelessWidget {
   final FlexScheme scheme;
   final bool isSelected;

@@ -1,11 +1,16 @@
 name: shonenx
-description: "A new Flutter project."
-publish_to: "none" # Remove this line if you wish to publish to pub.dev
+description: >
+  🚀 ShonenX is a blazing-fast, modern, and user-friendly anime streaming app built with Flutter.
+  Stream your favorite anime, keep track of your watch progress, and explore trending shows — 
+  all in one place. Built with ❤️ by Darkx-dev.
+
+publish_to: "none"
 
 version: 1.3.0
 
 environment:
   sdk: ">=3.2.6 <4.0.0"
+
 dependencies:
   flutter:
     sdk: flutter
@@ -43,6 +48,7 @@ dependencies:
   package_info_plus: ^8.2.1
   flutter_image_compress: ^2.4.0
   flex_color_scheme: ^8.1.1
+  rename: ^3.0.2
 
 dev_dependencies:
   flutter_test:
@@ -58,4 +64,4 @@ flutter_launcher_icons:
   image_path_android: "assets/icons/app_icon-modified-2.png"
   windows:
     generate: true
-    image_path: "assets/icons/app_icon-modified.png"
+    image_path: "assets/icons/app_icon-modified-2.png"

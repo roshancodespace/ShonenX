@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/providers/selected_provider.dart';
 import 'package:shonenx/api/registery/anime_source_registery_provider.dart';
 

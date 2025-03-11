@@ -1,6 +1,5 @@
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
@@ -33,10 +32,10 @@ class UISettingsState {
 class UISettingsNotifier extends StateNotifier<UISettingsState> {
   SettingsBox? _settingsBox;
 
-  UISettingsNotifier()
-      : super(UISettingsState(uiSettings: UISettingsModel()));
+  UISettingsNotifier() : super(UISettingsState(uiSettings: UISettingsModel()));
 
-  Future<void> initializeSettings() async { // Public method
+  Future<void> initializeSettings() async {
+    // Public method
     state = state.copyWith(isLoading: true);
     _settingsBox = SettingsBox();
     await _settingsBox?.init();
@@ -47,7 +46,8 @@ class UISettingsNotifier extends StateNotifier<UISettingsState> {
   void _loadSettings() {
     final settings = _settingsBox?.getSettings();
     if (settings != null) {
-      state = state.copyWith(uiSettings: settings.uiSettings ?? UISettingsModel());
+      state =
+          state.copyWith(uiSettings: settings.uiSettings ?? UISettingsModel());
     }
   }
 
@@ -92,7 +92,7 @@ class UISettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildContent(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
+    // final colorScheme = Theme.of(context).colorScheme;
 
     return CustomScrollView(
       slivers: [

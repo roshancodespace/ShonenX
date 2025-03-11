@@ -15,6 +15,7 @@ class SettingsLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    // final thextTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -30,7 +31,10 @@ class SettingsLayout extends StatelessWidget {
         ),
         title: Text(
           title,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface),
         ),
       ),
       body: child,

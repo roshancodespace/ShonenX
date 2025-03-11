@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/screens/settings/appearance/theme_screen.dart';
 import 'package:shonenx/screens/settings/appearance/ui_screen.dart';
 import 'package:shonenx/screens/settings/player/player_screen.dart';
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
@@ -17,11 +18,11 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
   bool _visible = true;
   double _opacity = 0.0;
   Timer? _blinkTimer;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // Start with fade in animation
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
@@ -30,7 +31,7 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
         });
       }
     });
-    
+
     // Create blinking effect for text
     _blinkTimer = Timer.periodic(const Duration(milliseconds: 700), (timer) {
       if (mounted) {
@@ -39,13 +40,13 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
         });
       }
     });
-    
+
     // Initialize after delay
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeWithDelay();
     });
   }
-  
+
   @override
   void dispose() {
     _blinkTimer?.cancel();
@@ -57,10 +58,11 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
       // Initialize with a forced 5-second delay
       await Future.wait([
         // Actual initialization
+        ref.read(themeSettingsProvider.notifier).initializeSettings(),
         ref.read(uiSettingsProvider.notifier).initializeSettings(),
         ref.read(playerSettingsProvider.notifier).initializeSettings(),
         AnimeWatchProgressBox().init(),
-        
+
         // Force minimum 5 second delay
         Future.delayed(const Duration(seconds: 5)),
       ]);
@@ -70,10 +72,10 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
         setState(() {
           _opacity = 0.0;
         });
-        
+
         // Wait for fade out animation
         await Future.delayed(const Duration(milliseconds: 300));
-        
+
         if (mounted) {
           context.go('/'); // Navigate to home screen
         }
@@ -87,8 +89,10 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: theme.colorScheme.surface,
       body: AnimatedOpacity(
         opacity: _opacity,
         duration: const Duration(milliseconds: 300),
@@ -96,10 +100,10 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
           child: AnimatedOpacity(
             opacity: _visible ? 1.0 : 0.5,
             duration: const Duration(milliseconds: 200),
-            child: const Text(
+            child: Text(
               'ShonenX',
               style: TextStyle(
-                color: Colors.red,
+                color: theme.colorScheme.primary,
                 fontSize: 48,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -1,

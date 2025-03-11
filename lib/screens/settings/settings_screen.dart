@@ -25,11 +25,12 @@ class SettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.all(10),
           ),
         ),
-        title: const Text(
+        title: Text(
           'Settings',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface
           ),
         ),
       ),

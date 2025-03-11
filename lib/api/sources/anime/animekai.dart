@@ -15,12 +15,12 @@ class AnimekaiProvider extends AnimeProvider {
             baseUrl: 'https://shonenx-consumet-api.vercel.app/anime/animekai',
             providerName: 'animekai');
 
-  Map<String, String> _getHeaders() {
-    return {
-      'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-    };
-  }
+  // Map<String, String> _getHeaders() {
+  //   return {
+  //     'User-Agent':
+  //         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+  //   };
+  // }
 
   @override
   Future<HomePage> getHome() {
@@ -113,7 +113,7 @@ class AnimekaiProvider extends AnimeProvider {
 
   @override
   Future<BaseSourcesModel> getSources(String animeId, String episodeId,
-      String serverName, String category) async {
+      String serverName, String category, ) async {
     final dub = category == 'dub' ? 1 : 0;
     log('Fetching : ${'$baseUrl/watch/$episodeId?dub=$dub'}');
     try {

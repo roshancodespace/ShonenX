@@ -24,7 +24,7 @@ class AboutScreen extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
-            color: colorScheme.outline.withOpacity(0.1),
+            color: colorScheme.outline.withValues(alpha: 0.1),
             width: 1,
           ),
         ),
@@ -39,14 +39,14 @@ class AboutScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: disabled
-                        ? colorScheme.onSurface.withOpacity(0.1)
-                        : colorScheme.primary.withOpacity(0.1),
+                        ? colorScheme.onSurface.withValues(alpha: 0.1)
+                        : colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     icon,
                     color: disabled
-                        ? colorScheme.onSurface.withOpacity(0.4)
+                        ? colorScheme.onSurface.withValues(alpha: 0.4)
                         : colorScheme.primary,
                     size: 20,
                   ),
@@ -62,7 +62,7 @@ class AboutScreen extends StatelessWidget {
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                           color: disabled
-                              ? colorScheme.onSurface.withOpacity(0.4)
+                              ? colorScheme.onSurface.withValues(alpha: 0.4)
                               : colorScheme.onSurface,
                         ),
                       ),
@@ -72,8 +72,8 @@ class AboutScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           color: disabled
-                              ? colorScheme.onSurface.withOpacity(0.3)
-                              : colorScheme.onSurface.withOpacity(0.7),
+                              ? colorScheme.onSurface.withValues(alpha: 0.3)
+                              : colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -82,7 +82,7 @@ class AboutScreen extends StatelessWidget {
                 if (onTap != null && !disabled)
                   Icon(
                     Iconsax.arrow_right_3,
-                    color: colorScheme.onSurface.withOpacity(0.5),
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
                     size: 20,
                   ),
               ],
@@ -105,7 +105,7 @@ class AboutScreen extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(
-                color: colorScheme.outline.withOpacity(0.1),
+                color: colorScheme.outline.withValues(alpha: 0.1),
                 width: 1,
               ),
             ),
@@ -116,7 +116,7 @@ class AboutScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: colorScheme.primary.withOpacity(0.1),
+                      color: colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -142,7 +142,7 @@ class AboutScreen extends StatelessWidget {
                           'Version ${info.version} (${info.buildNumber})',
                           style: TextStyle(
                             fontSize: 14,
-                            color: colorScheme.onSurface.withOpacity(0.7),
+                            color: colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -156,86 +156,66 @@ class AboutScreen extends StatelessWidget {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: Icon(Iconsax.arrow_left_1, color: colorScheme.onSurface),
-          style: IconButton.styleFrom(
-            backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-            padding: const EdgeInsets.all(10),
-          ),
-        ),
-        title: const Text(
-          'About',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            buildAppInfo(),
-            const SizedBox(height: 16),
-            Text(
-              'Legal',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.primary,
-              ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          buildAppInfo(),
+          const SizedBox(height: 16),
+          Text(
+            'Legal',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: colorScheme.primary,
             ),
-            const SizedBox(height: 8),
-            buildInfoTile(
+          ),
+          const SizedBox(height: 8),
+          buildInfoTile(
               title: 'Terms of Service',
               subtitle: 'Read our terms of service',
               icon: Iconsax.document_text,
               onTap: () => context.push('/settings/about/terms'),
-              disabled: true
-            ),
-            buildInfoTile(
+              disabled: true),
+          buildInfoTile(
               title: 'Privacy Policy',
               subtitle: 'Learn how we handle your data',
               icon: Iconsax.shield_tick,
               onTap: () => context.push('/settings/about/privacy'),
-              disabled: true
+              disabled: true),
+          buildInfoTile(
+            title: 'Licenses',
+            subtitle: 'Open source licenses',
+            icon: Iconsax.code,
+            onTap: () => showLicensePage(context: context),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Links',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: colorScheme.primary,
             ),
-            buildInfoTile(
-              title: 'Licenses',
-              subtitle: 'Open source licenses',
-              icon: Iconsax.code,
-              onTap: () => showLicensePage(context: context),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Links',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            buildInfoTile(
-              title: 'GitHub Repository',
-              subtitle: 'View source code and contribute',
-              icon: Iconsax.code,
-              onTap: () =>
-                  launchUrl(Uri.parse('https://github.com/Darkx-dev/ShonenX')),
-            ),
-            buildInfoTile(
-              title: 'Report an Issue',
-              subtitle: 'Help us improve the app',
-              icon: Iconsax.message_question,
-              onTap: () => launchUrl(
-                  Uri.parse('https://github.com/Darkx-dev/ShonenX/issues')),
-              disabled: false, // Set to true to disable this item
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+          buildInfoTile(
+            title: 'GitHub Repository',
+            subtitle: 'View source code and contribute',
+            icon: Iconsax.code,
+            onTap: () =>
+                launchUrl(Uri.parse('https://github.com/Darkx-dev/ShonenX')),
+          ),
+          buildInfoTile(
+            title: 'Report an Issue',
+            subtitle: 'Help us improve the app',
+            icon: Iconsax.message_question,
+            onTap: () => launchUrl(
+                Uri.parse('https://github.com/Darkx-dev/ShonenX/issues')),
+            disabled: false, // Set to true to disable this item
+          ),
+        ],
       ),
     );
   }

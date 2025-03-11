@@ -5,7 +5,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/anilist/services/anilist_service.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
@@ -29,9 +28,9 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
   late final Future<AnimeWatchProgressBox> _boxFuture;
   bool _isFavourite = false;
   bool _isLoading = false;
-  bool _isToggeling = false;
+  // bool _isToggeling = false;
   String? _currentStatus; // e.g., "CURRENT", "COMPLETED", etc.
-  int? _currentEntryId; // The ID of the MediaList entry
+  // int? _currentEntryId; // The ID of the MediaList entry
 
   @override
   void initState() {
@@ -54,7 +53,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
       if (mounted && statusData != null) {
         setState(() {
           _currentStatus = statusData['status'] as String?;
-          _currentEntryId = statusData['id'] as int?;
+          // _currentEntryId = statusData['id'] as int?;
         });
         // Update local state on initial fetch
         ref.read(animeListProvider.notifier).toggleStatusStatic(
@@ -368,7 +367,7 @@ class _Tag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -400,7 +399,7 @@ class _Content extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(

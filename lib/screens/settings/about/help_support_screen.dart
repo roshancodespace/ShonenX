@@ -9,101 +9,87 @@ class HelpSupportScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(Iconsax.arrow_left_1),
-        ),
-        title: const Text(
-          'Help & Support',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+            child: Text(
+              'Support',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.primary,
+              ),
+            ),
           ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-              child: Text(
-                'Support',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.primary,
-                ),
+          _buildSettingsTile(
+            context,
+            title: 'FAQ',
+            icon: Iconsax.message_question,
+            subtitle: 'Frequently asked questions',
+            onTap: () {},
+          ),
+          _buildSettingsTile(
+            context,
+            title: 'Contact Support',
+            icon: Iconsax.message_text,
+            subtitle: 'Get help from our team',
+            onTap: () {},
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+            child: Text(
+              'Community',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.primary,
               ),
             ),
-            _buildSettingsTile(
-              context,
-              title: 'FAQ',
-              icon: Iconsax.message_question,
-              subtitle: 'Frequently asked questions',
-              onTap: () {},
-            ),
-            _buildSettingsTile(
-              context,
-              title: 'Contact Support',
-              icon: Iconsax.message_text,
-              subtitle: 'Get help from our team',
-              onTap: () {},
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-              child: Text(
-                'Community',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.primary,
-                ),
+          ),
+          _buildSettingsTile(
+            context,
+            title: 'Discord Server',
+            icon: Iconsax.message,
+            subtitle: 'Join our community',
+            onTap: () {},
+          ),
+          _buildSettingsTile(
+            context,
+            title: 'Report an Issue',
+            icon: Iconsax.warning_2,
+            subtitle: 'Help us improve the app',
+            onTap: () {},
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+            child: Text(
+              'Resources',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.primary,
               ),
             ),
-            _buildSettingsTile(
-              context,
-              title: 'Discord Server',
-              icon: Iconsax.message,
-              subtitle: 'Join our community',
-              onTap: () {},
-            ),
-            _buildSettingsTile(
-              context,
-              title: 'Report an Issue',
-              icon: Iconsax.warning_2,
-              subtitle: 'Help us improve the app',
-              onTap: () {},
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-              child: Text(
-                'Resources',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.primary,
-                ),
-              ),
-            ),
-            _buildSettingsTile(
-              context,
-              title: 'Documentation',
-              icon: Iconsax.document_text,
-              subtitle: 'Learn how to use the app',
-              onTap: () {},
-            ),
-            _buildSettingsTile(
-              context,
-              title: 'Video Tutorials',
-              icon: Iconsax.video_play,
-              subtitle: 'Watch guides and tutorials',
-              onTap: () {},
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
+          ),
+          _buildSettingsTile(
+            context,
+            title: 'Documentation',
+            icon: Iconsax.document_text,
+            subtitle: 'Learn how to use the app',
+            onTap: () {},
+          ),
+          _buildSettingsTile(
+            context,
+            title: 'Video Tutorials',
+            icon: Iconsax.video_play,
+            subtitle: 'Watch guides and tutorials',
+            onTap: () {},
+          ),
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }

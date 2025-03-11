@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/api/models/anime/page_model.dart';
 import 'package:shonenx/api/sources/anime/anime_provider.dart';
 import 'package:shonenx/helpers/provider.dart';
-import 'package:uuid/uuid.dart';
 
 class SeeAllScreen extends ConsumerStatefulWidget {
   final String title;
@@ -21,7 +20,7 @@ class SeeAllScreen extends ConsumerStatefulWidget {
 
 class _SeeAllScreenState extends ConsumerState<SeeAllScreen> {
   late final AnimeProvider _animeProvider;
-  final _uuid = const Uuid();
+  // final _uuid = const Uuid();
 
   bool _isLoading = true;
   int _currentPage = 1;
@@ -76,7 +75,7 @@ class _SeeAllScreenState extends ConsumerState<SeeAllScreen> {
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),
@@ -214,8 +213,8 @@ class _SeeAllScreenState extends ConsumerState<SeeAllScreen> {
       ),
       itemCount: _page.results.length,
       itemBuilder: (context, index) {
-        final tag = _uuid.v4();
-        final anime = _page.results[index];
+        // final tag = _uuid.v4();
+        // final anime = _page.results[index];
 
         return Material(
           elevation: 4,

@@ -4,7 +4,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
     as anime_media;
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
@@ -64,7 +63,7 @@ class ContinueWatchingCard extends ConsumerWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(
-              color: theme.colorScheme.outline.withOpacity(0.1),
+              color: theme.colorScheme.outline.withValues(alpha: 0.1),
               width: 1,
             ),
           ),
@@ -108,7 +107,7 @@ class ContinueWatchingCard extends ConsumerWidget {
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.transparent,
-                            theme.colorScheme.surface.withOpacity(0.9),
+                            theme.colorScheme.surface.withValues(alpha: 0.9),
                           ],
                         ),
                       ),
@@ -129,8 +128,7 @@ class ContinueWatchingCard extends ConsumerWidget {
                             '${(progress * 100).toStringAsFixed(1)}%',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                            ),
+                            style: theme.textTheme.labelSmall?.copyWith(),
                           ),
                           Text(
                             anime.animeTitle,
@@ -160,7 +158,8 @@ class ContinueWatchingCard extends ConsumerWidget {
                                   border: Border.all(
                                     color: theme.colorScheme.primaryContainer,
                                   ),
-                                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
+                                  color: theme.colorScheme.primaryContainer
+                                      .withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -223,8 +222,9 @@ class ContinueWatchingCard extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(2),
                             child: LinearProgressIndicator(
                               value: progress,
-                              backgroundColor:
-                                  theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
+                              backgroundColor: theme
+                                  .colorScheme.primaryContainer
+                                  .withValues(alpha: 0.2),
                               valueColor: AlwaysStoppedAnimation(
                                   theme.colorScheme.primaryContainer),
                               minHeight: 3,
@@ -239,7 +239,7 @@ class ContinueWatchingCard extends ConsumerWidget {
                     Positioned.fill(
                       child: Container(
                         color: isSelected
-                            ? theme.colorScheme.primary.withOpacity(0.2)
+                            ? theme.colorScheme.primary.withValues(alpha: 0.2)
                             : Colors.transparent,
                         child: isSelected
                             ? Center(
@@ -487,7 +487,7 @@ class _ImagePlaceholder extends StatelessWidget {
     return Container(
       width: width ?? double.infinity,
       height: height ?? double.infinity,
-      color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
       child: Center(
         child: CircularProgressIndicator(
           strokeWidth: 2,
@@ -510,7 +510,7 @@ class _ImageFallback extends StatelessWidget {
     return Container(
       width: width ?? double.infinity,
       height: height ?? double.infinity,
-      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       child: Icon(Icons.image, color: colorScheme.onSurfaceVariant),
     );
   }

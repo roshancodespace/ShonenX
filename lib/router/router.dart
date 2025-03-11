@@ -10,10 +10,10 @@ import 'package:shonenx/screens/continue_all_screen.dart';
 import 'package:shonenx/screens/details_screen.dart';
 import 'package:shonenx/screens/error_screen.dart';
 import 'package:shonenx/screens/home_screen.dart';
+import 'package:shonenx/screens/loading_screen.dart'; // New import
 import 'package:shonenx/screens/see_all_screen.dart';
 import 'package:shonenx/screens/settings/about/privacy_policy_screen.dart';
 import 'package:shonenx/screens/settings/about/terms_screen.dart';
-import 'package:shonenx/screens/settings/appearance/ui_screen.dart';
 import 'package:shonenx/screens/settings/settings_screen.dart';
 import 'package:shonenx/screens/settings/about/about_screen.dart';
 import 'package:shonenx/screens/settings/appearance/theme_screen.dart';
@@ -22,13 +22,19 @@ import 'package:shonenx/screens/settings/profile/profile_screen.dart';
 import 'package:shonenx/screens/settings/source/provider_screen.dart';
 import 'package:shonenx/screens/settings/profile/sync_screen.dart';
 import 'package:shonenx/screens/settings/player/player_screen.dart';
+import 'package:shonenx/screens/settings/appearance/ui_screen.dart';
 import 'package:shonenx/screens/watch_screen.dart';
 import 'package:shonenx/screens/watchlist_screen.dart';
+import 'package:shonenx/widgets/ui/layouts/settings_layout.dart';
 
 final GoRouter router = GoRouter(
   errorBuilder: (context, state) => ErrorScreen(error: state.error),
-  initialLocation: '/',
+  initialLocation: '/loading', // Set initial route to loading screen
   routes: <RouteBase>[
+    GoRoute(
+      path: '/loading',
+      builder: (context, state) => const LoadingScreen(),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
           AppRouterScreen(navigationShell: navigationShell),
@@ -109,13 +115,14 @@ GoRoute _buildSettingsRoute() {
 GoRoute _buildProfileSettingsRoute() {
   return GoRoute(
     path: 'profile',
-    pageBuilder: (context, state) =>
-        const MaterialPage(child: ProfileSettingsScreen()),
+    pageBuilder: (context, state) => const MaterialPage(
+        child:
+            SettingsLayout(title: "Profile", child: ProfileSettingsScreen())),
     routes: [
       GoRoute(
         path: 'sync',
-        pageBuilder: (context, state) =>
-            const MaterialPage(child: SyncSettingsScreen()),
+        pageBuilder: (context, state) => const MaterialPage(
+            child: SettingsLayout(title: "Sync", child: SyncSettingsScreen())),
       ),
     ],
   );
@@ -124,41 +131,46 @@ GoRoute _buildProfileSettingsRoute() {
 GoRoute _buildProviderSettingsRoute() {
   return GoRoute(
     path: 'providers',
-    pageBuilder: (context, state) =>
-        const MaterialPage(child: ProviderSettingsScreen()),
+    pageBuilder: (context, state) => const MaterialPage(
+        child:
+            SettingsLayout(title: "Sources", child: ProviderSettingsScreen())),
   );
 }
 
 GoRoute _buildThemeSettingsRoute() {
   return GoRoute(
     path: 'theme',
-    pageBuilder: (context, state) =>
-        const MaterialPage(child: ThemeSettingsScreen()),
+    pageBuilder: (context, state) => const MaterialPage(
+        child: SettingsLayout(title: "Theme", child: ThemeSettingsScreen())),
   );
 }
 
 GoRoute _buildUiSettingsRoute() {
   return GoRoute(
     path: 'ui',
-    pageBuilder: (context, state) =>
-        const MaterialPage(child: UISettingsScreen()),
+    pageBuilder: (context, state) => const MaterialPage(
+        child:
+            SettingsLayout(title: "User Interface", child: UISettingsScreen())),
   );
 }
 
 GoRoute _buildAboutSettingsRoute() {
   return GoRoute(
     path: 'about',
-    pageBuilder: (context, state) => const MaterialPage(child: AboutScreen()),
+    pageBuilder: (context, state) => const MaterialPage(
+        child: SettingsLayout(title: "About", child: AboutScreen())),
     routes: [
       GoRoute(
         path: 'terms',
-        pageBuilder: (context, state) =>
-            const MaterialPage(child: TermsOfServiceScreen()),
+        pageBuilder: (context, state) => const MaterialPage(
+            child: SettingsLayout(
+                title: "Terms of Service", child: TermsOfServiceScreen())),
       ),
       GoRoute(
         path: 'privacy',
-        pageBuilder: (context, state) =>
-            const MaterialPage(child: PrivacyPolicyScreen()),
+        pageBuilder: (context, state) => const MaterialPage(
+            child: SettingsLayout(
+                title: "Privacy Policy", child: PrivacyPolicyScreen())),
       ),
     ],
   );
@@ -167,16 +179,17 @@ GoRoute _buildAboutSettingsRoute() {
 GoRoute _buildPlayerSettingsRoute() {
   return GoRoute(
     path: 'player',
-    pageBuilder: (context, state) =>
-        const MaterialPage(child: PlayerSettingsScreen()),
+    pageBuilder: (context, state) => const MaterialPage(
+        child: SettingsLayout(title: "Player", child: PlayerSettingsScreen())),
   );
 }
 
 GoRoute _buildSupportSettingsRoute() {
   return GoRoute(
     path: 'support',
-    pageBuilder: (context, state) =>
-        const MaterialPage(child: HelpSupportScreen()),
+    pageBuilder: (context, state) => const MaterialPage(
+        child: SettingsLayout(
+            title: "Help & Support", child: HelpSupportScreen())),
   );
 }
 
@@ -243,6 +256,8 @@ GoRoute _buildCatchAllRoute() {
   );
 }
 
+// Rest of the code (AppRouterScreen, _buildFloatingSideNav, etc.) remains unchanged
+
 class AppRouterScreen extends StatefulWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -267,7 +282,7 @@ class _AppRouterScreenState extends State<AppRouterScreen> {
           return;
         }
         showExitConfirmationDialog(context, isSystemExit: true);
-      }, // Handle back button behavior
+      },
       child: Scaffold(
         extendBody: true,
         extendBodyBehindAppBar: true,
@@ -312,7 +327,7 @@ class _AppRouterScreenState extends State<AppRouterScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -338,7 +353,7 @@ class _AppRouterScreenState extends State<AppRouterScreen> {
                   decoration: BoxDecoration(
                     borderRadius: borderRadius,
                     color: isSelected
-                        ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                        ? theme.colorScheme.primary.withOpacity(0.2)
                         : null,
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 15),
@@ -371,9 +386,9 @@ class _AppRouterScreenState extends State<AppRouterScreen> {
           child: Container(
             decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(100),
-                color: theme.colorScheme.surface.withValues(alpha: 0.5),
+                color: theme.colorScheme.surface.withOpacity(0.5),
                 border: Border.all(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.8),
+                  color: theme.colorScheme.primary.withOpacity(0.8),
                 )),
             padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
             child: Row(
@@ -401,7 +416,7 @@ class _AppRouterScreenState extends State<AppRouterScreen> {
                               : Radius.circular(5),
                         ),
                         color: isSelected
-                            ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                            ? theme.colorScheme.primary.withOpacity(0.2)
                             : null,
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -432,8 +447,6 @@ class _AppRouterScreenState extends State<AppRouterScreen> {
         return Iconsax.discover_1;
       case 2:
         return Iconsax.bookmark;
-      // case 3:
-      //   return Iconsax.setting;
       default:
         return Iconsax.home;
     }
@@ -458,7 +471,6 @@ void showExitConfirmationDialog(BuildContext context,
           TextButton(
             onPressed: () {
               Navigator.of(context).pop(); // Close the dialog
-              // Exit the app
               if (isSystemExit) {
                 SystemNavigator.pop();
               } else {

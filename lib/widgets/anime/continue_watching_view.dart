@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:hive/hive.dart';
-import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/widgets/anime/anime_continue_card.dart';
@@ -21,7 +20,8 @@ class ContinueWatchingView extends ConsumerWidget {
       child: ValueListenableBuilder<Box>(
         valueListenable: animeWatchProgressBox.boxValueListenable,
         builder: (context, box, child) {
-          final entries = animeWatchProgressBox.getAllMostRecentWatchedEpisodesWithAnime();
+          final entries =
+              animeWatchProgressBox.getAllMostRecentWatchedEpisodesWithAnime();
           return entries.isEmpty
               ? const _EmptyWatchingState()
               : _WatchingContent(entries: entries);
@@ -42,7 +42,8 @@ class _EmptyWatchingState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Iconsax.video_circle, size: 64, color: theme.colorScheme.outline),
+          Icon(Iconsax.video_circle,
+              size: 64, color: theme.colorScheme.outline),
           const SizedBox(height: 16),
           Text(
             'No shows in progress',
@@ -60,7 +61,8 @@ class _EmptyWatchingState extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: theme.colorScheme.onPrimary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
           ),
@@ -74,13 +76,14 @@ final loadingProvider = StateProvider.family<bool, int>((ref, index) => false);
 
 // Watching Content
 class _WatchingContent extends ConsumerWidget {
-  final List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})> entries;
+  final List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})>
+      entries;
 
   const _WatchingContent({required this.entries});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
     return SizedBox(
       height: 220, // Reduced height for compactness
       child: Column(
@@ -96,12 +99,11 @@ class _WatchingContent extends ConsumerWidget {
                 return Padding(
                   padding: const EdgeInsets.only(right: 16),
                   child: ContinueWatchingCard(
-                    onTap: ()async{
-                      final anime = entries[index].anime;
-                      final animeMedia = Media(
-                        id: anime.animeId,
-                        
-                      );
+                    onTap: () async {
+                      // final anime = entries[index].anime;
+                      // final animeMedia = Media(
+                      //   id: anime.animeId,
+                      // );
                       // await providerAnimeMatchSearch(context: context, ref: ref, animeMedia: , animeWatchProgressBox: animeWatchProgressBox)
                     },
                     anime: entries[index].anime,

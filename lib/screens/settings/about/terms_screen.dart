@@ -9,101 +9,87 @@ class TermsOfServiceScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(Iconsax.arrow_left_1),
-        ),
-        title: const Text(
-          'Terms of Service',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+            child: Text(
+              'Overview',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.primary,
+              ),
+            ),
           ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-              child: Text(
-                'Overview',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.primary,
-                ),
+          _buildTermsSection(
+            context,
+            title: 'Service Rules',
+            icon: Iconsax.clipboard_text,
+            subtitle: 'Usage guidelines and restrictions',
+            onTap: () {},
+          ),
+          _buildTermsSection(
+            context,
+            title: 'User Responsibilities',
+            icon: Iconsax.user_tick,
+            subtitle: 'Your obligations and commitments',
+            onTap: () {},
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+            child: Text(
+              'Content',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.primary,
               ),
             ),
-            _buildTermsSection(
-              context,
-              title: 'Service Rules',
-              icon: Iconsax.clipboard_text,
-              subtitle: 'Usage guidelines and restrictions',
-              onTap: () {},
-            ),
-            _buildTermsSection(
-              context,
-              title: 'User Responsibilities',
-              icon: Iconsax.user_tick,
-              subtitle: 'Your obligations and commitments',
-              onTap: () {},
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-              child: Text(
-                'Content',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.primary,
-                ),
+          ),
+          _buildTermsSection(
+            context,
+            title: 'Intellectual Property',
+            icon: Iconsax.copyright,
+            subtitle: 'Content ownership and rights',
+            onTap: () {},
+          ),
+          _buildTermsSection(
+            context,
+            title: 'Content Guidelines',
+            icon: Iconsax.document_text,
+            subtitle: 'Acceptable content standards',
+            onTap: () {},
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+            child: Text(
+              'Legal',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.primary,
               ),
             ),
-            _buildTermsSection(
-              context,
-              title: 'Intellectual Property',
-              icon: Iconsax.copyright,
-              subtitle: 'Content ownership and rights',
-              onTap: () {},
-            ),
-            _buildTermsSection(
-              context,
-              title: 'Content Guidelines',
-              icon: Iconsax.document_text,
-              subtitle: 'Acceptable content standards',
-              onTap: () {},
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-              child: Text(
-                'Legal',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.primary,
-                ),
-              ),
-            ),
-            _buildTermsSection(
-              context,
-              title: 'Liability',
-              icon: Iconsax.shield,
-              subtitle: 'Limitations of liability',
-              onTap: () {},
-            ),
-            _buildTermsSection(
-              context,
-              title: 'Term Changes',
-              icon: Iconsax.note,
-              subtitle: 'Updates to terms of service',
-              onTap: () {},
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
+          ),
+          _buildTermsSection(
+            context,
+            title: 'Liability',
+            icon: Iconsax.shield,
+            subtitle: 'Limitations of liability',
+            onTap: () {},
+          ),
+          _buildTermsSection(
+            context,
+            title: 'Term Changes',
+            icon: Iconsax.note,
+            subtitle: 'Updates to terms of service',
+            onTap: () {},
+          ),
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }

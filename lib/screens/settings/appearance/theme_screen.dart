@@ -14,8 +14,7 @@ class ThemeSettingsScreen extends ConsumerStatefulWidget {
       ThemeSettingsScreenState();
 }
 
-class ThemeSettingsScreenState
-    extends ConsumerState<ThemeSettingsScreen> {
+class ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
   late SettingsBox? _settingsBox;
   bool _isDarkMode = false;
   bool _useAmoledBlack = false;
@@ -117,39 +116,17 @@ class ThemeSettingsScreenState
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: Icon(Iconsax.arrow_left_1, color: colorScheme.onSurface),
-          style: IconButton.styleFrom(
-            backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-            padding: const EdgeInsets.all(10),
-          ),
-        ),
-        title: Text(
-          'Appearance',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            color: colorScheme.onSurface,
-          ),
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildExpandableSection('Theme', _buildThemeSection()),
-          _buildExpandableSection('Material Design', _buildMaterialSection()),
-          _buildExpandableSection('Colors', _buildColorsSection()),
-          _buildExpandableSection('Components', _buildComponentsSection()),
-          _buildExpandableSection('Typography', _buildTypographySection()),
-          _buildColorSchemeTile(),
-          const SizedBox(height: 120),
-        ],
-      ),
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildExpandableSection('Theme', _buildThemeSection()),
+        _buildExpandableSection('Material Design', _buildMaterialSection()),
+        _buildExpandableSection('Colors', _buildColorsSection()),
+        _buildExpandableSection('Components', _buildComponentsSection()),
+        _buildExpandableSection('Typography', _buildTypographySection()),
+        _buildColorSchemeTile(),
+        const SizedBox(height: 120),
+      ],
     );
   }
 
@@ -159,7 +136,7 @@ class ThemeSettingsScreenState
 
     return Card(
       elevation: 2,
-      shadowColor: colorScheme.shadow.withOpacity(0.1),
+      shadowColor: colorScheme.shadow.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ExpansionTile(
         shape: ShapeBorder.lerp(
@@ -466,8 +443,8 @@ class _SettingsSwitchTile extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        colorScheme.primary.withOpacity(0.2),
-                        colorScheme.primary.withOpacity(0.1),
+                        colorScheme.primary.withValues(alpha: 0.2),
+                        colorScheme.primary.withValues(alpha: 0.1),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -493,7 +470,7 @@ class _SettingsSwitchTile extends StatelessWidget {
                         subtitle,
                         style: TextStyle(
                           fontSize: 14,
-                          color: colorScheme.onSurface.withOpacity(0.7),
+                          color: colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -619,7 +596,7 @@ class _SimpleColorSchemeCard extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                      color: colorScheme.primary.withOpacity(0.2),
+                      color: colorScheme.primary.withValues(alpha: 0.2),
                       blurRadius: 6)
                 ]
               : null,

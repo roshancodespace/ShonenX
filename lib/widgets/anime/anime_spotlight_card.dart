@@ -28,7 +28,8 @@ class AnimeSpotlightCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(15), // Match 'Card' mode
           boxShadow: [
             BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.1), // Match 'Card' shadow
+              color: colorScheme.shadow
+                  .withValues(alpha: 0.1), // Match 'Card' shadow
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -77,7 +78,8 @@ class _Skeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: colorScheme.surfaceContainerHighest.withOpacity(0.3), // Match AnimatedAnimeCard
+      color: colorScheme.surfaceContainerHighest
+          .withValues(alpha: 0.3), // Match AnimatedAnimeCard
       padding: const EdgeInsets.all(8), // Match padding
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -109,7 +111,7 @@ class _SkeletonBar extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: colorScheme.onSurface.withOpacity(0.2),
+        color: colorScheme.onSurface.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
       ),
     );
@@ -142,7 +144,8 @@ class _AnimeContent extends StatelessWidget {
           child: CachedNetworkImage(
             imageUrl: imageUrl,
             fit: BoxFit.cover,
-            fadeInDuration: const Duration(milliseconds: 150), // Match AnimatedAnimeCard
+            fadeInDuration:
+                const Duration(milliseconds: 150), // Match AnimatedAnimeCard
             placeholder: (_, __) => const _ImagePlaceholder(),
             errorWidget: (_, __, ___) => const _ImageError(),
             filterQuality: FilterQuality.high, // Match AnimatedAnimeCard
@@ -156,7 +159,8 @@ class _AnimeContent extends StatelessWidget {
               end: Alignment.bottomCenter,
               colors: [
                 Colors.transparent,
-                colorScheme.shadow.withOpacity(0.8), // Match 'Card' gradient
+                colorScheme.shadow
+                    .withValues(alpha: 0.8), // Match 'Card' gradient
                 colorScheme.shadow,
               ],
               stops: const [0.3, 0.9, 1.0], // Match 'Card' gradient stops
@@ -221,7 +225,10 @@ class _BottomDetails extends StatelessWidget {
           ),
         const SizedBox(height: 4),
         Text(
-          anime.title?.english ?? anime.title?.romaji ?? anime.title?.native ?? 'Unknown Title',
+          anime.title?.english ??
+              anime.title?.romaji ??
+              anime.title?.native ??
+              'Unknown Title',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
@@ -254,28 +261,34 @@ class _BottomDetails extends StatelessWidget {
             if (anime.duration != null)
               _Tag(
                 text: '${anime.duration}m',
-                color: colorScheme.secondaryContainer.withOpacity(0.2),
+                color: colorScheme.secondaryContainer.withValues(alpha: 0.2),
                 textColor: colorScheme.onPrimaryContainer,
                 icon: Iconsax.timer,
               ),
             if (anime.status != null)
               _Tag(
                 text: anime.status!.split('.').last,
-                color: colorScheme.primaryContainer.withOpacity(0.2),
+                color: colorScheme.primaryContainer.withValues(alpha: 0.2),
                 textColor: colorScheme.onPrimaryContainer,
               ),
           ],
         ),
-        if (!isSmallScreen && anime.genres != null && anime.genres!.isNotEmpty) ...[
+        if (!isSmallScreen &&
+            anime.genres != null &&
+            anime.genres!.isNotEmpty) ...[
           const SizedBox(height: 8),
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: anime.genres!.take(3).map((genre) => _Tag(
-              text: genre,
-              color: colorScheme.onSurfaceVariant.withOpacity(0.2),
-              textColor: Colors.white,
-            )).toList(),
+            children: anime.genres!
+                .take(3)
+                .map((genre) => _Tag(
+                      text: genre,
+                      color:
+                          colorScheme.onSurfaceVariant.withValues(alpha: 0.2),
+                      textColor: Colors.white,
+                    ))
+                .toList(),
           ),
         ],
       ],
@@ -298,9 +311,10 @@ class _Tag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    // final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), // Match 'Card' padding
+      padding: const EdgeInsets.symmetric(
+          horizontal: 6, vertical: 2), // Match 'Card' padding
       decoration: BoxDecoration(
         color: color, // Match 'Card' solid background
         borderRadius: BorderRadius.circular(8), // Match 'Card' radius
@@ -333,7 +347,8 @@ class _ImagePlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: colorScheme.surfaceContainerHighest.withOpacity(0.3), // Match AnimatedAnimeCard
+      color: colorScheme.surfaceContainerHighest
+          .withValues(alpha: 0.3), // Match AnimatedAnimeCard
       child: Center(
         child: CircularProgressIndicator(
           strokeWidth: 2,
@@ -351,7 +366,8 @@ class _ImageError extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: colorScheme.errorContainer.withOpacity(0.6), // Match AnimatedAnimeCard
+      color: colorScheme.errorContainer
+          .withValues(alpha: 0.6), // Match AnimatedAnimeCard
       child: Icon(
         Icons.broken_image,
         size: 40, // Match AnimatedAnimeCard

@@ -39,12 +39,16 @@ class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
           curve: Curves.easeOut,
           width: width,
           height: height,
-          margin: EdgeInsets.only(top: _isHovered ? 0 : 4, bottom: _isHovered ? 4 : 0),
+          margin: EdgeInsets.only(
+              top: _isHovered ? 0 : 4, bottom: _isHovered ? 4 : 0),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(_getRadius(widget.mode)),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.shadow.withValues(alpha: _isHovered ? 0.25 : 0.1),
+                color: Theme.of(context)
+                    .colorScheme
+                    .shadow
+                    .withValues(alpha: _isHovered ? 0.25 : 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -124,7 +128,8 @@ class _CardBuilder extends StatelessWidget {
       'Glass' => _GlassCard(anime: anime, tag: tag, isHovered: isHovered),
       'Neon' => _NeonCard(anime: anime, tag: tag, isHovered: isHovered),
       'Minimal' => _MinimalCard(anime: anime, tag: tag, isHovered: isHovered),
-      'Cinematic' => _CinematicCard(anime: anime, tag: tag, isHovered: isHovered),
+      'Cinematic' =>
+        _CinematicCard(anime: anime, tag: tag, isHovered: isHovered),
       'Card' || _ => _Card(anime: anime, tag: tag, isHovered: isHovered),
     };
   }
@@ -136,7 +141,8 @@ class _Card extends StatelessWidget {
   final String tag;
   final bool isHovered;
 
-  const _Card({required this.anime, required this.tag, required this.isHovered});
+  const _Card(
+      {required this.anime, required this.tag, required this.isHovered});
 
   @override
   Widget build(BuildContext context) {
@@ -201,7 +207,8 @@ class _CompactCard extends StatelessWidget {
   final String tag;
   final bool isHovered;
 
-  const _CompactCard({required this.anime, required this.tag, required this.isHovered});
+  const _CompactCard(
+      {required this.anime, required this.tag, required this.isHovered});
 
   @override
   Widget build(BuildContext context) {
@@ -246,7 +253,8 @@ class _PosterCard extends StatelessWidget {
   final String tag;
   final bool isHovered;
 
-  const _PosterCard({required this.anime, required this.tag, required this.isHovered});
+  const _PosterCard(
+      {required this.anime, required this.tag, required this.isHovered});
 
   @override
   Widget build(BuildContext context) {
@@ -321,7 +329,8 @@ class _GlassCard extends StatelessWidget {
   final String tag;
   final bool isHovered;
 
-  const _GlassCard({required this.anime, required this.tag, required this.isHovered});
+  const _GlassCard(
+      {required this.anime, required this.tag, required this.isHovered});
 
   @override
   Widget build(BuildContext context) {
@@ -333,8 +342,10 @@ class _GlassCard extends StatelessWidget {
           _AnimeImage(anime: anime, tag: tag, height: double.infinity),
           Container(
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface.withValues(alpha: isHovered ? 0.25 : 0.15),
-              border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+              color: theme.colorScheme.surface
+                  .withValues(alpha: isHovered ? 0.25 : 0.15),
+              border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.2)),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Padding(
@@ -358,14 +369,16 @@ class _GlassCard extends StatelessWidget {
                       if (anime?.episodes != null)
                         _Tag(
                           text: '${anime!.episodes} Ep',
-                          color: theme.colorScheme.secondary.withValues(alpha: 0.8),
+                          color: theme.colorScheme.secondary
+                              .withValues(alpha: 0.8),
                           textColor: Colors.white,
                           icon: Iconsax.play,
                         ),
                       if (anime?.averageScore != null)
                         _Tag(
                           text: '${anime!.averageScore}%',
-                          color: theme.colorScheme.tertiary.withValues(alpha: 0.8),
+                          color:
+                              theme.colorScheme.tertiary.withValues(alpha: 0.8),
                           textColor: Colors.white,
                           icon: Iconsax.star1,
                         ),
@@ -387,7 +400,8 @@ class _NeonCard extends StatelessWidget {
   final String tag;
   final bool isHovered;
 
-  const _NeonCard({required this.anime, required this.tag, required this.isHovered});
+  const _NeonCard(
+      {required this.anime, required this.tag, required this.isHovered});
 
   @override
   Widget build(BuildContext context) {
@@ -396,7 +410,9 @@ class _NeonCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isHovered ? theme.colorScheme.primary : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+          color: isHovered
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurface.withValues(alpha: 0.3),
           width: isHovered ? 2.5 : 1.5,
         ),
         boxShadow: [
@@ -467,7 +483,8 @@ class _MinimalCard extends StatelessWidget {
   final String tag;
   final bool isHovered;
 
-  const _MinimalCard({required this.anime, required this.tag, required this.isHovered});
+  const _MinimalCard(
+      {required this.anime, required this.tag, required this.isHovered});
 
   @override
   Widget build(BuildContext context) {
@@ -525,7 +542,8 @@ class _CinematicCard extends StatelessWidget {
   final String tag;
   final bool isHovered;
 
-  const _CinematicCard({required this.anime, required this.tag, required this.isHovered});
+  const _CinematicCard(
+      {required this.anime, required this.tag, required this.isHovered});
 
   @override
   Widget build(BuildContext context) {
@@ -611,7 +629,7 @@ class _AnimeImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
     return SizedBox(
       height: height,
       width: double.infinity,

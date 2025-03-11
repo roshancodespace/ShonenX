@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
@@ -29,7 +28,8 @@ class _Content extends StatefulWidget {
   State<_Content> createState() => _ContentState();
 }
 
-class _ContentState extends State<_Content> with SingleTickerProviderStateMixin {
+class _ContentState extends State<_Content>
+    with SingleTickerProviderStateMixin {
   String _searchQuery = '';
   String _sortBy = 'lastWatched';
   String _filterBy = 'all'; // 'all', 'inProgress', 'completed'
@@ -92,45 +92,55 @@ class _ContentState extends State<_Content> with SingleTickerProviderStateMixin 
       final episodeNumber = int.parse(parts[1]);
       final entry = widget.box.getEntry(animeId);
       if (entry != null) {
-        final updatedEpisodes = Map<int, EpisodeProgress>.from(entry.episodesProgress);
+        final updatedEpisodes =
+            Map<int, EpisodeProgress>.from(entry.episodesProgress);
         updatedEpisodes.remove(episodeNumber);
         if (updatedEpisodes.isEmpty) {
           await widget.box.deleteEntry(animeId);
         } else {
-          await widget.box.setEntry(entry.copyWith(episodesProgress: updatedEpisodes));
+          await widget.box
+              .setEntry(entry.copyWith(episodesProgress: updatedEpisodes));
         }
       }
     }
     _exitMultiSelectMode();
   }
 
-  List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})> _getFilteredEntries() {
+  List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})>
+      _getFilteredEntries() {
     var entries = widget.box.getAllMostRecentWatchedEpisodesWithAnime();
 
     // Search filter
     if (_searchQuery.isNotEmpty) {
       entries = entries
-          .where((entry) => entry.anime.animeTitle.toLowerCase().contains(_searchQuery.toLowerCase()))
+          .where((entry) => entry.anime.animeTitle
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()))
           .toList();
     }
 
     // Filter by status
     if (_filterBy != 'all') {
       entries = entries.where((entry) {
-        return _filterBy == 'completed' ? entry.episode.isCompleted : !entry.episode.isCompleted;
+        return _filterBy == 'completed'
+            ? entry.episode.isCompleted
+            : !entry.episode.isCompleted;
       }).toList();
     }
 
     // Sorting
     switch (_sortBy) {
       case 'title':
-        entries.sort((a, b) => a.anime.animeTitle.compareTo(b.anime.animeTitle));
+        entries
+            .sort((a, b) => a.anime.animeTitle.compareTo(b.anime.animeTitle));
         break;
       case 'episode':
-        entries.sort((a, b) => a.episode.episodeNumber.compareTo(b.episode.episodeNumber));
+        entries.sort((a, b) =>
+            a.episode.episodeNumber.compareTo(b.episode.episodeNumber));
         break;
       case 'lastWatched':
-        entries.sort((a, b) => b.episode.watchedAt!.compareTo(a.episode.watchedAt!));
+        entries.sort(
+            (a, b) => b.episode.watchedAt!.compareTo(a.episode.watchedAt!));
         break;
     }
 
@@ -166,9 +176,13 @@ class _ContentState extends State<_Content> with SingleTickerProviderStateMixin 
                   icon: const Icon(Iconsax.sort),
                   onSelected: (value) => setState(() => _sortBy = value),
                   itemBuilder: (context) => [
-                    const PopupMenuItem(value: 'title', child: Text('Sort by Title')),
-                    const PopupMenuItem(value: 'episode', child: Text('Sort by Episode')),
-                    const PopupMenuItem(value: 'lastWatched', child: Text('Sort by Last Watched')),
+                    const PopupMenuItem(
+                        value: 'title', child: Text('Sort by Title')),
+                    const PopupMenuItem(
+                        value: 'episode', child: Text('Sort by Episode')),
+                    const PopupMenuItem(
+                        value: 'lastWatched',
+                        child: Text('Sort by Last Watched')),
                   ],
                 ),
                 PopupMenuButton<String>(
@@ -176,8 +190,10 @@ class _ContentState extends State<_Content> with SingleTickerProviderStateMixin 
                   onSelected: (value) => setState(() => _filterBy = value),
                   itemBuilder: (context) => [
                     const PopupMenuItem(value: 'all', child: Text('All')),
-                    const PopupMenuItem(value: 'inProgress', child: Text('In Progress')),
-                    const PopupMenuItem(value: 'completed', child: Text('Completed')),
+                    const PopupMenuItem(
+                        value: 'inProgress', child: Text('In Progress')),
+                    const PopupMenuItem(
+                        value: 'completed', child: Text('Completed')),
                   ],
                 ),
               ],
@@ -254,8 +270,10 @@ class _ContentState extends State<_Content> with SingleTickerProviderStateMixin 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Clear All?', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('This will remove all watch progress. Are you sure?'),
+        title:
+            Text('Clear All?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content:
+            const Text('This will remove all watch progress. Are you sure?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -312,7 +330,9 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Iconsax.video_octagon, size: 100, color: theme.colorScheme.onSurface.withOpacity(0.5)),
+          Icon(Iconsax.video_octagon,
+              size: 100,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           Text(
             'Nothing Here Yet',
@@ -321,7 +341,8 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Watch some anime to track your progress!',
-            style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurfaceVariant),
+            style: TextStyle(
+                fontSize: 16, color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -330,7 +351,8 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _EntriesView extends StatelessWidget {
-  final List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})> entries;
+  final List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})>
+      entries;
   final bool groupMode;
   final bool multiSelectMode;
   final Set<String> selectedItems;
@@ -352,7 +374,8 @@ class _EntriesView extends StatelessWidget {
     final isWideScreen = screenWidth > 600;
 
     if (groupMode) {
-      final groupedEntries = <int, List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})>>{};
+      final groupedEntries = <int,
+          List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})>>{};
       for (var entry in entries) {
         groupedEntries.putIfAbsent(entry.anime.animeId, () => []).add(entry);
       }
@@ -457,7 +480,8 @@ class _CardItem extends StatelessWidget {
 
 class _GroupedSection extends StatefulWidget {
   final AnimeWatchProgressEntry anime;
-  final List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})> episodes;
+  final List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})>
+      episodes;
   final bool multiSelectMode;
   final Set<String> selectedItems;
   final Function(String) onLongPress;
@@ -490,29 +514,38 @@ class _GroupedSectionState extends State<_GroupedSection> {
           ListTile(
             leading: CircleAvatar(
               radius: 18,
-              backgroundImage: widget.anime.animeCover.isNotEmpty ? NetworkImage(widget.anime.animeCover) : null,
-              child: widget.anime.animeCover.isEmpty ? const Icon(Iconsax.image) : null,
+              backgroundImage: widget.anime.animeCover.isNotEmpty
+                  ? NetworkImage(widget.anime.animeCover)
+                  : null,
+              child: widget.anime.animeCover.isEmpty
+                  ? const Icon(Iconsax.image)
+                  : null,
             ),
             title: Text(
               widget.anime.animeTitle,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             trailing: IconButton(
-              icon: Icon(_isExpanded ? Iconsax.arrow_down_1 : Iconsax.arrow_right_2),
+              icon: Icon(
+                  _isExpanded ? Iconsax.arrow_down_1 : Iconsax.arrow_right_2),
               onPressed: () => setState(() => _isExpanded = !_isExpanded),
             ),
             onTap: () => setState(() => _isExpanded = !_isExpanded),
           ),
           if (_isExpanded)
             ...widget.episodes.map((entry) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: _CardItem(
                     anime: entry.anime,
                     episode: entry.episode,
                     index: widget.episodes.indexOf(entry),
-                    isSelected: widget.selectedItems.contains('${entry.anime.animeId}-${entry.episode.episodeNumber}'),
-                    onLongPress: () => widget.onLongPress('${entry.anime.animeId}-${entry.episode.episodeNumber}'),
-                    onTap: () => widget.onTap('${entry.anime.animeId}-${entry.episode.episodeNumber}'),
+                    isSelected: widget.selectedItems.contains(
+                        '${entry.anime.animeId}-${entry.episode.episodeNumber}'),
+                    onLongPress: () => widget.onLongPress(
+                        '${entry.anime.animeId}-${entry.episode.episodeNumber}'),
+                    onTap: () => widget.onTap(
+                        '${entry.anime.animeId}-${entry.episode.episodeNumber}'),
                     multiSelectMode: widget.multiSelectMode,
                   ),
                 )),

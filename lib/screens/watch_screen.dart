@@ -51,7 +51,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   String? _selectedCategory = 'sub';
   int _selectedEpIdx = 0;
   int _selectedRangeStart = 1;
-  String? _errorMessage;
+  // String? _errorMessage;
   List<Map<String, String>> _qualityOptions = [];
   String? _selectedQuality;
   Timer? _debounceTimer;
@@ -83,8 +83,9 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     if (!mounted) return;
     try {
       final baseEpisodeModel = await _animeProvider.getEpisodes(widget.animeId);
-      if ((baseEpisodeModel.episodes ?? []).isEmpty)
+      if ((baseEpisodeModel.episodes ?? []).isEmpty) {
         throw Exception('No episodes found for this anime.');
+      }
       setState(() => _episodes = baseEpisodeModel.episodes!);
       _debounceFetchStreamData();
     } catch (e) {
@@ -107,8 +108,9 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       final episodeId = _episodes[_selectedEpIdx].id!;
       final sources = await _animeProvider.getSources(
           widget.animeId, episodeId, '', _selectedCategory!);
-      if (sources.sources.isEmpty)
+      if (sources.sources.isEmpty) {
         throw Exception('No video sources available.');
+      }
       await _extractQualities(sources.sources.first.url!);
       await _configureSubtitles(sources.tracks);
       await _updateVideoSource(sources.sources.first.url ?? '');
@@ -151,9 +153,10 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     if (_qualityCache[episodeId] == null) {
       try {
         final response = await http.get(Uri.parse(m3u8Url));
-        if (response.statusCode != 200)
+        if (response.statusCode != 200) {
           throw Exception(
               'Failed to load M3U8 playlist (HTTP ${response.statusCode}).');
+        }
         final lines = response.body.split('\n');
         final qualities = <Map<String, String>>[];
         for (var i = 0; i < lines.length - 1; i++) {
@@ -168,8 +171,9 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
             });
           }
         }
-        if (qualities.isEmpty)
+        if (qualities.isEmpty) {
           throw Exception('No quality options found in M3U8.');
+        }
         _qualityCache[episodeId] = qualities;
       } catch (e) {
         _handleError('Failed to extract quality options: $e',
@@ -201,13 +205,26 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   void _handleError(String message, {VoidCallback? onRetry}) {
     if (!mounted) return;
-    setState(() => _errorMessage = message);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+    // setState(() => _errorMessage = message);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
         content: Text(message),
-        action: onRetry != null
-            ? SnackBarAction(label: 'Retry', onPressed: onRetry)
-            : null,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          if (onRetry != null)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                onRetry();
+              },
+              child: const Text('Retry'),
+            ),
+        ],
       ),
     );
     log(message, level: 1000);
@@ -280,33 +297,28 @@ class _VideoPlayerSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: AspectRatio(
               aspectRatio: 16 / 10,
-              child: state._errorMessage != null
-                  ? Center(child: Text(state._errorMessage!))
-                  : state._selectedQuality == null
-                      ? const Center(child: CircularProgressIndicator())
-                      : Video(
-                          controller: state._controller,
-                          controls: (videoState) => CustomControls(
-                            animeMedia: state.widget.animeMedia,
-                            state: videoState,
-                            subtitles: state._subtitles,
-                            qualityOptions: state._qualityOptions,
-                            changeQuality: state._changeQuality,
-                            episodes: state._episodes,
-                            currentEpisodeIndex: state._selectedEpIdx,
-                          ),
-                          subtitleViewConfiguration: SubtitleViewConfiguration(
-                            style: TextStyle(
-                              color: Colors.white,
-                              backgroundColor:
-                                  Colors.black.withValues(alpha: 0.2),
-                            ),
-                            textScaleFactor:
-                                MediaQuery.sizeOf(context).width > 400
-                                    ? 1.5
-                                    : 2,
-                          ),
+              child: state._selectedQuality == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : Video(
+                      controller: state._controller,
+                      controls: (videoState) => CustomControls(
+                        animeMedia: state.widget.animeMedia,
+                        state: videoState,
+                        subtitles: state._subtitles,
+                        qualityOptions: state._qualityOptions,
+                        changeQuality: state._changeQuality,
+                        episodes: state._episodes,
+                        currentEpisodeIndex: state._selectedEpIdx,
+                      ),
+                      subtitleViewConfiguration: SubtitleViewConfiguration(
+                        style: TextStyle(
+                          color: Colors.white,
+                          backgroundColor: Colors.black.withValues(alpha: 0.2),
                         ),
+                        textScaleFactor:
+                            MediaQuery.sizeOf(context).width > 400 ? 1.5 : 2,
+                      ),
+                    ),
             ),
           ),
         ),
@@ -430,8 +442,8 @@ class _EpisodesPanel extends StatelessWidget {
           ),
         ),
         itemBuilder: (context) => [
-            PopupMenuItem(value: 'sub', child: const Text('SUB')),
-            PopupMenuItem(value: 'dub', child: const Text('DUB')),
+          PopupMenuItem(value: 'sub', child: const Text('SUB')),
+          PopupMenuItem(value: 'dub', child: const Text('DUB')),
         ],
         onSelected: (category) {
           state._player.pause();
@@ -460,6 +472,7 @@ class _EpisodesPanel extends StatelessWidget {
     final startIdx = state._selectedRangeStart - 1;
     final endIdx =
         (startIdx + 100 > totalEpisodes) ? totalEpisodes : startIdx + 100;
+
     final episodesInRange = state._episodes.sublist(startIdx, endIdx);
 
     return Column(

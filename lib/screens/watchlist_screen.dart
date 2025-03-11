@@ -83,19 +83,20 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            Theme.of(context).colorScheme.secondary.withOpacity(0.05),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
           ],
         ),
       ),
       child: Center(
         child: Card(
           elevation: 0,
-          color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
             side: BorderSide(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+              color:
+                  Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
             ),
           ),
           child: Container(
@@ -204,7 +205,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                theme.colorScheme.primaryContainer.withOpacity(0.2),
+                theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
                 theme.colorScheme.surface,
               ],
             ),
@@ -269,7 +270,8 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
                     : Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
-              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              backgroundColor:
+                  Theme.of(context).colorScheme.surfaceContainerHighest,
               selectedColor: Theme.of(context).colorScheme.primaryContainer,
               side: BorderSide.none,
               shape: RoundedRectangleBorder(

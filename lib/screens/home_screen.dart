@@ -34,7 +34,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   late final SettingsBox _settingsBox;
   late UISettingsModel _uiSettings;
   bool _isBoxInitialized = false;
-  bool _isScrolled = false;
+  // bool _isScrolled = false;
 
   @override
   void initState() {
@@ -56,7 +56,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _onScroll() {
-    _isScrolled = _scrollController.offset > 20;
+    // _isScrolled = _scrollController.offset > 20;
     if (mounted) setState(() {});
   }
 
@@ -215,7 +215,7 @@ class _HeaderSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
     final user = ref.watch(userProvider);
 
     return Padding(
@@ -252,7 +252,8 @@ class UserProfileCard extends StatelessWidget {
       color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: theme.colorScheme.outline.withOpacity(0.1)),
+        side:
+            BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -266,7 +267,8 @@ class UserProfileCard extends StatelessWidget {
                 children: [
                   Text(getGreeting(),
                       style: theme.textTheme.titleSmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.7))),
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.7))),
                   const SizedBox(height: 4),
                   Text(
                     user?.name ?? 'Guest',
@@ -298,7 +300,7 @@ class UserProfileCard extends StatelessWidget {
             tag: 'user-avatar',
             child: Material(
               elevation: 2,
-              shadowColor: theme.shadowColor.withOpacity(0.2),
+              shadowColor: theme.shadowColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(16),
               child: InkWell(
                 onTap: () => context.push('/settings/profile'),
@@ -401,8 +403,8 @@ class DiscoverCard extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              theme.colorScheme.primary.withOpacity(0.15),
-              theme.colorScheme.primary.withOpacity(0.05)
+              theme.colorScheme.primary.withValues(alpha: 0.15),
+              theme.colorScheme.primary.withValues(alpha: 0.05)
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -414,7 +416,7 @@ class DiscoverCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16)),
               child: Icon(Icons.explore,
                   color: theme.colorScheme.primary, size: 28),
@@ -431,7 +433,8 @@ class DiscoverCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text('Find your next favorite series',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.7))),
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.7))),
                 ],
               ),
             ),

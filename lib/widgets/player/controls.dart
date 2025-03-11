@@ -54,16 +54,16 @@ class _CustomControlsState extends State<CustomControls>
   Duration _duration = Duration.zero;
   double _volume = 1.0;
 
-  final List<double> _playbackSpeeds = [
-    0.25,
-    0.5,
-    0.75,
-    1.0,
-    1.25,
-    1.5,
-    1.75,
-    2.0
-  ];
+  // final List<double> _playbackSpeeds = [
+  //   0.25,
+  //   0.5,
+  //   0.75,
+  //   1.0,
+  //   1.25,
+  //   1.5,
+  //   1.75,
+  //   2.0
+  // ];
 
   @override
   void initState() {
@@ -178,18 +178,19 @@ class _CustomControlsState extends State<CustomControls>
   void dispose() {
     _fadeController.dispose();
     _hideTimer?.cancel();
+    _saveProgressTimer?.cancel();
     _playerStateSubscription?.cancel();
     super.dispose();
   }
 
-  String _formatDuration(Duration duration) {
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    final seconds = duration.inSeconds.remainder(60);
-    return hours > 0
-        ? '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'
-        : '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
+  // String _formatDuration(Duration duration) {
+  //   final hours = duration.inHours;
+  //   final minutes = duration.inMinutes.remainder(60);
+  //   final seconds = duration.inSeconds.remainder(60);
+  //   return hours > 0
+  //       ? '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'
+  //       : '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  // }
 
   @override
   Widget build(BuildContext context) {

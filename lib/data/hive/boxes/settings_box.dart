@@ -22,7 +22,7 @@ class SettingsBox {
   }
 
   Future<void> migrateSettings(SettingsModel? oldSettings) async {
-    log("Migrating settings...");
+    log("Migrating settings...", name: "settingsBox");
 
     // Create a fully populated default SettingsModel to merge with old data
     final defaultSettings = SettingsModel(
@@ -34,20 +34,22 @@ class SettingsBox {
 
     // If no old settings exist, use the default and save it
     if (oldSettings == null) {
-      log("No existing settings found, initializing with defaults: $defaultSettings");
+      log("No existing settings found, initializing with defaults: $defaultSettings",
+          name: "settingsBox");
       await saveSettings(defaultSettings);
       return;
     }
 
     // Merge old settings with defaults to ensure all fields are populated
     final newSettings = SettingsModel(
-      providerSettings: oldSettings.providerSettings ?? defaultSettings.providerSettings,
-      themeSettings: oldSettings.themeSettings ?? defaultSettings.themeSettings,
-      playerSettings: oldSettings.playerSettings ?? defaultSettings.playerSettings,
-      uiSettings: oldSettings.uiSettings ?? defaultSettings.uiSettings, // Handle null uiSettings
+      providerSettings: oldSettings.providerSettings,
+      themeSettings: oldSettings.themeSettings,
+      playerSettings: oldSettings.playerSettings,
+      uiSettings: oldSettings.uiSettings ??
+          defaultSettings.uiSettings, // Handle null uiSettings
     );
 
-    log("Migrated settings: $newSettings");
+    log("Migrated settings: $newSettings", name: "settingsBox");
 
     await saveSettings(newSettings);
   }
@@ -59,46 +61,54 @@ class SettingsBox {
   ValueListenable<Box<SettingsModel>> get settingsBoxListenable =>
       _settingsBox!.listenable();
 
-  Future<void> updateProviderSettings(ProviderSettingsModel providerSettings) async {
-    final currentSettings = getSettings() ?? SettingsModel(
-      providerSettings: ProviderSettingsModel(),
-      themeSettings: ThemeSettingsModel(),
-      playerSettings: PlayerSettingsModel(),
-      uiSettings: UISettingsModel(),
-    );
-    final updatedSettings = currentSettings.copyWith(providerSettings: providerSettings);
+  Future<void> updateProviderSettings(
+      ProviderSettingsModel providerSettings) async {
+    final currentSettings = getSettings() ??
+        SettingsModel(
+          providerSettings: ProviderSettingsModel(),
+          themeSettings: ThemeSettingsModel(),
+          playerSettings: PlayerSettingsModel(),
+          uiSettings: UISettingsModel(),
+        );
+    final updatedSettings =
+        currentSettings.copyWith(providerSettings: providerSettings);
     await saveSettings(updatedSettings);
   }
 
   Future<void> updateThemeSettings(ThemeSettingsModel themeSettings) async {
-    final currentSettings = getSettings() ?? SettingsModel(
-      providerSettings: ProviderSettingsModel(),
-      themeSettings: ThemeSettingsModel(),
-      playerSettings: PlayerSettingsModel(),
-      uiSettings: UISettingsModel(),
-    );
-    final updatedSettings = currentSettings.copyWith(themeSettings: themeSettings);
+    final currentSettings = getSettings() ??
+        SettingsModel(
+          providerSettings: ProviderSettingsModel(),
+          themeSettings: ThemeSettingsModel(),
+          playerSettings: PlayerSettingsModel(),
+          uiSettings: UISettingsModel(),
+        );
+    final updatedSettings =
+        currentSettings.copyWith(themeSettings: themeSettings);
     await saveSettings(updatedSettings);
   }
 
   Future<void> updatePlayerSettings(PlayerSettingsModel playerSettings) async {
-    final currentSettings = getSettings() ?? SettingsModel(
-      providerSettings: ProviderSettingsModel(),
-      themeSettings: ThemeSettingsModel(),
-      playerSettings: PlayerSettingsModel(),
-      uiSettings: UISettingsModel(),
-    );
-    final updatedSettings = currentSettings.copyWith(playerSettings: playerSettings);
+    final currentSettings = getSettings() ??
+        SettingsModel(
+          providerSettings: ProviderSettingsModel(),
+          themeSettings: ThemeSettingsModel(),
+          playerSettings: PlayerSettingsModel(),
+          uiSettings: UISettingsModel(),
+        );
+    final updatedSettings =
+        currentSettings.copyWith(playerSettings: playerSettings);
     await saveSettings(updatedSettings);
   }
 
   Future<void> updateUISettings(UISettingsModel uiSettings) async {
-    final currentSettings = getSettings() ?? SettingsModel(
-      providerSettings: ProviderSettingsModel(),
-      themeSettings: ThemeSettingsModel(),
-      playerSettings: PlayerSettingsModel(),
-      uiSettings: UISettingsModel(),
-    );
+    final currentSettings = getSettings() ??
+        SettingsModel(
+          providerSettings: ProviderSettingsModel(),
+          themeSettings: ThemeSettingsModel(),
+          playerSettings: PlayerSettingsModel(),
+          uiSettings: UISettingsModel(),
+        );
     final updatedSettings = currentSettings.copyWith(uiSettings: uiSettings);
     await saveSettings(updatedSettings);
   }

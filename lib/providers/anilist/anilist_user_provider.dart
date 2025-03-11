@@ -15,7 +15,7 @@ class UserNotifier extends StateNotifier<User?> {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   UserNotifier() : super(null) {
-    log('☑️ UserNotifier instantiated');
+    log('☑️ UserNotifier instantiated', name: "userProvider");
     _loadUser();
   }
 
@@ -47,7 +47,7 @@ class UserNotifier extends StateNotifier<User?> {
     state = User(accessToken: accessToken);
     final anilistService = AnilistService();
     final user = await anilistService.getUserProfile(accessToken);
-    log('$user');
+    log('$user', name: "userProvider");
 
     // Set the user once after retrieving the data.
     await _setUser({

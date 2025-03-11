@@ -21,9 +21,9 @@ class BrowseScreen extends ConsumerStatefulWidget {
 
 class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   late TextEditingController _searchController;
-  String _lastSearch = '';
+  // String _lastSearch = '';
   List<Media>? _searchResults = [];
-  int _currentPage = 1;
+  // int _currentPage = 1;
   bool _isLoading = false;
 
   @override
@@ -68,8 +68,8 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     }
 
     setState(() {
-      _lastSearch = _searchController.text;
-      _currentPage = 1;
+      // _lastSearch = _searchController.text;
+      // _currentPage = 1;
       _isLoading = true;
     });
 

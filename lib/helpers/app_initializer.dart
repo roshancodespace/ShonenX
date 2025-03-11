@@ -13,15 +13,15 @@ import 'package:window_manager/window_manager.dart';
 
 class AppInitializer {
   static Future<void> initialize() async {
-    log("🚀 Main() Called");
+    log("🚀 Main() Called", name: "appInitializer");
 
     if (Platform.environment.containsKey('FLUTTER_TEST')) {
-      log("⚠️ Running in test mode, exiting main.");
+      log("⚠️ Running in test mode, exiting main.", name: "appInitializer");
       return;
     }
 
     WidgetsFlutterBinding.ensureInitialized();
-    log("✅ Flutter bindings initialized.");
+    log("✅ Flutter bindings initialized.", name: "appInitializer");
 
     await _initializeMediaKit();
     await _initializeHive();
@@ -31,9 +31,9 @@ class AppInitializer {
   static Future<void> _initializeMediaKit() async {
     try {
       MediaKit.ensureInitialized();
-      log("✅ MediaKit initialized.");
+      log("✅ MediaKit initialized.", name: "appInitializer");
     } catch (e) {
-      log("❌ MediaKit Initialization Error: $e");
+      log("❌ MediaKit Initialization Error: $e", name: "appInitializer");
     }
   }
 
@@ -42,7 +42,7 @@ class AppInitializer {
     final customPath = '${appDocDir.path}${Platform.pathSeparator}hive_data';
 
     await Hive.initFlutter(customPath);
-    log("✅ Hive initialized at: $customPath");
+    log("✅ Hive initialized at: $customPath", name: "appInitializer");
 
     Hive.registerAdapter(SettingsModelAdapter());
     Hive.registerAdapter(ProviderSettingsModelAdapter());
@@ -52,7 +52,7 @@ class AppInitializer {
     Hive.registerAdapter(AnimeWatchProgressEntryAdapter());
     Hive.registerAdapter(EpisodeProgressAdapter());
 
-    log("✅ Hive adapters registered.");
+    log("✅ Hive adapters registered.", name: "appInitializer");
   }
 
   static Future<void> _initializeWindowManager() async {
@@ -73,21 +73,20 @@ class AppInitializer {
           },
         );
 
-        log("✅ Window Manager Initialized");
+        log("✅ Window Manager Initialized", name: "appInitializer");
       } catch (e) {
-        log("❌ Window Manager Initialization Error: $e");
+        log("❌ Window Manager Initialization Error: $e",
+            error: true, name: "appInitializer");
       }
     } else {
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      await SystemChrome.setPreferredOrientations([
-        
-      ]);
+      await SystemChrome.setPreferredOrientations([]);
       SystemChrome.setSystemUIOverlayStyle(
         const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
         ),
       );
-      log("✅ System UI Mode set to edge-to-edge.");
+      log("✅ System UI Mode set to edge-to-edge.", name: "appInitializer");
     }
   }
 }

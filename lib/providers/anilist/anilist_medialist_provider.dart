@@ -48,7 +48,8 @@ class AnimeListNotifier extends StateNotifier<AnimeListState> {
   })  : _anilistService = anilistService,
         super(AnimeListState()) {
     if (accessToken.isEmpty || userId.isEmpty) {
-      log('Access token or user ID is empty', error: true);
+      log('Access token or user ID is empty',
+          error: true, name: "animeListProvider");
     }
     fetchInitialData();
   }
@@ -67,6 +68,10 @@ class AnimeListNotifier extends StateNotifier<AnimeListState> {
     );
 
     try {
+      if (accessToken.isEmpty || userId.isEmpty) {
+        log('Access token or user ID is empty',
+            error: true, name: "animeListProvider");
+      }
       final data = await _anilistService.getUserAnimeList(
         accessToken: accessToken,
         userId: userId,
@@ -82,7 +87,7 @@ class AnimeListNotifier extends StateNotifier<AnimeListState> {
         isLoading: false,
         fetchedStatuses: {...state.fetchedStatuses, status},
       );
-      log('$status list fetched successfully');
+      log('$status ✅', name: "animeListProvider");
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -92,7 +97,8 @@ class AnimeListNotifier extends StateNotifier<AnimeListState> {
           status
         }, // Mark as fetched even on error
       );
-      log('❌ Error fetching $status: $e');
+      log('❌ Error fetching $status: $e',
+          error: true, name: "animeListProvider");
     }
   }
 
@@ -116,9 +122,9 @@ class AnimeListNotifier extends StateNotifier<AnimeListState> {
       state = state.copyWith(
         favorites: favorites?.anime ?? [],
       );
-      log('Favorites fetched successfully');
+      log('Favorites fetched successfully', name: "animeListProvider");
     } catch (e) {
-      log('Error fetching favorites: $e');
+      log('Error fetching favorites: $e', name: "animeListProvider");
     }
   }
 
@@ -224,7 +230,8 @@ class AnimeListNotifier extends StateNotifier<AnimeListState> {
 
     // Step 3: Update the state
     state = state.copyWith(mediaListGroups: currentGroups);
-    log('Toggled status for ${media.title?.english ?? media.id} to $newStatus');
+    log('Toggled status for ${media.title?.english ?? media.id} to $newStatus',
+        name: "animeListProvider");
   }
 
   // Convenience method for single status toggle

@@ -95,16 +95,20 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
           animeId: widget.anime.id!,
           accessToken: accessToken,
         );
-        ref.read(animeListProvider.notifier).toggleFavoritesStatic([widget.anime]);
+        ref
+            .read(animeListProvider.notifier)
+            .toggleFavoritesStatic([widget.anime]);
         setState(() => _isFavourite = !_isFavourite);
       } catch (e) {
         if (!mounted) return;
-        _showSnackBar(context, 'Toggling failed', 'Failed to toggle favorite: $e', ContentType.warning);
+        _showSnackBar(context, 'Toggling failed',
+            'Failed to toggle favorite: $e', ContentType.warning);
       } finally {
         setState(() => _isToggling = false);
       }
     } else {
-      _showSnackBar(context, 'Login required', 'You need to login to use this feature', ContentType.warning);
+      _showSnackBar(context, 'Login required',
+          'You need to login to use this feature', ContentType.warning);
       setState(() => _isToggling = false);
     }
   }
@@ -121,7 +125,8 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
     );
   }
 
-  void _showSnackBar(BuildContext context, String title, String message, ContentType type) {
+  void _showSnackBar(
+      BuildContext context, String title, String message, ContentType type) {
     final snackBar = SnackBar(
       elevation: 0,
       behavior: SnackBarBehavior.floating,
@@ -131,7 +136,8 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
         title: title,
         message: message,
         contentType: type,
-        titleTextStyle: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.w700),
+        titleTextStyle:
+            GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.w700),
         messageTextStyle: GoogleFonts.montserrat(fontSize: 14),
       ),
     );
@@ -213,8 +219,10 @@ class _Header extends StatelessWidget {
             CachedNetworkImage(
               imageUrl: anime.bannerImage ?? anime.coverImage?.large ?? '',
               fit: BoxFit.cover,
-              placeholder: (_, __) => Container(color: colorScheme.surfaceContainer),
-              errorWidget: (_, __, ___) => Icon(Icons.error, color: colorScheme.error),
+              placeholder: (_, __) =>
+                  Container(color: colorScheme.surfaceContainer),
+              errorWidget: (_, __, ___) =>
+                  Icon(Icons.error, color: colorScheme.error),
             ),
             Container(
               decoration: BoxDecoration(
@@ -222,7 +230,7 @@ class _Header extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.3),
+                    Colors.black.withValues(alpha: 0.3),
                     colorScheme.surfaceContainerLowest,
                   ],
                   stops: const [0.0, 1.0],
@@ -241,14 +249,21 @@ class _Header extends StatelessWidget {
                       Hero(
                         tag: tag,
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius:
+                              (theme.cardTheme.shape as RoundedRectangleBorder?)
+                                      ?.borderRadius ??
+                                  BorderRadius.circular(8),
                           child: CachedNetworkImage(
-                            imageUrl: anime.coverImage?.large ?? anime.coverImage?.medium ?? '',
+                            imageUrl: anime.coverImage?.large ??
+                                anime.coverImage?.medium ??
+                                '',
                             width: 105,
                             height: 160,
                             fit: BoxFit.cover,
-                            placeholder: (_, __) => Container(color: colorScheme.surfaceContainer),
-                            errorWidget: (_, __, ___) => Icon(Icons.error, color: colorScheme.error),
+                            placeholder: (_, __) =>
+                                Container(color: colorScheme.surfaceContainer),
+                            errorWidget: (_, __, ___) =>
+                                Icon(Icons.error, color: colorScheme.error),
                           ),
                         ),
                       ),
@@ -279,7 +294,9 @@ class _Header extends StatelessWidget {
                                 ),
                               ),
                             const SizedBox(height: 12),
-                            _GenreTags(genres: anime.genres ?? [], status: anime.status ?? 'Unknown'),
+                            _GenreTags(
+                                genres: anime.genres ?? [],
+                                status: anime.status ?? 'Unknown'),
                           ],
                         ),
                       ),
@@ -298,7 +315,8 @@ class _Header extends StatelessWidget {
       actions: [
         PopupMenuButton<String>(
           icon: Icon(Iconsax.more, color: Colors.white, size: 28),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 8,
           color: colorScheme.surfaceContainer,
           onSelected: (value) => log('Selected status: $value'),
@@ -308,15 +326,17 @@ class _Header extends StatelessWidget {
             _StatusOption('Planning', Iconsax.calendar_1, Colors.orange),
             _StatusOption('Paused', Iconsax.pause_circle, Colors.amber),
             _StatusOption('Dropped', Iconsax.close_circle, Colors.red),
-          ].map((option) => PopupMenuItem<String>(
-                value: option.title.toLowerCase(),
-                child: _StatusMenuItem(
-                  status: option,
-                  animeMedia: anime,
-                  currentStatus: currentStatus,
-                  onStatusChanged: onStatusChanged,
-                ),
-              )).toList(),
+          ]
+              .map((option) => PopupMenuItem<String>(
+                    value: option.title.toLowerCase(),
+                    child: _StatusMenuItem(
+                      status: option,
+                      animeMedia: anime,
+                      currentStatus: currentStatus,
+                      onStatusChanged: onStatusChanged,
+                    ),
+                  ))
+              .toList(),
         ),
       ],
     );
@@ -361,11 +381,12 @@ class _Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color?.withOpacity(0.2) ?? Colors.white.withOpacity(0.1),
+        color: color?.withValues(alpha: 0.2) ??
+            Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: color?.withOpacity(0.1) ?? Colors.black12,
+            color: color?.withValues(alpha: 0.1) ?? Colors.black12,
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -374,7 +395,7 @@ class _Tag extends StatelessWidget {
       child: Text(
         text,
         style: GoogleFonts.montserrat(
-          color: color ?? Colors.white.withOpacity(0.9),
+          color: color ?? Colors.white.withValues(alpha: 0.9),
           fontWeight: isStatus ? FontWeight.w600 : FontWeight.w500,
           fontSize: 12,
         ),
@@ -408,7 +429,8 @@ class _Content extends StatelessWidget {
             onToggleFavorite: onToggleFavorite,
           ),
           const SizedBox(height: 24),
-          _Synopsis(description: anime.description ?? 'No description available.'),
+          _Synopsis(
+              description: anime.description ?? 'No description available.'),
           if (anime.rankings?.isNotEmpty ?? false) ...[
             const SizedBox(height: 24),
             _Rankings(rankings: anime.rankings!),
@@ -496,7 +518,8 @@ class _InfoItem extends StatelessWidget {
   final String value;
   final String label;
 
-  const _InfoItem({required this.icon, required this.value, required this.label});
+  const _InfoItem(
+      {required this.icon, required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -508,7 +531,7 @@ class _InfoItem extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.1),
+            color: colorScheme.primary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: colorScheme.primary, size: 24),
@@ -555,11 +578,15 @@ class _ActionButton extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: isPrimary ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+        color: isPrimary
+            ? colorScheme.primary
+            : colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: isPrimary ? colorScheme.primary.withOpacity(0.3) : Colors.black12,
+            color: isPrimary
+                ? colorScheme.primary.withValues(alpha: 0.3)
+                : Colors.black12,
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -577,14 +604,16 @@ class _ActionButton extends StatelessWidget {
               children: [
                 Icon(
                   icon,
-                  color: isPrimary ? colorScheme.onPrimary : colorScheme.primary,
+                  color:
+                      isPrimary ? colorScheme.onPrimary : colorScheme.primary,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   label,
                   style: GoogleFonts.montserrat(
-                    color: isPrimary ? colorScheme.onPrimary : colorScheme.primary,
+                    color:
+                        isPrimary ? colorScheme.onPrimary : colorScheme.primary,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
@@ -685,7 +714,7 @@ class _RankingCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: colorScheme.primary.withOpacity(0.2),
+                    color: colorScheme.primary.withValues(alpha: 0.2),
                     blurRadius: 4,
                   ),
                 ],
@@ -705,7 +734,8 @@ class _RankingCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    ranking.context.replaceFirst(ranking.context[0], ranking.context[0].toUpperCase()),
+                    ranking.context.replaceFirst(
+                        ranking.context[0], ranking.context[0].toUpperCase()),
                     style: GoogleFonts.montserrat(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -756,7 +786,8 @@ class _WatchButton extends StatelessWidget {
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const SizedBox.shrink();
           final box = snapshot.data!;
-          final episodeProgress = box.getMostRecentEpisodeProgressByAnimeId(anime.id!);
+          final episodeProgress =
+              box.getMostRecentEpisodeProgressByAnimeId(anime.id!);
 
           return AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -764,7 +795,7 @@ class _WatchButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: colorScheme.primary.withOpacity(0.4),
+                  color: colorScheme.primary.withValues(alpha: 0.4),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -786,12 +817,16 @@ class _WatchButton extends StatelessWidget {
                         ),
                       )
                     : Row(
-                        key: ValueKey(episodeProgress?.episodeNumber ?? 'watch'),
+                        key:
+                            ValueKey(episodeProgress?.episodeNumber ?? 'watch'),
                         children: [
-                          Icon(Iconsax.play_circle, color: colorScheme.onPrimary, size: 24),
+                          Icon(Iconsax.play_circle,
+                              color: colorScheme.onPrimary, size: 24),
                           const SizedBox(width: 8),
                           Text(
-                            episodeProgress != null ? 'EP ${episodeProgress.episodeNumber}' : 'Watch Now',
+                            episodeProgress != null
+                                ? 'EP ${episodeProgress.episodeNumber}'
+                                : 'Watch Now',
                             style: GoogleFonts.montserrat(
                               color: colorScheme.onPrimary,
                               fontWeight: FontWeight.w600,
@@ -858,7 +893,8 @@ class _StatusMenuItem extends ConsumerWidget {
     return InkWell(
       onTap: () async {
         if (userState == null || userState.accessToken.isEmpty) {
-          _showSnackBar(context, 'Login required', 'Please log in to update status', ContentType.warning);
+          _showSnackBar(context, 'Login required',
+              'Please log in to update status', ContentType.warning);
           return;
         }
 
@@ -876,8 +912,10 @@ class _StatusMenuItem extends ConsumerWidget {
             final shouldRemove = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                title: Text('Remove from ${status.title}?', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                title: Text('Remove from ${status.title}?',
+                    style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
                 content: Text(
                   'Do you want to remove "${animeMedia.title?.english ?? animeMedia.title?.romaji}" from your ${status.title} list?',
                   style: GoogleFonts.montserrat(),
@@ -889,7 +927,8 @@ class _StatusMenuItem extends ConsumerWidget {
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(context, true),
-                    child: Text('Remove', style: GoogleFonts.montserrat(color: Colors.red)),
+                    child: Text('Remove',
+                        style: GoogleFonts.montserrat(color: Colors.red)),
                   ),
                 ],
               ),
@@ -900,9 +939,12 @@ class _StatusMenuItem extends ConsumerWidget {
                 entryId: entryId,
                 accessToken: userState.accessToken,
               );
-              ref.read(animeListProvider.notifier).toggleStatusStatic(media: animeMedia, newStatus: null);
+              ref
+                  .read(animeListProvider.notifier)
+                  .toggleStatusStatic(media: animeMedia, newStatus: null);
               if (!context.mounted) return;
-              _showSnackBar(context, 'Removed', 'Removed from ${status.title}', ContentType.success);
+              _showSnackBar(context, 'Removed', 'Removed from ${status.title}',
+                  ContentType.success);
             }
           } else {
             await anilistService.updateAnimeStatus(
@@ -910,14 +952,17 @@ class _StatusMenuItem extends ConsumerWidget {
               accessToken: userState.accessToken,
               newStatus: anilistStatus,
             );
-            ref.read(animeListProvider.notifier).toggleStatusStatic(media: animeMedia, newStatus: anilistStatus);
+            ref.read(animeListProvider.notifier).toggleStatusStatic(
+                media: animeMedia, newStatus: anilistStatus);
             if (!context.mounted) return;
-            _showSnackBar(context, '${status.title} updated', 'Added to ${status.title}', ContentType.success);
+            _showSnackBar(context, '${status.title} updated',
+                'Added to ${status.title}', ContentType.success);
           }
           onStatusChanged();
         } catch (e) {
           if (!context.mounted) return;
-          _showSnackBar(context, 'Update failed', 'Failed to update status: $e', ContentType.failure);
+          _showSnackBar(context, 'Update failed', 'Failed to update status: $e',
+              ContentType.failure);
         }
         if (!context.mounted) return;
         Navigator.pop(context);
@@ -929,7 +974,7 @@ class _StatusMenuItem extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: status.color.withOpacity(isCurrent ? 0.3 : 0.1),
+                color: status.color.withValues(alpha: isCurrent ? 0.3 : 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(status.icon, color: status.color, size: 20),
@@ -953,7 +998,8 @@ class _StatusMenuItem extends ConsumerWidget {
     );
   }
 
-  void _showSnackBar(BuildContext context, String title, String message, ContentType type) {
+  void _showSnackBar(
+      BuildContext context, String title, String message, ContentType type) {
     final snackBar = SnackBar(
       elevation: 0,
       behavior: SnackBarBehavior.floating,
@@ -963,7 +1009,8 @@ class _StatusMenuItem extends ConsumerWidget {
         title: title,
         message: message,
         contentType: type,
-        titleTextStyle: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.w700),
+        titleTextStyle:
+            GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.w700),
         messageTextStyle: GoogleFonts.montserrat(fontSize: 14),
       ),
     );

@@ -97,10 +97,10 @@ class _Header extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Continue Watching',
+            'Continue',
             style: GoogleFonts.montserrat(
               fontSize: 22, // Slightly larger for emphasis
-              fontWeight: FontWeight.w700, // Bolder for modern look
+              fontWeight: FontWeight.w600, // Bolder for modern look
               color: colorScheme.onSurface,
               letterSpacing: -0.2, // Tighten spacing for polish
             ),
@@ -115,7 +115,7 @@ class _Header extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: colorScheme.primary.withOpacity(0.3),
+                    color: colorScheme.primary.withValues(alpha: 0.3),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),

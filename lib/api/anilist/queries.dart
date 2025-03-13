@@ -104,7 +104,7 @@ class AnilistQueries {
         status
       }
     }
-  ''';  
+  ''';
 
   // Query: Fetch detailed anime information by ID
   static const String animeDetailsQuery = '''
@@ -131,7 +131,7 @@ class AnilistQueries {
   // Query: Fetch trending anime
   static const String trendingAnimeQuery = '''
     query {
-      Page(page: 1, perPage: 10) {
+      Page(page: 1, perPage: 15) {
         media(sort: TRENDING_DESC, type: ANIME) {
           $mediaFields
         }
@@ -142,7 +142,7 @@ class AnilistQueries {
   // Query: Fetch popular anime
   static const String popularAnimeQuery = '''
     query {
-      Page(page: 1, perPage: 10) {
+      Page(page: 1, perPage: 15) {
         media(sort: POPULARITY_DESC, type: ANIME) {
           $mediaFields
         }
@@ -153,7 +153,7 @@ class AnilistQueries {
   // Query: Fetch recently released episodes (Ongoing Anime)
   static const String recentEpisodesQuery = '''
     query {
-      Page(page: 1, perPage: 10) {
+      Page(page: 1, perPage: 15) {
         media(type: ANIME, status: RELEASING, sort: UPDATED_AT_DESC) {
           $mediaFields
         }
@@ -164,7 +164,7 @@ class AnilistQueries {
   // Query: Fetch seasonal anime
   static const String seasonalAnimeQuery = '''
     query (\$season: MediaSeason, \$year: Int) {
-      Page(page: 1, perPage: 10) {
+      Page(page: 1, perPage: 15) {
         media(season: \$season, seasonYear: \$year, type: ANIME, sort: POPULARITY_DESC) {
           $mediaFields
         }
@@ -175,7 +175,7 @@ class AnilistQueries {
   // Query: Fetch top-rated anime
   static const String topRatedAnimeQuery = '''
     query {
-      Page(page: 1, perPage: 10) {
+      Page(page: 1, perPage: 15) {
         media(sort: SCORE_DESC, type: ANIME) {
           $mediaFields
         }

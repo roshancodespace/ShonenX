@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:shonenx/utils/theme.dart';
 
 class SettingsSection extends StatelessWidget {
   final BuildContext context;
@@ -15,7 +16,7 @@ class SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -29,16 +30,19 @@ class SettingsSection extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: colorScheme.primary,
+                color: theme.colorScheme.primary,
                 letterSpacing: 0.5,
               ),
             ),
           ),
           Card(
             elevation: 2,
-            shadowColor: colorScheme.shadow.withValues(alpha: 0.1),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.1),
+            shape: RoundedRectangleBorder(
+              borderRadius: (theme.cardTheme.shape as RoundedRectangleBorder?)
+                      ?.borderRadius ??
+                  BorderRadius.circular(8),
+            ),
             child: Column(
               children: items.asMap().entries.map((entry) {
                 final index = entry.key;
@@ -50,7 +54,8 @@ class SettingsSection extends StatelessWidget {
                         height: 1,
                         indent: 60,
                         endIndent: 16,
-                        color: colorScheme.onSurface.withValues(alpha: 0.1),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.1),
                       ),
                     item,
                   ],
@@ -91,22 +96,25 @@ class _SettingsItemState extends State<SettingsItem> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: InkWell(
         onTap: widget.disabled ? null : widget.onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: getCardBorderRadius(context),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: _isHovered && !widget.disabled
-                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+                ? theme.colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.3)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: (theme.cardTheme.shape as RoundedRectangleBorder?)
+                    ?.borderRadius ??
+                BorderRadius.circular(8),
           ),
           child: Row(
             children: [
@@ -115,8 +123,8 @@ class _SettingsItemState extends State<SettingsItem> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      colorScheme.primary.withValues(alpha: 0.2),
-                      colorScheme.primary.withValues(alpha: 0.1),
+                      theme.colorScheme.primary.withValues(alpha: 0.2),
+                      theme.colorScheme.primary.withValues(alpha: 0.1),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -127,8 +135,8 @@ class _SettingsItemState extends State<SettingsItem> {
                   widget.icon,
                   size: 22,
                   color: widget.disabled
-                      ? colorScheme.onSurface.withValues(alpha: 0.4)
-                      : colorScheme.primary,
+                      ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
+                      : theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(width: 16),
@@ -142,8 +150,8 @@ class _SettingsItemState extends State<SettingsItem> {
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: widget.disabled
-                            ? colorScheme.onSurface.withValues(alpha: 0.4)
-                            : colorScheme.onSurface,
+                            ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
+                            : theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -151,7 +159,8 @@ class _SettingsItemState extends State<SettingsItem> {
                       widget.description,
                       style: TextStyle(
                         fontSize: 14,
-                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -163,8 +172,8 @@ class _SettingsItemState extends State<SettingsItem> {
                       Iconsax.arrow_right_3,
                       size: 20,
                       color: widget.disabled
-                          ? colorScheme.onSurface.withValues(alpha: 0.2)
-                          : colorScheme.onSurface.withValues(alpha: 0.5),
+                          ? theme.colorScheme.onSurface.withValues(alpha: 0.2)
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     )
             ],
           ),

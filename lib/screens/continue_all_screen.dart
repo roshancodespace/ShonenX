@@ -29,7 +29,8 @@ class _Content extends StatefulWidget {
   State<_Content> createState() => _ContentState();
 }
 
-class _ContentState extends State<_Content> with SingleTickerProviderStateMixin {
+class _ContentState extends State<_Content>
+    with SingleTickerProviderStateMixin {
   String _searchQuery = '';
   String _sortBy = 'lastWatched';
   String _filterBy = 'all'; // 'all', 'inProgress', 'completed'
@@ -92,45 +93,55 @@ class _ContentState extends State<_Content> with SingleTickerProviderStateMixin 
       final episodeNumber = int.parse(parts[1]);
       final entry = widget.box.getEntry(animeId);
       if (entry != null) {
-        final updatedEpisodes = Map<int, EpisodeProgress>.from(entry.episodesProgress);
+        final updatedEpisodes =
+            Map<int, EpisodeProgress>.from(entry.episodesProgress);
         updatedEpisodes.remove(episodeNumber);
         if (updatedEpisodes.isEmpty) {
           await widget.box.deleteEntry(animeId);
         } else {
-          await widget.box.setEntry(entry.copyWith(episodesProgress: updatedEpisodes));
+          await widget.box
+              .setEntry(entry.copyWith(episodesProgress: updatedEpisodes));
         }
       }
     }
     _exitMultiSelectMode();
   }
 
-  List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})> _getFilteredEntries() {
+  List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})>
+      _getFilteredEntries() {
     var entries = widget.box.getAllMostRecentWatchedEpisodesWithAnime();
 
     // Search filter
     if (_searchQuery.isNotEmpty) {
       entries = entries
-          .where((entry) => entry.anime.animeTitle.toLowerCase().contains(_searchQuery.toLowerCase()))
+          .where((entry) => entry.anime.animeTitle
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()))
           .toList();
     }
 
     // Filter by status
     if (_filterBy != 'all') {
       entries = entries.where((entry) {
-        return _filterBy == 'completed' ? entry.episode.isCompleted : !entry.episode.isCompleted;
+        return _filterBy == 'completed'
+            ? entry.episode.isCompleted
+            : !entry.episode.isCompleted;
       }).toList();
     }
 
     // Sorting
     switch (_sortBy) {
       case 'title':
-        entries.sort((a, b) => a.anime.animeTitle.compareTo(b.anime.animeTitle));
+        entries
+            .sort((a, b) => a.anime.animeTitle.compareTo(b.anime.animeTitle));
         break;
       case 'episode':
-        entries.sort((a, b) => a.episode.episodeNumber.compareTo(b.episode.episodeNumber));
+        entries.sort((a, b) =>
+            a.episode.episodeNumber.compareTo(b.episode.episodeNumber));
         break;
       case 'lastWatched':
-        entries.sort((a, b) => b.episode.watchedAt!.compareTo(a.episode.watchedAt!));
+        entries.sort(
+            (a, b) => b.episode.watchedAt!.compareTo(a.episode.watchedAt!));
         break;
     }
 
@@ -164,7 +175,8 @@ class _ContentState extends State<_Content> with SingleTickerProviderStateMixin 
               ),
               actions: [
                 IconButton(
-                  icon: Icon(_groupMode ? Iconsax.grid_2 : Iconsax.grid_1, color: colorScheme.onSurface),
+                  icon: Icon(_groupMode ? Iconsax.grid_2 : Iconsax.grid_1,
+                      color: colorScheme.onSurface),
                   onPressed: () => setState(() => _groupMode = !_groupMode),
                   tooltip: 'Toggle Layout',
                 ),
@@ -174,19 +186,23 @@ class _ContentState extends State<_Content> with SingleTickerProviderStateMixin 
                   itemBuilder: (context) => [
                     PopupMenuItem(
                       value: 'title',
-                      child: Text('Sort by Title', style: GoogleFonts.montserrat()),
+                      child: Text('Sort by Title',
+                          style: GoogleFonts.montserrat()),
                     ),
                     PopupMenuItem(
                       value: 'episode',
-                      child: Text('Sort by Episode', style: GoogleFonts.montserrat()),
+                      child: Text('Sort by Episode',
+                          style: GoogleFonts.montserrat()),
                     ),
                     PopupMenuItem(
                       value: 'lastWatched',
-                      child: Text('Sort by Last Watched', style: GoogleFonts.montserrat()),
+                      child: Text('Sort by Last Watched',
+                          style: GoogleFonts.montserrat()),
                     ),
                   ],
                   color: colorScheme.surfaceContainer,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 PopupMenuButton<String>(
                   icon: Icon(Iconsax.filter, color: colorScheme.onSurface),
@@ -198,7 +214,8 @@ class _ContentState extends State<_Content> with SingleTickerProviderStateMixin 
                     ),
                     PopupMenuItem(
                       value: 'inProgress',
-                      child: Text('In Progress', style: GoogleFonts.montserrat()),
+                      child:
+                          Text('In Progress', style: GoogleFonts.montserrat()),
                     ),
                     PopupMenuItem(
                       value: 'completed',
@@ -206,7 +223,8 @@ class _ContentState extends State<_Content> with SingleTickerProviderStateMixin 
                     ),
                   ],
                   color: colorScheme.surfaceContainer,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
               ],
               bottom: PreferredSize(
@@ -260,7 +278,8 @@ class _ContentState extends State<_Content> with SingleTickerProviderStateMixin 
                     onPressed: _exitMultiSelectMode,
                     backgroundColor: colorScheme.primary,
                     tooltip: 'Exit Multi-Select',
-                    child: const Icon(Iconsax.close_circle, color: Colors.white),
+                    child:
+                        const Icon(Iconsax.close_circle, color: Colors.white),
                   ),
                   const SizedBox(height: 12),
                   FloatingActionButton.small(
@@ -289,7 +308,8 @@ class _ContentState extends State<_Content> with SingleTickerProviderStateMixin 
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Clear All?', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+        title: Text('Clear All?',
+            style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
         content: Text('This will remove all watch progress. Are you sure?',
             style: GoogleFonts.montserrat()),
         actions: [
@@ -302,7 +322,8 @@ class _ContentState extends State<_Content> with SingleTickerProviderStateMixin 
               _clearAllEntries();
               Navigator.pop(context);
             },
-            child: Text('Clear', style: GoogleFonts.montserrat(color: Colors.red)),
+            child:
+                Text('Clear', style: GoogleFonts.montserrat(color: Colors.red)),
           ),
         ],
       ),
@@ -325,7 +346,8 @@ class _SearchField extends StatelessWidget {
       child: TextField(
         decoration: InputDecoration(
           hintText: 'Search titles...',
-          hintStyle: GoogleFonts.montserrat(color: colorScheme.onSurfaceVariant),
+          hintStyle:
+              GoogleFonts.montserrat(color: colorScheme.onSurfaceVariant),
           prefixIcon: Icon(Iconsax.search_normal, color: colorScheme.primary),
           filled: true,
           fillColor: colorScheme.surfaceContainerLow,
@@ -357,7 +379,7 @@ class _EmptyState extends StatelessWidget {
           Icon(
             Iconsax.video_octagon,
             size: 100,
-            color: colorScheme.onSurface.withOpacity(0.5),
+            color: colorScheme.onSurface.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -383,7 +405,8 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _EntriesView extends StatelessWidget {
-  final List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})> entries;
+  final List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})>
+      entries;
   final bool groupMode;
   final bool multiSelectMode;
   final Set<String> selectedItems;
@@ -511,7 +534,8 @@ class _CardItem extends StatelessWidget {
 
 class _GroupedSection extends StatefulWidget {
   final AnimeWatchProgressEntry anime;
-  final List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})> episodes;
+  final List<({AnimeWatchProgressEntry anime, EpisodeProgress episode})>
+      episodes;
   final bool multiSelectMode;
   final Set<String> selectedItems;
   final Function(String) onLongPress;
@@ -576,17 +600,18 @@ class _GroupedSectionState extends State<_GroupedSection> {
           ),
           if (_isExpanded)
             ...widget.episodes.map((entry) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: _CardItem(
                     anime: entry.anime,
                     episode: entry.episode,
                     index: widget.episodes.indexOf(entry),
-                    isSelected: widget.selectedItems
-                        .contains('${entry.anime.animeId}-${entry.episode.episodeNumber}'),
-                    onLongPress: () => widget
-                        .onLongPress('${entry.anime.animeId}-${entry.episode.episodeNumber}'),
-                    onTap: () =>
-                        widget.onTap('${entry.anime.animeId}-${entry.episode.episodeNumber}'),
+                    isSelected: widget.selectedItems.contains(
+                        '${entry.anime.animeId}-${entry.episode.episodeNumber}'),
+                    onLongPress: () => widget.onLongPress(
+                        '${entry.anime.animeId}-${entry.episode.episodeNumber}'),
+                    onTap: () => widget.onTap(
+                        '${entry.anime.animeId}-${entry.episode.episodeNumber}'),
                     multiSelectMode: widget.multiSelectMode,
                   ),
                 )),

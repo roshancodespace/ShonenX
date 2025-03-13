@@ -75,7 +75,8 @@ class ContinueWatchingCard extends ConsumerWidget {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: (theme.cardTheme.shape as RoundedRectangleBorder?)?.borderRadius ?? BorderRadius.circular(8),
+
             child: Stack(
               children: [
                 // Background Image

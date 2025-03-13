@@ -2,8 +2,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/utils/html_parser.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class AnimeSpotlightCard extends StatelessWidget {
+class AnimeSpotlightCard extends StatefulWidget {
   final Media? anime;
   final Function(Media)? onTap;
   final String heroTag;
@@ -16,32 +18,74 @@ class AnimeSpotlightCard extends StatelessWidget {
   });
 
   @override
+  State<AnimeSpotlightCard> createState() => _AnimeSpotlightCardState();
+}
+
+class _AnimeSpotlightCardState extends State<AnimeSpotlightCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _hoverController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _hoverController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
+      CurvedAnimation(parent: _hoverController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _hoverController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
 
-    return GestureDetector(
-      onTap: anime != null ? () => onTap?.call(anime!) : null,
-      child: Container(
-        height: isSmallScreen ? 260 : 320,
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withValues(alpha: 0.15),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-              spreadRadius: 2,
+    return MouseRegion(
+      onEnter: (_) => _hoverController.forward(),
+      onExit: (_) => _hoverController.reverse(),
+      child: GestureDetector(
+        onTap: widget.anime != null
+            ? () => widget.onTap?.call(widget.anime!)
+            : null,
+        child: AnimatedBuilder(
+          animation: _scaleAnimation,
+          builder: (context, child) => Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Container(
+              height:
+                  isSmallScreen ? 220 : 320, // Reduced height for small screens
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.shadow.withValues(alpha: 0.2),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: (theme.cardTheme.shape as RoundedRectangleBorder?)
+                        ?.borderRadius ??
+                    BorderRadius.circular(8),
+                child: _CardContent(
+                  anime: widget.anime,
+                  heroTag: widget.heroTag,
+                  isSmallScreen: isSmallScreen,
+                ),
+              ),
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: _CardContent(
-            anime: anime,
-            heroTag: heroTag,
-            isSmallScreen: isSmallScreen,
           ),
         ),
       ),
@@ -79,23 +123,24 @@ class _Skeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      padding: const EdgeInsets.all(16),
+      color: colorScheme.surfaceContainer.withValues(alpha: 0.3),
+      padding: const EdgeInsets.all(12), // Reduced padding
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _ShimmerEffect(child: _SkeletonBar(width: 120, height: 24)),
-          const SizedBox(height: 8),
-          const _ShimmerEffect(child: _SkeletonBar(width: 180, height: 16)),
+          const _ShimmerEffect(child: _SkeletonBar(width: 100, height: 20)),
+          const SizedBox(height: 6),
+          const _ShimmerEffect(child: _SkeletonBar(width: 140, height: 14)),
           const Spacer(),
-          const _ShimmerEffect(child: _SkeletonBar(width: double.infinity, height: 24)),
+          const _ShimmerEffect(
+              child: _SkeletonBar(width: double.infinity, height: 20)),
           const SizedBox(height: 8),
           Row(
             children: [
-              const _ShimmerEffect(child: _SkeletonBar(width: 80, height: 32)),
-              const SizedBox(width: 8),
-              const _ShimmerEffect(child: _SkeletonBar(width: 80, height: 32)),
+              const _ShimmerEffect(child: _SkeletonBar(width: 60, height: 24)),
+              const SizedBox(width: 6),
+              const _ShimmerEffect(child: _SkeletonBar(width: 60, height: 24)),
             ],
           ),
         ],
@@ -106,9 +151,9 @@ class _Skeleton extends StatelessWidget {
 
 class _ShimmerEffect extends StatelessWidget {
   final Widget child;
-  
+
   const _ShimmerEffect({required this.child});
-  
+
   @override
   Widget build(BuildContext context) {
     return ShaderMask(
@@ -120,10 +165,10 @@ class _ShimmerEffect extends StatelessWidget {
             Colors.grey.shade100,
             Colors.grey.shade300,
           ],
-          stops: const [0.1, 0.3, 0.4],
+          stops: const [0.1, 0.5, 0.9],
           begin: const Alignment(-1.0, -0.3),
           end: const Alignment(1.0, 0.3),
-          tileMode: TileMode.clamp,
+          tileMode: TileMode.repeated,
         ).createShader(bounds);
       },
       child: child,
@@ -172,40 +217,33 @@ class _AnimeContent extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Base image with frosted glass effect
         Hero(
           tag: heroTag,
           child: CachedNetworkImage(
             imageUrl: imageUrl,
             fit: BoxFit.cover,
-            fadeInDuration: const Duration(milliseconds: 250),
-            placeholderFadeInDuration: const Duration(milliseconds: 250),
+            fadeInDuration: const Duration(milliseconds: 300),
             placeholder: (_, __) => const _ImagePlaceholder(),
             errorWidget: (_, __, ___) => const _ImageError(),
             filterQuality: FilterQuality.high,
-            useOldImageOnUrlChange: true,
           ),
         ),
-        // Custom gradient with blur effect
-        ClipRect(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  colorScheme.shadow.withValues(alpha: 0.5),
-                  colorScheme.shadow.withValues(alpha: 0.9),
-                ],
-                stops: const [0.5, 0.8, 1.0],
-              ),
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.transparent,
+                colorScheme.shadow.withValues(alpha: 0.4),
+                colorScheme.shadow.withValues(alpha: 0.8),
+              ],
+              stops: const [0.4, 0.7, 1.0],
             ),
           ),
         ),
-        // Content
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12), // Reduced padding
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -215,12 +253,13 @@ class _AnimeContent extends StatelessWidget {
             ],
           ),
         ),
-        // Score indicator
         if (anime.averageScore != null)
           Positioned(
-            top: 16,
-            left: 16,
-            child: _ScoreIndicator(score: anime.averageScore?.toInt() ?? 0),
+            top: 8,
+            left: 8,
+            child: _ScoreIndicator(
+                score: anime.averageScore?.toInt() ?? 0,
+                isSmallScreen: isSmallScreen),
           ),
       ],
     );
@@ -229,56 +268,55 @@ class _AnimeContent extends StatelessWidget {
 
 class _ScoreIndicator extends StatelessWidget {
   final int score;
-  
-  const _ScoreIndicator({required this.score});
-  
+  final bool isSmallScreen;
+
+  const _ScoreIndicator({required this.score, required this.isSmallScreen});
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final Color scoreColor = score >= 80 
-        ? colorScheme.primary // Use theme color for high score
-        : score >= 60 
-            ? colorScheme.secondary // Use theme color for medium score
-            : colorScheme.error; // Use theme color for low score
-            
+    final scoreColor = score >= 80
+        ? colorScheme.primary
+        : score >= 60
+            ? colorScheme.secondary
+            : colorScheme.error;
+
     return Container(
-      width: 48,
-      height: 48,
+      width: isSmallScreen ? 40 : 48,
+      height: isSmallScreen ? 40 : 48,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: colorScheme.surface.withOpacity(0.9), // Use withOpacity for theming
+        color: colorScheme.surface.withValues(alpha: 0.9),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 4,
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Center(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 42,
-              height: 42,
-              child: CircularProgressIndicator(
-                value: score / 100,
-                strokeWidth: 3,
-                backgroundColor: colorScheme.surfaceVariant,
-                color: scoreColor,
-              ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: isSmallScreen ? 34 : 42,
+            height: isSmallScreen ? 34 : 42,
+            child: CircularProgressIndicator(
+              value: score / 100,
+              strokeWidth: 3,
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              color: scoreColor,
             ),
-            Text(
-              '$score',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+          ),
+          Text(
+            '$score',
+            style: GoogleFonts.montserrat(
+              fontSize: isSmallScreen ? 14 : 16,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -298,9 +336,10 @@ class _TopDetails extends StatelessWidget {
         if (anime.format != null)
           _Tag(
             text: anime.format!.split('.').last,
-            color: colorScheme.tertiaryContainer,
+            color: colorScheme.tertiaryContainer.withValues(alpha: 0.8),
             textColor: colorScheme.onTertiaryContainer,
             isGlass: true,
+            isSmallScreen: MediaQuery.of(context).size.width < 600,
           ),
       ],
     );
@@ -316,22 +355,19 @@ class _BottomDetails extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
-    // Create status chip with appropriate color
+
     Color statusColor = colorScheme.primaryContainer;
     if (anime.status != null) {
       final status = anime.status!.split('.').last.toLowerCase();
-      if (status == 'airing') {
-        statusColor = Colors.green.shade700;
-      } else if (status == 'completed') {
-        statusColor = Colors.blue.shade700;
-      } else if (status == 'cancelled') {
-        statusColor = Colors.red.shade700;
-      } else if (status == 'hiatus') {
-        statusColor = Colors.orange.shade700;
-      }
+      statusColor = switch (status) {
+        'airing' => Colors.green.shade700,
+        'completed' => Colors.blue.shade700,
+        'cancelled' => Colors.red.shade700,
+        'hiatus' => Colors.orange.shade700,
+        _ => colorScheme.primaryContainer,
+      };
     }
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -340,70 +376,64 @@ class _BottomDetails extends StatelessWidget {
               anime.title?.romaji ??
               anime.title?.native ??
               'Unknown Title',
-          maxLines: 2,
+          maxLines: isSmallScreen ? 1 : 2, // Reduced to 1 line on small screens
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: isSmallScreen ? 22 : 26,
-            fontWeight: FontWeight.w800,
+          style: GoogleFonts.montserrat(
+            fontSize: isSmallScreen ? 18 : 24,
+            fontWeight: FontWeight.w700,
             color: Colors.white,
             shadows: [
-              const Shadow(
-                color: Colors.black54,
-                offset: Offset(0, 1),
-                blurRadius: 3,
+              Shadow(
+                color: colorScheme.shadow.withValues(alpha: 0.5),
+                offset: const Offset(0, 2),
+                blurRadius: 4,
               ),
             ],
-            letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 8),
-        // Info row
+        const SizedBox(height: 6), // Reduced spacing
+        Text(
+          parseHtmlToString(anime.description ?? ''),
+          maxLines: isSmallScreen ? 1 : 3, // Reduced to 1 line on small screens
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.montserrat(
+            fontSize: isSmallScreen ? 12 : 16,
+            color: Colors.white.withValues(alpha: 0.9),
+            height: 1.2, // Tighter line height
+          ),
+        ),
+        const SizedBox(height: 8), // Reduced spacing
         Row(
           children: [
             if (anime.episodes != null)
               _InfoChip(
-                icon: Iconsax.play_circle,
+                icon: Iconsax.video_play,
                 label: '${anime.episodes} eps',
                 color: colorScheme.surface.withValues(alpha: 0.7),
+                isSmallScreen: isSmallScreen,
               ),
-            const SizedBox(width: 8),
+            if (anime.episodes != null && anime.duration != null)
+              const SizedBox(width: 6),
             if (anime.duration != null)
               _InfoChip(
                 icon: Iconsax.timer_1,
                 label: '${anime.duration}m',
                 color: colorScheme.surface.withValues(alpha: 0.7),
+                isSmallScreen: isSmallScreen,
               ),
           ],
         ),
-        const SizedBox(height: 12),
-        // Status chip
+        const SizedBox(height: 8), // Reduced spacing
         if (anime.status != null)
           _Tag(
             text: anime.status!.split('.').last,
-            color: statusColor.withValues(alpha: 0.8),
+            color: statusColor.withValues(alpha: 0.9),
             textColor: Colors.white,
             icon: Iconsax.timer,
-            iconSize: 14,
+            iconSize: 12,
+            isSmallScreen: isSmallScreen,
           ),
-        if (!isSmallScreen &&
-            anime.genres != null &&
-            anime.genres!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 28,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: anime.genres!.length > 3 ? 3 : anime.genres!.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, index) => _Tag(
-                text: anime.genres![index],
-                color: colorScheme.surface.withValues(alpha: 0.5),
-                textColor: Colors.white,
-                isGlass: true,
-              ),
-            ),
-          ),
-        ],
+        // Hide genres on small screens to save space
       ],
     );
   }
@@ -413,34 +443,40 @@ class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
-  
+  final bool isSmallScreen;
+
   const _InfoChip({
     required this.icon,
     required this.label,
     required this.color,
+    required this.isSmallScreen,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: EdgeInsets.symmetric(
+          horizontal: isSmallScreen ? 8 : 12, vertical: isSmallScreen ? 4 : 6),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon, 
-            size: 14, 
-            color: Colors.white,
-          ),
-          const SizedBox(width: 4),
+          Icon(icon, size: isSmallScreen ? 14 : 16, color: Colors.white),
+          const SizedBox(width: 4), // Reduced spacing
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
+            style: GoogleFonts.montserrat(
+              fontSize: isSmallScreen ? 10 : 12,
               fontWeight: FontWeight.w600,
               color: Colors.white,
             ),
@@ -458,6 +494,7 @@ class _Tag extends StatelessWidget {
   final IconData? icon;
   final bool isGlass;
   final double? iconSize;
+  final bool isSmallScreen;
 
   const _Tag({
     required this.text,
@@ -466,64 +503,52 @@ class _Tag extends StatelessWidget {
     this.icon,
     this.isGlass = false,
     this.iconSize,
+    required this.isSmallScreen,
   });
 
   @override
   Widget build(BuildContext context) {
     final container = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: EdgeInsets.symmetric(
+          horizontal: isSmallScreen ? 8 : 12, vertical: isSmallScreen ? 4 : 6),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(12),
-        border: isGlass ? Border.all(color: Colors.white.withValues(alpha: 0.2), width: 0.5) : null,
+        borderRadius: BorderRadius.circular(16),
+        border: isGlass
+            ? Border.all(color: Colors.white.withValues(alpha: 0.2))
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(
-              icon, 
-              size: iconSize ?? 14, 
-              color: textColor,
-            ),
-            const SizedBox(width: 4),
+            Icon(icon,
+                size: iconSize ?? (isSmallScreen ? 12 : 16), color: textColor),
+            const SizedBox(width: 4), // Reduced spacing
           ],
           Text(
             text,
-            style: TextStyle(
-              fontSize: 12,
+            style: GoogleFonts.montserrat(
+              fontSize: isSmallScreen ? 10 : 12,
               fontWeight: FontWeight.w600,
               color: textColor,
-              letterSpacing: 0.2,
             ),
           ),
         ],
       ),
     );
-    
-    if (isGlass) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: container,
-      );
-    }
-    
-    return container;
-  }
-}
 
-class ImageFilter {
-  final double blur;
-  final double opacity;
-  final double? saturation;
-  final double? brightness;
-  
-  const ImageFilter({
-    required this.blur,
-    required this.opacity,
-    this.saturation,
-    this.brightness,
-  });
+    return isGlass
+        ? ClipRRect(borderRadius: BorderRadius.circular(16), child: container)
+        : container;
+  }
 }
 
 class _ImagePlaceholder extends StatelessWidget {
@@ -533,12 +558,10 @@ class _ImagePlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      color: colorScheme.surfaceContainer.withValues(alpha: 0.3),
       child: Center(
         child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: colorScheme.primary,
-        ),
+            strokeWidth: 2, color: colorScheme.primary),
       ),
     );
   }
@@ -556,15 +579,12 @@ class _ImageError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.broken_image_rounded,
-              size: 36,
-              color: colorScheme.error,
-            ),
+            Icon(Icons.broken_image_rounded,
+                size: 36, color: colorScheme.error),
             const SizedBox(height: 8),
             Text(
               'Image unavailable',
-              style: TextStyle(
+              style: GoogleFonts.montserrat(
                 fontSize: 14,
                 color: colorScheme.error,
                 fontWeight: FontWeight.w500,

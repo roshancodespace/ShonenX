@@ -378,7 +378,7 @@ class _AppRouterScreenState extends State<AppRouterScreen> {
   Widget _buildCrystalBottomNav(ThemeData theme) {
     return Padding(
       padding: EdgeInsets.symmetric(
-          horizontal: MediaQuery.sizeOf(context).width * 0.1),
+          horizontal: MediaQuery.sizeOf(context).width * 0.15),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(100),
         child: BackdropFilter(
@@ -419,13 +419,14 @@ class _AppRouterScreenState extends State<AppRouterScreen> {
                             ? theme.colorScheme.primary.withValues(alpha: 0.2)
                             : null,
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Center(
                         child: Icon(
                           _getIconForIndex(index),
                           color: isSelected
                               ? theme.colorScheme.primary
                               : theme.colorScheme.onSurface,
+                              
                         ),
                       ),
                     ),

@@ -49,6 +49,7 @@ dependencies:
   flutter_image_compress: ^2.4.0
   flex_color_scheme: ^8.1.1
   rename: ^3.0.2
+  image: ^4.5.3
 
 dev_dependencies:
   flutter_test:

@@ -160,4 +160,20 @@ class AnimeWatchProgressBox {
     watchedEpisodes.sort((a, b) => b.watchedAt!.compareTo(a.watchedAt!));
     return watchedEpisodes.first;
   }
+
+  // New function to get all completed episodes
+  List<EpisodeProgress> getAllCompletedEpisodes() {
+    final allEntries = getAllEntries();
+    return allEntries
+        .expand((entry) => entry.episodesProgress.values)
+        .where((episode) => episode.isCompleted)
+        .toList();
+  }
+
+  // New function to get all progress of one anime by anime id
+  List<EpisodeProgress> getAllProgressByAnimeId(int animeId) {
+    final entry = getEntry(animeId);
+    if (entry == null) return [];
+    return entry.episodesProgress.values.toList();
+  }
 }

@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/api/models/anilist/anilist_media_list.dart' as anime_media;
+import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
+    as anime_media;
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/helpers/provider.dart';
@@ -67,7 +68,7 @@ class ContinueWatchingCard extends ConsumerWidget {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: colorScheme.shadow.withOpacity(0.1),
+                color: colorScheme.shadow.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -104,8 +105,8 @@ class ContinueWatchingCard extends ConsumerWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.1),
-                          Colors.black.withOpacity(0.7),
+                          Colors.black.withValues(alpha: 0.1),
+                          Colors.black.withValues(alpha: 0.7),
                         ],
                       ),
                     ),
@@ -120,6 +121,9 @@ class ContinueWatchingCard extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        if (episode.isCompleted) Text("Completed", style: TextStyle(
+                          color: colorScheme.primaryContainer
+                        ),),
                         // Progress Percentage
                         Text(
                           '${(progress * 100).toStringAsFixed(1)}%',
@@ -163,7 +167,8 @@ class ContinueWatchingCard extends ConsumerWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: colorScheme.primary.withOpacity(0.9),
+                                color:
+                                    colorScheme.primary.withValues(alpha: 0.9),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -207,7 +212,8 @@ class ContinueWatchingCard extends ConsumerWidget {
                                         child: Icon(
                                           Iconsax.play5,
                                           size: 20,
-                                          color: colorScheme.onSecondaryContainer,
+                                          color:
+                                              colorScheme.onSecondaryContainer,
                                         ),
                                       ),
                                     ),
@@ -220,7 +226,8 @@ class ContinueWatchingCard extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
                             value: progress,
-                            backgroundColor: Colors.white.withOpacity(0.2),
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.2),
                             valueColor:
                                 AlwaysStoppedAnimation(colorScheme.primary),
                             minHeight: 4,
@@ -238,7 +245,7 @@ class ContinueWatchingCard extends ConsumerWidget {
                       duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? colorScheme.primary.withOpacity(0.3)
+                            ? colorScheme.primary.withValues(alpha: 0.3)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -490,7 +497,7 @@ class _ImagePlaceholder extends StatelessWidget {
     return Container(
       width: width ?? double.infinity,
       height: height ?? double.infinity,
-      color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
       child: Center(
         child: CircularProgressIndicator(
           strokeWidth: 2,
@@ -513,7 +520,7 @@ class _ImageFallback extends StatelessWidget {
     return Container(
       width: width ?? double.infinity,
       height: height ?? double.infinity,
-      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       child: Icon(Icons.image, color: colorScheme.onSurfaceVariant),
     );
   }

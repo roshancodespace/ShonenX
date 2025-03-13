@@ -13,6 +13,7 @@ import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
 import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/api/models/anime/source_model.dart';
 import 'package:shonenx/api/sources/anime/anime_provider.dart';
+import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
 import 'package:shonenx/helpers/provider.dart';
 import 'package:shonenx/widgets/player/controls.dart';
 
@@ -43,6 +44,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   late final Player _player;
   late final VideoController _controller;
   late final AnimeProvider _animeProvider;
+  late final AnimeWatchProgressBox _animeWatchProgressBox;
   StreamSubscription? _playerSubscription;
   StreamSubscription? _positionSubscription;
 
@@ -63,10 +65,16 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     _selectedEpIdx = (widget.episode ?? 1) - 1;
     _lastPosition = widget.startAt;
     _initializeProviders();
+    _initializeBoxes();
     _initializePlayer().then((_) => _fetchEpisodes());
   }
 
   void _initializeProviders() => _animeProvider = getAnimeProvider(ref)!;
+
+  Future<void> _initializeBoxes() async {
+    _animeWatchProgressBox = AnimeWatchProgressBox();
+    await _animeWatchProgressBox.init();
+  }
 
   Future<void> _initializePlayer() async {
     _player = Player(
@@ -232,7 +240,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     final theme = Theme.of(context);
     final isWideScreen = MediaQuery.sizeOf(context).width > 600;
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
         child: isWideScreen
             ? Row(
@@ -244,6 +252,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                       this,
                       theme,
                       withHeader: true,
+                      animeWatchProgressBox: _animeWatchProgressBox,
+                      animeMedia: widget.animeMedia,
                     ),
                   ),
                 ],
@@ -251,7 +261,13 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
             : Column(
                 children: [
                   _VideoPlayerSection(this),
-                  Expanded(child: _EpisodesPanel(this, theme)),
+                  Expanded(
+                      child: _EpisodesPanel(
+                    this,
+                    theme,
+                    animeWatchProgressBox: _animeWatchProgressBox,
+                    animeMedia: widget.animeMedia,
+                  )),
                 ],
               ),
       ),
@@ -313,7 +329,7 @@ class _VideoPlayerSection extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               gradient: LinearGradient(
                 colors: [
-                  theme.colorScheme.surface.withOpacity(0.1),
+                  theme.colorScheme.surface.withValues(alpha: 0.1),
                   Colors.black,
                 ],
                 begin: Alignment.topCenter,
@@ -343,7 +359,7 @@ class _VideoPlayerSection extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       shadows: [
                         Shadow(
-                          color: Colors.black.withOpacity(0.7),
+                          color: Colors.black.withValues(alpha: 0.7),
                           blurRadius: 4,
                           offset: const Offset(2, 2),
                         ),
@@ -366,11 +382,16 @@ class _VideoPlayerSection extends StatelessWidget {
 
 // Updated Episodes Panel with Modern UI
 class _EpisodesPanel extends StatelessWidget {
+  final AnimeWatchProgressBox? animeWatchProgressBox;
+  final anilist_media.Media animeMedia;
   final _WatchScreenState state;
   final ThemeData theme;
   final bool withHeader;
 
-  const _EpisodesPanel(this.state, this.theme, {this.withHeader = false});
+  const _EpisodesPanel(this.state, this.theme,
+      {this.withHeader = false,
+      required this.animeWatchProgressBox,
+      required this.animeMedia});
 
   @override
   Widget build(BuildContext context) {
@@ -379,7 +400,7 @@ class _EpisodesPanel extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             theme.colorScheme.surface,
-            theme.colorScheme.background,
+            theme.colorScheme.surface,
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -394,7 +415,9 @@ class _EpisodesPanel extends StatelessWidget {
           : Column(
               children: [
                 if (withHeader) _buildHeader(context),
-                Expanded(child: _buildEpisodesList(context)),
+                Expanded(
+                    child: _buildEpisodesList(
+                        context, animeWatchProgressBox, animeMedia)),
               ],
             ),
     );
@@ -408,7 +431,7 @@ class _EpisodesPanel extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.shadow.withOpacity(0.1),
+            color: theme.colorScheme.shadow.withValues(alpha: 0.1),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -474,7 +497,7 @@ class _EpisodesPanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.3),
+            color: theme.colorScheme.primary.withValues(alpha: 0.3),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -530,12 +553,17 @@ class _EpisodesPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildEpisodesList(BuildContext context) {
+  Widget _buildEpisodesList(
+      BuildContext context,
+      AnimeWatchProgressBox? animeWatchProgressBox,
+      anilist_media.Media animeMedia) {
     final totalEpisodes = state._episodes.length;
     final startIdx = state._selectedRangeStart - 1;
     final endIdx =
         (startIdx + 100 > totalEpisodes) ? totalEpisodes : startIdx + 100;
     final episodesInRange = state._episodes.sublist(startIdx, endIdx);
+    final animeProgress =
+        animeWatchProgressBox?.getAllProgressByAnimeId(animeMedia.id!) ?? [];
 
     return Column(
       children: [
@@ -589,85 +617,103 @@ class _EpisodesPanel extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: GestureDetector(
                   onTap: () => state._playEpisode(globalIndex),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? theme.colorScheme.primaryContainer
-                          : theme.colorScheme.surfaceContainer,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.colorScheme.shadow.withOpacity(0.1),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
+                  child: ValueListenableBuilder(
+                    valueListenable: animeWatchProgressBox!.boxValueListenable,
+                    builder: (context, value, child) {
+                      return Opacity(
+                        opacity: (index < animeProgress.length &&
+                                animeProgress[index].isCompleted)
+                            ? 0.5
+                            : 1,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.primaryContainer,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${episode.number}',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: isSelected
-                                    ? theme.colorScheme.onPrimary
-                                    : theme.colorScheme.onPrimaryContainer,
-                                fontWeight: FontWeight.bold,
+                                ? theme.colorScheme.primaryContainer
+                                : theme.colorScheme.surfaceContainer,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.shadow
+                                    .withValues(alpha: 0.1),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
                               ),
-                            ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Text(
-                                'Episode ${episode.number}',
-                                style: theme.textTheme.titleMedium?.copyWith(
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
                                   color: isSelected
-                                      ? theme.colorScheme.onPrimaryContainer
-                                      : theme.colorScheme.onSurface,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.primaryContainer,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${episode.number}',
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      color: isSelected
+                                          ? theme.colorScheme.onPrimary
+                                          : theme
+                                              .colorScheme.onPrimaryContainer,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                               ),
-                              if (episode.title != null)
-                                Text(
-                                  episode.title!,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: isSelected
-                                        ? theme.colorScheme.onPrimaryContainer
-                                            .withOpacity(0.8)
-                                        : theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Episode ${episode.number}',
+                                      style:
+                                          theme.textTheme.titleMedium?.copyWith(
+                                        color: isSelected
+                                            ? theme
+                                                .colorScheme.onPrimaryContainer
+                                            : theme.colorScheme.onSurface,
+                                        fontWeight: isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.w500,
+                                      ),
+                                    ),
+                                    if (episode.title != null)
+                                      Text(
+                                        episode.title!,
+                                        style:
+                                            theme.textTheme.bodySmall?.copyWith(
+                                          color: isSelected
+                                              ? theme.colorScheme
+                                                  .onPrimaryContainer
+                                                  .withValues(alpha: 0.8)
+                                              : theme
+                                                  .colorScheme.onSurfaceVariant,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(
+                                  Iconsax.play5,
+                                  color: theme.colorScheme.primary,
+                                  size: 28,
                                 ),
                             ],
                           ),
                         ),
-                        if (isSelected)
-                          Icon(
-                            Icons.play_arrow_rounded,
-                            color: theme.colorScheme.primary,
-                            size: 28,
-                          ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ),
               );

@@ -10,6 +10,7 @@ import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
 import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
 import 'package:image/image.dart' as img;
+import 'package:shonenx/data/hive/boxes/settings_box.dart';
 
 class CustomControls extends StatefulWidget {
   final VideoState state;
@@ -40,6 +41,7 @@ class _CustomControlsState extends State<CustomControls>
   late final AnimationController _fadeController;
   late final Player _player;
   AnimeWatchProgressBox? _animeWatchProgressBox;
+  SettingsBox? _settingsBox;
   Timer? _hideTimer;
   Timer? _saveProgressTimer;
   StreamSubscription? _playerStateSubscription;
@@ -63,7 +65,7 @@ class _CustomControlsState extends State<CustomControls>
       ..forward();
     _player = widget.state.widget.controller.player;
     _isFullScreen = isFullscreen(widget.state.context);
-    _initializeProgressBox();
+    _initializeBoxes();
     _startHideTimer();
     _startProgressSaveTimer();
     _subscribeToPlayerState();
@@ -79,8 +81,10 @@ class _CustomControlsState extends State<CustomControls>
     _playbackSpeed.value = _player.state.rate;
   }
 
-  Future<void> _initializeProgressBox() async {
+  Future<void> _initializeBoxes() async {
     _animeWatchProgressBox = AnimeWatchProgressBox();
+    _settingsBox = SettingsBox();
+    await _settingsBox?.init();
     await _animeWatchProgressBox?.init();
   }
 
@@ -158,6 +162,12 @@ class _CustomControlsState extends State<CustomControls>
       }
     }
 
+    final isCompleted =
+        ((_position.value.inSeconds / _duration.value.inSeconds) * 100) >
+            (_settingsBox?.getPlayerSettings().episodeCompletionThreshold ??
+                    0.9 * 100)
+                .toInt();
+
     await _animeWatchProgressBox?.updateEpisodeProgress(
       animeMedia: widget.animeMedia,
       episodeNumber: episode.number!,
@@ -165,6 +175,7 @@ class _CustomControlsState extends State<CustomControls>
       episodeThumbnail: thumbnailBase64,
       progressInSeconds: _position.value.inSeconds,
       durationInSeconds: _duration.value.inSeconds,
+      isCompleted: isCompleted
     );
   }
 

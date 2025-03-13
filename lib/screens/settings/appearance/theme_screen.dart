@@ -9,7 +9,7 @@ import 'package:shonenx/widgets/ui/shonenx_settings.dart';
 // Riverpod provider for theme settings
 final themeSettingsProvider =
     StateNotifierProvider<ThemeSettingsNotifier, ThemeSettingsState>((ref) {
-  return ThemeSettingsNotifier();
+  return ThemeSettingsNotifier()..initializeSettings();
 });
 
 class ThemeSettingsState {
@@ -34,9 +34,10 @@ class ThemeSettingsNotifier extends StateNotifier<ThemeSettingsState> {
       : super(ThemeSettingsState(themeSettings: ThemeSettingsModel()));
 
   Future<void> initializeSettings() async {
+    if (state.isLoading) return; // Prevent re-init
     state = state.copyWith(isLoading: true);
     _settingsBox = SettingsBox();
-    await _settingsBox?.init();
+    await _settingsBox?.init(); // Async Hive init
     _loadSettings();
     state = state.copyWith(isLoading: false);
   }
@@ -97,29 +98,35 @@ class ThemeSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settingsState = ref.watch(themeSettingsProvider);
-    final notifier = ref.read(themeSettingsProvider.notifier);
-
-    final sections =
-        _buildSectionConfigs(context, settingsState.themeSettings, notifier);
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: sections.length + 1,
-      itemBuilder: (context, index) {
-        if (index == sections.length) {
-          return SizedBox(height: MediaQuery.of(context).size.height * 0.15);
+    return Consumer(
+      builder: (context, ref, child) {
+        final settingsState = ref.watch(themeSettingsProvider);
+        if (settingsState.isLoading) {
+          return const Center(child: CircularProgressIndicator());
         }
-        return SettingsSection(
-          title: sections[index].title,
-          items: sections[index].items,
+        final sections =
+            _buildSectionConfigs(context, settingsState.themeSettings, ref);
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: sections.length + 1,
+          itemBuilder: (context, index) {
+            if (index == sections.length) {
+              return SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.15);
+            }
+            return SettingsSection(
+              title: sections[index].title,
+              items: sections[index].items,
+            );
+          },
         );
       },
     );
   }
 
-  List<SectionConfig> _buildSectionConfigs(BuildContext context,
-      ThemeSettingsModel settings, ThemeSettingsNotifier notifier) {
+  List<SectionConfig> _buildSectionConfigs(
+      BuildContext context, ThemeSettingsModel settings, WidgetRef ref) {
+    final notifier = ref.read(themeSettingsProvider.notifier);
     final colorScheme = Theme.of(context).colorScheme;
 
     return [
@@ -137,6 +144,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               activeColor: colorScheme.primary,
               activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
             ),
+            onTap: () {},
           ),
           if (settings.themeMode != 'light')
             SettingItemConfig(
@@ -150,6 +158,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                 activeColor: colorScheme.primary,
                 activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
               ),
+              onTap: () {},
             ),
         ],
       ),
@@ -167,6 +176,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               activeColor: colorScheme.primary,
               activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
             ),
+            onTap: () {},
           ),
           SettingItemConfig(
             title: 'Sub-themes',
@@ -179,6 +189,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               activeColor: colorScheme.primary,
               activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
             ),
+            onTap: () {},
           ),
         ],
       ),
@@ -196,6 +207,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               activeColor: colorScheme.primary,
               activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
             ),
+            onTap: () {},
           ),
           if (settings.themeMode != 'light')
             SettingItemConfig(
@@ -209,7 +221,34 @@ class ThemeSettingsScreen extends ConsumerWidget {
                 activeColor: colorScheme.primary,
                 activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
               ),
+              onTap: () {},
             ),
+          // SettingItemConfig(
+          //   title: 'Use Key Colors',
+          //   description: 'Use key colors for theme',
+          //   icon: Iconsax.color_swatch,
+          //   trailing: Switch(
+          //     value: settings.useKeyColors,
+          //     onChanged: (value) => notifier
+          //         .updateThemeSettings(settings.copyWith(useKeyColors: value)),
+          //     activeColor: colorScheme.primary,
+          //     activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
+          //   ),
+          //   onTap: () {},
+          // ),
+          // SettingItemConfig(
+          //   title: 'Use Tertiary',
+          //   description: 'Include tertiary colors in theme',
+          //   icon: Iconsax.color_swatch,
+          //   trailing: Switch(
+          //     value: settings.useTertiary,
+          //     onChanged: (value) => notifier
+          //         .updateThemeSettings(settings.copyWith(useTertiary: value)),
+          //     activeColor: colorScheme.primary,
+          //     activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
+          //   ),
+          //   onTap: () {},
+          // ),
           SettingItemConfig(
             title: 'Color Blend Level',
             description: settings.blendLevel.toStringAsFixed(1),
@@ -222,6 +261,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
             sliderSuffix: '',
             onSliderChanged: (value) => notifier.updateThemeSettings(
                 settings.copyWith(blendLevel: value.toInt())),
+            onTap: () {},
           ),
         ],
       ),
@@ -241,6 +281,50 @@ class ThemeSettingsScreen extends ConsumerWidget {
             sliderSuffix: '%',
             onSliderChanged: (value) => notifier
                 .updateThemeSettings(settings.copyWith(appBarOpacity: value)),
+            onTap: () {},
+          ),
+          SettingItemConfig(
+            title: 'Use AppBar Colors',
+            description: 'Apply custom colors to app bar',
+            icon: Iconsax.colorfilter,
+            trailing: Switch(
+              value: settings.useAppbarColors,
+              onChanged: (value) => notifier.updateThemeSettings(
+                  settings.copyWith(useAppbarColors: value)),
+              activeColor: colorScheme.primary,
+              activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
+            ),
+            onTap: () {},
+          ),
+          SettingItemConfig(
+            title: 'Tab Bar Opacity',
+            description:
+                '${(settings.tabBarOpacity * 100).toStringAsFixed(1)}%',
+            icon: Iconsax.slider,
+            isSlider: true,
+            sliderValue: settings.tabBarOpacity,
+            sliderMin: 0,
+            sliderMax: 1,
+            sliderDivisions: 20,
+            sliderSuffix: '%',
+            onSliderChanged: (value) => notifier
+                .updateThemeSettings(settings.copyWith(tabBarOpacity: value)),
+            onTap: () {},
+          ),
+          SettingItemConfig(
+            title: 'Bottom Bar Opacity',
+            description:
+                '${(settings.bottomBarOpacity * 100).toStringAsFixed(1)}%',
+            icon: Iconsax.slider,
+            isSlider: true,
+            sliderValue: settings.bottomBarOpacity,
+            sliderMin: 0,
+            sliderMax: 1,
+            sliderDivisions: 20,
+            sliderSuffix: '%',
+            onSliderChanged: (value) => notifier.updateThemeSettings(
+                settings.copyWith(bottomBarOpacity: value)),
+            onTap: () {},
           ),
           SettingItemConfig(
             title: 'Transparent Status Bar',
@@ -253,6 +337,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               activeColor: colorScheme.primary,
               activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
             ),
+            onTap: () {},
           ),
           SettingItemConfig(
             title: 'Border Radius',
@@ -266,6 +351,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
             sliderSuffix: 'dp',
             onSliderChanged: (value) => notifier
                 .updateThemeSettings(settings.copyWith(defaultRadius: value)),
+            onTap: () {},
           ),
           SettingItemConfig(
             title: 'Tooltip Background',
@@ -278,6 +364,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               activeColor: colorScheme.primary,
               activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
             ),
+            onTap: () {},
           ),
         ],
       ),
@@ -295,6 +382,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               activeColor: colorScheme.primary,
               activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
             ),
+            onTap: () {},
           ),
         ],
       ),
@@ -305,6 +393,10 @@ class ThemeSettingsScreen extends ConsumerWidget {
             title: 'Color Scheme',
             description: 'Select a color scheme',
             icon: Iconsax.colorfilter,
+            trailing: Text(
+              _formatSchemeName(settings.colorScheme),
+              style: TextStyle(color: colorScheme.onSurface),
+            ),
             onTap: () => _showColorSchemeModal(context, settings, notifier),
           ),
         ],
@@ -316,45 +408,30 @@ class ThemeSettingsScreen extends ConsumerWidget {
       ThemeSettingsNotifier notifier) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          height: 400,
-          child: Column(
-            children: [
-              Text('Select Color Scheme',
-                  style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 16),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.8,
-                  ),
-                  itemCount: FlexScheme.values.length,
-                  itemBuilder: (context, index) {
-                    final scheme = FlexScheme.values[index];
-                    return _SimpleColorSchemeCard(
-                      scheme: scheme,
-                      isSelected: settings.flexSchemeEnum == scheme,
-                      onSelected: (selectedScheme) {
-                        notifier.updateThemeSettings(settings.copyWith(
-                            colorScheme: selectedScheme.name));
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (modalContext) {
+        return ColorSchemeModal(
+          settings: settings,
+          notifier: notifier,
         );
       },
     );
+  }
+
+  String _formatSchemeName(String name) {
+    return name
+        .splitMapJoin(
+          RegExp(r'(?=[A-Z])'),
+          onMatch: (m) => ' ${m.group(0)}',
+          onNonMatch: (n) => n,
+        )
+        .trim()
+        .split(' ')
+        .map((word) => word[0].toUpperCase() + word.substring(1))
+        .join(' ');
   }
 }
 
@@ -403,22 +480,19 @@ class SettingsSection extends StatelessWidget {
             description: config.description,
             onTap: config.onTap ?? () {},
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SliderTheme(
-              data: SliderThemeData(
-                trackHeight: 2,
-                thumbColor: colorScheme.primary,
-                activeTrackColor: colorScheme.primary,
-                inactiveTrackColor: colorScheme.surfaceContainerHighest,
-              ),
-              child: Slider(
-                value: config.sliderValue!,
-                min: config.sliderMin!,
-                max: config.sliderMax!,
-                divisions: config.sliderDivisions!,
-                onChanged: config.onSliderChanged!,
-              ),
+          SliderTheme(
+            data: SliderThemeData(
+              trackHeight: 2,
+              thumbColor: colorScheme.primary,
+              activeTrackColor: colorScheme.primary,
+              inactiveTrackColor: colorScheme.surfaceContainerHighest,
+            ),
+            child: Slider(
+              value: config.sliderValue!,
+              min: config.sliderMin!,
+              max: config.sliderMax!,
+              divisions: config.sliderDivisions!,
+              onChanged: config.onSliderChanged!,
             ),
           ),
         ],
@@ -430,7 +504,62 @@ class SettingsSection extends StatelessWidget {
       title: config.title,
       description: config.description,
       trailing: config.trailing,
-      onTap: () => config.onTap ?? (config.trailing != null ? () {} : null),
+      onTap: config.onTap ?? () {},
+    );
+  }
+}
+
+class ColorSchemeModal extends StatelessWidget {
+  final ThemeSettingsModel settings;
+  final ThemeSettingsNotifier notifier;
+
+  const ColorSchemeModal(
+      {super.key, required this.settings, required this.notifier});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.5,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Select Color Scheme',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: GridView.builder(
+                cacheExtent: 500,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.5,
+                ),
+                itemCount: FlexScheme.values.length,
+                itemBuilder: (context, index) {
+                  final scheme = FlexScheme.values[index];
+                  return _SimpleColorSchemeCard(
+                    scheme: scheme,
+                    isSelected: settings.colorScheme == scheme.name,
+                    onSelected: (selectedScheme) {
+                      notifier.updateThemeSettings(
+                        settings.copyWith(colorScheme: selectedScheme.name),
+                      );
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -446,11 +575,21 @@ class _SimpleColorSchemeCard extends StatelessWidget {
     required this.onSelected,
   });
 
+  static final Map<FlexScheme, ColorScheme> _colorCache = {};
+
+  ColorScheme _getColorScheme(FlexScheme scheme) {
+    return _colorCache.putIfAbsent(
+      scheme,
+      () => FlexThemeData.light(scheme: scheme).colorScheme,
+    );
+  }
+
   String _formatSchemeName(String name) {
     return name
         .splitMapJoin(
           RegExp(r'(?=[A-Z])'),
           onMatch: (m) => ' ${m.group(0)}',
+          onNonMatch: (n) => n,
         )
         .trim()
         .split(' ')
@@ -460,7 +599,7 @@ class _SimpleColorSchemeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final schemeData = FlexThemeData.light(scheme: scheme).colorScheme;
+    final schemeData = _getColorScheme(scheme);
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(

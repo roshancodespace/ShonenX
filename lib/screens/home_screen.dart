@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_carousel_widget/flutter_carousel_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -483,7 +484,8 @@ class _SpotlightSection extends StatelessWidget {
             autoPlay: true,
             enlargeCenterPage: true,
             autoPlayInterval: const Duration(seconds: 5),
-            enlargeStrategy: CenterPageEnlargeStrategy.height,
+            enlargeFactor: 1,
+            enlargeStrategy: CenterPageEnlargeStrategy.scale,
             enableInfiniteScroll: true,
             floatingIndicator: false,
             slideIndicator: CustomSlideIndicator(context),

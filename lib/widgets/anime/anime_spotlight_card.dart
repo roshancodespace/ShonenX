@@ -287,13 +287,6 @@ class _ScoreIndicator extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: colorScheme.surface.withValues(alpha: 0.9),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Stack(
         alignment: Alignment.center,
@@ -363,7 +356,8 @@ class _BottomDetails extends StatelessWidget {
         'airing' => Colors.green.shade700,
         'completed' => Colors.blue.shade700,
         'cancelled' => Colors.red.shade700,
-        'hiatus' => Colors.orange.shade700,
+        'releasing' => Colors.orange.shade700,
+        'not_yet_released' => Colors.amber.shade300,
         _ => colorScheme.primaryContainer,
       };
     }
@@ -460,25 +454,18 @@ class _InfoChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: isSmallScreen ? 14 : 16, color: Colors.white),
+          Icon(icon, size: isSmallScreen ? 14 : 16, color: Theme.of(context).colorScheme.onSurface,),
           const SizedBox(width: 4), // Reduced spacing
           Text(
             label,
             style: GoogleFonts.montserrat(
               fontSize: isSmallScreen ? 10 : 12,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],
@@ -517,13 +504,6 @@ class _Tag extends StatelessWidget {
         border: isGlass
             ? Border.all(color: Colors.white.withValues(alpha: 0.2))
             : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

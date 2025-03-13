@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/providers/homepage_provider.dart';
 import 'package:shonenx/screens/settings/appearance/theme_screen.dart';
 import 'package:shonenx/screens/settings/appearance/ui_screen.dart';
 import 'package:shonenx/screens/settings/player/player_screen.dart';
@@ -62,10 +63,11 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
         ref.read(themeSettingsProvider.notifier).initializeSettings(),
         ref.read(uiSettingsProvider.notifier).initializeSettings(),
         ref.read(playerSettingsProvider.notifier).initializeSettings(),
+        ref.read(homePageProvider.future),
         AnimeWatchProgressBox().init(),
 
         // Force minimum 5 second delay
-        Future.delayed(const Duration(seconds: 3)),
+        // Future.delayed(const Duration(seconds: 3)),
       ]);
       final uiSettings = ref.read(uiSettingsProvider).uiSettings;
       if (uiSettings.immersiveMode) {

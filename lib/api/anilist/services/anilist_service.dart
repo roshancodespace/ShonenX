@@ -36,7 +36,6 @@ class AnilistService {
     if (result.hasException) {
       debugPrint(query);
       debugPrint('GraphQL Operation Failed: ${result.exception}');
-      throw Exception('GraphQL Operation Failed: ${result.exception}');
     }
 
     return result.data;
@@ -224,26 +223,42 @@ class AnilistService {
     return (data?['Media']?['isFavourite'] as bool);
   }
 
-  /// **Update the status of an anime in the user's list**
+  /// Update the status of an anime in the user's list
   Future<void> updateAnimeStatus({
     required int mediaId,
     required String accessToken,
-    required String newStatus, // Example: "CURRENT", "COMPLETED", etc.
+    required String newStatus,
   }) async {
-    final data = await _executeGraphQLOperation(
-      accessToken: accessToken,
-      query: AnilistQueries.updateAnimeStatusMutation,
-      variables: {
-        'mediaId': mediaId,
-        'status': newStatus, // Must be one of "CURRENT", "COMPLETED", etc.
-      },
-      isMutation: true,
-    );
+    try {
+      final validatedStatus = validateMediaListStatus(newStatus);
+      final data = await _executeGraphQLOperation(
+        accessToken: accessToken,
+        query: '''
+          mutation UpdateAnimeStatus(\$mediaId: Int!, \$status: MediaListStatus!) {
+            SaveMediaListEntry(mediaId: \$mediaId, status: \$status, progress: 0) {
+              id
+              mediaId
+              status
+              progress
+              score
+            }
+          }
+        ''',
+        variables: {
+          'mediaId': mediaId,
+          'status': validatedStatus,
+        },
+        isMutation: true,
+      );
 
-    if (data != null) {
-      debugPrint('✅ Anime status updated successfully: $data');
-    } else {
-      throw Exception('❌ Failed to update anime status.');
+      if (data != null && data['SaveMediaListEntry'] != null) {
+        debugPrint('✅ Anime status updated successfully: $data');
+      } else {
+        throw Exception('❌ Failed to update anime status: No data returned');
+      }
+    } catch (e) {
+      debugPrint('❌ Error updating anime status: $e');
+      rethrow;
     }
   }
 
@@ -291,5 +306,23 @@ class AnilistService {
     );
 
     return data?['MediaList'] as Map<String, dynamic>?;
+  }
+
+  /// Validate and convert status to a valid MediaListStatus value
+  String validateMediaListStatus(String status) {
+    final validStatuses = [
+      'CURRENT',
+      'COMPLETED',
+      'PAUSED',
+      'DROPPED',
+      'PLANNING',
+      'REPEATING',
+    ];
+    final upperStatus = status.toUpperCase();
+    if (!validStatuses.contains(upperStatus)) {
+      throw Exception(
+          'Invalid MediaListStatus: $status. Valid values are: $validStatuses');
+    }
+    return upperStatus;
   }
 }

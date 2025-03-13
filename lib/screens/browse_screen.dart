@@ -8,8 +8,15 @@ import 'package:shonenx/data/constants/constants.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/helpers/provider.dart';
 import 'package:shonenx/widgets/anime/anime_card.dart';
+import 'package:shonenx/widgets/anime/anime_card_v2.dart';
 import 'package:shonenx/widgets/ui/search_bar.dart';
 import 'package:uuid/uuid.dart';
+import 'package:iconsax/iconsax.dart';
+
+final sortOptionProvider =
+    StateProvider<String>((ref) => 'Title'); // Shared or local sort state
+final filterFormatProvider =
+    StateProvider<String?>((ref) => null); // Hardcoded format filter
 
 class BrowseScreen extends ConsumerStatefulWidget {
   final String? keyword;
@@ -21,9 +28,7 @@ class BrowseScreen extends ConsumerStatefulWidget {
 
 class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   late TextEditingController _searchController;
-  // String _lastSearch = '';
   List<Media>? _searchResults = [];
-  // int _currentPage = 1;
   bool _isLoading = false;
 
   @override
@@ -35,7 +40,6 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _onSearch();
       });
-      setState(() {});
     }
   }
 
@@ -58,8 +62,8 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
             contentType: ContentType.warning,
             color: Colors.red.shade300,
             titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700
-            ),
+                  fontWeight: FontWeight.w700,
+                ),
             messageTextStyle: Theme.of(context).textTheme.labelLarge,
           ),
         ),
@@ -68,8 +72,6 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     }
 
     setState(() {
-      // _lastSearch = _searchController.text;
-      // _currentPage = 1;
       _isLoading = true;
     });
 
@@ -122,11 +124,39 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // Search Bar
-              Searchbar(
-                controller: _searchController,
-                onSearch: _onSearch,
-                onClear: onClear,
+              // Header with Search Bar and Actions
+              Row(
+                children: [
+                  Expanded(
+                    child: Searchbar(
+                      controller: _searchController,
+                      onSearch: _onSearch,
+                      onClear: onClear,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Iconsax.sort),
+                    color: colorScheme.onSurface,
+                    onPressed: _showSortDialog,
+                    style: IconButton.styleFrom(
+                      backgroundColor: colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.2),
+                      padding: const EdgeInsets.all(10),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Iconsax.filter),
+                    color: colorScheme.onSurface,
+                    onPressed: _showFilterDialog,
+                    style: IconButton.styleFrom(
+                      backgroundColor: colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.2),
+                      padding: const EdgeInsets.all(10),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 
@@ -164,24 +194,60 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   }
 
   Widget _buildSearchResults() {
+    final sortOption = ref.watch(sortOptionProvider);
+    final filterFormat = ref.watch(filterFormatProvider);
+    List<Media> animeList = List.from(_searchResults ?? []);
+
+    if (animeList.isEmpty) {
+      return const Center(child: Text("No results found."));
+    }
+
+    // Apply sorting
+    try {
+      switch (sortOption) {
+        case 'Title':
+          animeList.sort((a, b) =>
+              (a.title?.romaji ?? '').compareTo(b.title?.romaji ?? ''));
+          break;
+        case 'Popularity':
+          animeList
+              .sort((a, b) => (b.popularity ?? 0).compareTo(a.popularity ?? 0));
+          break;
+        case 'Score':
+          animeList.sort(
+              (a, b) => (b.averageScore ?? 0).compareTo(a.averageScore ?? 0));
+          break;
+      }
+    } catch (e) {
+      debugPrint('Sorting error: $e');
+    }
+
+    // Apply format filter
+    if (filterFormat != null && filterFormat.isNotEmpty) {
+      animeList =
+          animeList.where((media) => media.format == filterFormat).toList();
+    }
+
+    if (animeList.isEmpty) {
+      return const Center(child: Text("No results match the filter."));
+    }
+
     return GridView.builder(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.fromLTRB(0, 16, 0, 100), // Extra bottom padding
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: _getCrossAxisCount(context),
         childAspectRatio: 0.7,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
-      itemCount: _searchResults?.length,
+      itemCount: animeList.length,
       itemBuilder: (context, index) {
         final tag = Uuid().v4();
-        return GestureDetector(
-          onTap: () => navigateToDetail(context, _searchResults![index], tag),
-          child: AnimeCard(
-            anime: _searchResults![index],
-            tag: tag,
-          ),
+        return AnimatedAnimeCard(
+          anime: animeList[index],
+          tag: tag,
+          onTap: () => navigateToDetail(context, animeList[index], tag),
         );
       },
     );
@@ -194,7 +260,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
         children: [
           const SizedBox(height: 16),
           _buildSection(
-            "Categories",
+            "Categories \n(in development)",
             Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -256,5 +322,123 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     if (width > 600) return 4;
     if (width > 400) return 3;
     return 2;
+  }
+
+  void _showSortDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final currentSort = ref.read(sortOptionProvider);
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: Text(
+            "Sort By",
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildSortOption('Title', currentSort, context),
+              _buildSortOption('Popularity', currentSort, context),
+              _buildSortOption('Score', currentSort, context),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Close",
+                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSortOption(String option, String currentSort, context) {
+    return ListTile(
+      title: Text(
+        option,
+        style: TextStyle(
+          color: option == currentSort
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.onSurface,
+        ),
+      ),
+      trailing: option == currentSort
+          ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+          : null,
+      onTap: () {
+        ref.read(sortOptionProvider.notifier).state = option;
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  void _showFilterDialog() {
+    const availableFormats = [null, 'TV', 'MOVIE', 'OVA']; // Hardcoded formats
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        final currentFormat = ref.read(filterFormatProvider);
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: Text(
+            "Filter By Format",
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: availableFormats.length,
+              itemBuilder: (context, index) {
+                final format = availableFormats[index];
+                return ListTile(
+                  title: Text(
+                    format ?? 'All Formats',
+                    style: TextStyle(
+                      color: format == currentFormat
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  trailing: format == currentFormat
+                      ? Icon(Icons.check,
+                          color: Theme.of(context).colorScheme.primary)
+                      : null,
+                  onTap: () {
+                    ref.read(filterFormatProvider.notifier).state = format;
+                    Navigator.pop(context);
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Close",
+                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

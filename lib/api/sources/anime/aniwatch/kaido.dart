@@ -43,8 +43,9 @@ class KaidoProvider extends AnimeProvider {
 
   @override
   Future<WatchPage> getWatch(String animeId) async {
-    final response = await http.get(Uri.parse('$baseUrl/watch/$animeId'),
-        headers: _getHeaders());
+    final response = await http.get(
+      Uri.parse('$baseUrl/watch/$animeId'),
+    );
     final document = parse(response.body);
     return parseWatch(document, baseUrl, animeId: animeId);
   }

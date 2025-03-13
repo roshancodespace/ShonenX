@@ -7,12 +7,14 @@ import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/providers/anilist/anilist_medialist_provider.dart';
 import 'package:shonenx/providers/anilist/anilist_user_provider.dart';
-import 'package:shonenx/widgets/anime/anime_card.dart';
+import 'package:shonenx/widgets/anime/anime_card_v2.dart';
 import 'package:uuid/uuid.dart';
 
 final selectedCategoryProvider = StateProvider<String>((ref) => 'CURRENT');
 final cardLoadingProvider =
     StateProvider.family<bool, String>((ref, id) => false);
+final sortOptionProvider = StateProvider<String>((ref) => 'Title');
+final filterGenreProvider = StateProvider<String?>((ref) => null);
 
 class WatchlistScreen extends ConsumerStatefulWidget {
   const WatchlistScreen({super.key});
@@ -54,8 +56,8 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
       behavior: SnackBarBehavior.floating,
       backgroundColor: Colors.transparent,
       content: AwesomeSnackbarContent(
-        title: 'Feature Locked',
-        message: 'Anilist is required to use this feature. Please sign in.',
+        title: 'Sign In Required',
+        message: 'Link Anilist to unlock your watchlist.',
         contentType: ContentType.warning,
       ),
     );
@@ -65,217 +67,209 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final selectedCategory = ref.watch(selectedCategoryProvider);
-    final animeListState = ref.watch(animeListProvider);
     final userState = ref.watch(userProvider);
-
     return Scaffold(
-      body: userState == null
-          ? _buildLoginPrompt()
-          : _buildMainContent(selectedCategory, animeListState),
+      backgroundColor: Theme.of(context).colorScheme.background,
+      body: SafeArea(
+        child: userState == null ? _buildLoginPrompt() : _buildMainContent(),
+      ),
     );
   }
 
   Widget _buildLoginPrompt() {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
-          ],
-        ),
-      ),
+      padding: const EdgeInsets.all(24),
       child: Center(
-        child: Card(
-          elevation: 0,
-          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(
-              color:
-                  Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
-            ),
-          ),
-          child: Container(
-            width: 320,
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(
-                    Iconsax.video_play,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  "Track Your Anime Journey",
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Connect with Anilist to manage your watchlist and discover new anime.",
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                FilledButton.icon(
-                  onPressed: () => context.push('/settings/profile'),
-                  icon: const Icon(Iconsax.login),
-                  label: const Text("Connect with Anilist"),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+                Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHighest
+                    .withValues(alpha: 0.8),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMainContent(
-      String selectedCategory, AnimeListState animeListState) {
-    return NestedScrollView(
-      headerSliverBuilder: (context, innerBoxIsScrolled) => [
-        _buildAppBar(selectedCategory, innerBoxIsScrolled),
-        SliverToBoxAdapter(
-          child: _buildCategorySelector(selectedCategory),
-        ),
-      ],
-      body: _buildAnimeList(selectedCategory, animeListState),
-    );
-  }
-
-  Widget _buildAppBar(String selectedCategory, bool innerBoxIsScrolled) {
-    final theme = Theme.of(context);
-    return SliverAppBar(
-      expandedHeight: 140,
-      pinned: true,
-      stretch: true,
-      backgroundColor: theme.colorScheme.surface,
-      surfaceTintColor: Colors.transparent,
-      flexibleSpace: FlexibleSpaceBar(
-        expandedTitleScale: 1.3,
-        titlePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              categories[selectedCategory] ?? '',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
               ),
-            ),
-            if (!innerBoxIsScrolled) ...[
-              const SizedBox(height: 4),
+            ],
+          ),
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Iconsax.video_play,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 24),
               Text(
-                _getCategorySubtitle(selectedCategory),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                "Your Anime Awaits",
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "Sign in with Anilist to track your watchlist.",
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () =>
+                    context.push('/settings/profile'), // Keep push for now
+                style: ElevatedButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 4,
+                ),
+                child: const Text(
+                  "Sign In",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
             ],
-          ],
-        ),
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
-                theme.colorScheme.surface,
-              ],
-            ),
           ),
         ),
       ),
-      actions: [
-        IconButton(
-          color: theme.colorScheme.onSurface,
-          icon: const Icon(Iconsax.sort),
-          tooltip: 'Sort',
-          onPressed: () {
-            // Implement sort functionality
-          },
+    );
+  }
+
+  Widget _buildMainContent() {
+    final selectedCategory = ref.watch(selectedCategoryProvider);
+    final animeListState = ref.watch(animeListProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(),
+        _buildCategoryTabs(),
+        Expanded(
+          child: _buildAnimeList(selectedCategory, animeListState),
         ),
-        IconButton(
-          color: theme.colorScheme.onSurface,
-          icon: const Icon(Iconsax.filter),
-          tooltip: 'Filter',
-          onPressed: () {
-            // Implement filter functionality
-          },
-        ),
-        IconButton(
-          color: theme.colorScheme.onSurface,
-          icon: const Icon(Iconsax.search_normal),
-          tooltip: 'Search',
-          onPressed: () {
-            // Implement search functionality
-          },
-        ),
-        const SizedBox(width: 8),
       ],
     );
   }
 
-  Widget _buildCategorySelector(String selectedCategory) {
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            "Watchlist",
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  letterSpacing: -1,
+                ),
+          ),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Iconsax.sort),
+                color: Theme.of(context).colorScheme.onSurface,
+                onPressed: () => _showSortDialog(),
+                style: IconButton.styleFrom(
+                  backgroundColor: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.2),
+                  padding: const EdgeInsets.all(10),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Iconsax.filter),
+                color: Theme.of(context).colorScheme.onSurface,
+                onPressed: () => _showFilterDialog(),
+                style: IconButton.styleFrom(
+                  backgroundColor: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.2),
+                  padding: const EdgeInsets.all(10),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryTabs() {
+    final selectedCategory = ref.watch(selectedCategoryProvider);
     return Container(
       height: 50,
-      margin: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: categories.length,
         itemBuilder: (context, index) {
           final entry = categories.entries.elementAt(index);
           final isSelected = selectedCategory == entry.key;
-
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) {
-                  ref.read(selectedCategoryProvider.notifier).state = entry.key;
-                }
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: () {
+                ref.read(selectedCategoryProvider.notifier).state = entry.key;
               },
-              label: Text(entry.value),
-              labelStyle: TextStyle(
-                color: isSelected
-                    ? Theme.of(context).colorScheme.onPrimaryContainer
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-              backgroundColor:
-                  Theme.of(context).colorScheme.surfaceContainerHighest,
-              selectedColor: Theme.of(context).colorScheme.primaryContainer,
-              side: BorderSide.none,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.1)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.2),
+                    width: 1.5,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    entry.value,
+                    style: TextStyle(
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
               ),
             ),
           );
@@ -287,123 +281,270 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
   Widget _buildAnimeList(String status, AnimeListState animeListState) {
     if (animeListState.isLoading) {
       return const Center(
-        child: CircularProgressIndicator(),
+        child: CircularProgressIndicator(strokeWidth: 2),
       );
     }
 
-    final animeList = _getAnimeList(status, animeListState);
+    final sortOption = ref.watch(sortOptionProvider);
+    final filterGenre = ref.watch(filterGenreProvider);
+    List<MediaList> animeList = _getAnimeList(status, animeListState);
 
     if (animeList.isEmpty) {
-      return _buildEmptyState(status, animeListState);
+      return _buildEmptyState(status);
+    }
+
+    // Apply sorting with null safety
+    animeList =
+        List.from(animeList); // Create a copy to avoid mutating original
+    try {
+      switch (sortOption) {
+        case 'Title':
+          animeList.sort((a, b) => (a.media.title?.romaji ?? '')
+              .compareTo(b.media.title?.romaji ?? ''));
+          break;
+        case 'Progress':
+          animeList.sort((a, b) => (a.progress ?? 0)
+              .compareTo(b.progress ?? 0)); // Null-safe comparison
+          break;
+        case 'Score':
+          animeList.sort((a, b) =>
+              (a.score ?? 0).compareTo(b.score ?? 0)); // Null-safe comparison
+          break;
+      }
+    } catch (e) {
+      // Log error and fallback to unsorted list
+      debugPrint('Sorting error: $e');
+    }
+
+    // Apply filtering
+    if (filterGenre != null && filterGenre.isNotEmpty) {
+      animeList = animeList
+          .where((mediaList) =>
+              mediaList.media.genres?.contains(filterGenre) ?? false)
+          .toList();
+    }
+
+    if (animeList.isEmpty) {
+      return _buildEmptyState(status);
     }
 
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(15, 0, 15, 100),
+      padding:
+          const EdgeInsets.fromLTRB(20, 20, 20, 100), // Extra 100px at bottom
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 160,
-        childAspectRatio: 0.7,
+        childAspectRatio: 0.68,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
       itemCount: animeList.length,
       itemBuilder: (context, index) {
-        final anime = animeList[index];
+        final mediaList = animeList[index];
         final tag = const Uuid().v4();
-        return Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: () => navigateToDetail(context, anime, tag),
-            borderRadius: BorderRadius.circular(12),
-            child: AnimeCard(
-              tag: tag,
-              anime: anime,
-            ),
-          ),
+        return AnimatedAnimeCard(
+          tag: tag,
+          anime: mediaList.media,
+          onTap: () => navigateToDetail(context, mediaList.media, tag),
         );
       },
     );
   }
 
-  List<Media> _getAnimeList(String status, AnimeListState animeListState) {
+  List<MediaList> _getAnimeList(String status, AnimeListState animeListState) {
     if (status == 'FAVORITES') {
-      return animeListState.favorites;
+      return animeListState.favorites
+          .map((media) => MediaList(
+                media: media,
+                status: 'FAVORITES',
+                score: media.averageScore?.toInt() ?? 0,
+                progress: 0,
+              ))
+          .toList();
     }
     final mediaListGroups = animeListState.mediaListGroups[status];
-    return mediaListGroups
-            ?.expand((group) => group.entries)
-            .map((e) => e.media)
-            .toList() ??
-        [];
+    return mediaListGroups?.expand((group) => group.entries).toList() ?? [];
   }
 
-  Widget _buildEmptyState(String status, AnimeListState animeListState) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(
-                Iconsax.video_play,
-                size: 48,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              "No Anime Found",
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+  Widget _buildEmptyState(String status) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height - 150,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.1),
+                      Theme.of(context).colorScheme.surface,
+                    ],
                   ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Start building your ${categories[status]?.toLowerCase()} list by exploring new anime!",
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            if (animeListState.errors[status] != null) ...[
+                ),
+                child: Icon(
+                  Iconsax.video_play,
+                  size: 60,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
               const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: () {
-                  ref
-                      .read(animeListProvider.notifier)
-                      .fetchAnimeListByStatus(status);
-                },
-                icon: const Icon(Iconsax.refresh),
-                label: const Text("Try Again"),
+              Text(
+                "Empty List",
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      letterSpacing: -1,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Your ${categories[status]?.toLowerCase()} list is looking lonely. Add some anime!",
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.7),
+                    ),
+                textAlign: TextAlign.center,
               ),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 
-  String _getCategorySubtitle(String category) {
-    switch (category) {
-      case 'CURRENT':
-        return 'Keep track of what you\'re watching';
-      case 'COMPLETED':
-        return 'Anime you\'ve finished watching';
-      case 'PAUSED':
-        return 'Taking a break from these shows';
-      case 'DROPPED':
-        return 'Shows you\'ve stopped watching';
-      case 'PLANNING':
-        return 'Your anime watchlist';
-      case 'FAVORITES':
-        return 'Your all-time favorite anime';
-      default:
-        return '';
-    }
+  void _showSortDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final currentSort = ref.read(sortOptionProvider);
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: Text(
+            "Sort By",
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildSortOption('Title', currentSort, context),
+              _buildSortOption('Progress', currentSort, context),
+              _buildSortOption('Score', currentSort, context),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Close",
+                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSortOption(
+      String option, String currentSort, BuildContext context) {
+    return ListTile(
+      title: Text(
+        option,
+        style: TextStyle(
+          color: option == currentSort
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.onSurface,
+        ),
+      ),
+      trailing: option == currentSort
+          ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+          : null,
+      onTap: () {
+        ref.read(sortOptionProvider.notifier).state = option;
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  void _showFilterDialog() {
+    final animeListState = ref.read(animeListProvider);
+    final allGenres = animeListState.mediaListGroups.values
+        .expand((groups) => groups)
+        .expand((group) => group.entries)
+        .expand((mediaList) => mediaList.media.genres ?? [])
+        .toSet()
+        .toList()
+      ..sort();
+    final availableGenres = [null, ...allGenres];
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        final currentGenre = ref.read(filterGenreProvider);
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: Text(
+            "Filter By Genre",
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: availableGenres.length,
+              itemBuilder: (context, index) {
+                final genre = availableGenres[index];
+                return ListTile(
+                  title: Text(
+                    genre ?? 'All Genres',
+                    style: TextStyle(
+                      color: genre == currentGenre
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  trailing: genre == currentGenre
+                      ? Icon(Icons.check,
+                          color: Theme.of(context).colorScheme.primary)
+                      : null,
+                  onTap: () {
+                    ref.read(filterGenreProvider.notifier).state = genre;
+                    Navigator.pop(context);
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Close",
+                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

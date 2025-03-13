@@ -96,7 +96,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   uiSettings: _uiSettings,
                   onRefresh: () => ref.refresh(homePageProvider),
                 ),
-                loading: () => const _HomeContentLoading(),
+                loading: () => _HomeContent(
+                  animeWatchProgressBox: _animeWatchProgressBox,
+                  settingsBox: _settingsBox,
+                  homePage: null,
+                  isDesktop: isDesktop,
+                  uiSettings: _uiSettings,
+                  onRefresh: () => ref.refresh(homePageProvider),
+                ),
               ),
         ),
       ),
@@ -199,6 +206,7 @@ class _HomeContent extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _HomeContentLoading extends StatelessWidget {
   const _HomeContentLoading();
 
@@ -252,7 +260,9 @@ class UserProfileCard extends StatelessWidget {
       elevation: 0,
       color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius:
+            (theme.cardTheme.shape as RoundedRectangleBorder?)?.borderRadius ??
+                BorderRadius.circular(8),
         side:
             BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
       ),
@@ -410,7 +420,9 @@ class DiscoverCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: (theme.cardTheme.shape as RoundedRectangleBorder?)
+                  ?.borderRadius ??
+              BorderRadius.circular(8),
         ),
         child: Row(
           children: [
@@ -471,7 +483,7 @@ class _SpotlightSection extends StatelessWidget {
             autoPlay: true,
             enlargeCenterPage: true,
             autoPlayInterval: const Duration(seconds: 5),
-            enlargeStrategy: CenterPageEnlargeStrategy.scale,
+            enlargeStrategy: CenterPageEnlargeStrategy.height,
             enableInfiniteScroll: true,
             floatingIndicator: false,
             slideIndicator: CustomSlideIndicator(context),
@@ -533,7 +545,7 @@ class _SpotlightHeader extends StatelessWidget {
   }
 }
 
-class _HorizontalAnimeSection extends SliverToBoxAdapter {
+class _HorizontalAnimeSection extends StatefulWidget {
   final String title;
   final SettingsBox settingsBox;
   final List<Media>? animes;
@@ -545,6 +557,56 @@ class _HorizontalAnimeSection extends SliverToBoxAdapter {
     required this.uiSettings,
     required this.settingsBox,
   });
+
+  @override
+  State<_HorizontalAnimeSection> createState() =>
+      _HorizontalAnimeSectionState();
+}
+
+class _HorizontalAnimeSectionState extends State<_HorizontalAnimeSection> {
+  late final ScrollController _scrollController;
+  bool _showLeftButton = false;
+  bool _showRightButton = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_updateButtonVisibility);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_updateButtonVisibility);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _updateButtonVisibility() {
+    setState(() {
+      _showLeftButton = _scrollController.offset > 0;
+      _showRightButton =
+          _scrollController.offset < _scrollController.position.maxScrollExtent;
+    });
+  }
+
+  void _scrollLeft() {
+    _scrollController.animateTo(
+      _scrollController.offset -
+          _getCardWidth(context, widget.uiSettings.cardStyle) * 2,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _scrollRight() {
+    _scrollController.animateTo(
+      _scrollController.offset +
+          _getCardWidth(context, widget.uiSettings.cardStyle) * 2,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
 
   double _getCardWidth(BuildContext context, String mode) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -563,7 +625,7 @@ class _HorizontalAnimeSection extends SliverToBoxAdapter {
   double _getCardHeight(BuildContext context, String mode) {
     final screenWidth = MediaQuery.of(context).size.width;
     return switch (mode) {
-      'Card' => screenWidth < 600 ? 200.0 : 240.0,
+      'Card' => screenWidth < 600 ? 200.0 : 200.0,
       'Compact' => screenWidth < 600 ? 150.0 : 180.0,
       'Poster' => screenWidth < 600 ? 260.0 : 300.0,
       'Glass' => screenWidth < 600 ? 220.0 : 260.0,
@@ -575,63 +637,174 @@ class _HorizontalAnimeSection extends SliverToBoxAdapter {
   }
 
   @override
-  Widget get child {
-    return Builder(
-      builder: (context) {
-        final cardStyle = uiSettings.cardStyle;
-        final cardWidth = _getCardWidth(context, cardStyle);
-        final cardHeight = _getCardHeight(context, cardStyle);
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final cardStyle = widget.uiSettings.cardStyle;
+    final cardWidth = _getCardWidth(context, cardStyle);
+    final cardHeight = _getCardHeight(context, cardStyle);
+    final isDesktop = MediaQuery.of(context).size.width >= 600;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+            child: Text(
+              widget.title,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
+          SizedBox(
+            height: cardHeight +
+                (isDesktop ? 48 : 0), // Extra space for buttons on desktop
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                ListView.builder(
+                  controller: _scrollController,
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: widget.animes?.length ?? 10,
+                  itemBuilder: (context, index) {
+                    final anime = widget.animes?[index];
+                    final tag = const Uuid().v4();
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 16),
+                      child: ValueListenableBuilder(
+                        valueListenable:
+                            widget.settingsBox.settingsBoxListenable,
+                        builder: (context, value, child) {
+                          final cardMode =
+                              widget.settingsBox.getUISettings().cardStyle;
+                          return SizedBox(
+                            width: cardWidth,
+                            child: AnimatedAnimeCard(
+                              anime: anime,
+                              tag: tag,
+                              mode: cardMode,
+                              onTap: () => anime != null
+                                  ? navigateToDetail(context, anime, tag)
+                                  : null,
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 ),
-              ),
-            ),
-            SizedBox(
-              height: cardHeight,
-              child: ListView.builder(
-                physics: const ClampingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                scrollDirection: Axis.horizontal,
-                itemCount: animes?.length ?? 10,
-                itemBuilder: (context, index) {
-                  final anime = animes?[index];
-                  final tag = const Uuid().v4();
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 16),
-                    child: ValueListenableBuilder(
-                      valueListenable: settingsBox.settingsBoxListenable,
-                      builder: (context, value, child) {
-                        final cardMode = settingsBox.getUISettings().cardStyle;
-                        return SizedBox(
-                          width: cardWidth,
-                          child: AnimatedAnimeCard(
-                            anime: anime,
-                            tag: tag,
-                            mode: cardMode,
-                            onTap: () => anime != null
-                                ? navigateToDetail(context, anime, tag)
-                                : null,
-                          ),
-                        );
-                      },
+                if (isDesktop) ...[
+                  Positioned(
+                    left: 8,
+                    child: AnimatedOpacity(
+                      opacity: _showLeftButton ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: _NavButton(
+                        icon: Iconsax.arrow_left_2,
+                        onTap: _showLeftButton ? _scrollLeft : null,
+                        colorScheme: colorScheme,
+                      ),
                     ),
-                  );
-                },
+                  ),
+                  Positioned(
+                    right: 8,
+                    child: AnimatedOpacity(
+                      opacity: _showRightButton ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: _NavButton(
+                        icon: Iconsax.arrow_right_3,
+                        onTap: _showRightButton ? _scrollRight : null,
+                        colorScheme: colorScheme,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  final ColorScheme colorScheme;
+
+  const _NavButton({
+    required this.icon,
+    required this.onTap,
+    required this.colorScheme,
+  });
+
+  @override
+  State<_NavButton> createState() => _NavButtonState();
+}
+
+class _NavButtonState extends State<_NavButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _hoverController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _hoverController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _hoverController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _hoverController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => _hoverController.forward(),
+      onExit: (_) => _hoverController.reverse(),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedBuilder(
+          animation: _scaleAnimation,
+          builder: (context, child) => Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: widget.colorScheme.surfaceContainerHighest,
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.colorScheme.primary.withValues(alpha: 0.2),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                widget.icon,
+                color: widget.colorScheme.primary,
+                size: 24,
               ),
             ),
-          ],
-        );
-      },
+          ),
+        ),
+      ),
     );
   }
 }

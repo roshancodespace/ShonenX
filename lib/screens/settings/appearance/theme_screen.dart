@@ -135,7 +135,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               onChanged: (value) => notifier.updateThemeSettings(
                   settings.copyWith(themeMode: value ? 'dark' : 'light')),
               activeColor: colorScheme.primary,
-              activeTrackColor: colorScheme.primary.withOpacity(0.5),
+              activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
             ),
           ),
           if (settings.themeMode != 'light')
@@ -148,7 +148,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                 onChanged: (value) => notifier
                     .updateThemeSettings(settings.copyWith(amoled: value)),
                 activeColor: colorScheme.primary,
-                activeTrackColor: colorScheme.primary.withOpacity(0.5),
+                activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
               ),
             ),
         ],
@@ -165,7 +165,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               onChanged: (value) => notifier
                   .updateThemeSettings(settings.copyWith(useMaterial3: value)),
               activeColor: colorScheme.primary,
-              activeTrackColor: colorScheme.primary.withOpacity(0.5),
+              activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
             ),
           ),
           SettingItemConfig(
@@ -177,7 +177,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               onChanged: (value) => notifier
                   .updateThemeSettings(settings.copyWith(useSubThemes: value)),
               activeColor: colorScheme.primary,
-              activeTrackColor: colorScheme.primary.withOpacity(0.5),
+              activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
             ),
           ),
         ],
@@ -194,7 +194,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               onChanged: (value) => notifier.updateThemeSettings(
                   settings.copyWith(swapLightColors: value)),
               activeColor: colorScheme.primary,
-              activeTrackColor: colorScheme.primary.withOpacity(0.5),
+              activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
             ),
           ),
           if (settings.themeMode != 'light')
@@ -207,12 +207,12 @@ class ThemeSettingsScreen extends ConsumerWidget {
                 onChanged: (value) => notifier.updateThemeSettings(
                     settings.copyWith(swapDarkColors: value)),
                 activeColor: colorScheme.primary,
-                activeTrackColor: colorScheme.primary.withOpacity(0.5),
+                activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
               ),
             ),
           SettingItemConfig(
             title: 'Color Blend Level',
-            description: '${settings.blendLevel.toStringAsFixed(1)}',
+            description: settings.blendLevel.toStringAsFixed(1),
             icon: Iconsax.slider,
             isSlider: true,
             sliderValue: settings.blendLevel.toDouble(),
@@ -251,7 +251,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               onChanged: (value) => notifier.updateThemeSettings(
                   settings.copyWith(transparentStatusBar: value)),
               activeColor: colorScheme.primary,
-              activeTrackColor: colorScheme.primary.withOpacity(0.5),
+              activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
             ),
           ),
           SettingItemConfig(
@@ -276,7 +276,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               onChanged: (value) => notifier.updateThemeSettings(
                   settings.copyWith(tooltipsMatchBackground: value)),
               activeColor: colorScheme.primary,
-              activeTrackColor: colorScheme.primary.withOpacity(0.5),
+              activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
             ),
           ),
         ],
@@ -293,7 +293,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               onChanged: (value) => notifier
                   .updateThemeSettings(settings.copyWith(useTextTheme: value)),
               activeColor: colorScheme.primary,
-              activeTrackColor: colorScheme.primary.withOpacity(0.5),
+              activeTrackColor: colorScheme.primary.withValues(alpha: 0.5),
             ),
           ),
         ],
@@ -362,7 +362,7 @@ class SettingsSection extends StatelessWidget {
   final String title;
   final List<SettingItemConfig> items;
 
-  const SettingsSection({required this.title, required this.items});
+  const SettingsSection({super.key, required this.title, required this.items});
 
   @override
   Widget build(BuildContext context) {

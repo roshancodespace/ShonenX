@@ -169,14 +169,13 @@ class _CustomControlsState extends State<CustomControls>
                 .toInt();
 
     await _animeWatchProgressBox?.updateEpisodeProgress(
-      animeMedia: widget.animeMedia,
-      episodeNumber: episode.number!,
-      episodeTitle: episode.title ?? 'Untitled',
-      episodeThumbnail: thumbnailBase64,
-      progressInSeconds: _position.value.inSeconds,
-      durationInSeconds: _duration.value.inSeconds,
-      isCompleted: isCompleted
-    );
+        animeMedia: widget.animeMedia,
+        episodeNumber: episode.number!,
+        episodeTitle: episode.title ?? 'Untitled',
+        episodeThumbnail: thumbnailBase64,
+        progressInSeconds: _position.value.inSeconds,
+        durationInSeconds: _duration.value.inSeconds,
+        isCompleted: isCompleted);
   }
 
   void _toggleFullScreen() async {
@@ -232,7 +231,7 @@ class _CustomControlsState extends State<CustomControls>
               behavior: HitTestBehavior.opaque,
               child: Stack(
                 children: [
-                  Container(color: Colors.black.withOpacity(0.1)),
+                  Container(color: Colors.black.withValues(alpha: 0.1)),
                   _ControlOverlay(
                     state: widget.state,
                     animeMedia: widget.animeMedia,
@@ -347,7 +346,7 @@ class _ControlOverlay extends StatelessWidget {
                         Text(
                           'Ep ${episodes[currentEpisodeIndex].number}',
                           style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 12),
                         ),
                     ],
@@ -374,7 +373,7 @@ class _ControlOverlay extends StatelessWidget {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.black.withOpacity(0.5)),
+                              color: Colors.black.withValues(alpha: 0.5)),
                           child: const CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2),
                         )
@@ -434,7 +433,7 @@ class _ControlOverlay extends StatelessWidget {
                         builder: (context, duration, _) => Text(
                           '${_formatDuration(position)} / ${_formatDuration(duration)}',
                           style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               fontSize: 12),
                         ),
                       ),
@@ -501,10 +500,10 @@ class _GlowButton extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.black.withOpacity(0.5),
+          color: Colors.black.withValues(alpha: 0.5),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).primaryColor.withOpacity(0.4),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.4),
               blurRadius: 8,
               spreadRadius: 2,
             ),
@@ -542,7 +541,7 @@ class _ProgressSliderState extends State<_ProgressSlider> {
         activeTrackColor: Theme.of(context).primaryColor,
         inactiveTrackColor: Colors.white12,
         thumbColor: Colors.white,
-        overlayColor: Theme.of(context).primaryColor.withOpacity(0.3),
+        overlayColor: Theme.of(context).primaryColor.withValues(alpha: 0.3),
       ),
       child: Slider(
         value: currentValue.clamp(0.0, widget.max),
@@ -595,7 +594,7 @@ class _SettingsDrawer extends StatelessWidget {
         width: double.infinity,
         height: MediaQuery.of(context).size.height * 0.5,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.9),
+          color: Colors.black.withValues(alpha: 0.9),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 20)],
         ),
@@ -729,7 +728,7 @@ class _SettingsDrawer extends StatelessWidget {
                     activeTrackColor: Colors.white,
                     inactiveTrackColor: Colors.white24,
                     thumbColor: Colors.white,
-                    overlayColor: Colors.white.withOpacity(0.3),
+                    overlayColor: Colors.white.withValues(alpha: 0.3),
                   ),
                   child: Slider(
                     value: vol,
@@ -805,8 +804,9 @@ class _SettingsTile extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color:
-              isSelected ? Colors.white.withOpacity(0.1) : Colors.transparent,
+          color: isSelected
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(

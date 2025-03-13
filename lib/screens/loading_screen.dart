@@ -65,7 +65,7 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
         AnimeWatchProgressBox().init(),
 
         // Force minimum 5 second delay
-        Future.delayed(const Duration(seconds: 5)),
+        Future.delayed(const Duration(seconds: 3)),
       ]);
       final uiSettings = ref.read(uiSettingsProvider).uiSettings;
       if (uiSettings.immersiveMode) {

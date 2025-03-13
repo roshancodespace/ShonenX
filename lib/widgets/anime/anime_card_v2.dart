@@ -150,105 +150,108 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Stack(
-        children: [
-          // Base image
-          _AnimeImage(anime: anime, tag: tag, height: double.infinity),
-
-          // Overlay gradient with improved colors
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  theme.shadowColor.withValues(alpha: 0.5), // Lighter middle
-                  theme.shadowColor.withValues(alpha: 0.9), // Darker bottom
-                ],
-                stops: const [
-                  0.4,
-                  0.75,
-                  1.0
-                ], // Adjusted stops for smoother transition
+    return Hero(
+      tag: tag,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            // Base image
+            _AnimeImage(anime: anime, tag: tag, height: double.infinity),
+      
+            // Overlay gradient with improved colors
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    theme.shadowColor.withValues(alpha: 0.5), // Lighter middle
+                    theme.shadowColor.withValues(alpha: 0.9), // Darker bottom
+                  ],
+                  stops: const [
+                    0.4,
+                    0.75,
+                    1.0
+                  ], // Adjusted stops for smoother transition
+                ),
               ),
             ),
-          ),
-
-          // Content container with better padding
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top row with format badge
-                if (anime?.format != null)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+      
+            // Content container with better padding
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top row with format badge
+                  if (anime?.format != null)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        _Tag(
+                          text: anime!.format!.split('.').last,
+                          color: theme.colorScheme.tertiaryContainer
+                              .withValues(alpha: 0.85),
+                          textColor: theme.colorScheme.onTertiaryContainer,
+                          hasShadow: true,
+                        ),
+                      ],
+                    ),
+      
+                  const Spacer(),
+      
+                  // Bottom content with improved spacing
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _Tag(
-                        text: anime!.format!.split('.').last,
-                        color: theme.colorScheme.tertiaryContainer
-                            .withValues(alpha: 0.85),
-                        textColor: theme.colorScheme.onTertiaryContainer,
-                        hasShadow: true,
+                      // Score with improved badge
+                      if (anime?.averageScore != null)
+                        _Tag(
+                          text: '${anime!.averageScore}',
+                          color: theme.colorScheme.primary,
+                          textColor: theme.colorScheme.onPrimary,
+                          icon: Iconsax.star1,
+                          hasShadow: true,
+                        ),
+      
+                      const SizedBox(height: 8), // Increased spacing
+      
+                      // Title with enhanced styling
+                      _AnimeTitle(
+                        anime: anime,
+                        maxLines: 2,
+                        enhanced: true, // New property for enhanced styling
+                      ),
+      
+                      const SizedBox(height: 6),
+      
+                      // Episode info with enhanced styling
+                      _EpisodesInfo(
+                        anime: anime,
+                        enhanced: true, // New property for enhanced styling
                       ),
                     ],
                   ),
-
-                const Spacer(),
-
-                // Bottom content with improved spacing
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Score with improved badge
-                    if (anime?.averageScore != null)
-                      _Tag(
-                        text: '${anime!.averageScore}',
-                        color: theme.colorScheme.primary,
-                        textColor: theme.colorScheme.onPrimary,
-                        icon: Iconsax.star1,
-                        hasShadow: true,
-                      ),
-
-                    const SizedBox(height: 8), // Increased spacing
-
-                    // Title with enhanced styling
-                    _AnimeTitle(
-                      anime: anime,
-                      maxLines: 2,
-                      enhanced: true, // New property for enhanced styling
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    // Episode info with enhanced styling
-                    _EpisodesInfo(
-                      anime: anime,
-                      enhanced: true, // New property for enhanced styling
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Hover effect overlay
-          if (isHovered)
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                  width: 2,
-                ),
-                borderRadius: BorderRadius.circular(16),
+                ],
               ),
             ),
-        ],
+      
+            // Hover effect overlay
+            if (isHovered)
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -956,17 +959,14 @@ class _AnimeImage extends StatelessWidget {
     return SizedBox(
       height: height,
       width: double.infinity,
-      child: Hero(
-        tag: tag,
-        child: CachedNetworkImage(
-          imageUrl: anime?.coverImage?.large ?? anime?.coverImage?.medium ?? '',
-          fit: BoxFit.cover,
-          fadeInDuration: const Duration(milliseconds: 150),
-          placeholder: (_, __) => _ShimmerPlaceholder(height: height),
-          errorWidget: (_, __, ___) => _ErrorPlaceholder(height: height),
-          filterQuality: FilterQuality.high,
-          useOldImageOnUrlChange: true,
-        ),
+      child: CachedNetworkImage(
+        imageUrl: anime?.coverImage?.large ?? anime?.coverImage?.medium ?? '',
+        fit: BoxFit.cover,
+        fadeInDuration: const Duration(milliseconds: 150),
+        placeholder: (_, __) => _ShimmerPlaceholder(height: height),
+        errorWidget: (_, __, ___) => _ErrorPlaceholder(height: height),
+        filterQuality: FilterQuality.high,
+        useOldImageOnUrlChange: true,
       ),
     );
   }

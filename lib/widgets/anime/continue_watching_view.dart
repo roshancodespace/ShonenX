@@ -15,59 +15,19 @@ class ContinueWatchingView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SizedBox(
-      height: 250,
-      child: ValueListenableBuilder<Box>(
-        valueListenable: animeWatchProgressBox.boxValueListenable,
-        builder: (context, box, child) {
-          final entries =
-              animeWatchProgressBox.getAllMostRecentWatchedEpisodesWithAnime();
-          return entries.isEmpty
-              ? const _EmptyWatchingState()
-              : _WatchingContent(entries: entries);
-        },
-      ),
-    );
-  }
-}
-
-// Empty State
-class _EmptyWatchingState extends StatelessWidget {
-  const _EmptyWatchingState();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Iconsax.video_circle,
-              size: 64, color: theme.colorScheme.outline),
-          const SizedBox(height: 16),
-          Text(
-            'No shows in progress',
-            style: GoogleFonts.montserrat(
-              fontSize: 16,
-              color: theme.colorScheme.outline,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => context.go('/browse'),
-            icon: Icon(Iconsax.discover, color: theme.colorScheme.onPrimary),
-            label: const Text('Discover Shows'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: theme.colorScheme.onPrimary,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-          ),
-        ],
-      ),
+    return ValueListenableBuilder<Box>(
+      valueListenable: animeWatchProgressBox.boxValueListenable,
+      builder: (context, box, child) {
+        final entries =
+            animeWatchProgressBox.getAllMostRecentWatchedEpisodesWithAnime();
+        if (entries.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return SizedBox(
+          height: 260, // Slightly increased for better spacing
+          child: _WatchingContent(entries: entries),
+        );
+      },
     );
   }
 }
@@ -83,28 +43,30 @@ class _WatchingContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // final theme = Theme.of(context);
-    return SizedBox(
-      height: 220, // Reduced height for compactness
+    final theme = Theme.of(context);
+    return Container(
+      height: 260, // Adjusted to match parent
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Header(),
+          const _Header(),
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(), // Smooth scrolling
               itemCount: entries.length,
               itemBuilder: (context, index) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 16),
                   child: ContinueWatchingCard(
-                    onTap: () async {
-                      // final anime = entries[index].anime;
-                      // final animeMedia = Media(
-                      //   id: anime.animeId,
-                      // );
-                      // await providerAnimeMatchSearch(context: context, ref: ref, animeMedia: , animeWatchProgressBox: animeWatchProgressBox)
+                    onTap: () {
+                      // Placeholder for multi-select or navigation logic
+                      // Example: Toggle selection or navigate
                     },
                     anime: entries[index].anime,
                     episode: entries[index].episode,
@@ -122,9 +84,13 @@ class _WatchingContent extends ConsumerWidget {
 
 // Header with Floating Action
 class _Header extends StatelessWidget {
+  const _Header();
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Row(
@@ -133,17 +99,48 @@ class _Header extends StatelessWidget {
           Text(
             'Continue Watching',
             style: GoogleFonts.montserrat(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurface,
+              fontSize: 22, // Slightly larger for emphasis
+              fontWeight: FontWeight.w700, // Bolder for modern look
+              color: colorScheme.onSurface,
+              letterSpacing: -0.2, // Tighten spacing for polish
             ),
           ),
-          FloatingActionButton.small(
-            heroTag: 'continue-all-button',
-            onPressed: () => context.push('/continue-all'),
-            backgroundColor: theme.colorScheme.primary,
-            tooltip: 'View All',
-            child: const Icon(Iconsax.arrow_right_3, color: Colors.white),
+          GestureDetector(
+            onTap: () => context.push('/continue-all'),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: colorScheme.primary,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.primary.withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'View All',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Iconsax.arrow_right_3,
+                    size: 16,
+                    color: colorScheme.onPrimary,
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

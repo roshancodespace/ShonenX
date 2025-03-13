@@ -248,27 +248,31 @@ class UISettingsModel extends HiveObject {
   @HiveField(4)
   final String layoutStyle;
 
+  @HiveField(5)
+  final bool immersiveMode;
+
   UISettingsModel({
     this.compactMode = false,
     this.defaultTab = 'Home',
     this.showThumbnails = true,
     this.cardStyle = 'Card',
     this.layoutStyle = 'Grid',
+    this.immersiveMode = false,
   });
 
-  UISettingsModel copyWith({
-    bool? compactMode,
-    String? defaultTab,
-    bool? showThumbnails,
-    String? cardStyle,
-    String? layoutStyle,
-  }) {
+  UISettingsModel copyWith(
+      {bool? compactMode,
+      String? defaultTab,
+      bool? showThumbnails,
+      String? cardStyle,
+      String? layoutStyle,
+      bool? immersiveMode}) {
     return UISettingsModel(
-      compactMode: compactMode ?? this.compactMode,
-      defaultTab: defaultTab ?? this.defaultTab,
-      showThumbnails: showThumbnails ?? this.showThumbnails,
-      cardStyle: cardStyle ?? this.cardStyle,
-      layoutStyle: layoutStyle ?? this.layoutStyle,
-    );
+        compactMode: compactMode ?? this.compactMode,
+        defaultTab: defaultTab ?? this.defaultTab,
+        showThumbnails: showThumbnails ?? this.showThumbnails,
+        cardStyle: cardStyle ?? this.cardStyle,
+        layoutStyle: layoutStyle ?? this.layoutStyle,
+        immersiveMode: immersiveMode ?? this.immersiveMode);
   }
 }

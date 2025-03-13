@@ -1,153 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:shonenx/widgets/ui/shonenx_settings.dart';
 
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-            child: Text(
-              'Support',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.primary,
-              ),
-            ),
-          ),
-          _buildSettingsTile(
-            context,
-            title: 'FAQ',
-            icon: Iconsax.message_question,
-            subtitle: 'Frequently asked questions',
-            onTap: () {},
-          ),
-          _buildSettingsTile(
-            context,
-            title: 'Contact Support',
-            icon: Iconsax.message_text,
-            subtitle: 'Get help from our team',
-            onTap: () {},
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-            child: Text(
-              'Community',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.primary,
-              ),
-            ),
-          ),
-          _buildSettingsTile(
-            context,
-            title: 'Discord Server',
-            icon: Iconsax.message,
-            subtitle: 'Join our community',
-            onTap: () {},
-          ),
-          _buildSettingsTile(
-            context,
-            title: 'Report an Issue',
-            icon: Iconsax.warning_2,
-            subtitle: 'Help us improve the app',
-            onTap: () {},
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-            child: Text(
-              'Resources',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.primary,
-              ),
-            ),
-          ),
-          _buildSettingsTile(
-            context,
-            title: 'Documentation',
-            icon: Iconsax.document_text,
-            subtitle: 'Learn how to use the app',
-            onTap: () {},
-          ),
-          _buildSettingsTile(
-            context,
-            title: 'Video Tutorials',
-            icon: Iconsax.video_play,
-            subtitle: 'Watch guides and tutorials',
-            onTap: () {},
-          ),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettingsTile(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+            SettingsSection(context: context, title: 'Support', items: [
+              SettingsItem(
+                title: 'FAQ',
+                icon: Iconsax.message_question,
+                description: 'Frequently asked questions',
+                onTap: () {},
               ),
-              child: Icon(
-                icon,
-                color: colorScheme.primary,
-                size: 20,
+              SettingsItem(
+                title: 'Contact Support',
+                icon: Iconsax.message_text,
+                description: 'Get help from our team',
+                onTap: () {},
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
+            ]),
+            SettingsSection(context: context, title: 'Community', items: [
+              SettingsItem(
+                title: 'Discord Server',
+                icon: Iconsax.message,
+                description: 'Join our community',
+                onTap: () {},
               ),
-            ),
-            Icon(
-              Iconsax.arrow_right_3,
-              color: colorScheme.onSurface.withValues(alpha: 0.5),
-              size: 20,
-            ),
+              SettingsItem(
+                title: 'Report an Issue',
+                icon: Iconsax.warning_2,
+                description: 'Help us improve the app',
+                onTap: () {},
+              ),
+            ]),
+            SettingsSection(context: context, title: 'Resources', items: [
+              SettingsItem(
+                title: 'Documentation',
+                icon: Iconsax.document_text,
+                description: 'Learn how to use the app',
+                onTap: () {},
+              ),
+              SettingsItem(
+                title: 'Video Tutorials',
+                icon: Iconsax.video_play,
+                description: 'Watch guides and tutorials',
+                onTap: () {},
+              ),
+            ]),
+            const SizedBox(height: 24),
           ],
         ),
       ),

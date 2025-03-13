@@ -4,8 +4,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
-    as anime_media;
+import 'package:iconsax/iconsax.dart';
+import 'package:shonenx/api/models/anilist/anilist_media_list.dart' as anime_media;
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/helpers/provider.dart';
@@ -32,7 +32,7 @@ class ContinueWatchingCard extends ConsumerWidget {
 
   String _formatRemainingTime(int current, int total) {
     final remaining = (total - current).clamp(0, double.infinity) ~/ 60;
-    return remaining > 0 ? '$remaining min' : 'Done';
+    return remaining > 0 ? '$remaining min left' : 'Completed';
   }
 
   double _calculateProgress() {
@@ -43,6 +43,7 @@ class ContinueWatchingCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final progress = _calculateProgress().clamp(0.0, 1.0);
     final remainingTime = _formatRemainingTime(
         episode.progressInSeconds ?? 0, episode.durationInSeconds ?? 0);
@@ -54,208 +55,205 @@ class ContinueWatchingCard extends ConsumerWidget {
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        child: Card(
-          elevation: 0,
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: theme.colorScheme.outline.withValues(alpha: 0.1),
-              width: 1,
-            ),
-          ),
-          child: InkWell(
-            onTap: multiSelectMode
-                ? onTap
-                : (isLoading ? null : () => _handleTap(context, ref)),
-            child: Container(
-              width: 320,
-              height: 200,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
+      child: GestureDetector(
+        onTap: multiSelectMode
+            ? onTap
+            : (isLoading ? null : () => _handleTap(context, ref)),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 320,
+          height: 200,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.shadow.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-              child: Stack(
-                children: [
-                  // Background Image
-                  Positioned.fill(
-                    child: memoryImage != null
-                        ? Image.memory(
-                            memoryImage,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                _ImageFallback(colorScheme: theme.colorScheme),
-                          )
-                        : CachedNetworkImage(
-                            imageUrl: anime.animeCover,
-                            fit: BoxFit.cover,
-                            placeholder: (_, __) => _ImagePlaceholder(
-                                colorScheme: theme.colorScheme),
-                            errorWidget: (_, __, ___) =>
-                                _ImageFallback(colorScheme: theme.colorScheme),
-                          ),
-                  ),
-
-                  // Gradient Overlay
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            theme.colorScheme.surface.withValues(alpha: 0.9),
-                          ],
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
+              children: [
+                // Background Image
+                Positioned.fill(
+                  child: memoryImage != null
+                      ? Image.memory(
+                          memoryImage,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _ImageFallback(colorScheme: colorScheme),
+                        )
+                      : CachedNetworkImage(
+                          imageUrl: anime.animeCover,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) =>
+                              _ImagePlaceholder(colorScheme: colorScheme),
+                          errorWidget: (_, __, ___) =>
+                              _ImageFallback(colorScheme: colorScheme),
                         ),
-                      ),
-                    ),
-                  ),
+                ),
 
-                  // Content
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${(progress * 100).toStringAsFixed(1)}%',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: Colors.white
-                            ),
-                          ),
-                          Text(
-                            anime.animeTitle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white
-                            ),
-                          ),
-                          Text(
-                            episode.episodeTitle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color:  theme.colorScheme.secondary
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: theme.colorScheme.primaryContainer,
-                                  ),
-                                  color: theme.colorScheme.primaryContainer
-                                      .withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  'EP ${episode.episodeNumber}',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: theme.colorScheme.onPrimaryContainer,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                remainingTime,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              const Spacer(),
-                              // if (!multiSelectMode && !isLoading)
-                              //   Container(
-                              //     padding: const EdgeInsets.all(8),
-                              //     decoration: BoxDecoration(
-                              //       color: theme.colorScheme.primaryContainer,
-                              //       borderRadius: BorderRadius.circular(6),
-                              //     ),
-                              //     child: Text(
-                              //       "Continue",
-                              //       style: theme.textTheme.labelSmall?.copyWith(
-                              //       color: theme.colorScheme.onPrimaryContainer,
-                              //       fontWeight: FontWeight.bold,
-                              //     ),
-                              //     ),
-                              //   ),
-                              // if (!multiSelectMode && !isLoading)
-                              // Container(
-                              //   padding: const EdgeInsets.all(8),
-                              //   decoration: BoxDecoration(
-                              //     color: theme.colorScheme.primaryContainer,
-                              //     shape: BoxShape.circle,
-                              //   ),
-                              //   child: Icon(
-                              //     Iconsax.play,
-                              //     size: 16,
-                              //     color: theme.colorScheme.onPrimaryContainer,
-                              //   ),
-                              // ),
-                              if (isLoading)
-                                SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
-                            child: LinearProgressIndicator(
-                              value: progress,
-                              backgroundColor: theme
-                                  .colorScheme.primaryContainer
-                                  .withValues(alpha: 0.2),
-                              valueColor: AlwaysStoppedAnimation(
-                                  theme.colorScheme.primaryContainer),
-                              minHeight: 3,
-                            ),
-                          ),
+                // Gradient Overlay
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.1),
+                          Colors.black.withOpacity(0.7),
                         ],
                       ),
                     ),
                   ),
+                ),
 
-                  if (multiSelectMode)
-                    Positioned.fill(
-                      child: Container(
-                        color: isSelected
-                            ? theme.colorScheme.primary.withValues(alpha: 0.2)
-                            : Colors.transparent,
-                        child: isSelected
-                            ? Center(
-                                child: Icon(
-                                  Icons.check_circle,
-                                  color: theme.colorScheme.primary,
-                                  size: 40,
+                // Content
+                Positioned.fill(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        // Progress Percentage
+                        Text(
+                          '${(progress * 100).toStringAsFixed(1)}%',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+
+                        // Anime Title
+                        Text(
+                          anime.animeTitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+
+                        // Episode Title
+                        Text(
+                          episode.episodeTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Episode Number, Remaining Time, and Play Button
+                        Row(
+                          children: [
+                            // Episode Number Chip
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'EP ${episode.episodeNumber}',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onPrimary,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                              )
-                            : null,
-                      ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+
+                            // Remaining Time
+                            Text(
+                              remainingTime,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.white70,
+                              ),
+                            ),
+                            const Spacer(),
+
+                            // Play Button or Loading Indicator
+                            if (!multiSelectMode)
+                              isLoading
+                                  ? SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: colorScheme.primary,
+                                      ),
+                                    )
+                                  : GestureDetector(
+                                      onTap: () => _handleTap(context, ref),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.secondaryContainer,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          Iconsax.play5,
+                                          size: 20,
+                                          color: colorScheme.onSecondaryContainer,
+                                        ),
+                                      ),
+                                    ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Progress Bar
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                            valueColor:
+                                AlwaysStoppedAnimation(colorScheme.primary),
+                            minHeight: 4,
+                          ),
+                        ),
+                      ],
                     ),
-                ],
-              ),
+                  ),
+                ),
+
+                // Multi-select Overlay
+                if (multiSelectMode)
+                  Positioned.fill(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? colorScheme.primary.withOpacity(0.3)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: isSelected
+                          ? Center(
+                              child: Icon(
+                                Icons.check_circle,
+                                color: colorScheme.primary,
+                                size: 40,
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -263,7 +261,6 @@ class ContinueWatchingCard extends ConsumerWidget {
     );
   }
 
-  // Keep existing methods (_handleTap, _showErrorSnackBar, _navigateToWatch, _showSelectionDialog)...
   Future<void> _handleTap(BuildContext context, WidgetRef ref) async {
     ref.read(loadingProvider(index).notifier).state = true;
     final animeProvider = getAnimeProvider(ref);
@@ -383,7 +380,9 @@ class _SelectionDialog extends StatelessWidget {
               children: [
                 Text(
                   'Select Anime',
-                  style: theme.textTheme.titleLarge,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
@@ -443,7 +442,9 @@ class _DialogItem extends StatelessWidget {
       ),
       title: Text(
         result.name ?? 'Unknown',
-        style: theme.textTheme.titleMedium,
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+        ),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
@@ -489,7 +490,7 @@ class _ImagePlaceholder extends StatelessWidget {
     return Container(
       width: width ?? double.infinity,
       height: height ?? double.infinity,
-      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+      color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
       child: Center(
         child: CircularProgressIndicator(
           strokeWidth: 2,
@@ -512,7 +513,7 @@ class _ImageFallback extends StatelessWidget {
     return Container(
       width: width ?? double.infinity,
       height: height ?? double.infinity,
-      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
       child: Icon(Icons.image, color: colorScheme.onSurfaceVariant),
     );
   }

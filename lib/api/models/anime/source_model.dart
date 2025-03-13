@@ -58,13 +58,22 @@ class Intro {
 class Sources {
   String? url;
   String? type;
-  bool? isM3U8;
+  bool isM3U8;
+  bool isDub;
+  String? quality;
 
-  Sources({this.url, this.type, this.isM3U8 = false});
+  Sources({
+    this.url,
+    this.type,
+    this.isM3U8 = false,
+    this.isDub = false,
+    this.quality,
+  });
 
-  Sources.fromJson(Map<String, dynamic> json) {
-    url = json['url'];
-    type = json['type'];
-    isM3U8 = json['isM3U8'] ?? false;
-  }
+  Sources.fromJson(Map<String, dynamic> json)
+      : url = json['url'],
+        type = json['type'],
+        isM3U8 = json['isM3U8'] ?? false,
+        isDub = json['isDub'] ?? false,
+        quality = json['quality'] ?? 'Unknown';
 }

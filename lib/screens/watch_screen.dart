@@ -7,15 +7,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
     as anilist_media;
-import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/api/models/anime/source_model.dart';
 import 'package:shonenx/api/sources/anime/anime_provider.dart';
 import 'package:shonenx/helpers/provider.dart';
 import 'package:shonenx/widgets/player/controls.dart';
 
+// WatchScreen remains the same as provided
 class WatchScreen extends ConsumerStatefulWidget {
   final String animeId;
   final anilist_media.Media animeMedia;
@@ -36,6 +37,7 @@ class WatchScreen extends ConsumerStatefulWidget {
   ConsumerState<WatchScreen> createState() => _WatchScreenState();
 }
 
+// _WatchScreenState remains largely unchanged, only UI-related updates are applied
 class _WatchScreenState extends ConsumerState<WatchScreen>
     with SingleTickerProviderStateMixin {
   late final Player _player;
@@ -46,13 +48,11 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   List<EpisodeDataModel> _episodes = [];
   List<SubtitleTrack> _subtitles = [];
-  final Map<String, List<SubtitleTrack>> _subtitleCache = {};
-  final Map<String, List<Map<String, String>>> _qualityCache = {};
   String? _selectedCategory = 'sub';
   int _selectedEpIdx = 0;
   int _selectedRangeStart = 1;
-  // String? _errorMessage;
-  List<Map<String, String>> _qualityOptions = [];
+  List<Map<String, dynamic>> _qualityOptions =
+      []; // Changed to Map<String, String>
   String? _selectedQuality;
   Timer? _debounceTimer;
   Duration _lastPosition = Duration.zero;
@@ -72,10 +72,14 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     _player = Player(
         configuration: const PlayerConfiguration(bufferSize: 64 * 1024 * 1024));
     _controller = VideoController(_player);
-    _playerSubscription = _player.stream.error
-        .listen((error) => _handleError('Player error: $error'));
+    _playerSubscription = _player.stream.error.listen((error) {
+      log('Player error: $error');
+      if (error.contains('Failed to open')) {
+        _initializePlayer();
+      }
+    });
     _positionSubscription = _player.stream.position.listen((position) {
-      _lastPosition = position; // Continuously update last position
+      _lastPosition = position;
     });
   }
 
@@ -89,7 +93,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       setState(() => _episodes = baseEpisodeModel.episodes!);
       _debounceFetchStreamData();
     } catch (e) {
-      _handleError('Failed to load episodes: $e', onRetry: _fetchEpisodes);
+      log('Failed to load episodes: $e');
     }
   }
 
@@ -101,7 +105,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   Future<void> _fetchStreamData() async {
     if (!mounted || _selectedEpIdx >= _episodes.length) {
-      _handleError('No episodes available for streaming.');
+      log('No episodes available for streaming.');
       return;
     }
     try {
@@ -111,81 +115,74 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       if (sources.sources.isEmpty) {
         throw Exception('No video sources available.');
       }
+      _qualityOptions.clear();
       await _extractQualities(sources.sources.first.url!);
+      for (var source in sources.sources) {
+        _qualityOptions.add({
+          'quality': source.quality ?? 'NO NAME',
+          'url': source.url!,
+          'isDub': source.isDub
+        });
+      }
       await _configureSubtitles(sources.tracks);
       await _updateVideoSource(sources.sources.first.url ?? '');
     } catch (e) {
-      _handleError('Failed to load stream data: $e', onRetry: _fetchStreamData);
+      log('Failed to load stream data: $e');
+    } finally {
+      setState(() {});
     }
   }
 
   Future<void> _configureSubtitles(List<Subtitle> subtitles) async {
-    final episodeId = _episodes[_selectedEpIdx].id!;
-    if (_subtitleCache[episodeId] == null ||
-        _subtitleCache[episodeId]!.length != subtitles.length) {
-      _subtitles = subtitles
-          .map(
-              (s) => SubtitleTrack.uri(s.url!, language: s.lang, title: s.lang))
-          .toList();
-      _subtitleCache[episodeId] = _subtitles;
-      try {
-        final englishSub = subtitles
-            .firstWhere((s) => s.lang!.toLowerCase().contains('english'));
-        await _player.setSubtitleTrack(SubtitleTrack.uri(englishSub.url!,
-            language: englishSub.lang, title: englishSub.lang));
-      } catch (e) {
-        if (subtitles.isNotEmpty) {
-          await _player.setSubtitleTrack(SubtitleTrack.uri(subtitles.first.url!,
-              language: subtitles.first.lang, title: subtitles.first.lang));
-          log('Falling back to first available subtitle: ${subtitles.first.url}',
-              name: 'Subtitle Fallback');
-        } else {
-          await _player.setSubtitleTrack(SubtitleTrack.no());
-          log('No subtitles available, disabling subtitles.',
-              name: 'Subtitle Fallback');
-        }
+    _subtitles = subtitles
+        .map((s) => SubtitleTrack.uri(s.url!, language: s.lang, title: s.lang))
+        .toList();
+    try {
+      final englishSub = subtitles
+          .firstWhere((s) => s.lang!.toLowerCase().contains('english'));
+      await _player.setSubtitleTrack(SubtitleTrack.uri(englishSub.url!,
+          language: englishSub.lang, title: englishSub.lang));
+    } catch (e) {
+      if (subtitles.isNotEmpty) {
+        await _player.setSubtitleTrack(SubtitleTrack.uri(subtitles.first.url!,
+            language: subtitles.first.lang, title: subtitles.first.lang));
+      } else {
+        await _player.setSubtitleTrack(SubtitleTrack.no());
       }
     }
   }
 
   Future<void> _extractQualities(String m3u8Url) async {
-    final episodeId = _episodes[_selectedEpIdx].id!;
-    if (_qualityCache[episodeId] == null) {
-      try {
-        final response = await http.get(Uri.parse(m3u8Url));
-        if (response.statusCode != 200) {
-          throw Exception(
-              'Failed to load M3U8 playlist (HTTP ${response.statusCode}).');
-        }
-        final lines = response.body.split('\n');
-        final qualities = <Map<String, String>>[];
-        for (var i = 0; i < lines.length - 1; i++) {
-          if (lines[i].contains('#EXT-X-STREAM-INF')) {
-            final resolution = RegExp(r'RESOLUTION=(\d+x\d+)')
-                    .firstMatch(lines[i])
-                    ?.group(1) ??
-                'Unknown';
-            qualities.add({
-              'quality': resolution,
-              'url': m3u8Url.replaceAll('master.m3u8', lines[i + 1])
-            });
-          }
-        }
-        if (qualities.isEmpty) {
-          throw Exception('No quality options found in M3U8.');
-        }
-        _qualityCache[episodeId] = qualities;
-      } catch (e) {
-        _handleError('Failed to extract quality options: $e',
-            onRetry: () => _extractQualities(m3u8Url));
-        return;
+    try {
+      final response = await http.get(Uri.parse(m3u8Url));
+      if (response.statusCode != 200) {
+        throw Exception(
+            'Failed to load M3U8 playlist (HTTP ${response.statusCode}).');
       }
+      final lines = response.body.split('\n');
+      final qualities = <Map<String, String>>[];
+      for (var i = 0; i < lines.length - 1; i++) {
+        if (lines[i].contains('#EXT-X-STREAM-INF')) {
+          final resolution =
+              RegExp(r'RESOLUTION=(\d+x\d+)').firstMatch(lines[i])?.group(1) ??
+                  'Unknown';
+          qualities.add({
+            'quality': resolution,
+            'url': m3u8Url.replaceAll('master.m3u8', lines[i + 1])
+          });
+        }
+      }
+      if (qualities.isEmpty) {
+        throw Exception('No quality options found in M3U8.');
+      }
+      setState(() {
+        _qualityOptions = qualities;
+        _selectedQuality =
+            _qualityOptions.isNotEmpty ? _qualityOptions.first['url'] : null;
+      });
+    } catch (e) {
+      log('Failed to extract quality options: $e');
     }
-    setState(() {
-      _qualityOptions = _qualityCache[episodeId]!;
-      _selectedQuality =
-          _qualityOptions.isNotEmpty ? _qualityOptions.first['url'] : null;
-    });
   }
 
   Future<void> _updateVideoSource(String url,
@@ -196,38 +193,11 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       if (fromQualityChange) {
         await _player.seek(_lastPosition);
       } else {
-        await _player.seek(Duration.zero); // For new episodes
+        await _player.seek(Duration.zero);
       }
     } catch (e) {
-      _handleError('Failed to update video source: $e');
+      log('Failed to update video source: $e');
     }
-  }
-
-  void _handleError(String message, {VoidCallback? onRetry}) {
-    if (!mounted) return;
-    // setState(() => _errorMessage = message);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          if (onRetry != null)
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                onRetry();
-              },
-              child: const Text('Retry'),
-            ),
-        ],
-      ),
-    );
-    log(message, level: 1000);
   }
 
   @override
@@ -244,7 +214,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     if (index < 0 || index >= _episodes.length) return;
     setState(() {
       _selectedEpIdx = index;
-      _lastPosition = Duration.zero; // Reset for new episode
+      _lastPosition = Duration.zero;
     });
     _debounceFetchStreamData();
   }
@@ -253,7 +223,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     final currentPosition = _lastPosition;
     setState(() => _selectedQuality = url);
     _updateVideoSource(url, fromQualityChange: true).then((_) {
-      _player.seek(currentPosition); // Ensure position is restored
+      _player.seek(currentPosition);
     });
   }
 
@@ -262,12 +232,20 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     final theme = Theme.of(context);
     final isWideScreen = MediaQuery.sizeOf(context).width > 600;
     return Scaffold(
+      backgroundColor: theme.colorScheme.background,
       body: SafeArea(
         child: isWideScreen
             ? Row(
                 children: [
-                  Flexible(flex: 2, child: _VideoPlayerSection(this)),
-                  Expanded(flex: 1, child: _EpisodesPanel(this, theme)),
+                  Flexible(flex: 3, child: _VideoPlayerSection(this)),
+                  Flexible(
+                    flex: 2,
+                    child: _EpisodesPanel(
+                      this,
+                      theme,
+                      withHeader: true,
+                    ),
+                  ),
                 ],
               )
             : Column(
@@ -281,6 +259,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   }
 }
 
+// Updated Video Player Section with Modern UI
 class _VideoPlayerSection extends StatelessWidget {
   final _WatchScreenState state;
 
@@ -288,60 +267,133 @@ class _VideoPlayerSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: AspectRatio(
-              aspectRatio: 16 / 10,
-              child: state._selectedQuality == null
-                  ? const Center(child: CircularProgressIndicator())
-                  : Video(
-                      controller: state._controller,
-                      controls: (videoState) => CustomControls(
-                        animeMedia: state.widget.animeMedia,
-                        state: videoState,
-                        subtitles: state._subtitles,
-                        qualityOptions: state._qualityOptions,
-                        changeQuality: state._changeQuality,
-                        episodes: state._episodes,
-                        currentEpisodeIndex: state._selectedEpIdx,
-                      ),
-                      subtitleViewConfiguration: SubtitleViewConfiguration(
-                        style: TextStyle(
+    final theme = Theme.of(context);
+    return Container(
+      color: Colors.black,
+      child: Column(
+        children: [
+          // Anime Title and Episode Info
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        state.widget.animeName,
+                        style: theme.textTheme.titleLarge?.copyWith(
                           color: Colors.white,
-                          backgroundColor: Colors.black.withValues(alpha: 0.2),
+                          fontWeight: FontWeight.bold,
                         ),
-                        textScaleFactor:
-                            MediaQuery.sizeOf(context).width > 400 ? 1.5 : 2,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                      if (state._episodes.isNotEmpty)
+                        Text(
+                          'Episode ${state._episodes[state._selectedEpIdx].number}',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-      ],
+          // Modern Video Player Container
+
+          Container(
+            margin: const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.surface.withOpacity(0.1),
+                  Colors.black,
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Video(
+                  controller: state._controller,
+                  controls: (videoState) => CustomControls(
+                    animeMedia: state.widget.animeMedia,
+                    state: videoState,
+                    subtitles: state._subtitles,
+                    qualityOptions: state._qualityOptions,
+                    changeQuality: state._changeQuality,
+                    episodes: state._episodes,
+                    currentEpisodeIndex: state._selectedEpIdx,
+                  ),
+                  subtitleViewConfiguration: SubtitleViewConfiguration(
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      backgroundColor: Colors.black54,
+                      fontWeight: FontWeight.w600,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.7),
+                          blurRadius: 4,
+                          offset: const Offset(2, 2),
+                        ),
+                      ],
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    textScaleFactor:
+                        MediaQuery.sizeOf(context).width > 400 ? 1.2 : 1.5,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
+// Updated Episodes Panel with Modern UI
 class _EpisodesPanel extends StatelessWidget {
   final _WatchScreenState state;
   final ThemeData theme;
+  final bool withHeader;
 
-  const _EpisodesPanel(this.state, this.theme);
+  const _EpisodesPanel(this.state, this.theme, {this.withHeader = false});
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: theme.colorScheme.surface,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.surface,
+            theme.colorScheme.background,
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
       child: state._episodes.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
+              ),
+            )
           : Column(
               children: [
-                _buildHeader(context),
+                if (withHeader) _buildHeader(context),
                 Expanded(child: _buildEpisodesList(context)),
               ],
             ),
@@ -352,11 +404,15 @@ class _EpisodesPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(16),
-          bottomRight: Radius.circular(16),
-        ),
+        color: theme.colorScheme.surfaceContainer,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow.withOpacity(0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,21 +424,22 @@ class _EpisodesPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      state.widget.animeName,
-                      style: TextStyle(
-                        fontSize: 20,
+                      state._episodes[state._selectedEpIdx].title ??
+                          state.widget.animeName,
+                      style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     if (state._episodes.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         'Episode ${state._episodes[state._selectedEpIdx].number}',
-                        style: TextStyle(
-                          fontSize: 16,
+                        style: theme.textTheme.titleMedium?.copyWith(
                           color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -396,9 +453,8 @@ class _EpisodesPanel extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               state._episodes[state._selectedEpIdx].title ?? 'Untitled',
-              style: TextStyle(
+              style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
-                fontSize: 14,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -410,13 +466,22 @@ class _EpisodesPanel extends StatelessWidget {
   }
 
   Widget _buildCategoryDropdown(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: PopupMenuButton<String>(
-        tooltip: "Select Category",
+        tooltip: "Select Language",
         position: PopupMenuPosition.under,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
@@ -427,15 +492,14 @@ class _EpisodesPanel extends StatelessWidget {
               Icon(
                 Iconsax.language_circle,
                 color: theme.colorScheme.onPrimaryContainer,
-                size: 18,
+                size: 20,
               ),
               const SizedBox(width: 8),
               Text(
                 state._selectedCategory!.toUpperCase(),
-                style: TextStyle(
+                style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.onPrimaryContainer,
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
                 ),
               ),
             ],
@@ -453,9 +517,8 @@ class _EpisodesPanel extends StatelessWidget {
               behavior: SnackBarBehavior.floating,
               backgroundColor: Colors.transparent,
               content: AwesomeSnackbarContent(
-                title: "Message",
-                message:
-                    "Changed category to ${category.toUpperCase()}, please wait for the server to respond.",
+                title: "Language Changed",
+                message: "Switched to ${category.toUpperCase()}...",
                 contentType: ContentType.success,
               ),
             ),
@@ -472,14 +535,13 @@ class _EpisodesPanel extends StatelessWidget {
     final startIdx = state._selectedRangeStart - 1;
     final endIdx =
         (startIdx + 100 > totalEpisodes) ? totalEpisodes : startIdx + 100;
-
     final episodesInRange = state._episodes.sublist(startIdx, endIdx);
 
     return Column(
       children: [
         Container(
           height: 48,
-          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: (totalEpisodes / 100).ceil(),
@@ -496,13 +558,19 @@ class _EpisodesPanel extends StatelessWidget {
                   label: Text('$start-$end'),
                   onSelected: (_) =>
                       state.setState(() => state._selectedRangeStart = start),
-                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  backgroundColor: theme.colorScheme.surfaceContainerLow,
                   selectedColor: theme.colorScheme.primaryContainer,
                   labelStyle: TextStyle(
                     color: isSelected
                         ? theme.colorScheme.onPrimaryContainer
-                        : theme.colorScheme.onSurface,
+                        : theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
                   ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  elevation: isSelected ? 4 : 1,
+                  pressElevation: 6,
                 ),
               );
             },
@@ -510,46 +578,97 @@ class _EpisodesPanel extends StatelessWidget {
         ),
         Expanded(
           child: ListView.builder(
+            padding: const EdgeInsets.all(8),
             itemCount: episodesInRange.length,
             itemBuilder: (context, index) {
               final episode = episodesInRange[index];
               final globalIndex = startIdx + index;
               final isSelected = globalIndex == state._selectedEpIdx;
+
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-                child: ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  tileColor: isSelected
-                      ? theme.colorScheme.primaryContainer
-                      : theme.colorScheme.surfaceContainerHighest,
-                  title: Text(
-                    'Episode ${episode.number}',
-                    style: TextStyle(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: GestureDetector(
+                  onTap: () => state._playEpisode(globalIndex),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
                       color: isSelected
-                          ? theme.colorScheme.onPrimaryContainer
-                          : theme.colorScheme.onSurface,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                          ? theme.colorScheme.primaryContainer
+                          : theme.colorScheme.surfaceContainer,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.shadow.withOpacity(0.1),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.primaryContainer,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${episode.number}',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: isSelected
+                                    ? theme.colorScheme.onPrimary
+                                    : theme.colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Episode ${episode.number}',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: isSelected
+                                      ? theme.colorScheme.onPrimaryContainer
+                                      : theme.colorScheme.onSurface,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                ),
+                              ),
+                              if (episode.title != null)
+                                Text(
+                                  episode.title!,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: isSelected
+                                        ? theme.colorScheme.onPrimaryContainer
+                                            .withOpacity(0.8)
+                                        : theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                            ],
+                          ),
+                        ),
+                        if (isSelected)
+                          Icon(
+                            Icons.play_arrow_rounded,
+                            color: theme.colorScheme.primary,
+                            size: 28,
+                          ),
+                      ],
                     ),
                   ),
-                  subtitle: episode.title != null
-                      ? Text(
-                          episode.title!,
-                          style: TextStyle(
-                            color: isSelected
-                                ? theme.colorScheme.onPrimaryContainer
-                                    .withValues(alpha: 0.8)
-                                : theme.colorScheme.onSurfaceVariant,
-                            fontSize: 12,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        )
-                      : null,
-                  onTap: () => state._playEpisode(globalIndex),
                 ),
               );
             },

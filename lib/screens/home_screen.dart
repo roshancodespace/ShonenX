@@ -173,7 +173,7 @@ class _HomeContent extends StatelessWidget {
         slivers: [
           SliverToBoxAdapter(child: _HeaderSection(isDesktop: isDesktop)),
           SliverToBoxAdapter(child: _SpotlightSection(homePage: homePage)),
-          const SliverToBoxAdapter(child: SizedBox(height: 30)),
+          const SliverToBoxAdapter(child: SizedBox(height: 0)),
           SliverToBoxAdapter(
               child: ContinueWatchingView(
                   animeWatchProgressBox: animeWatchProgressBox)),
@@ -219,18 +219,19 @@ class _HeaderSection extends ConsumerWidget {
     final user = ref.watch(userProvider);
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 10),
       child: Column(
         children: [
+          SizedBox(height: MediaQuery.of(context).padding.top),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(child: UserProfileCard(user: user)),
-              const SizedBox(width: 16),
+              const SizedBox(width: 10),
               ActionPanel(isDesktop: isDesktop),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 10),
           const DiscoverCard(),
         ],
       ),
@@ -272,7 +273,7 @@ class UserProfileCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     user?.name ?? 'Guest',
-                    style: theme.textTheme.headlineSmall?.copyWith(
+                    style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface),
                   ),
@@ -342,7 +343,7 @@ class ActionPanel extends StatelessWidget {
       children: [
         if (!isDesktop) ...[
           const _ActionButton(icon: Iconsax.search_normal, route: null),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
         ],
         const _ActionButton(icon: Iconsax.setting_2, route: '/settings'),
       ],
@@ -414,12 +415,12 @@ class DiscoverCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                   color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16)),
+                  borderRadius: BorderRadius.circular(15)),
               child: Icon(Icons.explore,
-                  color: theme.colorScheme.primary, size: 28),
+                  color: theme.colorScheme.primary, size: 20),
             ),
             const SizedBox(width: 20),
             Expanded(
@@ -427,12 +428,12 @@ class DiscoverCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Discover Anime',
-                      style: theme.textTheme.titleLarge?.copyWith(
+                      style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary)),
                   const SizedBox(height: 4),
                   Text('Find your next favorite series',
-                      style: theme.textTheme.bodyMedium?.copyWith(
+                      style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface
                               .withValues(alpha: 0.7))),
                 ],
@@ -470,12 +471,12 @@ class _SpotlightSection extends StatelessWidget {
             autoPlay: true,
             enlargeCenterPage: true,
             autoPlayInterval: const Duration(seconds: 5),
-            enlargeStrategy: CenterPageEnlargeStrategy.height,
+            enlargeStrategy: CenterPageEnlargeStrategy.scale,
             enableInfiniteScroll: true,
             floatingIndicator: false,
             slideIndicator: CustomSlideIndicator(context),
             viewportFraction:
-                MediaQuery.sizeOf(context).width > 900 ? 0.9 : 0.9,
+                MediaQuery.sizeOf(context).width > 900 ? 0.95 : 0.95,
             pageSnapping: true,
           ),
           items: trendingAnimes
@@ -507,7 +508,7 @@ class _SpotlightHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+      padding: const EdgeInsets.fromLTRB(24, 0, 0, 0),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(

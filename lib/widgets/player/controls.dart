@@ -9,6 +9,7 @@ import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
     as anime_media;
 import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
+import 'package:image/image.dart' as img;
 
 class CustomControls extends StatefulWidget {
   final VideoState state;
@@ -132,15 +133,36 @@ class _CustomControlsState extends State<CustomControls>
   Future<void> _saveProgress({bool screenshot = false}) async {
     if (_animeWatchProgressBox == null ||
         widget.episodes.isEmpty ||
-        _duration.value.inSeconds < 10) return;
+        _duration.value.inSeconds < 10) {
+      return;
+    }
+
     final episode = widget.episodes[widget.currentEpisodeIndex];
-    final thumbnail =
-        screenshot ? await _player.screenshot(format: 'image/png') : null;
+    String? thumbnailBase64;
+
+    if (screenshot) {
+      final rawScreenshot = await _player.screenshot(format: 'image/png');
+      if (rawScreenshot != null) {
+        // Decode the raw PNG data
+        final image = img.decodeImage(rawScreenshot);
+        if (image != null) {
+          // Resize to a smaller resolution (e.g., 320x180 for a 16:9 aspect ratio)
+          final resizedImage = img.copyResize(image, width: 320, height: 180);
+
+          // Compress to JPEG with quality 75 (adjustable)
+          final compressedImage = img.encodeJpg(resizedImage, quality: 75);
+
+          // Encode to Base64
+          thumbnailBase64 = base64Encode(compressedImage);
+        }
+      }
+    }
+
     await _animeWatchProgressBox?.updateEpisodeProgress(
       animeMedia: widget.animeMedia,
       episodeNumber: episode.number!,
       episodeTitle: episode.title ?? 'Untitled',
-      episodeThumbnail: thumbnail != null ? base64Encode(thumbnail) : null,
+      episodeThumbnail: thumbnailBase64,
       progressInSeconds: _position.value.inSeconds,
       durationInSeconds: _duration.value.inSeconds,
     );

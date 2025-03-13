@@ -3,6 +3,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/data/hive/boxes/settings_box.dart';
 import 'package:shonenx/data/hive/models/settings_offline_model.dart';
+import 'package:shonenx/widgets/ui/shonenx_settings.dart';
 
 // Riverpod provider for player settings
 final playerSettingsProvider =
@@ -74,7 +75,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildSettingsSection(context, 'Playback', [
+        SettingsSection(context: context, title: 'Playback', items: [
           SettingsItem(
             icon: Iconsax.timer_1,
             title: 'Episode Completion',
@@ -82,29 +83,33 @@ class PlayerSettingsScreen extends ConsumerWidget {
                 'Mark as watched at ${(playerSettings.episodeCompletionThreshold * 100).toStringAsFixed(0)}% completion',
             onTap: () => _setEpisodeCompletionThreshold(context, ref),
           ),
-          const SettingsItem(
+          SettingsItem(
+            onTap: () {},
             icon: Iconsax.forward,
             title: 'Playback Speed',
             description: 'Set default video playback speed',
             disabled: true,
           ),
         ]),
-        _buildSettingsSection(context, 'Subtitles', [
-          const SettingsItem(
+        SettingsSection(context: context, title: 'Subtitles', items: [
+          SettingsItem(
+            onTap: () {},
             icon: Iconsax.text,
             title: 'Subtitle Appearance',
             description: 'Font style, size, and colors',
             disabled: true,
           ),
-          const SettingsItem(
+          SettingsItem(
+            onTap: () {},
             icon: Iconsax.clock,
             title: 'Subtitle Timing',
             description: 'Adjust subtitle sync and delay',
             disabled: true,
           ),
         ]),
-        _buildSettingsSection(context, 'Quality', [
-          const SettingsItem(
+        SettingsSection(context: context, title: 'Quality', items: [
+          SettingsItem(
+            onTap: () {},
             icon: Iconsax.video_tick,
             title: 'Video Quality',
             description: 'Default streaming quality settings',
@@ -113,41 +118,6 @@ class PlayerSettingsScreen extends ConsumerWidget {
         ]),
         const SizedBox(height: 48),
       ],
-    );
-  }
-
-  Widget _buildSettingsSection(
-      BuildContext context, String title, List<Widget> items) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 8, bottom: 12),
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.primary,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-          Card(
-            elevation: 2,
-            shadowColor: colorScheme.shadow.withValues(alpha: 0.1),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Column(
-              children: items,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -219,81 +189,5 @@ class PlayerSettingsScreen extends ConsumerWidget {
             PlayerSettingsModel(episodeCompletionThreshold: newThreshold),
           );
     }
-  }
-}
-
-// Reusing the SettingsItem from UISettingsScreen
-class SettingsItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String description;
-  final VoidCallback? onTap;
-  final bool disabled;
-
-  const SettingsItem({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.description,
-    this.onTap,
-    this.disabled = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return InkWell(
-      onTap: disabled ? null : onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                color: disabled
-                    ? colorScheme.onSurface.withValues(alpha: 0.38)
-                    : colorScheme.primary,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: disabled
-                          ? colorScheme.onSurface.withValues(alpha: 0.38)
-                          : colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: disabled
-                          ? colorScheme.onSurface.withValues(alpha: 0.38)
-                          : colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

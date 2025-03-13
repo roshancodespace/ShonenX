@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/screens/settings/appearance/theme_screen.dart';
@@ -66,7 +67,11 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
         // Force minimum 5 second delay
         Future.delayed(const Duration(seconds: 5)),
       ]);
-
+      final uiSettings = ref.read(uiSettingsProvider).uiSettings;
+      if (uiSettings.immersiveMode) {
+        // Hide the status bar and navigation bar for immersive mode
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+      }
       // Fade out before navigation
       if (mounted) {
         setState(() {
@@ -77,7 +82,13 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
         await Future.delayed(const Duration(milliseconds: 300));
 
         if (mounted) {
-          context.go('/'); // Navigate to home screen
+          final route = {
+                'Home': '/',
+                'Watchlist': '/watchlist',
+                'Browse': '/browse',
+              }[uiSettings.defaultTab] ??
+              '/'; // Default to home if no match
+          context.go(route);
         }
       }
     } catch (e) {

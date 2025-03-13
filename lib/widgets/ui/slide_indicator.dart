@@ -13,8 +13,8 @@ class CustomSlideIndicator implements SlideIndicator {
         activeIndex: currentPage,
         count: itemCount,
         effect: ExpandingDotsEffect(
-          dotHeight: 10,
-          dotWidth: 15,
+          dotHeight: 6,
+          dotWidth: 12,
           activeDotColor: Theme.of(context).colorScheme.primary,
           dotColor:
               Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),

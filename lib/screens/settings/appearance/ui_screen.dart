@@ -6,8 +6,8 @@ import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
     as anime_media;
 import 'package:shonenx/data/hive/boxes/settings_box.dart';
 import 'package:shonenx/data/hive/models/settings_offline_model.dart';
-import 'package:shonenx/screens/settings/settings_screen.dart';
 import 'package:shonenx/widgets/anime/anime_card_v2.dart';
+import 'package:shonenx/widgets/ui/shonenx_settings.dart';
 
 // Riverpod provider for UI settings
 final uiSettingsProvider =
@@ -116,11 +116,10 @@ class UISettingsScreen extends ConsumerWidget {
               title: 'Layout',
               items: [
                 SettingsItem(
-                  onTap: () {},
+                  onTap: () => _showDefaultTabDialog(context, ref),
                   icon: Iconsax.home,
                   title: 'Default Tab',
                   description: 'Set the tab shown on app launch',
-                  disabled: true,
                 ),
                 SettingsItem(
                   onTap: () {},
@@ -140,6 +139,41 @@ class UISettingsScreen extends ConsumerWidget {
                   title: 'Card Style',
                   description: 'Customize card appearance',
                   onTap: () => _showCardStyleDialog(context, ref),
+                ),
+              ],
+            ),
+            _buildSettingsGroup(
+              context,
+              title: 'Immersive Mode',
+              items: [
+                SettingsItem(
+                  icon: Icons.fullscreen,
+                  title: 'Enable Immersive Mode',
+                  description:
+                      'Toggle immersive mode for a distraction-free experience',
+                  onTap: () {
+                    // Logic to toggle immersive mode
+                    final currentSettings =
+                        ref.read(uiSettingsProvider).uiSettings;
+                    ref.read(uiSettingsProvider.notifier).updateUISettings(
+                          currentSettings.copyWith(
+                            immersiveMode: !currentSettings.immersiveMode,
+                          ),
+                        );
+                  },
+                  trailing: Switch(
+                    value:
+                        ref.watch(uiSettingsProvider).uiSettings.immersiveMode,
+                    onChanged: (value) {
+                      final currentSettings =
+                          ref.read(uiSettingsProvider).uiSettings;
+                      ref.read(uiSettingsProvider.notifier).updateUISettings(
+                            currentSettings.copyWith(
+                              immersiveMode: value,
+                            ),
+                          );
+                    },
+                  ),
                 ),
               ],
             ),
@@ -202,6 +236,78 @@ class UISettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showDefaultTabDialog(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final settings = ref.read(uiSettingsProvider);
+    final List<String> tabs = ["Home", "Watchlist", "Browse"];
+
+    ValueNotifier<String> selectedTab = ValueNotifier(
+        tabs.contains(settings.uiSettings.defaultTab)
+            ? settings.uiSettings.defaultTab
+            : 'Home');
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: colorScheme.surface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Default tab'),
+          content: ValueListenableBuilder<String>(
+            valueListenable: selectedTab,
+            builder: (context, value, child) {
+              return DropdownButtonFormField<String>(
+                value: value,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: colorScheme.outline.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest,
+                ),
+                dropdownColor: colorScheme.surfaceContainerHighest,
+                icon: Icon(Iconsax.arrow_down_1,
+                    color: colorScheme.onSurface),
+                style: TextStyle(color: colorScheme.onSurface),
+                onChanged: (newValue) => selectedTab.value = newValue!,
+                items: tabs.map((tab) {
+                  return DropdownMenuItem<String>(
+                    value: tab,
+                    child: Text(
+                      tab,
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel',
+                  style: TextStyle(color: colorScheme.onSurface)),
+            ),
+            TextButton(
+              onPressed: () {
+                ref.read(uiSettingsProvider.notifier).updateUISettings(
+                      settings.uiSettings
+                          .copyWith(defaultTab: selectedTab.value),
+                    );
+                Navigator.pop(context);
+              },
+              child: Text('Save', style: TextStyle(color: colorScheme.primary)),
+            ),
+          ],
+        );
+      },
     );
   }
 

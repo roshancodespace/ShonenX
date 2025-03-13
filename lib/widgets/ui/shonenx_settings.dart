@@ -70,6 +70,7 @@ class SettingsItem extends StatefulWidget {
   final String description;
   final VoidCallback onTap;
   final bool disabled;
+  final Widget? trailing; // Added trailing widget option
 
   const SettingsItem({
     super.key,
@@ -78,13 +79,14 @@ class SettingsItem extends StatefulWidget {
     required this.description,
     required this.onTap,
     this.disabled = false,
+    this.trailing, // Added trailing widget parameter
   });
 
   @override
-  State<SettingsItem> createState() => SettingsItemState();
+  State<SettingsItem> createState() => _SettingsItemState();
 }
 
-class SettingsItemState extends State<SettingsItem> {
+class _SettingsItemState extends State<SettingsItem> {
   bool _isHovered = false;
 
   @override
@@ -92,16 +94,8 @@ class SettingsItemState extends State<SettingsItem> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return MouseRegion(
-      onEnter: (_) {
-        if (!widget.disabled) {
-          setState(() => _isHovered = true);
-        }
-      },
-      onExit: (_) {
-        if (!widget.disabled) {
-          setState(() => _isHovered = false);
-        }
-      },
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
       child: InkWell(
         onTap: widget.disabled ? null : widget.onTap,
         borderRadius: BorderRadius.circular(16),
@@ -121,10 +115,8 @@ class SettingsItemState extends State<SettingsItem> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      colorScheme.primary
-                          .withValues(alpha: widget.disabled ? 0.05 : 0.2),
-                      colorScheme.primary
-                          .withValues(alpha: widget.disabled ? 0.03 : 0.1),
+                      colorScheme.primary.withValues(alpha: 0.2),
+                      colorScheme.primary.withValues(alpha: 0.1),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -133,10 +125,10 @@ class SettingsItemState extends State<SettingsItem> {
                 ),
                 child: Icon(
                   widget.icon,
+                  size: 22,
                   color: widget.disabled
                       ? colorScheme.onSurface.withValues(alpha: 0.4)
                       : colorScheme.primary,
-                  size: 20,
                 ),
               ),
               const SizedBox(width: 16),
@@ -159,19 +151,21 @@ class SettingsItemState extends State<SettingsItem> {
                       widget.description,
                       style: TextStyle(
                         fontSize: 14,
-                        color: colorScheme.onSurface
-                            .withValues(alpha: widget.disabled ? 0.3 : 0.7),
+                        color: colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(
-                Iconsax.arrow_right_3,
-                color: colorScheme.onSurface
-                    .withValues(alpha: widget.disabled ? 0.2 : 0.5),
-                size: 20,
-              ),
+              widget.trailing != null
+                  ? widget.trailing!
+                  : Icon(
+                      Iconsax.arrow_right_3,
+                      size: 20,
+                      color: widget.disabled
+                          ? colorScheme.onSurface.withValues(alpha: 0.2)
+                          : colorScheme.onSurface.withValues(alpha: 0.5),
+                    )
             ],
           ),
         ),

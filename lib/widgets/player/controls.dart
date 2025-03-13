@@ -14,7 +14,7 @@ class CustomControls extends StatefulWidget {
   final VideoState state;
   final anime_media.Media animeMedia;
   final List<SubtitleTrack> subtitles;
-  final List<Map<String, String>> qualityOptions;
+  final List<Map<String, dynamic>> qualityOptions;
   final Function(String) changeQuality;
   final int currentEpisodeIndex;
   final List<EpisodeDataModel> episodes;
@@ -24,8 +24,8 @@ class CustomControls extends StatefulWidget {
     required this.subtitles,
     required this.state,
     required this.animeMedia,
-    required this.changeQuality,
     required this.qualityOptions,
+    required this.changeQuality,
     required this.currentEpisodeIndex,
     required this.episodes,
   });
@@ -44,32 +44,21 @@ class _CustomControlsState extends State<CustomControls>
   StreamSubscription? _playerStateSubscription;
   bool _isFullScreen = false;
   bool _showSettings = false;
+  bool _controlsVisible = true;
   String _currentSettingsPage = 'main';
-  double _playbackSpeed = 1.0;
 
-  // Player state variables
-  bool _isPlaying = false;
-  bool _isBuffering = false;
-  Duration _position = Duration.zero;
-  Duration _duration = Duration.zero;
-  double _volume = 1.0;
-
-  // final List<double> _playbackSpeeds = [
-  //   0.25,
-  //   0.5,
-  //   0.75,
-  //   1.0,
-  //   1.25,
-  //   1.5,
-  //   1.75,
-  //   2.0
-  // ];
+  final _isPlaying = ValueNotifier(false);
+  final _isBuffering = ValueNotifier(false);
+  final _position = ValueNotifier(Duration.zero);
+  final _duration = ValueNotifier(Duration.zero);
+  final _volume = ValueNotifier(1.0);
+  final _playbackSpeed = ValueNotifier(1.0);
 
   @override
   void initState() {
     super.initState();
     _fadeController = AnimationController(
-        duration: const Duration(milliseconds: 300), vsync: this)
+        duration: const Duration(milliseconds: 200), vsync: this)
       ..forward();
     _player = widget.state.widget.controller.player;
     _isFullScreen = isFullscreen(widget.state.context);
@@ -81,15 +70,12 @@ class _CustomControlsState extends State<CustomControls>
   }
 
   void _syncInitialState() {
-    setState(() {
-      _isPlaying = _player.state.playing;
-      _isBuffering = _player.state.buffering;
-      _position = _player.state.position;
-      _duration = _player.state.duration;
-      _volume = _player.state.volume /
-          100.0; // Player uses 0-100, we normalize to 0.0-1.0
-      _playbackSpeed = _player.state.rate;
-    });
+    _isPlaying.value = _player.state.playing;
+    _isBuffering.value = _player.state.buffering;
+    _position.value = _player.state.position;
+    _duration.value = _player.state.duration;
+    _volume.value = _player.state.volume / 100.0;
+    _playbackSpeed.value = _player.state.rate;
   }
 
   Future<void> _initializeProgressBox() async {
@@ -97,27 +83,35 @@ class _CustomControlsState extends State<CustomControls>
     await _animeWatchProgressBox?.init();
   }
 
-  void _startHideTimer() {
-    _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(seconds: 3), () async {
-      await _fadeController.reverse();
-      if (mounted) setState(() {});
+  void _startProgressSaveTimer() {
+    int tickCount = 0;
+    _saveProgressTimer =
+        Timer.periodic(const Duration(seconds: 10), (timer) async {
+      tickCount++;
+      if (tickCount == 5) {
+        await _saveProgress(screenshot: true);
+        tickCount = 0;
+      }
     });
   }
 
-  void _startProgressSaveTimer() {
-    int tickCount = 0;
-    _saveProgressTimer = Timer.periodic(Duration(seconds: 10), (timer) async {
-      tickCount++;
-
-      if (tickCount == 5) {
-        await _saveProgress(screenshot: true);
+  void _startHideTimer() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted && !_showSettings) {
+        setState(() {
+          _controlsVisible = false;
+        });
+        _fadeController.reverse();
       }
     });
   }
 
   void _resetHideTimer() {
     if (mounted) {
+      setState(() {
+        _controlsVisible = true;
+      });
       _fadeController.forward();
       _startHideTimer();
     }
@@ -125,32 +119,20 @@ class _CustomControlsState extends State<CustomControls>
 
   void _subscribeToPlayerState() {
     _playerStateSubscription?.cancel();
-    _playerStateSubscription = _player.stream.playing.listen((playing) {
-      if (mounted) setState(() => _isPlaying = playing);
-    });
-    _player.stream.buffering.listen((buffering) {
-      if (mounted) setState(() => _isBuffering = buffering);
-    });
-    _player.stream.position.listen((position) {
-      if (mounted) setState(() => _position = position);
-    });
-    _player.stream.duration.listen((duration) {
-      if (mounted) setState(() => _duration = duration);
-    });
-    _player.stream.volume.listen((volume) {
-      if (mounted) setState(() => _volume = volume / 100.0);
-    });
-    _player.stream.rate.listen((rate) {
-      if (mounted) setState(() => _playbackSpeed = rate);
-    });
+    _playerStateSubscription =
+        _player.stream.playing.listen((playing) => _isPlaying.value = playing);
+    _player.stream.buffering
+        .listen((buffering) => _isBuffering.value = buffering);
+    _player.stream.position.listen((position) => _position.value = position);
+    _player.stream.duration.listen((duration) => _duration.value = duration);
+    _player.stream.volume.listen((volume) => _volume.value = volume / 100.0);
+    _player.stream.rate.listen((rate) => _playbackSpeed.value = rate);
   }
 
   Future<void> _saveProgress({bool screenshot = false}) async {
     if (_animeWatchProgressBox == null ||
         widget.episodes.isEmpty ||
-        _duration.inSeconds < 10) {
-      return;
-    }
+        _duration.value.inSeconds < 10) return;
     final episode = widget.episodes[widget.currentEpisodeIndex];
     final thumbnail =
         screenshot ? await _player.screenshot(format: 'image/png') : null;
@@ -159,19 +141,27 @@ class _CustomControlsState extends State<CustomControls>
       episodeNumber: episode.number!,
       episodeTitle: episode.title ?? 'Untitled',
       episodeThumbnail: thumbnail != null ? base64Encode(thumbnail) : null,
-      progressInSeconds: _position.inSeconds,
-      durationInSeconds: _duration.inSeconds,
+      progressInSeconds: _position.value.inSeconds,
+      durationInSeconds: _duration.value.inSeconds,
     );
   }
 
-  void _toggleFullScreen() {
+  void _toggleFullScreen() async {
     final isFull = isFullscreen(widget.state.context);
     if (isFull) {
-      widget.state.exitFullscreen();
+      await widget.state.exitFullscreen();
     } else {
-      widget.state.enterFullscreen();
+      await widget.state.enterFullscreen();
     }
     if (mounted) setState(() => _isFullScreen = !isFull);
+    _resetHideTimer();
+  }
+
+  void _toggleSettings() {
+    setState(() {
+      _showSettings = !_showSettings;
+    });
+    _resetHideTimer();
   }
 
   @override
@@ -180,381 +170,270 @@ class _CustomControlsState extends State<CustomControls>
     _hideTimer?.cancel();
     _saveProgressTimer?.cancel();
     _playerStateSubscription?.cancel();
+    _isPlaying.dispose();
+    _isBuffering.dispose();
+    _position.dispose();
+    _duration.dispose();
+    _volume.dispose();
+    _playbackSpeed.dispose();
     super.dispose();
   }
 
-  // String _formatDuration(Duration duration) {
-  //   final hours = duration.inHours;
-  //   final minutes = duration.inMinutes.remainder(60);
-  //   final seconds = duration.inSeconds.remainder(60);
-  //   return hours > 0
-  //       ? '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'
-  //       : '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  // }
-
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _resetHideTimer,
-      behavior: HitTestBehavior.opaque,
-      child: Stack(
-        children: [
-          _buildGradientOverlay(),
-          _ControlsLayer(
-            state: widget.state,
-            fadeController: _fadeController,
-            onFullScreenToggle: _toggleFullScreen,
-            isFullScreen: _isFullScreen,
-            onSettingsToggle: (show) => setState(() => _showSettings = show),
-            animeMedia: widget.animeMedia,
-            episodes: widget.episodes,
-            currentEpisodeIndex: widget.currentEpisodeIndex,
-            isPlaying: _isPlaying,
-            isBuffering: _isBuffering,
-            position: _position,
-            duration: _duration,
-            volume: _volume,
-          ),
-          if (_showSettings)
-            _SettingsPanel(
-              state: widget.state,
-              subtitles: widget.subtitles,
-              qualityOptions: widget.qualityOptions,
-              changeQuality: widget.changeQuality,
-              playbackSpeed: _playbackSpeed,
-              onSpeedChange: (speed) {
-                setState(() => _playbackSpeed = speed);
-                _player.setRate(speed);
-              },
-              volume: _volume,
-              onVolumeChange: (vol) {
-                setState(() => _volume = vol);
-                _player.setVolume(vol * 100);
-              },
-              onClose: () => setState(() => _showSettings = false),
-              currentPage: _currentSettingsPage,
-              onPageChange: (page) =>
-                  setState(() => _currentSettingsPage = page),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGradientOverlay() {
-    return FadeTransition(
-      opacity: _fadeController,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.black.withValues(alpha: 0.7),
-              Colors.transparent,
-              Colors.transparent,
-              Colors.black.withValues(alpha: 0.7),
-            ],
-            stops: const [0.0, 0.2, 0.8, 1.0],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Controls Layer
-class _ControlsLayer extends StatelessWidget {
-  final VideoState state;
-  final AnimationController fadeController;
-  final VoidCallback onFullScreenToggle;
-  final bool isFullScreen;
-  final Function(bool) onSettingsToggle;
-  final anime_media.Media animeMedia;
-  final List<EpisodeDataModel> episodes;
-  final int currentEpisodeIndex;
-  final bool isPlaying;
-  final bool isBuffering;
-  final Duration position;
-  final Duration duration;
-  final double volume;
-
-  const _ControlsLayer({
-    required this.state,
-    required this.fadeController,
-    required this.onFullScreenToggle,
-    required this.isFullScreen,
-    required this.onSettingsToggle,
-    required this.animeMedia,
-    required this.episodes,
-    required this.currentEpisodeIndex,
-    required this.isPlaying,
-    required this.isBuffering,
-    required this.position,
-    required this.duration,
-    required this.volume,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: fadeController,
-      builder: (context, child) {
-        if (fadeController.value == 0) return const SizedBox.shrink();
-        return SafeArea(
-          child: Opacity(
-            opacity: fadeController.value,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _TopBar(
-                  animeMedia: animeMedia,
-                  episodes: episodes,
-                  currentEpisodeIndex: currentEpisodeIndex,
-                  onSettingsToggle: () => onSettingsToggle(true),
-                ),
-                const Spacer(),
-                _CenterControls(
-                  state: state,
-                  isPlaying: isPlaying,
-                  isBuffering: isBuffering,
-                  position: position,
-                ),
-                const Spacer(),
-                _BottomControls(
-                  state: state,
-                  onFullScreenToggle: onFullScreenToggle,
-                  isFullScreen: isFullScreen,
-                  position: position,
-                  duration: duration,
-                  volume: volume,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// Top Bar
-class _TopBar extends StatelessWidget {
-  final anime_media.Media animeMedia;
-  final List<EpisodeDataModel> episodes;
-  final int currentEpisodeIndex;
-  final VoidCallback onSettingsToggle;
-
-  const _TopBar({
-    required this.animeMedia,
-    required this.episodes,
-    required this.currentEpisodeIndex,
-    required this.onSettingsToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          _IconButton(
-            icon: Iconsax.arrow_left_1,
-            onPressed: () async {
-              await toggleFullscreen(context);
-              if (!context.mounted) return;
-              context.pop();
-            },
-            size: 28,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  animeMedia.title?.english ?? '',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (episodes.isNotEmpty)
-                  Text(
-                    'Episode ${episodes[currentEpisodeIndex].number}',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 14,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          _IconButton(
-            icon: Iconsax.setting_2,
-            onPressed: onSettingsToggle,
-            size: 28,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Center Controls
-class _CenterControls extends StatelessWidget {
-  final VideoState state;
-  final bool isPlaying;
-  final bool isBuffering;
-  final Duration position;
-
-  const _CenterControls({
-    required this.state,
-    required this.isPlaying,
-    required this.isBuffering,
-    required this.position,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Stack(
       children: [
-        _IconButton(
-          icon: Iconsax.backward_10_seconds,
-          onPressed: () => state.widget.controller.player
-              .seek(position - const Duration(seconds: 10)),
-          size: 36,
+        GestureDetector(
+          onTap: () {
+            if (!_controlsVisible) {
+              _resetHideTimer();
+            }
+          },
+          behavior: HitTestBehavior.opaque,
         ),
-        const SizedBox(width: 32),
-        isBuffering
-            ? const SizedBox(
-                width: 64,
-                height: 64,
-                child: CircularProgressIndicator(
-                    color: Colors.white, strokeWidth: 3),
-              )
-            : _PlayPauseButton(state: state, isPlaying: isPlaying),
-        const SizedBox(width: 32),
-        _IconButton(
-          icon: Iconsax.forward_10_seconds,
-          onPressed: () => state.widget.controller.player
-              .seek(position + const Duration(seconds: 10)),
-          size: 36,
-        ),
+        if (_controlsVisible)
+          FadeTransition(
+            opacity: _fadeController,
+            child: GestureDetector(
+              onTap: _resetHideTimer,
+              behavior: HitTestBehavior.opaque,
+              child: Stack(
+                children: [
+                  Container(color: Colors.black.withOpacity(0.1)),
+                  _ControlOverlay(
+                    state: widget.state,
+                    animeMedia: widget.animeMedia,
+                    episodes: widget.episodes,
+                    currentEpisodeIndex: widget.currentEpisodeIndex,
+                    isPlaying: _isPlaying,
+                    isBuffering: _isBuffering,
+                    position: _position,
+                    duration: _duration,
+                    volume: _volume,
+                    isFullScreen: _isFullScreen,
+                    onFullScreenToggle: _toggleFullScreen,
+                    onSettingsToggle: _toggleSettings,
+                  ),
+                  if (_showSettings)
+                    _SettingsDrawer(
+                      state: widget.state,
+                      subtitles: widget.subtitles,
+                      qualityOptions: widget.qualityOptions,
+                      changeQuality: widget.changeQuality,
+                      playbackSpeed: _playbackSpeed,
+                      onSpeedChange: (speed) {
+                        _playbackSpeed.value = speed;
+                        _player.setRate(speed);
+                        _resetHideTimer();
+                      },
+                      volume: _volume,
+                      onVolumeChange: (vol) {
+                        _volume.value = vol;
+                        _player.setVolume(vol * 100);
+                        _resetHideTimer();
+                      },
+                      onClose: () {
+                        setState(() => _showSettings = false);
+                        _resetHideTimer();
+                      },
+                      currentPage: _currentSettingsPage,
+                      onPageChange: (page) {
+                        setState(() => _currentSettingsPage = page);
+                        _resetHideTimer();
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
 }
 
-// Play/Pause Button
-class _PlayPauseButton extends StatelessWidget {
+class _ControlOverlay extends StatelessWidget {
   final VideoState state;
-  final bool isPlaying;
-
-  const _PlayPauseButton({required this.state, required this.isPlaying});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 64,
-      height: 64,
-      decoration: BoxDecoration(
-          color: Theme.of(context).primaryColor,
-          borderRadius: BorderRadius.circular(32)),
-      child: _IconButton(
-        icon: isPlaying ? Iconsax.pause : Iconsax.play,
-        onPressed: () => isPlaying
-            ? state.widget.controller.player.pause()
-            : state.widget.controller.player.play(),
-        size: 36,
-      ),
-    );
-  }
-}
-
-// Bottom Controls
-class _BottomControls extends StatefulWidget {
-  final VideoState state;
-  final VoidCallback onFullScreenToggle;
+  final anime_media.Media animeMedia;
+  final List<EpisodeDataModel> episodes;
+  final int currentEpisodeIndex;
+  final ValueNotifier<bool> isPlaying;
+  final ValueNotifier<bool> isBuffering;
+  final ValueNotifier<Duration> position;
+  final ValueNotifier<Duration> duration;
+  final ValueNotifier<double> volume;
   final bool isFullScreen;
-  final Duration position;
-  final Duration duration;
-  final double volume;
+  final VoidCallback onFullScreenToggle;
+  final VoidCallback onSettingsToggle;
 
-  const _BottomControls({
+  const _ControlOverlay({
     required this.state,
-    required this.onFullScreenToggle,
-    required this.isFullScreen,
+    required this.animeMedia,
+    required this.episodes,
+    required this.currentEpisodeIndex,
+    required this.isPlaying,
+    required this.isBuffering,
     required this.position,
     required this.duration,
     required this.volume,
+    required this.isFullScreen,
+    required this.onFullScreenToggle,
+    required this.onSettingsToggle,
   });
 
   @override
-  State<_BottomControls> createState() => _BottomControlsState();
-}
-
-class _BottomControlsState extends State<_BottomControls> {
-  Duration? _dragPosition;
-
-  @override
   Widget build(BuildContext context) {
-    final maxDuration = widget.duration.inSeconds > 0
-        ? widget.duration.inSeconds.toDouble()
-        : 1.0;
-    final sliderValue = (_dragPosition?.inSeconds.toDouble() ??
-            widget.position.inSeconds.toDouble())
-        .clamp(0.0, maxDuration);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    return SafeArea(
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          SliderTheme(
-            data: SliderThemeData(
-              trackHeight: 4,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-              activeTrackColor: Theme.of(context).primaryColor,
-              inactiveTrackColor: Colors.white24,
-              thumbColor: Theme.of(context).primaryColor,
-              overlayColor:
-                  Theme.of(context).primaryColor.withValues(alpha: 0.2),
-            ),
-            child: Slider(
-              value: sliderValue,
-              min: 0.0,
-              max: maxDuration,
-              onChanged: (value) => setState(
-                  () => _dragPosition = Duration(seconds: value.toInt())),
-              onChangeEnd: (value) async {
-                await widget.state.widget.controller.player
-                    .seek(Duration(seconds: value.toInt()));
-                setState(() => _dragPosition = null);
-              },
-            ),
-          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
+            padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Text(
-                  '${_formatDuration(widget.position)} / ${_formatDuration(widget.duration)}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                _GlowButton(
+                  icon: Iconsax.arrow_left_1,
+                  onTap: () => context.pop(),
                 ),
-                const Spacer(),
-                _VolumeControl(state: widget.state, volume: widget.volume),
-                const SizedBox(width: 16),
-                _IconButton(
-                  icon: widget.isFullScreen
-                      ? Icons.fullscreen_exit_rounded
-                      : Icons.fullscreen_rounded,
-                  onPressed: widget.onFullScreenToggle,
-                  size: 28,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        animeMedia.title?.english ??
+                            animeMedia.title?.romaji ??
+                            '',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (episodes.isNotEmpty)
+                        Text(
+                          'Ep ${episodes[currentEpisodeIndex].number}',
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 12),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _GlowButton(
+                icon: Iconsax.backward_10_seconds,
+                onTap: () => state.widget.controller.player
+                    .seek(position.value - const Duration(seconds: 10)),
+              ),
+              const SizedBox(width: 20),
+              ValueListenableBuilder<bool>(
+                valueListenable: isBuffering,
+                builder: (context, buffering, _) {
+                  return buffering
+                      ? Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.black.withOpacity(0.5)),
+                          child: const CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
+                        )
+                      : ValueListenableBuilder<bool>(
+                          valueListenable: isPlaying,
+                          builder: (context, playing, _) => _GlowButton(
+                            icon: playing ? Iconsax.pause : Iconsax.play,
+                            onTap: () => playing
+                                ? state.widget.controller.player.pause()
+                                : state.widget.controller.player.play(),
+                            size: 36,
+                          ),
+                        );
+                },
+              ),
+              const SizedBox(width: 20),
+              _GlowButton(
+                icon: Iconsax.forward_10_seconds,
+                onTap: () => state.widget.controller.player
+                    .seek(position.value + const Duration(seconds: 10)),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                ValueListenableBuilder<Duration>(
+                  valueListenable: duration,
+                  builder: (context, duration, _) {
+                    final maxDuration = duration.inSeconds > 0
+                        ? duration.inSeconds.toDouble()
+                        : 1.0;
+                    return ValueListenableBuilder<Duration>(
+                      valueListenable: position,
+                      builder: (context, position, _) {
+                        return _ProgressSlider(
+                          value: position.inSeconds.toDouble(),
+                          max: maxDuration,
+                          onChanged: (value) => state.widget.controller.player
+                              .seek(Duration(seconds: value.toInt())),
+                        );
+                      },
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ValueListenableBuilder<Duration>(
+                      valueListenable: position,
+                      builder: (context, position, _) =>
+                          ValueListenableBuilder<Duration>(
+                        valueListenable: duration,
+                        builder: (context, duration, _) => Text(
+                          '${_formatDuration(position)} / ${_formatDuration(duration)}',
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 12),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        ValueListenableBuilder<double>(
+                          valueListenable: volume,
+                          builder: (context, volume, _) => _GlowButton(
+                            icon: volume == 0
+                                ? Iconsax.volume_mute
+                                : Iconsax.volume_high,
+                            onTap: () => state.widget.controller.player
+                                .setVolume(volume == 0 ? 100 : 0),
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _GlowButton(
+                          icon: isFullScreen
+                              ? Icons.fullscreen_exit
+                              : Icons.fullscreen,
+                          onTap: onFullScreenToggle,
+                        ),
+                        const SizedBox(width: 8),
+                        _GlowButton(
+                          icon: Iconsax.setting_2,
+                          onTap: onSettingsToggle,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -574,89 +453,92 @@ class _BottomControlsState extends State<_BottomControls> {
   }
 }
 
-// Volume Control
-class _VolumeControl extends StatelessWidget {
-  final VideoState state;
-  final double volume;
-
-  const _VolumeControl({required this.state, required this.volume});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          volume == 0
-              ? Iconsax.volume_mute
-              : volume < 0.5
-                  ? Iconsax.volume_low
-                  : Iconsax.volume_high,
-          color: Colors.white,
-          size: 24,
-        ),
-        SizedBox(
-          width: 100,
-          child: SliderTheme(
-            data: SliderThemeData(
-              trackHeight: 2,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-              activeTrackColor: Theme.of(context).primaryColor,
-              inactiveTrackColor: Colors.white24,
-              thumbColor: Theme.of(context).primaryColor,
-            ),
-            child: Slider(
-              value: volume,
-              onChanged: (value) =>
-                  state.widget.controller.player.setVolume(value * 100),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// Icon Button
-class _IconButton extends StatelessWidget {
+class _GlowButton extends StatelessWidget {
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback onTap;
   final double size;
 
-  const _IconButton(
-      {required this.icon, required this.onPressed, required this.size});
+  const _GlowButton({required this.icon, required this.onTap, this.size = 24});
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: onPressed,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Icon(icon, color: Colors.white, size: size),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.black.withOpacity(0.5),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).primaryColor.withOpacity(0.4),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
+          ],
         ),
+        child: Icon(icon, color: Colors.white, size: size),
       ),
     );
   }
 }
 
-// Settings Panel
-class _SettingsPanel extends StatelessWidget {
+class _ProgressSlider extends StatefulWidget {
+  final double value;
+  final double max;
+  final Function(double) onChanged;
+
+  const _ProgressSlider(
+      {required this.value, required this.max, required this.onChanged});
+
+  @override
+  State<_ProgressSlider> createState() => _ProgressSliderState();
+}
+
+class _ProgressSliderState extends State<_ProgressSlider> {
+  double? _dragValue;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentValue = _dragValue ?? widget.value;
+    return SliderTheme(
+      data: SliderThemeData(
+        trackHeight: 3,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+        overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+        activeTrackColor: Theme.of(context).primaryColor,
+        inactiveTrackColor: Colors.white12,
+        thumbColor: Colors.white,
+        overlayColor: Theme.of(context).primaryColor.withOpacity(0.3),
+      ),
+      child: Slider(
+        value: currentValue.clamp(0.0, widget.max),
+        min: 0.0,
+        max: widget.max,
+        onChanged: (value) => setState(() => _dragValue = value),
+        onChangeEnd: (value) {
+          widget.onChanged(value);
+          setState(() => _dragValue = null);
+        },
+      ),
+    );
+  }
+}
+
+class _SettingsDrawer extends StatelessWidget {
   final VideoState state;
   final List<SubtitleTrack> subtitles;
-  final List<Map<String, String>> qualityOptions;
+  final List<Map<String, dynamic>> qualityOptions;
   final Function(String) changeQuality;
-  final double playbackSpeed;
+  final ValueNotifier<double> playbackSpeed;
   final Function(double) onSpeedChange;
-  final double volume;
+  final ValueNotifier<double> volume;
   final Function(double) onVolumeChange;
   final VoidCallback onClose;
   final String currentPage;
   final Function(String) onPageChange;
 
-  const _SettingsPanel({
+  const _SettingsDrawer({
     required this.state,
     required this.subtitles,
     required this.qualityOptions,
@@ -670,37 +552,51 @@ class _SettingsPanel extends StatelessWidget {
     required this.onPageChange,
   });
 
-  final List<double> _playbackSpeeds = const [
-    0.25,
-    0.5,
-    0.75,
-    1.0,
-    1.25,
-    1.5,
-    1.75,
-    2.0
-  ];
+  static const _playbackSpeeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      color: Colors.black.withValues(alpha: 0.95),
-      child: SafeArea(
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Container(
+        width: double.infinity,
+        height: MediaQuery.of(context).size.height * 0.5,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.9),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 20)],
+        ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSettingsHeader(context),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (currentPage != 'main')
+                    _GlowButton(
+                        icon: Iconsax.arrow_left_1,
+                        onTap: () => onPageChange('main'),
+                        size: 20),
+                  Text(
+                    currentPage == 'main' ? 'Settings' : _getPageTitle(),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  _GlowButton(
+                      icon: Iconsax.close_circle, onTap: onClose, size: 20),
+                ],
+              ),
+            ),
             Expanded(
-              child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Container(
-                  color: Colors.black87,
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: currentPage == 'main'
-                      ? _buildMainSettingsMenu(context)
-                      : _buildSettingsSubPage(context, currentPage),
+                      ? _buildMainMenu(context)
+                      : _buildSubMenu(context),
                 ),
               ),
             ),
@@ -710,320 +606,206 @@ class _SettingsPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          _IconButton(
-            icon: Iconsax.arrow_left_1,
-            onPressed: () {
-              if (currentPage == 'main') {
-                onClose();
-              } else {
-                onPageChange('main');
-              }
-            },
-            size: 24,
-          ),
-          const SizedBox(width: 16),
-          Text(
-            _getSettingsTitle(),
-            style: const TextStyle(
-                color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getSettingsTitle() {
+  String _getPageTitle() {
     switch (currentPage) {
       case 'quality':
-        return 'Video Quality';
+        return 'Quality';
       case 'speed':
-        return 'Playback Speed';
+        return 'Speed';
       case 'audio':
-        return 'Audio Settings';
+        return 'Audio';
       case 'subtitles':
         return 'Subtitles';
       default:
-        return 'Settings';
+        return '';
     }
   }
 
-  Widget _buildMainSettingsMenu(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.only(top: 8),
+  Widget _buildMainMenu(BuildContext context) {
+    return Column(
       children: [
-        _buildSettingsMenuItem(
-          context: context,
-          icon: Icons.high_quality_outlined,
-          title: 'Quality',
-          subtitle: state.widget.controller.player.state.width != null
-              ? '${state.widget.controller.player.state.height}p'
-              : 'Auto',
-          onTap: () => onPageChange('quality'),
-        ),
-        _buildSettingsMenuItem(
-          context: context,
-          icon: Iconsax.speedometer,
-          title: 'Playback Speed',
-          subtitle: '${playbackSpeed}x',
-          onTap: () => onPageChange('speed'),
-        ),
-        _buildSettingsMenuItem(
-          context: context,
-          icon: Iconsax.volume_high,
-          title: 'Volume & Audio',
-          subtitle: '${(volume * 100).round()}%',
-          onTap: () => onPageChange('audio'),
-        ),
-        _buildSettingsMenuItem(
-          context: context,
-          icon: Iconsax.subtitle,
-          title: 'Subtitles',
-          subtitle: subtitles.isNotEmpty
-              ? subtitles.first.language ?? 'Default'
-              : 'None available',
-          onTap: () => onPageChange('subtitles'),
-        ),
+        _SettingsTile(
+            icon: Icons.high_quality,
+            title: 'Quality',
+            onTap: () => onPageChange('quality')),
+        _SettingsTile(
+            icon: Iconsax.speedometer,
+            title: 'Speed',
+            onTap: () => onPageChange('speed')),
+        _SettingsTile(
+            icon: Iconsax.volume_high,
+            title: 'Audio',
+            onTap: () => onPageChange('audio')),
+        _SettingsTile(
+            icon: Iconsax.subtitle,
+            title: 'Subtitles',
+            onTap: () => onPageChange('subtitles')),
       ],
     );
   }
 
-  Widget _buildSettingsMenuItem({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
+  Widget _buildSubMenu(BuildContext context) {
+    switch (currentPage) {
+      case 'quality':
+        return Column(
+          children: qualityOptions.map((quality) {
+            final isDub = quality['isDub'] as bool? ?? false;
+            final isSelected = quality['url'] ==
+                state.widget.controller.player.state.playlist.medias.first.uri;
+            return _SettingsTile(
+              title: '${quality['quality']} (${isDub ? 'Dub' : 'Sub'})',
+              isSelected: isSelected,
+              onTap: () {
+                changeQuality(quality['url']!);
+                onClose();
+              },
+              accentColor: isDub ? Colors.greenAccent : Colors.blueAccent,
+            );
+          }).toList(),
+        );
+      case 'speed':
+        return Column(
+          children: _playbackSpeeds.map((speed) {
+            final isSelected = speed == playbackSpeed.value;
+            return _SettingsTile(
+              title: '${speed}x',
+              isSelected: isSelected,
+              onTap: () => onSpeedChange(speed),
+            );
+          }).toList(),
+        );
+      case 'audio':
+        return ValueListenableBuilder<double>(
+          valueListenable: volume,
+          builder: (context, vol, _) => Row(
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                    color:
-                        Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20)),
-                child: Icon(icon, color: Theme.of(context).primaryColor),
+              _GlowButton(
+                icon: vol == 0 ? Iconsax.volume_mute : Iconsax.volume_high,
+                onTap: () => onVolumeChange(vol == 0 ? 1.0 : 0.0),
+                size: 20,
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 14),
-                    ),
-                  ],
+                child: SliderTheme(
+                  data: SliderThemeData(
+                    trackHeight: 2,
+                    thumbShape:
+                        const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    overlayShape:
+                        const RoundSliderOverlayShape(overlayRadius: 12),
+                    activeTrackColor: Colors.white,
+                    inactiveTrackColor: Colors.white24,
+                    thumbColor: Colors.white,
+                    overlayColor: Colors.white.withOpacity(0.3),
+                  ),
+                  child: Slider(
+                    value: vol,
+                    min: 0.0,
+                    max: 1.0,
+                    onChanged: onVolumeChange,
+                  ),
                 ),
               ),
-              Icon(Icons.chevron_right_rounded,
-                  color: Colors.white.withValues(alpha: 0.7)),
+              const SizedBox(width: 12),
+              Text('${(vol * 100).round()}%',
+                  style: const TextStyle(color: Colors.white, fontSize: 14)),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingsSubPage(BuildContext context, String page) {
-    switch (page) {
-      case 'quality':
-        return _buildQualitySettings(context);
-      case 'speed':
-        return _buildSpeedSettings(context);
-      case 'audio':
-        return _buildAudioSettings(context);
+        );
       case 'subtitles':
-        return _buildSubtitleSettings(context);
+        return Column(
+          children: [
+            _SettingsTile(
+              title: 'Off',
+              isSelected: state.widget.controller.player.state.subtitle ==
+                  SubtitleTrack.no(),
+              onTap: () async {
+                await state.widget.controller.player
+                    .setSubtitleTrack(SubtitleTrack.no());
+                onClose();
+              },
+            ),
+            ...subtitles.map((subtitle) {
+              final isSelected =
+                  state.widget.controller.player.state.subtitle == subtitle;
+              return _SettingsTile(
+                title: subtitle.language ?? 'Unknown',
+                subtitle: subtitle.title,
+                isSelected: isSelected,
+                onTap: () async {
+                  await state.widget.controller.player
+                      .setSubtitleTrack(subtitle);
+                  onClose();
+                },
+              );
+            }),
+          ],
+        );
       default:
         return const SizedBox.shrink();
     }
   }
+}
 
-  Widget _buildQualitySettings(BuildContext context) {
-    return ListView.builder(
-      itemCount: qualityOptions.length,
-      itemBuilder: (context, index) {
-        final quality = qualityOptions[index];
-        final isSelected =
-            quality['quality'] == 'Auto'; // Adjust logic as needed
-        return _buildSettingsOptionItem(
-          context: context,
-          title: quality['quality']!,
-          isSelected: isSelected,
-          onTap: () {
-            changeQuality(quality['url']!);
-            onClose();
-          },
-        );
-      },
-    );
-  }
+class _SettingsTile extends StatelessWidget {
+  final IconData? icon;
+  final String title;
+  final String? subtitle;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color? accentColor;
 
-  Widget _buildSpeedSettings(BuildContext context) {
-    return ListView.builder(
-      itemCount: _playbackSpeeds.length,
-      itemBuilder: (context, index) {
-        final speed = _playbackSpeeds[index];
-        final isSelected = speed == playbackSpeed;
-        return _buildSettingsOptionItem(
-          context: context,
-          title: '${speed}x',
-          isSelected: isSelected,
-          onTap: () {
-            onSpeedChange(speed);
-          },
-        );
-      },
-    );
-  }
+  const _SettingsTile({
+    this.icon,
+    required this.title,
+    this.subtitle,
+    this.isSelected = false,
+    required this.onTap,
+    this.accentColor,
+  });
 
-  Widget _buildAudioSettings(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Volume',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 16),
-              Row(
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color:
+              isSelected ? Colors.white.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: accentColor ?? Colors.white70, size: 20),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    volume == 0
-                        ? Icons.volume_off_rounded
-                        : volume < 0.5
-                            ? Icons.volume_down_rounded
-                            : Icons.volume_up_rounded,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: SliderTheme(
-                      data: SliderThemeData(
-                        trackHeight: 4,
-                        thumbShape:
-                            const RoundSliderThumbShape(enabledThumbRadius: 8),
-                        overlayShape:
-                            const RoundSliderOverlayShape(overlayRadius: 16),
-                        activeTrackColor: Theme.of(context).primaryColor,
-                        inactiveTrackColor: Colors.white24,
-                        thumbColor: Theme.of(context).primaryColor,
-                      ),
-                      child: Slider(
-                        value: volume,
-                        min: 0.0,
-                        max: 1.0,
-                        onChanged: onVolumeChange,
-                      ),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: accentColor ?? Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Text(
-                    '${(volume * 100).round()}%',
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                  ),
+                  if (subtitle != null)
+                    Text(
+                      subtitle!,
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
                 ],
               ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSubtitleSettings(BuildContext context) {
-    return ListView.builder(
-      itemCount: subtitles.length,
-      itemBuilder: (context, index) {
-        final subtitle = subtitles[index];
-        final isSelected = index == 0; // TODO: Implement proper selection logic
-        return _buildSettingsOptionItem(
-          context: context,
-          title: subtitle.language ?? 'Unknown',
-          subtitle: subtitle.title,
-          isSelected: isSelected,
-          onTap: () async {
-            await state.widget.controller.player.setSubtitleTrack(subtitle);
-            onClose();
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildSettingsOptionItem({
-    required BuildContext context,
-    required String title,
-    String? subtitle,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500),
-                    ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 14),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (isSelected)
-                Icon(Icons.check_rounded,
-                    color: Theme.of(context).primaryColor),
-            ],
-          ),
+            ),
+            if (isSelected)
+              Icon(Icons.check,
+                  color: Theme.of(context).primaryColor, size: 20),
+          ],
         ),
       ),
     );

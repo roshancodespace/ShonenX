@@ -7,9 +7,12 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
     as anime_media;
+import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
+import 'package:shonenx/helpers/anime_match_popup.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/helpers/provider.dart';
+import 'package:shonenx/screens/watchlist_screen.dart';
 
 final loadingProvider = StateProvider.family<bool, int>((ref, index) => false);
 
@@ -75,8 +78,9 @@ class ContinueWatchingCard extends ConsumerWidget {
             ],
           ),
           child: ClipRRect(
-            borderRadius: (theme.cardTheme.shape as RoundedRectangleBorder?)?.borderRadius ?? BorderRadius.circular(8),
-
+            borderRadius: (theme.cardTheme.shape as RoundedRectangleBorder?)
+                    ?.borderRadius ??
+                BorderRadius.circular(8),
             child: Stack(
               children: [
                 // Background Image
@@ -122,9 +126,12 @@ class ContinueWatchingCard extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        if (episode.isCompleted) Text("Completed", style: TextStyle(
-                          color: colorScheme.primaryContainer
-                        ),),
+                        if (episode.isCompleted)
+                          Text(
+                            "Completed",
+                            style:
+                                TextStyle(color: colorScheme.primaryContainer),
+                          ),
                         // Progress Percentage
                         Text(
                           '${(progress * 100).toStringAsFixed(1)}%',
@@ -271,217 +278,25 @@ class ContinueWatchingCard extends ConsumerWidget {
 
   Future<void> _handleTap(BuildContext context, WidgetRef ref) async {
     ref.read(loadingProvider(index).notifier).state = true;
-    final animeProvider = getAnimeProvider(ref);
-    final title = anime.animeTitle;
-
-    if (title.isEmpty || animeProvider == null) {
-      ref.read(loadingProvider(index).notifier).state = false;
-      return;
-    }
-
-    final response = await animeProvider.getSearch(
-        title.replaceAll(' ', '+'), anime.animeFormat, 1);
-
-    if (response.results.isEmpty && context.mounted) {
-      ref.read(loadingProvider(index).notifier).state = false;
-      return;
-    }
-
-    final matchedResults = response.results
-        .map((result) => (
-              result,
-              calculateSimilarity(
-                  result.name?.toLowerCase() ?? '', title.toLowerCase())
-            ))
-        .where((pair) => pair.$2 > 0)
-        .toList()
-      ..sort((a, b) => b.$2.compareTo(a.$2));
-
-    if (matchedResults.isEmpty && response.results.isEmpty && context.mounted) {
-      _showErrorSnackBar(context);
-      ref.read(loadingProvider(index).notifier).state = false;
-      return;
-    }
-
-    if (matchedResults.isNotEmpty &&
-        matchedResults.first.$2 >= 0.8 &&
-        context.mounted) {
-      final bestMatch = matchedResults.first.$1;
-      ref.read(loadingProvider(index).notifier).state = false;
-      _navigateToWatch(context, bestMatch);
-      return;
-    }
-
-    final results = matchedResults.isEmpty
-        ? response.results
-        : matchedResults.map((r) => r.$1).toList();
-    if (context.mounted) {
-      ref.read(loadingProvider(index).notifier).state = false;
-      _showSelectionDialog(context, results);
-    }
-  }
-
-  void _showErrorSnackBar(BuildContext context) {
-    final theme = Theme.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.transparent,
-        content: AwesomeSnackbarContent(
-          title: 'Anime Not Found',
-          message: 'We couldn\'t locate the anime with the selected provider.',
-          contentType: ContentType.failure,
-          color: theme.colorScheme.error,
-        ),
-      ),
-    );
-  }
-
-  void _navigateToWatch(BuildContext context, dynamic bestMatch) {
-    context.push(
-      '/watch/${bestMatch.id}?animeName=${bestMatch.name}&episode=${episode.episodeNumber}&startAt=${episode.progressInSeconds}',
-      extra: anime_media.Media(
-        id: anime.animeId,
-        title: anime_media.Title(
-            english: anime.animeTitle, romaji: anime.animeTitle),
-        format: anime.animeFormat,
-        coverImage: anime_media.CoverImage(
-            large: anime.animeCover, medium: anime.animeCover),
-        episodes: episode.episodeNumber,
-        duration: episode.durationInSeconds,
-      ),
-    );
-  }
-
-  void _showSelectionDialog(BuildContext context, List<dynamic> results) {
-    showDialog(
+    await providerAnimeMatchSearch(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child:
-            _SelectionDialog(content: results, episode: episode, anime: anime),
-      ),
-    );
-  }
-}
-
-class _SelectionDialog extends StatelessWidget {
-  final List<dynamic> content;
-  final EpisodeProgress episode;
-  final AnimeWatchProgressEntry anime;
-
-  const _SelectionDialog(
-      {required this.content, required this.episode, required this.anime});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 320, maxHeight: 450),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                Text(
-                  'Select Anime',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: Icon(Icons.close, color: theme.colorScheme.error),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Flexible(
-            child: ListView.builder(
-              shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: content.length,
-              itemBuilder: (context, index) => _DialogItem(
-                result: content[index],
-                episode: episode,
-                anime: anime,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DialogItem extends StatelessWidget {
-  final dynamic result;
-  final EpisodeProgress episode;
-  final AnimeWatchProgressEntry anime;
-
-  const _DialogItem(
-      {required this.result, required this.episode, required this.anime});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: result.poster != null
-            ? CachedNetworkImage(
-                imageUrl: result.poster!,
-                width: 50,
-                height: 75,
-                fit: BoxFit.cover,
-                placeholder: (_, __) =>
-                    _ImagePlaceholder(colorScheme: theme.colorScheme),
-                errorWidget: (_, __, ___) =>
-                    _ImageFallback(colorScheme: theme.colorScheme),
-              )
-            : _ImageFallback(
-                colorScheme: theme.colorScheme, width: 50, height: 75),
-      ),
-      title: Text(
-        result.name ?? 'Unknown',
-        style: theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-        ),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: result.releaseDate != null
-          ? Text(
-              result.releaseDate!,
-              style: theme.textTheme.bodySmall,
-            )
-          : null,
-      trailing:
-          Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
-      onTap: () => _handleTap(context),
-    );
-  }
-
-  void _handleTap(BuildContext context) {
-    Navigator.of(context).pop();
-    context.push(
-      '/watch/${result.id}?animeName=${result.name}&episode=${episode.episodeNumber}&startAt=${episode.progressInSeconds}',
-      extra: anime_media.Media(
+      ref: ref,
+      animeMedia: anime_media.Media(
         id: anime.animeId,
-        title: anime_media.Title(
-            english: anime.animeTitle, romaji: anime.animeTitle),
-        format: anime.animeFormat,
         coverImage: anime_media.CoverImage(
-            large: anime.animeCover, medium: anime.animeCover),
-        episodes: episode.episodeNumber,
-        duration: episode.durationInSeconds,
+          large: anime.animeCover,
+          medium: anime.animeCover,
+        ),
+        format: anime.animeFormat,
+        title: anime_media.Title(
+          romaji: anime.animeTitle,
+          english: anime.animeTitle,
+          native: anime.animeTitle,
+        ),
       ),
+      animeWatchProgressBox: AnimeWatchProgressBox()..init(),
+      afterSearchCallback: () =>
+          ref.read(loadingProvider(index).notifier).state = false,
     );
   }
 }

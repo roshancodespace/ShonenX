@@ -124,14 +124,30 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
         throw Exception('No video sources available.');
       }
       _qualityOptions.clear();
-      await _extractQualities(sources.sources.first.url!);
+
+      // Add initial source(s)
       for (var source in sources.sources) {
+        if (source.url == null) {
+          log('Skipping source with null URL');
+          continue;
+        }
+        final quality = source.quality ?? 'Default';
+        final url = source.url!;
+        final isDub = (source.isDub ?? false).toString();
+        log('Adding to qualityOptions: quality=$quality, url=$url, isDub=$isDub');
         _qualityOptions.add({
-          'quality': source.quality ?? 'NO NAME',
-          'url': source.url!,
-          'isDub': source.isDub
+          'quality': quality,
+          'url': url,
+          'isDub': isDub,
         });
       }
+
+      // Extract additional quality options from M3U8
+      if (sources.sources.isNotEmpty && sources.sources.first.url != null) {
+        await _extractQualities(sources.sources.first.url!);
+      }
+
+      log('Final qualityOptions: $_qualityOptions');
       await _configureSubtitles(sources.tracks);
       await _updateVideoSource(sources.sources.first.url ?? '');
     } catch (e) {
@@ -173,20 +189,29 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
         if (lines[i].contains('#EXT-X-STREAM-INF')) {
           final resolution =
               RegExp(r'RESOLUTION=(\d+x\d+)').firstMatch(lines[i])?.group(1) ??
-                  'Unknown';
+                  'Default';
+          final newUrl = m3u8Url.replaceAll('master.m3u8', lines[i + 1]);
+          if (newUrl.isEmpty) {
+            log('Skipping invalid URL in quality extraction');
+            continue;
+          }
           qualities.add({
             'quality': resolution,
-            'url': m3u8Url.replaceAll('master.m3u8', lines[i + 1])
+            'url': newUrl,
+            'isDub':
+                'false', // Default to 'false' since M3U8 doesn't provide isDub
           });
+          log('Extracted quality: {quality: $resolution, url: $newUrl, isDub: false}');
         }
       }
       if (qualities.isEmpty) {
         throw Exception('No quality options found in M3U8.');
       }
       setState(() {
-        _qualityOptions = qualities;
+        _qualityOptions.addAll(qualities); // Append instead of overwrite
         _selectedQuality =
             _qualityOptions.isNotEmpty ? _qualityOptions.first['url'] : null;
+        log('Updated qualityOptions from extractQualities: $_qualityOptions');
       });
     } catch (e) {
       log('Failed to extract quality options: $e');

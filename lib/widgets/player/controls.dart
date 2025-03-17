@@ -5,8 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
-    as anime_media;
+import 'package:shonenx/api/models/anilist/anilist_media_list.dart' as anime_media;
 import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
 import 'package:image/image.dart' as img;
@@ -16,7 +15,7 @@ class CustomControls extends StatefulWidget {
   final VideoState state;
   final anime_media.Media animeMedia;
   final List<SubtitleTrack> subtitles;
-  final List<Map<String, dynamic>> qualityOptions;
+  final List<Map<String, dynamic>> qualityOptions; // Updated to String for consistency
   final Function(String) changeQuality;
   final int currentEpisodeIndex;
   final List<EpisodeDataModel> episodes;
@@ -36,8 +35,7 @@ class CustomControls extends StatefulWidget {
   State<CustomControls> createState() => _CustomControlsState();
 }
 
-class _CustomControlsState extends State<CustomControls>
-    with SingleTickerProviderStateMixin {
+class _CustomControlsState extends State<CustomControls> with SingleTickerProviderStateMixin {
   late final AnimationController _fadeController;
   late final Player _player;
   AnimeWatchProgressBox? _animeWatchProgressBox;
@@ -60,9 +58,7 @@ class _CustomControlsState extends State<CustomControls>
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
-        duration: const Duration(milliseconds: 200), vsync: this)
-      ..forward();
+    _fadeController = AnimationController(duration: const Duration(milliseconds: 200), vsync: this)..forward();
     _player = widget.state.widget.controller.player;
     _isFullScreen = isFullscreen(widget.state.context);
     _initializeBoxes();
@@ -90,8 +86,7 @@ class _CustomControlsState extends State<CustomControls>
 
   void _startProgressSaveTimer() {
     int tickCount = 0;
-    _saveProgressTimer =
-        Timer.periodic(const Duration(seconds: 10), (timer) async {
+    _saveProgressTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
       tickCount++;
       if (tickCount == 5) {
         await _saveProgress(screenshot: true);
@@ -104,9 +99,7 @@ class _CustomControlsState extends State<CustomControls>
     _hideTimer?.cancel();
     _hideTimer = Timer(const Duration(seconds: 3), () {
       if (mounted && !_showSettings) {
-        setState(() {
-          _controlsVisible = false;
-        });
+        setState(() => _controlsVisible = false);
         _fadeController.reverse();
       }
     });
@@ -114,9 +107,7 @@ class _CustomControlsState extends State<CustomControls>
 
   void _resetHideTimer() {
     if (mounted) {
-      setState(() {
-        _controlsVisible = true;
-      });
+      setState(() => _controlsVisible = true);
       _fadeController.forward();
       _startHideTimer();
     }
@@ -124,10 +115,8 @@ class _CustomControlsState extends State<CustomControls>
 
   void _subscribeToPlayerState() {
     _playerStateSubscription?.cancel();
-    _playerStateSubscription =
-        _player.stream.playing.listen((playing) => _isPlaying.value = playing);
-    _player.stream.buffering
-        .listen((buffering) => _isBuffering.value = buffering);
+    _playerStateSubscription = _player.stream.playing.listen((playing) => _isPlaying.value = playing);
+    _player.stream.buffering.listen((buffering) => _isBuffering.value = buffering);
     _player.stream.position.listen((position) => _position.value = position);
     _player.stream.duration.listen((duration) => _duration.value = duration);
     _player.stream.volume.listen((volume) => _volume.value = volume / 100.0);
@@ -135,9 +124,7 @@ class _CustomControlsState extends State<CustomControls>
   }
 
   Future<void> _saveProgress({bool screenshot = false}) async {
-    if (_animeWatchProgressBox == null ||
-        widget.episodes.isEmpty ||
-        _duration.value.inSeconds < 10) {
+    if (_animeWatchProgressBox == null || widget.episodes.isEmpty || _duration.value.inSeconds < 10) {
       return;
     }
 
@@ -147,35 +134,28 @@ class _CustomControlsState extends State<CustomControls>
     if (screenshot) {
       final rawScreenshot = await _player.screenshot(format: 'image/png');
       if (rawScreenshot != null) {
-        // Decode the raw PNG data
         final image = img.decodeImage(rawScreenshot);
         if (image != null) {
-          // Resize to a smaller resolution (e.g., 320x180 for a 16:9 aspect ratio)
           final resizedImage = img.copyResize(image, width: 320, height: 180);
-
-          // Compress to JPEG with quality 75 (adjustable)
           final compressedImage = img.encodeJpg(resizedImage, quality: 75);
-
-          // Encode to Base64
           thumbnailBase64 = base64Encode(compressedImage);
         }
       }
     }
 
-    final isCompleted =
+    final isCompleted = _duration.value.inSeconds > 0 &&
         ((_position.value.inSeconds / _duration.value.inSeconds) * 100) >
-            (_settingsBox?.getPlayerSettings().episodeCompletionThreshold ??
-                    0.9 * 100)
-                .toInt();
+            (_settingsBox?.getPlayerSettings().episodeCompletionThreshold ?? 90);
 
     await _animeWatchProgressBox?.updateEpisodeProgress(
-        animeMedia: widget.animeMedia,
-        episodeNumber: episode.number!,
-        episodeTitle: episode.title ?? 'Untitled',
-        episodeThumbnail: thumbnailBase64,
-        progressInSeconds: _position.value.inSeconds,
-        durationInSeconds: _duration.value.inSeconds,
-        isCompleted: isCompleted);
+      animeMedia: widget.animeMedia,
+      episodeNumber: episode.number!,
+      episodeTitle: episode.title ?? 'Untitled',
+      episodeThumbnail: thumbnailBase64,
+      progressInSeconds: _position.value.inSeconds,
+      durationInSeconds: _duration.value.inSeconds,
+      isCompleted: isCompleted,
+    );
   }
 
   void _toggleFullScreen() async {
@@ -190,9 +170,7 @@ class _CustomControlsState extends State<CustomControls>
   }
 
   void _toggleSettings() {
-    setState(() {
-      _showSettings = !_showSettings;
-    });
+    setState(() => _showSettings = !_showSettings);
     _resetHideTimer();
   }
 
@@ -216,11 +194,7 @@ class _CustomControlsState extends State<CustomControls>
     return Stack(
       children: [
         GestureDetector(
-          onTap: () {
-            if (!_controlsVisible) {
-              _resetHideTimer();
-            }
-          },
+          onTap: () => _controlsVisible ? null : _resetHideTimer(),
           behavior: HitTestBehavior.opaque,
         ),
         if (_controlsVisible)
@@ -231,7 +205,7 @@ class _CustomControlsState extends State<CustomControls>
               behavior: HitTestBehavior.opaque,
               child: Stack(
                 children: [
-                  Container(color: Colors.black.withValues(alpha: 0.1)),
+                  Container(color: Colors.black.withOpacity(0.3)), // Softer overlay
                   _ControlOverlay(
                     state: widget.state,
                     animeMedia: widget.animeMedia,
@@ -264,15 +238,9 @@ class _CustomControlsState extends State<CustomControls>
                         _player.setVolume(vol * 100);
                         _resetHideTimer();
                       },
-                      onClose: () {
-                        setState(() => _showSettings = false);
-                        _resetHideTimer();
-                      },
+                      onClose: () => setState(() => _showSettings = false),
                       currentPage: _currentSettingsPage,
-                      onPageChange: (page) {
-                        setState(() => _currentSettingsPage = page);
-                        _resetHideTimer();
-                      },
+                      onPageChange: (page) => setState(() => _currentSettingsPage = page),
                     ),
                 ],
               ),
@@ -316,10 +284,9 @@ class _ControlOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16.0), // Increased padding for breathing room
             child: Row(
               children: [
                 _GlowButton(
@@ -328,30 +295,25 @@ class _ControlOverlay extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        animeMedia.title?.english ??
-                            animeMedia.title?.romaji ??
-                            '',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (episodes.isNotEmpty)
-                        Text(
-                          'Ep ${episodes[currentEpisodeIndex].number}',
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 12),
-                        ),
-                    ],
+                  child: Text(
+                    animeMedia.title?.english ?? animeMedia.title?.romaji ?? '',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18, // Slightly larger for prominence
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                if (episodes.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: Text(
+                      'Ep ${episodes[currentEpisodeIndex].number}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -361,63 +323,49 @@ class _ControlOverlay extends StatelessWidget {
             children: [
               _GlowButton(
                 icon: Iconsax.backward_10_seconds,
-                onTap: () => state.widget.controller.player
-                    .seek(position.value - const Duration(seconds: 10)),
+                onTap: () => state.widget.controller.player.seek(position.value - const Duration(seconds: 10)),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 24),
               ValueListenableBuilder<bool>(
                 valueListenable: isBuffering,
-                builder: (context, buffering, _) {
-                  return buffering
-                      ? Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.black.withValues(alpha: 0.5)),
-                          child: const CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2),
-                        )
-                      : ValueListenableBuilder<bool>(
-                          valueListenable: isPlaying,
-                          builder: (context, playing, _) => _GlowButton(
-                            icon: playing ? Iconsax.pause : Iconsax.play,
-                            onTap: () => playing
-                                ? state.widget.controller.player.pause()
-                                : state.widget.controller.player.play(),
-                            size: 36,
-                          ),
-                        );
-                },
+                builder: (context, buffering, _) => buffering
+                    ? const SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : ValueListenableBuilder<bool>(
+                        valueListenable: isPlaying,
+                        builder: (context, playing, _) => _GlowButton(
+                          icon: playing ? Iconsax.pause : Iconsax.play,
+                          onTap: () => playing ? state.widget.controller.player.pause() : state.widget.controller.player.play(),
+                          size: 32,
+                        ),
+                      ),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 24),
               _GlowButton(
                 icon: Iconsax.forward_10_seconds,
-                onTap: () => state.widget.controller.player
-                    .seek(position.value + const Duration(seconds: 10)),
+                onTap: () => state.widget.controller.player.seek(position.value + const Duration(seconds: 10)),
               ),
             ],
           ),
           const Spacer(),
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Column(
               children: [
                 ValueListenableBuilder<Duration>(
                   valueListenable: duration,
                   builder: (context, duration, _) {
-                    final maxDuration = duration.inSeconds > 0
-                        ? duration.inSeconds.toDouble()
-                        : 1.0;
+                    final maxDuration = duration.inSeconds > 0 ? duration.inSeconds.toDouble() : 1.0;
                     return ValueListenableBuilder<Duration>(
                       valueListenable: position,
-                      builder: (context, position, _) {
-                        return _ProgressSlider(
-                          value: position.inSeconds.toDouble(),
-                          max: maxDuration,
-                          onChanged: (value) => state.widget.controller.player
-                              .seek(Duration(seconds: value.toInt())),
-                        );
-                      },
+                      builder: (context, position, _) => _ProgressSlider(
+                        value: position.inSeconds.toDouble(),
+                        max: maxDuration,
+                        onChanged: (value) => state.widget.controller.player.seek(Duration(seconds: value.toInt())),
+                      ),
                     );
                   },
                 ),
@@ -427,41 +375,32 @@ class _ControlOverlay extends StatelessWidget {
                   children: [
                     ValueListenableBuilder<Duration>(
                       valueListenable: position,
-                      builder: (context, position, _) =>
-                          ValueListenableBuilder<Duration>(
+                      builder: (context, position, _) => ValueListenableBuilder<Duration>(
                         valueListenable: duration,
                         builder: (context, duration, _) => Text(
                           '${_formatDuration(position)} / ${_formatDuration(duration)}',
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 12),
+                          style: const TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                       ),
                     ),
                     Row(
                       children: [
-                        ValueListenableBuilder<double>(
-                          valueListenable: volume,
-                          builder: (context, volume, _) => _GlowButton(
-                            icon: volume == 0
-                                ? Iconsax.volume_mute
-                                : Iconsax.volume_high,
-                            onTap: () => state.widget.controller.player
-                                .setVolume(volume == 0 ? 100 : 0),
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
                         _GlowButton(
-                          icon: isFullScreen
-                              ? Icons.fullscreen_exit
-                              : Icons.fullscreen,
-                          onTap: onFullScreenToggle,
+                          icon: volume.value == 0 ? Iconsax.volume_mute : Iconsax.volume_high,
+                          onTap: () => state.widget.controller.player.setVolume(volume.value == 0 ? 100 : 0),
+                          size: 20,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
+                        _GlowButton(
+                          icon: isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                          onTap: onFullScreenToggle,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
                         _GlowButton(
                           icon: Iconsax.setting_2,
                           onTap: onSettingsToggle,
+                          size: 20,
                         ),
                       ],
                     ),
@@ -497,15 +436,15 @@ class _GlowButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(8), // Reduced padding for compactness
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.black.withValues(alpha: 0.5),
+          color: Colors.black.withOpacity(0.6), // Subtle background
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).primaryColor.withValues(alpha: 0.4),
-              blurRadius: 8,
-              spreadRadius: 2,
+              color: Colors.white.withOpacity(0.1), // Subtle glow
+              blurRadius: 6,
+              spreadRadius: 1,
             ),
           ],
         ),
@@ -520,8 +459,7 @@ class _ProgressSlider extends StatefulWidget {
   final double max;
   final Function(double) onChanged;
 
-  const _ProgressSlider(
-      {required this.value, required this.max, required this.onChanged});
+  const _ProgressSlider({required this.value, required this.max, required this.onChanged});
 
   @override
   State<_ProgressSlider> createState() => _ProgressSliderState();
@@ -535,13 +473,13 @@ class _ProgressSliderState extends State<_ProgressSlider> {
     final currentValue = _dragValue ?? widget.value;
     return SliderTheme(
       data: SliderThemeData(
-        trackHeight: 3,
-        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-        overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+        trackHeight: 2, // Thinner track
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+        overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
         activeTrackColor: Theme.of(context).primaryColor,
-        inactiveTrackColor: Colors.white12,
+        inactiveTrackColor: Colors.white.withOpacity(0.2),
         thumbColor: Colors.white,
-        overlayColor: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+        overlayColor: Theme.of(context).primaryColor.withOpacity(0.2),
       ),
       child: Slider(
         value: currentValue.clamp(0.0, widget.max),
@@ -560,7 +498,7 @@ class _ProgressSliderState extends State<_ProgressSlider> {
 class _SettingsDrawer extends StatelessWidget {
   final VideoState state;
   final List<SubtitleTrack> subtitles;
-  final List<Map<String, dynamic>> qualityOptions;
+  final List<Map<String, dynamic>> qualityOptions; // Updated to String
   final Function(String) changeQuality;
   final ValueNotifier<double> playbackSpeed;
   final Function(double) onSpeedChange;
@@ -592,43 +530,37 @@ class _SettingsDrawer extends StatelessWidget {
       alignment: Alignment.bottomCenter,
       child: Container(
         width: double.infinity,
-        height: MediaQuery.of(context).size.height * 0.5,
+        height: MediaQuery.of(context).size.height * 0.45, // Slightly shorter
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.9),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 20)],
+          color: Colors.black.withOpacity(0.85),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         ),
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   if (currentPage != 'main')
                     _GlowButton(
-                        icon: Iconsax.arrow_left_1,
-                        onTap: () => onPageChange('main'),
-                        size: 20),
+                      icon: Iconsax.arrow_left_1,
+                      onTap: () => onPageChange('main'),
+                      size: 20,
+                    ),
                   Text(
-                    currentPage == 'main' ? 'Settings' : _getPageTitle(),
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold),
+                    currentPage == 'main' ? 'Settings' : currentPage.capitalize(),
+                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                   ),
-                  _GlowButton(
-                      icon: Iconsax.close_circle, onTap: onClose, size: 20),
+                  _GlowButton(icon: Iconsax.close_circle, onTap: onClose, size: 20),
                 ],
               ),
             ),
             Expanded(
               child: SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: currentPage == 'main'
-                      ? _buildMainMenu(context)
-                      : _buildSubMenu(context),
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                  child: currentPage == 'main' ? _buildMainMenu(context) : _buildSubMenu(context),
                 ),
               ),
             ),
@@ -638,40 +570,30 @@ class _SettingsDrawer extends StatelessWidget {
     );
   }
 
-  String _getPageTitle() {
-    switch (currentPage) {
-      case 'quality':
-        return 'Quality';
-      case 'speed':
-        return 'Speed';
-      case 'audio':
-        return 'Audio';
-      case 'subtitles':
-        return 'Subtitles';
-      default:
-        return '';
-    }
-  }
-
   Widget _buildMainMenu(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SettingsTile(
-            icon: Icons.high_quality,
-            title: 'Quality',
-            onTap: () => onPageChange('quality')),
+          icon: Icons.high_quality,
+          title: 'Quality',
+          onTap: () => onPageChange('quality'),
+        ),
         _SettingsTile(
-            icon: Iconsax.speedometer,
-            title: 'Speed',
-            onTap: () => onPageChange('speed')),
+          icon: Iconsax.speedometer,
+          title: 'Playback Speed',
+          onTap: () => onPageChange('speed'),
+        ),
         _SettingsTile(
-            icon: Iconsax.volume_high,
-            title: 'Audio',
-            onTap: () => onPageChange('audio')),
+          icon: Iconsax.volume_high,
+          title: 'Volume',
+          onTap: () => onPageChange('audio'),
+        ),
         _SettingsTile(
-            icon: Iconsax.subtitle,
-            title: 'Subtitles',
-            onTap: () => onPageChange('subtitles')),
+          icon: Iconsax.subtitle,
+          title: 'Subtitles',
+          onTap: () => onPageChange('subtitles'),
+        ),
       ],
     );
   }
@@ -681,11 +603,10 @@ class _SettingsDrawer extends StatelessWidget {
       case 'quality':
         return Column(
           children: qualityOptions.map((quality) {
-            final isDub = quality['isDub'] as bool? ?? false;
-            final isSelected = quality['url'] ==
-                state.widget.controller.player.state.playlist.medias.first.uri;
+            final isDub = quality['isDub'] == 'true';
+            final isSelected = quality['url'] == state.widget.controller.player.state.playlist.medias.first.uri;
             return _SettingsTile(
-              title: '${quality['quality']} (${isDub ? 'Dub' : 'Sub'})',
+              title: '${quality['quality']}${isDub ? ' (Dub)' : ''}',
               isSelected: isSelected,
               onTap: () {
                 changeQuality(quality['url']!);
@@ -696,13 +617,16 @@ class _SettingsDrawer extends StatelessWidget {
           }).toList(),
         );
       case 'speed':
-        return Column(
+        return Wrap(
+          spacing: 8.0,
+          runSpacing: 8.0,
           children: _playbackSpeeds.map((speed) {
             final isSelected = speed == playbackSpeed.value;
             return _SettingsTile(
               title: '${speed}x',
               isSelected: isSelected,
               onTap: () => onSpeedChange(speed),
+              isCompact: true,
             );
           }).toList(),
         );
@@ -718,29 +642,20 @@ class _SettingsDrawer extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: SliderTheme(
-                  data: SliderThemeData(
-                    trackHeight: 2,
-                    thumbShape:
-                        const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    overlayShape:
-                        const RoundSliderOverlayShape(overlayRadius: 12),
-                    activeTrackColor: Colors.white,
-                    inactiveTrackColor: Colors.white24,
-                    thumbColor: Colors.white,
-                    overlayColor: Colors.white.withValues(alpha: 0.3),
-                  ),
-                  child: Slider(
-                    value: vol,
-                    min: 0.0,
-                    max: 1.0,
-                    onChanged: onVolumeChange,
-                  ),
+                child: Slider(
+                  value: vol,
+                  min: 0.0,
+                  max: 1.0,
+                  onChanged: onVolumeChange,
+                  activeColor: Colors.white,
+                  inactiveColor: Colors.white24,
                 ),
               ),
               const SizedBox(width: 12),
-              Text('${(vol * 100).round()}%',
-                  style: const TextStyle(color: Colors.white, fontSize: 14)),
+              Text(
+                '${(vol * 100).round()}%',
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
             ],
           ),
         );
@@ -749,24 +664,20 @@ class _SettingsDrawer extends StatelessWidget {
           children: [
             _SettingsTile(
               title: 'Off',
-              isSelected: state.widget.controller.player.state.subtitle ==
-                  SubtitleTrack.no(),
+              isSelected: state.widget.controller.player.state.subtitle == SubtitleTrack.no(),
               onTap: () async {
-                await state.widget.controller.player
-                    .setSubtitleTrack(SubtitleTrack.no());
+                await state.widget.controller.player.setSubtitleTrack(SubtitleTrack.no());
                 onClose();
               },
             ),
             ...subtitles.map((subtitle) {
-              final isSelected =
-                  state.widget.controller.player.state.subtitle == subtitle;
+              final isSelected = state.widget.controller.player.state.subtitle == subtitle;
               return _SettingsTile(
                 title: subtitle.language ?? 'Unknown',
                 subtitle: subtitle.title,
                 isSelected: isSelected,
                 onTap: () async {
-                  await state.widget.controller.player
-                      .setSubtitleTrack(subtitle);
+                  await state.widget.controller.player.setSubtitleTrack(subtitle);
                   onClose();
                 },
               );
@@ -786,6 +697,7 @@ class _SettingsTile extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final Color? accentColor;
+  final bool isCompact;
 
   const _SettingsTile({
     this.icon,
@@ -794,6 +706,7 @@ class _SettingsTile extends StatelessWidget {
     this.isSelected = false,
     required this.onTap,
     this.accentColor,
+    this.isCompact = false,
   });
 
   @override
@@ -801,19 +714,19 @@ class _SettingsTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.all(12),
+        width: isCompact ? 80 : double.infinity,
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: isSelected
-              ? Colors.white.withValues(alpha: 0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? Colors.white.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
+          mainAxisSize: isCompact ? MainAxisSize.min : MainAxisSize.max,
           children: [
             if (icon != null) ...[
-              Icon(icon, color: accentColor ?? Colors.white70, size: 20),
-              const SizedBox(width: 12),
+              Icon(icon, color: accentColor ?? Colors.white70, size: 18),
+              const SizedBox(width: 10),
             ],
             Expanded(
               child: Column(
@@ -823,24 +736,34 @@ class _SettingsTile extends StatelessWidget {
                     title,
                     style: TextStyle(
                       color: accentColor ?? Colors.white,
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
+                    textAlign: isCompact ? TextAlign.center : TextAlign.left,
                   ),
                   if (subtitle != null)
                     Text(
                       subtitle!,
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                 ],
               ),
             ),
-            if (isSelected)
-              Icon(Icons.check,
-                  color: Theme.of(context).primaryColor, size: 20),
+            if (isSelected && !isCompact)
+              Icon(Icons.check, color: Theme.of(context).primaryColor, size: 18),
           ],
         ),
       ),
     );
   }
+}
+
+// Extension to capitalize strings
+extension StringExtension on String {
+  String capitalize() => this[0].toUpperCase() + substring(1);
+}
+
+// Placeholder for isFullscreen function (assuming it exists elsewhere)
+bool isFullscreen(BuildContext context) {
+  return MediaQuery.of(context).orientation == Orientation.landscape;
 }

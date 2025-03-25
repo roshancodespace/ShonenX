@@ -1,6 +1,4 @@
-import 'dart:math';
-
-import 'package:flutter/material.dart';
+import 'dart:developer';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:shonenx/api/anilist/graphql_client.dart';
 import 'package:shonenx/api/anilist/queries.dart';
@@ -34,8 +32,8 @@ class AnilistService {
           );
 
     if (result.hasException) {
-      debugPrint(query);
-      debugPrint('GraphQL Operation Failed: ${result.exception}');
+      log(query);
+      log('GraphQL Operation Failed: ${result.exception}');
     }
 
     return result.data;
@@ -63,7 +61,8 @@ class AnilistService {
     );
 
     if (data?['Viewer'] == null) {
-      throw Exception('User profile not found');
+      log('User profile not found');
+      return {};
     }
     return data?['Viewer'];
   }
@@ -76,8 +75,7 @@ class AnilistService {
     required String status, // e.g., 'CURRENT', 'COMPLETED', etc.
   }) async {
     if (accessToken.isEmpty) return MediaListCollection(lists: []);
-    debugPrint(
-        'Fetching anime list: User ID: $userId, Type: $type, Status: $status');
+    log('Fetching anime list: User ID: $userId, Type: $type, Status: $status');
 
     final data = await _executeGraphQLOperation(
       accessToken: accessToken,
@@ -86,7 +84,8 @@ class AnilistService {
     );
 
     if (data == null) {
-      throw Exception('Failed to fetch anime list for status: $status');
+      log('Failed to fetch anime list for status: $status');
+      return MediaListCollection(lists: []);
     }
 
     return MediaListCollection.fromJson(data);
@@ -151,7 +150,8 @@ class AnilistService {
     );
 
     if (data?['Media'] == null) {
-      throw Exception('Anime details not found');
+      log('Anime details not found');
+      return Media(); // Return an empty Media object instead of throwing an exception
     }
 
     return Media.fromJson(data?['Media']);
@@ -161,17 +161,18 @@ class AnilistService {
   Future<AnilistFavorites?> getFavorites(
       {required int? userId, required String? accessToken}) async {
     if (userId == null || accessToken == null || accessToken.isEmpty) {
-      debugPrint('❌ User ID or access token is null');
+      log('❌ User ID or access token is null');
       return null;
     }
-    debugPrint('Fetching favorite anime list for user ID: $userId');
+    log('Fetching favorite anime list for user ID: $userId');
     final data = await _executeGraphQLOperation(
       accessToken: accessToken,
       query: AnilistQueries.userFavoritesQuery,
       variables: {'userId': userId},
     );
     if (data == null) {
-      throw Exception('Failed to fetch favorite anime list');
+      log('Failed to fetch favorite anime list');
+      return null; // Return null instead of throwing an exception
     }
     return AnilistFavorites(
       anime: (data['User']?['favourites']?['anime']?['nodes'] as List<dynamic>)
@@ -184,16 +185,17 @@ class AnilistService {
   Future<List<Media>> toggleFavorite(
       {required int animeId, required accessToken}) async {
     if (accessToken == null || accessToken.isEmpty) {
-      debugPrint('❌ User ID or access token is null');
+      log('❌ User ID or access token is null');
     }
-    debugPrint('💖 Toggling Favorite for $animeId');
+    log('💖 Toggling Favorite for $animeId');
     final data = await _executeGraphQLOperation(
         accessToken: accessToken,
         query: AnilistQueries.toggleFavoriteQuery,
         variables: {'animeId': animeId},
         isMutation: true);
     if (data == null) {
-      throw Exception('Failed to toggle favorite');
+      log('Failed to toggle favorite');
+      return []; // Return an empty list instead of throwing an exception
     }
     return (data['ToggleFavourite']?['anime']?['nodes'] as List<dynamic>)
         .map((mediaJson) => Media.fromJson(mediaJson))
@@ -252,13 +254,12 @@ class AnilistService {
       );
 
       if (data != null && data['SaveMediaListEntry'] != null) {
-        debugPrint('✅ Anime status updated successfully: $data');
+        log('✅ Anime status updated successfully: $data');
       } else {
-        throw Exception('❌ Failed to update anime status: No data returned');
+        log('❌ Failed to update anime status: No data returned');
       }
     } catch (e) {
-      debugPrint('❌ Error updating anime status: $e');
-      rethrow;
+      log('❌ Error updating anime status: $e');
     }
   }
 
@@ -281,9 +282,10 @@ class AnilistService {
     );
 
     if (data?['DeleteMediaListEntry']?['deleted'] != true) {
-      throw Exception('Failed to delete anime entry');
+      log('Failed to delete anime entry');
+    } else {
+      log('✅ Anime entry deleted successfully');
     }
-    debugPrint('✅ Anime entry deleted successfully');
   }
 
   /// **Fetch the current status of an anime for a user**
@@ -320,8 +322,8 @@ class AnilistService {
     ];
     final upperStatus = status.toUpperCase();
     if (!validStatuses.contains(upperStatus)) {
-      throw Exception(
-          'Invalid MediaListStatus: $status. Valid values are: $validStatuses');
+      log('Invalid MediaListStatus: $status. Valid values are: $validStatuses');
+      return 'INVALID'; // Return a default invalid status instead of throwing an exception
     }
     return upperStatus;
   }

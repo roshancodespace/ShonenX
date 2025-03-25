@@ -81,7 +81,7 @@ class AniwatchProvider extends AnimeProvider {
 
   @override
   Future<BaseSourcesModel> getSources(String animeId, String episodeId,
-      String serverName, String category) async {
+      String? serverName, String? category) async {
     final response = await http.get(
       Uri.parse(
           'https://animaze-swart.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category'),
@@ -120,5 +120,15 @@ class AniwatchProvider extends AnimeProvider {
       'music' => 6,
       _ => null
     };
+  }
+
+  @override
+  List<String> getSupportedServers() {
+    return ["vidcloud", "streamsb", "vidstreaming", "streamtape"];
+  }
+
+  @override
+  bool getDubSubParamSupport() {
+    return true;
   }
 }

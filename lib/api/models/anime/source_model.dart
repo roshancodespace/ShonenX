@@ -1,12 +1,14 @@
 class BaseSourcesModel {
+  dynamic headers;
   List<Subtitle> tracks;
   Intro? intro;
   Intro? outro;
-  List<Sources> sources;
+  List<Source> sources;
   int? anilistID;
   int? malID;
 
   BaseSourcesModel({
+    this.headers,
     this.tracks = const [],
     this.intro,
     this.outro,
@@ -21,9 +23,10 @@ class BaseSourcesModel {
                 .toList() ??
             [],
         sources = (json['sources'] as List<dynamic>?)
-                ?.map((v) => Sources.fromJson(v))
+                ?.map((v) => Source.fromJson(v))
                 .toList() ??
             [] {
+    headers = json['headers'];
     intro = json['intro'] != null ? Intro.fromJson(json['intro']) : null;
     outro = json['outro'] != null ? Intro.fromJson(json['outro']) : null;
     anilistID = json['anilistID'];
@@ -55,14 +58,14 @@ class Intro {
   }
 }
 
-class Sources {
+class Source {
   String? url;
   String? type;
   bool isM3U8;
   bool isDub;
   String? quality;
 
-  Sources({
+  Source({
     this.url,
     this.type,
     this.isM3U8 = false,
@@ -70,10 +73,10 @@ class Sources {
     this.quality,
   });
 
-  Sources.fromJson(Map<String, dynamic> json)
+  Source.fromJson(Map<String, dynamic> json)
       : url = json['url'],
         type = json['type'],
         isM3U8 = json['isM3U8'] ?? false,
         isDub = json['isDub'] ?? false,
-        quality = json['quality'] ?? 'Unknown';
+        quality = json['quality'] ?? 'Default';
 }

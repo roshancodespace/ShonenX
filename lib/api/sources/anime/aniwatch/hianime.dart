@@ -80,7 +80,7 @@ class HiAnimeProvider extends AnimeProvider {
 
   @override
   Future<BaseSourcesModel> getSources(String animeId, String episodeId,
-      String serverName, String category) async {
+      String? serverName, String? category) async {
     // log('Starting scrapeAnimeEpisodeSources with episodeId: $episodeId, server: $serverName, category: $category');
     // if (episodeId.startsWith('http')) {
     //   log('episodeId is a URL, processing accordingly');
@@ -178,5 +178,15 @@ class HiAnimeProvider extends AnimeProvider {
       'music' => 6,
       _ => null
     };
+  }
+
+  @override
+  List<String> getSupportedServers() {
+    return ["vidcloud", "streamsb", "vidstreaming", "streamtape"];
+  }
+
+  @override
+  bool getDubSubParamSupport() {
+    return true;
   }
 }

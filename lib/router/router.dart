@@ -23,7 +23,7 @@ import 'package:shonenx/screens/settings/source/provider_screen.dart';
 import 'package:shonenx/screens/settings/profile/sync_screen.dart';
 import 'package:shonenx/screens/settings/player/player_screen.dart';
 import 'package:shonenx/screens/settings/appearance/ui_screen.dart';
-import 'package:shonenx/screens/watch_screen.dart';
+import 'package:shonenx/screens/watch_screen/watch_screen.dart';
 import 'package:shonenx/screens/watchlist_screen.dart';
 import 'package:shonenx/widgets/ui/layouts/settings_layout.dart';
 

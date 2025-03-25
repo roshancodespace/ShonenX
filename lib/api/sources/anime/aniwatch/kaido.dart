@@ -82,10 +82,10 @@ class KaidoProvider extends AnimeProvider {
 
   @override
   Future<BaseSourcesModel> getSources(String animeId, String episodeId,
-      String serverName, String category) async {
+      String? serverName, String? category) async {
     final response = await http.get(
       Uri.parse(
-          'https://animaze-swart.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category'),
+          'https://animaze-swart.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category?server=${serverName}'),
     );
     final responseBody = json.decode(response.body);
     log('Sources: ${responseBody['sources']}', name: "Sources");
@@ -113,6 +113,16 @@ class KaidoProvider extends AnimeProvider {
         headers: _getHeaders());
     final document = parse(response.body);
     return parsePage(document, baseUrl, route: route, page: page);
+  }
+
+  @override
+  List<String> getSupportedServers() {
+    return ["vidcloud", "streamsb", "vidstreaming", "streamtape"];
+  }
+
+  @override
+  bool getDubSubParamSupport() {
+    return true;
   }
 
   int? _mapTypeToHianimeType(String type) {

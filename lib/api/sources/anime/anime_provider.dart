@@ -14,8 +14,10 @@ abstract class AnimeProvider {
   Future<BaseEpisodeModel> getEpisodes(String animeId);
   Future<BaseServerModel> getServers(String episodeId);
   Future<BaseSourcesModel> getSources(
-      String animeId, String episodeId, String serverName, String category);
+      String animeId, String episodeId, String? serverName, String? category);
   Future<SearchPage> getSearch(String keyword, String? type, int page);
   Future<SearchPage> getPage(String route, int page);
   Future<WatchPage> getWatch(String animeId);
+  List<String> getSupportedServers();
+  bool getDubSubParamSupport();
 }

@@ -121,8 +121,8 @@ class AnimePaheProvider extends AnimeProvider {
   Future<BaseSourcesModel> getSources(
     String animeId,
     String episodeId,
-    String serverName,
-    String category,
+    String? serverName,
+    String? category,
   ) async {
     final dub = category == 'dub' ? 1 : 0;
     log('Fetching : ${'$baseUrl/watch/$episodeId?dub=$dub'}');
@@ -140,12 +140,23 @@ class AnimePaheProvider extends AnimeProvider {
       log(data.toString());
       return BaseSourcesModel(
         sources: (data['sources'] as List<dynamic>)
-            .map((source) => Sources.fromJson(source))
+            .map((source) => Source.fromJson(source))
             .toList(),
       );
     } catch (e) {
       log('Error in getSources: $e', level: 1000);
       rethrow; // Propagate the error to the caller (e.g., WatchScreen)
     }
+  }
+
+  @override
+  List<String> getSupportedServers() {
+    // TODO: implement getSupportedServers
+    return [];
+  }
+
+  @override
+  bool getDubSubParamSupport() {
+    return false;
   }
 }

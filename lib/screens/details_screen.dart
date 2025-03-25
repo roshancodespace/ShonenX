@@ -121,7 +121,10 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
       ref: ref,
       animeMedia: widget.anime,
       animeWatchProgressBox: box,
-      afterSearchCallback: () => setState(() => _isLoading = false),
+      afterSearchCallback: () {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+      },
     );
   }
 

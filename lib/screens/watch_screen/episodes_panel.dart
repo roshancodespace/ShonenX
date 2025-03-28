@@ -1,12 +1,9 @@
-import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart' as anilist_media;
 import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
 import 'package:shonenx/screens/watch_screen/custom_dropdown.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/services.dart';
 
 class EpisodesPanel extends StatelessWidget {
   final List<EpisodeDataModel> episodes;
@@ -18,20 +15,11 @@ class EpisodesPanel extends StatelessWidget {
   final bool isGridView;
   final AnimeWatchProgressBox animeWatchProgressBox;
   final anilist_media.Media animeMedia;
-  final List<String> servers;
-  final String? selectedServer;
-  final bool supportsDubSub;
-  final String? selectedCategory;
-  final List<Map<String, String>> qualityOptions;
-  final String? selectedQuality;
-  final void Function(int) onEpisodeTap;
-  final void Function(String) onServerChange;
-  final void Function(String) onCategoryChange;
-  final void Function(String) onQualityChange;
   final VoidCallback onToggleLayout;
   final void Function(int) onRangeChange;
   final void Function(int) onItemsPerPageChange;
   final void Function(int) onGridColumnsChange;
+  final void Function(int) onEpisodeTap;
 
   const EpisodesPanel({
     super.key,
@@ -44,20 +32,11 @@ class EpisodesPanel extends StatelessWidget {
     required this.isGridView,
     required this.animeWatchProgressBox,
     required this.animeMedia,
-    required this.servers,
-    required this.selectedServer,
-    required this.supportsDubSub,
-    required this.selectedCategory,
-    required this.qualityOptions,
-    required this.selectedQuality,
-    required this.onEpisodeTap,
-    required this.onServerChange,
-    required this.onCategoryChange,
-    required this.onQualityChange,
     required this.onToggleLayout,
     required this.onRangeChange,
     required this.onItemsPerPageChange,
     required this.onGridColumnsChange,
+    required this.onEpisodeTap,
   });
 
   @override
@@ -67,128 +46,227 @@ class EpisodesPanel extends StatelessWidget {
       color: theme.colorScheme.surface,
       child: episodes.isEmpty
           ? const Center(child: CircularProgressIndicator())
-          : Column(children: [_buildControls(context), Expanded(child: _buildEpisodesView(context))]),
+          : Column(
+              children: [
+                _buildControls(context),
+                Expanded(child: _buildEpisodesView(context)),
+              ],
+            ),
     );
   }
 
   Widget _buildControls(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       color: theme.colorScheme.surfaceContainer,
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          if (servers.isNotEmpty) _buildServerDropdown(context),
-          const SizedBox(width: 12),
-          if (supportsDubSub) _buildCategoryDropdown(context),
-          const SizedBox(width: 12),
-          if (qualityOptions.isNotEmpty) _buildQualityDropdown(context),
-          const Spacer(),
-          _buildLayoutToggle(context),
-          const SizedBox(width: 12),
-          _buildMoreMenu(context),
+          _buildRangeSelector(context),
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(
+                  isGridView ? Iconsax.element_3 : Iconsax.element_2,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
+                onPressed: onToggleLayout,
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(),
+                tooltip: isGridView ? 'Switch to List View' : 'Switch to Grid View',
+              ),
+              const SizedBox(width: 4),
+              PopupMenuButton<String>(
+                icon: const Icon(Iconsax.setting_2, color: Colors.grey, size: 20),
+                padding: const EdgeInsets.all(4),
+                onSelected: (value) {
+                  if (value == 'layout') {
+                    _showLayoutSettingsDialog(context);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'layout', child: Text('Layout Settings\n(Currently not saving)')),
+                ],
+                color: theme.colorScheme.surfaceContainerHighest,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 4,
+                offset: const Offset(0, 32),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildServerDropdown(BuildContext context) => CustomDropdown(
-        icon: Iconsax.devices,
-        value: selectedServer!,
-        items: servers,
-        onChanged: onServerChange,
-      );
+  Widget _buildRangeSelector(BuildContext context) {
+    final theme = Theme.of(context);
+    final rangeOptions = _generateRangeOptions();
+    final currentRangeLabel = rangeOptions.firstWhere(
+      (option) => option['start'] == rangeStart.toString(),
+      orElse: () => {'label': 'All Episodes', 'start': '1'},
+    )['label']!;
 
-  Widget _buildCategoryDropdown(BuildContext context) => CustomDropdown(
-        icon: Iconsax.language_circle,
-        value: selectedCategory!,
-        items: const ['sub', 'dub'],
-        onChanged: onCategoryChange,
-      );
-
-  Widget _buildQualityDropdown(BuildContext context) => CustomDropdown(
-        icon: Iconsax.video,
-        value: selectedQuality!,
-        items: qualityOptions.map((q) => q['url']!).toList(),
-        itemBuilder: (value) => Text(
-          '${qualityOptions.firstWhere((q) => q['url'] == value)['quality']} ${qualityOptions.firstWhere((q) => q['url'] == value)['isDub'] == 'true' ? '(DUB)' : ''}',
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-        ),
-        onChanged: onQualityChange,
-      );
-
-  Widget _buildLayoutToggle(BuildContext context) => IconButton(
-        icon: Icon(isGridView ? Iconsax.element_3 : Iconsax.element_2, color: Theme.of(context).colorScheme.onSurfaceVariant),
-        onPressed: onToggleLayout,
-        tooltip: isGridView ? 'Switch to List View' : 'Switch to Grid View',
-      );
-
-  Widget _buildMoreMenu(BuildContext context) => PopupMenuButton<String>(
-        icon: const Icon(Iconsax.more, color: Colors.grey),
-        onSelected: (value) {
-          switch (value) {
-            case 'vlc':
-              launchUrl(Uri.parse('vlc://$selectedQuality'));
-              break;
-            case 'copy':
-              Clipboard.setData(ClipboardData(text: selectedQuality ?? ''));
-              _showSnackBar(context, 'URL Copied', 'Source URL copied to clipboard');
-              break;
-            case 'layout':
-              _showLayoutSettingsDialog(context);
-              break;
-          }
-        },
-        itemBuilder: (context) => [
-          const PopupMenuItem(value: 'vlc', child: Text('Open with VLC')),
-          const PopupMenuItem(value: 'copy', child: Text('Copy Source URL')),
-          const PopupMenuItem(value: 'layout', child: Text('Layout Settings')),
-        ],
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 4,
-      );
-
-  void _showSnackBar(BuildContext context, String title, String value) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.transparent,
-          content: AwesomeSnackbarContent(title: '$title Changed', message: 'Switched to ${value.toUpperCase()}', contentType: ContentType.success),
-        ),
-      );
-
-  void _showLayoutSettingsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Layout Settings'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CustomDropdown(
-              icon: Iconsax.ruler,
-              value: itemsPerPage.toString(),
-              items: ['50', '100', '200'],
-              onChanged: (value) => onItemsPerPageChange(int.parse(value)),
+    return PopupMenuButton<String>(
+      icon: Row(
+        children: [
+          const Icon(Iconsax.filter, color: Colors.grey, size: 20),
+          const SizedBox(width: 6),
+          Text(
+            currentRangeLabel,
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
-            const SizedBox(height: 16),
-            if (isGridView)
-              CustomDropdown(
-                icon: Iconsax.grid_2,
-                value: gridColumns.toString(),
-                items: ['2', '3', '4', '5'],
-                onChanged: (value) => onGridColumnsChange(int.parse(value)),
-              ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
           ),
         ],
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
+      padding: const EdgeInsets.all(4),
+      onSelected: (value) => onRangeChange(int.parse(value)),
+      itemBuilder: (context) => rangeOptions
+          .map((option) => PopupMenuItem(
+                value: option['start']!,
+                child: Text(option['label']!),
+              ))
+          .toList(),
+      color: theme.colorScheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      elevation: 4,
+      offset: const Offset(0, 32),
+    );
+  }
+
+  List<Map<String, String>> _generateRangeOptions() {
+    final options = <Map<String, String>>[];
+    options.add({'label': 'All Episodes', 'start': '1'});
+    for (int i = 0; i < (totalEpisodes / itemsPerPage).ceil(); i++) {
+      final start = i * itemsPerPage + 1;
+      final end = (start + itemsPerPage - 1) > totalEpisodes ? totalEpisodes : start + itemsPerPage - 1;
+      options.add({'label': '$start-$end', 'start': start.toString()});
+    }
+    return options;
+  }
+
+  void _showLayoutSettingsDialog(BuildContext context) {
+    final theme = Theme.of(context);
+    int tempGridColumns = gridColumns; // Temporary state for slider
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: StatefulBuilder(
+          builder: (context, setState) => Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Iconsax.setting_2, size: 24, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Layout Settings',
+                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildSettingsTile(
+                  context,
+                  icon: Iconsax.ruler,
+                  label: 'Items per Page',
+                  child: CustomDropdown(
+                    icon: Iconsax.ruler,
+                    value: itemsPerPage.toString(),
+                    items: ['50', '100', '200'],
+                    onChanged: (value) => onItemsPerPageChange(int.parse(value)),
+                  ),
+                ),
+                if (isGridView) ...[
+                  const SizedBox(height: 12),
+                  _buildSettingsTile(
+                    context,
+                    icon: Iconsax.grid_2,
+                    label: 'Grid Columns: $tempGridColumns',
+                    child: Slider(
+                      value: tempGridColumns.toDouble(),
+                      min: 2,
+                      max: 8,
+                      divisions: 6,
+                      activeColor: theme.colorScheme.primary,
+                      inactiveColor: theme.colorScheme.outlineVariant,
+                      onChanged: (value) {
+                        setState(() {
+                          tempGridColumns = value.round();
+                        });
+                      },
+                      onChangeEnd: (value) {
+                        onGridColumnsChange(value.round());
+                      },
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    child: const Text('Close'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsTile(BuildContext context, {required IconData icon, required String label, required Widget child}) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: child,
+        ),
+      ],
     );
   }
 
@@ -199,44 +277,14 @@ class EpisodesPanel extends StatelessWidget {
     final episodesInRange = episodes.sublist(startIdx, endIdx);
     final animeProgress = animeWatchProgressBox.getAllProgressByAnimeId(animeMedia.id!) ?? [];
 
-    return Column(
-      children: [
-        SizedBox(
-          height: 48,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: (totalEpisodes / itemsPerPage).ceil(),
-            itemBuilder: (context, index) {
-              final start = index * itemsPerPage + 1;
-              final end = (start + itemsPerPage - 1) > totalEpisodes ? totalEpisodes : start + itemsPerPage - 1;
-              final isSelected = rangeStart == start;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text('$start-$end', style: const TextStyle(fontSize: 14)),
-                  selected: isSelected,
-                  onSelected: (_) => onRangeChange(start),
-                  selectedColor: theme.colorScheme.primaryContainer,
-                  backgroundColor: theme.colorScheme.surfaceContainerLow,
-                  labelStyle: TextStyle(color: isSelected ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurfaceVariant),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-              );
-            },
-          ),
-        ),
-        Expanded(
-          child: isGridView ? _buildGridView(episodesInRange, animeProgress, theme) : _buildListView(episodesInRange, animeProgress, theme),
-        ),
-      ],
-    );
+    return isGridView
+        ? _buildGridView(episodesInRange, animeProgress, theme)
+        : _buildListView(episodesInRange, animeProgress, theme);
   }
 
   Widget _buildListView(List<EpisodeDataModel> episodesInRange, List<dynamic> animeProgress, ThemeData theme) {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       itemCount: episodesInRange.length,
       itemBuilder: (context, index) {
         final episode = episodesInRange[index];
@@ -245,34 +293,41 @@ class EpisodesPanel extends StatelessWidget {
         final isWatched = index < animeProgress.length && animeProgress[index].isCompleted;
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: const EdgeInsets.only(bottom: 6),
           decoration: BoxDecoration(
             color: isWatched ? theme.colorScheme.surfaceContainerLow : theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
           ),
           child: ListTile(
             leading: CircleAvatar(
-              radius: 18,
+              radius: 16,
               backgroundColor: isSelected ? theme.colorScheme.primary : theme.colorScheme.primaryContainer,
               child: Text(
                 '${episode.number}',
                 style: TextStyle(
                   color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onPrimaryContainer,
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
             title: Text(
               'Episode ${episode.number}',
-              style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, fontSize: 16),
+              style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, fontSize: 14),
             ),
-            subtitle: episode.title != null ? Text(episode.title!, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)) : null,
-            trailing: isSelected ? Icon(Iconsax.play_circle, color: theme.colorScheme.primary, size: 24) : null,
+            subtitle: episode.title != null
+                ? Text(
+                    episode.title!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 10),
+                  )
+                : null,
+            trailing: isSelected ? Icon(Iconsax.play_circle, color: theme.colorScheme.primary, size: 20) : null,
             onTap: () => onEpisodeTap(globalIndex),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       },
@@ -281,11 +336,11 @@ class EpisodesPanel extends StatelessWidget {
 
   Widget _buildGridView(List<EpisodeDataModel> episodesInRange, List<dynamic> animeProgress, ThemeData theme) {
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: gridColumns,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
         childAspectRatio: 1,
       ),
       itemCount: episodesInRange.length,
@@ -299,47 +354,65 @@ class EpisodesPanel extends StatelessWidget {
           onTap: () => onEpisodeTap(globalIndex),
           child: Container(
             decoration: BoxDecoration(
-              color: isWatched ? theme.colorScheme.surfaceContainerLow : theme.colorScheme.surface,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  isSelected ? theme.colorScheme.primary.withOpacity(0.9) : theme.colorScheme.surfaceContainer,
+                  isSelected ? theme.colorScheme.primary.withOpacity(0.6) : theme.colorScheme.surface,
+                ],
+              ),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
+              border: Border.all(
+                color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
+                width: isSelected ? 2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: isSelected ? theme.colorScheme.primary : theme.colorScheme.primaryContainer,
-                  child: Text(
-                    '${episode.number}',
-                    style: TextStyle(
-                      color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onPrimaryContainer,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
+                Text(
+                  '${episode.number}',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 2,
+                        offset: const Offset(1, 1),
+                      ),
+                    ],
                   ),
                 ),
-                // const SizedBox(height: 8),
-                // Text(
-                //   'Ep ${episode.number}',
-                //   style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, fontSize: 14),
-                //   textAlign: TextAlign.center,
-                // ),
-                // if (episode.title != null)
-                //   Padding(
-                //     padding: const EdgeInsets.only(top: 4),
-                //     child: Text(
-                //       episode.title!,
-                //       style: const TextStyle(fontSize: 10),
-                //       textAlign: TextAlign.center,
-                //       maxLines: 2,
-                //       overflow: TextOverflow.ellipsis,
-                //     ),
-                //   ),
-                // if (isSelected)
-                //   Padding(
-                //     padding: const EdgeInsets.only(top: 8),
-                //     child: Icon(Iconsax.play_circle, color: theme.colorScheme.primary, size: 20),
-                //   ),
+                if (isWatched)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Icon(
+                      Iconsax.tick_circle,
+                      color: theme.colorScheme.secondary,
+                      size: 18,
+                    ),
+                  ),
+                if (isSelected)
+                  Positioned(
+                    bottom: 6,
+                    right: 6,
+                    child: Icon(
+                      Iconsax.play_circle,
+                      color: theme.colorScheme.onPrimary,
+                      size: 18,
+                    ),
+                  ),
               ],
             ),
           ),

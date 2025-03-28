@@ -131,9 +131,8 @@ GoRoute _buildProfileSettingsRoute() {
 GoRoute _buildProviderSettingsRoute() {
   return GoRoute(
     path: 'providers',
-    pageBuilder: (context, state) => const MaterialPage(
-        child:
-            SettingsLayout(title: "Sources", child: ProviderSettingsScreen())),
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: ProviderSettingsScreen()),
   );
 }
 
@@ -426,7 +425,6 @@ class _AppRouterScreenState extends State<AppRouterScreen> {
                           color: isSelected
                               ? theme.colorScheme.primary
                               : theme.colorScheme.onSurface,
-                              
                         ),
                       ),
                     ),

@@ -9,106 +9,86 @@ class SettingsBox {
   final String boxName = 'local_settings';
 
   Future<void> init() async {
-    if (!Hive.isBoxOpen(boxName)) {
-      _settingsBox = await Hive.openBox<SettingsModel>(boxName);
-    } else {
-      _settingsBox = Hive.box<SettingsModel>(boxName);
+    try {
+      if (!Hive.isBoxOpen(boxName)) {
+        _settingsBox = await Hive.openBox<SettingsModel>(boxName);
+      } else {
+        _settingsBox = Hive.box<SettingsModel>(boxName);
+      }
+
+      final settings = _settingsBox?.get(0);
+      await migrateSettings(settings);
+    } catch (e, stackTrace) {
+      log('Error initializing SettingsBox: $e', name: 'settingsBox', error: e, stackTrace: stackTrace);
+      rethrow; // Optionally handle or rethrow based on your app's needs
     }
-
-    final settings = _settingsBox?.get(0);
-
-    // Always migrate to the latest data structure
-    await migrateSettings(settings);
   }
 
   Future<void> migrateSettings(SettingsModel? oldSettings) async {
     log("Migrating settings...", name: "settingsBox");
 
-    // Create a fully populated default SettingsModel to merge with old data
+    // Define default settings with all fields populated
     final defaultSettings = SettingsModel(
       providerSettings: ProviderSettingsModel(),
       themeSettings: ThemeSettingsModel(),
       playerSettings: PlayerSettingsModel(),
-      uiSettings: UISettingsModel(), // Include default UISettingsModel
+      uiSettings: UISettingsModel(),
     );
 
-    // If no old settings exist, use the default and save it
     if (oldSettings == null) {
-      log("No existing settings found, initializing with defaults: $defaultSettings",
-          name: "settingsBox");
+      log("No existing settings found, initializing with defaults: $defaultSettings", name: "settingsBox");
       await saveSettings(defaultSettings);
       return;
     }
 
-    // Merge old settings with defaults to ensure all fields are populated
+    // Merge old settings with defaults to ensure all fields are present
     final newSettings = SettingsModel(
-      providerSettings: oldSettings.providerSettings,
-      themeSettings: oldSettings.themeSettings,
-      playerSettings: oldSettings.playerSettings,
-      uiSettings: oldSettings.uiSettings ??
-          defaultSettings.uiSettings, // Handle null uiSettings
+      providerSettings: oldSettings.providerSettings.copyWith(), // Ensure deep copy
+      themeSettings: oldSettings.themeSettings.copyWith(),
+      playerSettings: oldSettings.playerSettings.copyWith(),
+      uiSettings: oldSettings.uiSettings?.copyWith() ?? defaultSettings.uiSettings,
     );
 
     log("Migrated settings: $newSettings", name: "settingsBox");
-
     await saveSettings(newSettings);
   }
 
   Future<void> saveSettings(SettingsModel settings) async {
-    await _settingsBox?.put(0, settings);
+    try {
+      await _settingsBox?.put(0, settings);
+    } catch (e, stackTrace) {
+      log('Error saving settings: $e', name: 'settingsBox', error: e, stackTrace: stackTrace);
+      rethrow;
+    }
   }
 
-  ValueListenable<Box<SettingsModel>> get settingsBoxListenable =>
-      _settingsBox!.listenable();
+  ValueListenable<Box<SettingsModel>> get settingsBoxListenable {
+    if (_settingsBox == null) {
+      throw StateError('SettingsBox not initialized. Call init() first.');
+    }
+    return _settingsBox!.listenable();
+  }
 
-  Future<void> updateProviderSettings(
-      ProviderSettingsModel providerSettings) async {
-    final currentSettings = getSettings() ??
-        SettingsModel(
-          providerSettings: ProviderSettingsModel(),
-          themeSettings: ThemeSettingsModel(),
-          playerSettings: PlayerSettingsModel(),
-          uiSettings: UISettingsModel(),
-        );
-    final updatedSettings =
-        currentSettings.copyWith(providerSettings: providerSettings);
+  Future<void> updateProviderSettings(ProviderSettingsModel providerSettings) async {
+    final currentSettings = getSettings() ?? _createDefaultSettings();
+    final updatedSettings = currentSettings.copyWith(providerSettings: providerSettings);
     await saveSettings(updatedSettings);
   }
 
   Future<void> updateThemeSettings(ThemeSettingsModel themeSettings) async {
-    final currentSettings = getSettings() ??
-        SettingsModel(
-          providerSettings: ProviderSettingsModel(),
-          themeSettings: ThemeSettingsModel(),
-          playerSettings: PlayerSettingsModel(),
-          uiSettings: UISettingsModel(),
-        );
-    final updatedSettings =
-        currentSettings.copyWith(themeSettings: themeSettings);
+    final currentSettings = getSettings() ?? _createDefaultSettings();
+    final updatedSettings = currentSettings.copyWith(themeSettings: themeSettings);
     await saveSettings(updatedSettings);
   }
 
   Future<void> updatePlayerSettings(PlayerSettingsModel playerSettings) async {
-    final currentSettings = getSettings() ??
-        SettingsModel(
-          providerSettings: ProviderSettingsModel(),
-          themeSettings: ThemeSettingsModel(),
-          playerSettings: PlayerSettingsModel(),
-          uiSettings: UISettingsModel(),
-        );
-    final updatedSettings =
-        currentSettings.copyWith(playerSettings: playerSettings);
+    final currentSettings = getSettings() ?? _createDefaultSettings();
+    final updatedSettings = currentSettings.copyWith(playerSettings: playerSettings);
     await saveSettings(updatedSettings);
   }
 
   Future<void> updateUISettings(UISettingsModel uiSettings) async {
-    final currentSettings = getSettings() ??
-        SettingsModel(
-          providerSettings: ProviderSettingsModel(),
-          themeSettings: ThemeSettingsModel(),
-          playerSettings: PlayerSettingsModel(),
-          uiSettings: UISettingsModel(),
-        );
+    final currentSettings = getSettings() ?? _createDefaultSettings();
     final updatedSettings = currentSettings.copyWith(uiSettings: uiSettings);
     await saveSettings(updatedSettings);
   }
@@ -117,15 +97,35 @@ class SettingsBox {
     return _settingsBox?.get(0);
   }
 
-  ProviderSettingsModel getProviderSettings() =>
-      getSettings()?.providerSettings ?? ProviderSettingsModel();
+  ProviderSettingsModel getProviderSettings() {
+    return getSettings()?.providerSettings ?? ProviderSettingsModel();
+  }
 
-  ThemeSettingsModel getAppearanceSettings() =>
-      getSettings()?.themeSettings ?? ThemeSettingsModel();
+  ThemeSettingsModel getAppearanceSettings() { // Renamed for consistency with your naming
+    return getSettings()?.themeSettings ?? ThemeSettingsModel();
+  }
 
-  PlayerSettingsModel getPlayerSettings() =>
-      getSettings()?.playerSettings ?? PlayerSettingsModel();
+  PlayerSettingsModel getPlayerSettings() {
+    return getSettings()?.playerSettings ?? PlayerSettingsModel();
+  }
 
-  UISettingsModel getUISettings() =>
-      getSettings()?.uiSettings ?? UISettingsModel();
+  UISettingsModel getUISettings() {
+    return getSettings()?.uiSettings ?? UISettingsModel();
+  }
+
+  // Helper method to avoid repetition
+  SettingsModel _createDefaultSettings() {
+    return SettingsModel(
+      providerSettings: ProviderSettingsModel(),
+      themeSettings: ThemeSettingsModel(),
+      playerSettings: PlayerSettingsModel(),
+      uiSettings: UISettingsModel(),
+    );
+  }
+
+  // Optional: Reset to defaults
+  Future<void> resetToDefaults() async {
+    final defaultSettings = _createDefaultSettings();
+    await saveSettings(defaultSettings);
+  }
 }

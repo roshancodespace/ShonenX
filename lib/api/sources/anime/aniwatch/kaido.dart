@@ -85,7 +85,7 @@ class KaidoProvider extends AnimeProvider {
       String? serverName, String? category) async {
     final response = await http.get(
       Uri.parse(
-          'https://animaze-swart.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category?server=${serverName}'),
+          'https://animaze-swart.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category?server=$serverName'),
     );
     final responseBody = json.decode(response.body);
     log('Sources: ${responseBody['sources']}', name: "Sources");

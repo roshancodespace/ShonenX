@@ -225,19 +225,31 @@ class PlayerSettingsModelAdapter extends TypeAdapter<PlayerSettingsModel> {
       episodeCompletionThreshold: fields[0] as double,
       autoPlayNextEpisode: fields[1] as bool,
       preferSubtitles: fields[2] as bool,
+      subtitleFontSize: fields[3] as double,
+      subtitleTextColor: fields[4] as int,
+      subtitleBackgroundOpacity: fields[5] as double,
+      subtitleHasShadow: fields[6] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, PlayerSettingsModel obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.episodeCompletionThreshold)
       ..writeByte(1)
       ..write(obj.autoPlayNextEpisode)
       ..writeByte(2)
-      ..write(obj.preferSubtitles);
+      ..write(obj.preferSubtitles)
+      ..writeByte(3)
+      ..write(obj.subtitleFontSize)
+      ..writeByte(4)
+      ..write(obj.subtitleTextColor)
+      ..writeByte(5)
+      ..write(obj.subtitleBackgroundOpacity)
+      ..writeByte(6)
+      ..write(obj.subtitleHasShadow);
   }
 
   @override
@@ -267,13 +279,14 @@ class UISettingsModelAdapter extends TypeAdapter<UISettingsModel> {
       showThumbnails: fields[2] as bool,
       cardStyle: fields[3] as String,
       layoutStyle: fields[4] as String,
+      immersiveMode: fields[5] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, UISettingsModel obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.compactMode)
       ..writeByte(1)
@@ -283,7 +296,9 @@ class UISettingsModelAdapter extends TypeAdapter<UISettingsModel> {
       ..writeByte(3)
       ..write(obj.cardStyle)
       ..writeByte(4)
-      ..write(obj.layoutStyle);
+      ..write(obj.layoutStyle)
+      ..writeByte(5)
+      ..write(obj.immersiveMode);
   }
 
   @override

@@ -1,18 +1,13 @@
 import 'dart:convert';
-import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
     as anime_media;
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
-import 'package:shonenx/helpers/matcher.dart';
-import 'package:shonenx/helpers/provider.dart';
-import 'package:shonenx/screens/watchlist_screen.dart';
 
 final loadingProvider = StateProvider.family<bool, int>((ref, index) => false);
 

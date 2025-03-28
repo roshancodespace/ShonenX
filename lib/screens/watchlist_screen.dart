@@ -69,7 +69,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
     super.build(context);
     final userState = ref.watch(userProvider);
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: userState == null ? _buildLoginPrompt() : _buildMainContent(),
       ),
@@ -303,12 +303,12 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
               .compareTo(b.media.title?.romaji ?? ''));
           break;
         case 'Progress':
-          animeList.sort((a, b) => (a.progress ?? 0)
-              .compareTo(b.progress ?? 0)); // Null-safe comparison
+          animeList.sort((a, b) => (a.progress)
+              .compareTo(b.progress)); // Null-safe comparison
           break;
         case 'Score':
           animeList.sort((a, b) =>
-              (a.score ?? 0).compareTo(b.score ?? 0)); // Null-safe comparison
+              (a.score).compareTo(b.score)); // Null-safe comparison
           break;
       }
     } catch (e) {

@@ -56,8 +56,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   Duration _lastPosition = Duration.zero;
 
   bool _isGridView = false;
-  int _itemsPerPage = 100;
-  int _gridColumns = 4;
+  int _itemsPerPage = 50;
+  int _gridColumns = 5;
 
   StreamSubscription? _playerSubscription;
   StreamSubscription? _positionSubscription;
@@ -249,22 +249,26 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   }
 
   @override
-  Widget build(BuildContext context) => _isInitialized &&
-          _controller != null &&
-          _animeWatchProgressBox != null
-      ? Scaffold(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          body: SafeArea(
-            child: MediaQuery.of(context).size.width > 600
-                ? Row(children: [_buildVideoSection(), _buildEpisodesPanel()])
-                : Column(
-                    children: [_buildVideoSection(), _buildEpisodesPanel()]),
-          ),
-        )
-      : const Scaffold(body: Center(child: CircularProgressIndicator()));
+  Widget build(BuildContext context) =>
+      _isInitialized && _controller != null && _animeWatchProgressBox != null
+          ? Scaffold(
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              body: SafeArea(
+                child: MediaQuery.of(context).size.width > 600
+                    ? Row(children: [
+                        _buildVideoSection(flex: 3),
+                        _buildEpisodesPanel(flex: 2)
+                      ])
+                    : Column(children: [
+                        _buildVideoSection(flex: 5),
+                        _buildEpisodesPanel(flex: 7)
+                      ]),
+              ),
+            )
+          : const Scaffold(body: Center(child: CircularProgressIndicator()));
 
-  Widget _buildVideoSection() => Expanded(
-        flex: 3,
+  Widget _buildVideoSection({int flex = 1}) => Expanded(
+        flex: flex,
         child: VideoPlayerSection(
           animeName: widget.animeName,
           episodes: _episodes,
@@ -272,11 +276,20 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
           controller: _controller!,
           subtitles: _subtitles,
           animeMedia: widget.animeMedia,
+          servers: _animeProvider.getSupportedServers(),
+          selectedServer: _selectedServer,
+          supportsDubSub: _animeProvider.getDubSubParamSupport(),
+          selectedCategory: _selectedCategory,
+          qualityOptions: _qualityOptions,
+          selectedQuality: _selectedQuality,
+          onServerChange: _changeServer,
+          onCategoryChange: _changeCategory,
+          onQualityChange: _changeQuality,
         ),
       );
 
-  Widget _buildEpisodesPanel() => Expanded(
-        flex: 2,
+  Widget _buildEpisodesPanel({int flex = 1}) => Expanded(
+        flex: flex,
         child: EpisodesPanel(
           episodes: _episodes,
           selectedEpisodeIndex: _selectedEpIdx,
@@ -287,20 +300,11 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
           isGridView: _isGridView,
           animeWatchProgressBox: _animeWatchProgressBox!,
           animeMedia: widget.animeMedia,
-          servers: _animeProvider.getSupportedServers(),
-          selectedServer: _selectedServer,
-          supportsDubSub: _animeProvider.getDubSubParamSupport(),
-          selectedCategory: _selectedCategory,
-          qualityOptions: _qualityOptions,
-          selectedQuality: _selectedQuality,
-          onEpisodeTap: _playEpisode,
-          onServerChange: _changeServer,
-          onCategoryChange: _changeCategory,
-          onQualityChange: _changeQuality,
           onToggleLayout: _toggleLayout,
           onRangeChange: _changeRange,
           onItemsPerPageChange: _updateItemsPerPage,
           onGridColumnsChange: _updateGridColumns,
+          onEpisodeTap: _playEpisode,
         ),
       );
 }

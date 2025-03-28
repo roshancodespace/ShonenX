@@ -12,7 +12,10 @@ final userProvider = StateNotifierProvider<UserNotifier, User?>((ref) {
 });
 
 class UserNotifier extends StateNotifier<User?> {
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    lOptions: LinuxOptions(),
+  );
 
   UserNotifier() : super(null) {
     log('☑️ UserNotifier instantiated', name: "userProvider");

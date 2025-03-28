@@ -16,8 +16,8 @@ class AniListAuthService {
             '$authUrl?client_id=$clientId&redirect_uri=$redirectUri&response_type=code',
         callbackUrlScheme: 'shonenx', // Must match the Redirect URL scheme
         options: FlutterWebAuth2Options(
-          silentAuth: true
-        )
+          silentAuth: true,
+        ),
       );
 
       // Extract the authorization code from the redirect URL

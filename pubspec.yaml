@@ -39,7 +39,11 @@ dependencies:
   flutter_staggered_animations: ^1.1.1
   graphql_flutter: ^5.2.0-beta.8
   flutter_web_auth_2: ^4.1.0
-  flutter_secure_storage: ^9.2.4
+  flutter_secure_storage:
+    git:
+      url: https://github.com/juliansteenbakker/flutter_secure_storage.git
+      ref: master
+      path: flutter_secure_storage
   url_launcher: ^6.3.1
   build_runner: ^2.4.14
   hive_generator: ^2.0.1
@@ -50,6 +54,7 @@ dependencies:
   flex_color_scheme: ^8.1.1
   rename: ^3.0.2
   image: ^4.5.3
+  desktop_webview_window: ^0.2.3
 
 dev_dependencies:
   flutter_test:

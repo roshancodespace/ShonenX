@@ -26,7 +26,9 @@ Future<void> providerAnimeMatchSearch({
 
   try {
     final animeProvider = getAnimeProvider(ref);
-    final title = animeMedia.title?.english ?? animeMedia.title?.romaji ?? animeMedia.title?.native;
+    final title = animeMedia.title?.english ??
+        animeMedia.title?.romaji ??
+        animeMedia.title?.native;
 
     if (title == null || animeProvider == null) {
       throw Exception('Invalid title or anime provider');
@@ -34,12 +36,14 @@ Future<void> providerAnimeMatchSearch({
 
     // Initial search with the provided title
     final searchTitle = Uri.encodeComponent(title.trim());
-    final initialResponse = await animeProvider.getSearch(searchTitle, animeMedia.format, 1);
+    final initialResponse =
+        await animeProvider.getSearch(searchTitle, animeMedia.format, 1);
 
     if (!context.mounted) return;
 
     if (initialResponse.results.isEmpty) {
-      _showErrorSnackBar(context, 'Anime Not Found', 'We couldn\'t locate the anime with the selected provider.');
+      _showErrorSnackBar(context, 'Anime Not Found',
+          'We couldn\'t locate the anime with the selected provider.');
       return;
     }
 
@@ -47,7 +51,8 @@ Future<void> providerAnimeMatchSearch({
     final matchedResults = initialResponse.results
         .where((result) => result.name != null && result.id != null)
         .map((result) {
-          final similarity = calculateSimilarity(result.name!.toLowerCase(), title.toLowerCase());
+          final similarity = calculateSimilarity(
+              result.name!.toLowerCase(), title.toLowerCase());
           return (result, similarity);
         })
         .where((pair) => pair.$2 > 0)
@@ -61,7 +66,11 @@ Future<void> providerAnimeMatchSearch({
       final bestMatch = matchedResults.first.$1;
       log("Best match found: ${bestMatch.id}");
       final encodedAnimeName = Uri.encodeComponent(bestMatch.name ?? '');
-      context.push('/watch/${bestMatch.id}?animeName=$encodedAnimeName', extra: animeMedia);
+      final episode = animeWatchProgressBox
+          .getMostRecentEpisodeProgressByAnimeId(animeMedia.id!);
+      context.push(
+          '/watch/${bestMatch.id}?animeName=$encodedAnimeName&episode=${episode?.episodeNumber ?? 1}',
+          extra: animeMedia);
       return;
     }
 
@@ -71,7 +80,9 @@ Future<void> providerAnimeMatchSearch({
     await showDialog(
       context: context,
       builder: (context) => _AnimeSearchDialog(
-        initialResults: matchedResults.isEmpty ? initialResponse.results : matchedResults.map((r) => r.$1).toList(),
+        initialResults: matchedResults.isEmpty
+            ? initialResponse.results
+            : matchedResults.map((r) => r.$1).toList(),
         animeProvider: animeProvider,
         animeMedia: animeMedia,
         animeWatchProgressBox: animeWatchProgressBox,
@@ -81,7 +92,8 @@ Future<void> providerAnimeMatchSearch({
   } catch (e) {
     log("Error in anime match search: $e");
     if (context.mounted) {
-      _showErrorSnackBar(context, 'Error', 'Failed to load anime details. Please try again.');
+      _showErrorSnackBar(
+          context, 'Error', 'Failed to load anime details. Please try again.');
     }
   } finally {
     if (afterSearchCallback != null) afterSearchCallback();
@@ -153,12 +165,15 @@ class _AnimeSearchDialogState extends State<_AnimeSearchDialog> {
     setState(() => _isLoading = true);
     try {
       final encodedQuery = Uri.encodeComponent(query.trim());
-      final response = await widget.animeProvider.getSearch(encodedQuery, widget.animeMedia.format, 1);
-      setState(() => _results = response.results.where((r) => r.id != null).toList());
+      final response = await widget.animeProvider
+          .getSearch(encodedQuery, widget.animeMedia.format, 1);
+      setState(() =>
+          _results = response.results.where((r) => r.id != null).toList());
     } catch (e) {
       log("Search error: $e");
       if (mounted) {
-        _showErrorSnackBar(context, 'Search Error', 'Failed to fetch search results.');
+        _showErrorSnackBar(
+            context, 'Search Error', 'Failed to fetch search results.');
       }
     } finally {
       setState(() => _isLoading = false);
@@ -193,7 +208,8 @@ class _AnimeSearchDialogState extends State<_AnimeSearchDialog> {
                       Expanded(
                         child: Text(
                           'Select Anime',
-                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                          style: theme.textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ),
                       IconButton(
@@ -210,11 +226,13 @@ class _AnimeSearchDialogState extends State<_AnimeSearchDialog> {
                       prefixIcon: const Icon(Iconsax.search_normal),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
+                        borderSide:
+                            BorderSide(color: theme.colorScheme.outlineVariant),
                       ),
                       filled: true,
                       fillColor: theme.colorScheme.surfaceContainerLowest,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 0, horizontal: 12),
                     ),
                     onChanged: _onSearchChanged,
                   ),
@@ -227,7 +245,9 @@ class _AnimeSearchDialogState extends State<_AnimeSearchDialog> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _results.isEmpty
-                      ? const Center(child: Text('No results found', style: TextStyle(fontSize: 16)))
+                      ? const Center(
+                          child: Text('No results found',
+                              style: TextStyle(fontSize: 16)))
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           itemCount: _results.length,
@@ -237,8 +257,12 @@ class _AnimeSearchDialogState extends State<_AnimeSearchDialog> {
                               anime: result,
                               onTap: () {
                                 Navigator.of(context).pop();
-                                final continueWatchingEntry = widget.animeWatchProgressBox.getMostRecentEpisodeProgressByAnimeId(widget.animeMedia.id!);
-                                final encodedAnimeName = Uri.encodeComponent(result.name ?? '');
+                                final continueWatchingEntry = widget
+                                    .animeWatchProgressBox
+                                    .getMostRecentEpisodeProgressByAnimeId(
+                                        widget.animeMedia.id!);
+                                final encodedAnimeName =
+                                    Uri.encodeComponent(result.name ?? '');
                                 if (continueWatchingEntry != null) {
                                   context.push(
                                     '/watch/${result.id}?animeName=$encodedAnimeName&episode=${continueWatchingEntry.episodeNumber}&startAt=${continueWatchingEntry.progressInSeconds}',
@@ -301,7 +325,8 @@ class _AnimeTile extends StatelessWidget {
                     width: 50,
                     height: 70,
                     color: theme.colorScheme.surfaceContainerHighest,
-                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2)),
                   ),
                   errorWidget: (context, url, error) => Container(
                     width: 50,
@@ -326,7 +351,8 @@ class _AnimeTile extends StatelessWidget {
                 children: [
                   Text(
                     anime.name ?? 'Unknown',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w600),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -334,8 +360,11 @@ class _AnimeTile extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        [anime.releaseDate, anime.type].where((e) => e != null).join(' • '),
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        [anime.releaseDate, anime.type]
+                            .where((e) => e != null)
+                            .join(' • '),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant),
                       ),
                     ),
                 ],

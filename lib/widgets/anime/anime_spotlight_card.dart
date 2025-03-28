@@ -61,8 +61,8 @@ class _AnimeSpotlightCardState extends State<AnimeSpotlightCard>
           builder: (context, child) => Transform.scale(
             scale: _scaleAnimation.value,
             child: Container(
-              height:
-                  isSmallScreen ? 220 : 320, // Reduced height for small screens
+              height: isSmallScreen ? 200 : 300, // Slightly reduced heights
+              width: double.infinity, // Ensure it takes full width
               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
@@ -71,14 +71,11 @@ class _AnimeSpotlightCardState extends State<AnimeSpotlightCard>
                     color: theme.colorScheme.shadow.withValues(alpha: 0.2),
                     blurRadius: 12,
                     offset: const Offset(0, 6),
-                    spreadRadius: 1,
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: (theme.cardTheme.shape as RoundedRectangleBorder?)
-                        ?.borderRadius ??
-                    BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(20),
                 child: _CardContent(
                   anime: widget.anime,
                   heroTag: widget.heroTag,
@@ -124,22 +121,22 @@ class _Skeleton extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       color: colorScheme.surfaceContainer.withValues(alpha: 0.3),
-      padding: const EdgeInsets.all(12), // Reduced padding
+      padding: const EdgeInsets.all(12),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _ShimmerEffect(child: _SkeletonBar(width: 100, height: 20)),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           const _ShimmerEffect(child: _SkeletonBar(width: 140, height: 14)),
           const Spacer(),
           const _ShimmerEffect(
               child: _SkeletonBar(width: double.infinity, height: 20)),
           const SizedBox(height: 8),
-          Row(
+          Wrap(
+            spacing: 6,
             children: [
               const _ShimmerEffect(child: _SkeletonBar(width: 60, height: 24)),
-              const SizedBox(width: 6),
               const _ShimmerEffect(child: _SkeletonBar(width: 60, height: 24)),
             ],
           ),
@@ -235,31 +232,32 @@ class _AnimeContent extends StatelessWidget {
               end: Alignment.bottomCenter,
               colors: [
                 Colors.transparent,
-                colorScheme.shadow.withValues(alpha: 0.4),
-                colorScheme.shadow.withValues(alpha: 0.8),
+                colorScheme.shadow.withValues(alpha: 0.3),
+                colorScheme.shadow.withValues(alpha: 0.7),
               ],
-              stops: const [0.4, 0.7, 1.0],
+              stops: const [0.5, 0.8, 1.0],
             ),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(12), // Reduced padding
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _TopDetails(anime: anime),
-              const Spacer(),
               _BottomDetails(anime: anime, isSmallScreen: isSmallScreen),
             ],
           ),
         ),
         if (anime.averageScore != null)
           Positioned(
-            top: 8,
-            left: 8,
+            top: 12,
+            left: 12,
             child: _ScoreIndicator(
-                score: anime.averageScore?.toInt() ?? 0,
-                isSmallScreen: isSmallScreen),
+              score: anime.averageScore?.toInt() ?? 0,
+              isSmallScreen: isSmallScreen,
+            ),
           ),
       ],
     );
@@ -327,7 +325,7 @@ class _TopDetails extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         if (anime.format != null)
-          _Tag(
+          _InfoTag(
             text: anime.format!.split('.').last,
             color: colorScheme.tertiaryContainer.withValues(alpha: 0.8),
             textColor: colorScheme.onTertiaryContainer,
@@ -362,111 +360,73 @@ class _BottomDetails extends StatelessWidget {
       };
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          anime.title?.english ??
-              anime.title?.romaji ??
-              anime.title?.native ??
-              'Unknown Title',
-          maxLines: isSmallScreen ? 1 : 2, // Reduced to 1 line on small screens
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.montserrat(
-            fontSize: isSmallScreen ? 18 : 24,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-            shadows: [
-              Shadow(
-                color: colorScheme.shadow.withValues(alpha: 0.5),
-                offset: const Offset(0, 2),
-                blurRadius: 4,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 6), // Reduced spacing
-        Text(
-          parseHtmlToString(anime.description ?? ''),
-          maxLines: isSmallScreen ? 1 : 3, // Reduced to 1 line on small screens
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.montserrat(
-            fontSize: isSmallScreen ? 12 : 16,
-            color: Colors.white.withValues(alpha: 0.9),
-            height: 1.2, // Tighter line height
-          ),
-        ),
-        const SizedBox(height: 8), // Reduced spacing
-        Row(
-          children: [
-            if (anime.episodes != null)
-              _InfoChip(
-                icon: Iconsax.video_play,
-                label: '${anime.episodes} eps',
-                color: colorScheme.surface.withValues(alpha: 0.7),
-                isSmallScreen: isSmallScreen,
-              ),
-            if (anime.episodes != null && anime.duration != null)
-              const SizedBox(width: 6),
-            if (anime.duration != null)
-              _InfoChip(
-                icon: Iconsax.timer_1,
-                label: '${anime.duration}m',
-                color: colorScheme.surface.withValues(alpha: 0.7),
-                isSmallScreen: isSmallScreen,
-              ),
-          ],
-        ),
-        const SizedBox(height: 8), // Reduced spacing
-        if (anime.status != null)
-          _Tag(
-            text: anime.status!.split('.').last,
-            color: statusColor.withValues(alpha: 0.9),
-            textColor: Colors.white,
-            icon: Iconsax.timer,
-            iconSize: 12,
-            isSmallScreen: isSmallScreen,
-          ),
-        // Hide genres on small screens to save space
-      ],
-    );
-  }
-}
-
-class _InfoChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool isSmallScreen;
-
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.isSmallScreen,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-          horizontal: isSmallScreen ? 8 : 12, vertical: isSmallScreen ? 4 : 6),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
+    return Flexible(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: isSmallScreen ? 14 : 16, color: Theme.of(context).colorScheme.onSurface,),
-          const SizedBox(width: 4), // Reduced spacing
           Text(
-            label,
+            anime.title?.english ??
+                anime.title?.romaji ??
+                anime.title?.native ??
+                'Unknown Title',
+            maxLines: isSmallScreen ? 1 : 2,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.montserrat(
-              fontSize: isSmallScreen ? 10 : 12,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: isSmallScreen ? 20 : 24,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              shadows: [
+                Shadow(
+                  color: colorScheme.shadow.withValues(alpha: 0.5),
+                  offset: const Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
             ),
+          ),
+          const SizedBox(height: 8),
+          if (!isSmallScreen) // Hide description on small screens
+            Text(
+              parseHtmlToString(anime.description ?? ''),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.montserrat(
+                fontSize: 14,
+                color: Colors.white.withValues(alpha: 0.9),
+                height: 1.2,
+              ),
+            ),
+          if (!isSmallScreen) const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              if (anime.episodes != null)
+                _InfoTag(
+                  icon: Iconsax.video_play,
+                  text: '${anime.episodes} eps',
+                  color: colorScheme.surface.withValues(alpha: 0.7),
+                  textColor: colorScheme.onSurface,
+                  isSmallScreen: isSmallScreen,
+                ),
+              if (anime.duration != null)
+                _InfoTag(
+                  icon: Iconsax.timer_1,
+                  text: '${anime.duration}m',
+                  color: colorScheme.surface.withValues(alpha: 0.7),
+                  textColor: colorScheme.onSurface,
+                  isSmallScreen: isSmallScreen,
+                ),
+              if (anime.status != null)
+                _InfoTag(
+                  icon: Iconsax.timer,
+                  text: anime.status!.split('.').last,
+                  color: statusColor.withValues(alpha: 0.9),
+                  textColor: Colors.white,
+                  isSmallScreen: isSmallScreen,
+                ),
+            ],
           ),
         ],
       ),
@@ -474,22 +434,20 @@ class _InfoChip extends StatelessWidget {
   }
 }
 
-class _Tag extends StatelessWidget {
+class _InfoTag extends StatelessWidget {
   final String text;
   final Color color;
   final Color textColor;
   final IconData? icon;
   final bool isGlass;
-  final double? iconSize;
   final bool isSmallScreen;
 
-  const _Tag({
+  const _InfoTag({
     required this.text,
     required this.color,
     required this.textColor,
     this.icon,
     this.isGlass = false,
-    this.iconSize,
     required this.isSmallScreen,
   });
 
@@ -497,7 +455,9 @@ class _Tag extends StatelessWidget {
   Widget build(BuildContext context) {
     final container = Container(
       padding: EdgeInsets.symmetric(
-          horizontal: isSmallScreen ? 8 : 12, vertical: isSmallScreen ? 4 : 6),
+        horizontal: isSmallScreen ? 8 : 12,
+        vertical: isSmallScreen ? 4 : 6,
+      ),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(16),
@@ -509,14 +469,13 @@ class _Tag extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon,
-                size: iconSize ?? (isSmallScreen ? 12 : 16), color: textColor),
-            const SizedBox(width: 4), // Reduced spacing
+            Icon(icon, size: isSmallScreen ? 12 : 16, color: textColor),
+            const SizedBox(width: 4),
           ],
           Text(
             text,
             style: GoogleFonts.montserrat(
-              fontSize: isSmallScreen ? 10 : 12,
+              fontSize: isSmallScreen ? 12 : 14,
               fontWeight: FontWeight.w600,
               color: textColor,
             ),
@@ -541,7 +500,9 @@ class _ImagePlaceholder extends StatelessWidget {
       color: colorScheme.surfaceContainer.withValues(alpha: 0.3),
       child: Center(
         child: CircularProgressIndicator(
-            strokeWidth: 2, color: colorScheme.primary),
+          strokeWidth: 2,
+          color: colorScheme.primary,
+        ),
       ),
     );
   }

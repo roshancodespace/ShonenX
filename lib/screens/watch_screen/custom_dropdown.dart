@@ -9,6 +9,7 @@ class CustomDropdown extends StatelessWidget {
   final void Function(String) onChanged;
 
   const CustomDropdown({
+    super.key,
     required this.icon,
     required this.value,
     required this.items,
@@ -32,28 +33,31 @@ class CustomDropdown extends StatelessWidget {
           border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(width: 8),
-            itemBuilder?.call(validValue) ??
-                Text(
-                  validValue.toUpperCase(),
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+            Expanded(  // Pushes the arrow icon to the right
+              child: itemBuilder?.call(validValue) ??
+                  Text(
+                    validValue.toUpperCase(),
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-            const SizedBox(width: 8),
-            Icon(Iconsax.arrow_down_1, size: 16, color: theme.colorScheme.onSurfaceVariant),
+            ),
+            Icon(Iconsax.arrow_down_1,
+                size: 16, color: theme.colorScheme.onSurfaceVariant),
           ],
         ),
       ),
     );
   }
 
-  void _showDropdownMenu(BuildContext context, List<String> uniqueItems, String currentValue) {
+  void _showDropdownMenu(
+      BuildContext context, List<String> uniqueItems, String currentValue) {
     final RenderBox box = context.findRenderObject() as RenderBox;
     final position = box.localToGlobal(Offset.zero);
 
@@ -65,21 +69,24 @@ class CustomDropdown extends StatelessWidget {
         position.dx + box.size.width,
         0,
       ),
-      items: uniqueItems.map((item) => PopupMenuItem<String>(
-            value: item,
-            child: Container(
-              width: box.size.width,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: itemBuilder?.call(item) ?? Text(
-                item.toUpperCase(),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+      items: uniqueItems
+          .map((item) => PopupMenuItem<String>(
+                value: item,
+                child: Container(
+                  width: box.size.width,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: itemBuilder?.call(item) ??
+                      Text(
+                        item.toUpperCase(),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                 ),
-              ),
-            ),
-          )).toList(),
+              ))
+          .toList(),
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,

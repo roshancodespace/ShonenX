@@ -1,7 +1,9 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
 import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:shonenx/data/hive/models/subtitle_style_offline_model.dart';
 
 part 'settings_offline_model.g.dart';
 
@@ -211,22 +213,58 @@ class PlayerSettingsModel extends HiveObject {
   @HiveField(2)
   final bool preferSubtitles;
 
+  // New subtitle style fields
+  @HiveField(3)
+  final double subtitleFontSize;
+
+  @HiveField(4)
+  final int subtitleTextColor; // Store as int (Color.value)
+
+  @HiveField(5)
+  final double subtitleBackgroundOpacity;
+
+  @HiveField(6)
+  final bool subtitleHasShadow;
+
   PlayerSettingsModel({
     this.episodeCompletionThreshold = 0.9,
     this.autoPlayNextEpisode = true,
     this.preferSubtitles = false,
+    this.subtitleFontSize = 16.0,
+    this.subtitleTextColor = 0xFFFFFFFF, // Default white
+    this.subtitleBackgroundOpacity = 0.6,
+    this.subtitleHasShadow = true,
   });
 
   PlayerSettingsModel copyWith({
     double? episodeCompletionThreshold,
     bool? autoPlayNextEpisode,
     bool? preferSubtitles,
+    double? subtitleFontSize,
+    int? subtitleTextColor,
+    double? subtitleBackgroundOpacity,
+    bool? subtitleHasShadow,
   }) {
     return PlayerSettingsModel(
       episodeCompletionThreshold:
           episodeCompletionThreshold ?? this.episodeCompletionThreshold,
       autoPlayNextEpisode: autoPlayNextEpisode ?? this.autoPlayNextEpisode,
       preferSubtitles: preferSubtitles ?? this.preferSubtitles,
+      subtitleFontSize: subtitleFontSize ?? this.subtitleFontSize,
+      subtitleTextColor: subtitleTextColor ?? this.subtitleTextColor,
+      subtitleBackgroundOpacity:
+          subtitleBackgroundOpacity ?? this.subtitleBackgroundOpacity,
+      subtitleHasShadow: subtitleHasShadow ?? this.subtitleHasShadow,
+    );
+  }
+
+  // Convert to runtime SubtitleStyle
+  SubtitleStyle toSubtitleStyle() {
+    return SubtitleStyle(
+      fontSize: subtitleFontSize,
+      textColor: Color(subtitleTextColor),
+      backgroundOpacity: subtitleBackgroundOpacity,
+      hasShadow: subtitleHasShadow,
     );
   }
 }

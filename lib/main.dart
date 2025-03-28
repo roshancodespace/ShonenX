@@ -1,3 +1,4 @@
+import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -10,6 +11,9 @@ import 'package:shonenx/helpers/app_initializer.dart';
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppInitializer.initialize();
+  if (runWebViewTitleBarWidget(args)) {
+    return;
+  }
   runApp(const ProviderScope(child: MyApp()));
 }
 

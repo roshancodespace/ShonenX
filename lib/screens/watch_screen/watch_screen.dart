@@ -100,7 +100,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   void _initializePlayer() {
     _player = Player(
         configuration: const PlayerConfiguration(bufferSize: 64 * 1024 * 1024));
-    _controller = VideoController(_player);
+    _controller = VideoController(_player, configuration: VideoControllerConfiguration());
     _playerSubscription = _player.stream.error.listen(_handlePlayerError);
     _positionSubscription =
         _player.stream.position.listen((position) => _lastPosition = position);

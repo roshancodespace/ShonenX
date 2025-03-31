@@ -79,14 +79,13 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     _selectedEpIdx = (widget.episode ?? 1) - 1;
     _lastPosition = widget.startAt;
 
-    // Initialize ValueNotifiers
     _selectedSource = ValueNotifier(null);
     _selectedCategory = ValueNotifier('sub');
     _selectedServer = ValueNotifier(null);
     _selectedQuality = ValueNotifier(null);
 
     _initializeComponents();
-    _togglePanel();
+    _togglePanel(value: false); // Ensure panel starts hidden
   }
 
   @override
@@ -99,6 +98,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     _selectedCategory.dispose();
     _selectedServer.dispose();
     _selectedQuality.dispose();
+    _panelController.dispose();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
@@ -221,19 +221,35 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   Future<void> _configureSubtitles(List<Subtitle> subtitles) async {
     _subtitles.clear();
-    _subtitles.addAll(subtitles.map(
-      (s) => SubtitleTrack.uri(
-        s.url!,
-        language: s.lang ?? 'Unknown',
-        title: s.lang ?? 'Unknown',
-      ),
-    ));
 
+    // Track occurrences of each language
+    Map<String, int> langCount = {};
+
+    _subtitles.addAll(subtitles.map((s) {
+      String language = s.lang ?? 'Unknown';
+
+      // If language is repeated, append a number to differentiate
+      if (langCount.containsKey(language)) {
+        langCount[language] = langCount[language]! + 1;
+        language = '$language (${langCount[language]})';
+      } else {
+        langCount[language] = 1;
+      }
+
+      return SubtitleTrack.uri(
+        s.url!,
+        language: language,
+        title: language,
+      );
+    }));
+
+    // Find initial subtitle track (first English or first available)
     SubtitleTrack initialTrack = _subtitles.firstWhere(
       (s) => s.language!.toLowerCase().contains('english'),
       orElse: () =>
           _subtitles.isNotEmpty ? _subtitles.first : SubtitleTrack.no(),
     );
+
     await _player.setSubtitleTrack(initialTrack);
   }
 
@@ -315,11 +331,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   void _togglePanel({bool? value}) {
     setState(() {
-      if (value != null) {
-        _isPanelVisible = value;
-      } else {
-        _isPanelVisible = !_isPanelVisible;
-      }
+      _isPanelVisible = value ?? !_isPanelVisible;
       _isPanelVisible ? _panelController.forward() : _panelController.reverse();
     });
   }
@@ -335,36 +347,41 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (!_isInitialized ||
-            _controller == null ||
-            _animeWatchProgressBox == null) {
-          return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
-        }
+    return OrientationBuilder(
+      builder: (context, orientation) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isWideScreen = constraints.maxWidth > constraints.maxHeight &&
+                constraints.maxWidth > 600;
+            if (!_isInitialized ||
+                _controller == null ||
+                _animeWatchProgressBox == null) {
+              return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()));
+            }
 
-        final isWideScreen = constraints.maxWidth > 800;
-
-        return Scaffold(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          body: SafeArea(
-            child: Stack(
-              children: [
-                GestureDetector(
-                  onTap: _hidePanel,
-                  child: Column(
-                    children: [
-                      _buildControlBar(context, isWideScreen),
-                      _buildVideoSection(flex: 1),
-                      if (!isWideScreen) _buildEpisodesPanel(flex: 2),
-                    ],
-                  ),
+            return Scaffold(
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              body: SafeArea(
+                child: Stack(
+                  children: [
+                    GestureDetector(
+                      onTap: _hidePanel,
+                      child: Column(
+                        children: [
+                          _buildControlBar(context, isWideScreen),
+                          _buildVideoSection(flex: 1),
+                          if (!isWideScreen)
+                            Flexible(child: _buildEpisodesPanel(flex: 1)),
+                        ],
+                      ),
+                    ),
+                    if (isWideScreen) _buildSlidingPanel(constraints),
+                  ],
                 ),
-                if (isWideScreen) _buildSlidingPanel(constraints),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -445,7 +462,9 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   }
 
   Widget _buildSlidingPanel(BoxConstraints constraints) {
-    final panelWidth = constraints.maxWidth * 0.3;
+    final panelWidth = constraints.maxWidth > constraints.maxHeight
+        ? constraints.maxWidth * 0.25
+        : constraints.maxWidth * 0.3;
     return AnimatedBuilder(
       animation: _panelController,
       builder: (context, child) {
@@ -453,12 +472,10 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
           right: 0,
           top: 0,
           bottom: 0,
+          width: panelWidth,
           child: Transform.translate(
             offset: Offset((1 - _panelController.value) * panelWidth, 0),
-            child: SizedBox(
-              width: panelWidth,
-              child: _buildEpisodesPanel(),
-            ),
+            child: _buildEpisodesPanel(),
           ),
         );
       },

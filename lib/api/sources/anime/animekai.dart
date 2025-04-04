@@ -10,8 +10,11 @@ import 'package:shonenx/api/sources/anime/anime_provider.dart';
 import 'package:http/http.dart' as http;
 
 class AnimekaiProvider extends AnimeProvider {
-  AnimekaiProvider()
+  AnimekaiProvider({String? customApiUrl})
       : super(
+            apiUrl: customApiUrl != null
+                ? '$customApiUrl/anime/animekai'
+                : 'https://consumet-api-production-cfef.up.railway.app/anime/animekai',
             baseUrl: 'https://shonenx-consumet-api.vercel.app/anime/animekai',
             providerName: 'animekai');
 

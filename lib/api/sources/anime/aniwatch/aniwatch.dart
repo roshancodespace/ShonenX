@@ -12,8 +12,13 @@ import 'package:shonenx/api/sources/anime/anime_provider.dart';
 import 'package:html/parser.dart' show parse;
 
 class AniwatchProvider extends AnimeProvider {
-  AniwatchProvider()
-      : super(baseUrl: 'https://aniwatchtv.to', providerName: 'aniwatch');
+  AniwatchProvider({String? customApiUrl})
+      : super(
+            apiUrl: customApiUrl != null
+                ? '$customApiUrl/anime/zoro'
+                : 'https://consumet-api-production-cfef.up.railway.app/anime/zoro',
+            baseUrl: 'https://aniwatchtv.to',
+            providerName: 'aniwatch');
 
   Map<String, String> _getHeaders() {
     return {

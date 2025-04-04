@@ -12,17 +12,20 @@ final selectedProviderKeyProvider =
 // State class
 class SelectedProviderState {
   final String selectedProviderKey;
+  final String? customApiUrl;
   final bool isLoading;
   final String? error;
 
   SelectedProviderState({
     required this.selectedProviderKey,
+    this.customApiUrl,
     this.isLoading = true,
     this.error,
   });
 
   SelectedProviderState copyWith({
     String? selectedProviderKey,
+    String? customApiUrl,
     bool? isLoading,
     String? error,
   }) {
@@ -68,19 +71,21 @@ class SelectedProviderNotifier extends StateNotifier<SelectedProviderState> {
       // If no settings exist, create and save default settings
       if (settingsModel == null) {
         log('No settings found, creating default settings.');
-        await _settingsBox.updateProviderSettings(
-            ProviderSettingsModel(selectedProviderName: defaultProviderKey));
+        await _settingsBox.updateProviderSettings(ProviderSettingsModel(
+            selectedProviderName: defaultProviderKey, customApiUrl: null));
       }
 
       // Extract the provider key, falling back to default if null
       final selectedProviderKey =
           settingsModel?.providerSettings.selectedProviderName ??
               defaultProviderKey;
+      final customApiUrl = settingsModel?.providerSettings.customApiUrl;
 
       log('Loaded Provider from Hive: $selectedProviderKey');
 
       state = state.copyWith(
         selectedProviderKey: selectedProviderKey,
+        customApiUrl: customApiUrl,
         isLoading: false,
         error: null,
       );
@@ -94,14 +99,17 @@ class SelectedProviderNotifier extends StateNotifier<SelectedProviderState> {
     }
   }
 
-  Future<void> updateSelectedProvider(String newProvider) async {
+  Future<void> updateSelectedProvider(
+      String newProvider, String? apiUrl) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
       await _settingsBox.updateProviderSettings(
-        ProviderSettingsModel(selectedProviderName: newProvider),
+        ProviderSettingsModel(
+            selectedProviderName: newProvider, customApiUrl: apiUrl),
       );
       state = state.copyWith(
         selectedProviderKey: newProvider,
+        customApiUrl: apiUrl,
         isLoading: false,
         error: null,
       );

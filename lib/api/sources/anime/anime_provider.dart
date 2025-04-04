@@ -6,8 +6,9 @@ import 'package:shonenx/api/models/anime/source_model.dart';
 abstract class AnimeProvider {
   final String providerName;
   final String baseUrl;
+  final String apiUrl;
 
-  AnimeProvider({required this.baseUrl, required this.providerName});
+  AnimeProvider({required this.baseUrl, required this.providerName, required this.apiUrl});
 
   Future<HomePage> getHome();
   Future<DetailPage> getDetails(String animeId);

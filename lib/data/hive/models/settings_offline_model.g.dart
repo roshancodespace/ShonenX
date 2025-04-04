@@ -61,15 +61,18 @@ class ProviderSettingsModelAdapter extends TypeAdapter<ProviderSettingsModel> {
     };
     return ProviderSettingsModel(
       selectedProviderName: fields[0] as String,
+      customApiUrl: fields[1] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ProviderSettingsModel obj) {
     writer
-      ..writeByte(1)
+      ..writeByte(2)
       ..writeByte(0)
-      ..write(obj.selectedProviderName);
+      ..write(obj.selectedProviderName)
+      ..writeByte(1)
+      ..write(obj.customApiUrl);
   }
 
   @override

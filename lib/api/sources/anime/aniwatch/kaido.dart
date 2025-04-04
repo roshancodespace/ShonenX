@@ -11,7 +11,13 @@ import 'package:shonenx/api/sources/anime/anime_provider.dart';
 import 'package:html/parser.dart' show parse;
 
 class KaidoProvider extends AnimeProvider {
-  KaidoProvider() : super(baseUrl: 'https://kaido.to', providerName: 'kaido');
+  KaidoProvider({String? customApiUrl})
+      : super(
+            apiUrl: customApiUrl != null
+                ? '$customApiUrl/anime/zoro'
+                : 'https://consumet-api-production-cfef.up.railway.app/anime/zoro',
+            baseUrl: 'https://kaido.to',
+            providerName: 'kaido');
 
   Map<String, String> _getHeaders() {
     return {
@@ -114,7 +120,7 @@ class KaidoProvider extends AnimeProvider {
   Future<BaseSourcesModel> getSources(String animeId, String episodeId,
       String? serverName, String? category) async {
     final apiUrl =
-        'https://shonenx-consumet-api.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category?server=${serverName ?? getSupportedServers().first}';
+        '${this.apiUrl}/watch/$animeId\$episode\$$episodeId\$$category?server=${serverName ?? getSupportedServers().first}';
 
     try {
       log("Fetching sources from: $apiUrl", name: providerName);

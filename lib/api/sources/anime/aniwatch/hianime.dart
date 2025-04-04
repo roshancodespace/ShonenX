@@ -11,8 +11,13 @@ import 'package:shonenx/api/sources/anime/anime_provider.dart';
 import 'package:html/parser.dart' show parse;
 
 class HiAnimeProvider extends AnimeProvider {
-  HiAnimeProvider()
-      : super(baseUrl: 'https://hianime.to', providerName: 'hianime');
+  HiAnimeProvider({String? customApiUrl})
+      : super(
+            apiUrl: customApiUrl != null
+                ? '$customApiUrl/anime/zoro'
+                : 'https://consumet-api-production-cfef.up.railway.app/anime/zoro',
+            baseUrl: 'https://hianime.to',
+            providerName: 'hianime');
 
   Map<String, String> _getHeaders() {
     return {

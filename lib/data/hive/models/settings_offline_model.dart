@@ -3,6 +3,7 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+
 import 'package:shonenx/data/hive/models/subtitle_style_offline_model.dart';
 
 part 'settings_offline_model.g.dart';
@@ -47,12 +48,18 @@ class SettingsModel extends HiveObject {
 class ProviderSettingsModel extends HiveObject {
   @HiveField(0)
   final String selectedProviderName;
+  @HiveField(1)
+  final String? customApiUrl;
 
-  ProviderSettingsModel({this.selectedProviderName = 'animekai'});
+  ProviderSettingsModel({this.selectedProviderName = 'animekai', this.customApiUrl});
 
-  ProviderSettingsModel copyWith({String? selectedProviderName}) {
+  ProviderSettingsModel copyWith({
+    String? selectedProviderName,
+    String? customApiUrl,
+  }) {
     return ProviderSettingsModel(
       selectedProviderName: selectedProviderName ?? this.selectedProviderName,
+      customApiUrl: customApiUrl ?? this.customApiUrl,
     );
   }
 }

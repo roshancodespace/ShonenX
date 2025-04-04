@@ -6,14 +6,29 @@ import 'package:shonenx/api/sources/anime/aniwatch/hianime.dart';
 import 'package:shonenx/api/registery/anime_source_registery.dart';
 import 'package:shonenx/api/sources/anime/aniwatch/kaido.dart';
 
-final animeSourceRegistryProvider = Provider<AnimeSourceRegistery>((ref) {
-  final registry = AnimeSourceRegistery();
-  // Register your providers. For example, the HiAnimeProvider:
-  registry.registerProvider("hianime", HiAnimeProvider());
-  registry.registerProvider("aniwatch", AniwatchProvider());
-  registry.registerProvider("kaido", KaidoProvider());
-  registry.registerProvider("animekai", AnimekaiProvider());
-  registry.registerProvider("animepahe", AnimePaheProvider());
-  // If you have other providers, register them here.
-  return registry;
-});
+class AnimeSourceRegistryNotifier extends StateNotifier<AnimeSourceRegistery> {
+  AnimeSourceRegistryNotifier() : super(AnimeSourceRegistery()) {
+    _initializeRegistry(null);
+  }
+
+  void _initializeRegistry(String? apiUrl) {
+    state = AnimeSourceRegistery();
+    state.registerProvider("hianime", HiAnimeProvider(customApiUrl: apiUrl));
+    state.registerProvider("aniwatch", AniwatchProvider(customApiUrl: apiUrl));
+    state.registerProvider("kaido", KaidoProvider(customApiUrl: apiUrl));
+    state.registerProvider("animekai", AnimekaiProvider(customApiUrl: apiUrl));
+    state.registerProvider("animepahe", AnimePaheProvider(customApiUrl: apiUrl));
+  }
+
+  void updateApiUrl(String newApiUrl) {
+    _initializeRegistry(newApiUrl);
+  }
+
+  void resetApiUrl() {
+    _initializeRegistry(null);
+  }
+}
+
+final animeSourceRegistryProvider =
+    StateNotifierProvider<AnimeSourceRegistryNotifier, AnimeSourceRegistery>(
+        (ref) => AnimeSourceRegistryNotifier());

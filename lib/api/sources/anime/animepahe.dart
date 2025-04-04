@@ -10,8 +10,11 @@ import 'package:shonenx/api/sources/anime/anime_provider.dart';
 import 'package:http/http.dart' as http;
 
 class AnimePaheProvider extends AnimeProvider {
-  AnimePaheProvider()
+  AnimePaheProvider({String? customApiUrl})
       : super(
+            apiUrl: customApiUrl != null
+                ? '$customApiUrl/anime/animepahe'
+                : 'https://consumet-api-production-cfef.up.railway.app/anime/animepahe',
             baseUrl:
                 'https://consumet-api-production-cfef.up.railway.app/anime/animepahe',
             providerName: 'animepahe');

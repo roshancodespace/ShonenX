@@ -6,12 +6,14 @@ list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
   desktop_webview_window
   flutter_secure_storage_windows
+  flutter_volume_controller
   media_kit_libs_windows_video
   media_kit_video
   permission_handler_windows
   screen_brightness_windows
   screen_retriever_windows
   url_launcher_windows
+  volume_controller
   window_manager
   window_to_front
 )

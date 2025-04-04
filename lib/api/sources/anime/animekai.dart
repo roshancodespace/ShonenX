@@ -148,12 +148,11 @@ class AnimekaiProvider extends AnimeProvider {
 
   @override
   List<String> getSupportedServers() {
-    // TODO: implement getSupportedServers
-    return [];
+    return ["vidcloud", "streamsb", "vidstreaming", "streamtape"];
   }
 
   @override
   bool getDubSubParamSupport() {
-    return false;
+    return true;
   }
 }

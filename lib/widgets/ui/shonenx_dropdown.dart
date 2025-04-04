@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 
-class CustomDropdown extends StatelessWidget {
+class ShonenxDropdown extends StatelessWidget {
   final IconData icon;
   final String value;
   final List<String> items;
   final Widget Function(String)? itemBuilder;
   final void Function(String) onChanged;
 
-  const CustomDropdown({
+  const ShonenxDropdown({
     super.key,
     required this.icon,
     required this.value,

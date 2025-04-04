@@ -3,73 +3,115 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/data/hive/boxes/settings_box.dart';
 import 'package:shonenx/data/hive/models/settings_offline_model.dart';
 
+// Define the provider
 final selectedProviderKeyProvider =
     StateNotifierProvider<SelectedProviderNotifier, SelectedProviderState>(
   (ref) => SelectedProviderNotifier(),
 );
 
+// State class
 class SelectedProviderState {
   final String selectedProviderKey;
   final bool isLoading;
+  final String? error;
 
   SelectedProviderState({
     required this.selectedProviderKey,
     this.isLoading = true,
+    this.error,
   });
+
+  SelectedProviderState copyWith({
+    String? selectedProviderKey,
+    bool? isLoading,
+    String? error,
+  }) {
+    return SelectedProviderState(
+      selectedProviderKey: selectedProviderKey ?? this.selectedProviderKey,
+      isLoading: isLoading ?? this.isLoading,
+      error: error ?? this.error,
+    );
+  }
 }
 
+// Notifier class
 class SelectedProviderNotifier extends StateNotifier<SelectedProviderState> {
-  final SettingsBox _settingsBox = SettingsBox(); // Keep a single instance
+  static const String defaultProviderKey = 'hianime';
+  final SettingsBox _settingsBox;
 
   SelectedProviderNotifier()
-      : super(SelectedProviderState(selectedProviderKey: 'hianime')) {
-    _init(); // Ensure Hive is initialized before calling load
+      : _settingsBox = SettingsBox(),
+        super(SelectedProviderState(selectedProviderKey: defaultProviderKey)) {
+    _init();
   }
 
   Future<void> _init() async {
-    await _settingsBox.init(); // Ensure Hive is initialized
-    _loadSelectedProvider();
+    try {
+      // Ensure Hive is initialized
+      await _settingsBox.init();
+      await _loadSelectedProvider();
+    } catch (e, stackTrace) {
+      log('Error during initialization: $e', stackTrace: stackTrace);
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to initialize settings: $e',
+      );
+    }
   }
 
   Future<void> _loadSelectedProvider() async {
-    // Try to read the settings
-    var settingsModel = _settingsBox.getSettings();
+    try {
+      // Get settings from Hive
+      var settingsModel = _settingsBox.getSettings();
+      await _settingsBox.init();
 
-    // Log the current saved provider (likely null on first run)
-    log(
-        'Before saving, provider: ${settingsModel?.providerSettings.selectedProviderName}');
+      // If no settings exist, create and save default settings
+      if (settingsModel == null) {
+        log('No settings found, creating default settings.');
+        await _settingsBox.updateProviderSettings(
+            ProviderSettingsModel(selectedProviderName: defaultProviderKey));
+      }
 
-    // If no settings exist, create and save the default settings, then re-read them
-    if (settingsModel == null) {
-      // log("No settings found, creating default settings.");
-      // final newSettings = SettingsModel(
-      //   providerSettings:
-      //       ProviderSettingsModel(selectedProviderName: 'hianime'),
-      // );
-      // await _settingsBox.saveSettings(newSettings);
-      // // Re-read the settings from the box after saving
-      // settingsModel = _settingsBox.getSettings();
+      // Extract the provider key, falling back to default if null
+      final selectedProviderKey =
+          settingsModel?.providerSettings.selectedProviderName ??
+              defaultProviderKey;
+
+      log('Loaded Provider from Hive: $selectedProviderKey');
+
+      state = state.copyWith(
+        selectedProviderKey: selectedProviderKey,
+        isLoading: false,
+        error: null,
+      );
+    } catch (e, stackTrace) {
+      log('Error loading provider: $e', stackTrace: stackTrace);
+      state = state.copyWith(
+        selectedProviderKey: defaultProviderKey,
+        isLoading: false,
+        error: 'Failed to load provider: $e',
+      );
     }
-
-    // Now extract the provider key (will be 'hianime' by default if still null)
-    final selectedProviderKey =
-        settingsModel?.providerSettings.selectedProviderName ?? 'hianime';
-
-    log("Loaded Provider from Hive: $selectedProviderKey");
-
-    state = SelectedProviderState(
-      selectedProviderKey: selectedProviderKey,
-      isLoading: false,
-    );
   }
 
   Future<void> updateSelectedProvider(String newProvider) async {
-    await _settingsBox.updateProviderSettings(
-      ProviderSettingsModel(selectedProviderName: newProvider),
-    );
-    state = SelectedProviderState(
-      selectedProviderKey: newProvider,
-      isLoading: false,
-    );
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+      await _settingsBox.updateProviderSettings(
+        ProviderSettingsModel(selectedProviderName: newProvider),
+      );
+      state = state.copyWith(
+        selectedProviderKey: newProvider,
+        isLoading: false,
+        error: null,
+      );
+      log('Updated Provider to: $newProvider');
+    } catch (e, stackTrace) {
+      log('Error updating provider: $e', stackTrace: stackTrace);
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to update provider: $e',
+      );
+    }
   }
 }

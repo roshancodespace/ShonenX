@@ -20,12 +20,29 @@ class KaidoProvider extends AnimeProvider {
     };
   }
 
+  Future<Document?> _fetchDocument(String url) async {
+    try {
+      log("Fetching: $url", name: providerName);
+      final response = await http.get(Uri.parse(url), headers: _getHeaders());
+
+      if (response.statusCode == 200) {
+        return parse(response.body);
+      } else {
+        log("Error ${response.statusCode}: Failed to fetch $url",
+            name: providerName, level: 900);
+      }
+    } catch (e) {
+      log("Exception: $e", name: providerName, level: 1000);
+    }
+    return null;
+  }
+
   @override
   Future<HomePage> getHome() async {
-    log('Fetching home page from $baseUrl');
-    final response =
-        await http.get(Uri.parse('$baseUrl/home'), headers: _getHeaders());
-    final document = parse(response.body);
+    final document = await _fetchDocument('$baseUrl/home');
+    if (document == null) {
+      throw Exception("Failed to fetch HomePage from $baseUrl");
+    }
     return HomePage(
       spotlight: parseSpotlight(document, baseUrl),
       trending: parseTrending(document, baseUrl),
@@ -35,83 +52,113 @@ class KaidoProvider extends AnimeProvider {
 
   @override
   Future<DetailPage> getDetails(String animeId) async {
-    final response =
-        await http.get(Uri.parse('$baseUrl/$animeId'), headers: _getHeaders());
-    final document = parse(response.body);
+    final document = await _fetchDocument('$baseUrl/$animeId');
+    if (document == null) {
+      throw Exception("Failed to fetch DetailPage for $animeId");
+    }
     return parseDetail(document, baseUrl, animeId: animeId);
   }
 
   @override
   Future<WatchPage> getWatch(String animeId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/watch/$animeId'),
-    );
-    final document = parse(response.body);
+    final document = await _fetchDocument('$baseUrl/watch/$animeId');
+    if (document == null) {
+      throw Exception("Failed to fetch WatchPage for $animeId");
+    }
     return parseWatch(document, baseUrl, animeId: animeId);
   }
 
   @override
   Future<BaseEpisodeModel> getEpisodes(String animeId) async {
-    log("Fetching : $baseUrl/ajax/episode/list/${animeId.split('-').last}");
-    final response = await http.get(
-        Uri.parse("$baseUrl/ajax/episode/list/${animeId.split('-').last}"),
-        headers: _getHeaders());
-    final document = parse(json.decode(response.body)['html']);
-    return parseEpisodes(document, "$baseUrl/ajax/episode/list/",
-        animeId: animeId);
+    final episodeUrl = "$baseUrl/ajax/episode/list/${animeId.split('-').last}";
+    final response =
+        await http.get(Uri.parse(episodeUrl), headers: _getHeaders());
+
+    if (response.statusCode == 200) {
+      final document = parse(json.decode(response.body)['html']);
+      return parseEpisodes(document, episodeUrl, animeId: animeId);
+    } else {
+      throw Exception("Failed to fetch episodes for $animeId");
+    }
   }
 
   @override
   Future<BaseServerModel> getServers(String episodeId) async {
-    log("Fetching : $baseUrl/ajax/episode/servers?episodeId=$episodeId");
-    final response = await http.get(
-        Uri.parse("$baseUrl/ajax/episode/servers?episodeId=$episodeId"),
-        headers: _getHeaders());
-    final document = parse(json.decode(response.body)['html']);
-    return parseServers(
-        document, "$baseUrl/ajax/episode/servers?episodeId=$episodeId");
+    final serverUrl = "$baseUrl/ajax/episode/servers?episodeId=$episodeId";
+    final response =
+        await http.get(Uri.parse(serverUrl), headers: _getHeaders());
+
+    if (response.statusCode == 200) {
+      final document = parse(json.decode(response.body)['html']);
+      return parseServers(document, serverUrl);
+    } else {
+      throw Exception("Failed to fetch servers for episode $episodeId");
+    }
   }
 
   String? retrieveServerId(Document document, int index, String category) {
-    final serverItems = document.querySelectorAll(
-        '.ps_-block.ps_-block-sub.servers-$category > .ps__-list .server-item');
-    return serverItems
-        .firstWhere((el) => el.attributes['data-server-id'] == index.toString())
-        .attributes['data-id'];
+    try {
+      final serverItems = document.querySelectorAll(
+          '.ps_-block.ps_-block-sub.servers-$category > .ps__-list .server-item');
+      return serverItems
+          .firstWhere(
+              (el) => el.attributes['data-server-id'] == index.toString())
+          .attributes['data-id'];
+    } catch (e) {
+      log("Error retrieving server ID: $e", name: providerName, level: 900);
+      return null;
+    }
   }
 
   @override
   Future<BaseSourcesModel> getSources(String animeId, String episodeId,
       String? serverName, String? category) async {
-    final response = await http.get(
-      Uri.parse(
-          'https://animaze-swart.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category?server=$serverName'),
-    );
-    final responseBody = json.decode(response.body);
-    log('Sources: ${responseBody['sources']}', name: "Sources");
-    log('Subtitles: ${responseBody['subtitles']}', name: "Subtitles");
-    log("Response status code: ${response.statusCode}");
-    return BaseSourcesModel.fromJson(responseBody);
+    final apiUrl =
+        'https://shonenx-consumet-api.vercel.app/anime/zoro/watch/$animeId\$episode\$$episodeId\$$category?server=${serverName ?? getSupportedServers().first}';
+
+    try {
+      log("Fetching sources from: $apiUrl", name: providerName);
+      final response =
+          await http.get(Uri.parse(apiUrl), headers: _getHeaders());
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
+        log("Sources found: ${responseBody['sources'].length}",
+            name: providerName);
+        return BaseSourcesModel.fromJson(responseBody);
+      } else {
+        log("Error ${response.statusCode}: Failed to fetch sources",
+            name: providerName);
+        throw Exception("Failed to fetch sources for episode $episodeId");
+      }
+    } catch (e) {
+      log("Exception fetching sources: $e", name: providerName, level: 1000);
+      throw Exception("Error fetching sources for $animeId - $episodeId");
+    }
   }
 
   @override
   Future<SearchPage> getSearch(String keyword, String? type, int page) async {
     final hianimeType =
         type != null ? _mapTypeToHianimeType(type.toLowerCase()) : null;
-    final url = hianimeType != null
+    final searchUrl = hianimeType != null
         ? '$baseUrl/search?keyword=$keyword&type=$hianimeType&page=$page'
         : '$baseUrl/search?keyword=$keyword&page=$page';
-    log(url);
-    final response = await http.get(Uri.parse(url), headers: _getHeaders());
-    final document = parse(response.body);
+
+    final document = await _fetchDocument(searchUrl);
+    if (document == null) {
+      throw Exception("Failed to fetch search results for $keyword");
+    }
     return parseSearch(document, baseUrl, keyword: keyword, page: page);
   }
 
   @override
   Future<SearchPage> getPage(String route, int page) async {
-    final response = await http.get(Uri.parse('$baseUrl/$route?page=$page'),
-        headers: _getHeaders());
-    final document = parse(response.body);
+    final pageUrl = '$baseUrl/$route?page=$page';
+    final document = await _fetchDocument(pageUrl);
+    if (document == null) {
+      throw Exception("Failed to fetch page $page for route $route");
+    }
     return parsePage(document, baseUrl, route: route, page: page);
   }
 

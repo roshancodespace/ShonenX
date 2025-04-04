@@ -23,7 +23,6 @@ void main(List<String> args) async {
     return;
   }
 
-  await windowManager.ensureInitialized();
   runApp(const ProviderScope(child: MyApp()));
 }
 

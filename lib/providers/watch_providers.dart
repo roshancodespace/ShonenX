@@ -91,6 +91,10 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
     required this.animeProvider,
   }) : super(const WatchState(animeId: ''));
 
+  void resetState() {
+    state = const WatchState(animeId: '');
+  }
+
   void updateCategory(String category) =>
       state = state.copyWith(selectedCategory: category);
 

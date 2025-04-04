@@ -119,7 +119,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
         await ref.read(playerProvider).screenshot(format: 'image/jpg');
     if (rawScreenshot == null) return null;
 
-    return compute(_processThumbnail, rawScreenshot);
+    return await compute(_processThumbnail, rawScreenshot);
   }
 
   static String? _processThumbnail(Uint8List rawScreenshot) {
@@ -139,7 +139,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     final notifier = ref.read(watchProvider.notifier);
     await notifier.fetchEpisodes(animeId: widget.animeId);
     await notifier.fetchStreamData(
-      withPlay: false,
+      withPlay: true,
       episodeIdx: (widget.episode ?? 1) - 1,
     );
   }
@@ -150,6 +150,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     _animationController.dispose();
     ref.read(playerProvider).dispose();
     _resetOrientationAndUI();
+    ref.read(watchProvider.notifier).resetState();
     super.dispose();
   }
 

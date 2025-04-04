@@ -90,7 +90,7 @@ GoRoute _buildContinueAllRoute() {
   return GoRoute(
     path: '/continue-all',
     builder: (context, state) => ContinueAllScreen(
-      animeWatchProgressBox: AnimeWatchProgressBox()..init,
+      animeWatchProgressBox: AnimeWatchProgressBox()..init(),
     ),
   );
 }
@@ -254,7 +254,6 @@ GoRoute _buildCatchAllRoute() {
     ),
   );
 }
-
 
 class AppRouterScreen extends StatefulWidget {
   final StatefulNavigationShell navigationShell;

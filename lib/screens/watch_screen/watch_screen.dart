@@ -75,6 +75,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   }
 
   void _startProgressTimer() {
+    _saveProgressTimer?.cancel(); // Cancel any existing timer
     _saveProgressTimer =
         Timer.periodic(_progressSaveInterval, (_) => _saveProgress());
   }
@@ -84,42 +85,72 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     final playerState = ref.read(playerStateProvider);
     final playerSettings = ref.read(playerSettingsProvider).playerSettings;
 
-    if (!_shouldSaveProgress(watchState, playerState)) return;
-    log("Saving progress");
+    if (!_shouldSaveProgress(watchState, playerState)) {
+      log("Skipping progress save - conditions not met");
+      return;
+    }
 
-    final episodeIdx = watchState.selectedEpisodeIdx!;
-    final episode = watchState.episodes[episodeIdx];
-    final progress = playerState.position;
-    final duration = playerState.duration;
+    try {
+      final episodeIdx = watchState.selectedEpisodeIdx!;
+      final episode = watchState.episodes[episodeIdx];
+      final progress = playerState.position;
+      final duration = playerState.duration;
 
-    final thumbnailBase64 = await _generateThumbnail();
-    final isCompleted = progress.inSeconds >=
-        (duration.inSeconds * playerSettings.episodeCompletionThreshold);
+      if (episode.number == null) {
+        log("Episode number is null, cannot save progress");
+        return;
+      }
 
-    await _animeWatchProgressBox.updateEpisodeProgress(
-      animeMedia: widget.animeMedia,
-      episodeNumber: episode.number!,
-      episodeTitle: episode.title ?? 'Untitled',
-      episodeThumbnail: thumbnailBase64,
-      progressInSeconds: progress.inSeconds,
-      durationInSeconds: duration.inSeconds,
-      isCompleted: isCompleted,
-    );
+      final thumbnailBase64 = await _generateThumbnail();
+      final isCompleted = progress.inSeconds >=
+          (duration.inSeconds * playerSettings.episodeCompletionThreshold);
+
+      log("Saving progress for episode ${episode.number} - Progress: ${progress.inSeconds}s / ${duration.inSeconds}s");
+
+      await _animeWatchProgressBox.updateEpisodeProgress(
+        animeMedia: widget.animeMedia,
+        episodeNumber: episode.number!,
+        episodeTitle: episode.title ?? 'Episode ${episode.number}',
+        episodeThumbnail: thumbnailBase64,
+        progressInSeconds: progress.inSeconds,
+        durationInSeconds: duration.inSeconds,
+        isCompleted: isCompleted,
+      );
+
+      log("Progress saved successfully");
+    } catch (e) {
+      log("Error saving progress: $e");
+    }
   }
 
   bool _shouldSaveProgress(WatchState watchState, PlayerState playerState) {
-    return watchState.selectedEpisodeIdx != null &&
-        playerState.duration.inSeconds >= 10 &&
-        playerState.position.inSeconds >= 10 &&
-        playerState.position <= playerState.duration;
+    final hasValidEpisode = watchState.selectedEpisodeIdx != null &&
+        watchState.episodes.isNotEmpty &&
+        watchState.selectedEpisodeIdx! < watchState.episodes.length;
+    final hasValidDuration = playerState.duration.inSeconds >= 10;
+    final hasValidPosition = playerState.position.inSeconds >= 10;
+    final isPositionValid = playerState.position <= playerState.duration;
+
+    return hasValidEpisode &&
+        hasValidDuration &&
+        hasValidPosition &&
+        isPositionValid;
   }
 
   Future<String?> _generateThumbnail() async {
-    final rawScreenshot =
-        await ref.read(playerProvider).screenshot(format: 'image/jpg');
-    if (rawScreenshot == null) return null;
+    try {
+      final rawScreenshot =
+          await ref.read(playerProvider).screenshot(format: 'image/jpg');
+      if (rawScreenshot == null) {
+        log("Failed to capture screenshot");
+        return null;
+      }
 
-    return await compute(_processThumbnail, rawScreenshot);
+      return await compute(_processThumbnail, rawScreenshot);
+    } catch (e) {
+      log("Error generating thumbnail: $e");
+      return null;
+    }
   }
 
   static String? _processThumbnail(Uint8List rawScreenshot) {

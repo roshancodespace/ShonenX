@@ -6,7 +6,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
 import 'package:shonenx/screens/browse_screen.dart';
-import 'package:shonenx/screens/continue_all_screen.dart';
+import 'package:shonenx/screens/continue_watching_screen.dart';
 import 'package:shonenx/screens/details_screen.dart';
 import 'package:shonenx/screens/error_screen.dart';
 import 'package:shonenx/screens/home_screen.dart';
@@ -89,7 +89,7 @@ StatefulShellBranch _buildWatchlistBranch() {
 GoRoute _buildContinueAllRoute() {
   return GoRoute(
     path: '/continue-all',
-    builder: (context, state) => ContinueAllScreen(
+    builder: (context, state) => ContinueWatchingScreen(
       animeWatchProgressBox: AnimeWatchProgressBox()..init(),
     ),
   );

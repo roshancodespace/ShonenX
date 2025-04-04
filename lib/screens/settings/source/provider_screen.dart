@@ -84,7 +84,7 @@ class ProviderSettingsScreen extends ConsumerWidget {
                 const SizedBox(height: 8),
                 ElevatedButton(
                   onPressed: () {
-                    ref.refresh(serverStatusProvider);
+                    ref.invalidate(serverStatusProvider);
                   },
                   child: const Text('Retry'),
                 ),

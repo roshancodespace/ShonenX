@@ -1,21 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
-import 'package:iconsax/iconsax.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
     as anilist_media;
-import 'package:shonenx/api/models/anime/episode_model.dart';
-import 'package:shonenx/api/models/anime/source_model.dart';
-import 'package:shonenx/api/sources/anime/anime_provider.dart';
+import 'package:image/image.dart' as img;
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
-import 'package:shonenx/helpers/provider.dart';
+import 'package:shonenx/providers/watch_providers.dart';
+import 'package:shonenx/screens/settings/player/player_screen.dart';
+import 'package:shonenx/screens/watch_screen/controls.dart';
 import 'package:shonenx/screens/watch_screen/episodes_panel.dart';
-import 'package:shonenx/screens/watch_screen/video_player_section.dart';
+import 'package:window_manager/window_manager.dart';
 
 class WatchScreen extends ConsumerStatefulWidget {
   final String animeId;
@@ -25,12 +24,12 @@ class WatchScreen extends ConsumerStatefulWidget {
   final Duration startAt;
 
   const WatchScreen({
-    super.key,
     required this.animeId,
     required this.animeMedia,
     required this.animeName,
     this.startAt = Duration.zero,
     this.episode = 1,
+    super.key,
   });
 
   @override
@@ -38,497 +37,229 @@ class WatchScreen extends ConsumerStatefulWidget {
 }
 
 class _WatchScreenState extends ConsumerState<WatchScreen>
-    with SingleTickerProviderStateMixin {
-  late final Player _player;
-  late final VideoController? _controller;
-  late final AnimeProvider _animeProvider;
-  late final AnimeWatchProgressBox? _animeWatchProgressBox;
-  late AnimationController _panelController;
-  bool _isPanelVisible = false;
+    with TickerProviderStateMixin {
+  static const _progressSaveInterval = Duration(seconds: 10);
+  static const _thumbnailWidth = 320;
+  static const _thumbnailHeight = 180;
+  static const _thumbnailQuality = 75;
 
-  final List<Source> _sources = [];
-  final List<EpisodeDataModel> _episodes = [];
-  final List<SubtitleTrack> _subtitles = [];
-  final List<Map<String, String>> _qualityOptions = [];
-
-  late final ValueNotifier<Source?> _selectedSource;
-  late final ValueNotifier<String?> _selectedCategory;
-  late final ValueNotifier<String?> _selectedServer;
-  late final ValueNotifier<String?> _selectedQuality;
-
-  int _selectedEpIdx = 0;
-  int _selectedRangeStart = 1;
-  Duration _lastPosition = Duration.zero;
-
-  bool _isGridView = false;
-  int _itemsPerPage = 50;
-  int _gridColumns = 5;
-
-  StreamSubscription? _playerSubscription;
-  StreamSubscription? _positionSubscription;
-  Timer? _debounceTimer;
-  bool _isInitialized = false;
+  final AnimeWatchProgressBox _animeWatchProgressBox = AnimeWatchProgressBox();
+  Timer? _saveProgressTimer;
+  late AnimationController _animationController;
+  late final VideoController _controller;
+  // bool _isFullscreen = false;
 
   @override
   void initState() {
     super.initState();
-    _panelController = AnimationController(
-      vsync: this,
+    _setupOrientation();
+    _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
+      vsync: this,
+      value: ref.read(watchProvider).isExpanded ? 1.0 : 0.0,
     );
-    _selectedEpIdx = (widget.episode ?? 1) - 1;
-    _lastPosition = widget.startAt;
+    _controller = ref.read(controllerProvider);
+    _initializeAsync().then((_) => _performInitialFetch(ref));
+  }
 
-    _selectedSource = ValueNotifier(null);
-    _selectedCategory = ValueNotifier('sub');
-    _selectedServer = ValueNotifier(null);
-    _selectedQuality = ValueNotifier(null);
+  Future<void> _setupOrientation() async {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
 
-    _initializeComponents();
-    _togglePanel(value: false); // Ensure panel starts hidden
+  Future<void> _initializeAsync() async {
+    await _animeWatchProgressBox.init();
+    _startProgressTimer();
+  }
+
+  void _startProgressTimer() {
+    _saveProgressTimer =
+        Timer.periodic(_progressSaveInterval, (_) => _saveProgress());
+  }
+
+  Future<void> _saveProgress() async {
+    final watchState = ref.read(watchProvider);
+    final playerState = ref.read(playerStateProvider);
+    final playerSettings = ref.read(playerSettingsProvider).playerSettings;
+
+    if (!_shouldSaveProgress(watchState, playerState)) return;
+    log("Saving progress");
+
+    final episodeIdx = watchState.selectedEpisodeIdx!;
+    final episode = watchState.episodes[episodeIdx];
+    final progress = playerState.position;
+    final duration = playerState.duration;
+
+    final thumbnailBase64 = await _generateThumbnail();
+    final isCompleted = progress.inSeconds >=
+        (duration.inSeconds * playerSettings.episodeCompletionThreshold);
+
+    await _animeWatchProgressBox.updateEpisodeProgress(
+      animeMedia: widget.animeMedia,
+      episodeNumber: episode.number!,
+      episodeTitle: episode.title ?? 'Untitled',
+      episodeThumbnail: thumbnailBase64,
+      progressInSeconds: progress.inSeconds,
+      durationInSeconds: duration.inSeconds,
+      isCompleted: isCompleted,
+    );
+  }
+
+  bool _shouldSaveProgress(WatchState watchState, PlayerState playerState) {
+    return watchState.selectedEpisodeIdx != null &&
+        playerState.duration.inSeconds >= 10 &&
+        playerState.position.inSeconds >= 10 &&
+        playerState.position <= playerState.duration;
+  }
+
+  Future<String?> _generateThumbnail() async {
+    final rawScreenshot =
+        await ref.read(playerProvider).screenshot(format: 'image/jpg');
+    if (rawScreenshot == null) return null;
+
+    return compute(_processThumbnail, rawScreenshot);
+  }
+
+  static String? _processThumbnail(Uint8List rawScreenshot) {
+    final image = img.decodeImage(rawScreenshot);
+    if (image == null) return null;
+
+    final resizedImage = img.copyResize(
+      image,
+      width: _thumbnailWidth,
+      height: _thumbnailHeight,
+    );
+    return base64Encode(
+        img.encodeJpg(resizedImage, quality: _thumbnailQuality));
+  }
+
+  Future<void> _performInitialFetch(WidgetRef ref) async {
+    final notifier = ref.read(watchProvider.notifier);
+    await notifier.fetchEpisodes(animeId: widget.animeId);
+    await notifier.fetchStreamData(
+      withPlay: false,
+      episodeIdx: (widget.episode ?? 1) - 1,
+    );
   }
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
-    _playerSubscription?.cancel();
-    _positionSubscription?.cancel();
-    _player.dispose();
-    _selectedSource.dispose();
-    _selectedCategory.dispose();
-    _selectedServer.dispose();
-    _selectedQuality.dispose();
-    _panelController.dispose();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _saveProgressTimer?.cancel();
+    _animationController.dispose();
+    ref.read(playerProvider).dispose();
+    _resetOrientationAndUI();
     super.dispose();
   }
 
-  Future<void> _initializeComponents() async {
-    try {
-      _animeProvider =
-          getAnimeProvider(ref) ?? (throw Exception('AnimeProvider not found'));
-      _animeWatchProgressBox = AnimeWatchProgressBox();
-      await _animeWatchProgressBox?.init();
-      _initializePlayer();
-      _selectedServer.value = _animeProvider.getSupportedServers().firstOrNull;
-      setState(() => _isInitialized = true);
-      await _fetchEpisodes();
-    } catch (e) {
-      _handleError('Initialization failed: $e');
-    }
-  }
-
-  void _initializePlayer() {
-    _player = Player(
-      configuration: const PlayerConfiguration(bufferSize: 64 * 1024 * 1024),
-    );
-    _controller =
-        VideoController(_player, configuration: VideoControllerConfiguration());
-    _playerSubscription = _player.stream.error.listen(_handlePlayerError);
-    _positionSubscription =
-        _player.stream.position.listen((position) => _lastPosition = position);
-  }
-
-  Future<void> _fetchEpisodes() async => await _handleAsyncOperation(
-        operation: () async {
-          final episodes =
-              (await _animeProvider.getEpisodes(widget.animeId)).episodes;
-          if (episodes?.isEmpty ?? true) throw Exception('No episodes found');
-          setState(() {
-            _episodes.clear();
-            _episodes.addAll(episodes!);
-          });
-          _debounceFetchStreamData();
-        },
-        errorMessage: 'Failed to load episodes',
-      );
-
-  Future<void> _fetchStreamData() async => await _handleAsyncOperation(
-        operation: () async {
-          if (_selectedEpIdx >= _episodes.length) return;
-          final sources = await _animeProvider.getSources(
-            widget.animeId,
-            _episodes[_selectedEpIdx].id!,
-            _selectedServer.value,
-            _selectedCategory.value!,
-          );
-          if (sources.sources.isEmpty) {
-            throw Exception('No video sources available');
-          }
-          setState(() {
-            _sources.clear();
-            _sources.addAll(sources.sources);
-            _selectedSource.value = _sources.first;
-          });
-          _qualityOptions.clear();
-          if (_selectedSource.value != null) {
-            await _extractQualities(
-                _selectedSource.value!.url!, sources.headers);
-            _selectedQuality.value = _qualityOptions.first['url'];
-          }
-          await _configureSubtitles(sources.tracks);
-          await _updateVideoSource(_selectedQuality.value!);
-        },
-        errorMessage: 'Failed to load stream data',
-      );
-
-  Future<void> _extractQualities(String m3u8Url, dynamic headers) async {
-    try {
-      final response = await http.get(Uri.parse(m3u8Url), headers: headers);
-      if (response.statusCode == 200) {
-        final lines = response.body.split('\n');
-        final List<Map<String, String>> extractedQualities = [];
-
-        for (int i = 0; i < lines.length; i++) {
-          if (lines[i].contains('#EXT-X-STREAM-INF')) {
-            final resolution = RegExp(r'RESOLUTION=(\d+x\d+)')
-                    .firstMatch(lines[i])
-                    ?.group(1) ??
-                'Default';
-            if (i + 1 < lines.length) {
-              extractedQualities.add({
-                'quality': resolution,
-                'url':
-                    Uri.parse(m3u8Url).resolve(lines[i + 1].trim()).toString(),
-              });
-            }
-          }
-        }
-
-        if (extractedQualities.isNotEmpty) {
-          setState(() {
-            _qualityOptions.clear();
-            _qualityOptions.addAll(extractedQualities);
-            _selectedQuality.value = _qualityOptions.first['url'];
-          });
-        } else {
-          setState(() {
-            _qualityOptions.clear();
-            _qualityOptions.add({'quality': 'Default', 'url': m3u8Url});
-            _selectedQuality.value = m3u8Url;
-          });
-        }
-      }
-    } catch (e) {
-      log('Failed to extract qualities: $e');
-      setState(() {
-        _qualityOptions.clear();
-        _qualityOptions.add({'quality': 'Default', 'url': m3u8Url});
-        _selectedQuality.value = m3u8Url;
-      });
-    }
-  }
-
-  Future<void> _configureSubtitles(List<Subtitle> subtitles) async {
-    _subtitles.clear();
-
-    // Track occurrences of each language
-    Map<String, int> langCount = {};
-
-    _subtitles.addAll(subtitles.map((s) {
-      String language = s.lang ?? 'Unknown';
-
-      // If language is repeated, append a number to differentiate
-      if (langCount.containsKey(language)) {
-        langCount[language] = langCount[language]! + 1;
-        language = '$language (${langCount[language]})';
-      } else {
-        langCount[language] = 1;
-      }
-
-      return SubtitleTrack.uri(
-        s.url!,
-        language: language,
-        title: language,
-      );
-    }));
-
-    // Find initial subtitle track (first English or first available)
-    SubtitleTrack initialTrack = _subtitles.firstWhere(
-      (s) => s.language!.toLowerCase().contains('english'),
-      orElse: () =>
-          _subtitles.isNotEmpty ? _subtitles.first : SubtitleTrack.no(),
-    );
-
-    await _player.setSubtitleTrack(initialTrack);
-  }
-
-  Future<void> _updateVideoSource(String url,
-      {bool fromQualityChange = false}) async {
-    _togglePanel(value: false);
-    await _player.open(Media(url)).then((_) => _player.play()).then(
-        (_) => _player.seek(fromQualityChange ? _lastPosition : Duration.zero));
-  }
-
-  void _playEpisode(int index) => setState(() {
-        _selectedEpIdx = index.clamp(0, _episodes.length - 1);
-        _lastPosition = Duration.zero;
-        _debounceFetchStreamData();
-      });
-
-  void _changeSource(Source source) {
-    _selectedSource.value = source;
-    _updateVideoSource(source.url!);
-  }
-
-  void _changeQuality(String url) {
-    _updateVideoSource(url, fromQualityChange: true).then((_) {
-      _player.seek(_lastPosition);
-      _selectedQuality.value = url;
-    });
-  }
-
-  void _changeServer(String server) {
-    _player.pause();
-    _selectedServer.value = server;
-    _debounceFetchStreamData();
-  }
-
-  void _changeCategory(String category) {
-    _player.pause();
-    _selectedCategory.value = category;
-    _debounceFetchStreamData();
-  }
-
-  void _toggleLayout() => setState(() => _isGridView = !_isGridView);
-
-  void _updateItemsPerPage(int value) => setState(() => _itemsPerPage = value);
-
-  void _updateGridColumns(int value) => setState(() => _gridColumns = value);
-
-  void _changeRange(int start) => setState(() => _selectedRangeStart = start);
-
-  void _debounceFetchStreamData() {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), _fetchStreamData);
-  }
-
-  void _handlePlayerError(String error) {
-    log('Player error: $error');
-    if (error.contains('Failed to open')) _initializePlayer();
-  }
-
-  Future<void> _handleAsyncOperation({
-    required Future<void> Function() operation,
-    required String errorMessage,
-  }) async {
-    try {
-      await operation();
-    } catch (e) {
-      _handleError('$errorMessage: $e');
-    } finally {
-      if (mounted) setState(() {});
-    }
-  }
-
-  void _handleError(String message) {
-    log(message);
-    if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
-    }
-  }
-
-  void _togglePanel({bool? value}) {
-    setState(() {
-      _isPanelVisible = value ?? !_isPanelVisible;
-      _isPanelVisible ? _panelController.forward() : _panelController.reverse();
-    });
-  }
-
-  void _hidePanel() {
-    if (_isPanelVisible) {
-      setState(() {
-        _isPanelVisible = false;
-        _panelController.reverse();
-      });
-    }
+  Future<void> _resetOrientationAndUI() async {
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    await windowManager.setFullScreen(false);
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
-    return OrientationBuilder(
-      builder: (context, orientation) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final isWideScreen = constraints.maxWidth > constraints.maxHeight &&
-                constraints.maxWidth > 600;
-            if (!_isInitialized ||
-                _controller == null ||
-                _animeWatchProgressBox == null) {
-              return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()));
-            }
-
-            return Scaffold(
-              backgroundColor: Theme.of(context).colorScheme.surface,
-              body: SafeArea(
-                child: Stack(
-                  children: [
-                    GestureDetector(
-                      onTap: _hidePanel,
-                      child: Column(
-                        children: [
-                          _buildControlBar(context, isWideScreen),
-                          _buildVideoSection(flex: 1),
-                          if (!isWideScreen)
-                            Flexible(child: _buildEpisodesPanel(flex: 1)),
-                        ],
-                      ),
-                    ),
-                    if (isWideScreen) _buildSlidingPanel(constraints),
-                  ],
+    return Scaffold(
+      body: Center(
+        child: LayoutBuilder(
+          builder: (context, constraints) => Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Video(
+                  controller: _controller,
+                  subtitleViewConfiguration:
+                      const SubtitleViewConfiguration(visible: false),
+                  filterQuality:
+                      kDebugMode ? FilterQuality.low : FilterQuality.none,
+                  fit: BoxFit.contain,
+                  controls: (state) => CustomControls(
+                    state: state,
+                    panelAnimationController: _animationController,
+                  ),
+                  // onEnterFullscreen: _enterFullscreen,
+                  // onExitFullscreen: _exitFullscreen,
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildControlBar(BuildContext context, bool isWideScreen) {
-    final theme = Theme.of(context);
-    final episode = _episodes.isNotEmpty && _selectedEpIdx < _episodes.length
-        ? _episodes[_selectedEpIdx]
-        : null;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.surfaceContainer,
-            theme.colorScheme.surfaceContainer.withValues(alpha: 0.9),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+              _buildEpisodesPanel(context, constraints),
+            ],
+          ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Iconsax.arrow_left_2, size: 24),
-            onPressed: () => Navigator.pop(context),
-            tooltip: 'Back',
-            color: theme.colorScheme.onSurface,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.animeName,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (episode != null)
-                  Text(
-                    'Ep ${episode.number}${episode.title != null ? ': ${episode.title}' : ''}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-              ],
-            ),
-          ),
-          if (isWideScreen)
-            IconButton(
-              icon: Icon(
-                _isPanelVisible ? Iconsax.arrow_right_3 : Iconsax.element_plus,
-                size: 20,
-                color: theme.colorScheme.onSurface,
-              ),
-              onPressed: _togglePanel,
-              tooltip: _isPanelVisible ? 'Hide Episodes' : 'Show Episodes',
-            ),
-        ],
       ),
     );
   }
 
-  Widget _buildSlidingPanel(BoxConstraints constraints) {
-    final panelWidth = constraints.maxWidth > constraints.maxHeight
-        ? constraints.maxWidth * 0.25
-        : constraints.maxWidth * 0.3;
+  // Future<void> _enterFullscreen() async {
+  //   try {
+  //     setState(() => _isFullscreen = true);
+
+  //     // Hide panel if it's expanded
+  //     if (ref.read(watchProvider).isExpanded) {
+  //       await ref.read(watchProvider.notifier).togglePanel(_animationController);
+  //     }
+
+  //     await Future.wait([
+  //       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
+  //       windowManager.setFullScreen(true),
+  //       _setupOrientation(),
+  //     ]);
+  //   } catch (e) {
+  //     debugPrint('Error entering fullscreen: $e');
+  //     setState(() => _isFullscreen = false);
+  //   }
+  // }
+
+  // Future<void> _exitFullscreen() async {
+  //   try {
+  //     // Show panel if it was previously hidden
+  //     if (!ref.read(watchProvider).isExpanded) {
+  //       await ref.read(watchProvider.notifier).togglePanel(_animationController);
+  //     }
+
+  //     await Future.wait([
+  //       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge),
+  //       windowManager.setFullScreen(false),
+  //       _setupOrientation(),
+  //     ]);
+
+  //     setState(() => _isFullscreen = false);
+  //   } catch (e) {
+  //     debugPrint('Error exiting fullscreen: $e');
+  //     setState(() => _isFullscreen = true);
+  //   }
+  // }
+
+  Widget _buildEpisodesPanel(BuildContext context, BoxConstraints constraints) {
     return AnimatedBuilder(
-      animation: _panelController,
-      builder: (context, child) {
-        return Positioned(
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: panelWidth,
-          child: Transform.translate(
-            offset: Offset((1 - _panelController.value) * panelWidth, 0),
-            child: _buildEpisodesPanel(),
+      animation: _animationController,
+      builder: (context, child) => SizeTransition(
+        sizeFactor: CurvedAnimation(
+          parent: _animationController,
+          curve: Curves.easeInOut,
+        ),
+        axis: Axis.horizontal,
+        child: SizedBox(
+          width: MediaQuery.sizeOf(context).width * 0.35,
+          height: constraints.maxHeight,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
+              ),
+            ),
+            child: EpisodesPanel(animeId: widget.animeId),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
-
-  Widget _buildVideoSection({int flex = 1}) => Expanded(
-        flex: flex,
-        child: IntrinsicHeight(
-          child: VideoPlayerSection(
-            animeName: widget.animeName,
-            episodes: _episodes,
-            selectedEpisodeIndex: _selectedEpIdx,
-            controller: _controller!,
-            subtitles: _subtitles,
-            animeMedia: widget.animeMedia,
-            sources: _sources,
-            selectedSource: _selectedSource,
-            servers: _animeProvider.getSupportedServers(),
-            selectedServer: _selectedServer,
-            supportsDubSub: _animeProvider.getDubSubParamSupport(),
-            selectedCategory: _selectedCategory,
-            qualityOptions: _qualityOptions,
-            selectedQuality: _selectedQuality,
-            onSourceChange: _changeSource,
-            onServerChange: _changeServer,
-            onCategoryChange: _changeCategory,
-            onQualityChange: _changeQuality,
-          ),
-        ),
-      );
-
-  Widget _buildEpisodesPanel({int flex = 1}) => Expanded(
-        flex: flex,
-        child: EpisodesPanel(
-          episodes: _episodes,
-          selectedEpisodeIndex: _selectedEpIdx,
-          totalEpisodes: _episodes.length,
-          rangeStart: _selectedRangeStart,
-          itemsPerPage: _itemsPerPage,
-          gridColumns: _gridColumns,
-          isGridView: _isGridView,
-          animeWatchProgressBox: _animeWatchProgressBox!,
-          animeMedia: widget.animeMedia,
-          onToggleLayout: _toggleLayout,
-          onRangeChange: _changeRange,
-          onItemsPerPageChange: _updateItemsPerPage,
-          onGridColumnsChange: _updateGridColumns,
-          onEpisodeTap: _playEpisode,
-        ),
-      );
-}
-
-extension ListExtension<T> on List<T> {
-  T? get firstOrNull => isNotEmpty ? first : null;
 }

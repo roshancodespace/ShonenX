@@ -229,7 +229,7 @@ class PlayerSettingsModel extends HiveObject {
   PlayerSettingsModel({
     this.episodeCompletionThreshold = 0.9,
     this.autoPlayNextEpisode = true,
-    this.preferSubtitles = false,
+    this.preferSubtitles = true,
     this.subtitleFontSize = 16.0,
     this.subtitleTextColor = 0xFFFFFFFF, // Default white
     this.subtitleBackgroundOpacity = 0.6,

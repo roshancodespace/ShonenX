@@ -52,6 +52,11 @@ class AppInitializer {
     Hive.registerAdapter(AnimeWatchProgressEntryAdapter());
     Hive.registerAdapter(EpisodeProgressAdapter());
 
+    // Future.wait([
+    //   SettingsBox().init(),
+    //   AnimeWatchProgressBox().init(),
+    // ]);
+
     log("✅ Hive adapters registered.", name: "appInitializer");
   }
 

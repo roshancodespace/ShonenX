@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
+import 'dart:developer' as dev;
 
 // AnimeWatchProgressBox (unchanged from your provided code)
 class AnimeWatchProgressBox {
@@ -9,10 +10,13 @@ class AnimeWatchProgressBox {
   final String boxName = 'anime_watch_progress';
 
   Future<void> init() async {
+    // dev.log('AnimeWatchProgressBox init on thread: ${Platform.currentThreadId}');
     if (!Hive.isBoxOpen(boxName)) {
       _box = await Hive.openBox<AnimeWatchProgressEntry>(boxName);
+      dev.log('Box opened');
     } else {
       _box = Hive.box<AnimeWatchProgressEntry>(boxName);
+      dev.log('Box reused');
     }
   }
 

@@ -5,7 +5,7 @@ import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
 import 'package:shonenx/utils/html_parser.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class AnimeSpotlightCard extends StatefulWidget {
+class AnimeSpotlightCard extends StatelessWidget {
   final Media? anime;
   final Function(Media)? onTap;
   final String heroTag;
@@ -18,71 +18,32 @@ class AnimeSpotlightCard extends StatefulWidget {
   });
 
   @override
-  State<AnimeSpotlightCard> createState() => _AnimeSpotlightCardState();
-}
-
-class _AnimeSpotlightCardState extends State<AnimeSpotlightCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _hoverController;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _hoverController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
-      CurvedAnimation(parent: _hoverController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _hoverController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
     final theme = Theme.of(context);
 
-    return MouseRegion(
-      onEnter: (_) => _hoverController.forward(),
-      onExit: (_) => _hoverController.reverse(),
-      child: GestureDetector(
-        onTap: widget.anime != null
-            ? () => widget.onTap?.call(widget.anime!)
-            : null,
-        child: AnimatedBuilder(
-          animation: _scaleAnimation,
-          builder: (context, child) => Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Container(
-              height: isSmallScreen ? 200 : 300, // Slightly reduced heights
-              width: double.infinity, // Ensure it takes full width
-              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.shadow.withValues(alpha: 0.2),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: _CardContent(
-                  anime: widget.anime,
-                  heroTag: widget.heroTag,
-                  isSmallScreen: isSmallScreen,
-                ),
-              ),
+    return GestureDetector(
+      onTap: anime != null ? () => onTap?.call(anime!) : null,
+      child: Container(
+        height: isSmallScreen ? 200 : 300, // Slightly reduced heights
+        width: double.infinity, // Ensure it takes full width
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: theme.colorScheme.shadow.withValues(alpha: 0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: _CardContent(
+            anime: anime,
+            heroTag: heroTag,
+            isSmallScreen: isSmallScreen,
           ),
         ),
       ),

@@ -27,7 +27,7 @@ class GestureHandler {
   Future<void> initialize() async {
     if (!_isMobile) return;
     try {
-      _brightnessValue = await ScreenBrightness().application ?? 0.5;
+      _brightnessValue = await ScreenBrightness().application;
       _volumeValue = await FlutterVolumeController.getVolume() ?? 0.5;
     } catch (e) {
       developer.log('Error initializing brightness/volume: $e');

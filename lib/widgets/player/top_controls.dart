@@ -48,7 +48,7 @@ class TopControls extends StatelessWidget {
                   )
                 ],
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
               child: Row(
                 children: [
                   ShonenXIconButton(
@@ -110,7 +110,7 @@ class TopControls extends StatelessWidget {
                 )
               ],
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

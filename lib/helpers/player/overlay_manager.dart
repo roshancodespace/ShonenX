@@ -53,7 +53,11 @@ class OverlayManager {
 
     if (context.mounted) {
       Overlay.of(context).insert(_overlayEntry!);
-      _overlayTimer = Timer(Duration(milliseconds: 800), _removeOverlay);
+      _overlayTimer = Timer(Duration(milliseconds: 800), () {
+        if (_overlayEntry != null && _overlayEntry!.mounted) {
+          _removeOverlay();
+        }
+      });
     }
   }
 
@@ -71,7 +75,9 @@ class OverlayManager {
           opacity: 1.0,
           duration: const Duration(milliseconds: 200),
           onEnd: () => Future.delayed(Duration(milliseconds: 300), () {
-            if (context.mounted) overlayEntry.remove();
+            if (overlayEntry.mounted) {
+              overlayEntry.remove();
+            }
           }),
           child: Container(
             decoration: BoxDecoration(
@@ -101,8 +107,10 @@ class OverlayManager {
   }
 
   void _removeOverlay() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
+    if (_overlayEntry != null && _overlayEntry!.mounted) {
+      _overlayEntry?.remove();
+      _overlayEntry = null;
+    }
   }
 
   void dispose() {

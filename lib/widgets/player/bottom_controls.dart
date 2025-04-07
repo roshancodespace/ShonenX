@@ -78,7 +78,7 @@ class BottomControls extends StatelessWidget {
           const SizedBox(width: 16),
           _SettingsButton(
             theme: theme,
-            enabled: hasSources,
+            enabled: true,
             label: '${watchState.selectedServer ?? 'N/A'}, '
                 '${watchState.selectedCategory ?? 'N/A'}, '
                 '$sourceQuality',

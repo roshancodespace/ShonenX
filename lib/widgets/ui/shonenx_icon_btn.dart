@@ -24,7 +24,7 @@ class ShonenXIconButton extends StatelessWidget {
   final bool useMaterial3;
 
   const ShonenXIconButton({
-    Key? key,
+    super.key,
     required this.icon,
     required this.onPressed,
     this.tooltip,
@@ -43,7 +43,7 @@ class ShonenXIconButton extends StatelessWidget {
     this.badgeContent,
     this.labelDirection = Axis.horizontal,
     this.useMaterial3 = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

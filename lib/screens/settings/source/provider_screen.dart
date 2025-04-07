@@ -59,7 +59,9 @@ class ApiUrlController extends ChangeNotifier {
 
   static String _cleanUrl(String url) {
     url = url.trim();
-    while (url.endsWith('/')) url = url.substring(0, url.length - 1);
+    while (url.endsWith('/')) {
+      url = url.substring(0, url.length - 1);
+    }
     final uri = Uri.tryParse(url);
     return uri != null && uri.hasAuthority
         ? '${uri.scheme}://${uri.host}${uri.port != 80 && uri.port != 443 ? ':${uri.port}' : ''}'

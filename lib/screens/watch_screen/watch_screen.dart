@@ -70,6 +70,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   }
 
   Future<void> _initializeAsync() async {
+    await windowManager.setFullScreen(true);
     await _animeWatchProgressBox.init();
     _startProgressTimer();
   }
@@ -170,7 +171,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     final notifier = ref.read(watchProvider.notifier);
     await notifier.fetchEpisodes(animeId: widget.animeId);
     await notifier.fetchStreamData(
-      withPlay: true,
+      withPlay: false,
       episodeIdx: (widget.episode ?? 1) - 1,
     );
   }
@@ -216,8 +217,11 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                     state: state,
                     panelAnimationController: _animationController,
                   ),
-                  // onEnterFullscreen: _enterFullscreen,
-                  // onExitFullscreen: _exitFullscreen,
+                  onExitFullscreen: () async {
+                    if (context.mounted) {
+                      await exitFullscreen(context);
+                    }
+                  },
                 ),
               ),
               _buildEpisodesPanel(context, constraints),

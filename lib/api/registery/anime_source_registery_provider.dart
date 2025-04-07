@@ -19,7 +19,7 @@ class AnimeSourceRegistryNotifier extends StateNotifier<AnimeSourceRegistery> {
     state.registerProvider("animekai", AnimekaiProvider(customApiUrl: apiUrl));
     state.registerProvider("animepahe", AnimePaheProvider(customApiUrl: apiUrl));
   }
-
+  
   void updateApiUrl(String newApiUrl) {
     _initializeRegistry(newApiUrl);
   }

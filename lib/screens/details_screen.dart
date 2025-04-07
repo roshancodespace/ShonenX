@@ -13,6 +13,7 @@ import 'package:shonenx/helpers/anime_match_popup.dart';
 import 'package:shonenx/providers/anilist/anilist_medialist_provider.dart';
 import 'package:shonenx/providers/anilist/anilist_user_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shonenx/utils/html_parser.dart';
 
 class AnimeDetailsScreen extends ConsumerStatefulWidget {
   final Media anime;
@@ -651,7 +652,7 @@ class _Synopsis extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          description,
+          parseHtmlToString(description),
           style: GoogleFonts.montserrat(
             fontSize: 16,
             color: colorScheme.onSurfaceVariant,

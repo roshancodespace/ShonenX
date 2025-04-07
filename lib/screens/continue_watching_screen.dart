@@ -100,8 +100,9 @@ class _ContentState extends State<_Content>
         final animeId = int.tryParse(parts[0]);
         final episodeNumber = int.tryParse(parts[1]);
 
-        if (animeId == null || episodeNumber == null)
+        if (animeId == null || episodeNumber == null) {
           continue; // Bug fix: Skip invalid IDs
+        }
 
         final entry = widget.box.getEntry(animeId);
         if (entry != null) {
@@ -213,10 +214,9 @@ class _ContentState extends State<_Content>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Stack(
           children: [
@@ -349,7 +349,7 @@ class _ContentState extends State<_Content>
                       borderRadius: BorderRadius.circular(32),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -472,7 +472,7 @@ class _ActionButton extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: color.withOpacity(opacity),
+              color: color.withValues(alpha: opacity),
               size: 24,
             ),
             const SizedBox(height: 4),
@@ -482,7 +482,7 @@ class _ActionButton extends StatelessWidget {
                 color: Theme.of(context)
                     .colorScheme
                     .onSurface
-                    .withOpacity(opacity),
+                    .withValues(alpha: opacity),
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -542,7 +542,7 @@ class _EmptyState extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: colorScheme.primaryContainer.withOpacity(0.3),
+              color: colorScheme.primaryContainer.withValues(alpha: 0.3),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -781,7 +781,7 @@ class _GroupedSectionState extends State<_GroupedSection> {
 
     return Card(
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
+      shadowColor: Colors.black.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
@@ -789,7 +789,7 @@ class _GroupedSectionState extends State<_GroupedSection> {
           Container(
             decoration: BoxDecoration(
               color: widget.multiSelectMode && areAllEpisodesSelected()
-                  ? colorScheme.primaryContainer.withOpacity(0.5)
+                  ? colorScheme.primaryContainer.withValues(alpha: 0.5)
                   : null,
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(16)),
@@ -926,10 +926,10 @@ class _GroupedSectionState extends State<_GroupedSection> {
 extension ColorExtension on Color {
   Color withValues({int? red, int? green, int? blue, double? alpha}) {
     return Color.fromRGBO(
-      red ?? this.red,
-      green ?? this.green,
-      blue ?? this.blue,
-      alpha ?? this.opacity,
+      red ?? r.toInt(),
+      green ?? g.toInt(),
+      blue ?? b.toInt(),
+      alpha ?? a.toDouble(),
     );
   }
 }

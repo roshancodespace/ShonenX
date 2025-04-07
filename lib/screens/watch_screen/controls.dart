@@ -64,7 +64,7 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
   void initState() {
     super.initState();
     _scheduleHideControls();
-    _isFullscreen = widget.state.isFullscreen();
+    _isFullscreen = !ref.read(watchProvider).isExpanded;
     _overlayManager = OverlayManager();
     _gestureHandler = GestureHandler(
       resetTimer: _resetTimer,
@@ -95,6 +95,9 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
   void dispose() {
     _hideControlsTimer?.cancel();
     _overlayManager.dispose();
+    ref.read(watchProvider.notifier).resetState();
+    widget.state.dispose();
+    ref.read(playerProvider).dispose();
     super.dispose();
   }
 
@@ -132,29 +135,29 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
     }
   }
 
-  Future<void> _handleDoubleTap(
-      BuildContext context, TapDownDetails details) async {
-    // Only enable on mobile
-    if (!Platform.isAndroid && !Platform.isIOS) return;
+  // Future<void> _handleDoubleTap(
+  //     BuildContext context, TapDownDetails details) async {
+  //   // Only enable on mobile
+  //   if (!Platform.isAndroid && !Platform.isIOS) return;
 
-    final playerNotifier = ref.read(playerStateProvider.notifier);
-    final playerState = ref.read(playerStateProvider);
-    final screenWidth = MediaQuery.of(context).size.width;
-    final tapPositionX = details.globalPosition.dx;
+  //   final playerNotifier = ref.read(playerStateProvider.notifier);
+  //   final playerState = ref.read(playerStateProvider);
+  //   final screenWidth = MediaQuery.of(context).size.width;
+  //   final tapPositionX = details.globalPosition.dx;
 
-    if (tapPositionX < screenWidth / 2) {
-      await playerNotifier.seek(playerState.position - _seekDuration);
-      if (context.mounted) {
-        _overlayManager.showSeekIndicator(context, isForward: false);
-      }
-    } else {
-      await playerNotifier.seek(playerState.position + _seekDuration);
-      if (context.mounted) {
-        _overlayManager.showSeekIndicator(context, isForward: true);
-      }
-    }
-    _resetTimer();
-  }
+  //   if (tapPositionX < screenWidth / 2) {
+  //     await playerNotifier.seek(playerState.position - _seekDuration);
+  //     if (context.mounted) {
+  //       _overlayManager.showSeekIndicator(context, isForward: false);
+  //     }
+  //   } else {
+  //     await playerNotifier.seek(playerState.position + _seekDuration);
+  //     if (context.mounted) {
+  //       _overlayManager.showSeekIndicator(context, isForward: true);
+  //     }
+  //   }
+  //   _resetTimer();
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -194,9 +197,15 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
             },
           ),
           ToggleFullscreenIntent: CallbackAction<ToggleFullscreenIntent>(
-            onInvoke: (_) {
+            onInvoke: (_) async {
               _resetTimer();
-              return widget.state.toggleFullscreen();
+              if (!_isFullscreen) {
+                return await ref
+                    .read(watchProvider.notifier)
+                    .togglePanel(widget.panelAnimationController);
+              }
+              return;
+              // return widget.state.toggleFullscreen();
             },
           ),
         },
@@ -209,50 +218,50 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
                 : MouseCursor.defer,
             child: GestureDetector(
               onTap: _toggleControls,
-              onDoubleTapDown: (details) => _handleDoubleTap(context, details),
-              // Only enable gestures on mobile
-              onPanStart: Platform.isAndroid || Platform.isIOS
-                  ? (details) => _gestureHandler.onPanStart(context, details)
-                  : null,
-              onPanUpdate: Platform.isAndroid || Platform.isIOS
-                  ? (details) => _gestureHandler.onPanUpdate(context, details)
-                  : null,
-              onPanEnd: Platform.isAndroid || Platform.isIOS
-                  ? (_) => _gestureHandler.onPanEnd()
-                  : null,
-              child: Stack(
-                children: [
-                  Positioned(
-                    bottom: _controlsVisible ? 100 : 0,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: SubtitleOverlay(
-                        subtitleStyle: playerSettings.toSubtitleStyle(),
-                        subtitle: playerState.subtitle.firstOrNull ?? '',
+              // TODO: Fix this
+              // onDoubleTapDown: (details) => _handleDoubleTap(context, details),
+              // // Only enable gestures on mobile
+              // onPanStart: Platform.isAndroid || Platform.isIOS
+              //     ? (details) => _gestureHandler.onPanStart(context, details)
+              //     : null,
+              // onPanUpdate: Platform.isAndroid || Platform.isIOS
+              //     ? (details) => _gestureHandler.onPanUpdate(context, details)
+              //     : null,
+              // onPanEnd: Platform.isAndroid || Platform.isIOS
+              //     ? (_) => _gestureHandler.onPanEnd()
+              //     : null,
+              child: SafeArea(
+                child: Stack(
+                  children: [
+                    Positioned(
+                      bottom: _controlsVisible ? 100 : 0,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: SubtitleOverlay(
+                          subtitleStyle: playerSettings.toSubtitleStyle(),
+                          subtitle: playerState.subtitle.firstOrNull ?? '',
+                        ),
                       ),
                     ),
-                  ),
-                  AnimatedOpacity(
-                    opacity: _controlsVisible ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: AbsorbPointer(
-                      absorbing: !_controlsVisible,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.black.withValues(alpha: 0.7),
-                              Colors.transparent,
-                            ],
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
+                    AnimatedOpacity(
+                      opacity: _controlsVisible ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      child: AbsorbPointer(
+                        absorbing: !_controlsVisible,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.black.withValues(alpha: 0.7),
+                                Colors.transparent,
+                              ],
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                            ),
                           ),
-                        ),
-                        child: SafeArea(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 5),
                             child: Stack(
                               children: [
                                 Positioned(
@@ -286,7 +295,7 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
                                     onFullscreenTap: () async {
                                       _resetTimer();
 
-                                      await widget.state.toggleFullscreen();
+                                      // await widget.state.toggleFullscreen();
                                       if (!watchState.isExpanded &&
                                           !_isFullscreen) {
                                         await ref
@@ -376,8 +385,8 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

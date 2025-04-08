@@ -246,7 +246,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   void dispose() {
     _saveProgressTimer?.cancel();
     _animationController.dispose();
-    if (mounted) {
+    if (ref.context.mounted && mounted) {
       ref.read(playerProvider).dispose();
       _resetOrientationAndUI();
     }

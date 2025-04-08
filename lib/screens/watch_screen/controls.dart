@@ -20,6 +20,7 @@ import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:shonenx/widgets/ui/shonenx_icon_btn.dart';
+import 'package:window_manager/window_manager.dart';
 
 // Intents for keyboard shortcuts
 class PlayPauseIntent extends Intent {
@@ -82,8 +83,10 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
     _initializeState();
   }
 
-  void _initializeState() {
-    _isFullscreen = false;
+  Future<void> _initializeState() async {
+    _isFullscreen = (!Platform.isAndroid && !Platform.isIOS)
+        ? await windowManager.isFullScreen()
+        : false;
     _gestureHandler.initialize();
     if (_isFullscreen) {
       _scheduleHideControls();

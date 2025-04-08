@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class AnimatedAnimeCard extends StatefulWidget {
   final Media? anime;
@@ -1205,14 +1206,6 @@ class _ErrorPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      height: height,
-      color: theme.colorScheme.errorContainer.withValues(alpha: 0.6),
-      child: Icon(
-        Icons.broken_image,
-        size: 40,
-        color: theme.colorScheme.error,
-      ),
-    );
+    return Skeletonizer(child: Bone.square());
   }
 }

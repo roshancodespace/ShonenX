@@ -178,45 +178,13 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     if (!mounted) return;
     final notifier = ref.read(watchProvider.notifier);
     // Show loading dialog for initial fetch
-    _showLoadingDialog(context, 'Loading episodes...');
     await notifier.fetchEpisodes(animeId: widget.animeId);
     if (mounted) {
-      Navigator.of(context).pop(); // Close loading dialog
-      _showLoadingDialog(context, 'Fetching stream data...');
       await notifier.fetchStreamData(
         withPlay: true,
         episodeIdx: (widget.episode ?? 1) - 1,
       );
-      if (mounted) Navigator.of(context).pop();
     }
-  }
-
-  void _showLoadingDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(
-              valueColor:
-                  AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _showErrorSnackBar(String error) {
@@ -267,89 +235,83 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Consumer(
-        builder: (context, ref, child) {
-          final watchState = ref.watch(watchProvider);
+    return Scaffold(body: Consumer(
+      builder: (context, ref, child) {
+        final watchState = ref.watch(watchProvider);
 
-          // Handle loading states
-          if (watchState.episodesLoading || watchState.sourceLoading) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted &&
-                  !watchState.episodesLoading &&
-                  !watchState.sourceLoading) {
-                Navigator.of(context)
-                    .pop(); // Close any lingering loading dialog
-              }
-            });
-          }
+        // Handle loading states
+        if (watchState.episodesLoading || watchState.sourceLoading) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted &&
+                !watchState.episodesLoading &&
+                !watchState.sourceLoading) {
+              Navigator.of(context).pop(); // Close any lingering loading dialog
+            }
+          });
+        }
 
-          // Handle errors
-          if (watchState.error != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) _showErrorSnackBar(watchState.error!);
-            });
-          }
+        // Handle errors
+        if (watchState.error != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _showErrorSnackBar(watchState.error!);
+          });
+        }
 
-          return Stack(
-            children: [
-              Center(
-                child: LayoutBuilder(
-                  builder: (context, constraints) => Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Video(
-                          controller: _controller,
-                          subtitleViewConfiguration:
-                              const SubtitleViewConfiguration(visible: false),
-                          filterQuality: kDebugMode
-                              ? FilterQuality.low
-                              : FilterQuality.none,
-                          fit: BoxFit.contain,
-                          controls: (state) => CustomControls(
-                            state: state,
-                            panelAnimationController: _animationController,
-                          ),
-                        ),
-                      ),
-                      _buildEpisodesPanel(context, constraints),
-                    ],
-                  ),
-                ),
-              ),
-              if (watchState.episodesLoading || watchState.sourceLoading)
-                Container(
-                  color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation(
-                              Theme.of(context).colorScheme.primary),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          watchState.episodesLoading
-                              ? 'Loading episodes...'
-                              : 'Fetching stream data...',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                        ),
-                      ],
+        return Center(
+          child: LayoutBuilder(
+            builder: (context, constraints) => Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Video(
+                    controller: _controller,
+                    subtitleViewConfiguration:
+                        const SubtitleViewConfiguration(visible: false),
+                    filterQuality:
+                        kDebugMode ? FilterQuality.low : FilterQuality.none,
+                    fit: BoxFit.contain,
+                    controls: (state) => CustomControls(
+                      state: state,
+                      panelAnimationController: _animationController,
                     ),
                   ),
                 ),
-            ],
-          );
-        },
-      ),
-    );
+                _buildEpisodesPanel(context, constraints),
+              ],
+            ),
+          ),
+        );
+      },
+    ), floatingActionButton: Consumer(
+      builder: (context, ref, child) {
+        final watchState = ref.watch(watchProvider);
+        if (watchState.sources.isNotEmpty || !watchState.sourceLoading) {
+          return const SizedBox.shrink();
+        }
+        return Card(
+          child: Padding(
+            padding: EdgeInsets.all(15),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation(
+                      Theme.of(context).colorScheme.primary),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  watchState.loadingMessage ?? 'Loading...',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ));
   }
 
   Widget _buildEpisodesPanel(BuildContext context, BoxConstraints constraints) {

@@ -31,6 +31,7 @@ class WatchState {
   final String? error; // Error message to be displayed or handled
   final bool episodesLoading;
   final bool sourceLoading;
+  final String? loadingMessage;
 
   const WatchState({
     required this.animeId,
@@ -49,6 +50,7 @@ class WatchState {
     this.selectedQualityIdx = 0,
     this.selectedSourceIdx = 0,
     this.selectedSubtitleIdx,
+    this.loadingMessage,
   });
 
   WatchState copyWith({
@@ -68,6 +70,7 @@ class WatchState {
     int? selectedSubtitleIdx,
     int? selectedSourceIdx,
     int? selectedEpisodeIdx,
+    String? loadingMessage,
   }) {
     return WatchState(
       error: error, // Allow null to clear error
@@ -86,6 +89,7 @@ class WatchState {
       selectedSubtitleIdx: selectedSubtitleIdx ?? this.selectedSubtitleIdx,
       selectedSourceIdx: selectedSourceIdx ?? this.selectedSourceIdx,
       selectedEpisodeIdx: selectedEpisodeIdx ?? this.selectedEpisodeIdx,
+      loadingMessage: loadingMessage ?? this.loadingMessage,
     );
   }
 }
@@ -256,18 +260,21 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
 
   Future<void> fetchEpisodes({required dynamic animeId}) async {
     try {
-      state = state.copyWith(episodesLoading: true, error: null);
+      state = state.copyWith(
+          episodesLoading: true,
+          error: null,
+          loadingMessage: 'Loading episodes...');
       final episodes = (await animeProvider.getEpisodes(animeId)).episodes;
       state = state.copyWith(
-        episodesLoading: false,
-        animeId: animeId,
-        episodes: episodes,
-        selectedServer: animeProvider.getSupportedServers().first,
-        error: null,
-      );
+          episodesLoading: false,
+          animeId: animeId,
+          episodes: episodes,
+          selectedServer: animeProvider.getSupportedServers().first,
+          error: null,
+          loadingMessage: null);
     } catch (e, stackTrace) {
       _handleError('Failed to fetch episodes: $e', stackTrace);
-      state = state.copyWith(episodesLoading: false);
+      state = state.copyWith(episodesLoading: false, loadingMessage: null);
     }
   }
 
@@ -284,6 +291,7 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
         selectedEpisodeIdx: episodeIdx,
         sourceLoading: true,
         error: null,
+        loadingMessage: 'Loading sources...',
       );
       final data = await animeProvider.getSources(
         state.animeId,
@@ -294,6 +302,7 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
 
       state = state.copyWith(
         sourceLoading: false,
+        loadingMessage: null,
         selectedSource: data.sources.isNotEmpty ? data.sources.first.url : null,
         sources: data.sources,
         subtitles: data.tracks,
@@ -314,7 +323,7 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
       }
     } catch (e, stackTrace) {
       _handleError('Failed to fetch stream data: $e', stackTrace);
-      state = state.copyWith(sourceLoading: false);
+      state = state.copyWith(sourceLoading: false, loadingMessage: null);
     }
   }
 

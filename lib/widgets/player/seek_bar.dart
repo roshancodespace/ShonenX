@@ -57,9 +57,13 @@ class _SeekBarState extends State<SeekBar> {
         final handlerWidth =
             constraints.maxWidth * 0.005; // Responsive handler width
 
-        return SizedBox(
+        return Container(
           height:
-              sliderHeight.clamp(20, 30), // Ensure a minimum and maximum height
+              sliderHeight.clamp(28, 38), // Ensure a minimum and maximum height
+          padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.3),
+          ),
           child: FlutterSlider(
             values: [_currentPosition],
             min: 0,
@@ -84,7 +88,7 @@ class _SeekBarState extends State<SeekBar> {
                 borderRadius: BorderRadius.circular(4),
               ),
               inactiveTrackBar: BoxDecoration(
-                color: widget.theme.colorScheme.onPrimaryContainer
+                color: widget.theme.colorScheme.primaryContainer
                     .withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(4),
               ),

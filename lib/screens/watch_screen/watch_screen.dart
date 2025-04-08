@@ -63,6 +63,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   }
 
   Future<void> _setupOrientation() async {
+    if (!mounted) return; // Check if widget is still mounted
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
@@ -70,15 +71,15 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   }
 
   Future<void> _initializeAsync() async {
-    await windowManager.setFullScreen(true);
     await _animeWatchProgressBox.init();
     _startProgressTimer();
   }
 
   void _startProgressTimer() {
-    _saveProgressTimer?.cancel(); // Cancel any existing timer
-    _saveProgressTimer =
-        Timer.periodic(_progressSaveInterval, (_) => _saveProgress());
+    _saveProgressTimer?.cancel();
+    _saveProgressTimer = Timer.periodic(_progressSaveInterval, (_) {
+      if (mounted) _saveProgress(); // Only save if still mounted
+    });
   }
 
   Future<void> _saveProgress() async {
@@ -146,7 +147,6 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
         log("Failed to capture screenshot");
         return null;
       }
-
       return await compute(_processThumbnail, rawScreenshot);
     } catch (e) {
       log("Error generating thumbnail: $e");
@@ -180,13 +180,15 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   void dispose() {
     _saveProgressTimer?.cancel();
     _animationController.dispose();
-    ref.read(playerProvider).dispose();
-    _resetOrientationAndUI();
-    ref.read(watchProvider.notifier).resetState();
+    if (mounted) {
+      ref.read(playerProvider).dispose(); // Only dispose if still mounted
+      _resetOrientationAndUI(); // Call reset only if mounted
+    }
     super.dispose();
   }
 
   Future<void> _resetOrientationAndUI() async {
+    if (!mounted) return; // Avoid running if widget is disposed
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     await windowManager.setFullScreen(false);
     await SystemChrome.setPreferredOrientations([
@@ -217,11 +219,6 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                     state: state,
                     panelAnimationController: _animationController,
                   ),
-                  onExitFullscreen: () async {
-                    if (context.mounted) {
-                      await exitFullscreen(context);
-                    }
-                  },
                 ),
               ),
               _buildEpisodesPanel(context, constraints),
@@ -231,46 +228,6 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       ),
     );
   }
-
-  // Future<void> _enterFullscreen() async {
-  //   try {
-  //     setState(() => _isFullscreen = true);
-
-  //     // Hide panel if it's expanded
-  //     if (ref.read(watchProvider).isExpanded) {
-  //       await ref.read(watchProvider.notifier).togglePanel(_animationController);
-  //     }
-
-  //     await Future.wait([
-  //       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
-  //       windowManager.setFullScreen(true),
-  //       _setupOrientation(),
-  //     ]);
-  //   } catch (e) {
-  //     debugPrint('Error entering fullscreen: $e');
-  //     setState(() => _isFullscreen = false);
-  //   }
-  // }
-
-  // Future<void> _exitFullscreen() async {
-  //   try {
-  //     // Show panel if it was previously hidden
-  //     if (!ref.read(watchProvider).isExpanded) {
-  //       await ref.read(watchProvider.notifier).togglePanel(_animationController);
-  //     }
-
-  //     await Future.wait([
-  //       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge),
-  //       windowManager.setFullScreen(false),
-  //       _setupOrientation(),
-  //     ]);
-
-  //     setState(() => _isFullscreen = false);
-  //   } catch (e) {
-  //     debugPrint('Error exiting fullscreen: $e');
-  //     setState(() => _isFullscreen = true);
-  //   }
-  // }
 
   Widget _buildEpisodesPanel(BuildContext context, BoxConstraints constraints) {
     return AnimatedBuilder(

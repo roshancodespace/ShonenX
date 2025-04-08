@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:media_kit_video/media_kit_video.dart' as media_kit_video;
-import 'package:shonenx/api/models/anime/source_model.dart';
+import 'package:shonenx/data/hive/models/settings_offline_model.dart';
 import 'package:shonenx/helpers/player/gesture_handler.dart';
 import 'package:shonenx/helpers/player/overlay_manager.dart';
 import 'package:shonenx/helpers/provider.dart';
+import 'package:shonenx/helpers/ui.dart';
 import 'package:shonenx/providers/watch_providers.dart';
 import 'package:shonenx/screens/settings/player/player_screen.dart';
 import 'package:shonenx/widgets/player/bottom_controls.dart';
@@ -16,9 +17,9 @@ import 'package:shonenx/widgets/player/subtitle_overlay.dart';
 import 'package:shonenx/widgets/player/top_controls.dart';
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:shonenx/widgets/ui/shonenx_icon_btn.dart';
-import 'dart:io';
 
 // Intents for keyboard shortcuts
 class PlayPauseIntent extends Intent {
@@ -52,10 +53,11 @@ class CustomControls extends ConsumerStatefulWidget {
 }
 
 class _CustomControlsState extends ConsumerState<CustomControls> {
-  bool _controlsVisible = true;
-  Timer? _hideControlsTimer;
   static const _autoHideDuration = Duration(seconds: 3);
   static const _seekDuration = Duration(seconds: 10);
+
+  bool _controlsVisible = true;
+  Timer? _hideControlsTimer;
   bool _isFullscreen = false;
   late GestureHandler _gestureHandler;
   late OverlayManager _overlayManager;
@@ -63,41 +65,44 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
   @override
   void initState() {
     super.initState();
-    _scheduleHideControls();
-    _isFullscreen = !ref.read(watchProvider).isExpanded;
     _overlayManager = OverlayManager();
     _gestureHandler = GestureHandler(
       resetTimer: _resetTimer,
-      showOverlay: (context, {required bool isBrightness}) =>
-          _overlayManager.showAdjustmentOverlay(
-        context,
-        isBrightness: isBrightness,
-        value: isBrightness
-            ? _gestureHandler.brightnessValue
-            : _gestureHandler.volumeValue,
-      ),
+      showOverlay: (context, {required bool isBrightness}) {
+        if (!mounted) return;
+        _overlayManager.showAdjustmentOverlay(
+          context,
+          isBrightness: isBrightness,
+          value: isBrightness
+              ? _gestureHandler.brightnessValue
+              : _gestureHandler.volumeValue,
+        );
+      },
     );
+    _initializeState();
+  }
 
-    if (mounted) {
-      setState(() {
-        _isFullscreen = widget.state.isFullscreen();
-        if (!_isFullscreen) {
-          _hideControlsTimer?.cancel();
-          _controlsVisible = true;
-          _scheduleHideControls();
-        }
-      });
-      _gestureHandler.initialize();
+  void _initializeState() {
+    _isFullscreen = false;
+    _gestureHandler.initialize();
+    if (_isFullscreen) {
+      _scheduleHideControls();
+    } else {
+      _controlsVisible = true;
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // No need to save ancestor references here unless accessing specific inherited widgets
   }
 
   @override
   void dispose() {
     _hideControlsTimer?.cancel();
     _overlayManager.dispose();
-    ref.read(watchProvider.notifier).resetState();
-    widget.state.dispose();
-    ref.read(playerProvider).dispose();
+    // Avoid disposing widget.state here; let the parent widget handle it
     super.dispose();
   }
 
@@ -106,7 +111,7 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
     if (!_controlsVisible || !mounted || !_isFullscreen) return;
 
     _hideControlsTimer = Timer(_autoHideDuration, () {
-      if (mounted && _controlsVisible) {
+      if (mounted) {
         setState(() => _controlsVisible = false);
         developer.log('Controls auto-hidden', name: 'CustomControls');
       }
@@ -116,11 +121,7 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
   void _toggleControls() {
     if (!mounted) return;
     setState(() => _controlsVisible = !_controlsVisible);
-    if (_controlsVisible) {
-      _scheduleHideControls();
-    } else {
-      _hideControlsTimer?.cancel();
-    }
+    _controlsVisible ? _scheduleHideControls() : _hideControlsTimer?.cancel();
   }
 
   void _showControls() {
@@ -130,34 +131,10 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
   }
 
   void _resetTimer() {
-    if (_controlsVisible && mounted) {
+    if (mounted && _controlsVisible) {
       _scheduleHideControls();
     }
   }
-
-  // Future<void> _handleDoubleTap(
-  //     BuildContext context, TapDownDetails details) async {
-  //   // Only enable on mobile
-  //   if (!Platform.isAndroid && !Platform.isIOS) return;
-
-  //   final playerNotifier = ref.read(playerStateProvider.notifier);
-  //   final playerState = ref.read(playerStateProvider);
-  //   final screenWidth = MediaQuery.of(context).size.width;
-  //   final tapPositionX = details.globalPosition.dx;
-
-  //   if (tapPositionX < screenWidth / 2) {
-  //     await playerNotifier.seek(playerState.position - _seekDuration);
-  //     if (context.mounted) {
-  //       _overlayManager.showSeekIndicator(context, isForward: false);
-  //     }
-  //   } else {
-  //     await playerNotifier.seek(playerState.position + _seekDuration);
-  //     if (context.mounted) {
-  //       _overlayManager.showSeekIndicator(context, isForward: true);
-  //     }
-  //   }
-  //   _resetTimer();
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -179,34 +156,18 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
       child: Actions(
         actions: {
           PlayPauseIntent: CallbackAction<PlayPauseIntent>(
-            onInvoke: (_) {
-              _toggleControls();
-              return playerNotifier.playOrPause();
-            },
+            onInvoke: (_) => _handlePlayPause(playerNotifier),
           ),
           SeekForwardIntent: CallbackAction<SeekForwardIntent>(
-            onInvoke: (_) {
-              _resetTimer();
-              return playerNotifier.seek(playerState.position + _seekDuration);
-            },
+            onInvoke: (_) =>
+                _handleSeek(playerState, playerNotifier, forward: true),
           ),
           SeekBackwardIntent: CallbackAction<SeekBackwardIntent>(
-            onInvoke: (_) {
-              _resetTimer();
-              return playerNotifier.seek(playerState.position - _seekDuration);
-            },
+            onInvoke: (_) =>
+                _handleSeek(playerState, playerNotifier, forward: false),
           ),
           ToggleFullscreenIntent: CallbackAction<ToggleFullscreenIntent>(
-            onInvoke: (_) async {
-              _resetTimer();
-              if (!_isFullscreen) {
-                return await ref
-                    .read(watchProvider.notifier)
-                    .togglePanel(widget.panelAnimationController);
-              }
-              return;
-              // return widget.state.toggleFullscreen();
-            },
+            onInvoke: (_) => _handleToggleFullscreen(),
           ),
         },
         child: Focus(
@@ -218,172 +179,16 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
                 : MouseCursor.defer,
             child: GestureDetector(
               onTap: _toggleControls,
-              // TODO: Fix this
-              // onDoubleTapDown: (details) => _handleDoubleTap(context, details),
-              // // Only enable gestures on mobile
-              // onPanStart: Platform.isAndroid || Platform.isIOS
-              //     ? (details) => _gestureHandler.onPanStart(context, details)
-              //     : null,
-              // onPanUpdate: Platform.isAndroid || Platform.isIOS
-              //     ? (details) => _gestureHandler.onPanUpdate(context, details)
-              //     : null,
-              // onPanEnd: Platform.isAndroid || Platform.isIOS
-              //     ? (_) => _gestureHandler.onPanEnd()
-              //     : null,
               child: SafeArea(
                 child: Stack(
                   children: [
-                    Positioned(
-                      bottom: _controlsVisible ? 100 : 0,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: SubtitleOverlay(
-                          subtitleStyle: playerSettings.toSubtitleStyle(),
-                          subtitle: playerState.subtitle.firstOrNull ?? '',
-                        ),
-                      ),
-                    ),
-                    AnimatedOpacity(
-                      opacity: _controlsVisible ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 300),
-                      child: AbsorbPointer(
-                        absorbing: !_controlsVisible,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.black.withValues(alpha: 0.7),
-                                Colors.transparent,
-                              ],
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 5),
-                            child: Stack(
-                              children: [
-                                Positioned(
-                                  top: 0,
-                                  left: 0,
-                                  right: 0,
-                                  child: TopControls(
-                                    watchState: watchState,
-                                    onPanelToggle: () async {
-                                      _resetTimer();
-                                      if (_isFullscreen) {
-                                        await widget.state.exitFullscreen();
-                                      }
-                                      await ref
-                                          .read(watchProvider.notifier)
-                                          .togglePanel(
-                                              widget.panelAnimationController);
-                                    },
-                                    onQualityTap: () => _showQualitySelector(
-                                      context,
-                                      ref,
-                                      watchState.qualityOptions,
-                                      watchState.selectedQualityIdx,
-                                    ),
-                                    onSubtitleTap: () => _showSubtitleSelector(
-                                      context,
-                                      ref,
-                                      watchState.subtitles,
-                                      watchState.selectedSubtitleIdx,
-                                    ),
-                                    onFullscreenTap: () async {
-                                      _resetTimer();
-
-                                      // await widget.state.toggleFullscreen();
-                                      if (!watchState.isExpanded &&
-                                          !_isFullscreen) {
-                                        await ref
-                                            .read(watchProvider.notifier)
-                                            .togglePanel(widget
-                                                .panelAnimationController);
-                                      }
-                                    },
-                                  ),
-                                ),
-                                Align(
-                                  alignment: Alignment.center,
-                                  child: CenterControls(
-                                    isPlaying: playerState.isPlaying,
-                                    isBuffering: playerState.isBuffering,
-                                    onTap: () {
-                                      _resetTimer();
-                                      playerNotifier.playOrPause();
-                                    },
-                                    theme: theme,
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: 0,
-                                  left: 0,
-                                  right: 0,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      if ((playerState.position.inSeconds /
-                                                  playerState
-                                                      .duration.inSeconds) *
-                                              100.0 >=
-                                          85)
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.end,
-                                          children: [
-                                            ShonenXIconButton(
-                                              icon: Iconsax.next5,
-                                              onPressed: () {
-                                                ref
-                                                    .read(
-                                                        watchProvider.notifier)
-                                                    .changeEpisode((watchState
-                                                                .selectedEpisodeIdx ??
-                                                            0) +
-                                                        1);
-                                              },
-                                              label:
-                                                  'Episode ${watchState.episodes[(watchState.selectedEpisodeIdx ?? 0) + 1].number}',
-                                            ),
-                                          ],
-                                        ),
-                                      const SizedBox(height: 8),
-                                      SeekBar(
-                                        position: playerState.position,
-                                        duration: playerState.duration,
-                                        onSeek: (position) {
-                                          _resetTimer();
-                                          playerNotifier.seek(position);
-                                        },
-                                        theme: theme,
-                                      ),
-                                      const SizedBox(height: 8),
-                                      BottomControls(
-                                        animeProvider: getAnimeProvider(ref)!,
-                                        watchState: watchState,
-                                        onChangeSource: _resetTimer,
-                                        isPlaying: playerState.isPlaying,
-                                        onPlayPause: () {
-                                          _resetTimer();
-                                          playerNotifier.playOrPause();
-                                        },
-                                        position: playerState.position,
-                                        duration: playerState.duration,
-                                        isBuffering: playerState.isBuffering,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+                    _buildSubtitleOverlay(playerState, playerSettings),
+                    _buildControlsOverlay(
+                      context,
+                      playerState,
+                      playerNotifier,
+                      watchState,
+                      theme,
                     ),
                   ],
                 ),
@@ -395,44 +200,195 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
     );
   }
 
-  void _showQualitySelector(BuildContext context, WidgetRef ref,
-      List<Map<String, dynamic>> qualities, int? currentQuality) {
-    if (qualities.isEmpty || !mounted) return;
+  Widget _buildSubtitleOverlay(
+      PlayerState playerState, PlayerSettingsModel playerSettings) {
+    return Positioned(
+      bottom: _controlsVisible ? 100 : 0,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: SubtitleOverlay(
+          subtitleStyle: playerSettings.toSubtitleStyle(),
+          subtitle: playerState.subtitle.firstOrNull ?? '',
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControlsOverlay(
+    BuildContext context,
+    PlayerState playerState,
+    PlayerStateNotifier playerNotifier,
+    WatchState watchState,
+    ThemeData theme,
+  ) {
+    return AnimatedOpacity(
+      opacity: _controlsVisible ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 300),
+      child: AbsorbPointer(
+        absorbing: !_controlsVisible,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 5),
+          child: Stack(
+            children: [
+              TopControls(
+                watchState: watchState,
+                onPanelToggle: () => _togglePanel(),
+                onQualityTap: () =>
+                    _showQualitySelector(context, ref, watchState),
+                onSubtitleTap: () =>
+                    _showSubtitleSelector(context, ref, watchState),
+                onFullscreenTap: () async => await _handleToggleFullscreen(),
+              ),
+              Align(
+                alignment: Alignment.center,
+                child: CenterControls(
+                  isPlaying: playerState.isPlaying,
+                  isBuffering: playerState.isBuffering,
+                  onTap: () => _handlePlayPause(playerNotifier),
+                  theme: theme,
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: _buildBottomControls(
+                    playerState, watchState, playerNotifier, theme),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomControls(
+    PlayerState playerState,
+    WatchState watchState,
+    PlayerStateNotifier playerNotifier,
+    ThemeData theme,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if ((playerState.position.inSeconds / playerState.duration.inSeconds) *
+                100.0 >=
+            85)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ShonenXIconButton(
+                icon: Iconsax.next5,
+                onPressed: () => ref.read(watchProvider.notifier).changeEpisode(
+                      (watchState.selectedEpisodeIdx ?? 0) + 1,
+                    ),
+                label:
+                    'Episode ${watchState.episodes[(watchState.selectedEpisodeIdx ?? 0) + 1].number}',
+              ),
+            ],
+          ),
+        const SizedBox(height: 8),
+        SeekBar(
+          position: playerState.position,
+          duration: playerState.duration,
+          onSeek: (position) {
+            _resetTimer();
+            playerNotifier.seek(position);
+          },
+          theme: theme,
+        ),
+        const SizedBox(height: 8),
+        BottomControls(
+          animeProvider: getAnimeProvider(ref)!,
+          watchState: watchState,
+          onChangeSource: _resetTimer,
+          isPlaying: playerState.isPlaying,
+          onPlayPause: () => _handlePlayPause(playerNotifier),
+          position: playerState.position,
+          duration: playerState.duration,
+          isBuffering: playerState.isBuffering,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handlePlayPause(PlayerStateNotifier playerNotifier) async {
+    _resetTimer();
+    await playerNotifier.playOrPause();
+  }
+
+  Future<void> _handleSeek(
+      PlayerState playerState, PlayerStateNotifier playerNotifier,
+      {required bool forward}) async {
+    _resetTimer();
+    final newPosition = forward
+        ? playerState.position + _seekDuration
+        : playerState.position - _seekDuration;
+    await playerNotifier.seek(newPosition);
+  }
+
+  Future<void> _handleToggleFullscreen() async {
+    await UIHelper.handleToggleFullscreen(
+        isFullscreen: _isFullscreen,
+        beforeCallback: _resetTimer,
+        afterCallback: () {
+          if (mounted) setState(() => _isFullscreen = !_isFullscreen);
+        });
+  }
+
+  Future<void> _togglePanel() async {
+    _resetTimer();
+    if (_isFullscreen) {
+      await widget.state.exitFullscreen();
+      if (mounted) setState(() => _isFullscreen = false);
+    }
+    await ref
+        .read(watchProvider.notifier)
+        .togglePanel(widget.panelAnimationController);
+  }
+
+  void _showQualitySelector(
+      BuildContext context, WidgetRef ref, WatchState watchState) {
+    if (watchState.qualityOptions.isEmpty || !mounted) return;
     _showSelector(
       context: context,
       title: 'Quality',
-      items: qualities,
-      selectedItemIdx: currentQuality,
+      items: watchState.qualityOptions,
+      selectedItemIdx: watchState.selectedQualityIdx,
       itemBuilder: (item) => item['quality'],
       onTap: (index) async {
         await ref.read(watchProvider.notifier).changeQuality(
-            qualityIdx: index,
-            lastPosition: ref.read(playerStateProvider).position);
+              qualityIdx: index,
+              lastPosition: ref.read(playerStateProvider).position,
+            );
         _resetTimer();
       },
     );
   }
 
-  void _showSubtitleSelector(BuildContext context, WidgetRef ref,
-      List<Subtitle> subtitles, int? subtitleIdx) {
-    if (subtitles.isEmpty || !mounted) return;
+  void _showSubtitleSelector(
+      BuildContext context, WidgetRef ref, WatchState watchState) {
+    if (watchState.subtitles.isEmpty || !mounted) return;
     _showSelector(
       context: context,
       title: 'Subtitles',
-      items: subtitles,
-      selectedItemIdx: subtitleIdx,
+      items: watchState.subtitles,
+      selectedItemIdx: watchState.selectedSubtitleIdx,
       showDisableOption: true,
       itemBuilder: (item) => item.lang ?? 'Unknown',
       onTap: (index) async {
-        if (index == -1) {
-          await ref
-              .read(watchProvider.notifier)
-              .updateSubtitleTrack(subtitleIdx: null);
-        } else {
-          await ref
-              .read(watchProvider.notifier)
-              .updateSubtitleTrack(subtitleIdx: index);
-        }
+        await ref.read(watchProvider.notifier).updateSubtitleTrack(
+              subtitleIdx: index == -1 ? null : index,
+            );
         _resetTimer();
       },
     );
@@ -450,11 +406,6 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
     if (!mounted) return;
 
     final theme = Theme.of(context);
-    final surfaceColor = theme.colorScheme.surface;
-    final borderRadius = BorderRadius.circular(28);
-
-    developer.log('Showing selector modal for $title', name: 'CustomControls');
-
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -462,92 +413,100 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
       isDismissible: true,
       enableDrag: true,
       useRootNavigator: true,
-      builder: (BuildContext modalContext) {
-        return PopScope(
-          canPop: true,
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: surfaceColor,
-              borderRadius: borderRadius,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+      builder: (modalContext) => _buildSelectorModal(
+        modalContext,
+        theme,
+        title,
+        items,
+        selectedItemIdx,
+        itemBuilder,
+        onTap,
+        showDisableOption,
+      ),
+    ).whenComplete(() => _resetTimer());
+  }
+
+  Widget _buildSelectorModal<T>(
+    BuildContext modalContext,
+    ThemeData theme,
+    String title,
+    List<T> items,
+    int? selectedItemIdx,
+    String Function(T) itemBuilder,
+    Future<void> Function(int) onTap,
+    bool showDisableOption,
+  ) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Text(
-                        title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        onPressed: () {
-                          Navigator.of(modalContext).pop();
-                          if (mounted) _resetTimer();
-                        },
-                        icon: const Icon(Icons.close_rounded),
-                        style: IconButton.styleFrom(
-                          backgroundColor:
-                              theme.colorScheme.surfaceContainerHighest,
-                          foregroundColor: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                const Divider(height: 1),
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        if (showDisableOption)
-                          SelectorTile(
-                            selected: selectedItemIdx == null,
-                            title: "OFF",
-                            onTap: () async {
-                              await onTap(-1);
-                              if (modalContext.mounted) {
-                                Navigator.of(modalContext).pop();
-                              }
-                            },
-                            theme: theme,
-                          ),
-                        ...items.asMap().entries.map((entry) {
-                          return SelectorTile(
-                            selected: selectedItemIdx == entry.key,
-                            title: itemBuilder(items[entry.key]),
-                            onTap: () async {
-                              await onTap(entry.key);
-                              if (modalContext.mounted) {
-                                Navigator.of(modalContext).pop();
-                              }
-                            },
-                            theme: theme,
-                          );
-                        }),
-                      ],
-                    ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Navigator.of(modalContext).pop(),
+                  icon: const Icon(Icons.close_rounded),
+                  style: IconButton.styleFrom(
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    foregroundColor: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           ),
-        );
-      },
-    ).whenComplete(() {
-      if (mounted) _resetTimer();
-    });
+          const Divider(height: 1),
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  if (showDisableOption)
+                    SelectorTile(
+                      selected: selectedItemIdx == null,
+                      title: "OFF",
+                      onTap: () async {
+                        await onTap(-1);
+                        if (modalContext.mounted) {
+                          Navigator.of(modalContext).pop();
+                        }
+                      },
+                      theme: theme,
+                    ),
+                  ...items.asMap().entries.map((entry) => SelectorTile(
+                        selected: selectedItemIdx == entry.key,
+                        title: itemBuilder(entry.value),
+                        onTap: () async {
+                          await onTap(entry.key);
+                          if (modalContext.mounted) {
+                            Navigator.of(modalContext).pop();
+                          }
+                        },
+                        theme: theme,
+                      )),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

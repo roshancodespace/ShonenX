@@ -88,7 +88,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
 
     // Filter episodes based on the current range
     final filteredEpisodes = watchState.episodes.where((episode) {
-      final epNumber = int.parse(episode.number.toString());
+      final epNumber = int.tryParse(episode.number.toString()) ?? 0;
       return epNumber >= _currentStart &&
           epNumber <= (_currentStart + _rangeSize - 1);
     }).toList();
@@ -155,8 +155,9 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
               itemCount: filteredEpisodes.length,
               itemBuilder: (context, index) {
                 final episode = filteredEpisodes[index];
-                final isSelected = (watchState.selectedEpisodeIdx ?? 0) ==
-                    watchState.episodes.indexOf(episode);
+                final actualIndex = watchState.episodes
+                    .indexOf(episode); // Get the actual index in the full list
+                final isSelected = watchState.selectedEpisodeIdx == actualIndex;
 
                 return EpisodeTile(
                   episodeNumber: episode.number.toString(),
@@ -165,7 +166,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                   onTap: () async {
                     await ref
                         .read(watchProvider.notifier)
-                        .changeEpisode(index, withPlay: true);
+                        .changeEpisode(actualIndex, withPlay: true);
                   },
                 );
               },
@@ -198,7 +199,8 @@ class EpisodeTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 4.0),
+        margin: const EdgeInsets.only(
+            bottom: 4.0), // Note: 'bottom' should replace 'custom'
         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
         decoration: BoxDecoration(
           color: isSelected

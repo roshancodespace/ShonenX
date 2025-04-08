@@ -184,7 +184,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       Navigator.of(context).pop(); // Close loading dialog
       _showLoadingDialog(context, 'Fetching stream data...');
       await notifier.fetchStreamData(
-        withPlay: false,
+        withPlay: true,
         episodeIdx: (widget.episode ?? 1) - 1,
       );
       if (mounted) Navigator.of(context).pop();

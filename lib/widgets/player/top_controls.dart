@@ -30,7 +30,7 @@ class TopControls extends StatelessWidget {
         Colors.black38; // Slightly darker for better contrast
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -48,7 +48,7 @@ class TopControls extends StatelessWidget {
                   )
                 ],
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: Row(
                 children: [
                   ShonenXIconButton(
@@ -110,7 +110,7 @@ class TopControls extends StatelessWidget {
                 )
               ],
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as dev;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/api/anilist/services/anilist_service.dart';
@@ -7,7 +8,12 @@ import 'package:shonenx/api/models/anime/page_model.dart';
 final anilistServiceProvider =
     Provider<AnilistService>((ref) => AnilistService());
 
+// Improved homePageProvider with caching
 final homePageProvider = FutureProvider.autoDispose<HomePage>((ref) async {
+  // Keep the provider alive for 5 minutes to avoid unnecessary refetches
+  final link = ref.keepAlive();
+  Timer(const Duration(minutes: 5), () => link.close());
+
   // Log the start of data fetching
   dev.log('Fetching home page data...', name: 'homePageProvider');
 
@@ -42,3 +48,4 @@ final homePageProvider = FutureProvider.autoDispose<HomePage>((ref) async {
     throw Exception('Failed to load home page data: $e');
   }
 });
+

@@ -14,6 +14,7 @@ import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/helpers/provider.dart';
 import 'package:shonenx/providers/anilist/anilist_user_provider.dart';
 import 'package:shonenx/providers/homepage_provider.dart';
+import 'package:shonenx/utils/async_value_ui.dart';
 import 'package:shonenx/utils/greeting_methods.dart';
 import 'package:shonenx/widgets/anime/anime_card_v2.dart';
 import 'package:shonenx/widgets/anime/anime_spotlight_card.dart';
@@ -79,32 +80,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       floatingActionButton: isDesktop ? _buildFAB(theme) : null,
       body: SafeArea(
         child: Consumer(
-          builder: (context, ref, _) => ref.watch(homePageProvider).when(
-                data: (homePage) => _HomeContent(
-                  animeWatchProgressBox: _animeWatchProgressBox,
-                  settingsBox: _settingsBox,
-                  homePage: homePage,
-                  isDesktop: isDesktop,
-                  uiSettings: _uiSettings,
-                  onRefresh: () => ref.refresh(homePageProvider),
-                ),
-                error: (_, __) => _HomeContent(
-                  animeWatchProgressBox: _animeWatchProgressBox,
-                  settingsBox: _settingsBox,
-                  homePage: null,
-                  isDesktop: isDesktop,
-                  uiSettings: _uiSettings,
-                  onRefresh: () => ref.refresh(homePageProvider),
-                ),
-                loading: () => _HomeContent(
-                  animeWatchProgressBox: _animeWatchProgressBox,
-                  settingsBox: _settingsBox,
-                  homePage: null,
-                  isDesktop: isDesktop,
-                  uiSettings: _uiSettings,
-                  onRefresh: () => ref.refresh(homePageProvider),
-                ),
+          builder: (context, ref, _) {
+            // Use our custom AsyncValue extension for better error handling
+            final homePageState = ref.watch(homePageProvider);
+
+            // Show error snackbar if there's an error
+            homePageState.showSnackBarOnError(context);
+
+            // Use the simpleWhen method from our extension for cleaner code
+            return homePageState.simpleWhen<HomePage>(
+              data: (homePage) => _HomeContent(
+                animeWatchProgressBox: _animeWatchProgressBox,
+                settingsBox: _settingsBox,
+                homePage: homePage,
+                isDesktop: isDesktop,
+                uiSettings: _uiSettings,
+                onRefresh: () => ref.refresh(homePageProvider),
               ),
+              // Use the same widget for loading and error states, just with null data
+              loadingWidget: _HomeContent(
+                animeWatchProgressBox: _animeWatchProgressBox,
+                settingsBox: _settingsBox,
+                homePage: null,
+                isDesktop: isDesktop,
+                uiSettings: _uiSettings,
+                onRefresh: () => ref.refresh(homePageProvider),
+              ),
+            );
+          },
         ),
       ),
     );

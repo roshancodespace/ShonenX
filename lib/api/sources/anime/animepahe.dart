@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:flutter/material.dart';
 import 'package:shonenx/api/models/anime/anime_model.dep.dart';
 import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/api/models/anime/page_model.dart';
@@ -40,6 +41,7 @@ class AnimePaheProvider extends AnimeProvider {
 
   @override
   Future<BaseEpisodeModel> getEpisodes(String animeId) async {
+    log('Fetching $baseUrl/info/$animeId', name: providerName);
     final response = await http.get(Uri.parse('$baseUrl/info/$animeId'));
     final data = jsonDecode(response.body);
     return BaseEpisodeModel(
@@ -48,9 +50,8 @@ class AnimePaheProvider extends AnimeProvider {
             .map(
               (episode) => EpisodeDataModel(
                 id: episode['id'],
-                number: episode['number'],
+                number: episode['number'] as int,
                 title: episode['title'],
-                isFiller: episode['isFiller'],
                 thumbnail: episode['image'],
                 url: episode['url'],
               ),
@@ -127,8 +128,7 @@ class AnimePaheProvider extends AnimeProvider {
     String? serverName,
     String? category,
   ) async {
-    final dub = category == 'dub' ? 1 : 0;
-    log('Fetching : ${'$baseUrl/watch/$episodeId?dub=$dub'}');
+    log('Fetching : ${'$baseUrl/watch?episodeId=$episodeId'}');
     try {
       final response =
           await http.get(Uri.parse('$baseUrl/watch?episodeId=$episodeId'));
@@ -154,7 +154,6 @@ class AnimePaheProvider extends AnimeProvider {
 
   @override
   List<String> getSupportedServers() {
-    // TODO: implement getSupportedServers
     return [];
   }
 

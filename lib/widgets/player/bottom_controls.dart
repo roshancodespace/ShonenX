@@ -260,7 +260,7 @@ class _SettingsPanel extends ConsumerWidget {
                   watchState.sources.length > 1)
                 _SettingsRow(
                   icon: Iconsax.cloud,
-                  label: 'Quality',
+                  label: 'Sources',
                   theme: theme,
                   child: ShonenxDropdown(
                     icon: Iconsax.cloud,
@@ -378,7 +378,7 @@ class _SettingsRow extends StatelessWidget {
         Icon(icon, color: theme.colorScheme.primary, size: 20),
         const SizedBox(width: 12),
         Expanded(
-          flex: 2,
+          flex: 1,
           child: Text(
             label,
             style: TextStyle(

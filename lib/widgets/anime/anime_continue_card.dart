@@ -60,8 +60,8 @@ class ContinueWatchingCard extends ConsumerWidget {
             : (isLoading ? null : () => _handleTap(context, ref)),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          width: 320,
-          height: 200,
+          width: 270,
+          height: 150,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
@@ -204,22 +204,31 @@ class ContinueWatchingCard extends ConsumerWidget {
                                         color: colorScheme.primary,
                                       ),
                                     )
-                                  : GestureDetector(
-                                      onTap: () => _handleTap(context, ref),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: colorScheme.secondaryContainer,
-                                          shape: BoxShape.circle,
+                                  : episode.isCompleted
+                                      ? IconButton.filledTonal(
+                                          onPressed: () => _handleTap(
+                                              context, ref,
+                                              plusEpisode: 1),
+                                          iconSize: 20,
+                                          padding: EdgeInsets.all(0),
+                                          icon: Icon(Iconsax.next5))
+                                      : GestureDetector(
+                                          onTap: () => _handleTap(context, ref),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  colorScheme.primaryContainer,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Icon(
+                                              Iconsax.play5,
+                                              size: 20,
+                                              color: colorScheme
+                                                  .onPrimaryContainer,
+                                            ),
+                                          ),
                                         ),
-                                        child: Icon(
-                                          Iconsax.play5,
-                                          size: 20,
-                                          color:
-                                              colorScheme.onSecondaryContainer,
-                                        ),
-                                      ),
-                                    ),
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -271,7 +280,8 @@ class ContinueWatchingCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleTap(BuildContext context, WidgetRef ref) async {
+  Future<void> _handleTap(BuildContext context, WidgetRef ref,
+      {int plusEpisode = 0}) async {
     ref.read(loadingProvider(index).notifier).state = true;
     await providerAnimeMatchSearch(
       context: context,
@@ -290,6 +300,7 @@ class ContinueWatchingCard extends ConsumerWidget {
         ),
       ),
       animeWatchProgressBox: AnimeWatchProgressBox()..init(),
+      plusEpisode: plusEpisode,
       afterSearchCallback: () =>
           ref.read(loadingProvider(index).notifier).state = false,
     );

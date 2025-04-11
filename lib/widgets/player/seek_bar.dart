@@ -60,10 +60,7 @@ class _SeekBarState extends State<SeekBar> {
         return Container(
           height:
               sliderHeight.clamp(28, 38), // Ensure a minimum and maximum height
-          padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 5),
           child: FlutterSlider(
             values: [_currentPosition],
             min: 0,

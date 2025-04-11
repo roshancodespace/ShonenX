@@ -27,7 +27,7 @@ class TopControls extends StatelessWidget {
         theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.8);
     final contentColor = theme.colorScheme.onSurfaceVariant;
     final containerColor =
-        Colors.black38; // Slightly darker for better contrast
+        theme.colorScheme.surfaceContainerLowest.withValues(alpha: 0.3);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),

@@ -20,6 +20,7 @@ Future<void> providerAnimeMatchSearch({
   required BuildContext context,
   required WidgetRef ref,
   required Media animeMedia,
+  int plusEpisode = 0,
   required AnimeWatchProgressBox animeWatchProgressBox,
 }) async {
   if (beforeSearchCallback != null) beforeSearchCallback();
@@ -69,7 +70,7 @@ Future<void> providerAnimeMatchSearch({
       final episode = animeWatchProgressBox
           .getMostRecentEpisodeProgressByAnimeId(animeMedia.id!);
       context.push(
-          '/watch/${bestMatch.id}?animeName=$encodedAnimeName&episode=${episode?.episodeNumber ?? 1}',
+          '/watch/${bestMatch.id}?animeName=$encodedAnimeName&episode=${(episode?.episodeNumber ?? 1) + plusEpisode}',
           extra: animeMedia);
       return;
     }
@@ -80,6 +81,7 @@ Future<void> providerAnimeMatchSearch({
     await showDialog(
       context: context,
       builder: (context) => _AnimeSearchDialog(
+        plusEpisode: plusEpisode,
         initialResults: matchedResults.isEmpty
             ? initialResponse.results
             : matchedResults.map((r) => r.$1).toList(),
@@ -121,12 +123,14 @@ class _AnimeSearchDialog extends StatefulWidget {
   final List<BaseAnimeModel> initialResults;
   final AnimeProvider animeProvider;
   final Media animeMedia;
+  final int plusEpisode;
   final AnimeWatchProgressBox animeWatchProgressBox;
   final String initialQuery;
 
   const _AnimeSearchDialog({
     required this.initialResults,
     required this.animeProvider,
+    required this.plusEpisode,
     required this.animeMedia,
     required this.animeWatchProgressBox,
     required this.initialQuery,
@@ -265,7 +269,7 @@ class _AnimeSearchDialogState extends State<_AnimeSearchDialog> {
                                     Uri.encodeComponent(result.name ?? '');
                                 if (continueWatchingEntry != null) {
                                   context.push(
-                                    '/watch/${result.id}?animeName=$encodedAnimeName&episode=${continueWatchingEntry.episodeNumber}&startAt=${continueWatchingEntry.progressInSeconds}',
+                                    '/watch/${result.id}?animeName=$encodedAnimeName&episode=${continueWatchingEntry.episodeNumber + widget.plusEpisode}&startAt=${continueWatchingEntry.progressInSeconds}',
                                     extra: widget.animeMedia,
                                   );
                                 } else {

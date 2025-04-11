@@ -240,12 +240,12 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+              colors: [Colors.black.withValues(alpha: 0.7), Colors.transparent],
               begin: Alignment.bottomCenter,
               end: Alignment.topCenter,
             ),
           ),
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 5),
+          padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
           child: Stack(
             children: [
               TopControls(
@@ -307,26 +307,38 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
             ],
           ),
         const SizedBox(height: 8),
-        SeekBar(
-          position: playerState.position,
-          duration: playerState.duration,
-          onSeek: (position) {
-            _resetTimer();
-            playerNotifier.seek(position);
-          },
-          theme: theme,
-        ),
-        const SizedBox(height: 8),
-        BottomControls(
-          animeProvider: getAnimeProvider(ref)!,
-          watchState: watchState,
-          onChangeSource: _resetTimer,
-          isPlaying: playerState.isPlaying,
-          onPlayPause: () => _handlePlayPause(playerNotifier),
-          position: playerState.position,
-          duration: playerState.duration,
-          isBuffering: playerState.isBuffering,
-        ),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color:
+                theme.colorScheme.surfaceContainerLowest.withValues(alpha: 0.3),
+          ),
+          child: Column(
+            children: [
+              SeekBar(
+                position: playerState.position,
+                duration: playerState.duration,
+                onSeek: (position) {
+                  _resetTimer();
+                  playerNotifier.seek(position);
+                },
+                theme: theme,
+              ),
+              const SizedBox(height: 8),
+              BottomControls(
+                animeProvider: getAnimeProvider(ref)!,
+                watchState: watchState,
+                onChangeSource: _resetTimer,
+                isPlaying: playerState.isPlaying,
+                onPlayPause: () => _handlePlayPause(playerNotifier),
+                position: playerState.position,
+                duration: playerState.duration,
+                isBuffering: playerState.isBuffering,
+              ),
+            ],
+          ),
+        )
       ],
     );
   }
@@ -453,7 +465,7 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),

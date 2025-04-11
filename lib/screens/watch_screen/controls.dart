@@ -105,6 +105,13 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
   void dispose() {
     _hideControlsTimer?.cancel();
     _overlayManager.dispose();
+    Future.wait([
+      widget.state.widget.controller.player.dispose(),
+      widget.state.widget.controller.player.remove(0),
+      widget.state.widget.controller.player.stop(),
+      widget.state.widget.controller.player.pause(),
+    ]);
+    widget.state.dispose();
     // Avoid disposing widget.state here; let the parent widget handle it
     super.dispose();
   }

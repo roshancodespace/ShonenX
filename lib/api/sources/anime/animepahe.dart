@@ -1,7 +1,5 @@
 import 'dart:convert';
 import 'dart:developer';
-
-import 'package:flutter/material.dart';
 import 'package:shonenx/api/models/anime/anime_model.dep.dart';
 import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/api/models/anime/page_model.dart';

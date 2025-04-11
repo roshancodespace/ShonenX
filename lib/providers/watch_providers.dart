@@ -264,12 +264,13 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
           episodesLoading: true,
           error: null,
           loadingMessage: 'Loading episodes...');
-      final episodes = (await animeProvider.getEpisodes(animeId)).episodes;
+      final episodes =
+          (await animeProvider.getEpisodes(animeId)).episodes ?? [];
       state = state.copyWith(
           episodesLoading: false,
           animeId: animeId,
           episodes: episodes,
-          selectedServer: animeProvider.getSupportedServers().first,
+          selectedServer: animeProvider.getSupportedServers().firstOrNull,
           error: null,
           loadingMessage: null);
     } catch (e, stackTrace) {

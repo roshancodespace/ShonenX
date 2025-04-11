@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
     as anilist_media;
@@ -51,6 +52,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   @override
   void initState() {
     super.initState();
+
     _setupOrientation();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -175,15 +177,16 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   }
 
   Future<void> _performInitialFetch(WidgetRef ref) async {
-    if (!mounted) return;
-    final notifier = ref.read(watchProvider.notifier);
-    // Show loading dialog for initial fetch
-    await notifier.fetchEpisodes(animeId: widget.animeId);
     if (mounted) {
-      await notifier.fetchStreamData(
-        withPlay: true,
-        episodeIdx: (widget.episode ?? 1) - 1,
-      );
+      final notifier = ref.read(watchProvider.notifier);
+      // Show loading dialog for initial fetch
+      await Future.wait([
+        notifier.fetchEpisodes(animeId: widget.animeId),
+        notifier.fetchStreamData(
+          withPlay: true,
+          episodeIdx: (widget.episode ?? 1) - 1,
+        )
+      ]);
     }
   }
 
@@ -212,10 +215,14 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   @override
   void dispose() {
+    if (ref.context.mounted) {
+      ref.read(watchProvider.notifier).dispose();
+      ref.read(playerProvider).pause();
+      ref.read(playerProvider).dispose();
+    }
     _saveProgressTimer?.cancel();
     _animationController.dispose();
-    if (ref.context.mounted && mounted) {
-      ref.read(playerProvider).dispose();
+    if (mounted) {
       _resetOrientationAndUI();
     }
     super.dispose();
@@ -285,7 +292,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     ), floatingActionButton: Consumer(
       builder: (context, ref, child) {
         final watchState = ref.watch(watchProvider);
-        if (watchState.sources.isNotEmpty || !watchState.sourceLoading) {
+        if (!watchState.sourceLoading && !watchState.episodesLoading) {
           return const SizedBox.shrink();
         }
         return Card(
@@ -306,6 +313,9 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                       ),
                   textAlign: TextAlign.center,
                 ),
+                IconButton(
+                    onPressed: () async => _performInitialFetch(ref),
+                    icon: Icon(Iconsax.repeat_circle))
               ],
             ),
           ),

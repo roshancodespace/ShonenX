@@ -60,7 +60,7 @@ class ContinueWatchingCard extends ConsumerWidget {
             : (isLoading ? null : () => _handleTap(context, ref)),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          width: 270,
+          width: 290,
           height: 150,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
@@ -240,8 +240,8 @@ class ContinueWatchingCard extends ConsumerWidget {
                             value: progress,
                             backgroundColor:
                                 Colors.white.withValues(alpha: 0.2),
-                            valueColor:
-                                AlwaysStoppedAnimation(colorScheme.primary),
+                            valueColor: AlwaysStoppedAnimation(
+                                colorScheme.primaryContainer),
                             minHeight: 4,
                           ),
                         ),

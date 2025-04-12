@@ -151,7 +151,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   Future<String?> _generateThumbnail() async {
     try {
       final rawScreenshot =
-          await ref.read(playerProvider).screenshot(format: 'image/jpg');
+          await ref.read(playerProvider).screenshot(format: 'image/png');
       if (rawScreenshot == null) {
         log("Failed to capture screenshot");
         return null;
@@ -210,10 +210,6 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   @override
   void dispose() {
-    if (ref.context.mounted) {
-      ref.read(watchProvider.notifier).dispose();
-      ref.read(playerProvider).dispose();
-    }
     _saveProgressTimer?.cancel();
     _animationController.dispose();
     if (mounted) {

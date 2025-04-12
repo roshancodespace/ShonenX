@@ -14,7 +14,7 @@ class AnimekaiProvider extends AnimeProvider {
       : super(
             apiUrl: customApiUrl != null
                 ? '$customApiUrl/anime/animekai'
-                : 'https://consumet-api-production-cfef.up.railway.app/anime/animekai',
+                : 'https://shonenx-consumet-api.vercel.app/anime/animekai',
             baseUrl: 'https://shonenx-consumet-api.vercel.app/anime/animekai',
             providerName: 'animekai');
 

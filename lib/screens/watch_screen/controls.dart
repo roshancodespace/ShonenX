@@ -87,6 +87,7 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
     _isFullscreen = (!Platform.isAndroid && !Platform.isIOS)
         ? await windowManager.isFullScreen()
         : false;
+    await UIHelper.forceLandscape();
     _gestureHandler.initialize();
     if (_isFullscreen) {
       _scheduleHideControls();
@@ -106,12 +107,11 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
     _hideControlsTimer?.cancel();
     _overlayManager.dispose();
     Future.wait([
-      widget.state.widget.controller.player.dispose(),
-      widget.state.widget.controller.player.remove(0),
-      widget.state.widget.controller.player.stop(),
       widget.state.widget.controller.player.pause(),
+      widget.state.widget.controller.player.stop(),
+      widget.state.widget.controller.player.remove(0),
+      UIHelper.enableAutoRotate()
     ]);
-    widget.state.dispose();
     // Avoid disposing widget.state here; let the parent widget handle it
     super.dispose();
   }

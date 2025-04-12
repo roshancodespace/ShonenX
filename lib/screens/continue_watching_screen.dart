@@ -237,7 +237,7 @@ class _ContentState extends State<_Content>
                   backgroundColor: theme.colorScheme.surface,
                   surfaceTintColor: Colors.transparent,
                   leading: IconButton(
-                    icon: Icon(Iconsax.arrow_left_25,
+                    icon: Icon(Iconsax.arrow_left_2,
                         size: 20, color: theme.colorScheme.primary),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
@@ -252,7 +252,7 @@ class _ContentState extends State<_Content>
                   actions: [
                     IconButton(
                       icon: Icon(
-                        _groupMode ? Iconsax.grid_25 : Iconsax.grid_15,
+                        _groupMode ? Iconsax.grid_45 : Iconsax.grid_15,
                         size: 20,
                         color: theme.colorScheme.onSurface,
                       ),
@@ -260,7 +260,7 @@ class _ContentState extends State<_Content>
                       tooltip: 'Toggle Layout',
                     ),
                     PopupMenuButton<String>(
-                      icon: Icon(Iconsax.sort5,
+                      icon: Icon(Iconsax.sort,
                           size: 20, color: theme.colorScheme.onSurface),
                       onSelected: (value) => setState(() => _sortBy = value),
                       itemBuilder: (context) => [
@@ -384,20 +384,20 @@ class _ContentState extends State<_Content>
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         _ActionButton(
-                          icon: Iconsax.close_circle5,
+                          icon: Icons.close_rounded,
                           label: 'Cancel',
                           color: theme.colorScheme.primary,
                           onTap: _exitMultiSelectMode,
                         ),
                         _ActionButton(
-                          icon: Iconsax.trash5,
+                          icon: Iconsax.trash,
                           label: 'Delete',
                           color: theme.colorScheme.error,
                           onTap:
                               _selectedItems.isEmpty ? null : _deleteSelected,
                         ),
                         _ActionButton(
-                          icon: Iconsax.broom5,
+                          icon: Iconsax.broom,
                           label: 'Clear All',
                           color: Colors.orange,
                           onTap: () => _showClearAllDialog(context),
@@ -572,7 +572,7 @@ class _SearchField extends StatelessWidget {
             fontSize: 14,
             color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
           ),
-          prefixIcon: Icon(Iconsax.search_normal_15,
+          prefixIcon: Icon(Iconsax.search_normal,
               size: 20, color: theme.colorScheme.primary),
           filled: true,
           fillColor: theme.colorScheme.surfaceContainerLow,
@@ -978,7 +978,7 @@ class _GroupedSectionState extends State<_GroupedSection> {
                           IconButton(
                             icon: Icon(
                               areAllEpisodesSelected()
-                                  ? Iconsax.tick_circle5
+                                  ? Iconsax.tick_circle
                                   : Iconsax.add_circle,
                               size: 20,
                               color: areAllEpisodesSelected()
@@ -992,7 +992,7 @@ class _GroupedSectionState extends State<_GroupedSection> {
                             turns: _isExpanded ? 0.5 : 0.0,
                             duration: const Duration(milliseconds: 200),
                             child: Icon(
-                              Iconsax.arrow_down_15,
+                              Iconsax.arrow_down_1,
                               size: 20,
                               color: theme.colorScheme.primary,
                             ),

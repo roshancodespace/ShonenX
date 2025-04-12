@@ -180,7 +180,7 @@ class _HomeContent extends StatelessWidget {
         slivers: [
           SliverToBoxAdapter(child: _HeaderSection(isDesktop: isDesktop)),
           SliverToBoxAdapter(child: _SpotlightSection(homePage: homePage)),
-          const SliverToBoxAdapter(child: SizedBox(height: 0)),
+          const SliverToBoxAdapter(child: SizedBox(height: 15)),
           SliverToBoxAdapter(
               child: ContinueWatchingView(
                   animeWatchProgressBox: animeWatchProgressBox)),
@@ -227,7 +227,7 @@ class _HeaderSection extends ConsumerWidget {
     final user = ref.watch(userProvider);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 10),
+      padding: const EdgeInsets.fromLTRB(15, 12, 15, 10),
       child: Column(
         children: [
           SizedBox(height: MediaQuery.of(context).padding.top),
@@ -484,15 +484,18 @@ class _SpotlightSection extends StatelessWidget {
             autoPlayInterval: const Duration(seconds: 5),
             enableInfiniteScroll: true,
             floatingIndicator: false,
+            enlargeCenterPage: true,
+            // enlargeFactor: 1,
+            enlargeStrategy: CenterPageEnlargeStrategy.height,
             slideIndicator: CustomSlideIndicator(context),
             viewportFraction:
-                MediaQuery.sizeOf(context).width > 900 ? 0.95 : 0.95,
+                MediaQuery.sizeOf(context).width > 900 ? 0.95 : 0.9,
             pageSnapping: true,
           ),
           items: trendingAnimes
               .map((anime) => Padding(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                        const EdgeInsets.symmetric(horizontal: 0, vertical: 5),
                     child: AnimeSpotlightCard(
                       onTap: (media) => anime?.id != null
                           ? navigateToDetail(
@@ -518,7 +521,7 @@ class _SpotlightHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 0, 0),
+      padding: const EdgeInsets.fromLTRB(15, 0, 0, 0),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
@@ -648,7 +651,7 @@ class _HorizontalAnimeSectionState extends State<_HorizontalAnimeSection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+            padding: const EdgeInsets.fromLTRB(15, 32, 15, 16),
             child: Text(
               widget.title,
               style: TextStyle(
@@ -667,7 +670,7 @@ class _HorizontalAnimeSectionState extends State<_HorizontalAnimeSection> {
                 ListView.builder(
                   controller: _scrollController,
                   physics: const ClampingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.symmetric(horizontal: 15),
                   scrollDirection: Axis.horizontal,
                   itemCount: widget.animes?.length ?? 10,
                   itemBuilder: (context, index) {

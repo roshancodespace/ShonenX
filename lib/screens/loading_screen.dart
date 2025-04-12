@@ -11,7 +11,6 @@ import 'package:shonenx/screens/settings/player/player_screen.dart';
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
 import 'dart:async';
 import 'dart:developer' as dev;
-import 'dart:math' as math;
 
 class LoadingScreen extends ConsumerStatefulWidget {
   const LoadingScreen({super.key});
@@ -22,73 +21,60 @@ class LoadingScreen extends ConsumerStatefulWidget {
 
 class _LoadingScreenState extends ConsumerState<LoadingScreen>
     with SingleTickerProviderStateMixin {
-  bool _visible = true;
-  double _opacity = 0.0;
   double _loadingProgress = 0.0;
-  Timer? _blinkTimer;
-  Timer? _progressTimer;
-  late AnimationController _animationController;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
 
-    // Animation controller for continuous animations
-    _animationController = AnimationController(
+    // Subtle pulse animation for the logo
+    _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat();
+    );
 
-    // Start with fade in animation
-    Future.delayed(const Duration(milliseconds: 300), () {
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(
+        parent: _pulseController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _pulseController.repeat(reverse: true);
+
+    // Start with 0% progress
+    _loadingProgress = 0.0;
+
+    // Simulate loading progress up to 95%
+    Timer.periodic(const Duration(milliseconds: 300), (timer) {
       if (mounted) {
         setState(() {
-          _opacity = 1.0;
+          if (_loadingProgress < 0.95) {
+            _loadingProgress += 0.05;
+          } else {
+            timer.cancel();
+          }
         });
       }
     });
 
-    // Create blinking effect for text
-    _blinkTimer = Timer.periodic(const Duration(milliseconds: 700), (timer) {
-      if (mounted) {
-        setState(() {
-          _visible = !_visible;
-        });
-      }
-    });
-
-    // Simulate loading progress
-    _progressTimer = Timer.periodic(const Duration(milliseconds: 350), (timer) {
-      if (mounted) {
-        setState(() {
-          // Increase loading progress but cap at 95% until actual loading completes
-          _loadingProgress = math.min(0.95, _loadingProgress + 0.05);
-        });
-      }
-    });
-
-    // Initialize after delay
+    // Initialize app
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeWithDelay();
+      _initializeApp();
     });
   }
 
   @override
   void dispose() {
-    _blinkTimer?.cancel();
-    _progressTimer?.cancel();
-    _animationController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
-  Future<void> _initializeWithDelay() async {
+  Future<void> _initializeApp() async {
     try {
       dev.log('Starting app initialization', name: 'LoadingScreen');
-
-      // Wait for the selected provider to be loaded
-      // This is handled automatically by the SelectedProviderNotifier
-      // We just need to wait for it to complete
-      await Future.delayed(const Duration(milliseconds: 100));
 
       // Get the selected provider key and custom API URL
       final selectedProviderState = ref.read(selectedProviderKeyProvider);
@@ -98,16 +84,17 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
           'Selected provider: ${selectedProviderState.selectedProviderKey}, API URL: $customApiUrl',
           name: 'LoadingScreen');
 
-      // Initialize the anime source registry
-      final registryNotifier = ref.read(animeSourceRegistryProvider.notifier);
-
-      // Initialize with a forced minimum delay for better UX
+      // Initialize with all required services
       await Future.wait([
-        // Actual initialization
-        registryNotifier.initialize(customApiUrl),
+        // Initialize anime source registry
+        ref.read(animeSourceRegistryProvider.notifier).initialize(customApiUrl),
+
+        // Initialize all settings
         ref.read(themeSettingsProvider.notifier).initializeSettings(),
         ref.read(uiSettingsProvider.notifier).initializeSettings(),
         ref.read(playerSettingsProvider.notifier).initializeSettings(),
+
+        // Initialize homepage and watch progress
         ref.read(homePageProvider.future),
         AnimeWatchProgressBox().init(),
 
@@ -131,7 +118,7 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
           _loadingProgress = 1.0;
         });
 
-        // Small delay to show the completed progress bar
+        // Small delay to show the completed progress
         await Future.delayed(const Duration(milliseconds: 300));
       }
 
@@ -141,24 +128,15 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
         SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
       }
 
-      // Fade out before navigation
+      // Navigate to the appropriate screen
       if (mounted) {
-        setState(() {
-          _opacity = 0.0;
-        });
-
-        // Wait for fade out animation
-        await Future.delayed(const Duration(milliseconds: 300));
-
-        if (mounted) {
-          final route = {
-                'Home': '/',
-                'Watchlist': '/watchlist',
-                'Browse': '/browse',
-              }[uiSettings.defaultTab] ??
-              '/'; // Default to home if no match
-          context.go(route);
-        }
+        final route = {
+              'Home': '/',
+              'Watchlist': '/watchlist',
+              'Browse': '/browse',
+            }[uiSettings.defaultTab] ??
+            '/'; // Default to home if no match
+        context.go(route);
       }
     } catch (e, stackTrace) {
       dev.log('Error during initialization: $e',
@@ -171,65 +149,59 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      body: AnimatedOpacity(
-        opacity: _opacity,
-        duration: const Duration(milliseconds: 300),
+      backgroundColor: colorScheme.background,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              colorScheme.surface,
+              colorScheme.background,
+            ],
+          ),
+        ),
         child: Stack(
           children: [
-            // Decorative background elements
+            // Subtle accent circles
             Positioned(
-              top: -size.width * 0.3,
-              right: -size.width * 0.3,
-              child: AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  return Transform.rotate(
-                    angle: _animationController.value * 2 * math.pi,
-                    child: Container(
-                      width: size.width * 0.7,
-                      height: size.width * 0.7,
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(
-                          colors: [
-                            theme.colorScheme.primary.withValues(alpha: 0.2),
-                            theme.colorScheme.primary.withValues(alpha: 0.0),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(size.width * 0.7),
-                      ),
-                    ),
-                  );
-                },
+              top: -size.width * 0.2,
+              right: -size.width * 0.2,
+              child: Container(
+                width: size.width * 0.5,
+                height: size.width * 0.5,
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [
+                      colorScheme.primary.withOpacity(0.05),
+                      colorScheme.primary.withOpacity(0.0),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
             Positioned(
-              bottom: -size.width * 0.4,
-              left: -size.width * 0.2,
-              child: AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  return Transform.rotate(
-                    angle: -_animationController.value * 2 * math.pi,
-                    child: Container(
-                      width: size.width * 0.8,
-                      height: size.width * 0.8,
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(
-                          colors: [
-                            theme.colorScheme.secondary.withValues(alpha: 0.1),
-                            theme.colorScheme.secondary.withValues(alpha: 0.0),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(size.width * 0.8),
-                      ),
-                    ),
-                  );
-                },
+              bottom: -size.width * 0.25,
+              left: -size.width * 0.1,
+              child: Container(
+                width: size.width * 0.5,
+                height: size.width * 0.5,
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [
+                      colorScheme.secondary.withOpacity(0.05),
+                      colorScheme.secondary.withOpacity(0.0),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
 
@@ -238,45 +210,49 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo container
-                  Container(
-                    width: 160,
-                    height: 160,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(40),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              theme.colorScheme.primary.withValues(alpha: 0.2),
-                          blurRadius: 20,
+                  // Logo with subtle pulse animation
+                  AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _pulseAnimation.value,
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: colorScheme.surface,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colorScheme.primary.withOpacity(0.12),
+                                blurRadius: 20,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Image.asset(
+                              'assets/icons/app_icon-modified-2.png',
+                              width: 80,
+                              height: 80,
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    child: Center(
-                      child: AnimatedOpacity(
-                        opacity: _visible ? 1.0 : 0.7,
-                        duration: const Duration(milliseconds: 200),
-                        child:
-                            Image.asset('assets/icons/app_icon-modified-2.png'),
-                      ),
-                    ),
+                      );
+                    },
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 40),
 
                   // App name
-                  AnimatedOpacity(
-                    opacity: _visible ? 1.0 : 0.7,
-                    duration: const Duration(milliseconds: 200),
-                    child: Text(
-                      'ShonenX',
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurface,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
+                  Text(
+                    'ShonenX',
+                    style: TextStyle(
+                      color: colorScheme.onBackground,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.5,
                     ),
                   ),
 
@@ -284,56 +260,57 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
 
                   // Tagline
                   Text(
-                    'Your Anime, Your Way',
+                    'Premium Anime Experience',
                     style: TextStyle(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      color: colorScheme.onBackground.withOpacity(0.7),
                       fontSize: 16,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 48),
 
-                  // Progress indicator
+                  // Clean, minimal progress indicator
                   SizedBox(
-                    width: size.width * 0.7,
+                    width: size.width * 0.6,
                     child: Column(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: _loadingProgress,
-                            backgroundColor: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.1),
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              theme.colorScheme.primary,
-                            ),
-                            minHeight: 6,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        // Progress bar
+                        Stack(
                           children: [
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  theme.colorScheme.secondary,
-                                ),
+                            // Background track
+                            Container(
+                              height: 4,
+                              width: size.width * 0.6,
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceVariant,
+                                borderRadius: BorderRadius.circular(2),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Loading your anime world...',
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
-                                fontSize: 14,
+                            // Animated progress
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              height: 4,
+                              width: size.width * 0.6 * _loadingProgress,
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary,
+                                borderRadius: BorderRadius.circular(2),
                               ),
                             ),
                           ],
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Loading text with status
+                        Text(
+                          _loadingProgress < 1.0 ? 'Loading...' : 'Ready',
+                          style: TextStyle(
+                            color: colorScheme.onBackground.withOpacity(0.6),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.2,
+                          ),
                         ),
                       ],
                     ),

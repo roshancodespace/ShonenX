@@ -134,7 +134,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     }
   }
 
-  bool _shouldSaveProgress(WatchState watchState, playerState) {
+  bool _shouldSaveProgress(WatchState watchState, PlayerState playerState) {
     final hasValidEpisode = watchState.selectedEpisodeIdx != null &&
         watchState.episodes.isNotEmpty &&
         watchState.selectedEpisodeIdx! < watchState.episodes.length;
@@ -151,7 +151,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   Future<String?> _generateThumbnail() async {
     try {
       final rawScreenshot =
-          await ref.read(playerProvider).screenshot(format: 'image/png');
+          await ref.read(playerProvider).screenshot(format: 'image/jpg');
       if (rawScreenshot == null) {
         log("Failed to capture screenshot");
         return null;
@@ -180,8 +180,13 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     if (mounted) {
       final notifier = ref.read(watchProvider.notifier);
       // Show loading dialog for initial fetch
-      notifier.fetchEpisodes(animeId: widget.animeId).then((_) =>
-          notifier.fetchStreamData(episodeIdx: (widget.episode ?? 1) - 1));
+      await Future.wait([
+        notifier.fetchEpisodes(animeId: widget.animeId),
+        notifier.fetchStreamData(
+          withPlay: true,
+          episodeIdx: (widget.episode ?? 1) - 1,
+        )
+      ]);
     }
   }
 
@@ -210,6 +215,11 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   @override
   void dispose() {
+    if (ref.context.mounted) {
+      ref.read(watchProvider.notifier).dispose();
+      ref.read(playerProvider).pause();
+      ref.read(playerProvider).dispose();
+    }
     _saveProgressTimer?.cancel();
     _animationController.dispose();
     if (mounted) {
@@ -234,28 +244,23 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   Widget build(BuildContext context) {
     return Scaffold(body: Consumer(
       builder: (context, ref, child) {
-        // Use select to only watch the specific parts of the state we need
-        // This prevents unnecessary rebuilds when other parts of the state change
-        final isEpisodesLoading =
-            ref.watch(watchProvider.select((state) => state.episodesLoading));
-        final isSourceLoading =
-            ref.watch(watchProvider.select((state) => state.sourceLoading));
-        final error = ref.watch(watchProvider.select((state) => state.error));
+        final watchState = ref.watch(watchProvider);
 
-        // Handle loading states more efficiently
-        final bool isLoading = isEpisodesLoading || isSourceLoading;
-        if (isLoading) {
+        // Handle loading states
+        if (watchState.episodesLoading || watchState.sourceLoading) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && !isEpisodesLoading && !isSourceLoading) {
+            if (mounted &&
+                !watchState.episodesLoading &&
+                !watchState.sourceLoading) {
               Navigator.of(context).pop(); // Close any lingering loading dialog
             }
           });
         }
 
-        // Handle errors with a debounce to prevent multiple snackbars
-        if (error != null) {
+        // Handle errors
+        if (watchState.error != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _showErrorSnackBar(error);
+            if (mounted) _showErrorSnackBar(watchState.error!);
           });
         }
 
@@ -286,24 +291,13 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       },
     ), floatingActionButton: Consumer(
       builder: (context, ref, child) {
-        // Reuse the same selectors from the body for consistency
-        final isLoading = ref.watch(watchProvider
-            .select((state) => state.sourceLoading || state.episodesLoading));
-        final loadingMessage =
-            ref.watch(watchProvider.select((state) => state.loadingMessage));
-
-        // Only show the loading indicator when actually loading
-        if (!isLoading) {
+        final watchState = ref.watch(watchProvider);
+        if (!watchState.sourceLoading && !watchState.episodesLoading) {
           return const SizedBox.shrink();
         }
-
-        // Show a loading card with the current loading message
         return Card(
-          elevation: 4,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(15),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -313,7 +307,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  loadingMessage ?? 'Loading...',
+                  watchState.loadingMessage ?? 'Loading...',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
@@ -321,8 +315,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                 ),
                 IconButton(
                     onPressed: () async => _performInitialFetch(ref),
-                    tooltip: 'Retry',
-                    icon: const Icon(Iconsax.repeat_circle))
+                    icon: Icon(Iconsax.repeat_circle))
               ],
             ),
           ),

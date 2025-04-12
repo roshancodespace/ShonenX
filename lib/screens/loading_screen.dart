@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/api/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/providers/homepage_provider.dart';
+import 'package:shonenx/providers/selected_provider.dart';
 import 'package:shonenx/screens/settings/appearance/theme_screen.dart';
 import 'package:shonenx/screens/settings/appearance/ui_screen.dart';
 import 'package:shonenx/screens/settings/player/player_screen.dart';
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
 import 'dart:async';
+import 'dart:developer' as dev;
 import 'dart:math' as math;
 
 class LoadingScreen extends ConsumerStatefulWidget {
@@ -80,18 +83,47 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
 
   Future<void> _initializeWithDelay() async {
     try {
-      // Initialize with a forced 10-second delay
+      dev.log('Starting app initialization', name: 'LoadingScreen');
+
+      // Wait for the selected provider to be loaded
+      // This is handled automatically by the SelectedProviderNotifier
+      // We just need to wait for it to complete
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Get the selected provider key and custom API URL
+      final selectedProviderState = ref.read(selectedProviderKeyProvider);
+      final customApiUrl = selectedProviderState.customApiUrl;
+
+      dev.log(
+          'Selected provider: ${selectedProviderState.selectedProviderKey}, API URL: $customApiUrl',
+          name: 'LoadingScreen');
+
+      // Initialize the anime source registry
+      final registryNotifier = ref.read(animeSourceRegistryProvider.notifier);
+
+      // Initialize with a forced minimum delay for better UX
       await Future.wait([
         // Actual initialization
+        registryNotifier.initialize(customApiUrl),
         ref.read(themeSettingsProvider.notifier).initializeSettings(),
         ref.read(uiSettingsProvider.notifier).initializeSettings(),
         ref.read(playerSettingsProvider.notifier).initializeSettings(),
         ref.read(homePageProvider.future),
         AnimeWatchProgressBox().init(),
 
-        // Force minimum 10 second delay
-        // Future.delayed(const Duration(seconds: 20000)),
+        // Force minimum delay for better UX
+        Future.delayed(const Duration(seconds: 2)),
       ]);
+
+      // Verify that the registry was initialized successfully
+      final registryState = ref.read(animeSourceRegistryProvider);
+      if (!registryState.registry.isInitialized) {
+        throw Exception(
+            'Failed to initialize anime source registry: ${registryState.error}');
+      }
+
+      dev.log('App initialization completed successfully',
+          name: 'LoadingScreen');
 
       // Set progress to 100% when everything is loaded
       if (mounted) {
@@ -128,7 +160,9 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
           context.go(route);
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      dev.log('Error during initialization: $e',
+          name: 'LoadingScreen', error: e, stackTrace: stackTrace);
       if (mounted) {
         context.go('/error', extra: e);
       }

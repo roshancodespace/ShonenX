@@ -9,7 +9,6 @@ import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/api/models/anime/source_model.dart';
 import 'package:shonenx/api/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/api/sources/anime/anime_provider.dart';
-import 'package:shonenx/providers/selected_provider.dart';
 import 'package:shonenx/utils/extractors.dart' as extractor;
 
 // Optimized WatchState
@@ -94,76 +93,45 @@ class WatchState {
   }
 }
 
-/// StateNotifier for managing watch state with optimized error handling
+// Optimized WatchStateNotifier with Error Handling
 class WatchStateNotifier extends StateNotifier<WatchState> {
   final Player? player;
   final VideoController? controller;
   final AnimeProvider animeProvider;
 
-  // Keep track of active operations to prevent duplicate calls
-  bool _isChangingEpisode = false;
-  bool _isChangingSource = false;
-
-  /// Creates a new WatchStateNotifier with the required dependencies
   WatchStateNotifier({
     required this.player,
     required this.controller,
     required this.animeProvider,
   }) : super(const WatchState(animeId: ''));
 
-  /// Clears any existing error in the state
+  // Clear any existing error
   void clearError() {
-    if (state.error != null) {
-      state = state.copyWith(error: null);
-    }
+    state = state.copyWith(error: null);
   }
 
-  /// Resets the state to its initial values
   void resetState() {
     state = const WatchState(animeId: '');
   }
 
-  /// Updates the selected category (sub/dub)
   void updateCategory(String category) {
-    if (state.selectedCategory == category) return;
     state = state.copyWith(selectedCategory: category, error: null);
   }
 
-  /// Updates the selected server
   void updateServer(String server) {
-    if (state.selectedServer == server) return;
     state = state.copyWith(selectedServer: server, error: null);
   }
 
-  /// Changes the current episode and fetches its stream data
-  /// Returns immediately if already changing an episode to prevent duplicate calls
   Future<void> changeEpisode(int episodeIdx, {bool withPlay = true}) async {
-    // Prevent duplicate calls
-    if (_isChangingEpisode) {
-      log('Already changing episode, ignoring duplicate call');
-      return;
-    }
-
-    // Validate episode index
     if (episodeIdx < 0 || episodeIdx >= state.episodes.length) {
       state = state.copyWith(error: 'Invalid episode index');
       return;
     }
-
-    // Skip if already on this episode
-    if (state.selectedEpisodeIdx == episodeIdx) {
-      log('Already on episode $episodeIdx, skipping');
-      return;
-    }
-
     try {
-      _isChangingEpisode = true;
       await fetchStreamData(episodeIdx: episodeIdx, withPlay: withPlay);
       state = state.copyWith(error: null); // Clear error on success
     } catch (e, stackTrace) {
       _handleError('Failed to change episode: $e', stackTrace);
-    } finally {
-      _isChangingEpisode = false;
     }
   }
 
@@ -292,7 +260,6 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
   Future<void> fetchEpisodes({required dynamic animeId}) async {
     try {
       state = state.copyWith(
-          animeId: animeId,
           episodesLoading: true,
           error: null,
           loadingMessage: 'Loading episodes...');
@@ -300,6 +267,7 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
           (await animeProvider.getEpisodes(animeId)).episodes ?? [];
       state = state.copyWith(
           episodesLoading: false,
+          animeId: animeId,
           episodes: episodes,
           selectedServer: animeProvider.getSupportedServers().firstOrNull,
           error: null,
@@ -310,36 +278,21 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
     }
   }
 
-  /// Fetches stream data for the specified episode
-  /// This is the core method that loads sources and prepares the player
   Future<void> fetchStreamData({
     required int episodeIdx,
     bool withPlay = true,
   }) async {
-    // Prevent duplicate calls
-    if (_isChangingSource) {
-      log('Already fetching stream data, ignoring duplicate call');
-      return;
-    }
-
-    // Validate episode index
     if (episodeIdx >= state.episodes.length) {
       state = state.copyWith(error: 'Invalid episode index');
       return;
     }
-
     try {
-      _isChangingSource = true;
-
-      // Update state to show loading
       state = state.copyWith(
         selectedEpisodeIdx: episodeIdx,
         sourceLoading: true,
         error: null,
         loadingMessage: 'Loading sources...',
       );
-
-      // Fetch sources from the anime provider
       final data = await animeProvider.getSources(
         state.animeId,
         state.episodes[episodeIdx].id ?? '',
@@ -347,7 +300,6 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
         state.selectedCategory ?? 'sub',
       );
 
-      // Update state with the fetched sources
       state = state.copyWith(
         sourceLoading: false,
         loadingMessage: null,
@@ -357,14 +309,10 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
         error: null,
       );
 
-      // Extract qualities and prepare the player
       await _extractQualities();
-
-      // Determine which source to play
       final qualityUrl = state.qualityOptions.isNotEmpty
           ? state.qualityOptions[0]['url']
           : null;
-
       if (qualityUrl != null) {
         await updateVideoSource(sourceUrl: qualityUrl, withPlay: withPlay);
       } else if (data.sources.isNotEmpty) {
@@ -376,8 +324,6 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
     } catch (e, stackTrace) {
       _handleError('Failed to fetch stream data: $e', stackTrace);
       state = state.copyWith(sourceLoading: false, loadingMessage: null);
-    } finally {
-      _isChangingSource = false;
     }
   }
 
@@ -483,63 +429,36 @@ class PlayerStateNotifier extends StateNotifier<PlayerState> {
   }
 }
 
-// ============= Media Player Providers =============
+// Providers
+final watchProvider =
+    StateNotifierProvider<WatchStateNotifier, WatchState>((ref) {
+  // Use the currentAnimeProviderProvider to get the current anime provider
+  final animeProvider = ref.watch(currentAnimeProviderProvider);
 
-/// Provider for the media player instance
-/// This is a low-level provider that should not be used directly by widgets
+  // If the anime provider is null, throw an exception
+  if (animeProvider == null) {
+    throw Exception(
+        'No anime provider available. Make sure the registry is initialized and a provider is selected.');
+  }
+
+  return WatchStateNotifier(
+    player: ref.watch(playerProvider),
+    controller: ref.watch(controllerProvider),
+    animeProvider: animeProvider,
+  );
+});
+
 final playerProvider = Provider<Player>((ref) {
   final player = Player();
-
-  // Proper cleanup when the provider is disposed
-  ref.onDispose(() async {
-    try {
-      await player.pause();
-      await player.stop();
-      await player.remove(0);
-      await player.dispose();
-    } catch (e) {
-      log('Error disposing player: $e');
-    }
-  });
-
+  ref.onDispose(() => player.dispose());
   return player;
 });
 
-/// Provider for the video controller
-/// This is a low-level provider that should not be used directly by widgets
 final controllerProvider = Provider<VideoController>((ref) {
   final controller = VideoController(ref.watch(playerProvider));
   return controller;
 });
 
-/// Provider for the current anime provider based on user selection
-/// This centralizes the logic for getting the current anime provider
-final currentAnimeProviderProvider = Provider<AnimeProvider>((ref) {
-  final registry = ref.watch(animeSourceRegistryProvider);
-  final selectedKey =
-      ref.watch(selectedProviderKeyProvider).selectedProviderKey;
-  final provider = registry.getProvider(selectedKey);
-
-  if (provider == null) {
-    throw Exception('No provider found for key: $selectedKey');
-  }
-
-  return provider;
-});
-
-/// Main provider for watch state
-/// This is the primary provider that widgets should use for watch functionality
-final watchProvider =
-    StateNotifierProvider<WatchStateNotifier, WatchState>((ref) {
-  return WatchStateNotifier(
-    player: ref.watch(playerProvider),
-    controller: ref.watch(controllerProvider),
-    animeProvider: ref.watch(currentAnimeProviderProvider),
-  );
-});
-
-/// Provider for player state (playing, position, etc.)
-/// This is used by widgets that need to react to player state changes
 final playerStateProvider =
     StateNotifierProvider<PlayerStateNotifier, PlayerState>((ref) {
   return PlayerStateNotifier(ref.watch(playerProvider));

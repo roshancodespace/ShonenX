@@ -110,7 +110,8 @@ class _CustomControlsState extends ConsumerState<CustomControls> {
       widget.state.widget.controller.player.pause(),
       widget.state.widget.controller.player.stop(),
       widget.state.widget.controller.player.remove(0),
-      UIHelper.enableAutoRotate()
+      UIHelper.enableAutoRotate(),
+      UIHelper.exitImmersiveMode()
     ]);
     // Avoid disposing widget.state here; let the parent widget handle it
     super.dispose();

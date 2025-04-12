@@ -11,6 +11,7 @@ import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
     as anilist_media;
 import 'package:image/image.dart' as img;
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
+import 'package:shonenx/helpers/ui.dart';
 import 'package:shonenx/providers/watch_providers.dart';
 import 'package:shonenx/screens/settings/player/player_screen.dart';
 import 'package:shonenx/screens/watch_screen/controls.dart';
@@ -217,8 +218,6 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   void dispose() {
     if (ref.context.mounted) {
       ref.read(watchProvider.notifier).dispose();
-      ref.read(playerProvider).pause();
-      ref.read(playerProvider).dispose();
     }
     _saveProgressTimer?.cancel();
     _animationController.dispose();
@@ -232,12 +231,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     if (!mounted) return;
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     await windowManager.setFullScreen(false);
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
+    await UIHelper.enableAutoRotate();
+    await UIHelper.exitImmersiveMode();
   }
 
   @override

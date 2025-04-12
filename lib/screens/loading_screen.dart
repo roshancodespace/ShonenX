@@ -153,7 +153,7 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -163,7 +163,7 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
             end: Alignment.bottomRight,
             colors: [
               colorScheme.surface,
-              colorScheme.background,
+              colorScheme.surface,
             ],
           ),
         ),
@@ -179,8 +179,8 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: [
-                      colorScheme.primary.withOpacity(0.05),
-                      colorScheme.primary.withOpacity(0.0),
+                      colorScheme.primary.withValues(alpha: 0.05),
+                      colorScheme.primary.withValues(alpha: 0.0),
                     ],
                   ),
                   shape: BoxShape.circle,
@@ -196,8 +196,8 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: [
-                      colorScheme.secondary.withOpacity(0.05),
-                      colorScheme.secondary.withOpacity(0.0),
+                      colorScheme.secondary.withValues(alpha: 0.05),
+                      colorScheme.secondary.withValues(alpha: 0.0),
                     ],
                   ),
                   shape: BoxShape.circle,
@@ -224,7 +224,8 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
                             borderRadius: BorderRadius.circular(24),
                             boxShadow: [
                               BoxShadow(
-                                color: colorScheme.primary.withOpacity(0.12),
+                                color:
+                                    colorScheme.primary.withValues(alpha: 0.12),
                                 blurRadius: 20,
                                 spreadRadius: 2,
                                 offset: const Offset(0, 4),
@@ -249,7 +250,7 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
                   Text(
                     'ShonenX',
                     style: TextStyle(
-                      color: colorScheme.onBackground,
+                      color: colorScheme.onSurface,
                       fontSize: 32,
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.5,
@@ -262,7 +263,7 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
                   Text(
                     'Premium Anime Experience',
                     style: TextStyle(
-                      color: colorScheme.onBackground.withOpacity(0.7),
+                      color: colorScheme.onSurface.withValues(alpha: 0.7),
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
                     ),
@@ -283,7 +284,7 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
                               height: 4,
                               width: size.width * 0.6,
                               decoration: BoxDecoration(
-                                color: colorScheme.surfaceVariant,
+                                color: colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),
@@ -306,7 +307,7 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
                         Text(
                           _loadingProgress < 1.0 ? 'Loading...' : 'Ready',
                           style: TextStyle(
-                            color: colorScheme.onBackground.withOpacity(0.6),
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             letterSpacing: 0.2,

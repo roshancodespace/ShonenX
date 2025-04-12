@@ -335,7 +335,7 @@ class _BottomDetails extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.montserrat(
               fontSize: isSmallScreen ? 20 : 24,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               color: Colors.white,
               shadows: [
                 Shadow(

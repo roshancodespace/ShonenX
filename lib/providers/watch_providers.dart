@@ -257,7 +257,8 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
     }
   }
 
-  Future<void> fetchEpisodes({required dynamic animeId}) async {
+  Future<void> fetchEpisodes(
+      {required dynamic animeId, int episodeIdx = 0}) async {
     try {
       state = state.copyWith(
           episodesLoading: true,
@@ -272,6 +273,7 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
           selectedServer: animeProvider.getSupportedServers().firstOrNull,
           error: null,
           loadingMessage: null);
+      await fetchStreamData(episodeIdx: episodeIdx);
     } catch (e, stackTrace) {
       _handleError('Failed to fetch episodes: $e', stackTrace);
       state = state.copyWith(episodesLoading: false, loadingMessage: null);

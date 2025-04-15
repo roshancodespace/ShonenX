@@ -4,13 +4,11 @@ import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'dart:developer' as dev;
 
-// AnimeWatchProgressBox (unchanged from your provided code)
 class AnimeWatchProgressBox {
   Box<AnimeWatchProgressEntry>? _box;
   final String boxName = 'anime_watch_progress';
 
   Future<void> init() async {
-    // dev.log('AnimeWatchProgressBox init on thread: ${Platform.currentThreadId}');
     if (!Hive.isBoxOpen(boxName)) {
       _box = await Hive.openBox<AnimeWatchProgressEntry>(boxName);
       dev.log('Box opened');
@@ -40,11 +38,20 @@ class AnimeWatchProgressBox {
     required Media animeMedia,
     required int episodeNumber,
     required String episodeTitle,
-    required String? episodeThumbnail,
+    required String episodeThumbnail, // Changed to non-nullable
     required int progressInSeconds,
     required int durationInSeconds,
     bool isCompleted = false,
   }) async {
+    dev.log('Updating episode progress: animeId=${animeMedia.id}, '
+        'episode=$episodeNumber, thumbnailLength=${episodeThumbnail.length}');
+
+    // Validate thumbnail
+    if (episodeThumbnail.isEmpty) {
+      dev.log('WARNING: Empty thumbnail provided, using default');
+      episodeThumbnail = _defaultThumbnail();
+    }
+
     final existingEntry = getEntry(animeMedia.id!);
 
     if (existingEntry != null) {
@@ -52,6 +59,8 @@ class AnimeWatchProgressBox {
           Map<int, EpisodeProgress>.from(existingEntry.episodesProgress);
 
       final updatedEpisode = updatedEpisodes[episodeNumber]?.copyWith(
+            episodeTitle: episodeTitle,
+            episodeThumbnail: episodeThumbnail, // Explicitly update thumbnail
             progressInSeconds: progressInSeconds,
             durationInSeconds: durationInSeconds,
             isCompleted: isCompleted,
@@ -75,6 +84,7 @@ class AnimeWatchProgressBox {
       );
 
       await setEntry(updatedEntry);
+      dev.log('Updated existing entry for episode $episodeNumber');
     } else {
       final newEntry = AnimeWatchProgressEntry(
         animeId: animeMedia.id!,
@@ -100,7 +110,19 @@ class AnimeWatchProgressBox {
       );
 
       await setEntry(newEntry);
+      dev.log('Created new entry for episode $episodeNumber');
     }
+
+    // Verify save
+    final savedEntry = getEntry(animeMedia.id!);
+    final savedThumbnail =
+        savedEntry?.episodesProgress[episodeNumber]?.episodeThumbnail;
+    dev.log('Verified save: thumbnailLength=${savedThumbnail?.length ?? 'null'}');
+  }
+
+  // Default thumbnail (1x1 blue pixel JPEG)
+  String _defaultThumbnail() {
+    return 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAAAAAAAD/4QAuRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAKADAAQAAAABAAAAAP/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAAAP/EABQBAQAAAAAAAAAAAAAAAAAAAAH/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AAAD/2Q==';
   }
 
   AnimeWatchProgressEntry? getMostRecentEntry() {
@@ -165,7 +187,6 @@ class AnimeWatchProgressBox {
     return watchedEpisodes.first;
   }
 
-  // New function to get all completed episodes
   List<EpisodeProgress> getAllCompletedEpisodes() {
     final allEntries = getAllEntries();
     return allEntries
@@ -174,7 +195,6 @@ class AnimeWatchProgressBox {
         .toList();
   }
 
-  // New function to get all progress of one anime by anime id
   List<EpisodeProgress> getAllProgressByAnimeId(int animeId) {
     final entry = getEntry(animeId);
     if (entry == null) return [];

@@ -181,13 +181,10 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     if (mounted) {
       final notifier = ref.read(watchProvider.notifier);
       // Show loading dialog for initial fetch
-      await Future.wait([
-        notifier.fetchEpisodes(animeId: widget.animeId),
-        notifier.fetchStreamData(
-          withPlay: true,
-          episodeIdx: (widget.episode ?? 1) - 1,
-        )
-      ]);
+      await notifier.fetchEpisodes(
+        animeId: widget.animeId,
+        episodeIdx: (widget.episode ?? 1) - 1,
+      );
     }
   }
 

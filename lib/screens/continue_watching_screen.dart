@@ -6,7 +6,7 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
-import 'package:shonenx/widgets/anime/anime_continue_card.dart';
+import 'package:shonenx/widgets/anime/continue_watching/anime_continue_card.dart';
 
 class ContinueWatchingScreen extends StatelessWidget {
   final AnimeWatchProgressBox animeWatchProgressBox;

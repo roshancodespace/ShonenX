@@ -232,13 +232,16 @@ class PlayerSettingsModelAdapter extends TypeAdapter<PlayerSettingsModel> {
       subtitleTextColor: fields[4] as int,
       subtitleBackgroundOpacity: fields[5] as double,
       subtitleHasShadow: fields[6] as bool,
+      defaultPlaybackSpeed: fields.containsKey(7) ? fields[7] as double : 1.0,
+      skipIntro: fields.containsKey(8) ? fields[8] as bool : true,
+      skipOutro: fields.containsKey(9) ? fields[9] as bool : true,
     );
   }
 
   @override
   void write(BinaryWriter writer, PlayerSettingsModel obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.episodeCompletionThreshold)
       ..writeByte(1)
@@ -252,7 +255,13 @@ class PlayerSettingsModelAdapter extends TypeAdapter<PlayerSettingsModel> {
       ..writeByte(5)
       ..write(obj.subtitleBackgroundOpacity)
       ..writeByte(6)
-      ..write(obj.subtitleHasShadow);
+      ..write(obj.subtitleHasShadow)
+      ..writeByte(7)
+      ..write(obj.defaultPlaybackSpeed)
+      ..writeByte(8)
+      ..write(obj.skipIntro)
+      ..writeByte(9)
+      ..write(obj.skipOutro);
   }
 
   @override

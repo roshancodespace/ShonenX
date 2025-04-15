@@ -39,27 +39,15 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Text(
-                  'Customize Your Experience',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-              ),
-            ),
             SliverList(
               delegate: SliverChildListDelegate([
                 SettingsSection(
+                  compact: true,
                   context: context,
                   title: 'Account',
                   items: [
                     SettingsItem(
+                      compact: true,
                       icon: Iconsax.user,
                       title: 'Profile Settings',
                       description: 'AniList integration, account preferences',
@@ -68,16 +56,19 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
                 SettingsSection(
+                  compact: true,
                   context: context,
                   title: 'Content & Playback',
                   items: [
                     SettingsItem(
+                      compact: true,
                       icon: Iconsax.video_play,
                       title: 'Video Player',
                       description: 'Playback settings, subtitles configuration',
                       onTap: () => context.push('/settings/player'),
                     ),
                     SettingsItem(
+                      compact: true,
                       icon: Iconsax.play,
                       title: 'Anime Sources',
                       description: 'Manage content providers',
@@ -86,16 +77,19 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
                 SettingsSection(
+                  compact: true,
                   context: context,
                   title: 'Appearance',
                   items: [
                     SettingsItem(
+                      compact: true,
                       icon: Iconsax.brush_2,
                       title: 'Theme Settings',
                       description: 'Customize app colors and appearance',
                       onTap: () => context.push('/settings/theme'),
                     ),
                     SettingsItem(
+                      compact: true,
                       icon: Iconsax.square,
                       title: 'UI Settings',
                       description: 'Customize the interface and layout',
@@ -104,16 +98,19 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
                 SettingsSection(
+                  compact: true,
                   context: context,
                   title: 'Support',
                   items: [
                     SettingsItem(
+                      compact: true,
                       icon: Iconsax.message_question,
                       title: 'Help Center',
                       description: 'FAQs and support resources',
                       onTap: () => context.push('/settings/support'),
                     ),
                     SettingsItem(
+                      compact: true,
                       icon: Iconsax.info_circle,
                       title: 'About',
                       description: 'App information and licenses',
@@ -129,6 +126,4 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-
-  
 }

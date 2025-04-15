@@ -51,7 +51,8 @@ class ProviderSettingsModel extends HiveObject {
   @HiveField(1)
   final String? customApiUrl;
 
-  ProviderSettingsModel({this.selectedProviderName = 'animekai', this.customApiUrl});
+  ProviderSettingsModel(
+      {this.selectedProviderName = 'animekai', this.customApiUrl});
 
   ProviderSettingsModel copyWith({
     String? selectedProviderName,
@@ -220,7 +221,7 @@ class PlayerSettingsModel extends HiveObject {
   @HiveField(2)
   final bool preferSubtitles;
 
-  // New subtitle style fields
+  // Subtitle style fields
   @HiveField(3)
   final double subtitleFontSize;
 
@@ -233,6 +234,16 @@ class PlayerSettingsModel extends HiveObject {
   @HiveField(6)
   final bool subtitleHasShadow;
 
+  // Playback settings
+  @HiveField(7)
+  final double defaultPlaybackSpeed;
+
+  @HiveField(8)
+  final bool skipIntro;
+
+  @HiveField(9)
+  final bool skipOutro;
+
   PlayerSettingsModel({
     this.episodeCompletionThreshold = 0.9,
     this.autoPlayNextEpisode = true,
@@ -241,6 +252,9 @@ class PlayerSettingsModel extends HiveObject {
     this.subtitleTextColor = 0xFFFFFFFF, // Default white
     this.subtitleBackgroundOpacity = 0.6,
     this.subtitleHasShadow = true,
+    this.defaultPlaybackSpeed = 1.0,
+    this.skipIntro = true,
+    this.skipOutro = true,
   });
 
   PlayerSettingsModel copyWith({
@@ -251,6 +265,9 @@ class PlayerSettingsModel extends HiveObject {
     int? subtitleTextColor,
     double? subtitleBackgroundOpacity,
     bool? subtitleHasShadow,
+    double? defaultPlaybackSpeed,
+    bool? skipIntro,
+    bool? skipOutro,
   }) {
     return PlayerSettingsModel(
       episodeCompletionThreshold:
@@ -262,6 +279,9 @@ class PlayerSettingsModel extends HiveObject {
       subtitleBackgroundOpacity:
           subtitleBackgroundOpacity ?? this.subtitleBackgroundOpacity,
       subtitleHasShadow: subtitleHasShadow ?? this.subtitleHasShadow,
+      defaultPlaybackSpeed: defaultPlaybackSpeed ?? this.defaultPlaybackSpeed,
+      skipIntro: skipIntro ?? this.skipIntro,
+      skipOutro: skipOutro ?? this.skipOutro,
     );
   }
 

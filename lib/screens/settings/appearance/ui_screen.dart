@@ -96,32 +96,22 @@ class UISettingsScreen extends ConsumerWidget {
 
     return CustomScrollView(
       slivers: [
-        const SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: Text(
-              'Customize Interface',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.2,
-              ),
-            ),
-          ),
-        ),
         SliverList(
           delegate: SliverChildListDelegate([
-            _buildSettingsGroup(
-              context,
+            SettingsSection(
+              compact: true,
+              context: context,
               title: 'Layout',
               items: [
                 SettingsItem(
+                  compact: true,
                   onTap: () => _showDefaultTabDialog(context, ref),
                   icon: Iconsax.home,
                   title: 'Default Tab',
                   description: 'Set the tab shown on app launch',
                 ),
                 SettingsItem(
+                  compact: true,
                   onTap: () {},
                   icon: Iconsax.grid_3,
                   title: 'Layout Style',
@@ -130,11 +120,13 @@ class UISettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            _buildSettingsGroup(
-              context,
+            SettingsSection(
+              compact: true,
+              context: context,
               title: 'Content Display',
               items: [
                 SettingsItem(
+                  compact: true,
                   icon: Iconsax.card,
                   title: 'Card Style',
                   description: 'Customize card appearance',
@@ -142,38 +134,27 @@ class UISettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            _buildSettingsGroup(
-              context,
+            SettingsSection(
+              compact: true,
+              context: context,
               title: 'Immersive Mode',
               items: [
-                SettingsItem(
+                SettingsSwitch(
+                  compact: true,
                   icon: Icons.fullscreen,
                   title: 'Enable Immersive Mode',
                   description:
                       'Toggle immersive mode for a distraction-free experience',
-                  onTap: () {
-                    // Logic to toggle immersive mode
+                  value: ref.watch(uiSettingsProvider).uiSettings.immersiveMode,
+                  onChanged: (value) {
                     final currentSettings =
                         ref.read(uiSettingsProvider).uiSettings;
                     ref.read(uiSettingsProvider.notifier).updateUISettings(
                           currentSettings.copyWith(
-                            immersiveMode: !currentSettings.immersiveMode,
+                            immersiveMode: value,
                           ),
                         );
                   },
-                  trailing: Switch(
-                    value:
-                        ref.watch(uiSettingsProvider).uiSettings.immersiveMode,
-                    onChanged: (value) {
-                      final currentSettings =
-                          ref.read(uiSettingsProvider).uiSettings;
-                      ref.read(uiSettingsProvider.notifier).updateUISettings(
-                            currentSettings.copyWith(
-                              immersiveMode: value,
-                            ),
-                          );
-                    },
-                  ),
                 ),
               ],
             ),
@@ -181,61 +162,6 @@ class UISettingsScreen extends ConsumerWidget {
           ]),
         ),
       ],
-    );
-  }
-
-  Widget _buildSettingsGroup(
-    BuildContext context, {
-    required String title,
-    required List<Widget> items,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12, left: 8),
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.primary,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-          Card(
-            elevation: 3,
-            shadowColor: colorScheme.shadow.withValues(alpha: 0.1),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            surfaceTintColor: Colors.transparent,
-            color: colorScheme.surface,
-            child: Column(
-              children: items.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                return Column(
-                  children: [
-                    if (index > 0)
-                      Divider(
-                        height: 1,
-                        indent: 60,
-                        endIndent: 16,
-                        color: colorScheme.onSurface.withValues(alpha: 0.1),
-                      ),
-                    item,
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -273,8 +199,7 @@ class UISettingsScreen extends ConsumerWidget {
                   fillColor: colorScheme.surfaceContainerHighest,
                 ),
                 dropdownColor: colorScheme.surfaceContainerHighest,
-                icon: Icon(Iconsax.arrow_down_1,
-                    color: colorScheme.onSurface),
+                icon: Icon(Iconsax.arrow_down_1, color: colorScheme.onSurface),
                 style: TextStyle(color: colorScheme.onSurface),
                 onChanged: (newValue) => selectedTab.value = newValue!,
                 items: tabs.map((tab) {

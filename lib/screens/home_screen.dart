@@ -15,9 +15,9 @@ import 'package:shonenx/helpers/provider.dart';
 import 'package:shonenx/providers/anilist/anilist_user_provider.dart';
 import 'package:shonenx/providers/homepage_provider.dart';
 import 'package:shonenx/utils/greeting_methods.dart';
-import 'package:shonenx/widgets/anime/anime_card_v2.dart';
-import 'package:shonenx/widgets/anime/anime_spotlight_card.dart';
-import 'package:shonenx/widgets/anime/continue_watching_view.dart';
+import 'package:shonenx/widgets/anime/card/anime_card.dart';
+import 'package:shonenx/widgets/anime/spotlight_card/anime_spotlight_card.dart';
+import 'package:shonenx/widgets/anime/continue_watching/continue_watching_view.dart';
 import 'package:shonenx/widgets/ui/slide_indicator.dart';
 import 'package:uuid/uuid.dart';
 
@@ -470,7 +470,7 @@ class _SpotlightSection extends StatelessWidget {
     final trendingAnimes =
         homePage?.trendingAnime ?? List<Media?>.filled(9, null);
     final carouselHeight =
-        MediaQuery.sizeOf(context).width > 900 ? 500.0 : 260.0;
+        MediaQuery.sizeOf(context).width > 900 ? 500.0 : 240.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

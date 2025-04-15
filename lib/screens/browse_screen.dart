@@ -7,7 +7,7 @@ import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
 import 'package:shonenx/data/constants/constants.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/helpers/provider.dart';
-import 'package:shonenx/widgets/anime/anime_card_v2.dart';
+import 'package:shonenx/widgets/anime/card/anime_card.dart';
 import 'package:shonenx/widgets/ui/search_bar.dart';
 import 'package:uuid/uuid.dart';
 import 'package:iconsax/iconsax.dart';

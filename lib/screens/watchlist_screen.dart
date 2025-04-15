@@ -7,7 +7,7 @@ import 'package:shonenx/api/models/anilist/anilist_media_list.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/providers/anilist/anilist_medialist_provider.dart';
 import 'package:shonenx/providers/anilist/anilist_user_provider.dart';
-import 'package:shonenx/widgets/anime/anime_card_v2.dart';
+import 'package:shonenx/widgets/anime/card/anime_card.dart';
 import 'package:uuid/uuid.dart';
 
 final selectedCategoryProvider = StateProvider<String>((ref) => 'CURRENT');

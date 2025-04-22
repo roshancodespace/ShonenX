@@ -74,6 +74,7 @@ class UISettingsScreen extends ConsumerWidget {
       native: "One Piece",
     ),
     format: 'TV',
+    averageScore: 69,
     status: 'Completed',
     genres: ['Action', 'Adventure', 'Comedy'],
     episodes: 220,
@@ -94,74 +95,78 @@ class UISettingsScreen extends ConsumerWidget {
   Widget _buildContent(BuildContext context, WidgetRef ref) {
     // final colorScheme = Theme.of(context).colorScheme;
 
-    return CustomScrollView(
-      slivers: [
-        SliverList(
-          delegate: SliverChildListDelegate([
-            SettingsSection(
-              compact: true,
-              context: context,
-              title: 'Layout',
-              items: [
-                SettingsItem(
-                  compact: true,
-                  onTap: () => _showDefaultTabDialog(context, ref),
-                  icon: Iconsax.home,
-                  title: 'Default Tab',
-                  description: 'Set the tab shown on app launch',
-                ),
-                SettingsItem(
-                  compact: true,
-                  onTap: () {},
-                  icon: Iconsax.grid_3,
-                  title: 'Layout Style',
-                  description: 'Choose between grid or list view',
-                  disabled: true,
-                ),
-              ],
-            ),
-            SettingsSection(
-              compact: true,
-              context: context,
-              title: 'Content Display',
-              items: [
-                SettingsItem(
-                  compact: true,
-                  icon: Iconsax.card,
-                  title: 'Card Style',
-                  description: 'Customize card appearance',
-                  onTap: () => _showCardStyleDialog(context, ref),
-                ),
-              ],
-            ),
-            SettingsSection(
-              compact: true,
-              context: context,
-              title: 'Immersive Mode',
-              items: [
-                SettingsSwitch(
-                  compact: true,
-                  icon: Icons.fullscreen,
-                  title: 'Enable Immersive Mode',
-                  description:
-                      'Toggle immersive mode for a distraction-free experience',
-                  value: ref.watch(uiSettingsProvider).uiSettings.immersiveMode,
-                  onChanged: (value) {
-                    final currentSettings =
-                        ref.read(uiSettingsProvider).uiSettings;
-                    ref.read(uiSettingsProvider.notifier).updateUISettings(
-                          currentSettings.copyWith(
-                            immersiveMode: value,
-                          ),
-                        );
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 48),
-          ]),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: CustomScrollView(
+        slivers: [
+          SliverList(
+            delegate: SliverChildListDelegate([
+              SettingsSection(
+                compact: true,
+                context: context,
+                title: 'Layout',
+                items: [
+                  SettingsItem(
+                    compact: true,
+                    onTap: () => _showDefaultTabDialog(context, ref),
+                    icon: Iconsax.home,
+                    title: 'Default Tab',
+                    description: 'Set the tab shown on app launch',
+                  ),
+                  SettingsItem(
+                    compact: true,
+                    onTap: () {},
+                    icon: Iconsax.grid_3,
+                    title: 'Layout Style',
+                    description: 'Choose between grid or list view',
+                    disabled: true,
+                  ),
+                ],
+              ),
+              SettingsSection(
+                compact: true,
+                context: context,
+                title: 'Content Display',
+                items: [
+                  SettingsItem(
+                    compact: true,
+                    icon: Iconsax.card,
+                    title: 'Card Style',
+                    description: 'Customize card appearance',
+                    onTap: () => _showCardStyleDialog(context, ref),
+                  ),
+                ],
+              ),
+              SettingsSection(
+                compact: true,
+                context: context,
+                title: 'Immersive Mode',
+                items: [
+                  SettingsSwitch(
+                    compact: true,
+                    icon: Icons.fullscreen,
+                    title: 'Enable Immersive Mode',
+                    description:
+                        'Toggle immersive mode for a distraction-free experience',
+                    value:
+                        ref.watch(uiSettingsProvider).uiSettings.immersiveMode,
+                    onChanged: (value) {
+                      final currentSettings =
+                          ref.read(uiSettingsProvider).uiSettings;
+                      ref.read(uiSettingsProvider.notifier).updateUISettings(
+                            currentSettings.copyWith(
+                              immersiveMode: value,
+                            ),
+                          );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 48),
+            ]),
+          ),
+        ],
+      ),
     );
   }
 

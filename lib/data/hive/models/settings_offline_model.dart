@@ -20,7 +20,7 @@ class SettingsModel extends HiveObject {
   final PlayerSettingsModel playerSettings;
 
   @HiveField(3)
-  final UISettingsModel? uiSettings; // New UI Settings field
+  final UISettingsModel? uiSettings;
 
   SettingsModel({
     required this.providerSettings,
@@ -51,8 +51,10 @@ class ProviderSettingsModel extends HiveObject {
   @HiveField(1)
   final String? customApiUrl;
 
-  ProviderSettingsModel(
-      {this.selectedProviderName = 'animekai', this.customApiUrl});
+  ProviderSettingsModel({
+    this.selectedProviderName = 'animekai',
+    this.customApiUrl,
+  });
 
   ProviderSettingsModel copyWith({
     String? selectedProviderName,
@@ -202,10 +204,10 @@ class AnilistSettings extends HiveObject {
   AnilistSettings({this.themeMode = 'system'});
 
   AnilistSettings copyWith({
-    String? theme,
+    String? themeMode,
   }) {
     return AnilistSettings(
-      themeMode: theme ?? themeMode,
+      themeMode: themeMode ?? this.themeMode,
     );
   }
 }
@@ -234,14 +236,26 @@ class PlayerSettingsModel extends HiveObject {
   @HiveField(6)
   final bool subtitleHasShadow;
 
-  // Playback settings
   @HiveField(7)
-  final double defaultPlaybackSpeed;
+  final double subtitleShadowOpacity;
 
   @HiveField(8)
-  final bool skipIntro;
+  final double subtitleShadowBlur;
 
   @HiveField(9)
+  final String? subtitleFontFamily;
+
+  @HiveField(10)
+  final int subtitlePosition; // Store as int (0=top, 1=middle, 2=bottom)
+
+  // Playback settings
+  @HiveField(11)
+  final double defaultPlaybackSpeed;
+
+  @HiveField(12)
+  final bool skipIntro;
+
+  @HiveField(13)
   final bool skipOutro;
 
   PlayerSettingsModel({
@@ -252,10 +266,28 @@ class PlayerSettingsModel extends HiveObject {
     this.subtitleTextColor = 0xFFFFFFFF, // Default white
     this.subtitleBackgroundOpacity = 0.6,
     this.subtitleHasShadow = true,
+    this.subtitleShadowOpacity = 0.5,
+    this.subtitleShadowBlur = 2.0,
+    this.subtitleFontFamily,
+    this.subtitlePosition = 2,
     this.defaultPlaybackSpeed = 1.0,
     this.skipIntro = true,
     this.skipOutro = true,
   });
+
+  // Convert to runtime SubtitleStyle
+  SubtitleStyle toSubtitleStyle() {
+    return SubtitleStyle(
+      fontSize: subtitleFontSize,
+      textColor: Color(subtitleTextColor),
+      backgroundOpacity: subtitleBackgroundOpacity,
+      hasShadow: subtitleHasShadow,
+      shadowOpacity: subtitleShadowOpacity,
+      shadowBlur: subtitleShadowBlur,
+      fontFamily: subtitleFontFamily,
+      position: subtitlePosition,
+    );
+  }
 
   PlayerSettingsModel copyWith({
     double? episodeCompletionThreshold,
@@ -265,6 +297,10 @@ class PlayerSettingsModel extends HiveObject {
     int? subtitleTextColor,
     double? subtitleBackgroundOpacity,
     bool? subtitleHasShadow,
+    double? subtitleShadowOpacity,
+    double? subtitleShadowBlur,
+    int? subtitlePosition,
+    String? subtitleFontFamily,
     double? defaultPlaybackSpeed,
     bool? skipIntro,
     bool? skipOutro,
@@ -279,19 +315,14 @@ class PlayerSettingsModel extends HiveObject {
       subtitleBackgroundOpacity:
           subtitleBackgroundOpacity ?? this.subtitleBackgroundOpacity,
       subtitleHasShadow: subtitleHasShadow ?? this.subtitleHasShadow,
+      subtitleShadowOpacity:
+          subtitleShadowOpacity ?? this.subtitleShadowOpacity,
+      subtitleShadowBlur: subtitleShadowBlur ?? this.subtitleShadowBlur,
+      subtitleFontFamily: subtitleFontFamily ?? this.subtitleFontFamily,
+      subtitlePosition: subtitlePosition ?? this.subtitlePosition,
       defaultPlaybackSpeed: defaultPlaybackSpeed ?? this.defaultPlaybackSpeed,
       skipIntro: skipIntro ?? this.skipIntro,
       skipOutro: skipOutro ?? this.skipOutro,
-    );
-  }
-
-  // Convert to runtime SubtitleStyle
-  SubtitleStyle toSubtitleStyle() {
-    return SubtitleStyle(
-      fontSize: subtitleFontSize,
-      textColor: Color(subtitleTextColor),
-      backgroundOpacity: subtitleBackgroundOpacity,
-      hasShadow: subtitleHasShadow,
     );
   }
 }
@@ -325,19 +356,21 @@ class UISettingsModel extends HiveObject {
     this.immersiveMode = false,
   });
 
-  UISettingsModel copyWith(
-      {bool? compactMode,
-      String? defaultTab,
-      bool? showThumbnails,
-      String? cardStyle,
-      String? layoutStyle,
-      bool? immersiveMode}) {
+  UISettingsModel copyWith({
+    bool? compactMode,
+    String? defaultTab,
+    bool? showThumbnails,
+    String? cardStyle,
+    String? layoutStyle,
+    bool? immersiveMode,
+  }) {
     return UISettingsModel(
-        compactMode: compactMode ?? this.compactMode,
-        defaultTab: defaultTab ?? this.defaultTab,
-        showThumbnails: showThumbnails ?? this.showThumbnails,
-        cardStyle: cardStyle ?? this.cardStyle,
-        layoutStyle: layoutStyle ?? this.layoutStyle,
-        immersiveMode: immersiveMode ?? this.immersiveMode);
+      compactMode: compactMode ?? this.compactMode,
+      defaultTab: defaultTab ?? this.defaultTab,
+      showThumbnails: showThumbnails ?? this.showThumbnails,
+      cardStyle: cardStyle ?? this.cardStyle,
+      layoutStyle: layoutStyle ?? this.layoutStyle,
+      immersiveMode: immersiveMode ?? this.immersiveMode,
+    );
   }
 }

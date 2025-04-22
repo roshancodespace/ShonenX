@@ -9,6 +9,7 @@ import 'package:shonenx/api/models/anime/episode_model.dart';
 import 'package:shonenx/api/models/anime/source_model.dart';
 import 'package:shonenx/api/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/api/sources/anime/anime_provider.dart';
+import 'package:shonenx/data/hive/boxes/settings_box.dart';
 import 'package:shonenx/utils/extractors.dart' as extractor;
 
 // Optimized WatchState
@@ -31,6 +32,8 @@ class WatchState {
   final bool episodesLoading;
   final bool sourceLoading;
   final String? loadingMessage;
+  final Map<String, int>? intro; // {start: seconds, end: seconds}
+  final Map<String, int>? outro; // {start: seconds, end: seconds}
 
   const WatchState({
     required this.animeId,
@@ -50,6 +53,8 @@ class WatchState {
     this.selectedSourceIdx = 0,
     this.selectedSubtitleIdx,
     this.loadingMessage,
+    this.intro,
+    this.outro,
   });
 
   WatchState copyWith({
@@ -70,9 +75,11 @@ class WatchState {
     int? selectedSourceIdx,
     int? selectedEpisodeIdx,
     String? loadingMessage,
+    Map<String, int>? intro,
+    Map<String, int>? outro,
   }) {
     return WatchState(
-      error: error, // Allow null to clear error
+      error: error,
       episodesLoading: episodesLoading ?? this.episodesLoading,
       sourceLoading: sourceLoading ?? this.sourceLoading,
       animeId: animeId ?? this.animeId,
@@ -89,6 +96,8 @@ class WatchState {
       selectedSourceIdx: selectedSourceIdx ?? this.selectedSourceIdx,
       selectedEpisodeIdx: selectedEpisodeIdx ?? this.selectedEpisodeIdx,
       loadingMessage: loadingMessage ?? this.loadingMessage,
+      intro: intro ?? this.intro,
+      outro: outro ?? this.outro,
     );
   }
 }
@@ -98,6 +107,7 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
   final Player? player;
   final VideoController? controller;
   final AnimeProvider animeProvider;
+  StreamSubscription<Duration>? _positionSubscription;
 
   WatchStateNotifier({
     required this.player,
@@ -112,6 +122,7 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
 
   void resetState() {
     state = const WatchState(animeId: '');
+    _positionSubscription?.cancel();
   }
 
   void updateCategory(String category) {
@@ -129,7 +140,7 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
     }
     try {
       await fetchStreamData(episodeIdx: episodeIdx, withPlay: withPlay);
-      state = state.copyWith(error: null); // Clear error on success
+      state = state.copyWith(error: null);
     } catch (e, stackTrace) {
       _handleError('Failed to change episode: $e', stackTrace);
     }
@@ -162,6 +173,37 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
         await player?.seek(startAt);
         await player?.play();
         log('Video source updated: $sourceUrl, seeked to: $startAt');
+
+        // Cancel any existing position subscription
+        await _positionSubscription?.cancel();
+        final settingsBox = SettingsBox();
+        await settingsBox.init();
+        final playerSettings = settingsBox.getPlayerSettings();
+
+        // Set up position listener for intro/outro skipping
+        if (state.intro != null || state.outro != null) {
+          _positionSubscription = player?.stream.position.listen((position) {
+            final positionSeconds = position.inSeconds;
+
+            // Skip intro
+            if (playerSettings.skipIntro &&
+                state.intro != null &&
+                positionSeconds >= state.intro!['start']! &&
+                positionSeconds < state.intro!['end']!) {
+              player?.seek(Duration(seconds: state.intro!['end']!));
+              log('Skipped intro from ${state.intro!['start']} to ${state.intro!['end']}');
+            }
+
+            // Skip outro
+            if (playerSettings.skipIntro &&
+                state.outro != null &&
+                positionSeconds >= state.outro!['start']! &&
+                positionSeconds < state.outro!['end']!) {
+              player?.seek(Duration(seconds: state.outro!['end']!));
+              log('Skipped outro from ${state.outro!['start']} to ${state.outro!['end']}');
+            }
+          });
+        }
       }
     } catch (e, stackTrace) {
       _handleError('Failed to update video source: $e', stackTrace);
@@ -308,6 +350,12 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
         selectedSource: data.sources.isNotEmpty ? data.sources.first.url : null,
         sources: data.sources,
         subtitles: data.tracks,
+        intro: data.intro != null
+            ? {'start': data.intro!.start ?? 0, 'end': data.intro!.end ?? 0}
+            : null,
+        outro: data.outro != null
+            ? {'start': data.outro!.start ?? 0, 'end': data.outro!.end ?? 0}
+            : null,
         error: null,
       );
 
@@ -346,9 +394,14 @@ class WatchStateNotifier extends StateNotifier<WatchState> {
   }
 
   void _handleError(String message, StackTrace stackTrace) {
-    log(message,
-        stackTrace: stackTrace, level: 1000); // Log error with high severity
+    log(message, stackTrace: stackTrace, level: 1000);
     state = state.copyWith(error: message);
+  }
+
+  @override
+  void dispose() {
+    _positionSubscription?.cancel();
+    super.dispose();
   }
 }
 
@@ -434,10 +487,8 @@ class PlayerStateNotifier extends StateNotifier<PlayerState> {
 // Providers
 final watchProvider =
     StateNotifierProvider<WatchStateNotifier, WatchState>((ref) {
-  // Use the currentAnimeProviderProvider to get the current anime provider
   final animeProvider = ref.watch(currentAnimeProviderProvider);
 
-  // If the anime provider is null, throw an exception
   if (animeProvider == null) {
     throw Exception(
         'No anime provider available. Make sure the registry is initialized and a provider is selected.');

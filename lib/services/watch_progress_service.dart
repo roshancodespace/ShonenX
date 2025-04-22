@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/api/models/anilist/anilist_media_list.dart'
     as anilist_media;
 import 'package:shonenx/data/hive/boxes/anime_watch_progress_box.dart';
-import 'package:shonenx/data/hive/models/settings_offline_model.dart';
 import 'package:shonenx/providers/watch_providers.dart';
 import 'package:shonenx/screens/settings/player/player_screen.dart';
 import 'package:shonenx/services/thumbnail_service.dart';

@@ -105,7 +105,7 @@ dependencies:
 
 1. **Clone the Repository**
 ```bash
-git clone https://github.com/Darkx-dev/ShonenX.git
+git clone https://github.com/roshancodespace/ShonenX.git
 cd ShonenX
 ```
 
@@ -191,8 +191,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Contact Information
 - **Developer**: Roshan Kumar
-- **GitHub**: [@Darkx-dev](https://github.com/Darkx-dev)
-- **Email**: [darkx.dev.23@gmail.com](mailto:darkx.dev.23@gmail.com)
+- **GitHub**: [@roshancodespace](https://github.com/roshancodespace)
+- **Email**: [roshan.codespace@gmail.com](mailto:roshan.codespace@gmail.com)
 - **Discord**: [Join our Community](https://discord.gg/uJyXZYSmH4)
 
 ---
@@ -201,5 +201,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   
 ### Star the repo if you like what you see! ⭐
 
-Made with ❤️ by [Darkx-dev](https://github.com/Darkx-dev)
+Made with ❤️ by [roshancodespace](https://github.com/roshancodespace)
 </div>

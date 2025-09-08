@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
 class DefaultCard extends StatelessWidget {
   final Media? anime;

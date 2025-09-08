@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
 
 /// Bottom sheet for editing anime list entry
 class EditListBottomSheet extends StatefulWidget {
@@ -138,7 +138,7 @@ class _EditListBottomSheetState extends State<EditListBottomSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Edit Entry',
+            Text('Edit Entry (WIP)',
                 style: theme.textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 24),

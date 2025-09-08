@@ -1,4 +1,7 @@
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/anilist/media_list_collection.dart';
+import 'package:shonenx/core/models/anilist/media_list_entry.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
 
 class MalRepository implements AnimeRepository {
@@ -65,4 +68,20 @@ class MalRepository implements AnimeRepository {
   @override
   // TODO: implement name
   String get name => throw UnimplementedError();
+
+  @override
+  Future<MediaListEntry?> updateUserAnimeList({
+    required int mediaId,
+    String? status,
+    double? score, // GraphQL expects Float
+    int? progress,
+    FuzzyDateInput? startedAt,
+    FuzzyDateInput? completedAt,
+    int? repeat,
+    String? notes,
+    bool? private,
+  }) {
+    // TODO: implement updateUserAnimeListEntry
+    throw UnimplementedError();
+  }
 }

@@ -1,54 +1,69 @@
-double calculateSimilarity(String? str1, String? str2) {
-  // Handle null or empty inputs
-  if (str1 == null || str2 == null) return 0.0;
-  if (str1.isEmpty || str2.isEmpty) return 0.0;
+import 'dart:math';
 
-  // Normalize to lowercase for case-insensitive comparison
-  final s1 = str1.toLowerCase();
-  final s2 = str2.toLowerCase();
+/// Filters and sorts provider search results by similarity score
+List<({T result, double similarity})> getBestMatches<T>({
+  required List<T> results,
+  required String title,
+  required String? Function(T r) nameSelector,
+  required String? Function(T r) idSelector,
+  double minThreshold = 0.1,
+}) {
+  return results
+      .where((r) => nameSelector(r) != null && idSelector(r) != null)
+      .map((r) => (
+            result: r,
+            similarity: getSimilarityScore(
+              nameSelector(r)!.toLowerCase(),
+              title.toLowerCase(),
+            ),
+          ))
+      .where((p) => p.similarity > minThreshold)
+      .toList()
+    ..sort((a, b) => b.similarity.compareTo(a.similarity));
+}
 
-  // Early exit for identical strings
-  if (s1 == s2) return 1.0;
+/// Calculates the similarity score between two strings (0.0 - 1.0).
+/// Uses normalized Levenshtein distance.
+double getSimilarityScore(String a, String b) {
+  if (a.isEmpty || b.isEmpty) return 0.0;
 
-  final len1 = s1.length;
-  final len2 = s2.length;
+  final lenA = a.length;
+  final lenB = b.length;
+  final distance = _levenshtein(a, b);
 
-  // Create a two-row matrix to save space (O(min(m,n)) instead of O(m*n))
-  final minLen = len1 < len2 ? len1 : len2;
-  final maxLen = len1 > len2 ? len1 : len2;
-  List<int> prevRow = List.generate(minLen + 1, (i) => i);
-  List<int> currRow = List.generate(minLen + 1, (_) => 0);
+  // Similarity = 1 - (editDistance / maxLength)
+  return 1.0 - (distance / max(lenA, lenB));
+}
 
-  // Fill the matrix
-  for (int i = 1; i <= maxLen; i++) {
-    currRow[0] = i;
-    for (int j = 1; j <= minLen; j++) {
-      final cost = (len1 < len2 ? s2[i - 1] : s1[i - 1]) == (len1 < len2 ? s1[j - 1] : s2[j - 1]) ? 0 : 1;
-      currRow[j] = [
-        currRow[j - 1] + 1, // Insertion
-        prevRow[j] + 1,     // Deletion
-        prevRow[j - 1] + cost // Substitution
-      ].reduce((a, b) => a < b ? a : b);
-    }
-    // Swap rows
-    final temp = prevRow;
-    prevRow = currRow;
-    currRow = temp;
+/// Internal Levenshtein distance implementation
+int _levenshtein(String s, String t) {
+  if (s == t) return 0;
+  if (s.isEmpty) return t.length;
+  if (t.isEmpty) return s.length;
+
+  final v0 = List<int>.filled(t.length + 1, 0);
+  final v1 = List<int>.filled(t.length + 1, 0);
+
+  for (var i = 0; i <= t.length; i++) {
+    v0[i] = i;
   }
 
-  final levenshteinDistance = prevRow[minLen];
+  for (var i = 0; i < s.length; i++) {
+    v1[0] = i + 1;
 
-  // Alternative normalization: Use average length for better balance
-  final avgLength = (len1 + len2) / 2;
-  double levenshteinSimilarity = 1.0 - (levenshteinDistance / avgLength);
+    for (var j = 0; j < t.length; j++) {
+      final cost = s[i] == t[j] ? 0 : 1;
+      v1[j + 1] = [
+        v1[j] + 1,      // Deletion
+        v0[j + 1] + 1,  // Insertion
+        v0[j] + cost,   // Substitution
+      ].reduce(min);
+    }
 
-  // Bonus: Word overlap heuristic for anime titles
-  final words1 = s1.split(RegExp(r'\s+'));
-  final words2 = s2.split(RegExp(r'\s+'));
-  final commonWords = words1.where((w) => words2.contains(w)).length;
-  final maxWords = words1.length > words2.length ? words1.length : words2.length;
-  final wordSimilarity = commonWords / maxWords;
+    for (var j = 0; j < v0.length; j++) {
+      v0[j] = v1[j];
+    }
+  }
 
-  // Combine scores (weighted: 70% Levenshtein, 30% word overlap)
-  return 0.7 * levenshteinSimilarity + 0.3 * wordSimilarity;
+  return v1[t.length];
 }

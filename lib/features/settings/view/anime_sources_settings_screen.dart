@@ -66,6 +66,7 @@ class AnimeSourcesSettingsScreen extends ConsumerWidget {
                       child: SettingsItem(
                         icon: Icon(_getStatusIcon(status)),
                         iconColor: _getStatusColor(status),
+                        accent: _getStatusColor(status),
                         title: provider.toUpperCase(),
                         description:
                             'Status: ${status?.toUpperCase() ?? 'UNKNOWN'}',

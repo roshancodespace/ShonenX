@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_carousel_widget/flutter_carousel_widget.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_spotlight_card.dart';
 import 'package:shonenx/features/home/view/widget/slider_indicator.dart';

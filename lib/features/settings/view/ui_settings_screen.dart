@@ -7,7 +7,7 @@ import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart'
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/features/settings/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/widgets/settings_section.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart'
+import 'package:shonenx/core/models/anilist/media.dart'
     as anime_media;
 import 'package:uuid/uuid.dart';
 
@@ -37,7 +37,7 @@ class UiSettingsScreen extends ConsumerWidget {
                   items: [
                     SettingsItem(
                       icon: Icon(Iconsax.card, color: colorScheme.primary),
-                      iconColor: colorScheme.primary,
+                      accent: colorScheme.primary,
                       title: 'Card Style',
                       description: 'Customize card appearance',
                       onTap: () => _showCardStyleDialog(context, ref),
@@ -73,7 +73,7 @@ class UiSettingsScreen extends ConsumerWidget {
                 children: [
                   SettingsItem(
                     icon: Icon(Iconsax.card, color: colorScheme.primary),
-                    iconColor: colorScheme.primary,
+                    accent: colorScheme.primary,
                     title: 'Card Style',
                     description: 'Customize card appearance',
                     type: SettingsItemType.dropdown,

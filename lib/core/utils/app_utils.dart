@@ -1,4 +1,4 @@
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
 
 List<Media> safeParse(String label, List list) {
   try {

@@ -3,14 +3,14 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/helpers/matcher.dart';
+import 'package:shonenx/helpers/navigation.dart';
 
 /// Searches for an anime match and navigates to the watch screen.
 ///
@@ -45,16 +45,12 @@ Future<void> providerAnimeMatchSearch({
     }
 
     // Calculate similarity for valid results and sort them
-    final matchedResults = initialResponse.results
-        .where((r) => r.name != null && r.id != null)
-        .map((r) => (
-              result: r,
-              similarity: calculateSimilarity(
-                  r.name!.toLowerCase(), title.toLowerCase())
-            ))
-        .where((p) => p.similarity > 0.1) // Filter out very low-quality matches
-        .toList()
-      ..sort((a, b) => b.similarity.compareTo(a.similarity));
+    final matchedResults = getBestMatches(
+      results: initialResponse.results,
+      title: title,
+      nameSelector: (r) => r.name,
+      idSelector: (r) => r.id,
+    );
 
     if (!context.mounted) return;
 
@@ -62,13 +58,11 @@ Future<void> providerAnimeMatchSearch({
     if (matchedResults.isNotEmpty && matchedResults.first.similarity >= 0.8) {
       final bestMatch = matchedResults.first.result;
       AppLogger.d('High-confidence match found: ${bestMatch.name}');
-      _navigateToWatch(
+      navigateToWatch(
         context: context,
         ref: ref,
         animeId: bestMatch.id!,
         animeName: bestMatch.name!,
-        animeMedia: animeMedia,
-        plusEpisode: plusEpisode,
       );
       return;
     }
@@ -169,13 +163,11 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
 
   void _selectAnime(BaseAnimeModel anime) {
     Navigator.of(context).pop();
-    _navigateToWatch(
+    navigateToWatch(
       context: context,
       ref: ref,
       animeId: anime.id!,
       animeName: anime.name ?? 'Unknown',
-      animeMedia: widget.animeMedia,
-      plusEpisode: widget.plusEpisode,
     );
   }
 
@@ -348,30 +340,4 @@ void _showErrorSnackBar(BuildContext context, String title, String message) {
         ),
       ),
     );
-}
-
-/// Helper to construct the route and navigate to the watch screen.
-void _navigateToWatch({
-  required BuildContext context,
-  required WidgetRef ref,
-  required String animeId,
-  required String animeName,
-  required Media animeMedia,
-  required int plusEpisode,
-}) {
-  // final progress = ref
-  //     .read(animeWatchProgressProvider.notifier)
-  //     .getMostRecentEpisodeProgressByAnimeId(animeMedia.id!);
-
-  // final episode = (progress?.episodeNumber ?? 0) + plusEpisode;
-  // final startAt = progress?.progressInSeconds ?? 0;
-  // final encodedName = Uri.encodeComponent(animeName);
-
-  final route = '/watch/$animeId'
-      '?animeName=$animeName'
-      '&episode=0';
-  // '&startAt=';
-
-  AppLogger.d('Navigating to watch screen: $route');
-  context.push(route, extra: animeMedia);
 }

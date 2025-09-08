@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
 
 class AnimatedAnimeCard extends StatefulWidget {
-  final Media? anime;
+  final Media anime;
   final String tag;
   final VoidCallback? onTap;
-  final AnimeCardMode mode; // Use the enum for type safety
+  final AnimeCardMode mode;
 
   const AnimatedAnimeCard({
     super.key,
     required this.anime,
     required this.tag,
     this.onTap,
-    this.mode = AnimeCardMode.defaults, // Default to the enum value
+    this.mode = AnimeCardMode.defaults,
   });
 
   @override
@@ -27,15 +27,19 @@ class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
   Widget build(BuildContext context) {
     // 1. Get the configuration for the current mode
     final config = cardConfigs[widget.mode]!;
-    
+
     // 2. Get screen width once for responsive calculations
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 600;
 
     // 3. Use the config to determine size
-    final width = isSmallScreen ? config.responsiveWidth.small : config.responsiveWidth.large;
-    final height = isSmallScreen ? config.responsiveHeight.small : config.responsiveHeight.large;
-    
+    final width = isSmallScreen
+        ? config.responsiveWidth.small
+        : config.responsiveWidth.large;
+    final height = isSmallScreen
+        ? config.responsiveHeight.small
+        : config.responsiveHeight.large;
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _isHovered = true),
@@ -52,7 +56,6 @@ class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
             bottom: _isHovered ? 4 : 0,
           ),
           decoration: BoxDecoration(
-            // 4. Use the config for the radius
             borderRadius: BorderRadius.circular(config.radius),
             boxShadow: [
               BoxShadow(
@@ -65,7 +68,6 @@ class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
               ),
             ],
           ),
-          // 5. Use the builder function from the config to create the card content
           child: config.builder(
             anime: widget.anime,
             tag: widget.tag,

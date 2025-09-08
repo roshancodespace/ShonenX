@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
 
 /// Rankings widget for displaying anime rankings
 class AnimeRankings extends StatelessWidget {

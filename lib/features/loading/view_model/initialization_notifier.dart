@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/home/view_model/homepage_notifier.dart';
+import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/helpers/ui.dart';
@@ -96,7 +97,7 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
         message: 'Loading anime sources...',
         progress: 0.3,
       );
-      await _ref.read(animeSourceRegistryProvider).initialize();
+      _ref.read(animeSourceRegistryProvider).initialize();
 
       final registryState = _ref.read(animeSourceRegistryProvider);
       if (!registryState.isInitialized) {
@@ -104,6 +105,16 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
             'Anime source registry failed to initialize: ${registryState.error ?? 'Unknown error'}');
       }
       AppLogger.d('✅ Anime source registry initialized');
+
+      _updateState(
+          status: InitializationStatus.initializing,
+          message: 'Loading extensions',
+          progress: 0.4);
+
+      final sourceState = _ref.read(sourceProvider.notifier);
+      await sourceState.initialize();
+
+      AppLogger.d('✅ Extensions loaded');
 
       // Step 3: Initialize homepage
       _updateState(

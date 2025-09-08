@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
@@ -122,7 +122,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Column(
         children: [
           _Header(
@@ -330,7 +330,7 @@ class _ResultsGrid extends ConsumerWidget {
                     ...results.map((anime) => AnimatedAnimeCard(
                           onTap: () => navigateToDetail(
                               context, anime, anime.id.toString()),
-                          anime: anime,
+                          anime: anime ,
                           mode: mode,
                           tag: anime.id.toString(),
                         )),

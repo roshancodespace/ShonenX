@@ -28,7 +28,7 @@ class SettingsScreen extends StatelessWidget {
                   items: [
                     SettingsItem(
                       icon: Icon(Iconsax.user, color: colorScheme.primary),
-                      iconColor: colorScheme.primary,
+                      accent: colorScheme.primary,
                       title: 'Profile Settings',
                       description: 'AniList integration, account preferences',
                       onTap: () => context.push('/settings/account'),
@@ -43,15 +43,23 @@ class SettingsScreen extends StatelessWidget {
                     SettingsItem(
                       icon: Icon(Icons.source_outlined,
                           color: colorScheme.primary),
-                      iconColor: colorScheme.primary,
+                      accent: colorScheme.primary,
                       title: 'Anime Sources',
                       description: 'Manage anime content providers',
                       onTap: () => context.push('/settings/anime-sources'),
                     ),
                     SettingsItem(
+                      icon: Icon(Icons.extension_outlined,
+                          color: colorScheme.primary),
+                      accent: colorScheme.primary,
+                      title: 'Extensions (WIP)',
+                      description: 'Manage your extensions',
+                      onTap: () => context.push('/settings/extensions'),
+                    ),
+                    SettingsItem(
                       icon:
                           Icon(Iconsax.video_play, color: colorScheme.primary),
-                      iconColor: colorScheme.primary,
+                      accent: colorScheme.primary,
                       title: 'Video Player',
                       description: 'Manage video player settings',
                       onTap: () => context.push('/settings/player'),
@@ -66,14 +74,14 @@ class SettingsScreen extends StatelessWidget {
                     SettingsItem(
                       icon:
                           Icon(Iconsax.paintbucket, color: colorScheme.primary),
-                      iconColor: colorScheme.primary,
+                      accent: colorScheme.primary,
                       title: 'Theme Settings',
                       description: 'Customize app colors and appearance',
                       onTap: () => context.push('/settings/theme'),
                     ),
                     SettingsItem(
                       icon: Icon(Iconsax.mobile, color: colorScheme.primary),
-                      iconColor: colorScheme.primary,
+                      accent: colorScheme.primary,
                       title: 'UI Settings',
                       description: 'Customize the interface and layout',
                       onTap: () => context.push('/settings/ui'),
@@ -88,7 +96,7 @@ class SettingsScreen extends StatelessWidget {
                     SettingsItem(
                       icon:
                           Icon(Iconsax.info_circle, color: colorScheme.primary),
-                      iconColor: colorScheme.primary,
+                      accent: colorScheme.primary,
                       title: 'About',
                       description: 'App information and licenses',
                       onTap: () => context.push('/settings/about'),

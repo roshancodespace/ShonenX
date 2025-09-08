@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/modes/default_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/modes/minimal_card.dart';
 

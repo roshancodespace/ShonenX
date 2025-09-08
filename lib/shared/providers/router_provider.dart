@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core_new/models/source.dart';
 import 'package:shonenx/features/anime/view/watch_screen.dart';
 import 'package:shonenx/features/browse/view/browse_screen.dart';
 import 'package:shonenx/features/details/view/details_screen.dart';
@@ -9,9 +10,12 @@ import 'package:shonenx/features/error/view/error_screen.dart';
 import 'package:shonenx/features/settings/view/about_screen.dart';
 import 'package:shonenx/features/settings/view/account_settings_screen.dart';
 import 'package:shonenx/features/settings/view/anime_sources_settings_screen.dart';
+import 'package:shonenx/features/settings/view/extension_preference_screen.dart';
+import 'package:shonenx/features/settings/view/extensions_list_screen.dart';
 import 'package:shonenx/features/settings/view/player_settings_screen.dart';
 import 'package:shonenx/features/settings/view/settings_screen.dart';
 import 'package:shonenx/features/settings/view/subtitle_customization_screen.dart';
+import 'package:shonenx/features/settings/view/temporary/demo_screen.dart';
 import 'package:shonenx/features/settings/view/theme_settings_screen.dart';
 import 'package:shonenx/features/settings/view/ui_settings_screen.dart';
 import 'package:shonenx/router/router.dart';
@@ -62,7 +66,6 @@ final _router = GoRouter(
       builder: (context, state) => WatchScreen(
         animeId: state.pathParameters['id']!,
         episode: int.tryParse(state.uri.queryParameters['episode'] ?? '1') ?? 1,
-        animeMedia: state.extra as Media,
         startAt: Duration(
           seconds:
               int.tryParse(state.uri.queryParameters['startAt'] ?? '0') ?? 0,
@@ -107,6 +110,24 @@ GoRoute _buildSettingsRoute() {
               path: 'subtitles',
               builder: (context, state) => const SubtitleCustomizationScreen(),
             ),
+          ]),
+      GoRoute(
+          path: 'extensions',
+          builder: (context, state) => const ExtensionsListScreen(),
+          routes: [
+            GoRoute(
+              path: 'demo',
+              builder: (context, state) => const DemoScreen(),
+            ),
+            GoRoute(
+              path: 'extension-preference',
+              builder: (context, state) {
+                final source = state.extra as Source;
+                return ExtensionPreferenceScreen(
+                  source: source,
+                );
+              },
+            )
           ])
     ],
   );

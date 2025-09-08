@@ -93,8 +93,9 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
     });
   }
 
-  Future<void> open(String url, Duration? startAt) async {
-    await player.open(Media(url));
+  Future<void> open(String url, Duration? startAt,
+      {Map<String, String>? headers}) async {
+    await player.open(Media(url, httpHeaders: headers));
     if (startAt != null) {
       await player.seek(startAt);
     }

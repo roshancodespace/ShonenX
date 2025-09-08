@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+
+import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/anilist/media_list_entry.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
 import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 
@@ -13,11 +15,11 @@ enum WatchlistStatus {
 }
 
 class WatchListState {
-  final List<MediaList> current;
-  final List<MediaList> completed;
-  final List<MediaList> paused;
-  final List<MediaList> dropped;
-  final List<MediaList> planning;
+  final List<MediaListEntry> current;
+  final List<MediaListEntry> completed;
+  final List<MediaListEntry> paused;
+  final List<MediaListEntry> dropped;
+  final List<MediaListEntry> planning;
   final List<Media> favorites;
   final Set<WatchlistStatus> loadingStatuses;
   final Map<WatchlistStatus, String> errors;
@@ -33,12 +35,14 @@ class WatchListState {
     this.errors = const {},
   });
 
+ 
+
   WatchListState copyWith({
-    List<MediaList>? current,
-    List<MediaList>? completed,
-    List<MediaList>? paused,
-    List<MediaList>? dropped,
-    List<MediaList>? planning,
+    List<MediaListEntry>? current,
+    List<MediaListEntry>? completed,
+    List<MediaListEntry>? paused,
+    List<MediaListEntry>? dropped,
+    List<MediaListEntry>? planning,
     List<Media>? favorites,
     Set<WatchlistStatus>? loadingStatuses,
     Map<WatchlistStatus, String>? errors,
@@ -88,7 +92,7 @@ class WatchlistNotifier extends Notifier<WatchListState> {
         // For all other statuses, call getUserAnimeList.
         final statusString = status.name.toUpperCase();
         final collection = await _repo.getUserAnimeList(type: 'ANIME', status: statusString);
-        final entries = collection.lists.isNotEmpty ? collection.lists[0].entries : <MediaList>[];
+        final entries = collection.lists.isNotEmpty ? collection.lists[0].entries : <MediaListEntry>[];
 
         state = _copyWithStatus(status, entries).copyWith(
           loadingStatuses: {...state.loadingStatuses}..remove(status),
@@ -122,7 +126,7 @@ class WatchlistNotifier extends Notifier<WatchListState> {
 
   // Helper to update the correct list based on status.
   WatchListState _copyWithStatus(
-      WatchlistStatus status, List<MediaList> entries) {
+      WatchlistStatus status, List<MediaListEntry> entries) {
     switch (status) {
       case WatchlistStatus.current:
         return state.copyWith(current: entries);

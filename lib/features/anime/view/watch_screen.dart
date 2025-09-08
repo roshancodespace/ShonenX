@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart'
-    as anilist_media;
 import 'package:shonenx/features/anime/view/widgets/episodes_panel.dart';
 import 'package:shonenx/features/anime/view/widgets/player/controls_overlay.dart';
 import 'package:shonenx/helpers/ui.dart';
@@ -11,7 +9,6 @@ import 'package:shonenx/features/anime/view_model/playerStateProvider.dart';
 
 class WatchScreen extends ConsumerStatefulWidget {
   final String animeId;
-  final anilist_media.Media animeMedia;
   final String animeName;
   final int? episode;
   final Duration startAt;
@@ -19,7 +16,6 @@ class WatchScreen extends ConsumerStatefulWidget {
   const WatchScreen({
     super.key,
     required this.animeId,
-    required this.animeMedia,
     required this.animeName,
     this.startAt = Duration.zero,
     this.episode = 1,
@@ -46,6 +42,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     // Trigger the initial data fetch
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await ref.read(episodeDataProvider.notifier).fetchEpisodes(
+            animeTitle: widget.animeName,
             animeId: widget.animeId,
             initialEpisodeIdx: (widget.episode ?? 1) - 1,
             startAt: widget.startAt,

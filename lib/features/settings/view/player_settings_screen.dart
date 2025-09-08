@@ -30,14 +30,14 @@ class PlayerSettingsScreen extends ConsumerWidget {
                 items: [
                   SettingsItem(
                     icon: Icon(Iconsax.video_tick, color: colorScheme.primary),
-                    iconColor: colorScheme.primary,
+                    accent: colorScheme.primary,
                     title: 'Video Quality',
                     description: 'Default streaming quality settings',
                     onTap: () => _showQualitySettingsDialog(context, ref),
                   ),
                   SettingsItem(
                     icon: Icon(Iconsax.subtitle, color: colorScheme.primary),
-                    iconColor: colorScheme.primary,
+                    accent: colorScheme.primary,
                     title: 'Subtitle Customization',
                     description: 'Customize subtitle appearance',
                     onTap: () => context.push('/settings/player/subtitles'),

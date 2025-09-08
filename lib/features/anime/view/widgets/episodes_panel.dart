@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/features/anime/view_model/episodeDataProvider.dart'; // Ensure this path is correct
+import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/features/anime/view_model/episodeDataProvider.dart';
 
 class EpisodesPanel extends ConsumerStatefulWidget {
   final String animeId;
@@ -36,7 +37,8 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
   }
 
   // A redesigned, theme-aware dialog for changing the range size
-  void _showRangeSizeDialog(BuildContext context) {
+  void _showRangeSizeDialog(
+      BuildContext context, EpisodeDataNotifier episodeNotifier) {
     int? selectedSize = _rangeSize;
     showDialog(
       context: context,
@@ -82,6 +84,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                         _rangeSize = selectedSize!;
                         _currentStart = 1; // Reset to the first range
                       });
+                      episodeNotifier.syncEpisodesWithJikan(page: 1);
                     }
                     Navigator.pop(context);
                   },
@@ -143,13 +146,27 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                           if (_scrollController.hasClients) {
                             _scrollController.jumpTo(0);
                           }
+
+                          final pageForJikan = (value - 1) / 100;
+                          if (pageForJikan == pageForJikan.toInt()) {
+                            AppLogger.w(
+                                "It's an integer: ${pageForJikan.toInt()}");
+                            episodeNotifier.syncEpisodesWithJikan(
+                                page: pageForJikan.toInt() + 1);
+                          }
                         });
                       }
                     },
                   ),
                 IconButton(
+                  icon: const Icon(Iconsax.refresh, size: 20),
+                  onPressed: () => episodeNotifier.refreshEpisodes(),
+                  tooltip: "Refresh episodes",
+                ),
+                IconButton(
                   icon: const Icon(Iconsax.setting_2, size: 20),
-                  onPressed: () => _showRangeSizeDialog(context),
+                  onPressed: () =>
+                      _showRangeSizeDialog(context, episodeNotifier),
                   tooltip: "Change episode range size",
                 ),
               ],
@@ -212,10 +229,14 @@ class EpisodeTile extends ConsumerWidget {
         isSelected ? theme.colorScheme.primaryContainer : Colors.transparent;
     final Color numberBackgroundColor = isSelected
         ? theme.colorScheme.primary
-        : theme.colorScheme.surfaceContainerHighest;
+        : isFiller
+            ? theme.colorScheme.errorContainer
+            : theme.colorScheme.surfaceContainerHighest;
     final Color numberTextColor = isSelected
         ? theme.colorScheme.onPrimary
-        : theme.colorScheme.onSurfaceVariant;
+        : isFiller
+            ? theme.colorScheme.onErrorContainer
+            : theme.colorScheme.onSurfaceVariant;
     final Color titleTextColor = isSelected
         ? theme.colorScheme.onPrimaryContainer
         : theme.colorScheme.onSurface;
@@ -262,14 +283,23 @@ class EpisodeTile extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    episodeTitle,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: titleTextColor,
-                      fontWeight: titleFontWeight,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      if (episodeTitle.isEmpty && isFiller) Text("FILLER"),
+                      Flexible(
+                        child: Text(
+                          episodeTitle.isEmpty
+                              ? 'Title unavailable'
+                              : episodeTitle,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: titleTextColor,
+                            fontWeight: titleFontWeight,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                   if (isFiller) ...[
                     const SizedBox(height: 4),

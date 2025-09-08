@@ -1,5 +1,8 @@
 import 'package:shonenx/core/anilist/services/anilist_service.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/anilist/media_list_collection.dart';
+import 'package:shonenx/core/models/anilist/media_list_entry.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
 
 class AniListRepository implements AnimeRepository {
@@ -14,7 +17,7 @@ class AniListRepository implements AnimeRepository {
   }
 
   @override
-  Future<Media> getAnimeDetails(int animeId) {
+  Future<Media?> getAnimeDetails(int animeId) {
     return service.getAnimeDetails(animeId);
   }
 
@@ -52,6 +55,30 @@ class AniListRepository implements AnimeRepository {
   Future<MediaListCollection> getUserAnimeList(
       {required String type, required String status}) {
     return service.getUserAnimeList(type: type, status: status);
+  }
+
+  @override
+  Future<MediaListEntry?> updateUserAnimeList(
+      {required int mediaId,
+      String? status,
+      double? score,
+      int? progress,
+      FuzzyDateInput? startedAt,
+      FuzzyDateInput? completedAt,
+      int? repeat,
+      String? notes,
+      bool? private}) {
+    return service.updateUserAnimeList(
+      mediaId: mediaId,
+      status: status,
+      score: score,
+      progress: progress,
+      startedAt: startedAt,
+      completedAt: completedAt,
+      repeat: repeat,
+      notes: notes,
+      private: private,
+    );
   }
 
   @override

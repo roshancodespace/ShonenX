@@ -62,6 +62,7 @@ class AppInitializer {
 
       await Future.wait([
         Hive.openBox<ThemeModel>('theme_settings'),
+        Hive.openBox('themedata'),
         Hive.openBox<SubtitleAppearanceModel>('subtitle_appearance'),
         Hive.openBox<HomePageModel>('home_page'),
         Hive.openBox<String>('selected_provider'),

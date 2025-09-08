@@ -43,7 +43,7 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
                   items: [
                     SettingsItem(
                       icon: const Icon(Icons.palette),
-                      iconColor: colorScheme.primary,
+                      accent: colorScheme.primary,
                       title: 'Theme',
                       description: 'Choose your preferred theme',
                       type: SettingsItemType.segmentedToggle,
@@ -83,7 +83,7 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
                       SettingsItem(
                         icon: Icon(Iconsax.colorfilter,
                             color: colorScheme.primary),
-                        iconColor: colorScheme.primary,
+                        accent: colorScheme.primary,
                         title: 'AMOLED Dark',
                         description: 'Use pure black for dark mode',
                         type: SettingsItemType.toggleable,
@@ -97,7 +97,7 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
                     SettingsItem(
                       icon:
                           Icon(Iconsax.arrow_swap, color: colorScheme.primary),
-                      iconColor: colorScheme.primary,
+                      accent: colorScheme.primary,
                       title: 'Swap Colors',
                       description: 'Swap primary and secondary colors',
                       type: SettingsItemType.toggleable,
@@ -109,7 +109,7 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
                     ),
                     SettingsItem(
                       icon: Icon(Icons.colorize, color: colorScheme.primary),
-                      iconColor: colorScheme.primary,
+                      accent: colorScheme.primary,
                       title: 'Color Scheme',
                       description: 'Change the color scheme of the app',
                       onTap: () => _showColorSchemeSheet(context, ref),
@@ -117,7 +117,7 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
                     SettingsItem(
                       icon: Icon(Icons.blender_outlined,
                           color: colorScheme.primary),
-                      iconColor: colorScheme.primary,
+                      accent: colorScheme.primary,
                       sliderValue: themeSettings.blendLevel.toDouble(),
                       sliderMin: 0,
                       sliderMax: 40,

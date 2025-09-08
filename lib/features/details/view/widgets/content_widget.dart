@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
 import 'info_card_widget.dart';
 import 'synopsis_widget.dart';
 import 'rankings_widget.dart';
@@ -33,9 +33,9 @@ class DetailsContent extends StatelessWidget {
           AnimeSynopsis(
             description: anime.description ?? 'No description available.',
           ),
-          if (anime.rankings?.isNotEmpty ?? false) ...[
+          if (anime.rankings.isNotEmpty) ...[
             const SizedBox(height: 24),
-            AnimeRankings(rankings: anime.rankings!),
+            AnimeRankings(rankings: anime.rankings),
           ],
           const SizedBox(height: 80),
         ],

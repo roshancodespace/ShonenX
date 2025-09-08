@@ -4,18 +4,21 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   desktop_webview_window
+  file_selector_linux
+  flutter_qjs
   flutter_secure_storage_linux
   flutter_volume_controller
+  isar_flutter_libs
   media_kit_libs_linux
   media_kit_video
   screen_retriever_linux
   url_launcher_linux
+  volume_controller
   window_manager
   window_to_front
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
-  media_kit_native_event_loop
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

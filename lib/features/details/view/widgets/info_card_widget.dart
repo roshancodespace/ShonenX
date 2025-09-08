@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
 
 /// Info card widget displaying anime statistics and action buttons
 class AnimeInfoCard extends StatelessWidget {
@@ -33,7 +33,9 @@ class AnimeInfoCard extends StatelessWidget {
               children: [
                 InfoItem(
                   icon: Iconsax.star_1,
-                  value: '${anime.averageScore ?? "?"}/100',
+                  value: anime.averageScore != null
+                      ? '${(anime.averageScore! / 10).toStringAsFixed(1)}/10'
+                      : '?/10',
                   label: 'Rating',
                 ),
                 InfoItem(
@@ -155,7 +157,7 @@ class ActionButton extends StatelessWidget {
             ? BorderSide.none
             : BorderSide(color: colorScheme.outline),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
       ),
     );
   }

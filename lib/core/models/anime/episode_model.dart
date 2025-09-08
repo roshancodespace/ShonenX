@@ -1,3 +1,4 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 abstract class BaseEpisode {
   String? get id;
 
@@ -41,4 +42,22 @@ class EpisodeDataModel implements BaseEpisode {
     this.isFiller,
     this.number,
   });
+
+  EpisodeDataModel copyWith({
+    String? id,
+    String? title,
+    String? url,
+    String? thumbnail,
+    bool? isFiller,
+    int? number,
+  }) {
+    return EpisodeDataModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      url: url ?? this.url,
+      thumbnail: thumbnail ?? this.thumbnail,
+      isFiller: isFiller ?? this.isFiller,
+      number: number ?? this.number,
+    );
+  }
 }

@@ -33,7 +33,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                   SettingsItem(
                     icon: Icon(Iconsax.text,
                         color: Theme.of(context).colorScheme.primary),
-                    iconColor: Theme.of(context).colorScheme.primary,
+                    accent: Theme.of(context).colorScheme.primary,
                     title: 'Font Size',
                     description: '${subtitleSettings.fontSize.round()}px',
                     type: SettingsItemType.slider,
@@ -49,9 +49,10 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                   SettingsItem(
                     icon: Icon(Iconsax.text,
                         color: Theme.of(context).colorScheme.primary),
-                    iconColor: Theme.of(context).colorScheme.primary,
+                    accent: Theme.of(context).colorScheme.primary,
                     title: 'Font Family',
                     description: subtitleSettings.fontFamily ?? 'Default',
+                    layoutType: SettingsItemLayout.horizontal,
                     type: SettingsItemType.dropdown,
                     dropdownValue: subtitleSettings.fontFamily ?? 'Default',
                     dropdownItems: const [
@@ -74,7 +75,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                   SettingsItem(
                     icon: Icon(Iconsax.text_bold,
                         color: Theme.of(context).colorScheme.primary),
-                    iconColor: Theme.of(context).colorScheme.primary,
+                    accent: Theme.of(context).colorScheme.primary,
                     title: 'Bold Text',
                     description: subtitleSettings.boldText ? 'On' : 'Off',
                     type: SettingsItemType.toggleable,
@@ -86,7 +87,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                   SettingsItem(
                     icon: Icon(Iconsax.text,
                         color: Theme.of(context).colorScheme.primary),
-                    iconColor: Theme.of(context).colorScheme.primary,
+                    accent: Theme.of(context).colorScheme.primary,
                     title: 'Force Uppercase',
                     description: subtitleSettings.forceUppercase ? 'On' : 'Off',
                     type: SettingsItemType.toggleable,
@@ -104,7 +105,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                   SettingsItem(
                     icon: Icon(Iconsax.square,
                         color: Theme.of(context).colorScheme.primary),
-                    iconColor: Theme.of(context).colorScheme.primary,
+                    accent: Theme.of(context).colorScheme.primary,
                     title: 'Opacity',
                     description:
                         '${(subtitleSettings.backgroundOpacity * 100).round()}%',
@@ -127,7 +128,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                   SettingsItem(
                     icon: Icon(Iconsax.ghost,
                         color: Theme.of(context).colorScheme.primary),
-                    iconColor: Theme.of(context).colorScheme.primary,
+                    accent: Theme.of(context).colorScheme.primary,
                     title: 'Enable Shadow',
                     description: subtitleSettings.hasShadow ? 'On' : 'Off',
                     type: SettingsItemType.toggleable,
@@ -146,7 +147,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                     SettingsItem(
                       icon: Icon(Iconsax.ghost,
                           color: Theme.of(context).colorScheme.primary),
-                      iconColor: Theme.of(context).colorScheme.primary,
+                      accent: Theme.of(context).colorScheme.primary,
                       title: 'Opacity',
                       description:
                           '${(subtitleSettings.shadowOpacity * 100).round()}%',
@@ -164,7 +165,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                     SettingsItem(
                       icon: Icon(Iconsax.ghost,
                           color: Theme.of(context).colorScheme.primary),
-                      iconColor: Theme.of(context).colorScheme.primary,
+                      accent: Theme.of(context).colorScheme.primary,
                       title: 'Blur',
                       description:
                           '${subtitleSettings.shadowBlur.toStringAsFixed(1)}px',
@@ -188,13 +189,14 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                     SettingsItem(
                       icon: Icon(Iconsax.arrow_up_1,
                           color: Theme.of(context).colorScheme.primary),
-                      iconColor: Theme.of(context).colorScheme.primary,
+                      accent: Theme.of(context).colorScheme.primary,
                       title: 'Position',
                       description: subtitleSettings.position == 3
                           ? 'Top'
                           : subtitleSettings.position == 2
                               ? 'Center'
                               : 'Bottom',
+                      layoutType: SettingsItemLayout.horizontal,
                       type: SettingsItemType.dropdown,
                       dropdownValue: subtitleSettings.position == 3
                           ? 'Top'

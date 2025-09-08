@@ -171,7 +171,7 @@ class Media {
 }
 
 class Title {
-  final String romaji;
+  final String? romaji;
   final String? english;
   final String? native;
 
@@ -183,7 +183,7 @@ class Title {
 
   factory Title.fromJson(Map<String, dynamic> json) {
     return Title(
-      romaji: json['romaji'] ?? 'Unknown',
+      romaji: json['romaji'],
       english: json['english'],
       native: json['native'],
     );

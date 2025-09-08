@@ -222,7 +222,7 @@ class AboutScreen extends StatelessWidget {
                         icon: Iconsax.code_1,
                         label: 'Source Code',
                         onTap: () =>
-                            _launchUrl('https://github.com/Darkx-dev/ShonenX'),
+                            _launchUrl('https://github.com/roshancodespace/ShonenX'),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -232,7 +232,7 @@ class AboutScreen extends StatelessWidget {
                         icon: Iconsax.message,
                         label: 'Report Issue',
                         onTap: () => _launchUrl(
-                            'https://github.com/Darkx-dev/ShonenX/issues'),
+                            'https://github.com/roshancodespace/ShonenX/issues'),
                       ),
                     ),
                   ],
@@ -244,7 +244,7 @@ class AboutScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceVariant.withOpacity(0.3),
+                    color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -315,7 +315,7 @@ class AboutScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.3),
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: colorScheme.outline.withOpacity(0.1),

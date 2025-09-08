@@ -2,7 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:shonenx/core/anilist/graphql_client.dart';
 import 'package:shonenx/core/anilist/queries.dart';
-import 'package:shonenx/core/models/anilist/anilist_media_list.dart';
+import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/anilist/media_list_collection.dart';
+import 'package:shonenx/core/models/anilist/media_list_entry.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
@@ -251,14 +254,14 @@ class AnilistService implements AnimeRepository {
 
   /// Fetch detailed anime information
   @override
-  Future<Media> getAnimeDetails(int animeId) async {
+  Future<Media?> getAnimeDetails(int animeId) async {
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: null,
       query: AnilistQueries.animeDetailsQuery,
       variables: {'id': animeId},
       operationName: 'GetAnimeDetails',
     );
-    return data?['Media'] != null ? Media.fromJson(data!['Media']) : Media();
+    return Media.fromJson(data!['Media']);
   }
 
   /// Toggle anime as favorite
@@ -295,6 +298,45 @@ class AnilistService implements AnimeRepository {
       isMutation: true,
       operationName: 'SaveMediaProgress',
     );
+  }
+
+  /// Update (or create) a user's anime list entry
+  @override
+  Future<MediaListEntry?> updateUserAnimeList({
+    required int mediaId,
+    String? status,
+    double? score, // GraphQL expects Float
+    int? progress,
+    FuzzyDateInput? startedAt,
+    FuzzyDateInput? completedAt,
+    int? repeat,
+    String? notes,
+    bool? private,
+  }) async {
+    final auth = _getAuthContext();
+    if (auth == null) return null;
+
+    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+      accessToken: auth.accessToken,
+      query: AnilistQueries.updateAnimeMediaEntryMutation,
+      variables: {
+        'mediaId': mediaId,
+        'status': status,
+        'score': score,
+        'progress': progress,
+        'startedAt': startedAt?.toJson(), // Convert model to map
+        'completedAt': completedAt?.toJson(),
+        'repeat': repeat,
+        'private': private,
+        'notes': notes,
+      },
+      operationName: 'UpdateUserAnimeList',
+    );
+
+    final rawEntry = data?['SaveMediaListEntry'];
+    if (rawEntry == null) return null;
+
+    return MediaListEntry.fromJson(rawEntry as Map<String, dynamic>);
   }
 
   /// Check if an anime is favorited
@@ -392,6 +434,16 @@ class AnilistService implements AnimeRepository {
       operationName: 'GetAnimeStatus',
     );
     return data?['MediaList'] as Map<String, dynamic>?;
+  }
+
+  /// Get Streaming Episodes
+  Future<List<StreamingEpisode>> getStreamingEpisodes(int mediaId) async {
+    try {
+      final data = await _executeGraphQLOperation(accessToken: null, query: AnilistQueries.streamingEpisodes);
+      return (data?['Media']?['streamingEpisodes'] as List<dynamic>).map((itemJson) => StreamingEpisode.fromJson(itemJson)).toList();
+    } catch (err){
+      return [];
+    }
   }
 
   /// Validate and convert status to a valid MediaListStatus value

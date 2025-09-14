@@ -21,12 +21,19 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build Split APKs
+      - name: Create .env file
+        run: |
+          echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" >> .env
+          echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
+          echo "API_URL=${{ secrets.API_URL }}" >> .env
+          cat .env # optional: just to verify contents (remove if secrets must stay hidden)
+
+      - name: Build APKs (per-ABI)
         run: flutter build apk --release --split-per-abi
 
-      - name: Upload Split APKs to GitHub Release
+      - name: Upload APKs to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: build/app/outputs/flutter-apk/*-release.apk
+          files: build/app/outputs/flutter-apk/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

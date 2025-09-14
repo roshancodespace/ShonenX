@@ -3,34 +3,47 @@ name: Android Release
 on:
   push:
     tags:
-      - "v*"
+      - "v*" # Runs when any tag like v1.0.0 is pushed
 
 jobs:
   build-android:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout repository
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2. Set up Flutter
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.24.5"
 
+      # 3. Install dependencies
       - name: Install dependencies
         run: flutter pub get
 
+      # 4. Install Android build tools (CMake + NDK)
+      - name: Install Android NDK + CMake
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
+          yes | sdkmanager --install "cmake;3.18.1" "ndk;29.0.140338493"
+
+      # 5. Create .env file from GitHub secrets
       - name: Create .env file
         run: |
           echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" >> .env
           echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
           echo "API_URL=${{ secrets.API_URL }}" >> .env
-          cat .env # optional: just to verify contents (remove if secrets must stay hidden)
+        shell: bash
 
-      - name: Build APKs (per-ABI)
+      # 6. Build APKs (split by architecture)
+      - name: Build APK (per ABI split)
         run: flutter build apk --release --split-per-abi
 
+      # 7. Upload APKs to GitHub Release
       - name: Upload APKs to GitHub Release
         uses: softprops/action-gh-release@v2
         with:

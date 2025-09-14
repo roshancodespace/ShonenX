@@ -92,6 +92,8 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
                 repeat: int.parse(_repeatsController.text),
                 notes: _notesController.text,
               );
+          _showSnackBar(
+          'Success', 'Animelist updated successfully', ContentType.success);
           break;
         }
       case AuthPlatform.mal:
@@ -102,8 +104,6 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
 
     if (mounted) {
       Navigator.pop(context);
-      _showSnackBar(
-          'Failed', 'Failed to update your list', ContentType.success);
     }
   }
 

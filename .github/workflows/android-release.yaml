@@ -50,10 +50,25 @@ jobs:
       - name: Build APK (split per ABI)
         run: flutter build apk --release --split-per-abi
 
-      # 7. Upload APKs to GitHub Release
-      - name: Upload APKs to GitHub Release
+      # 7. Create GitHub Release with changelog + APKs
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: build/app/outputs/flutter-apk/*.apk
+          body: |
+            🚀 New Android release: ${{ github.ref_name }}
+
+            ## Changelog
+            ${{ github.event.head_commit.message }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 8. Notify Discord (short message only)
+      - name: Notify Discord
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: |
+            ✅ A new Android release **${{ github.ref_name }}** is live!
+            👉 Check GitHub Releases for details.

@@ -108,13 +108,4 @@ void _notifyUser(BuildContext context, String latestVersion) {
       ],
     ),
   );
-
-  // Fluttertoast.showToast(
-  //   msg: 'Update available! New version: $latestVersion',
-  //   toastLength: Toast.LENGTH_LONG,
-  //   gravity: ToastGravity.BOTTOM,
-  //   backgroundColor: Colors.black87,
-  //   textColor: Colors.white,
-  //   fontSize: 16.0,
-  // );
 }

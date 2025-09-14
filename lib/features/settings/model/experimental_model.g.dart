@@ -1,35 +1,33 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'user_model.dart';
+part of 'experimental_model.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class UserOfflineAdapter extends TypeAdapter<UserOffline> {
+class ExperimentalFeaturesModelAdapter
+    extends TypeAdapter<ExperimentalFeaturesModel> {
   @override
-  final int typeId = 1;
+  final int typeId = 11;
 
   @override
-  UserOffline read(BinaryReader reader) {
+  ExperimentalFeaturesModel read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return UserOffline(
-      name: fields[0] as String,
-      avatar: fields[1] as String,
+    return ExperimentalFeaturesModel(
+      episodeTitleSync: fields[0] == null ? false : fields[0] as bool,
     );
   }
 
   @override
-  void write(BinaryWriter writer, UserOffline obj) {
+  void write(BinaryWriter writer, ExperimentalFeaturesModel obj) {
     writer
-      ..writeByte(2)
-      ..writeByte(0)
-      ..write(obj.name)
       ..writeByte(1)
-      ..write(obj.avatar);
+      ..writeByte(0)
+      ..write(obj.episodeTitleSync);
   }
 
   @override
@@ -38,7 +36,7 @@ class UserOfflineAdapter extends TypeAdapter<UserOffline> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is UserOfflineAdapter &&
+      other is ExperimentalFeaturesModelAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

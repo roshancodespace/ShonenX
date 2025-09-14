@@ -102,7 +102,21 @@ class SettingsScreen extends StatelessWidget {
                       onTap: () => context.push('/settings/about'),
                     ),
                   ]),
-              const SizedBox(height: 20)
+              const SizedBox(height: 20),
+               SettingsSection(
+                  title: 'Misc',
+                  titleColor: colorScheme.primary,
+                  onTap: () {},
+                  items: [
+                    SettingsItem(
+                      icon:
+                          Icon(Iconsax.info_circle, color: colorScheme.primary),
+                      accent: colorScheme.primary,
+                      title: 'Experimental',
+                      description: 'Few extra features',
+                      onTap: () => context.push('/settings/experimental'),
+                    ),
+                  ]),
             ],
           ),
         ));

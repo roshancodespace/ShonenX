@@ -12,6 +12,7 @@ import 'package:shonenx/data/hive/models/settings/provider_model.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 import 'package:shonenx/features/home/model/home_page.dart';
+import 'package:shonenx/features/settings/model/experimental_model.dart';
 import 'package:shonenx/features/settings/model/player_model.dart';
 import 'package:shonenx/features/settings/model/subtitle_appearance_model.dart';
 import 'package:shonenx/features/settings/model/theme_model.dart';
@@ -59,6 +60,7 @@ class AppInitializer {
       Hive.registerAdapter(PlayerModelAdapter());
       Hive.registerAdapter(AnimeWatchProgressEntryAdapter());
       Hive.registerAdapter(EpisodeProgressAdapter());
+      Hive.registerAdapter(ExperimentalFeaturesModelAdapter());
 
       await Future.wait([
         Hive.openBox<ThemeModel>('theme_settings'),
@@ -70,6 +72,7 @@ class AppInitializer {
         Hive.openBox<ProviderSettings>('provider_settings'),
         Hive.openBox<PlayerModel>('player_settings'),
         Hive.openBox<AnimeWatchProgressEntry>('anime_watch_progress'),
+        Hive.openBox<ExperimentalFeaturesModel>('experimental_features'),
       ]);
 
       AppLogger.i("✅ Hive adapters registered and boxes opened.");

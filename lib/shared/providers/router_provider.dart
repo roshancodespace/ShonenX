@@ -10,6 +10,7 @@ import 'package:shonenx/features/error/view/error_screen.dart';
 import 'package:shonenx/features/settings/view/about_screen.dart';
 import 'package:shonenx/features/settings/view/account_settings_screen.dart';
 import 'package:shonenx/features/settings/view/anime_sources_settings_screen.dart';
+import 'package:shonenx/features/settings/view/experimental_screen.dart';
 import 'package:shonenx/features/settings/view/extension_preference_screen.dart';
 import 'package:shonenx/features/settings/view/extensions_list_screen.dart';
 import 'package:shonenx/features/settings/view/player_settings_screen.dart';
@@ -112,23 +113,28 @@ GoRoute _buildSettingsRoute() {
             ),
           ]),
       GoRoute(
-          path: 'extensions',
-          builder: (context, state) => const ExtensionsListScreen(),
-          routes: [
-            GoRoute(
-              path: 'demo',
-              builder: (context, state) => const DemoScreen(),
-            ),
-            GoRoute(
-              path: 'extension-preference',
-              builder: (context, state) {
-                final source = state.extra as Source;
-                return ExtensionPreferenceScreen(
-                  source: source,
-                );
-              },
-            )
-          ])
+        path: 'extensions',
+        builder: (context, state) => const ExtensionsListScreen(),
+        routes: [
+          GoRoute(
+            path: 'demo',
+            builder: (context, state) => const DemoScreen(),
+          ),
+          GoRoute(
+            path: 'extension-preference',
+            builder: (context, state) {
+              final source = state.extra as Source;
+              return ExtensionPreferenceScreen(
+                source: source,
+              );
+            },
+          )
+        ],
+      ),
+      GoRoute(
+        path: 'experimental',
+        builder: (context, state) => ExperimentalScreen(),
+      )
     ],
   );
 }

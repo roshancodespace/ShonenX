@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart'; // Import for BoxFit
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -59,7 +59,7 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
 
   @override
   PlayerState build() {
-    player = Player(); // initialize
+    player = Player();
     videoController = VideoController(player);
     ref.onDispose(() {
       player.dispose();

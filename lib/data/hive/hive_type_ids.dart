@@ -9,4 +9,5 @@ class HiveTypeIds {
   static const progressEpisode = 8;
   static const anilistMedia = 9;
   static const subtitle = 10;
+  static const experimental = 11;
 }

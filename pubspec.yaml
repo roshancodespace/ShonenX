@@ -6,7 +6,7 @@ description: >
 
 publish_to: "none"
 
-version: 1.6.5+3
+version: 1.6.7
 
 environment:
   sdk: ">=3.5.0 <3.6.0"
@@ -59,7 +59,6 @@ dependencies:
   permission_handler: ^12.0.0+1
   flutter_dotenv: ^5.2.1
   logger: ^2.5.0
-  fluttertoast: ^8.2.12
   intl: ^0.19.0
   isar: ^3.1.0+1
   isar_flutter_libs:
@@ -79,14 +78,11 @@ dependencies:
   riverpod_annotation: ^2.6.1
   path: ^1.9.0
   http_interceptor: ^2.0.0
-  package_info_plus: any
-  d4rt: ^0.1.0
+  package_info_plus: ^8.0.0
+  d4rt: 0.1.0
   archive: ^4.0.7
   image_picker: ^1.1.2
-  xml: ^6.5.0
-  device_apps: ^2.2.0
   collection: ^1.19.1
-  battery_plus: ^6.2.3
 
 dev_dependencies:
   build_runner: ^2.4.13
@@ -99,7 +95,7 @@ dev_dependencies:
   json_serializable: ^6.0.1
 
 dependency_overrides: 
-  analyzer: ">=5.2.0 <7.0.0"
+  analyzer: ^7.4.5
   collection: ^1.19.1
 
 flutter:

@@ -11,6 +11,8 @@ import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/anime/view_model/playerStateProvider.dart';
+import 'package:shonenx/features/settings/model/experimental_model.dart';
+import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/main.dart';
 import 'package:shonenx/utils/extractors.dart' as extractor;
@@ -109,6 +111,7 @@ class EpisodeDataState {
 // The Notifier for fetching and holding episode data
 class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   JikanService get _jikan => JikanService();
+  ExperimentalFeaturesModel get _experimentalFeatures => ref.read(experimentalProvider);
   AnimeProvider get _animeProvider => ref.read(selectedAnimeProvider)!;
 
   @override
@@ -164,6 +167,8 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
     state = state.copyWith(episodes: episodes);
 
+    syncEpisodesWithJikan(page: 1);
+
     // Setup servers
     final servers = _animeProvider.getSupportedServers();
     state = state.copyWith(
@@ -178,6 +183,8 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   Future<void> syncEpisodesWithJikan({required int page}) async {
     await _safeRun(() async {
+      final shouldSyncEpisodes = _experimentalFeatures.episodeTitleSync;
+      if (!shouldSyncEpisodes) return;
       if ((state.episodes.isEmpty &&
               (state.animeTitle == null && state.animeTitle!.isNotEmpty)) &&
           (state.animeId == null && state.animeId!.isNotEmpty)) return;
@@ -199,24 +206,24 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
         final episodesByJikan =
             await _jikan.getEpisodes(bestMatch.mal_id, page);
 
-        // final syncedEpisodes = List.generate(
-        //   state.episodes.length,
-        //   (i) {
-        //     final jikanEp =
-        //         i < episodesByJikan.length ? episodesByJikan[i] : null;
-        //     return state.episodes[i].copyWith(
-        //       title: jikanEp?.title ?? state.episodes[i].title,
-        //     );
-        //   },
-        // );
-        final syncedEpisodes = state.episodes.map((episode) {
-          final episodeNumber = episode.number!;
+        final syncedEpisodes = List.generate(
+          state.episodes.length,
+          (i) {
+            final jikanEp =
+                i < episodesByJikan.length ? episodesByJikan[i] : null;
+            return state.episodes[i].copyWith(
+              title: jikanEp?.title ?? state.episodes[i].title,
+            );
+          },
+        );
+        // final syncedEpisodes = state.episodes.map((episode) {
+        //   final episodeNumber = episode.number!;
 
-          return episode.copyWith(
-              title: episodesByJikan
-                  .firstWhere((ep) => int.parse(ep.id!) == episodeNumber)
-                  .title);
-        }).toList();
+        //   return episode.copyWith(
+        //       title: episodesByJikan
+        //           .firstWhere((ep) => int.parse(ep.id!) == episodeNumber)
+        //           .title);
+        // }).toList();
 
         state = state.copyWith(episodes: syncedEpisodes);
       }
@@ -238,7 +245,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   Future<void> changeEpisode(int episodeIdx,
       {Duration startAt = Duration.zero}) async {
-    if (episodeIdx < 0 || episodeIdx >= state.episodes.length) {
+    if (episodeIdx < 0 || episodeIdx >= state.episodes.length - 1) {
       state = state.copyWith(error: "Invalid episode selected.");
       return;
     }

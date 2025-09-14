@@ -389,7 +389,9 @@ class _TopControls extends ConsumerWidget {
                     Text(source?.providerName.toUpperCase() ?? "SOURCE",
                         style: Theme.of(context).textTheme.bodySmall),
                     Text(
-                      'Episode Title Here', // Replace with your actual title logic
+                      episodeData.episodes[episodeData.selectedEpisodeIdx ?? 0]
+                              .title ??
+                          'Unavailable',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

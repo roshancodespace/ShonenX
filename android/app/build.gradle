@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.shonenx"
     compileSdk = 35
-    ndkVersion = "25.1.8937393"
+    ndkVersion = "29.0.14033849"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -19,8 +19,7 @@ android {
         jvmTarget = JavaVersion.VERSION_1_8
     }
 
-    defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+    defaultConfig { 
         applicationId "com.shonenx.anime"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.

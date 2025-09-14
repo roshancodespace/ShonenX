@@ -14,8 +14,9 @@ class WatchButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final navHeight = MediaQuery.of(context).padding.bottom;
     return Positioned(
-      bottom: 16,
+      bottom: 16 + navHeight,
       left: 16,
       right: 16,
       child: FloatingActionButton.extended(

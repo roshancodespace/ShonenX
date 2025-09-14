@@ -2,12 +2,18 @@ import 'dart:developer';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
+import 'package:shonenx/core/anilist/services/anilist_service.dart';
+import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/services/auth_provider_enum.dart';
+import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
+import 'package:shonenx/main.dart';
 
 /// Bottom sheet for editing anime list entry
-class EditListBottomSheet extends StatefulWidget {
+class EditListBottomSheet extends ConsumerStatefulWidget {
   final Media anime;
 
   const EditListBottomSheet({
@@ -16,10 +22,11 @@ class EditListBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<EditListBottomSheet> createState() => _EditListBottomSheetState();
+  ConsumerState<EditListBottomSheet> createState() =>
+      _EditListBottomSheetState();
 }
 
-class _EditListBottomSheetState extends State<EditListBottomSheet> {
+class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
   static const List<String> _statusOptions = [
     'CURRENT',
     'PLANNING',
@@ -59,7 +66,10 @@ class _EditListBottomSheetState extends State<EditListBottomSheet> {
     super.dispose();
   }
 
-  Future<void> _saveChanges() async {
+  Future<void> _saveChanges(WidgetRef ref) async {
+    final auth = ref.read(authProvider);
+    if (auth.authPlatform == null) return;
+    showAppSnackBar('Sar Plz Login!');
     setState(() => _isSaving = true);
     log('--- Saving Anime Status ---');
     log('Status: $_selectedStatus');
@@ -71,13 +81,29 @@ class _EditListBottomSheetState extends State<EditListBottomSheet> {
     log('Private: $_isPrivate');
     log('Notes: ${_notesController.text}');
 
-    // Simulate network call
-    await Future.delayed(const Duration(seconds: 1));
+    switch (auth.authPlatform!) {
+      case AuthPlatform.anilist:
+        {
+          await ref.read(anilistServiceProvider).updateUserAnimeList(
+                mediaId: widget.anime.id!,
+                status: _selectedStatus,
+                score: double.parse(_scoreController.text),
+                private: _isPrivate,
+                repeat: int.parse(_repeatsController.text),
+                notes: _notesController.text,
+              );
+          break;
+        }
+      case AuthPlatform.mal:
+        {
+          break;
+        }
+    }
 
     if (mounted) {
       Navigator.pop(context);
       _showSnackBar(
-          'Success', 'Your list has been updated.', ContentType.success);
+          'Failed', 'Failed to update your list', ContentType.success);
     }
   }
 
@@ -138,7 +164,7 @@ class _EditListBottomSheetState extends State<EditListBottomSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Edit Entry (WIP)',
+            Text('Edit Entry',
                 style: theme.textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 24),
@@ -196,7 +222,7 @@ class _EditListBottomSheetState extends State<EditListBottomSheet> {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: _isSaving ? null : _saveChanges,
+              onPressed: _isSaving ? null : () => _saveChanges(ref),
               icon: _isSaving
                   ? const SizedBox(
                       width: 20,

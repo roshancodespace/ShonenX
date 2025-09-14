@@ -1,0 +1,23 @@
+targets:
+  $default:
+    sources:
+      exclude:
+        - lib/core_new/**
+    builders:
+      hive_generator:
+        generate_for:
+          - lib/features/**
+          - lib/core/**
+          - lib/data/**
+      riverpod_generator:
+        generate_for:
+          - lib/features/**
+          - lib/core/**
+      isar_generator:
+        generate_for:
+          - lib/features/**
+          - lib/core/**
+      json_serializable:
+        generate_for:
+          - lib/features/**
+          - lib/core/**

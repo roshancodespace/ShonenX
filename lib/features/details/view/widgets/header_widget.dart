@@ -94,7 +94,7 @@ class DetailsHeader extends StatelessWidget {
                           ),
                         const SizedBox(height: 12),
                         GenreTags(
-                          genres: anime.genres ?? [],
+                          genres: anime.genres,
                           status: anime.status ?? 'Unknown',
                         ),
                       ],

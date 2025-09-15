@@ -10,7 +10,6 @@ import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
-import 'package:shonenx/main.dart';
 
 /// Bottom sheet for editing anime list entry
 class EditListBottomSheet extends ConsumerStatefulWidget {
@@ -68,42 +67,78 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
 
   Future<void> _saveChanges(WidgetRef ref) async {
     final auth = ref.read(authProvider);
-    if (auth.authPlatform == null) return;
-    showAppSnackBar('Sar Plz Login!');
-    setState(() => _isSaving = true);
-    log('--- Saving Anime Status ---');
-    log('Status: $_selectedStatus');
-    log('Progress: ${_progressController.text}');
-    log('Score: ${_scoreController.text}');
-    log('Start Date: $_startDate');
-    log('Completed Date: $_completedDate');
-    log('Repeats: ${_repeatsController.text}');
-    log('Private: $_isPrivate');
-    log('Notes: ${_notesController.text}');
+    if (auth.authPlatform == null) {
+      _showSnackBar('Login Required', 'Sar plz login!', ContentType.failure);
+      return;
+    }
 
-    switch (auth.authPlatform!) {
-      case AuthPlatform.anilist:
-        {
+    setState(() => _isSaving = true);
+
+    try {
+      log('--- Saving Anime Status ---');
+      log('Status: $_selectedStatus');
+      log('Progress: ${_progressController.text}');
+      log('Score: ${_scoreController.text}');
+      log('Start Date: $_startDate');
+      log('Completed Date: $_completedDate');
+      log('Repeats: ${_repeatsController.text}');
+      log('Private: $_isPrivate');
+      log('Notes: ${_notesController.text}');
+
+      // Safe parsing with defaults
+      final score = double.tryParse(_scoreController.text) ?? 0.0;
+      final progress = int.tryParse(_progressController.text) ?? 0;
+      final repeats = int.tryParse(_repeatsController.text) ?? 0;
+
+      switch (auth.authPlatform!) {
+        case AuthPlatform.anilist:
           await ref.read(anilistServiceProvider).updateUserAnimeList(
                 mediaId: widget.anime.id!,
                 status: _selectedStatus,
-                score: double.parse(_scoreController.text),
+                score: score,
                 private: _isPrivate,
-                repeat: int.parse(_repeatsController.text),
+                startedAt: FuzzyDateInput(
+                  year: _startDate?.year,
+                  month: _startDate?.month,
+                  day: _startDate?.day,
+                ),
+                completedAt: FuzzyDateInput(
+                  year: _completedDate?.year,
+                  month: _completedDate?.month,
+                  day: _completedDate?.day,
+                ),
+                repeat: repeats,
                 notes: _notesController.text,
+                progress: progress,
               );
           _showSnackBar(
-          'Success', 'Animelist updated successfully', ContentType.success);
+            'Success',
+            'Animelist updated successfully',
+            ContentType.success,
+          );
           break;
-        }
-      case AuthPlatform.mal:
-        {
-          break;
-        }
-    }
 
-    if (mounted) {
-      Navigator.pop(context);
+        case AuthPlatform.mal:
+          _showSnackBar(
+            'Info',
+            'MAL support not implemented yet.',
+            ContentType.warning,
+          );
+          break;
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e, st) {
+      log('Error while saving anime list: $e\n$st');
+      _showSnackBar(
+        'Error',
+        'Failed to update anime list. Please try again.',
+        ContentType.failure,
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 

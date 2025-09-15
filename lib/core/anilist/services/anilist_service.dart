@@ -4,8 +4,8 @@ import 'package:shonenx/core/anilist/graphql_client.dart';
 import 'package:shonenx/core/anilist/queries.dart';
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
-import 'package:shonenx/core/models/anilist/media_list_collection.dart';
 import 'package:shonenx/core/models/anilist/media_list_entry.dart';
+import 'package:shonenx/core/models/anilist/page_response.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
@@ -25,10 +25,8 @@ class AnilistServiceException implements Exception {
 
 /// Service class for interacting with the AniList GraphQL API
 class AnilistService implements AnimeRepository {
-  // NEW: Store the Ref object to access other providers.
   final Ref _ref;
 
-  // NEW: The constructor now accepts a Ref.
   AnilistService(this._ref);
 
   @override
@@ -44,10 +42,7 @@ class AnilistService implements AnimeRepository {
   };
 
   // --- PRIVATE HELPERS ---
-  /// Helper to get the current authentication context for authenticated calls.
-  /// This consolidates all the auth-checking logic in one place.
   ({int userId, String accessToken})? _getAuthContext() {
-    // Use the injected _ref to read the authProvider state safely.
     final authState = _ref.read(authProvider);
 
     if (!authState.isLoggedIn ||
@@ -114,10 +109,6 @@ class AnilistService implements AnimeRepository {
       media?.map((json) => Media.fromJson(json)).toList() ?? [];
 
   // --- METHODS FOR AUTHENTICATION FLOW ---
-
-  // This is called by AuthViewModel and ONLY needs a token,
-  // which breaks the circular dependency.
-
   Future<Map<String, dynamic>> getUserProfile(String accessToken) async {
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: accessToken,
@@ -142,22 +133,52 @@ class AnilistService implements AnimeRepository {
 
   // Fetch user anime list by status
   @override
-  Future<MediaListCollection> getUserAnimeList(
-      {required String type, required String status}) async {
+  Future<PageResponse> getUserAnimeList({
+    required String type,
+    required String status,
+    required int page,
+    required int perPage,
+  }) async {
     final auth = _getAuthContext();
     if (auth == null) {
-      return MediaListCollection(lists: []); // Not logged in, return empty.
+      // Not logged in → return empty PageResponse
+      return PageResponse(
+        pageInfo: PageInfo(
+          total: 0,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage,
+        ),
+        mediaList: [],
+      );
     }
 
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: auth.accessToken,
       query: AnilistQueries.userAnimeListQuery,
-      variables: {'userId': auth.userId, 'status': status, 'type': type},
+      variables: {
+        'page': page,
+        'perPage': perPage,
+        'userId': auth.userId,
+        'type': type,
+        'status': status,
+      },
       operationName: 'GetUserAnimeList',
     );
+
     return data != null
-        ? MediaListCollection.fromJson(data)
-        : MediaListCollection(lists: []);
+        ? PageResponse.fromJson(data)
+        : PageResponse(
+            pageInfo: PageInfo(
+              total: 0,
+              currentPage: 1,
+              lastPage: 1,
+              hasNextPage: false,
+              perPage: perPage,
+            ),
+            mediaList: [],
+          );
   }
 
   // Fetch user's favorite anime
@@ -324,7 +345,7 @@ class AnilistService implements AnimeRepository {
         'status': status,
         'score': score,
         'progress': progress,
-        'startedAt': startedAt?.toJson(), // Convert model to map
+        'startedAt': startedAt?.toJson(),
         'completedAt': completedAt?.toJson(),
         'repeat': repeat,
         'private': private,
@@ -439,9 +460,12 @@ class AnilistService implements AnimeRepository {
   /// Get Streaming Episodes
   Future<List<StreamingEpisode>> getStreamingEpisodes(int mediaId) async {
     try {
-      final data = await _executeGraphQLOperation(accessToken: null, query: AnilistQueries.streamingEpisodes);
-      return (data?['Media']?['streamingEpisodes'] as List<dynamic>).map((itemJson) => StreamingEpisode.fromJson(itemJson)).toList();
-    } catch (err){
+      final data = await _executeGraphQLOperation(
+          accessToken: null, query: AnilistQueries.streamingEpisodes);
+      return (data?['Media']?['streamingEpisodes'] as List<dynamic>)
+          .map((itemJson) => StreamingEpisode.fromJson(itemJson))
+          .toList();
+    } catch (err) {
       return [];
     }
   }

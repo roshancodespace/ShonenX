@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/home/view_model/homepage_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
@@ -16,6 +17,7 @@ const noError = Object();
 enum InitializationStatus {
   idle,
   initializing,
+  authenticating,
   loadingSources,
   loadingHomepage,
   applyingSettings,
@@ -83,21 +85,25 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
     _startTimeoutTimer();
 
     try {
-      // Step 1: Initialize basic services
       _updateState(
         status: InitializationStatus.initializing,
         message: 'Setting up core services...',
         progress: 0.1,
       );
-      await Future.delayed(const Duration(milliseconds: 500));
 
-      // Step 2: Initialize anime registry
       _updateState(
         status: InitializationStatus.loadingSources,
         message: 'Loading anime sources...',
         progress: 0.3,
       );
       _ref.read(animeSourceRegistryProvider).initialize();
+
+      _updateState(
+        status: InitializationStatus.authenticating,
+        message: 'Logging you in',
+        progress: 0.35
+      );
+      _ref.read(authProvider.notifier).init();
 
       final registryState = _ref.read(animeSourceRegistryProvider);
       if (!registryState.isInitialized) {
@@ -116,7 +122,6 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
 
       AppLogger.d('✅ Extensions loaded');
 
-      // Step 3: Initialize homepage
       _updateState(
         status: InitializationStatus.loadingHomepage,
         message: 'Preparing homepage...',
@@ -125,7 +130,6 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
       await _ref.read(homepageProvider.notifier).initialize();
       AppLogger.d('✅ Homepage initialized');
 
-      // Step 4: Apply UI & Theme settings
       _updateState(
         status: InitializationStatus.applyingSettings,
         message: 'Applying settings...',
@@ -135,11 +139,9 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
       await _applyThemeSettings();
       AppLogger.d('✅ Settings applied');
 
-      // Step 5: Final preparations
       _updateState(progress: 0.95, message: 'Finalizing setup...');
       await Future.delayed(const Duration(milliseconds: 800));
 
-      // Step 6: Complete
       _timeoutTimer?.cancel();
       _updateState(
         status: InitializationStatus.success,

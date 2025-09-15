@@ -1,15 +1,18 @@
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
-import 'package:shonenx/core/models/anilist/media_list_collection.dart';
 import 'package:shonenx/core/models/anilist/media_list_entry.dart';
-
+import 'package:shonenx/core/models/anilist/page_response.dart';
 
 abstract class AnimeRepository {
   String get name;
-  Future<MediaListCollection> getUserAnimeList(
-      {required String type, required String status});
+  Future<PageResponse> getUserAnimeList({
+    required String type,
+    required String status,
+    required int page,
+    required int perPage,
+  });
   Future<MediaListEntry?> updateUserAnimeList({
-     required int mediaId,
+    required int mediaId,
     String? status,
     double? score,
     int? progress,

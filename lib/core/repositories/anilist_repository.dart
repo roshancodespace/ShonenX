@@ -1,8 +1,8 @@
 import 'package:shonenx/core/anilist/services/anilist_service.dart';
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
-import 'package:shonenx/core/models/anilist/media_list_collection.dart';
 import 'package:shonenx/core/models/anilist/media_list_entry.dart';
+import 'package:shonenx/core/models/anilist/page_response.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
 
 class AniListRepository implements AnimeRepository {
@@ -52,9 +52,13 @@ class AniListRepository implements AnimeRepository {
   }
 
   @override
-  Future<MediaListCollection> getUserAnimeList(
-      {required String type, required String status}) {
-    return service.getUserAnimeList(type: type, status: status);
+  Future<PageResponse> getUserAnimeList(
+      {required String type,
+      required String status,
+      required int page,
+      required int perPage}) {
+    return service.getUserAnimeList(
+        type: type, status: status, page: page, perPage: perPage);
   }
 
   @override

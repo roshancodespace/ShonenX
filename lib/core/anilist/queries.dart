@@ -57,21 +57,62 @@ class AnilistQueries {
 
   // Query: Fetch a user's anime list by status
   static const String userAnimeListQuery = '''
-    query (\$userId: Int, \$type: MediaType, \$status: MediaListStatus) {
-      MediaListCollection(userId: \$userId, type: \$type, status: \$status) {
-        lists {
-          name
-          entries {
-            media {
-              $mediaFields
-            }
-            status
-            score
-            progress
+    query (\$userId: Int, \$type: MediaType, \$status: MediaListStatus, \$page: Int, \$perPage: Int) {
+      Page(page: \$page, perPage: \$perPage) {
+        pageInfo {
+          total
+          currentPage
+          lastPage
+          hasNextPage
+          perPage
+        }
+        mediaList(userId: \$userId, type: \$type, status: \$status) {
+          id
+          status
+          score
+          progress
+          media {
+            $mediaFields
           }
         }
       }
     }
+  ''';
+
+  // Query: Fetch a user's entire anime list
+  static const String userFullAnimeListQuery = '''
+    query (\$userName: String, \$page: Int, \$perPage: Int) {
+      Page(page: \$page, perPage: \$perPage) {
+        pageInfo {
+          total
+          currentPage
+          lastPage
+          hasNextPage
+          perPage
+        }
+        mediaList(userName: \$userName, type: ANIME) {
+          id
+          status
+          score
+          progress
+          repeat
+          private
+          notes
+          startedAt {
+            year
+            month
+            day
+          }
+          completedAt {
+            year
+            month
+            day
+          }
+          $mediaFields
+        }
+      }
+    }
+
   ''';
 
   // Query: Fetch a user's favorite anime

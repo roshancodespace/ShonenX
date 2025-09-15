@@ -17,17 +17,19 @@ class WatchlistScreen extends ConsumerStatefulWidget {
 class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  final List<WatchlistStatus> _statuses = WatchlistStatus.values;
+  final _statuses = WatchlistStatus.values;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _statuses.length, vsync: this);
 
-    // Fetch data for the initial tab.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchDataForIndex(0));
+    // Initial fetch
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchDataForIndex(0);
+    });
 
-    // Add a listener to fetch data when the user swipes to a new tab.
+    // Fetch when tab changes
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
         _fetchDataForIndex(_tabController.index);
@@ -36,10 +38,10 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
   }
 
   void _fetchDataForIndex(int index, {bool force = false}) {
-    final status = _statuses[index];
-    ref
-        .read(watchlistProvider.notifier)
-        .fetchListForStatus(status, force: force);
+    ref.read(watchlistProvider.notifier).fetchListForStatus(
+          _statuses[index],
+          force: force,
+        );
   }
 
   @override
@@ -56,69 +58,69 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          onTap: (index) => _fetchDataForIndex(index), // Also fetch on tap
-          tabs: _statuses
-              .map((s) =>
-                  Tab(text: s.name[0].toUpperCase() + s.name.substring(1)))
-              .toList(),
+          onTap: (i) => _fetchDataForIndex(i),
+          tabs: _statuses.map((s) => Tab(text: _capitalize(s.name))).toList(),
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: _statuses.map((status) {
-          return _WatchlistTabView(status: status);
-        }).toList(),
+        children: _statuses
+            .map((status) => _WatchlistTabView(status: status))
+            .toList(),
       ),
     );
   }
+
+  String _capitalize(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 }
 
-// A dedicated, reusable widget for displaying the content of a single tab.
 class _WatchlistTabView extends ConsumerWidget {
   final WatchlistStatus status;
-
   const _WatchlistTabView({required this.status});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the provider to rebuild when state changes.
     final state = ref.watch(watchlistProvider);
     final notifier = ref.read(watchlistProvider.notifier);
 
-    // Check loading state for THIS specific tab.
+    // Loading
     if (state.loadingStatuses.contains(status)) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // Check error state for THIS specific tab.
+    // Error
     if (state.errors.containsKey(status)) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("Failed to load list.\n${state.errors[status]}"),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => notifier.fetchListForStatus(status, force: true),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+      return _ErrorView(
+        message: state.errors[status]!,
+        onRetry: () => notifier.fetchListForStatus(status, force: true),
       );
     }
 
-    // Get the correct data list for this tab.
-    final List<Media> mediaList = _getMediaForStatus(state, status);
-
+    // Data
+    final mediaList = _extractMedia(state, status);
     if (mediaList.isEmpty) {
-      return Center(child: Text('No anime in this list.'));
+      return const Center(child: Text('No anime in this list.'));
     }
 
-    // The actual list UI with pull-to-refresh.
-    return RefreshIndicator(
-      onRefresh: () => notifier.fetchListForStatus(status, force: true),
-      child: ShonenXGridView (
-          physics: AlwaysScrollableScrollPhysics(),
+    return NotificationListener<ScrollNotification>(
+      onNotification: (scrollInfo) {
+        if (scrollInfo.metrics.pixels >=
+            scrollInfo.metrics.maxScrollExtent * 0.9) {
+          final pageInfo = state.pageInfo[status];
+          if (pageInfo != null &&
+              pageInfo.hasNextPage &&
+              !state.loadingStatuses.contains(status)) {
+            notifier.fetchListForStatus(status, page: pageInfo.currentPage + 1);
+          }
+        }
+        return false;
+      },
+      child: RefreshIndicator(
+        onRefresh: () =>
+            notifier.fetchListForStatus(status, force: true, page: 1),
+        child: ShonenXGridView(
+          physics: const AlwaysScrollableScrollPhysics(),
           crossAxisCount: 3,
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
@@ -126,28 +128,41 @@ class _WatchlistTabView extends ConsumerWidget {
           items: mediaList.map((anime) {
             final tag = generateId().toString();
             return AnimatedAnimeCard(
-                anime: anime,
-                tag: tag + (anime.id.toString()),
-                onTap: () => navigateToDetail(context, anime, tag));
-          }).toList()),
+              anime: anime,
+              tag: "$tag${anime.id}",
+              onTap: () => navigateToDetail(context, anime, tag),
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 
-  // Helper to extract the right list of Media from the state.
-  List<Media> _getMediaForStatus(WatchListState state, WatchlistStatus status) {
-    switch (status) {
-      case WatchlistStatus.current:
-        return state.current.map((e) => e.media).toList();
-      case WatchlistStatus.completed:
-        return state.completed.map((e) => e.media).toList();
-      case WatchlistStatus.paused:
-        return state.paused.map((e) => e.media).toList();
-      case WatchlistStatus.dropped:
-        return state.dropped.map((e) => e.media).toList();
-      case WatchlistStatus.planning:
-        return state.planning.map((e) => e.media).toList();
-      case WatchlistStatus.favorites:
-        return state.favorites;
-    }
+  List<Media> _extractMedia(WatchListState state, WatchlistStatus status) {
+    if (status == WatchlistStatus.favorites) return state.favorites;
+    return (state.lists[status] ?? []).map((e) => e.media).toList();
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _ErrorView({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text("Failed to load list.\n$message"),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: onRetry,
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
   }
 }

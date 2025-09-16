@@ -388,14 +388,15 @@ class _TopControls extends ConsumerWidget {
                   children: [
                     Text(source?.providerName.toUpperCase() ?? "SOURCE",
                         style: Theme.of(context).textTheme.bodySmall),
-                    Text(
-                      episodeData.episodes[episodeData.selectedEpisodeIdx ?? 0]
-                              .title ??
-                          'Unavailable',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    if (episodeData.selectedEpisodeIdx != null)
+                      Text(
+                        episodeData.episodes[episodeData.selectedEpisodeIdx!]
+                                .title ??
+                            'Unavailable',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                   ],
                 ),
               ),

@@ -123,6 +123,7 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
 
   void pause() => player.pause();
   void seek(Duration pos) => player.seek(pos);
+  void forward(int seconds) => player.seek(Duration(seconds: player.state.position.inSeconds + seconds));
 }
 
 final playerStateProvider =

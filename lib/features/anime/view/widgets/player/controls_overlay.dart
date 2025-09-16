@@ -1,12 +1,12 @@
-// ignore_for_file: curly_braces_in_flow_control_structures
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
-import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
+import 'package:shonenx/features/anime/view/widgets/player/bottom_controls.dart';
+import 'package:shonenx/features/anime/view/widgets/player/center_controls.dart';
+import 'package:shonenx/features/anime/view/widgets/player/subtitle_overlay.dart';
+import 'package:shonenx/features/anime/view/widgets/player/top_controls.dart';
 import 'package:shonenx/features/anime/view_model/episodeDataProvider.dart';
 import 'package:shonenx/features/anime/view_model/playerStateProvider.dart';
 
@@ -44,16 +44,13 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     super.dispose();
   }
 
-  /// Resets the 5-second auto-hide timer. Called on any user interaction.
   void _resetHideTimer() {
     _hideControlsTimer?.cancel();
-    // Don't start a timer if locked or if controls are already meant to be hidden.
     if (_isLocked || !_areControlsVisible) return;
 
     _hideControlsTimer = Timer(const Duration(seconds: 5), _hideControls);
   }
 
-  /// Hides the controls immediately.
   void _hideControls() {
     if (mounted) {
       setState(() => _areControlsVisible = false);
@@ -61,7 +58,6 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     }
   }
 
-  /// Shows the controls if they are currently hidden.
   void _showControls() {
     if (mounted && !_areControlsVisible) {
       setState(() => _areControlsVisible = true);
@@ -73,62 +69,51 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
   void _toggleLock() {
     setState(() {
       _isLocked = !_isLocked;
-      _areControlsVisible =
-          true; // Always show controls when locking/unlocking.
+      _areControlsVisible = true;
       _resetHideTimer();
     });
   }
 
-  // --- BUILD METHOD ---
   @override
   Widget build(BuildContext context) {
-    // This GestureDetector covers the whole screen and is responsible for SHOWING the controls.
     return GestureDetector(
       onTap: _showControls,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // The main controls UI, animated with opacity.
           AnimatedOpacity(
             opacity: _areControlsVisible ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 300),
             child: AbsorbPointer(
-              // Block interactions with the controls when they are invisible.
               absorbing: !_areControlsVisible,
               child: _buildControlsUI(),
             ),
           ),
-
-          // Subtitle Overlay. Moves up when controls are visible.
           Positioned(
             bottom: _areControlsVisible && !_isLocked ? 150 : 20,
             left: 20,
             right: 20,
-            child: const _SubtitleOverlay(),
+            child: const SubtitleOverlay(),
           ),
         ],
       ),
     );
   }
 
-  /// Builds the controls area, including the logic for HIDING them.
   Widget _buildControlsUI() {
-    // This detector sits on top of the controls and HIDES them when the empty space is tapped.
     return GestureDetector(
       onTap: _hideControls,
       child: Container(
-        color: Colors.transparent, // Makes the GestureDetector tappable.
+        color: Colors.transparent,
         child: _isLocked ? _buildLockMode() : _buildFullControls(),
       ),
     );
   }
 
-  /// Builds the simple "Unlock" button UI.
   Widget _buildLockMode() {
     return Center(
-      // A GestureDetector to prevent the background tap from hiding the unlock button.
       child: GestureDetector(
-        onTap: _resetHideTimer, // Tapping the button resets the timer.
+        onTap: _resetHideTimer,
         child: IconButton(
           style: IconButton.styleFrom(
             backgroundColor: Colors.black54,
@@ -142,49 +127,43 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     );
   }
 
-  /// Builds the main top, center, and bottom controls.
   Widget _buildFullControls() {
+    final playerNotifier = ref.read(playerStateProvider.notifier);
     return Column(
       children: [
-        // Top Controls with slide-down animation.
         AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           transform:
               Matrix4.translationValues(0, _areControlsVisible ? 0 : -100, 0),
-          child: _TopControls(
+          child: TopControls(
             onInteraction: _resetHideTimer,
             onEpisodesPressed: widget.onEpisodesPressed,
             onSettingsPressed: _showSettingsSheet,
             onQualityPressed: _showQualitySheet,
           ),
         ),
-
-        // Center play/pause button.
         Expanded(
           child: Center(
-            child: _CenterControls(onInteraction: _resetHideTimer),
+            child: CenterControls(onInteraction: _resetHideTimer),
           ),
         ),
-
-        // Bottom Controls with slide-up animation.
         AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           transform:
               Matrix4.translationValues(0, _areControlsVisible ? 0 : 150, 0),
-          child: _BottomControls(
+          child: BottomControls(
             onInteraction: _resetHideTimer,
             sliderValue: _draggedSliderValue,
             onSliderChangeStart: (val) {
-              _hideControlsTimer?.cancel(); // Pause timer while scrubbing.
+              _hideControlsTimer?.cancel();
               setState(() => _draggedSliderValue = val);
             },
+            onForwardPressed: () => playerNotifier.forward(85),
             onSliderChanged: (val) => setState(() => _draggedSliderValue = val),
             onSliderChangeEnd: (val) {
-              ref
-                  .read(playerStateProvider.notifier)
-                  .seek(Duration(milliseconds: val.round()));
+              playerNotifier.seek(Duration(milliseconds: val.round()));
               setState(() => _draggedSliderValue = null);
-              _resetHideTimer(); // Restart timer after scrubbing is done.
+              _resetHideTimer();
             },
             onLockPressed: _toggleLock,
             onSourcePressed: _showSourceSheet,
@@ -196,8 +175,6 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     );
   }
 
-  // --- MODAL SHEET HANDLERS ---
-  /// A helper to show a modal sheet and manage the hide timer.
   Future<void> _showPlayerModalSheet({required WidgetBuilder builder}) async {
     _hideControlsTimer?.cancel();
     await showModalBottomSheet(
@@ -206,7 +183,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
       backgroundColor: Theme.of(context).colorScheme.surface.withAlpha(240),
       isScrollControlled: true,
     );
-    if (mounted) _resetHideTimer(); // Reset timer after the sheet is closed.
+    if (mounted) _resetHideTimer();
   }
 
   void _showSettingsSheet() => _showPlayerModalSheet(
@@ -252,14 +229,15 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
   void _showServerSheet() {
     final episodeData = ref.read(episodeDataProvider);
     final episodeNotifier = ref.read(episodeDataProvider.notifier);
+    if (episodeData.selectedServer == null) return;
     _showPlayerModalSheet(
       builder: (context) => _GenericSelectionSheet<String>(
         title: 'Server',
         items: episodeData.servers,
-        selectedIndex: episodeData.selectedSourceIdx ?? -1,
+        selectedIndex: episodeData.servers.indexOf(episodeData.selectedServer!),
         displayBuilder: (item) => item,
         onItemSelected: (index) {
-          episodeNotifier.changeSource(index);
+          episodeNotifier.changeServer(index);
           Navigator.pop(context);
         },
       ),
@@ -284,9 +262,6 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
   }
 }
 
-// --- REUSABLE WIDGETS ---
-
-/// A generic bottom sheet for selecting an item from a list.
 class _GenericSelectionSheet<T> extends StatelessWidget {
   final String title;
   final List<T> items;
@@ -342,257 +317,6 @@ class _GenericSelectionSheet<T> extends StatelessWidget {
   }
 }
 
-/// The top control bar (back button, title, settings).
-class _TopControls extends ConsumerWidget {
-  final VoidCallback onInteraction;
-  final VoidCallback? onEpisodesPressed;
-  final VoidCallback? onSettingsPressed;
-  final VoidCallback? onQualityPressed;
-
-  const _TopControls({
-    required this.onInteraction,
-    this.onEpisodesPressed,
-    this.onSettingsPressed,
-    this.onQualityPressed,
-  });
-
-  // Helper to wrap button presses with the interaction callback.
-  VoidCallback? _wrap(VoidCallback? action) {
-    if (action == null) return null;
-    return () {
-      onInteraction();
-      action();
-    };
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final episodeData = ref.watch(episodeDataProvider);
-    final source = ref.watch(selectedAnimeProvider);
-    return Material(
-      color: Colors.black.withOpacity(0.5),
-      child: GestureDetector(
-        onTap: onInteraction, // Prevents background tap from hiding controls.
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Row(
-            children: [
-              IconButton(
-                  onPressed: _wrap(() => context.pop()),
-                  icon: const Icon(Icons.arrow_back),
-                  tooltip: "Back"),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(source?.providerName.toUpperCase() ?? "SOURCE",
-                        style: Theme.of(context).textTheme.bodySmall),
-                    if (episodeData.selectedEpisodeIdx != null)
-                      Text(
-                        episodeData.episodes[episodeData.selectedEpisodeIdx!]
-                                .title ??
-                            'Unavailable',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                  ],
-                ),
-              ),
-              if (episodeData.qualityOptions.length > 1)
-                IconButton(
-                    onPressed: _wrap(onQualityPressed),
-                    icon: const Icon(Iconsax.video_horizontal),
-                    tooltip: "Quality"),
-              if (onEpisodesPressed != null)
-                IconButton(
-                    onPressed: _wrap(onEpisodesPressed),
-                    icon: const Icon(Icons.playlist_play),
-                    tooltip: "Episodes"),
-              IconButton(
-                  onPressed: _wrap(onSettingsPressed),
-                  icon: const Icon(Iconsax.setting_2),
-                  tooltip: "Settings"),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The center play/pause/buffering indicator.
-class _CenterControls extends ConsumerWidget {
-  final VoidCallback onInteraction;
-  const _CenterControls({required this.onInteraction});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = ref.watch(playerStateProvider);
-    final playerNotifier = ref.read(playerStateProvider.notifier);
-    return GestureDetector(
-      onTap: onInteraction, // Prevents background tap from hiding controls.
-      child: playerState.isBuffering
-          ? const SizedBox(
-              width: 80, height: 80, child: CircularProgressIndicator())
-          : IconButton(
-              onPressed: () {
-                onInteraction(); // Reset timer on play/pause.
-                playerNotifier.togglePlay();
-              },
-              icon:
-                  Icon(playerState.isPlaying ? Icons.pause : Icons.play_arrow),
-              iconSize: 80,
-            ),
-    );
-  }
-}
-
-/// The bottom control bar (slider, timestamps, action buttons).
-class _BottomControls extends ConsumerWidget {
-  final VoidCallback onInteraction;
-  final double? sliderValue;
-  final Function(double) onSliderChanged;
-  final Function(double) onSliderChangeStart;
-  final Function(double) onSliderChangeEnd;
-  final VoidCallback onLockPressed;
-  final VoidCallback onSourcePressed;
-  final VoidCallback onSubtitlePressed;
-  final VoidCallback onServerPressed;
-
-  const _BottomControls(
-      {required this.onInteraction,
-      this.sliderValue,
-      required this.onSliderChanged,
-      required this.onSliderChangeStart,
-      required this.onSliderChangeEnd,
-      required this.onLockPressed,
-      required this.onSourcePressed,
-      required this.onSubtitlePressed,
-      required this.onServerPressed});
-
-  // Helper to wrap button presses with the interaction callback.
-  VoidCallback? _wrap(VoidCallback? action) {
-    if (action == null) return null;
-    return () {
-      onInteraction();
-      action();
-    };
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = ref.watch(playerStateProvider);
-    final episodeData = ref.watch(episodeDataProvider);
-    final episodeNotifier = ref.read(episodeDataProvider.notifier);
-
-    final positionMs = playerState.position.inMilliseconds.toDouble();
-    final durationMs = playerState.duration.inMilliseconds.toDouble();
-    final displayedValue = (sliderValue ?? positionMs).clamp(0.0, durationMs);
-
-    return Material(
-      color: Colors.black.withOpacity(0.5),
-      child: GestureDetector(
-        onTap: onInteraction, // Prevents background tap from hiding controls.
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0),
-                  child: Text(_formatDuration(
-                      Duration(milliseconds: displayedValue.round()))),
-                ),
-                Expanded(
-                  child: Slider(
-                    value: displayedValue,
-                    max: durationMs > 0 ? durationMs : 1.0,
-                    onChanged: onSliderChanged,
-                    onChangeStart: onSliderChangeStart,
-                    onChangeEnd: onSliderChangeEnd,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
-                  child: Text(_formatDuration(playerState.duration)),
-                ),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                TextButton.icon(
-                    onPressed: _wrap(onLockPressed),
-                    label: const Text('Lock'),
-                    icon: const Icon(Iconsax.lock)),
-                if (episodeData.dubSubSupport)
-                  TextButton.icon(
-                    onPressed: _wrap(() => episodeNotifier.toggleDubSub()),
-                    label: Text(
-                        episodeData.selectedCategory == 'sub' ? 'Sub' : 'Dub'),
-                    icon: const Icon(Iconsax.text_block),
-                  ),
-                if (episodeData.servers.isNotEmpty)
-                  TextButton.icon(
-                    onPressed: _wrap(onServerPressed),
-                    label: Text(episodeData.selectedServer ?? 'Server'),
-                    icon: const Icon(Iconsax.d_cube_scan),
-                  ),
-                TextButton.icon(
-                  onPressed: episodeData.sources.length > 1
-                      ? _wrap(onSourcePressed)
-                      : null,
-                  label: const Text('Source'),
-                  icon: const Icon(Iconsax.hierarchy_2),
-                ),
-                TextButton.icon(
-                  onPressed: episodeData.subtitles.isNotEmpty
-                      ? _wrap(onSubtitlePressed)
-                      : null,
-                  label: const Text('Subtitle'),
-                  icon: const Icon(Iconsax.subtitle),
-                ),
-              ],
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The overlay that displays the current subtitle text.
-class _SubtitleOverlay extends ConsumerWidget {
-  const _SubtitleOverlay();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final subtitleText =
-        ref.watch(playerStateProvider.select((s) => s.subtitle.firstOrNull));
-
-    if (subtitleText == null || subtitleText.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.6),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          subtitleText,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 16, color: Colors.white),
-        ),
-      ),
-    );
-  }
-}
-
-/// The content for the player settings bottom sheet.
 class _SettingsSheetContent extends ConsumerWidget {
   final VoidCallback onDismiss;
   const _SettingsSheetContent({required this.onDismiss});
@@ -600,6 +324,7 @@ class _SettingsSheetContent extends ConsumerWidget {
   void _showDialog(BuildContext context,
       {required Widget Function(BuildContext) builder}) {
     showDialog(context: context, builder: builder).then((_) {
+      if (!context.mounted) return;
       if (Navigator.of(context).canPop()) onDismiss();
     });
   }
@@ -636,7 +361,6 @@ class _SettingsSheetContent extends ConsumerWidget {
   }
 }
 
-/// Dialog for changing playback speed.
 class _SpeedDialog extends ConsumerStatefulWidget {
   @override
   ConsumerState<_SpeedDialog> createState() => _SpeedDialogState();
@@ -684,7 +408,6 @@ class _SpeedDialogState extends ConsumerState<_SpeedDialog> {
   }
 }
 
-/// Dialog for changing the video fit mode.
 class _FitDialog extends ConsumerStatefulWidget {
   @override
   ConsumerState<_FitDialog> createState() => _FitDialogState();
@@ -733,21 +456,6 @@ class _FitDialogState extends ConsumerState<_FitDialog> {
   }
 }
 
-// --- HELPER FUNCTIONS ---
-
-/// Formats a Duration into hh:mm:ss or mm:ss.
-String _formatDuration(Duration duration) {
-  if (duration.isNegative) return '00:00';
-  final hours = duration.inHours;
-  final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-  final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-  if (hours > 0) {
-    return '$hours:$minutes:$seconds';
-  }
-  return '$minutes:$seconds';
-}
-
-/// Converts a BoxFit enum to a readable string.
 String _fitModeToString(BoxFit fit) {
   switch (fit) {
     case BoxFit.contain:

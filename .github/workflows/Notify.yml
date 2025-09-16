@@ -18,11 +18,11 @@ jobs:
       - name: Fetch Repository Tags by Date and Time
         id: fetch_tags
         run: |
-          curl -s "https://api.github.com/repos/roshancodespace/ShonenX/tags" -o tags.json
+          curl -s "https://api.github.com/repos/${{github.repository}}/tags" -o tags.json
           TAGS=$(jq -r '.[].name' tags.json)
           declare -a TAGS_WITH_DATES=()
           for TAG in $TAGS; do
-            TAG_DETAILS=$(curl -s "https://api.github.com/repos/roshancodespace/ShonenX/git/refs/tags/$TAG")
+            TAG_DETAILS=$(curl -s "https://api.github.com/repos/${{github.repository}}/git/refs/tags/$TAG")
             OBJECT_URL=$(echo "$TAG_DETAILS" | jq -r '.object.url // empty')
             if [ -n "$OBJECT_URL" ]; then
               OBJECT_DETAILS=$(curl -s "$OBJECT_URL")

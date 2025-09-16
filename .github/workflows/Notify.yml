@@ -49,7 +49,7 @@ jobs:
         id: get_release_notes
         run: |
           RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/roshancodespace/ShonenXreleases/tags/${{ env.LATEST_TAG }}")
+          "https://api.github.com/repos/${{github.repository}}/releases/tags/${{ env.LATEST_TAG }}")
 
           RELEASE_NOTES=$(echo "$RELEASE_DATA" | jq -r '.body')
           echo "Release Notes: $RELEASE_NOTES"
@@ -77,7 +77,7 @@ jobs:
           # Fetch release assets based on the latest tag
           curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
            -H "Accept: application/vnd.github.v3+json" \
-           "https://api.github.com/repos/roshancodespace/ShonenX/releases/tags/${{ env.LATEST_TAG }}" -o release.json
+           "https://api.github.com/repos/${{github.repository}}/releases/tags/${{ env.LATEST_TAG }}" -o release.json
           
           # Initialize environment variables
           echo "apk_universal_message=" >> $GITHUB_ENV

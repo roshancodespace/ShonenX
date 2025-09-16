@@ -164,23 +164,28 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           # Build the message with available assets
-          MESSAGE="${{ env.LATEST_TAG }} Released"$'\n'
-          
+          MESSAGE="$LATEST_TAG Released"$'\n'
+
           # Add APK downloads if available
-          if [ -n "${{ env.apk_arm64_message }}" ]; then
-          MESSAGE="${MESSAGE}🔹 ${{ env.apk_arm64_message }} | **APK (arm64-v8a)**"$'\n'
+          if [ -n "$apk_arm64_message" ]; then
+            MESSAGE="${MESSAGE}🔹 $apk_arm64_message | **APK (arm64-v8a)**"$'\n'
           fi
 
-          if [ -n "${{ env.apk_armeabi_message }}" ]; then
-           MESSAGE="${MESSAGE}🔹 ${{ env.apk_armeabi_message }} | **APK (armeabi-v7a)**"$'\n'
-           fi
+          if [ -n "$apk_armeabi_message" ]; then
+            MESSAGE="${MESSAGE}🔹 $apk_armeabi_message | **APK (armeabi-v7a)**"$'\n'
+          fi
 
-           if [ -n "${{ env.apk_x86_64_message }}" ]; then
-           MESSAGE="${MESSAGE}🔹 ${{ env.apk_x86_64_message }} | **APK (x86_64)**"$'\n'
-           fi
-          
+          if [ -n "$apk_x86_64_message" ]; then
+            MESSAGE="${MESSAGE}🔹 $apk_x86_64_message | **APK (x86_64)**"$'\n'
+          fi
+
+          # Add Windows setup if available
+          if [ -n "$setup_message" ]; then
+            MESSAGE="${MESSAGE}🔹 $setup_message | **Windows Setup**"$'\n'
+          fi
+
           # Only send if we have at least one asset
-          if [ -n "${{ env.apk_universal_message }}" ] || [ -n "${{ env.setup_message }}" ]; then
+          if [ -n "$apk_arm64_message" ] || [ -n "$apk_armeabi_message" ] || [ -n "$apk_x86_64_message" ] || [ -n "$setup_message" ]; then
             PAYLOAD=$(jq -n --arg content "$MESSAGE" '{ content: $content }')
             curl -X POST "$DISCORD_WEBHOOK_URL" \
               -H "Content-Type: application/json" \

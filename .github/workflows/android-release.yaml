@@ -62,3 +62,13 @@ jobs:
             ${{ github.event.head_commit.message }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 8. Notify Discord (short message only)
+      - name: Notify Discord
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: |
+            ✅ A new Android release **${{ github.ref_name }}** is live!
+            👉 Check GitHub Releases for details.

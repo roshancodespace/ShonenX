@@ -117,11 +117,11 @@ jobs:
           
           # Mention the role based on the release name
           if [[ "${{ env.LATEST_TAG }}" == *alpha* ]]; then
-            role_mention="<@&1348756894034165800>"  # Role ID for alpha channel
+            role_mention="@everyone"  # Role ID for alpha channel
           elif [[ "${{ env.LATEST_TAG }}" == *beta* ]]; then
-            role_mention="<@&1348756894034165800>"  # Role ID for beta channel
+            role_mention="@everyone"  # Role ID for beta channel
           else
-            role_mention="<@&1348756894034165800>"  # Default role ID
+            role_mention="@everyone"  # Default role ID
           fi
         
           default_color="#1ac4c5"

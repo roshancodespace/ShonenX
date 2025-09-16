@@ -162,15 +162,18 @@ jobs:
           # Build the message with available assets
           MESSAGE="${{ env.LATEST_TAG }} Released"$'\n'
           
-          # Add APK download if available
-          if [ -n "${{ env.apk_universal_message }}" ]; then
-            MESSAGE="${MESSAGE}🔹 ${{ env.apk_universal_message }} | **APK (universal)**"$'\n'
+          # Add APK downloads if available
+          if [ -n "${{ env.apk_arm64_message }}" ]; then
+          MESSAGE="${MESSAGE}🔹 ${{ env.apk_arm64_message }} | **APK (arm64-v8a)**"$'\n'
           fi
-          
-          # Add Windows setup if available
-          if [ -n "${{ env.setup_message }}" ]; then
-            MESSAGE="${MESSAGE}🔹 ${{ env.setup_message }} | **Windows Setup**"$'\n'
-          fi
+
+          if [ -n "${{ env.apk_armeabi_message }}" ]; then
+           MESSAGE="${MESSAGE}🔹 ${{ env.apk_armeabi_message }} | **APK (armeabi-v7a)**"$'\n'
+           fi
+
+           if [ -n "${{ env.apk_x86_64_message }}" ]; then
+           MESSAGE="${MESSAGE}🔹 ${{ env.apk_x86_64_message }} | **APK (x86_64)**"$'\n'
+           fi
           
           # Only send if we have at least one asset
           if [ -n "${{ env.apk_universal_message }}" ] || [ -n "${{ env.setup_message }}" ]; then

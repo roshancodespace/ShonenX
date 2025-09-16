@@ -291,13 +291,19 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   }
 
   Future<void> changeSource(int sourceIdx) async {
-    if (sourceIdx < 0 ||
-        sourceIdx >= state.sources.length ||
-        state.selectedSourceIdx == sourceIdx) return;
+    AppLogger.d("Changed Source to $sourceIdx");
 
     final currentPosition = ref.read(playerStateProvider).position;
     state = state.copyWith(selectedSourceIdx: sourceIdx);
     await _loadAndPlaySource(sourceIdx, startAt: currentPosition);
+  }
+
+  Future<void> changeServer(int serverIdx) async {
+    AppLogger.d("Changed Server to $serverIdx");
+
+    final currentPosition = ref.read(playerStateProvider).position;
+    state = state.copyWith(selectedServer: state.servers[serverIdx]);
+    await _fetchStreamData(startAt: currentPosition);
   }
 
   Future<void> _fetchStreamData({Duration startAt = Duration.zero}) async {

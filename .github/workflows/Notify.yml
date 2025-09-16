@@ -18,11 +18,11 @@ jobs:
       - name: Fetch Repository Tags by Date and Time
         id: fetch_tags
         run: |
-          curl -s "https://api.github.com/repos/${{github.repository}}/tags" -o tags.json
+          curl -s "https://api.github.com/repos/roshancodespace/ShonenX/tags" -o tags.json
           TAGS=$(jq -r '.[].name' tags.json)
           declare -a TAGS_WITH_DATES=()
           for TAG in $TAGS; do
-            TAG_DETAILS=$(curl -s "https://api.github.com/repos/${{github.repository}}/git/refs/tags/$TAG")
+            TAG_DETAILS=$(curl -s "https://api.github.com/repos/roshancodespace/ShonenX/git/refs/tags/$TAG")
             OBJECT_URL=$(echo "$TAG_DETAILS" | jq -r '.object.url // empty')
             if [ -n "$OBJECT_URL" ]; then
               OBJECT_DETAILS=$(curl -s "$OBJECT_URL")
@@ -49,7 +49,7 @@ jobs:
         id: get_release_notes
         run: |
           RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ env.LATEST_TAG }}")
+          "https://api.github.com/repos/roshancodespace/ShonenXreleases/tags/${{ env.LATEST_TAG }}")
 
           RELEASE_NOTES=$(echo "$RELEASE_DATA" | jq -r '.body')
           echo "Release Notes: $RELEASE_NOTES"
@@ -77,7 +77,7 @@ jobs:
           # Fetch release assets based on the latest tag
           curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
            -H "Accept: application/vnd.github.v3+json" \
-           "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ env.LATEST_TAG }}" -o release.json
+           "https://api.github.com/repos/roshancodespace/ShonenX/releases/tags/${{ env.LATEST_TAG }}" -o release.json
           
           # Initialize environment variables
           echo "apk_universal_message=" >> $GITHUB_ENV

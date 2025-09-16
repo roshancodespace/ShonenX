@@ -136,7 +136,7 @@ class HiAnimeProvider extends AnimeProvider {
               ))
           .toList(),
       tracks:
-          (data['tracks'] as List<dynamic>?) // ✅ was 'subtitles', now 'tracks'
+          (data['subtitles'] as List<dynamic>?) // ✅ was 'subtitles', now 'tracks'
                   ?.map((track) => Subtitle(
                         url: track['url'],
                         lang: track['lang'],

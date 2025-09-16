@@ -93,10 +93,14 @@ jobs:
               printf "%.2f %s", size, unit[i]
             }')
             FILE_NAME=$(basename "$ASSET_URL")
-            
+  
             # Categorize and set variables
-            if [[ "$FILE_NAME" == *".apk" ]]; then
-              echo "apk_universal_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
+            if [[ "$FILE_NAME" == "app-arm64-v8a-release.apk" ]]; then
+              echo "apk_arm64_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
+            elif [[ "$FILE_NAME" == "app-armeabi-v7a-release.apk" ]]; then
+              echo "apk_armeabi_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
+            elif [[ "$FILE_NAME" == "app-x86_64-release.apk" ]]; then
+              echo "apk_x86_64_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
             elif [[ "$FILE_NAME" == *".exe" ]] || [[ "$FILE_NAME" == *".msi" ]]; then
               echo "setup_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
             fi

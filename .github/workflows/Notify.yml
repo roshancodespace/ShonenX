@@ -1,10 +1,12 @@
 name: Notify Release
 
 on:
+  workflow_run:
+    workflows:
+      - "Android Release"
+    types:
+      - completed
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
 
 jobs:
   notify:

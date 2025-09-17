@@ -27,6 +27,21 @@ class ExperimentalScreen extends ConsumerWidget {
           children: [
             SettingsItem(
               accent: colorScheme.primary,
+              icon: Icon(experimentalSettings.useMangayomiExtensions
+                  ? Icons.extension_outlined
+                  : Icons.extension_off_outlined),
+              title: 'Mangayomi extension',
+              description: 'Enables the experimental extension support',
+              type: SettingsItemType.toggleable,
+              toggleValue: experimentalSettings.useMangayomiExtensions,
+              onToggleChanged: (value) {
+                experimentalNotifier.updateSettings(
+                    (state) => state.copyWith(useMangayomiExtensions: value));
+              },
+            ),
+            SettingsItem(
+              accent: colorScheme.primary,
+              icon: Icon(Icons.replay_outlined),
               title: 'Episode Title Sync',
               description: 'Sync episode titles using JIKAN API',
               type: SettingsItemType.toggleable,
@@ -35,7 +50,7 @@ class ExperimentalScreen extends ConsumerWidget {
                 experimentalNotifier.updateSettings(
                     (state) => state.copyWith(episodeTitleSync: value));
               },
-            )
+            ),
           ],
         ),
       ),

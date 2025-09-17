@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/anilist/media.dart' as anilist;
+import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core_new/eval/model/m_manga.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
+import 'package:shonenx/helpers/navigation.dart';
 
 class DemoScreen extends ConsumerStatefulWidget {
   const DemoScreen({super.key});
@@ -120,9 +122,62 @@ class _DemoDetailState extends ConsumerState<DemoDetail> {
                           final sources = await ref
                               .read(sourceProvider.notifier)
                               .getSources(chapter.url!);
-                          for (var source in sources) {
-                            AppLogger.d(source?.toJson());
+                          for (var s in sources) {
+                            for (var ss in s?.subtitles ?? []) {
+                              AppLogger.w(ss.file);
+                              AppLogger.w(ss.label);
+                            }
                           }
+                          if (!context.mounted) return;
+                          showModalBottomSheet(
+                            context: context,
+                            builder: (context) {
+                              return BottomSheet(
+                                onClosing: () => Navigator.pop(context),
+                                builder: (context) {
+                                  return Container(
+                                    color: Colors.black,
+                                    child: ListView(
+                                      children: sources
+                                          .map((s) => ListTile(
+                                                title: Text('${s?.quality}'),
+                                                subtitle: Text('${s?.url}'),
+                                                onTap: () {
+                                                  navigateToWatch(
+                                                      context: context,
+                                                      ref: ref,
+                                                      animeId: 'Niggesh',
+                                                      animeName:
+                                                          '${media?.name}',
+                                                      episodes: media?.chapters
+                                                              ?.map((ch) => EpisodeDataModel(
+                                                                  title: ch.name
+                                                                      ?.split(
+                                                                          ':')
+                                                                      .last
+                                                                      .trim(),
+                                                                  url: ch.url,
+                                                                  number: int.parse(ch
+                                                                          .name
+                                                                          ?.split(
+                                                                              ':')
+                                                                          .first
+                                                                          .split(
+                                                                              ' ')
+                                                                          .last
+                                                                          .trim() ??
+                                                                      '')))
+                                                              .toList() ??
+                                                          []);
+                                                },
+                                              ))
+                                          .toList(),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          );
                         },
                         title: Text('${chapter.name}'),
                         subtitle: Text('${chapter.url}'),

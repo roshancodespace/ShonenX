@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 void navigateToDetail(BuildContext context, Media media, String tag) {
@@ -9,12 +10,12 @@ void navigateToDetail(BuildContext context, Media media, String tag) {
 }
 
 /// Helper to construct the route and navigate to the watch screen.
-void navigateToWatch({
-  required BuildContext context,
-  required WidgetRef ref,
-  required String animeId,
-  required String animeName,
-}) {
+void navigateToWatch(
+    {required BuildContext context,
+    required WidgetRef ref,
+    required String animeId,
+    required String animeName,
+    required List<EpisodeDataModel> episodes}) {
   // final progress = ref
   //     .read(animeWatchProgressProvider.notifier)
   //     .getMostRecentEpisodeProgressByAnimeId(animeMedia.id!);
@@ -29,5 +30,5 @@ void navigateToWatch({
   // '&startAt=';
 
   AppLogger.d('Navigating to watch screen: $route');
-  context.push(route);
+  context.push(route, extra: episodes);
 }

@@ -13,6 +13,7 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/anime/view_model/playerStateProvider.dart';
 import 'package:shonenx/features/settings/model/experimental_model.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
+import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/main.dart';
 import 'package:shonenx/utils/extractors.dart' as extractor;
@@ -41,27 +42,29 @@ class EpisodeDataState {
   final bool sourceLoading;
   final String? error;
 
-  const EpisodeDataState({
-    this.animeId,
-    this.animeTitle,
-    this.episodes = const [],
-    this.sources = const [],
-    this.subtitles = const [],
-    this.qualityOptions = const [],
-    this.servers = const [],
-    this.jikanMatches = const [],
-    this.headers,
-    this.selectedQualityIdx,
-    this.selectedSourceIdx,
-    this.selectedEpisodeIdx,
-    this.selectedSubtitleIdx,
-    this.selectedCategory = 'sub',
-    this.dubSubSupport = false,
-    this.selectedServer,
-    this.episodesLoading = true,
-    this.sourceLoading = false,
-    this.error,
-  });
+  final String? mMangaUrl;
+
+  const EpisodeDataState(
+      {this.animeId,
+      this.animeTitle,
+      this.episodes = const [],
+      this.sources = const [],
+      this.subtitles = const [],
+      this.qualityOptions = const [],
+      this.servers = const [],
+      this.jikanMatches = const [],
+      this.headers,
+      this.selectedQualityIdx,
+      this.selectedSourceIdx,
+      this.selectedEpisodeIdx,
+      this.selectedSubtitleIdx,
+      this.selectedCategory = 'sub',
+      this.dubSubSupport = false,
+      this.selectedServer,
+      this.episodesLoading = true,
+      this.sourceLoading = false,
+      this.error,
+      this.mMangaUrl});
 
   EpisodeDataState copyWith({
     String? animeId,
@@ -72,17 +75,18 @@ class EpisodeDataState {
     List<Subtitle>? subtitles,
     List<Map<String, dynamic>>? qualityOptions,
     List<String>? servers,
-    List<({JikanMedia result, double similarity})>? jikanMatches,
     int? selectedQualityIdx,
     int? selectedSourceIdx,
     int? selectedEpisodeIdx,
     int? selectedSubtitleIdx,
     String? selectedCategory,
     String? selectedServer,
+    List<({JikanMedia result, double similarity})>? jikanMatches,
     bool? dubSubSupport,
     bool? episodesLoading,
     bool? sourceLoading,
     String? error,
+    String? mMangaUrl,
   }) {
     return EpisodeDataState(
       animeId: animeId ?? this.animeId,
@@ -93,7 +97,6 @@ class EpisodeDataState {
       subtitles: subtitles ?? this.subtitles,
       qualityOptions: qualityOptions ?? this.qualityOptions,
       servers: servers ?? this.servers,
-      jikanMatches: jikanMatches ?? this.jikanMatches,
       selectedQualityIdx: selectedQualityIdx ?? this.selectedQualityIdx,
       selectedSourceIdx: selectedSourceIdx ?? this.selectedSourceIdx,
       selectedEpisodeIdx: selectedEpisodeIdx ?? this.selectedEpisodeIdx,
@@ -101,9 +104,11 @@ class EpisodeDataState {
       selectedCategory: selectedCategory ?? this.selectedCategory,
       selectedServer: selectedServer ?? this.selectedServer,
       dubSubSupport: dubSubSupport ?? this.dubSubSupport,
+      jikanMatches: jikanMatches ?? this.jikanMatches,
       episodesLoading: episodesLoading ?? this.episodesLoading,
       sourceLoading: sourceLoading ?? this.sourceLoading,
       error: error ?? this.error,
+      mMangaUrl: mMangaUrl ?? this.mMangaUrl,
     );
   }
 }
@@ -111,8 +116,10 @@ class EpisodeDataState {
 // The Notifier for fetching and holding episode data
 class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   JikanService get _jikan => JikanService();
-  ExperimentalFeaturesModel get _experimentalFeatures => ref.read(experimentalProvider);
+  ExperimentalFeaturesModel get _experimentalFeatures =>
+      ref.read(experimentalProvider);
   AnimeProvider get _animeProvider => ref.read(selectedAnimeProvider)!;
+  SourceNotifier get _sourceNotifier => ref.read(sourceProvider.notifier);
 
   @override
   EpisodeDataState build() {
@@ -139,23 +146,49 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     }
   }
 
-  Future<void> fetchEpisodes({
-    required String animeTitle,
-    required String animeId,
-    int initialEpisodeIdx = 0,
-    Duration startAt = Duration.zero,
-  }) async {
+  Future<void> fetchEpisodes(
+      {required String animeTitle,
+      required String animeId,
+      required bool force,
+      List<EpisodeDataModel>? episodes,
+      int initialEpisodeIdx = 0,
+      Duration startAt = Duration.zero,
+      String? mMangaUrl}) async {
     state = state.copyWith(
-      episodesLoading: true,
-      error: null,
-      animeId: animeId,
-      animeTitle: animeTitle,
-    );
+        episodesLoading: true,
+        error: null,
+        animeId: animeId,
+        animeTitle: animeTitle,
+        mMangaUrl: mMangaUrl);
+    if (!force && _experimentalFeatures.useMangayomiExtensions) {
+      state = state.copyWith(episodes: episodes, episodesLoading: false);
+      syncEpisodesWithJikan(page: 1);
+      await changeEpisode(initialEpisodeIdx);
+      return;
+    }
 
-    final episodes = await _safeRun<List<EpisodeDataModel>>(
-      () async => (await _animeProvider.getEpisodes(animeId)).episodes ?? [],
-      errorMessage: "Failed to fetch episodes.",
-    );
+    if (_experimentalFeatures.useMangayomiExtensions &&
+        (state.mMangaUrl != null || mMangaUrl != null)) {
+      episodes = await _safeRun<List<EpisodeDataModel>>(
+        () async =>
+            (await _sourceNotifier.getDetails(state.mMangaUrl!))
+                ?.chapters
+                ?.map((ch) => EpisodeDataModel(
+                    title: ch.name?.split(':').last.trim(),
+                    url: ch.url,
+                    number: int.parse(
+                        ch.name?.split(':').first.split(' ').last.trim() ??
+                            '')))
+                .toList() ??
+            [],
+        errorMessage: "Failed to fetch episodes.",
+      );
+    } else {
+      episodes = await _safeRun<List<EpisodeDataModel>>(
+        () async => (await _animeProvider.getEpisodes(animeId)).episodes ?? [],
+        errorMessage: "Failed to fetch episodes.",
+      );
+    }
 
     if (episodes == null || episodes.isEmpty) {
       state = state.copyWith(
@@ -232,7 +265,8 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   Future<void> refreshEpisodes() async {
     if (state.animeId == null) return;
-    fetchEpisodes(animeId: state.animeId!, animeTitle: state.animeTitle!);
+    fetchEpisodes(
+        animeId: state.animeId!, animeTitle: state.animeTitle!, force: true);
   }
 
   Future<void> toggleDubSub() async {
@@ -245,10 +279,6 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   Future<void> changeEpisode(int episodeIdx,
       {Duration startAt = Duration.zero}) async {
-    if (episodeIdx < 0 || episodeIdx >= state.episodes.length - 1) {
-      state = state.copyWith(error: "Invalid episode selected.");
-      return;
-    }
     state = state.copyWith(selectedEpisodeIdx: episodeIdx);
     await _fetchStreamData(startAt: startAt);
   }
@@ -313,12 +343,35 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
     await _safeRun(() async {
       final episode = state.episodes[state.selectedEpisodeIdx!];
-      final data = await _animeProvider.getSources(
-        episode.id ?? '',
-        episode.id ?? '',
-        state.selectedServer,
-        state.selectedCategory,
-      );
+      late BaseSourcesModel? data;
+      final url = state.episodes[state.selectedEpisodeIdx!].url;
+      if (url != null && url.isNotEmpty && _experimentalFeatures.useMangayomiExtensions) {
+        final sources = await _sourceNotifier.getSources(url);
+        data = BaseSourcesModel(
+            sources: sources
+                .map(
+                  (s) => Source(
+                    url: s?.url,
+                    isM3U8: s?.url.contains('.m3u8') ?? false,
+                    isDub:
+                        s?.originalUrl.toLowerCase().contains('dub') ?? false,
+                    quality: s?.quality,
+                  ),
+                )
+                .toList(),
+            tracks: sources[0]
+                    ?.subtitles
+                    ?.map((sub) => Subtitle(url: sub.file, lang: sub.label))
+                    .toList() ??
+                []);
+      } else {
+        data = await _animeProvider.getSources(
+          episode.id ?? '',
+          episode.id ?? '',
+          state.selectedServer,
+          state.selectedCategory,
+        );
+      }
 
       if (data.sources.isEmpty) {
         throw Exception("No sources found.");
@@ -330,9 +383,26 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
         headers: data.headers,
         selectedSourceIdx: 0,
       );
-
-      await _loadAndPlaySource(0, startAt: startAt);
+      if (url != null && url.isNotEmpty) {
+        await _loadAndPlayMSource(0, startAt: startAt);
+      } else {
+        await _loadAndPlaySource(0, startAt: startAt);
+      }
     }, errorMessage: "Failed to load stream");
+  }
+
+  Future<void> _loadAndPlayMSource(int sourceIdx,
+      {Duration startAt = Duration.zero}) async {
+    await _safeRun(() async {
+      final source = state.sources[sourceIdx];
+      state = state.copyWith(
+        qualityOptions: [],
+        selectedSourceIdx: sourceIdx,
+        selectedQualityIdx: null,
+      );
+      if (source.url == null && source.url!.isEmpty) return;
+      ref.read(playerStateProvider.notifier).open(source.url!, startAt);
+    }, errorMessage: "Failed to load source", showSnackBar: true);
   }
 
   Future<void> _loadAndPlaySource(int sourceIndex,

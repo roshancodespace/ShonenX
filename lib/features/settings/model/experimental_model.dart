@@ -8,14 +8,20 @@ part 'experimental_model.g.dart';
 class ExperimentalFeaturesModel {
   @HiveField(0, defaultValue: false)
   bool episodeTitleSync;
+  @HiveField(1, defaultValue: false)
+  bool useMangayomiExtensions;
 
-  ExperimentalFeaturesModel({this.episodeTitleSync = false});
+  ExperimentalFeaturesModel(
+      {this.episodeTitleSync = false, this.useMangayomiExtensions = false});
 
   ExperimentalFeaturesModel copyWith({
     bool? episodeTitleSync,
+    bool? useMangayomiExtensions,
   }) {
     return ExperimentalFeaturesModel(
       episodeTitleSync: episodeTitleSync ?? this.episodeTitleSync,
+      useMangayomiExtensions:
+          useMangayomiExtensions ?? this.useMangayomiExtensions,
     );
   }
 }

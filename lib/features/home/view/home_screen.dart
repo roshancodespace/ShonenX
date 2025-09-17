@@ -5,12 +5,14 @@ import 'package:shonenx/features/home/view_model/homepage_notifier.dart';
 import 'package:shonenx/features/home/view/widget/header_section.dart';
 import 'package:shonenx/features/home/view/widget/home_section.dart';
 import 'package:shonenx/features/home/view/widget/spotlight_section.dart';
+import 'package:shonenx/utils/updater.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    checkForUpdates(context);
     final state = ref.watch(homepageProvider);
 
     if (state.isLoading)

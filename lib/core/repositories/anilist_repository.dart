@@ -85,6 +85,11 @@ class AniListRepository implements AnimeRepository {
     );
   }
 
+   @override
+  Future<MediaListEntry?> getAnimeEntry(int animeId) {
+    return service.getAnimeEntry(animeId);
+  }
+
   @override
   String get name => 'anilist';
 }

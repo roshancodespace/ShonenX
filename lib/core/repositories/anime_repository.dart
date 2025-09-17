@@ -22,6 +22,7 @@ abstract class AnimeRepository {
     String? notes,
     bool? private,
   });
+  Future<MediaListEntry?> getAnimeEntry(int animeId);
   Future<List<Media>> getFavorites();
   Future<List<Media>> searchAnime(String title,
       {int page = 1, int perPage = 10});

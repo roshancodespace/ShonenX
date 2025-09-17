@@ -91,7 +91,8 @@ class WatchlistNotifier extends Notifier<WatchListState> {
           perPage: perPage,
         );
 
-        final oldList = page == 1 ? <MediaListEntry>[] : (state.lists[status] ?? []);
+        final oldList =
+            page == 1 ? <MediaListEntry>[] : (state.lists[status] ?? []);
         final newList = [...oldList, ...pageResponse.mediaList];
 
         state = state.copyWith(
@@ -118,6 +119,17 @@ class WatchlistNotifier extends Notifier<WatchListState> {
         loadingStatuses: {...state.loadingStatuses}..remove(status),
       );
     }
+  }
+
+  void addEntry(MediaListEntry entry) {
+    final status = WatchlistStatus.values.byName(entry.status.toLowerCase());
+
+    state = state.copyWith(
+      lists: {
+        ...state.lists,
+        status: [...?state.lists[status], entry],
+      },
+    );
   }
 
   Future<void> fetchAll({bool force = false}) async {

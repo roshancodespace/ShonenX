@@ -50,15 +50,18 @@ class SourceNotifier extends Notifier<SourceState> {
         activeAnimeRepo: _repo.getActiveAnimeRepo(),
         activeMangaRepo: _repo.getActiveMangaRepo(),
         activeNovelRepo: _repo.getActiveNovelRepo(),
-        activeAnimeSource: state.installedAnimeExtensions.firstWhereOrNull(
-          (source) => source.id == _repo.getActiveAnimeSourceId(),
-        ),
-        activeMangaSource: state.installedAnimeExtensions.firstWhereOrNull(
-          (source) => source.id == _repo.getActiveMangaSourceId(),
-        ),
-        activeNovelSource: state.installedAnimeExtensions.firstWhereOrNull(
-          (source) => source.id == _repo.getActiveNovelSourceId(),
-        ),
+        activeAnimeSource: animeExtensions
+            .where((ext) => ext.isAdded ?? false)
+            .firstWhereOrNull(
+                (source) => source.id == _repo.getActiveAnimeSourceId()),
+        activeMangaSource: mangaExtensions
+            .where((ext) => ext.isAdded ?? false)
+            .firstWhereOrNull(
+                (source) => source.id == _repo.getActiveMangaSourceId()),
+        activeNovelSource: novelExtensions
+            .where((ext) => ext.isAdded ?? false)
+            .firstWhereOrNull(
+                (source) => source.id == _repo.getActiveNovelSourceId()),
       );
     } catch (e, st) {
       AppLogger.e('Error initializing extensions: $e\n$st');

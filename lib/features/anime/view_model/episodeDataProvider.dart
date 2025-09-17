@@ -157,10 +157,11 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     state = state.copyWith(
         episodesLoading: true,
         error: null,
+        selectedEpisodeIdx: initialEpisodeIdx,
         animeId: animeId,
         animeTitle: animeTitle,
         mMangaUrl: mMangaUrl);
-    if (!force && _experimentalFeatures.useMangayomiExtensions) {
+    if ((!force && _experimentalFeatures.useMangayomiExtensions && episodes != null) && episodes.isNotEmpty) {
       state = state.copyWith(episodes: episodes, episodesLoading: false);
       syncEpisodesWithJikan(page: 1);
       await changeEpisode(initialEpisodeIdx);

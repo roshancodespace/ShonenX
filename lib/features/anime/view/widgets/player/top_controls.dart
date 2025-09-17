@@ -50,7 +50,7 @@ class TopControls extends ConsumerWidget {
                   children: [
                     Text(source?.providerName.toUpperCase() ?? "SOURCE",
                         style: Theme.of(context).textTheme.bodySmall),
-                    if (episodeData.selectedEpisodeIdx != null)
+                    if (episodeData.selectedEpisodeIdx != null && episodeData.sources.isNotEmpty)
                       Text(
                         episodeData.episodes[episodeData.selectedEpisodeIdx!]
                                 .title ??

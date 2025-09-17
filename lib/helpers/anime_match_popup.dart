@@ -59,11 +59,11 @@ Future<void> providerAnimeMatchSearch({
       final bestMatch = matchedResults.first.result;
       AppLogger.d('High-confidence match found: ${bestMatch.name}');
       navigateToWatch(
-        context: context,
-        ref: ref,
-        animeId: bestMatch.id!,
-        animeName: bestMatch.name!,
-      );
+          context: context,
+          ref: ref,
+          animeId: bestMatch.id!,
+          animeName: bestMatch.name!,
+          episodes: const []);
       return;
     }
 
@@ -164,11 +164,11 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
   void _selectAnime(BaseAnimeModel anime) {
     Navigator.of(context).pop();
     navigateToWatch(
-      context: context,
-      ref: ref,
-      animeId: anime.id!,
-      animeName: anime.name ?? 'Unknown',
-    );
+        context: context,
+        ref: ref,
+        animeId: anime.id!,
+        animeName: anime.name ?? 'Unknown',
+        episodes: const []);
   }
 
   @override

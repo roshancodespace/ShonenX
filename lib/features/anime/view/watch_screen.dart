@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/features/anime/view/widgets/episodes_panel.dart';
 import 'package:shonenx/features/anime/view/widgets/player/controls_overlay.dart';
 import 'package:shonenx/helpers/ui.dart';
@@ -12,6 +13,7 @@ class WatchScreen extends ConsumerStatefulWidget {
   final String animeName;
   final int? episode;
   final Duration startAt;
+  final List<EpisodeDataModel>? episodes;
 
   const WatchScreen({
     super.key,
@@ -19,6 +21,7 @@ class WatchScreen extends ConsumerStatefulWidget {
     required this.animeName,
     this.startAt = Duration.zero,
     this.episode = 1,
+    this.episodes = const []
   });
 
   @override
@@ -46,6 +49,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
             animeId: widget.animeId,
             initialEpisodeIdx: (widget.episode ?? 1) - 1,
             startAt: widget.startAt,
+            force: false,
+            episodes: widget.episodes
           );
     });
 

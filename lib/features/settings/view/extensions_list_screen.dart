@@ -160,7 +160,7 @@ class ExtensionsListScreen extends ConsumerWidget {
                     final TextEditingController controller =
                         TextEditingController(
                       text:
-                          'https://miraienoki.github.io/anymex-extensions/anime_index.json',
+                          'https://raw.githubusercontent.com/m2k3a/mangayomi-extensions/refs/heads/main/anime_index.json',
                     );
 
                     return AlertDialog(
@@ -171,7 +171,7 @@ class ExtensionsListScreen extends ConsumerWidget {
                           TextField(
                             controller: controller,
                             decoration: const InputDecoration(
-                              hintText: 'https://example.com/repo.json',
+                              hintText: 'https://example.com/anime.json',
                               border: OutlineInputBorder(),
                             ),
                           ),

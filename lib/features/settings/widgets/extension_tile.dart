@@ -2,17 +2,16 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/core_new/models/manga.dart';
+import 'package:shonenx/core_new/models/source.dart';
 import 'package:shonenx/core_new/extensions/fetch_anime_sources.dart';
 import 'package:shonenx/core_new/extensions/fetch_manga_sources.dart';
 import 'package:shonenx/core_new/extensions/fetch_novel_sources.dart';
-import 'package:shonenx/core_new/models/manga.dart';
-import 'package:shonenx/core_new/models/source.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/features/settings/widgets/settings_item.dart';
+import 'package:shonenx/main.dart';
 
-class ExtensionTile extends ConsumerWidget  {
+class ExtensionTile extends ConsumerWidget {
   final Source extension;
   final bool isInstalled;
   final bool selected;
@@ -41,7 +40,15 @@ class ExtensionTile extends ConsumerWidget  {
   }
 
   Future<void> _uninstallSource(WidgetRef ref) async {
-    AppLogger.e('Uninstall failed cuz i didnt make it yet');
+    final sourceNotifier = ref.read(sourceProvider.notifier);
+    await isar.writeTxn(() async {
+      final source = await isar.sources.get(extension.id!);
+      if (source != null) {
+        source.isAdded = false;
+        await isar.sources.put(source);
+      }
+    });
+    await sourceNotifier.initialize();
   }
 
   Future<void> _selectSource(WidgetRef ref) async {
@@ -50,67 +57,105 @@ class ExtensionTile extends ConsumerWidget  {
   }
 
   String _buildExtensionDescription(Source extension, bool isInstalled) {
-    final List<String> parts = [];
-
-    if (extension.version != null) {
-      parts.add('v${extension.version}');
-    }
-
-    if (extension.isNsfw == true) {
-      parts.add('NSFW');
-    }
-
-    if (isInstalled) {
-      parts.add('Installed');
-    } else {
-      parts.add('Available');
-    }
-
-    return parts.join(' • ');
+    final parts = <String>[];
+    if (extension.version != null) parts.add("v${extension.version}");
+    if (extension.isNsfw == true) parts.add("NSFW");
+    parts.add(isInstalled ? "Installed" : "Available");
+    return parts.join(" • ");
   }
 
   @override
-  SettingsItem build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    return SettingsItem(
-      leading: CachedNetworkImage(
-        imageUrl: extension.iconUrl ?? '',
-        errorWidget: (context, url, error) =>
-            const Icon(Icons.error_outline_outlined),
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-      accent: isInstalled ? Colors.green : Colors.blue,
-      title: extension.name ?? 'Unknown Extension',
-      description: _buildExtensionDescription(extension, isInstalled),
-      onTap: () {
-        if (isInstalled) {
-          _selectSource(ref);
-        } else {
-          // Install extension
-          // sourceNotifier.installSource(extension);
-        }
-      },
-      trailingWidgets: [
-        if (isInstalled && selected) const Icon(Icons.check_rounded),
-        if (isInstalled)
-          IconButton(
-              style: IconButton.styleFrom(
-                  backgroundColor: theme.colorScheme.errorContainer,
-                  foregroundColor: theme.colorScheme.onErrorContainer),
-              onPressed: () => _uninstallSource(ref),
-              icon: const Icon(Iconsax.trash)),
-        if (isInstalled)
-          IconButton.filledTonal(
-            onPressed: () => context.push(
-                '/settings/extensions/extension-preference',
-                extra: extension),
-            icon: const Icon(Iconsax.setting_2),
-          )
-        else
-          IconButton.filledTonal(
-            onPressed: () => _installSource(ref),
-            icon: const Icon(Icons.file_download_rounded),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => isInstalled ? _selectSource(ref) : _installSource(ref),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Icon / Logo
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: CachedNetworkImage(
+                  imageUrl: extension.iconUrl ?? '',
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                  errorWidget: (context, url, error) => const Icon(
+                    Icons.error_outline,
+                    size: 40,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+
+              // Title + description
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      extension.name ?? "Unknown Extension",
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _buildExtensionDescription(extension, isInstalled),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // Actions
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isInstalled && selected)
+                    const Icon(Icons.check_rounded, color: Colors.green),
+
+                  if (isInstalled) ...[
+                    IconButton(
+                      tooltip: "Preferences",
+                      onPressed: () => context.push(
+                        '/settings/extensions/extension-preference',
+                        extra: extension,
+                      ),
+                      icon: const Icon(Iconsax.setting_2),
+                    ),
+                    IconButton(
+                      tooltip: "Uninstall",
+                      color: theme.colorScheme.error,
+                      onPressed: () => _uninstallSource(ref),
+                      icon: const Icon(Iconsax.trash),
+                    ),
+                  ] else
+                    IconButton.filledTonal(
+                      tooltip: "Install",
+                      onPressed: () => _installSource(ref),
+                      icon: const Icon(Icons.file_download_rounded),
+                    ),
+                ],
+              )
+            ],
           ),
-      ],
+        ),
+      ),
     );
   }
 }

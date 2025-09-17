@@ -27,7 +27,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
             SettingsSection(
                 title: 'Quality',
                 titleColor: colorScheme.primary,
-                items: [
+                children: [
                   SettingsItem(
                     icon: Icon(Iconsax.video_tick, color: colorScheme.primary),
                     accent: colorScheme.primary,

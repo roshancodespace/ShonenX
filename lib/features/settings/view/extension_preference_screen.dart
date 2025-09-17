@@ -111,10 +111,10 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
             child: SettingsSection(
               title: categoryName,
               titleColor: theme.primary,
-              items: preferences
+              roundness: 16,
+              children: preferences
                   .map((pref) => _buildSettingsItem(context, pref, theme))
                   .toList(),
-              roundness: 16,
             ),
           );
         }).toList(),

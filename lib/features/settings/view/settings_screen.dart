@@ -28,7 +28,7 @@ class SettingsScreen extends ConsumerWidget {
                   title: 'Account',
                   titleColor: colorScheme.primary,
                   onTap: () {},
-                  items: [
+                  children: [
                     SettingsItem(
                       icon: Icon(Iconsax.user, color: colorScheme.primary),
                       accent: colorScheme.primary,
@@ -42,7 +42,7 @@ class SettingsScreen extends ConsumerWidget {
                   title: 'Content & Playback',
                   titleColor: colorScheme.primary,
                   onTap: () {},
-                  items: [
+                  children: [
                     SettingsItem(
                       icon: Icon(Icons.source_outlined,
                           color: colorScheme.primary),
@@ -74,7 +74,7 @@ class SettingsScreen extends ConsumerWidget {
                   title: 'Appearance',
                   titleColor: colorScheme.primary,
                   onTap: () {},
-                  items: [
+                  children: [
                     SettingsItem(
                       icon:
                           Icon(Iconsax.paintbucket, color: colorScheme.primary),
@@ -96,7 +96,7 @@ class SettingsScreen extends ConsumerWidget {
                   title: 'Support',
                   titleColor: colorScheme.primary,
                   onTap: () {},
-                  items: [
+                  children: [
                     SettingsItem(
                       icon:
                           Icon(Iconsax.info_circle, color: colorScheme.primary),
@@ -111,7 +111,7 @@ class SettingsScreen extends ConsumerWidget {
                   title: 'Misc',
                   titleColor: colorScheme.primary,
                   onTap: () {},
-                  items: [
+                  children: [
                     SettingsItem(
                       icon:
                           Icon(Iconsax.info_circle, color: colorScheme.primary),

@@ -34,7 +34,7 @@ class UiSettingsScreen extends ConsumerWidget {
               SettingsSection(
                   title: 'Content Display',
                   titleColor: colorScheme.primary,
-                  items: [
+                  children: [
                     SettingsItem(
                       icon: Icon(Iconsax.card, color: colorScheme.primary),
                       accent: colorScheme.primary,

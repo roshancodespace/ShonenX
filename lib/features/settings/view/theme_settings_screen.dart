@@ -40,7 +40,7 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
               SettingsSection(
                   title: 'Theme',
                   titleColor: colorScheme.primary,
-                  items: [
+                  children: [
                     SettingsItem(
                       icon: const Icon(Icons.palette),
                       accent: colorScheme.primary,
@@ -75,7 +75,7 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
               SettingsSection(
                   title: 'Advanced',
                   titleColor: colorScheme.primary,
-                  items: [
+                  children: [
                     if (themeSettings.themeMode == 'dark' ||
                         (themeSettings.themeMode == 'system' &&
                             Theme.of(context).brightness ==

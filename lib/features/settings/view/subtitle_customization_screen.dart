@@ -29,7 +29,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
             SettingsSection(
                 title: 'Text',
                 titleColor: Theme.of(context).colorScheme.primary,
-                items: [
+                children: [
                   SettingsItem(
                     icon: Icon(Iconsax.text,
                         color: Theme.of(context).colorScheme.primary),
@@ -71,7 +71,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
             SettingsSection(
                 title: 'Style',
                 titleColor: Theme.of(context).colorScheme.primary,
-                items: [
+                children: [
                   SettingsItem(
                     icon: Icon(Iconsax.text_bold,
                         color: Theme.of(context).colorScheme.primary),
@@ -101,7 +101,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
             SettingsSection(
                 title: 'Background',
                 titleColor: Theme.of(context).colorScheme.primary,
-                items: [
+                children: [
                   SettingsItem(
                     icon: Icon(Iconsax.square,
                         color: Theme.of(context).colorScheme.primary),
@@ -124,7 +124,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
             SettingsSection(
                 title: 'Shadow',
                 titleColor: Theme.of(context).colorScheme.primary,
-                items: [
+                children: [
                   SettingsItem(
                     icon: Icon(Iconsax.ghost,
                         color: Theme.of(context).colorScheme.primary),
@@ -143,7 +143,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
               SettingsSection(
                   title: 'Shadow Settings',
                   titleColor: Theme.of(context).colorScheme.primary,
-                  items: [
+                  children: [
                     SettingsItem(
                       icon: Icon(Iconsax.ghost,
                           color: Theme.of(context).colorScheme.primary),
@@ -185,7 +185,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
               SettingsSection(
                   title: 'Position',
                   titleColor: Theme.of(context).colorScheme.primary,
-                  items: [
+                  children: [
                     SettingsItem(
                       icon: Icon(Iconsax.arrow_up_1,
                           color: Theme.of(context).colorScheme.primary),

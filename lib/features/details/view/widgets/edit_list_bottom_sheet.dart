@@ -12,6 +12,7 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
 import 'package:collection/collection.dart';
+import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 
 /// Bottom sheet for editing anime list entry
 class EditListBottomSheet extends ConsumerStatefulWidget {
@@ -56,7 +57,7 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
     _scoreController = TextEditingController(text: '0');
     _repeatsController = TextEditingController(text: '0');
     _notesController = TextEditingController();
-    _fetchEntry(ref);
+    _loadEntry(ref);
     _isPrivate = false;
   }
 
@@ -69,7 +70,7 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
     super.dispose();
   }
 
-  Future<void> _fetchEntry(WidgetRef ref) async {
+  Future<void> _loadEntry(WidgetRef ref) async {
     setState(() {
       _isFetching = true;
     });
@@ -80,18 +81,41 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
     }
     final watchlist = ref.read(watchlistProvider);
     final watchlistNotifier = ref.read(watchlistProvider.notifier);
+    final animeRepo = ref.read(animeRepositoryProvider);
 
     switch (auth.authPlatform!) {
       case AuthPlatform.anilist:
         {
           final entries = watchlist.lists.entries;
-          final entry = entries.map((entry) => entry.value.firstWhereOrNull((media) => media.id == widget.anime.id!));
-          // Todo: Entry sync load
-          if (entry.isNotEmpty ) {
-            AppLogger.d('Entry is already in list');
-            return;
+          final entry = entries
+              .expand((e) => e.value)
+              .firstWhereOrNull((media) => media.id == widget.anime.id);
+          if (entry != null) {
+            setState(() {
+              _selectedStatus = entry.status;
+              _progressController.text = entry.progress.toString();
+              _scoreController.text = entry.score.toString();
+              _repeatsController.text = entry.repeat.toString();
+              _notesController.text = entry.notes;
+              _startDate = entry.startedAt?.toDateTime;
+              _completedDate = entry.completedAt?.toDateTime;
+              _isPrivate = entry.isPrivate;
+            });
+          } else {
+            final entry = await animeRepo.getAnimeEntry(widget.anime.id!);
+            if (entry == null) return;
+            watchlistNotifier.addEntry(entry);
+            setState(() {
+              _selectedStatus = entry.status;
+              _progressController.text = entry.progress.toString();
+              _scoreController.text = entry.score.toString();
+              _repeatsController.text = entry.repeat.toString();
+              _notesController.text = entry.notes;
+              _startDate = entry.startedAt?.toDateTime;
+              _completedDate = entry.completedAt?.toDateTime;
+              _isPrivate = entry.isPrivate;
+            });
           }
-          AppLogger.d('Entry is being fetched');
           break;
         }
       case AuthPlatform.mal:
@@ -104,6 +128,9 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
           break;
         }
     }
+    setState(() {
+      _isFetching = false;
+    });
   }
 
   Future<void> _saveChanges(WidgetRef ref) async {
@@ -229,9 +256,15 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Edit Entry',
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                Text('Edit Entry',
+                    style: theme.textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(width: 10),
+                if (_isFetching) const CircularProgressIndicator()
+              ],
+            ),
             const SizedBox(height: 24),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,

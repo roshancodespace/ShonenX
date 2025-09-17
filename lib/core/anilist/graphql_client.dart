@@ -9,7 +9,7 @@ class AnilistClient {
       defaultHeaders: accessToken != null && accessToken.isNotEmpty
           ? {'Authorization': 'Bearer $accessToken'}
           : {},
-    ); // ✅ Don't include Authorization if null
+    );
     return GraphQLClient(
       link: httpLink,
       cache: GraphQLCache(),

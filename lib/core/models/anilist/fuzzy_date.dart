@@ -18,6 +18,11 @@ class FuzzyDate {
         'month': month,
         'day': day,
       };
+
+  DateTime? get toDateTime {
+    if (year == null || month == null || day == null) return null;
+    return DateTime(year!, month!, day!);
+  }
 }
 
 class FuzzyDateInput {
@@ -33,4 +38,3 @@ class FuzzyDateInput {
         'day': day,
       };
 }
-

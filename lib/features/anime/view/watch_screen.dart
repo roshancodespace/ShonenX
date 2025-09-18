@@ -14,6 +14,7 @@ class WatchScreen extends ConsumerStatefulWidget {
   final int? episode;
   final Duration startAt;
   final List<EpisodeDataModel>? episodes;
+  final String? mMangaUrl;
 
   const WatchScreen({
     super.key,
@@ -21,7 +22,8 @@ class WatchScreen extends ConsumerStatefulWidget {
     required this.animeName,
     this.startAt = Duration.zero,
     this.episode = 1,
-    this.episodes = const []
+    this.episodes = const [],
+    this.mMangaUrl
   });
 
   @override
@@ -50,7 +52,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
             initialEpisodeIdx: (widget.episode ?? 1) - 1,
             startAt: widget.startAt,
             force: false,
-            episodes: widget.episodes
+            mMangaUrl: widget.mMangaUrl,
+            episodes: widget.episodes ?? []
           );
     });
 

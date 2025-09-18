@@ -11,12 +11,12 @@ enum SettingsItemType {
 }
 
 enum SettingsItemLayout {
-  auto, // Automatically chooses based on screen size and content
-  horizontal, // Forces horizontal layout
-  vertical, // Forces vertical layout
+  auto,
+  horizontal,
+  vertical,
 }
 
-class SettingsItem extends StatelessWidget {
+class SettingsItem extends StatefulWidget {
   final Widget? leading;
   final Icon? icon;
   final Color? iconColor;
@@ -72,7 +72,7 @@ class SettingsItem extends StatelessWidget {
     required this.description,
     this.leading,
     this.onTap,
-    this.roundness = 12,
+    this.roundness = 16,
     this.type = SettingsItemType.normal,
     this.isSelected = false,
     this.isInSelectionMode = false,
@@ -93,53 +93,169 @@ class SettingsItem extends StatelessWidget {
     this.onSegmentedChanged,
     this.isCompact = false,
     this.trailingWidgets,
-    this.layoutType = SettingsItemLayout.auto, // New parameter
+    this.layoutType = SettingsItemLayout.auto,
   });
 
   @override
+  State<SettingsItem> createState() => _SettingsItemState();
+}
+
+class _SettingsItemState extends State<SettingsItem>
+    with TickerProviderStateMixin {
+  late AnimationController _hoverController;
+  late AnimationController _tapController;
+  late Animation<double> _elevationAnimation;
+  late Animation<double> _scaleAnimation;
+  bool _isHovered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _hoverController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _tapController = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+
+    _elevationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 4.0,
+    ).animate(CurvedAnimation(
+      parent: _hoverController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.98,
+    ).animate(CurvedAnimation(
+      parent: _tapController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _hoverController.dispose();
+    _tapController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final bool shouldGreyOut =
-        type == SettingsItemType.selectable && isInSelectionMode && !isSelected;
+    final bool shouldGreyOut = widget.type == SettingsItemType.selectable &&
+        widget.isInSelectionMode &&
+        !widget.isSelected;
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 600;
-    final effectiveCompact = isCompact || isSmallScreen;
+    final effectiveCompact = widget.isCompact || isSmallScreen;
 
-    final dimensions =
-        _getResponsiveDimensions(effectiveCompact, isSmallScreen);
+    final dimensions = _getResponsiveDimensions(effectiveCompact, isSmallScreen);
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
 
-    return Opacity(
-      opacity: shouldGreyOut ? 0.5 : 1.0,
-      child: Card(
-        elevation: effectiveCompact ? 1 : 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(roundness),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(roundness),
-          child: InkWell(
-            onTap: _shouldDisableOnTap() ? null : onTap,
-            borderRadius: BorderRadius.circular(roundness),
-            child: Padding(
-              padding: dimensions.padding,
-              child: _buildLayout(
-                context,
-                effectiveCompact,
-                isSmallScreen,
-                dimensions,
+    return AnimatedBuilder(
+      animation: Listenable.merge([_hoverController, _tapController]),
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 150),
+            opacity: shouldGreyOut ? 0.4 : 1.0,
+            child: Container(
+              margin: EdgeInsets.symmetric(
+                vertical: effectiveCompact ? 3 : 4,
+                horizontal: effectiveCompact ? 2 : 4,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(widget.roundness),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDarkMode
+                        ? Colors.black.withOpacity(0.3)
+                        : Colors.black.withOpacity(0.08),
+                    blurRadius: 8 + _elevationAnimation.value,
+                    offset: Offset(0, 2 + _elevationAnimation.value / 2),
+                    spreadRadius: -2,
+                  ),
+                  if (_isHovered)
+                    BoxShadow(
+                      color: widget.accent.withOpacity(0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                      spreadRadius: -4,
+                    ),
+                ],
+              ),
+              child: Material(
+                color: isDarkMode
+                    ? Colors.grey[900]?.withOpacity(0.7)
+                    : Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(widget.roundness),
+                child: InkWell(
+                  onTap: _shouldDisableOnTap() ? null : widget.onTap,
+                  onTapDown: (_) => _tapController.forward(),
+                  onTapUp: (_) => _tapController.reverse(),
+                  onTapCancel: () => _tapController.reverse(),
+                  borderRadius: BorderRadius.circular(widget.roundness),
+                  splashColor: widget.accent.withOpacity(0.1),
+                  highlightColor: widget.accent.withOpacity(0.05),
+                  child: MouseRegion(
+                    onEnter: (_) {
+                      setState(() => _isHovered = true);
+                      _hoverController.forward();
+                    },
+                    onExit: (_) {
+                      setState(() => _isHovered = false);
+                      _hoverController.reverse();
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(widget.roundness),
+                        border: Border.all(
+                          color: isDarkMode
+                              ? Colors.white.withOpacity(0.08)
+                              : Colors.black.withOpacity(0.06),
+                          width: 0.5,
+                        ),
+                        gradient: _isHovered
+                            ? LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  widget.accent.withOpacity(0.03),
+                                  widget.accent.withOpacity(0.01),
+                                ],
+                              )
+                            : null,
+                      ),
+                      padding: dimensions.padding,
+                      child: _buildLayout(
+                        context,
+                        effectiveCompact,
+                        isSmallScreen,
+                        dimensions,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   bool _shouldDisableOnTap() {
-    return type == SettingsItemType.toggleable ||
-        type == SettingsItemType.slider ||
-        type == SettingsItemType.dropdown ||
-        type == SettingsItemType.segmentedToggle;
+    return widget.type == SettingsItemType.toggleable ||
+        widget.type == SettingsItemType.slider ||
+        widget.type == SettingsItemType.dropdown ||
+        widget.type == SettingsItemType.segmentedToggle;
   }
 
   Widget _buildLayout(
@@ -148,7 +264,6 @@ class SettingsItem extends StatelessWidget {
     bool isSmallScreen,
     ResponsiveDimensions dimensions,
   ) {
-    // Determine layout based on the layoutType parameter
     final bool useVerticalLayout = _shouldUseVerticalLayout(
       isSmallScreen,
       effectiveCompact,
@@ -161,23 +276,21 @@ class SettingsItem extends StatelessWidget {
   }
 
   bool _shouldUseVerticalLayout(bool isSmallScreen, bool effectiveCompact) {
-    // Respect the explicit layout choice if not auto
-    switch (layoutType) {
+    switch (widget.layoutType) {
       case SettingsItemLayout.horizontal:
         return false;
       case SettingsItemLayout.vertical:
         return true;
       case SettingsItemLayout.auto:
       default:
-        // Auto behavior - use vertical layout for complex controls on small screens
         return isSmallScreen && _needsVerticalLayoutByContent();
     }
   }
 
   bool _needsVerticalLayoutByContent() {
-    return type == SettingsItemType.dropdown ||
-        type == SettingsItemType.slider ||
-        type == SettingsItemType.segmentedToggle;
+    return widget.type == SettingsItemType.dropdown ||
+        widget.type == SettingsItemType.slider ||
+        widget.type == SettingsItemType.segmentedToggle;
   }
 
   Widget _buildHorizontalLayout(
@@ -185,7 +298,7 @@ class SettingsItem extends StatelessWidget {
     bool effectiveCompact,
     ResponsiveDimensions dimensions,
   ) {
-    if (type == SettingsItemType.dropdown) {
+    if (widget.type == SettingsItemType.dropdown) {
       return _buildHorizontalDropdownLayout(
           context, effectiveCompact, dimensions);
     }
@@ -198,7 +311,7 @@ class SettingsItem extends StatelessWidget {
         _buildTitleAndDescription(effectiveCompact, dimensions),
         if (_shouldShowDefaultTrailing())
           _buildDefaultTrailingWidget(effectiveCompact),
-        if (trailingWidgets != null)
+        if (widget.trailingWidgets != null)
           ..._buildCustomTrailingWidgets(effectiveCompact),
       ],
     );
@@ -210,7 +323,6 @@ class SettingsItem extends StatelessWidget {
     ResponsiveDimensions dimensions,
   ) {
     final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
 
     return IntrinsicHeight(
       child: Row(
@@ -224,21 +336,23 @@ class SettingsItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: TextStyle(
+                  widget.title,
+                  style: theme.textTheme.titleMedium?.copyWith(
                     fontSize: dimensions.titleFontSize,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
-                if (description.isNotEmpty) ...[
-                  SizedBox(height: effectiveCompact ? 1 : 2),
+                if (widget.description.isNotEmpty) ...[
+                  SizedBox(height: effectiveCompact ? 2 : 4),
                   Text(
-                    description,
-                    style: TextStyle(
+                    widget.description,
+                    style: theme.textTheme.bodySmall?.copyWith(
                       fontSize: dimensions.descriptionFontSize,
-                      color: Colors.grey[600],
+                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                      height: 1.3,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -248,63 +362,14 @@ class SettingsItem extends StatelessWidget {
             ),
           ),
           SizedBox(width: dimensions.spacing),
-          Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.4,
-              minWidth: 100,
-            ),
-            padding: EdgeInsets.symmetric(
-              horizontal: effectiveCompact ? 8 : 12,
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: dropdownValue,
-                isExpanded: true,
-                icon: Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: (iconColor ?? accent).withOpacity(0.8),
-                  size: effectiveCompact ? 20 : 24,
-                ),
-                style: TextStyle(
-                  fontSize: effectiveCompact ? 14 : 15,
-                  color: theme.textTheme.bodyMedium?.color,
-                  fontWeight: FontWeight.w500,
-                ),
-                dropdownColor: isDarkMode ? Colors.grey[900] : Colors.white,
-                borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
-                elevation: 2,
-                menuMaxHeight: 300,
-                itemHeight: effectiveCompact ? 48 : 52,
-                items: dropdownItems?.map((String item) {
-                  return DropdownMenuItem<String>(
-                    value: item,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: effectiveCompact ? 8 : 12,
-                      ),
-                      child: Text(
-                        item,
-                        style: TextStyle(
-                          fontSize: effectiveCompact ? 14 : 15,
-                          color: theme.textTheme.bodyMedium?.color,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  );
-                }).toList(),
-                onChanged: onDropdownChanged,
-              ),
-            ),
-          ),
+          _buildEnhancedDropdown(context, effectiveCompact, isInline: true),
         ],
       ),
     );
   }
 
   List<Widget> _buildCustomTrailingWidgets(bool effectiveCompact) {
-    return trailingWidgets!.map((widget) {
+    return widget.trailingWidgets!.map((widget) {
       return Padding(
         padding: EdgeInsets.only(left: effectiveCompact ? 8 : 12),
         child: widget,
@@ -317,24 +382,6 @@ class SettingsItem extends StatelessWidget {
     bool effectiveCompact,
     ResponsiveDimensions dimensions,
   ) {
-    if (type == SettingsItemType.dropdown) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              _buildIconContainer(effectiveCompact, dimensions),
-              SizedBox(width: dimensions.spacing),
-              _buildTitleAndDescription(effectiveCompact, dimensions,
-                  isVertical: true),
-            ],
-          ),
-          SizedBox(height: effectiveCompact ? 8 : 12),
-          _buildDropdown(context, effectiveCompact),
-        ],
-      );
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -347,17 +394,21 @@ class SettingsItem extends StatelessWidget {
             const Spacer(),
             if (_shouldShowDefaultTrailing())
               _buildDefaultTrailingWidget(effectiveCompact),
-            if (trailingWidgets != null)
+            if (widget.trailingWidgets != null)
               ..._buildCustomTrailingWidgets(effectiveCompact),
           ],
         ),
-        if (type == SettingsItemType.segmentedToggle) ...[
-          SizedBox(height: effectiveCompact ? 8 : 12),
-          _buildSegmentedToggle(context, effectiveCompact),
+        if (widget.type == SettingsItemType.dropdown) ...[
+          SizedBox(height: effectiveCompact ? 12 : 16),
+          _buildEnhancedDropdown(context, effectiveCompact),
         ],
-        if (type == SettingsItemType.slider) ...[
-          SizedBox(height: effectiveCompact ? 8 : 12),
-          _buildSlider(context, effectiveCompact),
+        if (widget.type == SettingsItemType.segmentedToggle) ...[
+          SizedBox(height: effectiveCompact ? 12 : 16),
+          _buildEnhancedSegmentedToggle(context, effectiveCompact),
+        ],
+        if (widget.type == SettingsItemType.slider) ...[
+          SizedBox(height: effectiveCompact ? 12 : 16),
+          _buildEnhancedSlider(context, effectiveCompact),
         ]
       ],
     );
@@ -365,24 +416,49 @@ class SettingsItem extends StatelessWidget {
 
   Widget _buildIconContainer(
       bool effectiveCompact, ResponsiveDimensions dimensions) {
-    return Container(
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       width: dimensions.iconContainerSize,
       height: dimensions.iconContainerSize,
       decoration: BoxDecoration(
-        color: (iconColor ?? accent).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(effectiveCompact ? 6 : 8),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            (widget.iconColor ?? widget.accent).withOpacity(0.15),
+            (widget.iconColor ?? widget.accent).withOpacity(0.08),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
+        border: Border.all(
+          color: (widget.iconColor ?? widget.accent).withOpacity(0.2),
+          width: 0.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDarkMode
+                ? Colors.black.withOpacity(0.3)
+                : (widget.iconColor ?? widget.accent).withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+            spreadRadius: -2,
+          ),
+        ],
       ),
       child: Center(
-        child: (icon != null)
+        child: (widget.icon != null)
             ? IconTheme(
                 data: IconThemeData(
-                  color: (iconColor ?? accent),
+                  color: (widget.iconColor ?? widget.accent),
                   size: dimensions.iconSize,
                 ),
-                child: icon!,
+                child: widget.icon!,
               )
-            : (leading != null)
-                ? leading
+            : (widget.leading != null)
+                ? widget.leading
                 : const SizedBox.shrink(),
       ),
     );
@@ -393,28 +469,33 @@ class SettingsItem extends StatelessWidget {
     ResponsiveDimensions dimensions, {
     bool isVertical = false,
   }) {
+    final theme = Theme.of(context);
+
     return Expanded(
       flex: isVertical ? 0 : 1,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            title,
-            style: TextStyle(
+            widget.title,
+            style: theme.textTheme.titleMedium?.copyWith(
               fontSize: dimensions.titleFontSize,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
+              height: 1.2,
+              letterSpacing: -0.2,
             ),
             overflow: TextOverflow.ellipsis,
             maxLines: (effectiveCompact || isVertical) ? 1 : 2,
           ),
-          if (description.isNotEmpty &&
-              (!effectiveCompact || description.isNotEmpty)) ...[
-            SizedBox(height: effectiveCompact ? 1 : 2),
+          if (widget.description.isNotEmpty) ...[
+            SizedBox(height: effectiveCompact ? 2 : 4),
             Text(
-              description,
-              style: TextStyle(
+              widget.description,
+              style: theme.textTheme.bodySmall?.copyWith(
                 fontSize: dimensions.descriptionFontSize,
-                color: Colors.grey[600],
+                color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                height: 1.3,
+                letterSpacing: 0.1,
               ),
               overflow: TextOverflow.ellipsis,
               maxLines: (effectiveCompact || isVertical) ? 1 : 2,
@@ -425,43 +506,56 @@ class SettingsItem extends StatelessWidget {
     );
   }
 
-  Widget _buildSegmentedToggle(BuildContext context, bool effectiveCompact) {
-    if (segmentedOptions == null ||
-        segmentedLabels == null ||
-        segmentedOptions!.length != 3) {
+  Widget _buildEnhancedSegmentedToggle(BuildContext context, bool effectiveCompact) {
+    if (widget.segmentedOptions == null ||
+        widget.segmentedLabels == null ||
+        widget.segmentedOptions!.length != 3) {
       return const SizedBox.shrink();
     }
 
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Container(
       decoration: BoxDecoration(
-        color: accent.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
+        color: isDarkMode
+            ? Colors.grey[850]?.withOpacity(0.5)
+            : Colors.grey[50],
+        borderRadius: BorderRadius.circular(effectiveCompact ? 12 : 14),
+        border: Border.all(
+          color: isDarkMode
+              ? Colors.white.withOpacity(0.1)
+              : Colors.black.withOpacity(0.08),
+          width: 0.5,
+        ),
       ),
+      padding: const EdgeInsets.all(4),
       child: Row(
         children: List.generate(3, (index) {
-          final isSelected = segmentedSelectedIndex == index;
+          final isSelected = widget.segmentedSelectedIndex == index;
           return Expanded(
             child: GestureDetector(
-              onTap: () => onSegmentedChanged?.call(index),
+              onTap: () => widget.onSegmentedChanged?.call(index),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
-                margin: const EdgeInsets.all(2),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOutCubic,
                 padding: EdgeInsets.symmetric(
-                  vertical: effectiveCompact ? 8 : 10,
-                  horizontal: effectiveCompact ? 12 : 16,
+                  vertical: effectiveCompact ? 10 : 12,
+                  horizontal: effectiveCompact ? 8 : 12,
                 ),
                 decoration: BoxDecoration(
-                  color:
-                      isSelected ? (iconColor ?? accent) : Colors.transparent,
-                  borderRadius:
-                      BorderRadius.circular(effectiveCompact ? 8 : 10),
+                  color: isSelected
+                      ? (widget.iconColor ?? widget.accent)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(effectiveCompact ? 8 : 10),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: accent.withOpacity(0.3),
-                            blurRadius: 4,
+                            color: (widget.iconColor ?? widget.accent)
+                                .withOpacity(0.3),
+                            blurRadius: 8,
                             offset: const Offset(0, 2),
+                            spreadRadius: -1,
                           ),
                         ]
                       : null,
@@ -469,24 +563,32 @@ class SettingsItem extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    IconTheme(
-                      data: IconThemeData(
-                        color:
-                            isSelected ? Colors.white : (iconColor ?? accent),
-                        size: effectiveCompact ? 16 : 18,
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: IconTheme(
+                        data: IconThemeData(
+                          color: isSelected
+                              ? Colors.white
+                              : (widget.iconColor ?? widget.accent)
+                                  .withOpacity(0.7),
+                          size: effectiveCompact ? 16 : 18,
+                        ),
+                        child: widget.segmentedOptions![index],
                       ),
-                      child: segmentedOptions![index],
                     ),
                     if (!effectiveCompact) ...[
                       const SizedBox(width: 6),
-                      Text(
-                        segmentedLabels![index],
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 200),
                         style: TextStyle(
                           fontSize: effectiveCompact ? 11 : 12,
                           fontWeight: FontWeight.w600,
-                          color:
-                              isSelected ? Colors.white : (iconColor ?? accent),
+                          color: isSelected
+                              ? Colors.white
+                              : (widget.iconColor ?? widget.accent)
+                                  .withOpacity(0.7),
                         ),
+                        child: Text(widget.segmentedLabels![index]),
                       ),
                     ],
                   ],
@@ -499,54 +601,72 @@ class SettingsItem extends StatelessWidget {
     );
   }
 
-  Widget _buildDropdown(BuildContext context, bool effectiveCompact) {
+  Widget _buildEnhancedDropdown(BuildContext context, bool effectiveCompact,
+      {bool isInline = false}) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
 
     return Container(
-      width: double.infinity,
+      width: isInline ? null : double.infinity,
+      constraints: isInline
+          ? BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.4,
+              minWidth: 120,
+            )
+          : null,
       decoration: BoxDecoration(
         color: isDarkMode
             ? Colors.grey[850]?.withOpacity(0.5)
-            : Colors.grey[100]?.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
+            : Colors.grey[50],
+        borderRadius: BorderRadius.circular(effectiveCompact ? 12 : 14),
         border: Border.all(
-          color: isDarkMode ? Colors.grey[700]! : accent.withOpacity(0.2),
-          width: 1,
+          color: isDarkMode
+              ? Colors.white.withOpacity(0.1)
+              : Colors.black.withOpacity(0.08),
+          width: 0.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: isDarkMode
+                ? Colors.black.withOpacity(0.2)
+                : Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+            spreadRadius: -2,
+          ),
+        ],
       ),
       padding: EdgeInsets.symmetric(
-        horizontal: effectiveCompact ? 12 : 16,
-        vertical: effectiveCompact ? 2 : 4,
+        horizontal: effectiveCompact ? 14 : 16,
+        vertical: effectiveCompact ? 4 : 6,
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: dropdownValue,
+          value: widget.dropdownValue,
           isExpanded: true,
           icon: Icon(
             Icons.keyboard_arrow_down_rounded,
-            color: (iconColor ?? accent).withOpacity(0.8),
+            color: (widget.iconColor ?? widget.accent).withOpacity(0.8),
             size: effectiveCompact ? 20 : 24,
           ),
-          style: TextStyle(
+          style: theme.textTheme.bodyMedium?.copyWith(
             fontSize: effectiveCompact ? 14 : 15,
-            color: theme.textTheme.bodyMedium?.color,
             fontWeight: FontWeight.w500,
           ),
           dropdownColor: isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
-          elevation: 2,
+          borderRadius: BorderRadius.circular(effectiveCompact ? 12 : 14),
+          elevation: 8,
           menuMaxHeight: 300,
           itemHeight: effectiveCompact ? 48 : 52,
           selectedItemBuilder: (BuildContext context) {
-            return dropdownItems?.map<Widget>((String item) {
+            return widget.dropdownItems?.map<Widget>((String item) {
                   return Container(
                     alignment: Alignment.centerLeft,
                     child: Text(
                       item,
                       style: TextStyle(
                         fontSize: effectiveCompact ? 14 : 15,
-                        color: (iconColor ?? accent),
+                        color: (widget.iconColor ?? widget.accent),
                         fontWeight: FontWeight.w600,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -555,7 +675,7 @@ class SettingsItem extends StatelessWidget {
                 }).toList() ??
                 [];
           },
-          items: dropdownItems?.map((String item) {
+          items: widget.dropdownItems?.map((String item) {
             return DropdownMenuItem<String>(
               value: item,
               child: Padding(
@@ -564,9 +684,8 @@ class SettingsItem extends StatelessWidget {
                 ),
                 child: Text(
                   item,
-                  style: TextStyle(
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     fontSize: effectiveCompact ? 14 : 15,
-                    color: theme.textTheme.bodyMedium?.color,
                     fontWeight: FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -574,73 +693,120 @@ class SettingsItem extends StatelessWidget {
               ),
             );
           }).toList(),
-          onChanged: onDropdownChanged,
+          onChanged: widget.onDropdownChanged,
         ),
       ),
     );
   }
 
-  Widget _buildSlider(BuildContext context, bool effectiveCompact) {
-    return Row(
-      children: [
-        Expanded(
-          child: SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: accent,
-              inactiveTrackColor: accent.withOpacity(0.3),
-              thumbColor: accent,
-              overlayColor: accent.withOpacity(0.2),
-              trackHeight: effectiveCompact ? 2 : 3,
-              thumbShape: RoundSliderThumbShape(
-                enabledThumbRadius: effectiveCompact ? 6 : 8,
+  Widget _buildEnhancedSlider(BuildContext context, bool effectiveCompact) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: effectiveCompact ? 4 : 8,
+        vertical: effectiveCompact ? 8 : 12,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(effectiveCompact ? 12 : 14),
+        color: theme.brightness == Brightness.dark
+            ? Colors.grey[850]?.withOpacity(0.3)
+            : Colors.grey[50]?.withOpacity(0.8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                activeTrackColor: widget.accent,
+                inactiveTrackColor: widget.accent.withOpacity(0.2),
+                thumbColor: widget.accent,
+                overlayColor: widget.accent.withOpacity(0.15),
+                trackHeight: effectiveCompact ? 3 : 4,
+                thumbShape: RoundSliderThumbShape(
+                  enabledThumbRadius: effectiveCompact ? 8 : 10,
+                ),
+                overlayShape: RoundSliderOverlayShape(
+                  overlayRadius: effectiveCompact ? 16 : 20,
+                ),
+                tickMarkShape: const RoundSliderTickMarkShape(
+                  tickMarkRadius: 2,
+                ),
+                activeTickMarkColor: widget.accent.withOpacity(0.7),
+                inactiveTickMarkColor: widget.accent.withOpacity(0.3),
               ),
-              overlayShape: RoundSliderOverlayShape(
-                overlayRadius: effectiveCompact ? 12 : 16,
+              child: Slider(
+                value: widget.sliderValue ?? 0,
+                min: widget.sliderMin ?? 0,
+                max: widget.sliderMax ?? 100,
+                divisions: widget.sliderDivisions,
+                onChanged: widget.onSliderChanged,
               ),
             ),
-            child: Slider(
-              value: sliderValue ?? 0,
-              min: sliderMin ?? 0,
-              max: sliderMax ?? 100,
-              divisions: sliderDivisions,
-              onChanged: onSliderChanged,
+          ),
+          SizedBox(width: effectiveCompact ? 8 : 12),
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: effectiveCompact ? 8 : 10,
+              vertical: effectiveCompact ? 4 : 6,
+            ),
+            decoration: BoxDecoration(
+              color: widget.accent.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(effectiveCompact ? 8 : 10),
+            ),
+            child: Text(
+              '${(widget.sliderValue ?? 0).toStringAsFixed(widget.sliderDivisions != null ? 0 : 1)}${widget.sliderSuffix ?? ''}',
+              style: TextStyle(
+                fontSize: effectiveCompact ? 13 : 14,
+                fontWeight: FontWeight.w600,
+                color: widget.accent,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
-        ),
-        SizedBox(width: effectiveCompact ? 6 : 8),
-        Text(
-          '${(sliderValue ?? 0).toStringAsFixed(sliderDivisions != null ? 0 : 1)}${sliderSuffix ?? ''}',
-          style: TextStyle(
-            fontSize: effectiveCompact ? 13 : 14,
-            fontWeight: FontWeight.w500,
-            color: accent,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   bool _shouldShowDefaultTrailing() {
-    return trailingWidgets == null &&
-        type != SettingsItemType.slider &&
-        type != SettingsItemType.dropdown &&
-        type != SettingsItemType.segmentedToggle;
+    return widget.trailingWidgets == null &&
+        widget.type != SettingsItemType.slider &&
+        widget.type != SettingsItemType.dropdown &&
+        widget.type != SettingsItemType.segmentedToggle;
   }
 
   Widget _buildDefaultTrailingWidget(bool effectiveCompact) {
-    switch (type) {
+    final theme = Theme.of(context);
+
+    switch (widget.type) {
       case SettingsItemType.selectable:
-        if (isSelected) {
-          return Container(
-            width: effectiveCompact ? 20 : 24,
-            height: effectiveCompact ? 20 : 24,
+        if (widget.isSelected) {
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: effectiveCompact ? 24 : 28,
+            height: effectiveCompact ? 24 : 28,
             decoration: BoxDecoration(
-              color: iconColor,
-              borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  widget.iconColor ?? widget.accent,
+                  (widget.iconColor ?? widget.accent).withOpacity(0.8),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(effectiveCompact ? 12 : 14),
+              boxShadow: [
+                BoxShadow(
+                  color: (widget.iconColor ?? widget.accent).withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Icon(
-              Icons.check,
-              size: effectiveCompact ? 14 : 16,
+              Icons.check_rounded,
+              size: effectiveCompact ? 16 : 18,
               color: Colors.white,
             ),
           );
@@ -650,11 +816,12 @@ class SettingsItem extends StatelessWidget {
 
       case SettingsItemType.toggleable:
         return Transform.scale(
-          scale: effectiveCompact ? 0.8 : 1.0,
-          child: Switch(
-            value: toggleValue ?? false,
-            onChanged: onToggleChanged,
-            activeColor: iconColor,
+          scale: effectiveCompact ? 0.85 : 1.0,
+          child: Switch.adaptive(
+            value: widget.toggleValue ?? false,
+            onChanged: widget.onToggleChanged,
+            activeColor: widget.iconColor ?? widget.accent,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         );
 
@@ -662,8 +829,8 @@ class SettingsItem extends StatelessWidget {
       default:
         return Icon(
           Iconsax.arrow_right_3,
-          size: effectiveCompact ? 16 : 20,
-          color: Colors.grey[400],
+          size: effectiveCompact ? 18 : 20,
+          color: theme.textTheme.bodySmall?.color?.withOpacity(0.5),
         );
     }
   }
@@ -671,16 +838,16 @@ class SettingsItem extends StatelessWidget {
   ResponsiveDimensions _getResponsiveDimensions(
       bool effectiveCompact, bool isSmallScreen) {
     return ResponsiveDimensions(
-      iconSize: effectiveCompact ? 20 : (isSmallScreen ? 22 : 24),
-      iconContainerSize: effectiveCompact ? 40 : (isSmallScreen ? 44 : 48),
-      titleFontSize: effectiveCompact ? 14 : (isSmallScreen ? 15 : 16),
-      descriptionFontSize: effectiveCompact ? 11 : (isSmallScreen ? 11.5 : 12),
+      iconSize: effectiveCompact ? 22 : (isSmallScreen ? 24 : 26),
+      iconContainerSize: effectiveCompact ? 44 : (isSmallScreen ? 48 : 52),
+      titleFontSize: effectiveCompact ? 15 : (isSmallScreen ? 16 : 17),
+      descriptionFontSize: effectiveCompact ? 12 : (isSmallScreen ? 12.5 : 13),
       padding: effectiveCompact
-          ? const EdgeInsets.all(12.0)
+          ? const EdgeInsets.all(16.0)
           : (isSmallScreen
-              ? const EdgeInsets.all(14.0)
-              : const EdgeInsets.all(16.0)),
-      spacing: effectiveCompact ? 12 : (isSmallScreen ? 14 : 16),
+              ? const EdgeInsets.all(18.0)
+              : const EdgeInsets.all(20.0)),
+      spacing: effectiveCompact ? 14 : (isSmallScreen ? 16 : 18),
     );
   }
 }

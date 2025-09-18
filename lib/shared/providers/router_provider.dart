@@ -74,6 +74,7 @@ final _router = GoRouter(
         ),
         animeName: state.uri.queryParameters['animeName']!,
         episodes: state.extra as List<EpisodeDataModel>,
+        mMangaUrl: state.uri.queryParameters['mMangaUrl'],
       ),
     ),
   ],

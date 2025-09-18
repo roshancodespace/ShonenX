@@ -206,9 +206,18 @@ class ExtensionsListScreen extends ConsumerWidget {
                           child: const Text('Cancel'),
                         ),
                         ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             final url = controller.text.trim();
                             if (url.isNotEmpty) {
+                              await ref
+                                  .read(_uninstalledAnimeExtensionsProvider
+                                      .future)
+                                  .then((sources) {
+                                isar.writeTxn(() async {
+                                  isar.sources.deleteAll(
+                                      sources.map((s) => s.id!).toList());
+                                });
+                              });
                               sourceNotifier.setActiveRepo(url, ItemType.anime);
                               sourceNotifier.fetchSources(ItemType.anime);
                               Navigator.pop(context);

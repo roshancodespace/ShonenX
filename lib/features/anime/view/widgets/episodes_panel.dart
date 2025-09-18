@@ -101,14 +101,15 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final episodeData = ref.watch(episodeDataProvider);
+    final episodeData = ref.watch(episodeDataProvider
+        .select((ed) => (ed.episodes, ed.selectedEpisodeIdx)));
     final episodeNotifier = ref.read(episodeDataProvider.notifier);
 
-    final totalEpisodes = episodeData.episodes.length;
+    final totalEpisodes = episodeData.$1.length;
     final ranges = _generateRanges(totalEpisodes);
 
     // Filter episodes based on the selected range
-    final filteredEpisodes = episodeData.episodes.where((episode) {
+    final filteredEpisodes = episodeData.$1.where((episode) {
       final match = RegExp(r'\d+').firstMatch(episode.number.toString());
       final epNumber = match != null ? int.tryParse(match.group(0)!) : null;
 
@@ -185,9 +186,8 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
               itemBuilder: (context, index) {
                 final episode = filteredEpisodes[index];
                 // Get the actual index from the original, unfiltered list
-                final actualIndex = episodeData.episodes.indexOf(episode);
-                final isSelected =
-                    episodeData.selectedEpisodeIdx == actualIndex;
+                final actualIndex = episodeData.$1.indexOf(episode);
+                final isSelected = episodeData.$2 == actualIndex;
 
                 return EpisodeTile(
                   isFiller: episode.isFiller ?? false,

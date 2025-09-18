@@ -16,15 +16,14 @@ class WatchScreen extends ConsumerStatefulWidget {
   final List<EpisodeDataModel>? episodes;
   final String? mMangaUrl;
 
-  const WatchScreen({
-    super.key,
-    required this.animeId,
-    required this.animeName,
-    this.startAt = Duration.zero,
-    this.episode = 1,
-    this.episodes = const [],
-    this.mMangaUrl
-  });
+  const WatchScreen(
+      {super.key,
+      required this.animeId,
+      required this.animeName,
+      this.startAt = Duration.zero,
+      this.episode = 1,
+      this.episodes = const [],
+      this.mMangaUrl});
 
   @override
   ConsumerState<WatchScreen> createState() => _WatchScreenState();
@@ -47,14 +46,13 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     // Trigger the initial data fetch
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await ref.read(episodeDataProvider.notifier).fetchEpisodes(
-            animeTitle: widget.animeName,
-            animeId: widget.animeId,
-            initialEpisodeIdx: (widget.episode ?? 1) - 1,
-            startAt: widget.startAt,
-            force: false,
-            mMangaUrl: widget.mMangaUrl,
-            episodes: widget.episodes ?? []
-          );
+          animeTitle: widget.animeName,
+          animeId: widget.animeId,
+          initialEpisodeIdx: (widget.episode ?? 1) - 1,
+          startAt: widget.startAt,
+          force: false,
+          mMangaUrl: widget.mMangaUrl,
+          episodes: widget.episodes ?? []);
     });
 
     // ref.read(playerStateProvider.notifier).open(
@@ -89,7 +87,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   @override
   Widget build(BuildContext context) {
-    final playerState = ref.watch(playerStateProvider);
+    final fit = ref.watch(playerStateProvider.select((p) => p.fit));
     final playerNotifier = ref.read(playerStateProvider.notifier);
 
     return Scaffold(
@@ -98,7 +96,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
         builder: (context, orientation) {
           final videoPlayerWidget = Video(
             controller: playerNotifier.videoController,
-            fit: playerState.fit,
+            fit: fit,
+            filterQuality: FilterQuality.none,
             controls: (state) => CloudstreamControls(
               onEpisodesPressed: _toggleEpisodesPanel,
             ),

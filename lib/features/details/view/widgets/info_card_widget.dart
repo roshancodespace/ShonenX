@@ -2,17 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
 
-/// Info card widget displaying anime statistics and action buttons
+/// Info card widget displaying anime statistics and a share button
 class AnimeInfoCard extends StatelessWidget {
   final Media anime;
-  final bool isFavourite;
-  final VoidCallback onToggleFavorite;
+  final VoidCallback onShare;
 
   const AnimeInfoCard({
     super.key,
     required this.anime,
-    required this.isFavourite,
-    required this.onToggleFavorite,
+    required this.onShare,
   });
 
   @override
@@ -31,19 +29,19 @@ class AnimeInfoCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                InfoItem(
+                _InfoItem(
                   icon: Iconsax.star_1,
                   value: anime.averageScore != null
                       ? '${(anime.averageScore! / 10).toStringAsFixed(1)}/10'
                       : '?/10',
                   label: 'Rating',
                 ),
-                InfoItem(
+                _InfoItem(
                   icon: Iconsax.timer_1,
                   value: '${anime.duration ?? "?"} min',
                   label: 'Duration',
                 ),
-                InfoItem(
+                _InfoItem(
                   icon: Iconsax.video_play,
                   value: '${anime.episodes ?? "?"} eps',
                   label: 'Episodes',
@@ -51,25 +49,7 @@ class AnimeInfoCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: ActionButton(
-                    icon: isFavourite ? Iconsax.heart5 : Iconsax.heart,
-                    label: isFavourite ? 'Favourited' : 'Favourite',
-                    onTap: onToggleFavorite,
-                    isPrimary: true,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ActionButton(
-                  icon: Iconsax.share,
-                  label: 'Share',
-                  onTap: () {}, // Add sharing logic
-                  isPrimary: false,
-                ),
-              ],
-            ),
+            _ShareButton(onShare: onShare),
           ],
         ),
       ),
@@ -78,13 +58,12 @@ class AnimeInfoCard extends StatelessWidget {
 }
 
 /// Individual info item widget for displaying statistics
-class InfoItem extends StatelessWidget {
+class _InfoItem extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
 
-  const InfoItem({
-    super.key,
+  const _InfoItem({
     required this.icon,
     required this.value,
     required this.label,
@@ -124,40 +103,31 @@ class InfoItem extends StatelessWidget {
   }
 }
 
-/// Action button widget for favorite and share actions
-class ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool isPrimary;
+/// Minimal share button
+class _ShareButton extends StatelessWidget {
+  final VoidCallback onShare;
 
-  const ActionButton({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    required this.isPrimary,
-  });
+  const _ShareButton({required this.onShare});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return OutlinedButton.icon(
-      icon: Icon(icon, size: 20),
-      label: Text(label),
-      onPressed: onTap,
-      style: OutlinedButton.styleFrom(
-        foregroundColor:
-            isPrimary ? colorScheme.onPrimaryContainer : colorScheme.primary,
-        backgroundColor:
-            isPrimary ? colorScheme.primaryContainer : Colors.transparent,
-        side: isPrimary
-            ? BorderSide.none
-            : BorderSide(color: colorScheme.outline),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        icon: const Icon(Iconsax.share, size: 20),
+        label: const Text('Share'),
+        onPressed: onShare,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: colorScheme.primary,
+          backgroundColor: Colors.transparent,
+          side: BorderSide(color: colorScheme.outline),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          textStyle: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }

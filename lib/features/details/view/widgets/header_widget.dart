@@ -1,11 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
 
-/// Header widget for the anime details screen with banner, poster, and title
-class DetailsHeader extends StatelessWidget {
+class DetailsHeader extends ConsumerStatefulWidget {
   final Media anime;
   final String tag;
   final VoidCallback onEditPressed;
@@ -16,6 +17,36 @@ class DetailsHeader extends StatelessWidget {
     required this.tag,
     required this.onEditPressed,
   });
+
+  @override
+  ConsumerState<DetailsHeader> createState() => _DetailsHeaderState();
+}
+
+class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
+  late bool isFavorite;
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // initialize from current state
+    final watchlist = ref.read(watchlistProvider);
+    isFavorite = watchlist.isFavorite(widget.anime.id!);
+  }
+
+  Future<void> toggleFavorite() async {
+    if (isLoading) return;
+    setState(() => isLoading = true);
+
+    try {
+      await ref.read(watchlistProvider.notifier).toggleFavorite(widget.anime);
+      setState(() => isFavorite = !isFavorite); // optimistic update
+    } catch (_) {
+      // optionally handle error
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +63,9 @@ class DetailsHeader extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             CachedNetworkImage(
-              imageUrl: anime.bannerImage ?? anime.coverImage?.large ?? '',
+              imageUrl: widget.anime.bannerImage ?? widget.anime.coverImage?.large ?? '',
               fit: BoxFit.cover,
-              placeholder: (_, __) =>
-                  Container(color: colorScheme.surfaceContainer),
+              placeholder: (_, __) => Container(color: colorScheme.surfaceContainer),
             ),
             Container(
               decoration: BoxDecoration(
@@ -58,11 +88,11 @@ class DetailsHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Hero(
-                    tag: tag,
+                    tag: widget.tag,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: CachedNetworkImage(
-                        imageUrl: anime.coverImage?.large ?? '',
+                        imageUrl: widget.anime.coverImage?.large ?? '',
                         width: 105,
                         height: 160,
                         fit: BoxFit.cover,
@@ -76,26 +106,26 @@ class DetailsHeader extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
-                          anime.title?.english ?? anime.title?.romaji ?? '',
+                          widget.anime.title?.english ?? widget.anime.title?.romaji ?? '',
                           style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.onSurface),
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (anime.title?.native != null)
+                        if (widget.anime.title?.native != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
-                              anime.title!.native!,
+                              widget.anime.title!.native!,
                               style: theme.textTheme.titleMedium?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant),
                             ),
                           ),
                         const SizedBox(height: 12),
                         GenreTags(
-                          genres: anime.genres,
-                          status: anime.status ?? 'Unknown',
+                          genres: widget.anime.genres,
+                          status: widget.anime.status ?? 'Unknown',
                         ),
                       ],
                     ),
@@ -107,20 +137,43 @@ class DetailsHeader extends StatelessWidget {
         ),
       ),
       leading: IconButton(
-        icon: const Icon(Iconsax.arrow_left_1, color: Colors.white, size: 28),
+        icon: const Icon(Iconsax.arrow_left_1, color: Colors.white, size: 30),
         onPressed: () => context.pop(),
       ),
       actions: [
+        isLoading
+            ? const Padding(
+                padding: EdgeInsets.all(12.0),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+              )
+            : IconButton(
+                icon: Icon(
+                  isFavorite ? Iconsax.heart5 : Iconsax.heart,
+                  color: Colors.white,
+                  size: 30,
+                ),
+                tooltip: isFavorite ? 'Remove from favourites' : 'Add to favourites',
+                onPressed: toggleFavorite,
+              ),
+        const SizedBox(width: 8),
         IconButton(
-          icon: const Icon(Iconsax.edit, color: Colors.white, size: 28),
+          icon: const Icon(Iconsax.add_circle, color: Colors.white, size: 30),
           tooltip: 'Add or Edit in your list',
-          onPressed: onEditPressed,
+          onPressed: widget.onEditPressed,
         ),
         const SizedBox(width: 8),
       ],
     );
   }
 }
+
 
 /// Widget for displaying genre tags and status
 class GenreTags extends StatelessWidget {

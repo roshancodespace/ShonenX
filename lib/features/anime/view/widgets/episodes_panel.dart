@@ -109,8 +109,11 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
 
     // Filter episodes based on the selected range
     final filteredEpisodes = episodeData.episodes.where((episode) {
-      final epNumber = int.tryParse(episode.number.toString()) ?? 0;
-      return epNumber >= _currentStart &&
+      final match = RegExp(r'\d+').firstMatch(episode.number.toString());
+      final epNumber = match != null ? int.tryParse(match.group(0)!) : null;
+
+      return epNumber != null &&
+          epNumber >= _currentStart &&
           epNumber <= (_currentStart + _rangeSize - 1);
     }).toList();
 

@@ -150,18 +150,18 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       {required String animeTitle,
       required String animeId,
       required bool force,
-      List<EpisodeDataModel>? episodes,
+      List<EpisodeDataModel> episodes = const [],
       int initialEpisodeIdx = 0,
       Duration startAt = Duration.zero,
       String? mMangaUrl}) async {
     state = state.copyWith(
         episodesLoading: true,
         error: null,
-        selectedEpisodeIdx: initialEpisodeIdx,
         animeId: animeId,
         animeTitle: animeTitle,
         mMangaUrl: mMangaUrl);
-    if ((!force && _experimentalFeatures.useMangayomiExtensions && episodes != null) && episodes.isNotEmpty) {
+    if (!force && episodes.isNotEmpty) {
+      AppLogger.w('fetching episodes using mangayomi extension');
       state = state.copyWith(episodes: episodes, episodesLoading: false);
       syncEpisodesWithJikan(page: 1);
       await changeEpisode(initialEpisodeIdx);
@@ -170,28 +170,34 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
     if (_experimentalFeatures.useMangayomiExtensions &&
         (state.mMangaUrl != null || mMangaUrl != null)) {
+      AppLogger.w('fetching episodes using mangayomi extension');
       episodes = await _safeRun<List<EpisodeDataModel>>(
-        () async =>
-            (await _sourceNotifier.getDetails(state.mMangaUrl!))
-                ?.chapters
-                ?.map((ch) => EpisodeDataModel(
-                    title: ch.name?.split(':').last.trim(),
-                    url: ch.url,
-                    number: int.parse(
-                        ch.name?.split(':').first.split(' ').last.trim() ??
-                            '')))
-                .toList() ??
-            [],
-        errorMessage: "Failed to fetch episodes.",
-      );
+            () async =>
+                (await _sourceNotifier.getDetails(state.mMangaUrl!))
+                    ?.chapters
+                    ?.map((ch) => EpisodeDataModel(
+                          title: ch.name,
+                          url: ch.url,
+                          number: int.tryParse(RegExp(r'\d+')
+                                  .firstMatch(ch.name ?? '')
+                                  ?.group(0) ??
+                              ''),
+                        ))
+                    .toList() ??
+                [],
+            errorMessage: "Failed to fetch episodes. (Mangayomi)",
+          ) ??
+          [];
     } else {
       episodes = await _safeRun<List<EpisodeDataModel>>(
-        () async => (await _animeProvider.getEpisodes(animeId)).episodes ?? [],
-        errorMessage: "Failed to fetch episodes.",
-      );
+            () async =>
+                (await _animeProvider.getEpisodes(animeId)).episodes ?? [],
+            errorMessage: "Failed to fetch episodes.",
+          ) ??
+          [];
     }
 
-    if (episodes == null || episodes.isEmpty) {
+    if (episodes.isEmpty) {
       state = state.copyWith(
         episodesLoading: false,
         error: "No episodes found for this anime.",
@@ -204,7 +210,10 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     syncEpisodesWithJikan(page: 1);
 
     // Setup servers
-    final servers = _animeProvider.getSupportedServers();
+    late List<String> servers = [];
+    if (!_experimentalFeatures.useMangayomiExtensions) {
+      servers = _animeProvider.getSupportedServers();
+    }
     state = state.copyWith(
       episodesLoading: false,
       servers: servers,
@@ -346,7 +355,9 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       final episode = state.episodes[state.selectedEpisodeIdx!];
       late BaseSourcesModel? data;
       final url = state.episodes[state.selectedEpisodeIdx!].url;
-      if (url != null && url.isNotEmpty && _experimentalFeatures.useMangayomiExtensions) {
+      if (url != null &&
+          url.isNotEmpty &&
+          _experimentalFeatures.useMangayomiExtensions) {
         final sources = await _sourceNotifier.getSources(url);
         data = BaseSourcesModel(
             sources: sources

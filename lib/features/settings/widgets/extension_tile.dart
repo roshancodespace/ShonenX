@@ -42,11 +42,7 @@ class ExtensionTile extends ConsumerWidget {
   Future<void> _uninstallSource(WidgetRef ref) async {
     final sourceNotifier = ref.read(sourceProvider.notifier);
     await isar.writeTxn(() async {
-      final source = await isar.sources.get(extension.id!);
-      if (source != null) {
-        source.isAdded = false;
-        await isar.sources.put(source);
-      }
+      await isar.sources.delete(extension.id!);
     });
     await sourceNotifier.initialize();
   }
@@ -69,7 +65,7 @@ class ExtensionTile extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      margin: const EdgeInsets.all(0),
       elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -128,7 +124,6 @@ class ExtensionTile extends ConsumerWidget {
                 children: [
                   if (isInstalled && selected)
                     const Icon(Icons.check_rounded, color: Colors.green),
-
                   if (isInstalled) ...[
                     IconButton(
                       tooltip: "Preferences",

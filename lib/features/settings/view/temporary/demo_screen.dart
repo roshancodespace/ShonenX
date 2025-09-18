@@ -8,6 +8,10 @@ import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';
 
+/// Helper: Extract first consecutive number from string, or null
+int? extractNumber(String? text) =>
+    int.tryParse(RegExp(r'\d+').firstMatch(text ?? '')?.group(0) ?? '');
+
 class DemoScreen extends ConsumerStatefulWidget {
   const DemoScreen({super.key});
 
@@ -16,64 +20,94 @@ class DemoScreen extends ConsumerStatefulWidget {
 }
 
 class _DemoScreenState extends ConsumerState<DemoScreen> {
-  late List<MManga> data = [];
+  List<MManga> data = [];
   bool loading = false;
-  Future<void> search(String query, WidgetRef r) async {
-    setState(() {
-      loading = true;
-    });
-    final searchedData = await r.read(sourceProvider.notifier).search(query);
-    setState(() {
-      data = searchedData.list;
-      loading = false;
-    });
+  final TextEditingController searchController = TextEditingController();
+
+  Future<void> search(String query) async {
+    setState(() => loading = true);
+    try {
+      final result = await ref.read(sourceProvider.notifier).search(query);
+      setState(() => data = result.list);
+    } catch (e) {
+      AppLogger.e(e);
+    } finally {
+      setState(() => loading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Welcome to demo!'),
-      ),
-      body: Column(
-        children: [
-          SearchBar(
-            hintText: 'Search for anime!',
-            onSubmitted: (value) => search(value, ref),
-          ),
-          !loading
-              ? Expanded(
-                  child: GridView.builder(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, childAspectRatio: 1.2),
-                  itemCount: data.length,
-                  itemBuilder: (context, index) {
-                    final anime = data[index];
-                    return AnimatedAnimeCard(
-                      anime: anilist.Media(
-                          title: anilist.Title(
-                            english: anime.name.toString(),
-                            romaji: anime.name.toString(),
+      appBar: AppBar(title: const Text('Welcome to demo!')),
+      body: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            // Search bar
+            Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              elevation: 2,
+              child: TextField(
+                controller: searchController,
+                decoration: const InputDecoration(
+                  hintText: 'Search for anime!',
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                ),
+                onSubmitted: search,
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Loading / Grid
+            loading
+                ? const Expanded(
+                    child: Center(child: CircularProgressIndicator()))
+                : data.isEmpty
+                    ? const Expanded(
+                        child: Center(child: Text('No results found')))
+                    : Expanded(
+                        child: GridView.builder(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 0.7,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
                           ),
-                          coverImage: anilist.CoverImage(
-                              large: anime.imageUrl.toString(),
-                              medium: anime.imageUrl.toString()),
-                          format: anime.author),
-                      onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => DemoDetail(
-                                url: anime.link!,
+                          itemCount: data.length,
+                          itemBuilder: (context, index) {
+                            final anime = data[index];
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        DemoDetail(url: anime.link!),
+                                  ),
+                                );
+                              },
+                              child: AnimatedAnimeCard(
+                                anime: anilist.Media(
+                                  title: anilist.Title(
+                                      english: anime.name ?? '',
+                                      romaji: anime.name ?? ''),
+                                  coverImage: anilist.CoverImage(
+                                      large: anime.imageUrl ?? '',
+                                      medium: anime.imageUrl ?? ''),
+                                  format: anime.author,
+                                ),
+                                onTap: null,
+                                tag: anime.name ?? '',
                               ),
-                            ));
-                      },
-                      tag: anime.name.toString(),
-                    );
-                  },
-                ))
-              : Center(child: CircularProgressIndicator())
-        ],
+                            );
+                          },
+                        ),
+                      ),
+          ],
+        ),
       ),
     );
   }
@@ -89,6 +123,8 @@ class DemoDetail extends ConsumerStatefulWidget {
 
 class _DemoDetailState extends ConsumerState<DemoDetail> {
   MManga? media;
+  bool loading = true;
+
   @override
   void initState() {
     super.initState();
@@ -97,95 +133,84 @@ class _DemoDetailState extends ConsumerState<DemoDetail> {
 
   void fetch() async {
     try {
-      final data =
-          await ref.read(sourceProvider.notifier).getDetails(widget.url);
-      setState(() {
-        media = data;
-        AppLogger.d(data?.toJson());
-      });
+      final data = await ref.read(sourceProvider.notifier).getDetails(widget.url);
+      setState(() => media = data);
+      AppLogger.d(data?.toJson());
     } catch (err) {
       AppLogger.e(err);
+    } finally {
+      setState(() => loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (loading) {
+      return const Scaffold(
+          body: Center(child: CircularProgressIndicator()));
+    }
+    if (media == null) {
+      return const Scaffold(
+          body: Center(child: Text("Failed to load details")));
+    }
+
+    final chapters = media!.chapters?.reversed.toList() ?? [];
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Demo details"),
-      ),
-      body: ListView(
-          children: media?.chapters
-                  ?.map((chapter) => ListTile(
-                        onTap: () async {
-                          if (chapter.url == null) return;
-                          final sources = await ref
-                              .read(sourceProvider.notifier)
-                              .getSources(chapter.url!);
-                          for (var s in sources) {
-                            for (var ss in s?.subtitles ?? []) {
-                              AppLogger.w(ss.file);
-                              AppLogger.w(ss.label);
-                            }
-                          }
-                          if (!context.mounted) return;
-                          showModalBottomSheet(
-                            context: context,
-                            builder: (context) {
-                              return BottomSheet(
-                                onClosing: () => Navigator.pop(context),
-                                builder: (context) {
-                                  return Container(
-                                    color: Colors.black,
-                                    child: ListView(
-                                      children: sources
-                                          .map((s) => ListTile(
-                                                title: Text('${s?.quality}'),
-                                                subtitle: Text('${s?.url}'),
-                                                onTap: () {
-                                                  navigateToWatch(
-                                                      context: context,
-                                                      ref: ref,
-                                                      animeId: 'Niggesh',
-                                                      animeName:
-                                                          '${media?.name}',
-                                                      episodes: media?.chapters
-                                                              ?.map((ch) => EpisodeDataModel(
-                                                                  title: ch.name
-                                                                      ?.split(
-                                                                          ':')
-                                                                      .last
-                                                                      .trim(),
-                                                                  url: ch.url,
-                                                                  number: int.parse(ch
-                                                                          .name
-                                                                          ?.split(
-                                                                              ':')
-                                                                          .first
-                                                                          .split(
-                                                                              ' ')
-                                                                          .last
-                                                                          .trim() ??
-                                                                      '')))
-                                                              .toList() ??
-                                                          []);
-                                                },
+      appBar: AppBar(title: Text(media!.name ?? "Details")),
+      body: ListView.builder(
+        itemCount: chapters.length,
+        itemBuilder: (context, i) {
+          final ch = chapters[i];
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            child: ListTile(
+              title: Text(ch.name ?? ''),
+              subtitle: Text(ch.url ?? ''),
+              onTap: () async {
+                if (ch.url == null) return;
+                final sources =
+                    await ref.read(sourceProvider.notifier).getSources(ch.url!);
+                if (!context.mounted) return;
+
+                showModalBottomSheet(
+                  context: context,
+                  builder: (_) => Container(
+                    color: Colors.black,
+                    child: ListView(
+                      children: sources
+                              .map((s) => ListTile(
+                                    title: Text(s?.quality ?? ''),
+                                    subtitle: Text(s?.url ?? ''),
+                                    onTap: () {
+                                      final episodes = media!.chapters!
+                                          .map((c) => EpisodeDataModel(
+                                                title: c.name,
+                                                url: c.url,
+                                                number: extractNumber(c.name),
                                               ))
-                                          .toList(),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          );
-                        },
-                        title: Text('${chapter.name}'),
-                        subtitle: Text('${chapter.url}'),
-                      ))
-                  .toList()
-                  .reversed
-                  .toList() ??
-              []),
+                                          .toList();
+
+                                      navigateToWatch(
+                                        context: context,
+                                        ref: ref,
+                                        animeId: 'demo',
+                                        animeName: media!.name ?? 'demo',
+                                        episodes: episodes,
+                                      );
+                                    },
+                                  ))
+                              .toList(),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }

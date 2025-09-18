@@ -124,10 +124,20 @@ class WatchlistNotifier extends Notifier<WatchListState> {
   void addEntry(MediaListEntry entry) {
     final status = WatchlistStatus.values.byName(entry.status.toLowerCase());
 
+    final existingList = [...?state.lists[status]];
+
+    final index = existingList.indexWhere((e) => e.id == entry.id);
+
+    if (index >= 0) {
+      existingList[index] = entry;
+    } else {
+      existingList.add(entry);
+    }
+
     state = state.copyWith(
       lists: {
         ...state.lists,
-        status: [...?state.lists[status], entry],
+        status: existingList,
       },
     );
   }

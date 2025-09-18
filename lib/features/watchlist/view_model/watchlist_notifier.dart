@@ -36,6 +36,10 @@ class WatchListState {
   List<MediaListEntry> get dropped => lists[WatchlistStatus.dropped] ?? [];
   List<MediaListEntry> get planning => lists[WatchlistStatus.planning] ?? [];
 
+  bool isFavorite(int id) {
+    return favorites.any((media) => media.id == id);
+  }
+
   WatchListState copyWith({
     Map<WatchlistStatus, List<MediaListEntry>>? lists,
     Map<WatchlistStatus, PageInfo>? pageInfo,
@@ -58,6 +62,42 @@ class WatchlistNotifier extends Notifier<WatchListState> {
 
   @override
   WatchListState build() => const WatchListState();
+
+  Future<bool> ensureFavorite(int id) async {
+    if (state.isFavorite(id)) {
+      return true;
+    }
+
+    if (state.loadingStatuses.contains(WatchlistStatus.favorites)) {
+      return state.favorites.any((media) => media.id == id);
+    }
+
+    await fetchListForStatus(WatchlistStatus.favorites, force: true);
+    return state.favorites.any((media) => media.id == id);
+  }
+
+  Future<void> toggleFavorite(Media anime) async {
+    final isFav = state.isFavorite(anime.id!);
+
+    try {
+      await _repo.toggleFavorite(anime.id!);
+
+      List<Media> updatedFavorites;
+      if (isFav) {
+        updatedFavorites =
+            state.favorites.where((m) => m.id != anime.id).toList();
+      } else {
+        updatedFavorites = [...state.favorites, anime];
+      }
+
+      state = state.copyWith(favorites: updatedFavorites);
+    } catch (e) {
+      state = state.copyWith(errors: {
+        ...state.errors,
+        WatchlistStatus.favorites: e.toString(),
+      });
+    }
+  }
 
   Future<void> fetchListForStatus(
     WatchlistStatus status, {

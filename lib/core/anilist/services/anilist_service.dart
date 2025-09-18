@@ -234,6 +234,21 @@ class AnilistService implements AnimeRepository {
   }
 
   @override
+  Future<List<Media>> toggleFavorite(int animeId) async {
+    final auth = _getAuthContext();
+    if (auth == null) return [];
+
+    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+      accessToken: auth.accessToken,
+      query: AnilistQueries.toggleFavoriteQuery,
+      variables: {'animeId': animeId},
+      operationName: 'ToggleFavourite',
+    );
+    return _parseMediaList(
+        data?['data']?['ToggleFavourite']?['anime']?['nodes']);
+  }
+
+  @override
   Future<List<Media>> searchAnime(String title,
       {int page = 1, int perPage = 10}) async {
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(

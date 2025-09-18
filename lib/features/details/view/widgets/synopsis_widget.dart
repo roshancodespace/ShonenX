@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/utils/html_parser.dart';
 
-/// Synopsis widget for displaying anime description
-class AnimeSynopsis extends StatelessWidget {
+class AnimeSynopsis extends StatefulWidget {
   final String description;
+  final double collapsedHeight;
 
   const AnimeSynopsis({
     super.key,
     required this.description,
+    this.collapsedHeight = 150,
   });
+
+  @override
+  State<AnimeSynopsis> createState() => _AnimeSynopsisState();
+}
+
+class _AnimeSynopsisState extends State<AnimeSynopsis>
+    with SingleTickerProviderStateMixin {
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -26,12 +35,28 @@ class AnimeSynopsis extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Text(
-          parseHtmlToString(description),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-            height: 1.5,
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: _isExpanded
+                ? const BoxConstraints() // no height limit
+                : BoxConstraints(maxHeight: widget.collapsedHeight),
+            child: Text(
+              parseHtmlToString(widget.description),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
+              softWrap: true,
+              overflow: TextOverflow.fade,
+            ),
           ),
+        ),
+        TextButton(
+          onPressed: () => setState(() => _isExpanded = !_isExpanded),
+          child: Text(_isExpanded ? 'Show Less' : 'Read More'),
         ),
       ],
     );

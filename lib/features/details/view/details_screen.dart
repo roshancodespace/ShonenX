@@ -17,29 +17,20 @@ class AnimeDetailsScreen extends ConsumerStatefulWidget {
   ConsumerState<AnimeDetailsScreen> createState() => _AnimeDetailsScreenState();
 }
 
-class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
-    with TickerProviderStateMixin {
+class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
   late final ScrollController _scrollController;
-  late final TabController _tabController;
-
-  bool _isFavourite = false;
   bool _isWatchLoading = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.animation!.addListener(() {
-      setState(() {});
-    });
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -60,78 +51,44 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final experimental = ref.read(experimentalProvider);
-
-    // final icons = [Icons.info_outline, Icons.movie];
-    // final labels = ['Details', 'Episodes'];
+    final useMangayomi = ref.watch(
+        experimentalProvider.select((exp) => exp.useMangayomiExtensions));
 
     return Scaffold(
       backgroundColor: colorScheme.surfaceContainerLowest,
       body: Stack(
         children: [
-          // Tab content
-          TabBarView(
-            controller: _tabController,
-            physics: const BouncingScrollPhysics(),
-            children: [
-              // DETAILS TAB
-              Stack(
-                children: [
-                  CustomScrollView(
-                    controller: _scrollController,
-                    slivers: [
-                      DetailsHeader(
-                        anime: widget.anime,
-                        tag: widget.tag,
-                        onEditPressed: _showEditListBottomSheet,
-                      ),
-                      SliverToBoxAdapter(
-                        child: DetailsContent(
-                          anime: widget.anime,
-                          isFavourite: _isFavourite,
-                          onToggleFavorite: () {
-                            setState(() => _isFavourite = !_isFavourite);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (!experimental.useMangayomiExtensions)
-                    Positioned(
-                      bottom: 16,
-                      left: 16,
-                      right: 16,
-                      child: WatchButton(
-                        isLoading: _isWatchLoading,
-                        onPressed: () async {
-                          if (_isWatchLoading) return;
-                          setState(() => _isWatchLoading = true);
-                          await providerAnimeMatchSearch(
-                            context: context,
-                            ref: ref,
-                            animeMedia: widget.anime,
-                          );
-                          if (mounted) {
-                            setState(() => _isWatchLoading = false);
-                          }
-                        },
-                      ),
-                    ),
-                ],
+          CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              DetailsHeader(
+                anime: widget.anime,
+                tag: widget.tag,
+                onEditPressed: _showEditListBottomSheet,
               ),
-
-              // EPISODES TAB
-              Column(
-                children: [
-                  Expanded(child: ListView(
-                    children: [
-                      Text('Dummy Ep')
-                    ],
-                  ))
-                ],
-              )
+              SliverToBoxAdapter(
+                child: DetailsContent(
+                  anime: widget.anime,
+                ),
+              ),
             ],
           ),
+          if (!useMangayomi)
+            WatchButton(
+              isLoading: _isWatchLoading,
+              onPressed: () async {
+                if (_isWatchLoading) return;
+                setState(() => _isWatchLoading = true);
+                await providerAnimeMatchSearch(
+                  context: context,
+                  ref: ref,
+                  animeMedia: widget.anime,
+                );
+                if (mounted) {
+                  setState(() => _isWatchLoading = false);
+                }
+              },
+            ),
         ],
       ),
     );

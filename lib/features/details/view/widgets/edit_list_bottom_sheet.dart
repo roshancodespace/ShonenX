@@ -57,8 +57,8 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
     _scoreController = TextEditingController(text: '0');
     _repeatsController = TextEditingController(text: '0');
     _notesController = TextEditingController();
-    _loadEntry(ref);
     _isPrivate = false;
+    _loadEntry(ref);
   }
 
   @override
@@ -71,66 +71,57 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
   }
 
   Future<void> _loadEntry(WidgetRef ref) async {
-    setState(() {
-      _isFetching = true;
-    });
+    if (_isFetching || !mounted) return;
+
+    setState(() => _isFetching = true);
+
     final auth = ref.read(authProvider);
     if (auth.authPlatform == null) {
       _showSnackBar('Login Required', 'Sar plz login!', ContentType.failure);
+      setState(() => _isFetching = false);
       return;
     }
+
     final watchlist = ref.read(watchlistProvider);
     final watchlistNotifier = ref.read(watchlistProvider.notifier);
     final animeRepo = ref.read(animeRepositoryProvider);
 
-    switch (auth.authPlatform!) {
-      case AuthPlatform.anilist:
-        {
-          final entries = watchlist.lists.entries;
-          final entry = entries
-              .expand((e) => e.value)
-              .firstWhereOrNull((media) => media.id == widget.anime.id);
-          if (entry != null) {
-            setState(() {
-              _selectedStatus = entry.status;
-              _progressController.text = entry.progress.toString();
-              _scoreController.text = entry.score.toString();
-              _repeatsController.text = entry.repeat.toString();
-              _notesController.text = entry.notes;
-              _startDate = entry.startedAt?.toDateTime;
-              _completedDate = entry.completedAt?.toDateTime;
-              _isPrivate = entry.isPrivate;
-            });
-          } else {
-            final entry = await animeRepo.getAnimeEntry(widget.anime.id!);
-            if (entry == null) return;
-            watchlistNotifier.addEntry(entry);
-            setState(() {
-              _selectedStatus = entry.status;
-              _progressController.text = entry.progress.toString();
-              _scoreController.text = entry.score.toString();
-              _repeatsController.text = entry.repeat.toString();
-              _notesController.text = entry.notes;
-              _startDate = entry.startedAt?.toDateTime;
-              _completedDate = entry.completedAt?.toDateTime;
-              _isPrivate = entry.isPrivate;
-            });
-          }
-          break;
+    try {
+      if (auth.authPlatform == AuthPlatform.anilist) {
+        var entry = watchlist.lists.values
+            .expand((e) => e)
+            .firstWhereOrNull((m) => m.id == widget.anime.id);
+
+        entry ??= await animeRepo.getAnimeEntry(widget.anime.id!);
+        if (entry != null) {
+          watchlistNotifier.addEntry(entry);
+          setState(() {
+            _selectedStatus = entry?.status ?? _selectedStatus;
+            _progressController.text =
+                entry?.progress.toString() ?? _progressController.text;
+            _scoreController.text =
+                entry?.score.toString() ?? _scoreController.text;
+            _repeatsController.text =
+                entry?.repeat.toString() ?? _repeatsController.text;
+            _notesController.text = entry?.notes ?? _notesController.text;
+            _startDate = entry?.startedAt?.toDateTime;
+            _completedDate = entry?.completedAt?.toDateTime;
+            _isPrivate = entry?.isPrivate ?? _isPrivate;
+          });
         }
-      case AuthPlatform.mal:
-        {
-          _showSnackBar(
-            'Info',
-            'MAL support not implemented yet.',
-            ContentType.warning,
-          );
-          break;
-        }
+      } else {
+        _showSnackBar(
+          'Info',
+          'MAL support not implemented yet.',
+          ContentType.warning,
+        );
+      }
+    } catch (e, st) {
+      debugPrint('Error loading entry: $e\n$st');
+      _showSnackBar('Error', 'Failed to load entry', ContentType.failure);
+    } finally {
+      if (mounted) setState(() => _isFetching = false);
     }
-    setState(() {
-      _isFetching = false;
-    });
   }
 
   Future<void> _saveChanges(WidgetRef ref) async {

@@ -15,7 +15,9 @@ void navigateToWatch(
     required WidgetRef ref,
     required String animeId,
     required String animeName,
-    required List<EpisodeDataModel> episodes}) {
+    required List<EpisodeDataModel> episodes,
+    int? startAt,
+    String? mMangaUrl}) {
   // final progress = ref
   //     .read(animeWatchProgressProvider.notifier)
   //     .getMostRecentEpisodeProgressByAnimeId(animeMedia.id!);
@@ -26,9 +28,7 @@ void navigateToWatch(
 
   final route = '/watch/$animeId'
       '?animeName=$animeName'
-      '&episode=0';
-  // '&startAt=';
-
+      '&episode=1&mMangaUrl=$mMangaUrl&startAt=$startAt';
   AppLogger.d('Navigating to watch screen: $route');
   context.push(route, extra: episodes);
 }

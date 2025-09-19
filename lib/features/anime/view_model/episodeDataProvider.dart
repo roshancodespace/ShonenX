@@ -1,4 +1,5 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
@@ -129,6 +130,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   /// Centralized safe async runner
   Future<T?> _safeRun<T>(
     Future<T> Function() task, {
+    String? errorTitle,
     String? errorMessage,
     bool showSnackBar = true,
   }) async {
@@ -136,20 +138,22 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       return await task();
     } catch (e, st) {
       AppLogger.e('Error: $e\n$st');
+      final title = errorTitle ?? 'Error';
       final msg = errorMessage ?? 'Something went wrong.';
       state = state.copyWith(error: msg);
 
       if (showSnackBar) {
-        showAppSnackBar(msg);
+        showAppSnackBar(title, msg, type: ContentType.failure);
       }
       return null;
     }
   }
 
-  Future<void> fetchEpisodes(
+  Future<List<EpisodeDataModel>> fetchEpisodes(
       {required String animeTitle,
       required String animeId,
       required bool force,
+      bool play = true,
       List<EpisodeDataModel> episodes = const [],
       int initialEpisodeIdx = 0,
       Duration startAt = Duration.zero,
@@ -165,7 +169,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       state = state.copyWith(episodes: episodes, episodesLoading: false);
       syncEpisodesWithJikan(page: 1);
       await changeEpisode(initialEpisodeIdx);
-      return;
+      return [];
     }
 
     if (_experimentalFeatures.useMangayomiExtensions &&
@@ -185,6 +189,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
                         ))
                     .toList() ??
                 [],
+            errorTitle: "Mangayomi",
             errorMessage: "Failed to fetch episodes. (Mangayomi)",
           ) ??
           [];
@@ -192,6 +197,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       episodes = await _safeRun<List<EpisodeDataModel>>(
             () async =>
                 (await _animeProvider.getEpisodes(animeId)).episodes ?? [],
+            errorTitle: "Legacy Source",
             errorMessage: "Failed to fetch episodes.",
           ) ??
           [];
@@ -202,7 +208,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
         episodesLoading: false,
         error: "No episodes found for this anime.",
       );
-      return;
+      return [];
     }
 
     state = state.copyWith(episodes: episodes);
@@ -211,17 +217,17 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
     // Setup servers
     late List<String> servers = [];
-    if (!_experimentalFeatures.useMangayomiExtensions) {
-      servers = _animeProvider.getSupportedServers();
-    }
+    servers = _animeProvider.getSupportedServers();
     state = state.copyWith(
       episodesLoading: false,
       servers: servers,
       selectedServer: servers.isNotEmpty ? servers.first : null,
       dubSubSupport: _animeProvider.getDubSubParamSupport(),
     );
-
-    await changeEpisode(initialEpisodeIdx, startAt: startAt);
+    if (play) {
+      await changeEpisode(initialEpisodeIdx, startAt: startAt);
+    }
+    return episodes;
   }
 
   Future<void> syncEpisodesWithJikan({required int page}) async {
@@ -270,7 +276,9 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
         state = state.copyWith(episodes: syncedEpisodes);
       }
-    }, errorMessage: "Couldn't sync with Jikan episode titles");
+    },
+        errorTitle: "JIKAN Sync",
+        errorMessage: "Couldn't sync with Jikan episode titles");
   }
 
   Future<void> refreshEpisodes() async {
@@ -400,7 +408,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       } else {
         await _loadAndPlaySource(0, startAt: startAt);
       }
-    }, errorMessage: "Failed to load stream");
+    }, errorTitle: "Stream", errorMessage: "Failed to load stream");
   }
 
   Future<void> _loadAndPlayMSource(int sourceIdx,
@@ -414,7 +422,10 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       );
       if (source.url == null && source.url!.isEmpty) return;
       ref.read(playerStateProvider.notifier).open(source.url!, startAt);
-    }, errorMessage: "Failed to load source", showSnackBar: true);
+    },
+        errorTitle: 'Source',
+        errorMessage: "Failed to load source",
+        showSnackBar: true);
   }
 
   Future<void> _loadAndPlaySource(int sourceIndex,
@@ -437,7 +448,10 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       );
 
       ref.read(playerStateProvider.notifier).open(urlToPlay, startAt);
-    }, errorMessage: "Failed to load source", showSnackBar: true);
+    },
+        errorTitle: "Source",
+        errorMessage: "Failed to load source",
+        showSnackBar: true);
 
     state = state.copyWith(sourceLoading: false);
   }

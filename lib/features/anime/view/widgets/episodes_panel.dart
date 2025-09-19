@@ -190,7 +190,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                 final isSelected = episodeData.$2 == actualIndex;
 
                 return EpisodeTile(
-                  isFiller: episode.isFiller ?? false,
+                  isFiller: episode.isFiller == true,
                   episodeNumber: episode.number.toString(),
                   episodeTitle: episode.title ?? 'Episode ${episode.number}',
                   isSelected: isSelected,

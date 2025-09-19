@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/settings/view_model/player_notifier.dart';
-import 'package:shonenx/features/settings/widgets/settings_item.dart';
-import 'package:shonenx/features/settings/widgets/settings_section.dart';
+import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
+import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 
 class PlayerSettingsScreen extends ConsumerWidget {
   const PlayerSettingsScreen({super.key});

@@ -11,11 +11,6 @@ class AccountSettingsScreen extends StatefulWidget {
 }
 
 class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
-  bool isAnilistLoggedIn = false;
-  bool isMalLoggedIn = false;
-  String? anilistUsername;
-  String? malUsername;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,36 +59,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
             // ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSyncOption({
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          fontSize: 12,
-          color: Colors.grey[600],
-        ),
-      ),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeColor: Theme.of(context).primaryColor,
       ),
     );
   }

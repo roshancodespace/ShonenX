@@ -1,4 +1,5 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/home/view_model/homepage_notifier.dart';
@@ -12,7 +13,6 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    checkForUpdates(context);
     final state = ref.watch(homepageProvider);
 
     if (state.isLoading)
@@ -22,6 +22,10 @@ class HomeScreen extends ConsumerWidget {
 
     final home = state.homePage;
     if (home == null) return const SizedBox();
+
+    if (!kDebugMode) {
+      checkForUpdates(context);
+    }
 
     return RefreshIndicator(
       onRefresh: () => ref.read(homepageProvider.notifier).fetchHomePage(),

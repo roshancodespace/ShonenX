@@ -57,7 +57,7 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
       expandedHeight: 420,
       pinned: true,
       elevation: 0,
-      backgroundColor: Colors.transparent,
+      backgroundColor: colorScheme.surfaceContainerLowest.withOpacity(0.8),
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           fit: StackFit.expand,

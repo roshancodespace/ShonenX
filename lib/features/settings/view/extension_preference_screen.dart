@@ -6,8 +6,8 @@ import 'package:shonenx/core_new/eval/model/source_preference.dart';
 import 'package:shonenx/core_new/models/source.dart';
 import 'package:shonenx/core_new/providers/extension_preference_provider.dart';
 import 'package:shonenx/core_new/providers/get_source_preference.dart';
-import 'package:shonenx/features/settings/widgets/settings_item.dart';
-import 'package:shonenx/features/settings/widgets/settings_section.dart';
+import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
+import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 
 class ExtensionPreferenceScreen extends ConsumerWidget {
   final Source source;

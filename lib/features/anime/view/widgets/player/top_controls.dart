@@ -27,9 +27,15 @@ class TopControls extends ConsumerWidget {
     };
   }
 
+  T watchTheme<T>(
+    WidgetRef ref,
+    T Function(EpisodeDataState s) selector,
+  ) {
+    return ref.watch(episodeDataProvider.select(selector));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final episodeData = ref.watch(episodeDataProvider);
     final source = ref.watch(selectedAnimeProvider);
     return Material(
       color: Colors.black.withOpacity(0.5),
@@ -50,9 +56,11 @@ class TopControls extends ConsumerWidget {
                   children: [
                     Text(source?.providerName.toUpperCase() ?? "SOURCE",
                         style: Theme.of(context).textTheme.bodySmall),
-                    if (episodeData.selectedEpisodeIdx != null && episodeData.sources.isNotEmpty)
+                    if (watchTheme(ref, (e) => e.selectedEpisodeIdx) != null &&
+                        watchTheme(ref, (e) => e.sources).isNotEmpty)
                       Text(
-                        episodeData.episodes[episodeData.selectedEpisodeIdx!]
+                        watchTheme(ref, (e) => e.episodes)[watchTheme(
+                                    ref, (e) => e.selectedEpisodeIdx)!]
                                 .title ??
                             'Unavailable',
                         style: const TextStyle(fontWeight: FontWeight.w600),
@@ -62,10 +70,10 @@ class TopControls extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (episodeData.qualityOptions.length > 1)
+              if (watchTheme(ref, (e) => e.qualityOptions).length > 1)
                 IconButton(
                     onPressed: _wrap(onQualityPressed),
-                    icon: const Icon(Iconsax.video_horizontal),
+                    icon: const Icon(Icons.high_quality_outlined),
                     tooltip: "Quality"),
               if (onEpisodesPressed != null)
                 IconButton(

@@ -38,14 +38,21 @@ class BottomControls extends ConsumerWidget {
     };
   }
 
+  T watchTheme<T>(
+    WidgetRef ref,
+    T Function(EpisodeDataState s) selector,
+  ) {
+    return ref.watch(episodeDataProvider.select(selector));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = ref.watch(playerStateProvider);
-    final episodeData = ref.watch(episodeDataProvider);
+    final playerState =
+        ref.watch(playerStateProvider.select((p) => (p.position, p.duration)));
     final episodeNotifier = ref.read(episodeDataProvider.notifier);
 
-    final positionMs = playerState.position.inMilliseconds.toDouble();
-    final durationMs = playerState.duration.inMilliseconds.toDouble();
+    final positionMs = playerState.$1.inMilliseconds.toDouble();
+    final durationMs = playerState.$2.inMilliseconds.toDouble();
     final displayedValue = (sliderValue ?? positionMs).clamp(0.0, durationMs);
 
     final colorScheme = Theme.of(context).colorScheme;
@@ -75,8 +82,8 @@ class BottomControls extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(30),
                   onTap: _wrap(onForwardPressed),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 15, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 15, vertical: 6),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: const [
@@ -137,7 +144,7 @@ class BottomControls extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(right: 16.0),
                   child: Text(
-                    _formatDuration(playerState.duration),
+                    _formatDuration(playerState.$2),
                     style: const TextStyle(color: Colors.white),
                   ),
                 ),
@@ -169,50 +176,54 @@ class BottomControls extends ConsumerWidget {
                   label: const Text('Lock'),
                   icon: const Icon(Iconsax.lock),
                 ),
-                if (episodeData.dubSubSupport)
+                if (watchTheme(ref, (s) => s.dubSubSupport))
                   TextButton.icon(
                     style: ButtonStyle(
                       foregroundColor:
                           WidgetStatePropertyAll(colorScheme.onSurface),
                     ),
                     onPressed: _wrap(() => episodeNotifier.toggleDubSub()),
-                    label: Text(episodeData.selectedCategory == 'sub'
-                        ? 'Sub'
-                        : 'Dub'),
+                    label: Text(
+                        watchTheme(ref, (s) => s.selectedCategory) == 'sub'
+                            ? 'Sub'
+                            : 'Dub'),
                     icon: const Icon(Iconsax.text_block),
                   ),
-                if (episodeData.servers.isNotEmpty)
+                if (watchTheme(ref, (s) => s.servers).length > 1)
                   TextButton.icon(
                     style: ButtonStyle(
                       foregroundColor:
                           WidgetStatePropertyAll(colorScheme.onSurface),
                     ),
                     onPressed: _wrap(onServerPressed),
-                    label: Text(episodeData.selectedServer ?? 'Server'),
+                    label: Text(
+                        watchTheme(ref, (s) => s.selectedServer) ?? 'Server'),
                     icon: const Icon(Iconsax.cloud),
                   ),
-                TextButton.icon(
-                  style: ButtonStyle(
-                    foregroundColor:
-                        WidgetStatePropertyAll(colorScheme.onSurface),
+                if (watchTheme(ref, (s) => s.sources).length > 1)
+                  TextButton.icon(
+                    style: ButtonStyle(
+                      foregroundColor:
+                          WidgetStatePropertyAll(colorScheme.onSurface),
+                    ),
+                    onPressed: watchTheme(ref, (s) => s.sources).length > 1
+                        ? _wrap(onSourcePressed)
+                        : null,
+                    label: const Text('Source'),
+                    icon: const Icon(Iconsax.hierarchy_2),
                   ),
-                  onPressed: episodeData.sources.length > 1
-                      ? _wrap(onSourcePressed)
-                      : null,
-                  label: const Text('Source'),
-                  icon: const Icon(Iconsax.hierarchy_2),
-                ),
-                TextButton.icon(
-                  style: ButtonStyle(
-                    foregroundColor:
-                        WidgetStatePropertyAll(colorScheme.onSurface),
+                if (watchTheme(ref, (s) => s.subtitles).isNotEmpty)
+                  TextButton.icon(
+                    style: ButtonStyle(
+                      foregroundColor:
+                          WidgetStatePropertyAll(colorScheme.onSurface),
+                    ),
+                    onPressed: watchTheme(ref, (s) => s.subtitles).isNotEmpty
+                        ? _wrap(onSubtitlePressed)
+                        : null,
+                    label: const Text('Subtitle'),
+                    icon: const Icon(Iconsax.subtitle),
                   ),
-                  onPressed: episodeData.subtitles.isNotEmpty
-                      ? _wrap(onSubtitlePressed)
-                      : null,
-                  label: const Text('Subtitle'),
-                  icon: const Icon(Iconsax.subtitle),
-                ),
               ],
             ),
           ),

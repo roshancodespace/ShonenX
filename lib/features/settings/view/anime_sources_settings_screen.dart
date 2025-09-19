@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/features/settings/widgets/settings_item.dart';
+import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 
 final providerStatusProvider =
     FutureProvider<Map<String, dynamic>>((ref) async {

@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/features/settings/model/theme_model.dart';
 import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
-import 'package:shonenx/features/settings/widgets/settings_item.dart';
-import 'package:shonenx/features/settings/widgets/settings_section.dart';
+import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
+import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 
 class ThemeSettingsScreen extends ConsumerStatefulWidget {
   const ThemeSettingsScreen({super.key});
@@ -16,9 +17,15 @@ class ThemeSettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
+  T watchTheme<T>(
+    WidgetRef ref,
+    T Function(ThemeModel s) selector,
+  ) {
+    return ref.watch(themeSettingsProvider.select(selector));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final themeSettings = ref.watch(themeSettingsProvider);
     final themeSettingsNotifier = ref.read(themeSettingsProvider.notifier);
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
@@ -47,11 +54,12 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
                       title: 'Theme',
                       description: 'Choose your preferred theme',
                       type: SettingsItemType.segmentedToggle,
-                      segmentedSelectedIndex: themeSettings.themeMode == 'light'
-                          ? 1
-                          : themeSettings.themeMode == 'dark'
-                              ? 2
-                              : 0,
+                      segmentedSelectedIndex:
+                          watchTheme(ref, (t) => t.themeMode) == 'light'
+                              ? 1
+                              : watchTheme(ref, (t) => t.themeMode) == 'dark'
+                                  ? 2
+                                  : 0,
                       segmentedOptions: const [
                         Icon(Icons.brightness_auto),
                         Icon(Icons.light_mode),
@@ -76,8 +84,8 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
                   title: 'Advanced',
                   titleColor: colorScheme.primary,
                   children: [
-                    if (themeSettings.themeMode == 'dark' ||
-                        (themeSettings.themeMode == 'system' &&
+                    if (watchTheme(ref, (t) => t.themeMode) == 'dark' ||
+                        (watchTheme(ref, (t) => t.themeMode) == 'system' &&
                             Theme.of(context).brightness ==
                                 Brightness.dark)) ...[
                       SettingsItem(
@@ -87,7 +95,7 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
                         title: 'AMOLED Dark',
                         description: 'Use pure black for dark mode',
                         type: SettingsItemType.toggleable,
-                        toggleValue: themeSettings.amoled,
+                        toggleValue: watchTheme(ref, (t) => t.amoled),
                         onToggleChanged: (value) {
                           themeSettingsNotifier.updateSettings(
                               (prev) => prev.copyWith(amoled: value));
@@ -101,7 +109,7 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
                       title: 'Swap Colors',
                       description: 'Swap primary and secondary colors',
                       type: SettingsItemType.toggleable,
-                      toggleValue: themeSettings.swapColors,
+                      toggleValue: watchTheme(ref, (t) => t.swapColors),
                       onToggleChanged: (value) {
                         themeSettingsNotifier.updateSettings(
                             (prev) => prev.copyWith(swapColors: value));
@@ -118,7 +126,8 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
                       icon: Icon(Icons.blender_outlined,
                           color: colorScheme.primary),
                       accent: colorScheme.primary,
-                      sliderValue: themeSettings.blendLevel.toDouble(),
+                      sliderValue:
+                          watchTheme(ref, (t) => t.blendLevel).toDouble(),
                       sliderMin: 0,
                       sliderMax: 40,
                       sliderDivisions: 40,
@@ -146,7 +155,6 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
       builder: (context) {
         return Consumer(
           builder: (context, ref, child) {
-            final themeSettings = ref.watch(themeSettingsProvider);
             final themeSettingsNotifier =
                 ref.read(themeSettingsProvider.notifier);
 
@@ -192,9 +200,8 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
                       itemCount: FlexScheme.values.length,
                       itemBuilder: (context, index) {
                         final scheme = FlexScheme.values[index];
-                        // This 'isSelected' check will now be re-evaluated on every rebuild.
                         final isSelected =
-                            themeSettings.flexScheme == scheme.name;
+                            watchTheme(ref, (t) => t.flexScheme) == scheme.name;
 
                         return ListTile(
                           onTap: () {

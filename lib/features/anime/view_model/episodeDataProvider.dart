@@ -149,51 +149,81 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     }
   }
 
-  Future<List<EpisodeDataModel>> fetchEpisodes(
-      {required String animeTitle,
-      required String animeId,
-      required bool force,
-      bool play = true,
-      List<EpisodeDataModel> episodes = const [],
-      int initialEpisodeIdx = 0,
-      Duration startAt = Duration.zero,
-      String? mMangaUrl}) async {
+  Future<List<EpisodeDataModel>> fetchEpisodes({
+    required String animeTitle,
+    required String animeId,
+    required bool force,
+    bool play = true,
+    List<EpisodeDataModel> episodes = const [],
+    int initialEpisodeIdx = 0,
+    Duration startAt = Duration.zero,
+    String? mMangaUrl,
+  }) async {
     state = state.copyWith(
-        episodesLoading: true,
-        error: null,
-        animeId: animeId,
-        animeTitle: animeTitle,
-        mMangaUrl: mMangaUrl);
+      episodesLoading: true,
+      error: null,
+      animeId: animeId,
+      animeTitle: animeTitle,
+      mMangaUrl: mMangaUrl,
+    );
+    final useMangayomi = _experimentalFeatures.useMangayomiExtensions;
+
+    // --- Skip fetching if already have episodes and not forced ---
     if (!force && episodes.isNotEmpty) {
-      AppLogger.w('fetching episodes using mangayomi extension');
       state = state.copyWith(episodes: episodes, episodesLoading: false);
       syncEpisodesWithJikan(page: 1);
-      await changeEpisode(initialEpisodeIdx);
-      return [];
+
+      await _setupServersAndMaybePlay(play, initialEpisodeIdx, startAt,
+          useMangayomi: useMangayomi);
+      return episodes;
     }
 
-    if (_experimentalFeatures.useMangayomiExtensions &&
-        (state.mMangaUrl != null || mMangaUrl != null)) {
-      AppLogger.w('fetching episodes using mangayomi extension');
+    // --- Fetch episodes depending on source type ---
+    if (useMangayomi && (state.mMangaUrl != null || mMangaUrl != null)) {
+      AppLogger.w('Fetching episodes using Mangayomi extension');
+      final url = state.mMangaUrl ?? mMangaUrl!;
       episodes = await _safeRun<List<EpisodeDataModel>>(
-            () async =>
-                (await _sourceNotifier.getDetails(state.mMangaUrl!))
-                    ?.chapters
-                    ?.map((ch) => EpisodeDataModel(
+            () async {
+              final details = await _sourceNotifier.getDetails(url);
+              final mapped = details?.chapters
+                      ?.map(
+                        (ch) => EpisodeDataModel(
+                          isFiller: false,
                           title: ch.name,
                           url: ch.url,
-                          number: int.tryParse(RegExp(r'\d+')
-                                  .firstMatch(ch.name ?? '')
-                                  ?.group(0) ??
-                              ''),
-                        ))
-                    .toList() ??
-                [],
+                          number: int.tryParse(
+                            RegExp(r'\d+')
+                                    .firstMatch(ch.name ?? '')
+                                    ?.group(0) ??
+                                '',
+                          ),
+                        ),
+                      )
+                      .toList() ??
+                  [];
+
+              // 🔑 Normalize: sort ascending by number if valid numbers exist
+              if (mapped.isNotEmpty) {
+                final hasNumbers =
+                    mapped.any((e) => e.number != null && e.number! > 0);
+
+                if (hasNumbers) {
+                  mapped.sort((a, b) {
+                    final na = a.number ?? 999999;
+                    final nb = b.number ?? 999999;
+                    return na.compareTo(nb);
+                  });
+                }
+              }
+
+              return mapped;
+            },
             errorTitle: "Mangayomi",
             errorMessage: "Failed to fetch episodes. (Mangayomi)",
           ) ??
           [];
     } else {
+      AppLogger.w('Fetching episodes using Legacy source');
       episodes = await _safeRun<List<EpisodeDataModel>>(
             () async =>
                 (await _animeProvider.getEpisodes(animeId)).episodes ?? [],
@@ -211,23 +241,35 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       return [];
     }
 
+    // --- Update state ---
     state = state.copyWith(episodes: episodes);
-
     syncEpisodesWithJikan(page: 1);
 
-    // Setup servers
-    late List<String> servers = [];
-    servers = _animeProvider.getSupportedServers();
+    await _setupServersAndMaybePlay(play, initialEpisodeIdx, startAt);
+
+    return episodes;
+  }
+
+  Future<void> _setupServersAndMaybePlay(
+      bool play, int initialEpisodeIdx, Duration startAt,
+      {bool useMangayomi = false}) async {
+    List<String> servers = [];
+    bool dubOrSubSupport = false;
+    if (!useMangayomi) {
+      servers = _animeProvider.getSupportedServers();
+      dubOrSubSupport = _animeProvider.getDubSubParamSupport();
+    }
+
     state = state.copyWith(
       episodesLoading: false,
       servers: servers,
       selectedServer: servers.isNotEmpty ? servers.first : null,
-      dubSubSupport: _animeProvider.getDubSubParamSupport(),
+      dubSubSupport: dubOrSubSupport,
     );
+
     if (play) {
       await changeEpisode(initialEpisodeIdx, startAt: startAt);
     }
-    return episodes;
   }
 
   Future<void> syncEpisodesWithJikan({required int page}) async {

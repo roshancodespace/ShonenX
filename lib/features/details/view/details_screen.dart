@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/features/details/view/widgets/episodes_tab.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
 import 'widgets/widgets.dart';
@@ -17,20 +18,21 @@ class AnimeDetailsScreen extends ConsumerStatefulWidget {
   ConsumerState<AnimeDetailsScreen> createState() => _AnimeDetailsScreenState();
 }
 
-class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
-  late final ScrollController _scrollController;
+class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
   bool _isWatchLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
+    _tabController = TabController(length: 3, vsync: this);
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -56,41 +58,103 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen> {
 
     return Scaffold(
       backgroundColor: colorScheme.surfaceContainerLowest,
-      body: Stack(
-        children: [
-          CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              DetailsHeader(
-                anime: widget.anime,
-                tag: widget.tag,
-                onEditPressed: _showEditListBottomSheet,
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            DetailsHeader(
+              anime: widget.anime,
+              tag: widget.tag,
+              onEditPressed: _showEditListBottomSheet,
+            ),
+          ];
+        },
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            // About Tab
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+              child: DetailsContent(anime: widget.anime),
+            ),
+            // Episodes Tab
+            EpisodesTab(
+              animeTitle: widget.anime.title!,
+              animeId: widget.anime.id.toString(),
+            ),
+            // Characters Tab
+            const SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 100),
+              child: Center(
+                child: Text('Characters Tab Content'),
               ),
-              SliverToBoxAdapter(
-                child: DetailsContent(
-                  anime: widget.anime,
+            ),
+          ],
+        ),
+      ),
+      // Bottom Tab Bar - cleaner design
+      bottomNavigationBar: Material(
+        color: colorScheme.surface,
+        elevation: 8,
+        child: SafeArea(
+          child: SizedBox(
+            height: 60,
+            child: TabBar(
+              controller: _tabController,
+              labelColor: colorScheme.primary,
+              unselectedLabelColor: colorScheme.onSurface.withOpacity(0.6),
+              indicatorColor: colorScheme.primary,
+              indicatorSize: TabBarIndicatorSize.label,
+              dividerColor: Colors.transparent,
+              tabs: const [
+                Tab(text: 'About'),
+                Tab(text: 'Episodes'),
+                Tab(text: 'Characters'),
+              ],
+            ),
+          ),
+        ),
+      ),
+      // Watch Button as FAB - no margin
+      floatingActionButton: !useMangayomi
+          ? FloatingActionButton.extended(
+              onPressed: _isWatchLoading
+                  ? null
+                  : () async {
+                      setState(() => _isWatchLoading = true);
+                      await providerAnimeMatchSearch(
+                        context: context,
+                        ref: ref,
+                        animeMedia: widget.anime,
+                      );
+                      if (mounted) {
+                        setState(() => _isWatchLoading = false);
+                      }
+                    },
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              elevation: 6,
+              icon: _isWatchLoading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          colorScheme.onPrimary,
+                        ),
+                      ),
+                    )
+                  : const Icon(Icons.play_arrow, size: 24),
+              label: Text(
+                _isWatchLoading ? 'Loading...' : 'Watch Now',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
-          if (!useMangayomi)
-            WatchButton(
-              isLoading: _isWatchLoading,
-              onPressed: () async {
-                if (_isWatchLoading) return;
-                setState(() => _isWatchLoading = true);
-                await providerAnimeMatchSearch(
-                  context: context,
-                  ref: ref,
-                  animeMedia: widget.anime,
-                );
-                if (mounted) {
-                  setState(() => _isWatchLoading = false);
-                }
-              },
-            ),
-        ],
-      ),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
     );
   }
 }

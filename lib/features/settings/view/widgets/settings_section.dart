@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shonenx/features/settings/widgets/settings_item.dart';
+import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 
 enum SettingsSectionLayout {
   list,
@@ -10,7 +10,7 @@ class SettingsSection extends StatelessWidget {
   final String title;
   final Color titleColor;
   final VoidCallback? onTap;
-  final List<Widget> children; // <-- changed from List<SettingsItem>
+  final List<Widget> children;
   final double roundness;
 
   // Grid layout properties
@@ -69,18 +69,21 @@ class SettingsSection extends StatelessWidget {
   }
 
   Widget _buildListLayout() {
-    return Column(
-      children: children.asMap().entries.map((entry) {
-        final index = entry.key;
-        final child = entry.value;
-
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: index < children.length - 1 ? 5.0 : 0.0,
-          ),
-          child: _wrapChild(child, false),
-        );
-      }).toList(),
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 500),
+      child: Column(
+        children: children.asMap().entries.map((entry) {
+          final index = entry.key;
+          final child = entry.value;
+      
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: index < children.length - 1 ? 5.0 : 0.0,
+            ),
+            child: _wrapChild(child, false),
+          );
+        }).toList(),
+      ),
     );
   }
 

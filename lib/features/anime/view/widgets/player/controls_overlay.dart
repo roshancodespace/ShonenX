@@ -331,7 +331,6 @@ class _SettingsSheetContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = ref.watch(playerStateProvider);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -344,14 +343,16 @@ class _SettingsSheetContent extends ConsumerWidget {
             ListTile(
               leading: const Icon(Iconsax.speedometer),
               title: const Text("Playback Speed"),
-              trailing: Text("${playerState.playbackSpeed}x"),
+              trailing: Text(
+                  "${ref.watch(playerStateProvider.select((p) => p.playbackSpeed))}x"),
               onTap: () =>
                   _showDialog(context, builder: (ctx) => _SpeedDialog()),
             ),
             ListTile(
               leading: const Icon(Iconsax.crop),
               title: const Text("Video Fit"),
-              trailing: Text(_fitModeToString(playerState.fit)),
+              trailing: Text(_fitModeToString(
+                  ref.watch(playerStateProvider.select((p) => p.fit)))),
               onTap: () => _showDialog(context, builder: (ctx) => _FitDialog()),
             ),
           ],

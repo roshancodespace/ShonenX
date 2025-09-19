@@ -35,7 +35,7 @@ class HomepageState {
 }
 
 class HomepageNotifier extends Notifier<HomepageState> {
-  AnimeRepository get _repo => ref.watch(animeRepositoryProvider);
+  AnimeRepository get _repo => ref.read(animeRepositoryProvider);
   Box<HomePageModel> get _box => Hive.box<HomePageModel>(_boxName);
   static const _boxName = 'home_page';
 

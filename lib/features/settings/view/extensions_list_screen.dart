@@ -6,8 +6,8 @@ import 'package:isar/isar.dart';
 import 'package:shonenx/core_new/models/manga.dart';
 import 'package:shonenx/core_new/models/source.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
-import 'package:shonenx/features/settings/widgets/extension_tile.dart';
-import 'package:shonenx/features/settings/widgets/settings_section.dart';
+import 'package:shonenx/features/settings/view/widgets/extension_tile.dart';
+import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 import 'package:shonenx/main.dart';
 
 final _uninstalledAnimeExtensionsProvider =

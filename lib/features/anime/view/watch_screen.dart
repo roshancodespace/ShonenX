@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -95,9 +96,10 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       body: Center(child: OrientationBuilder(
         builder: (context, orientation) {
           final videoPlayerWidget = Video(
+            wakelock: true,
             controller: playerNotifier.videoController,
             fit: fit,
-            filterQuality: FilterQuality.none,
+            filterQuality: kDebugMode ? FilterQuality.low : FilterQuality.none,
             controls: (state) => CloudstreamControls(
               onEpisodesPressed: _toggleEpisodesPanel,
             ),

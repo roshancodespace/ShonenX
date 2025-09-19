@@ -12,6 +12,40 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
+      # 1. Check Job Statuses of Android Release
+      - name: Check Job Statuses
+        id: check_jobs
+        env:
+          WORKFLOW_RUN: ${{ toJSON(github.event.workflow_run) }}
+          JOBS: ${{ toJSON(github.event.workflow_run.jobs) }}
+        run: |
+          echo "Workflow run event: $WORKFLOW_RUN"
+          if [ -z "$JOBS" ] || [ "$JOBS" == "null" ]; then
+            echo "Warning: No job data available from workflow_run. This may occur if the triggering workflow failed. Assuming failure unless manual trigger."
+            ALL_SUCCESS=false
+          else
+            ALL_SUCCESS=true
+          fi
+
+          REQUIRED_JOBS=("build-android")
+
+          if [ -n "$JOBS" ] && [ "$JOBS" != "null" ]; then
+            for JOB in "${REQUIRED_JOBS[@]}"; do
+              JOB_STATUS=$(echo "$JOBS" | jq -c ".[] | select(.name == \"$JOB\") | .conclusion")
+              if [ -z "$JOB_STATUS" ] || [ "$JOB_STATUS" != '"success"' ]; then
+                echo "Job $JOB failed or was not found. Status: $JOB_STATUS"
+                ALL_SUCCESS=false
+                break
+              else
+                echo "Job $JOB succeeded. Status: $JOB_STATUS"
+              fi
+            done
+          fi
+
+          echo "all_jobs_success=$ALL_SUCCESS" >> $GITHUB_OUTPUT
+        shell: /usr/bin/bash -e {0}
+
+      # 2. Cloning repository
       - name: Cloning repository
         uses: actions/checkout@v4
         with:
@@ -19,6 +53,7 @@ jobs:
       
       - name: Fetch Repository Tags by Date and Time
         id: fetch_tags
+        if: ${{ steps.check_jobs.outputs.all_jobs_success == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           curl -s "https://api.github.com/repos/${{github.repository}}/tags" -o tags.json
           TAGS=$(jq -r '.[].name' tags.json)
@@ -49,6 +84,7 @@ jobs:
           
       - name: Get Latest Release Notes
         id: get_release_notes
+        if: ${{ steps.check_jobs.outputs.all_jobs_success == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
           "https://api.github.com/repos/${{github.repository}}/releases/tags/${{ env.LATEST_TAG }}")
@@ -61,6 +97,7 @@ jobs:
 
       - name: Format Release Notes
         id: format_notes
+        if: ${{ steps.check_jobs.outputs.all_jobs_success == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           # Just clean the || markers and set as environment variable
           sed 's/||//g' release_notes.txt > clean_release_notes.txt
@@ -75,6 +112,7 @@ jobs:
 
       - name: Get and Categorize Assets with Sizes
         id: categorize_assets
+        if: ${{ steps.check_jobs.outputs.all_jobs_success == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           # Fetch release assets based on the latest tag
           curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
@@ -109,6 +147,7 @@ jobs:
           done
 
       - name: Send message to Discord
+        if: ${{ steps.check_jobs.outputs.all_jobs_success == 'true' || github.event_name == 'workflow_dispatch' }}
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
@@ -162,6 +201,7 @@ jobs:
               "$DISCORD_WEBHOOK_URL"
 
       - name: Send Assets to Discord
+        if: ${{ steps.check_jobs.outputs.all_jobs_success == 'true' || github.event_name == 'workflow_dispatch' }}
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK }}
         run: |

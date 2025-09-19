@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -99,11 +100,24 @@ class MyApp extends ConsumerWidget {
   }
 }
 
-void showAppSnackBar(String message) {
+void showAppSnackBar(String title, String message,
+    {ContentType type = ContentType.success}) {
   final messenger = scaffoldMessengerKey.currentState;
   if (messenger != null) {
-    messenger.showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    messenger
+      ..removeCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.fixed,
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          content: AwesomeSnackbarContent(
+            title: title,
+            message: message,
+            contentType: type,
+          ),
+        ),
+      );
   }
 }
+

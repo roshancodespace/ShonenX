@@ -11,6 +11,7 @@ import 'package:shonenx/core/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/helpers/navigation.dart';
+import 'package:shonenx/main.dart';
 
 /// Searches for an anime match and navigates to the watch screen.
 ///
@@ -39,8 +40,8 @@ Future<void> providerAnimeMatchSearch({
     if (!context.mounted) return;
 
     if (initialResponse.results.isEmpty) {
-      _showErrorSnackBar(context, 'Anime Not Found',
-          'We couldn\'t locate this anime with the selected provider.');
+      showAppSnackBar('Anime Not Found',
+          'We couldn\'t locate this anime with the selected provider.', type: ContentType.failure);
       return;
     }
 
@@ -81,7 +82,7 @@ Future<void> providerAnimeMatchSearch({
   } catch (e, stackTrace) {
     AppLogger.e('Anime match search failed', e, stackTrace);
     if (context.mounted) {
-      _showErrorSnackBar(context, 'Error', 'Failed to load anime details.');
+      showAppSnackBar('Error', 'Failed to load anime details.', type: ContentType.failure);
     }
   } finally {
     afterSearchCallback?.call();
@@ -153,7 +154,8 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
     } catch (e, stackTrace) {
       AppLogger.e('Anime search in dialog failed', e, stackTrace);
       if (mounted) {
-        _showErrorSnackBar(context, 'Search Error', 'Could not fetch results.');
+        showAppSnackBar('Search Error', 'Could not fetch results.',
+            type: ContentType.failure);
         setState(() => _results = []);
       }
     } finally {
@@ -322,22 +324,4 @@ class _AnimeTile extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Helper to show a standardized error snackbar.
-void _showErrorSnackBar(BuildContext context, String title, String message) {
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.transparent,
-        content: AwesomeSnackbarContent(
-          title: title,
-          message: message,
-          contentType: ContentType.failure,
-        ),
-      ),
-    );
 }

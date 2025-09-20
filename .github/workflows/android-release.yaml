@@ -13,9 +13,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout
+      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # fetch full history to get previous tags
 
       # 2. Set up Flutter
       - name: Set up Flutter
@@ -46,19 +48,39 @@ jobs:
           echo "API_URL=${{ secrets.API_URL }}" >> .env
         shell: bash
 
-      # 6. Build APKs (split per ABI)
+      # 6. Generate structured release notes
+      - name: Generate release notes
+        id: changelog
+        run: |
+          # Get the latest tag before this release
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^)
+          echo "Last tag: $LAST_TAG"
+
+          # Get commits since last tag
+          COMMITS=$(git log $LAST_TAG..HEAD --pretty=format:'%s')
+
+          # Categorize commits by type (conventional commits)
+          echo "## Changelog" > release_notes.md
+          for TYPE in feat fix perf style refactor docs chore; do
+            echo "### $TYPE" >> release_notes.md
+            echo "$COMMITS" | grep -i "^$TYPE" | sed "s/^$TYPE: /- /" >> release_notes.md || true
+            echo "" >> release_notes.md
+          done
+
+          # Save to output
+          RELEASE_NOTES=$(cat release_notes.md)
+          echo "$RELEASE_NOTES"
+          echo "::set-output name=notes::$RELEASE_NOTES"
+
+      # 7. Build APKs (split per ABI)
       - name: Build APK (split per ABI)
         run: flutter build apk --release --split-per-abi
 
-      # 7. Create GitHub Release with changelog + APKs
+      # 8. Create GitHub Release with APKs and changelog
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: build/app/outputs/flutter-apk/*.apk
-          body: |
-            🚀 New Android release: ${{ github.ref_name }}
-
-            ## Changelog
-            ${{ github.event.head_commit.message }}
+          body: ${{ steps.changelog.outputs.notes }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

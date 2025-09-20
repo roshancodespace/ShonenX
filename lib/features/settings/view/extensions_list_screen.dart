@@ -159,7 +159,7 @@ class ExtensionsListScreen extends ConsumerWidget {
                     final TextEditingController controller =
                         TextEditingController(
                       text:
-                          'https://raw.githubusercontent.com/m2k3a/mangayomi-extensions/refs/heads/main/anime_index.json',
+                          'https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/anime_index.json',
                     );
 
                     return AlertDialog(

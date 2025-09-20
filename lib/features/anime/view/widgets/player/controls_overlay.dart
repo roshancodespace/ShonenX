@@ -237,7 +237,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
         selectedIndex: episodeData.servers.indexOf(episodeData.selectedServer!),
         displayBuilder: (item) => item,
         onItemSelected: (index) {
-          episodeNotifier.changeServer(index);
+          episodeNotifier.changeServer(episodeData.servers.elementAt(index));
           Navigator.pop(context);
         },
       ),

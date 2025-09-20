@@ -84,7 +84,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                         _rangeSize = selectedSize!;
                         _currentStart = 1; // Reset to the first range
                       });
-                      episodeNotifier.syncEpisodesWithJikan(page: 1);
+                      episodeNotifier.syncEpisodesWithJikan();
                     }
                     Navigator.pop(context);
                   },
@@ -155,8 +155,8 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                           if (pageForJikan == pageForJikan.toInt()) {
                             AppLogger.w(
                                 "It's an integer: ${pageForJikan.toInt()}");
-                            episodeNotifier.syncEpisodesWithJikan(
-                                page: pageForJikan.toInt() + 1);
+                            // episodeNotifier.syncEpisodesWithJikan(
+                            
                           }
                         });
                       }

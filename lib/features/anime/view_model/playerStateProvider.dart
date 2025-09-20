@@ -97,6 +97,7 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
       {Map<String, String>? headers}) async {
     await player.open(Media(url, httpHeaders: headers));
     if (startAt != null) {
+      await player.stream.duration.firstWhere((d) => d > Duration.zero);
       await player.seek(startAt);
     }
   }

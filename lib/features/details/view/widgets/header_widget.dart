@@ -23,15 +23,20 @@ class DetailsHeader extends ConsumerStatefulWidget {
 }
 
 class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
-  late bool isFavorite;
+  bool isFavorite = false;
   bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
     // initialize from current state
-    final watchlist = ref.read(watchlistProvider);
-    isFavorite = watchlist.isFavorite(widget.anime.id!);
+    final watchlist = ref.read(watchlistProvider.notifier);
+    Future.microtask(() async {
+    isFavorite = await watchlist.ensureFavorite(widget.anime.id!);
+    setState(() {
+      
+    });
+    });
   }
 
   Future<void> toggleFavorite() async {

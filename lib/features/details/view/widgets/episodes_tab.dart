@@ -116,7 +116,9 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
             ContentType.failure);
       }
 
-      animeIdForSource = best["id"];
+      if (!useMangayomi) {
+        animeIdForSource = best["id"];
+      }
       AppLogger.d(
           'High-confidence match found: ${best["name"]} (via "$usedTitle")');
 

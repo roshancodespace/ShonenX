@@ -4,6 +4,8 @@ import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/features/anime/view_model/episodeDataProvider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
+import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 
 class TopControls extends ConsumerWidget {
   final VoidCallback onInteraction;
@@ -27,7 +29,7 @@ class TopControls extends ConsumerWidget {
     };
   }
 
-  T watchTheme<T>(
+  T watchEpisode<T>(
     WidgetRef ref,
     T Function(EpisodeDataState s) selector,
   ) {
@@ -54,12 +56,20 @@ class TopControls extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(source?.providerName.toUpperCase() ?? "SOURCE",
+                    Text(
+                        !ref.watch(experimentalProvider).useMangayomiExtensions
+                            ? (source?.providerName.toUpperCase() ?? "Legacy")
+                            : ref
+                                    .read(sourceProvider)
+                                    .activeAnimeSource
+                                    ?.name ??
+                                'Mangayomi',
                         style: Theme.of(context).textTheme.bodySmall),
-                    if (watchTheme(ref, (e) => e.selectedEpisodeIdx) != null &&
-                        watchTheme(ref, (e) => e.sources).isNotEmpty)
+                    if (watchEpisode(ref, (e) => e.selectedEpisodeIdx) !=
+                            null &&
+                        watchEpisode(ref, (e) => e.sources).isNotEmpty)
                       Text(
-                        watchTheme(ref, (e) => e.episodes)[watchTheme(
+                        watchEpisode(ref, (e) => e.episodes)[watchEpisode(
                                     ref, (e) => e.selectedEpisodeIdx)!]
                                 .title ??
                             'Unavailable',
@@ -70,7 +80,7 @@ class TopControls extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (watchTheme(ref, (e) => e.qualityOptions).length > 1)
+              if (watchEpisode(ref, (e) => e.qualityOptions).length > 1)
                 IconButton(
                     onPressed: _wrap(onQualityPressed),
                     icon: const Icon(Icons.high_quality_outlined),

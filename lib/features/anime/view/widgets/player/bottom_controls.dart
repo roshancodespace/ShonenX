@@ -38,7 +38,7 @@ class BottomControls extends ConsumerWidget {
     };
   }
 
-  T watchTheme<T>(
+  T watchEpisode<T>(
     WidgetRef ref,
     T Function(EpisodeDataState s) selector,
   ) {
@@ -176,7 +176,7 @@ class BottomControls extends ConsumerWidget {
                   label: const Text('Lock'),
                   icon: const Icon(Iconsax.lock),
                 ),
-                if (watchTheme(ref, (s) => s.dubSubSupport))
+                if (watchEpisode(ref, (s) => s.dubSubSupport))
                   TextButton.icon(
                     style: ButtonStyle(
                       foregroundColor:
@@ -184,12 +184,12 @@ class BottomControls extends ConsumerWidget {
                     ),
                     onPressed: _wrap(() => episodeNotifier.toggleDubSub()),
                     label: Text(
-                        watchTheme(ref, (s) => s.selectedCategory) == 'sub'
+                        watchEpisode(ref, (s) => s.selectedCategory) == 'sub'
                             ? 'Sub'
                             : 'Dub'),
                     icon: const Icon(Iconsax.text_block),
                   ),
-                if (watchTheme(ref, (s) => s.servers).length > 1)
+                if (watchEpisode(ref, (s) => s.servers).length > 1)
                   TextButton.icon(
                     style: ButtonStyle(
                       foregroundColor:
@@ -197,28 +197,28 @@ class BottomControls extends ConsumerWidget {
                     ),
                     onPressed: _wrap(onServerPressed),
                     label: Text(
-                        watchTheme(ref, (s) => s.selectedServer) ?? 'Server'),
+                        watchEpisode(ref, (s) => s.selectedServer) ?? 'Server'),
                     icon: const Icon(Iconsax.cloud),
                   ),
-                if (watchTheme(ref, (s) => s.sources).length > 1)
+                if (watchEpisode(ref, (s) => s.sources).length > 1)
                   TextButton.icon(
                     style: ButtonStyle(
                       foregroundColor:
                           WidgetStatePropertyAll(colorScheme.onSurface),
                     ),
-                    onPressed: watchTheme(ref, (s) => s.sources).length > 1
+                    onPressed: watchEpisode(ref, (s) => s.sources).length > 1
                         ? _wrap(onSourcePressed)
                         : null,
                     label: const Text('Source'),
                     icon: const Icon(Iconsax.hierarchy_2),
                   ),
-                if (watchTheme(ref, (s) => s.subtitles).isNotEmpty)
+                if (watchEpisode(ref, (s) => s.subtitles).isNotEmpty)
                   TextButton.icon(
                     style: ButtonStyle(
                       foregroundColor:
                           WidgetStatePropertyAll(colorScheme.onSurface),
                     ),
-                    onPressed: watchTheme(ref, (s) => s.subtitles).isNotEmpty
+                    onPressed: watchEpisode(ref, (s) => s.subtitles).isNotEmpty
                         ? _wrap(onSubtitlePressed)
                         : null,
                     label: const Text('Subtitle'),

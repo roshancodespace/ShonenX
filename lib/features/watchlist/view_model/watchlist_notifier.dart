@@ -4,6 +4,8 @@ import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/models/anilist/media_list_entry.dart';
 import 'package:shonenx/core/models/anilist/page_response.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
+import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
+import 'package:shonenx/main.dart';
 import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 
 enum WatchlistStatus {
@@ -162,6 +164,8 @@ class WatchlistNotifier extends Notifier<WatchListState> {
   }
 
   void addEntry(MediaListEntry entry) {
+    final auth = ref.read(authProvider);
+    if (!auth.isLoggedIn) return showAppSnackBar('Locked', 'This operation required authenticaion');
     final status = WatchlistStatus.values.byName(entry.status.toLowerCase());
 
     final existingList = [...?state.lists[status]];

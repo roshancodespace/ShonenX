@@ -198,7 +198,7 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
     );
   }
 
-  DropdownSettingsItem<String> _buildListSettingsItem(BuildContext context,
+  DropdownSettingsItem _buildListSettingsItem(BuildContext context,
       SourcePreference preference, ListPreference pref, ColorScheme theme) {
     final currentValue = pref.valueIndex != null &&
             pref.entries != null &&
@@ -206,7 +206,7 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
         ? pref.entries![pref.valueIndex!]
         : 'Select option';
 
-    return DropdownSettingsItem<String>(
+    return DropdownSettingsItem(
       icon: const Icon(Iconsax.menu_1),
       accent: theme.primary,
       title: pref.title ?? 'List Setting',

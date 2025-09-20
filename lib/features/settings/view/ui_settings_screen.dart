@@ -70,7 +70,7 @@ class UiSettingsScreen extends ConsumerWidget {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  DropdownSettingsItem<String>(
+                  DropdownSettingsItem(
                     icon: Icon(Iconsax.card, color: colorScheme.primary),
                     accent: colorScheme.primary,
                     title: 'Card Style',

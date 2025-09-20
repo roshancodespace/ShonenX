@@ -529,7 +529,7 @@ class SliderSettingsItem extends BaseSettingsItem {
 }
 
 // --- Dropdown Settings Item ---
-class DropdownSettingsItem<T> extends BaseSettingsItem {
+class DropdownSettingsItem extends BaseSettingsItem {
   final String value;
   final List<DropdownMenuItem<String>> items;
   final ValueChanged<String?> onChanged;

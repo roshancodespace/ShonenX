@@ -73,6 +73,8 @@ class AppInitializer {
         Hive.openBox<PlayerModel>('player_settings'),
         Hive.openBox<AnimeWatchProgressEntry>('anime_watch_progress'),
         Hive.openBox<ExperimentalFeaturesModel>('experimental_features'),
+        // ------------------------------------
+        Hive.openBox<bool>('settings')
       ]);
 
       AppLogger.i("✅ Hive adapters registered and boxes opened.");

@@ -103,7 +103,7 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
         message: 'Logging you in',
         progress: 0.35
       );
-      _ref.read(authProvider.notifier).init();
+      _ref.read(authProvider.notifier);
 
       final registryState = _ref.read(animeSourceRegistryProvider);
       if (!registryState.isInitialized) {

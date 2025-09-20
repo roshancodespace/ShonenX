@@ -49,10 +49,10 @@ class AuthViewModel extends StateNotifier<AuthState> {
   );
 
   AuthViewModel(this._ref, this._authService) : super(const AuthState()) {
-    init();
+    _init();
   }
 
-  Future<void> init() async {
+  Future<void> _init() async {
     switch (state.authPlatform) {
       case AuthPlatform.anilist:
         return await _loadAnilistToken();

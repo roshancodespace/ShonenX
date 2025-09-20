@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/main.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
@@ -71,6 +72,10 @@ Future<void> checkForUpdates(BuildContext context,
       );
     } else {
       developer.log('No update available', name: 'UpdateChecker');
+      showAppSnackBar(
+        'No updates',
+        'You are already on latest version',
+      );
     }
   } catch (e) {
     AppLogger.w('Failed to check for updates: $e');

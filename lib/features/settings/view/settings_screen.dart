@@ -6,6 +6,7 @@ import 'package:shonenx/features/settings/view_model/experimental_notifier.dart'
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/shared/providers/update_provider.dart';
 import 'package:shonenx/utils/updater.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -115,8 +116,7 @@ class SettingsScreen extends ConsumerWidget {
                   onTap: () {},
                   children: [
                     NormalSettingsItem(
-                      icon:
-                          Icon(Iconsax.danger, color: colorScheme.primary),
+                      icon: Icon(Iconsax.danger, color: colorScheme.primary),
                       accent: colorScheme.primary,
                       title: 'Experimental',
                       description: 'Few extra features',
@@ -128,18 +128,28 @@ class SettingsScreen extends ConsumerWidget {
                       accent: colorScheme.primary,
                       title: 'Check for updates',
                       description: 'Manually check for latest release',
-                      onTap: () => checkForUpdates(context, debugMode: kDebugMode),
+                      onTap: () =>
+                          checkForUpdates(context, debugMode: kDebugMode),
                     ),
-                    // ToggleableSettingsItem(
-                    //   icon:
-                    //       Icon(Iconsax.info_circle, color: colorScheme.primary),
-                    //   accent: colorScheme.primary,
-                    //   title: 'Automatic updates',
-                    //   description: 'Automatically check for latest release',
-                    //   value: false,
-                    //   onChanged: (val) {},
-                    // ),
-                    const SizedBox(height: 50,)
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final isAuto = ref.watch(automaticUpdatesProvider);
+                        final updateNotifier =
+                            ref.read(automaticUpdatesProvider.notifier);
+                        return ToggleableSettingsItem(
+                          icon: Icon(Iconsax.info_circle,
+                              color: colorScheme.primary),
+                          accent: colorScheme.primary,
+                          title: 'Automatic updates',
+                          description: 'Automatically check for latest release',
+                          value: isAuto,
+                          onChanged: (val) => updateNotifier.toggle(),
+                        );
+                      },
+                    ),
+                    const SizedBox(
+                      height: 50,
+                    )
                   ]),
             ],
           ),

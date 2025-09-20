@@ -83,6 +83,8 @@ dependencies:
   archive: ^4.0.7
   image_picker: ^1.1.2
   collection: ^1.19.1
+  dio: ^5.9.0
+  install_plugin: ^2.1.0
 
 dev_dependencies:
   build_runner: ^2.4.13

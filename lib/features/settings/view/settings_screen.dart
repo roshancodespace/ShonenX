@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
@@ -5,6 +6,7 @@ import 'package:shonenx/features/settings/view_model/experimental_notifier.dart'
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/utils/updater.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -114,12 +116,30 @@ class SettingsScreen extends ConsumerWidget {
                   children: [
                     NormalSettingsItem(
                       icon:
-                          Icon(Iconsax.info_circle, color: colorScheme.primary),
+                          Icon(Iconsax.danger, color: colorScheme.primary),
                       accent: colorScheme.primary,
                       title: 'Experimental',
                       description: 'Few extra features',
                       onTap: () => context.push('/settings/experimental'),
                     ),
+                    NormalSettingsItem(
+                      icon:
+                          Icon(Iconsax.info_circle, color: colorScheme.primary),
+                      accent: colorScheme.primary,
+                      title: 'Check for updates',
+                      description: 'Manually check for latest release',
+                      onTap: () => checkForUpdates(context, debugMode: kDebugMode),
+                    ),
+                    // ToggleableSettingsItem(
+                    //   icon:
+                    //       Icon(Iconsax.info_circle, color: colorScheme.primary),
+                    //   accent: colorScheme.primary,
+                    //   title: 'Automatic updates',
+                    //   description: 'Automatically check for latest release',
+                    //   value: false,
+                    //   onChanged: (val) {},
+                    // ),
+                    const SizedBox(height: 50,)
                   ]),
             ],
           ),

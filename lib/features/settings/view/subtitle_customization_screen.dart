@@ -52,7 +52,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                   (prev) => prev.copyWith(fontSize: value),
                 ),
               ),
-              DropdownSettingsItem<String>(
+              DropdownSettingsItem(
                 icon: Icon(Iconsax.text_block, color: colorScheme.primary),
                 accent: colorScheme.primary,
                 title: 'Font Family',

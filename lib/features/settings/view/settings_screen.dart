@@ -29,7 +29,7 @@ class SettingsScreen extends ConsumerWidget {
                   titleColor: colorScheme.primary,
                   onTap: () {},
                   children: [
-                    SettingsItem(
+                    NormalSettingsItem(
                       icon: Icon(Iconsax.user, color: colorScheme.primary),
                       accent: colorScheme.primary,
                       title: 'Profile Settings',
@@ -43,7 +43,7 @@ class SettingsScreen extends ConsumerWidget {
                   titleColor: colorScheme.primary,
                   onTap: () {},
                   children: [
-                    SettingsItem(
+                    NormalSettingsItem(
                       icon: Icon(Icons.source_outlined,
                           color: colorScheme.primary),
                       accent: colorScheme.primary,
@@ -52,7 +52,7 @@ class SettingsScreen extends ConsumerWidget {
                       onTap: () => context.push('/settings/anime-sources'),
                     ),
                     if (experimental.useMangayomiExtensions)
-                      SettingsItem(
+                      NormalSettingsItem(
                         icon: Icon(Icons.extension_outlined,
                             color: colorScheme.primary),
                         accent: colorScheme.primary,
@@ -60,7 +60,7 @@ class SettingsScreen extends ConsumerWidget {
                         description: 'Manage your extensions',
                         onTap: () => context.push('/settings/extensions'),
                       ),
-                    SettingsItem(
+                    NormalSettingsItem(
                       icon:
                           Icon(Iconsax.video_play, color: colorScheme.primary),
                       accent: colorScheme.primary,
@@ -75,7 +75,7 @@ class SettingsScreen extends ConsumerWidget {
                   titleColor: colorScheme.primary,
                   onTap: () {},
                   children: [
-                    SettingsItem(
+                    NormalSettingsItem(
                       icon:
                           Icon(Iconsax.paintbucket, color: colorScheme.primary),
                       accent: colorScheme.primary,
@@ -83,7 +83,7 @@ class SettingsScreen extends ConsumerWidget {
                       description: 'Customize app colors and appearance',
                       onTap: () => context.push('/settings/theme'),
                     ),
-                    SettingsItem(
+                    NormalSettingsItem(
                       icon: Icon(Iconsax.mobile, color: colorScheme.primary),
                       accent: colorScheme.primary,
                       title: 'UI Settings',
@@ -97,7 +97,7 @@ class SettingsScreen extends ConsumerWidget {
                   titleColor: colorScheme.primary,
                   onTap: () {},
                   children: [
-                    SettingsItem(
+                    NormalSettingsItem(
                       icon:
                           Icon(Iconsax.info_circle, color: colorScheme.primary),
                       accent: colorScheme.primary,
@@ -112,7 +112,7 @@ class SettingsScreen extends ConsumerWidget {
                   titleColor: colorScheme.primary,
                   onTap: () {},
                   children: [
-                    SettingsItem(
+                    NormalSettingsItem(
                       icon:
                           Icon(Iconsax.info_circle, color: colorScheme.primary),
                       accent: colorScheme.primary,

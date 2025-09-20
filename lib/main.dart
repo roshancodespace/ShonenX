@@ -73,7 +73,7 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeSettingsProvider);
-    final router = ref.watch(routerProvider);
+    final router = ref.read(routerProvider);
 
     final lightTheme = FlexThemeData.light(
       swapColors: theme.swapColors,
@@ -96,24 +96,13 @@ class MyApp extends ConsumerWidget {
             ? ThemeMode.dark
             : ThemeMode.system;
 
-    final brightness = themeMode == ThemeMode.light
-        ? Brightness.light
-        : themeMode == ThemeMode.dark
-            ? Brightness.dark
-            : MediaQuery.platformBrightnessOf(context);
-
-    return AnimatedTheme(
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOut,
-      data: brightness == Brightness.dark ? darkTheme : lightTheme,
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        scaffoldMessengerKey: scaffoldMessengerKey,
-        routerConfig: router,
-        theme: lightTheme,
-        darkTheme: darkTheme,
-        themeMode: themeMode,
-      ),
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: scaffoldMessengerKey,
+      routerConfig: router,
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: themeMode,
     );
   }
 }

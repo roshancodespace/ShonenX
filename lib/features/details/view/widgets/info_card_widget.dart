@@ -20,6 +20,7 @@ class AnimeInfoCard extends StatelessWidget {
 
     return Card(
       elevation: 2,
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: colorScheme.surfaceContainer,
       child: Padding(

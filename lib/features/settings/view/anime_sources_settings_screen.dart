@@ -63,14 +63,13 @@ class AnimeSourcesSettingsScreen extends ConsumerWidget {
                         provider.toLowerCase();
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
-                      child: SettingsItem(
+                      child: SelectableSettingsItem(
                         icon: Icon(_getStatusIcon(status)),
                         iconColor: _getStatusColor(status),
                         accent: _getStatusColor(status),
                         title: provider.toUpperCase(),
                         description:
                             'Status: ${status?.toUpperCase() ?? 'UNKNOWN'}',
-                        type: SettingsItemType.selectable,
                         isInSelectionMode: true,
                         isSelected: isSelected,
                         onTap: () {

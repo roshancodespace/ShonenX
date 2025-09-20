@@ -3,31 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/features/settings/model/theme_model.dart';
 import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 
-class ThemeSettingsScreen extends ConsumerStatefulWidget {
+class ThemeSettingsScreen extends ConsumerWidget {
   const ThemeSettingsScreen({super.key});
 
   @override
-  ConsumerState<ThemeSettingsScreen> createState() =>
-      _ThemeSettingsScreenState();
-}
-
-class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
-  T watchTheme<T>(
-    WidgetRef ref,
-    T Function(ThemeModel s) selector,
-  ) {
-    return ref.watch(themeSettingsProvider.select(selector));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final themeSettingsNotifier = ref.read(themeSettingsProvider.notifier);
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch the provider to rebuild the UI on state changes.
+    final theme = ref.watch(themeSettingsProvider);
+    final themeNotifier = ref.read(themeSettingsProvider.notifier);
     final colorScheme = Theme.of(context).colorScheme;
+    final isCurrentlyDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton.filledTonal(
@@ -43,104 +33,98 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Theme Section
               SettingsSection(
-                  title: 'Theme',
-                  titleColor: colorScheme.primary,
-                  children: [
-                    SettingsItem(
-                      icon: const Icon(Icons.palette),
-                      accent: colorScheme.primary,
-                      title: 'Theme',
-                      description: 'Choose your preferred theme',
-                      type: SettingsItemType.segmentedToggle,
-                      segmentedSelectedIndex:
-                          watchTheme(ref, (t) => t.themeMode) == 'light'
-                              ? 1
-                              : watchTheme(ref, (t) => t.themeMode) == 'dark'
-                                  ? 2
-                                  : 0,
-                      segmentedOptions: const [
-                        Icon(Icons.brightness_auto),
-                        Icon(Icons.light_mode),
-                        Icon(Icons.dark_mode),
-                      ],
-                      segmentedLabels: const ['System', 'Light', 'Dark'],
-                      onSegmentedChanged: (index) {
-                        setState(() {
-                          themeSettingsNotifier
-                              .updateSettings((prev) => prev.copyWith(
-                                  themeMode: index == 0
-                                      ? 'system'
-                                      : index == 1
-                                          ? 'light'
-                                          : 'dark'));
-                        });
-                      },
-                    ),
-                  ]),
-              const SizedBox(height: 15),
+                title: 'Appearance',
+                titleColor: colorScheme.primary,
+                children: [
+                  SegmentedToggleSettingsItem<int>(
+                    accent: colorScheme.primary,
+                    iconColor: colorScheme.primary,
+                    title: 'Theme Mode',
+                    description: 'Choose your preferred theme',
+                    selectedValue: theme.themeMode == 'light'
+                        ? 1
+                        : theme.themeMode == 'dark'
+                            ? 2
+                            : 0,
+                    onValueChanged: (index) {
+                      final newMode = index == 0
+                          ? 'system'
+                          : index == 1
+                              ? 'light'
+                              : 'dark';
+                      themeNotifier
+                          .updateSettings((prev) => prev.copyWith(themeMode: newMode));
+                    },
+                    children: const {
+                      0: Icon(Iconsax.monitor),
+                      1: Icon(Iconsax.sun_1),
+                      2: Icon(Iconsax.moon),
+                    },
+                    labels: const {
+                      0: 'System',
+                      1: 'Light',
+                      2: 'Dark',
+                    },
+                    icon: const Icon(Iconsax.color_swatch),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
               SettingsSection(
-                  title: 'Advanced',
-                  titleColor: colorScheme.primary,
-                  children: [
-                    if (watchTheme(ref, (t) => t.themeMode) == 'dark' ||
-                        (watchTheme(ref, (t) => t.themeMode) == 'system' &&
-                            Theme.of(context).brightness ==
-                                Brightness.dark)) ...[
-                      SettingsItem(
-                        icon: Icon(Iconsax.colorfilter,
-                            color: colorScheme.primary),
-                        accent: colorScheme.primary,
-                        title: 'AMOLED Dark',
-                        description: 'Use pure black for dark mode',
-                        type: SettingsItemType.toggleable,
-                        toggleValue: watchTheme(ref, (t) => t.amoled),
-                        onToggleChanged: (value) {
-                          themeSettingsNotifier.updateSettings(
-                              (prev) => prev.copyWith(amoled: value));
-                        },
-                      )
-                    ],
-                    SettingsItem(
+                title: 'Colors',
+                titleColor: colorScheme.primary,
+                children: [
+                  NormalSettingsItem(
+                    icon: Icon(Iconsax.colors_square, color: colorScheme.primary),
+                    accent: colorScheme.primary,
+                    title: 'Color Scheme',
+                    description: _formatSchemeName(theme.flexScheme ?? ''),
+                    onTap: () =>
+                        _showColorSchemeSheet(context, ref, themeNotifier),
+                  ),
+                  if (theme.themeMode == 'dark' ||
+                      (theme.themeMode == 'system' && isCurrentlyDark))
+                    ToggleableSettingsItem(
                       icon:
-                          Icon(Iconsax.arrow_swap, color: colorScheme.primary),
+                          Icon(Iconsax.colorfilter, color: colorScheme.primary),
                       accent: colorScheme.primary,
-                      title: 'Swap Colors',
-                      description: 'Swap primary and secondary colors',
-                      type: SettingsItemType.toggleable,
-                      toggleValue: watchTheme(ref, (t) => t.swapColors),
-                      onToggleChanged: (value) {
-                        themeSettingsNotifier.updateSettings(
-                            (prev) => prev.copyWith(swapColors: value));
+                      title: 'AMOLED Dark',
+                      description: 'Use pure black for dark backgrounds',
+                      value: theme.amoled,
+                      onChanged: (value) {
+                        themeNotifier
+                            .updateSettings((prev) => prev.copyWith(amoled: value));
                       },
                     ),
-                    SettingsItem(
-                      icon: Icon(Icons.colorize, color: colorScheme.primary),
-                      accent: colorScheme.primary,
-                      title: 'Color Scheme',
-                      description: 'Change the color scheme of the app',
-                      onTap: () => _showColorSchemeSheet(context, ref),
-                    ),
-                    SettingsItem(
-                      icon: Icon(Icons.blender_outlined,
-                          color: colorScheme.primary),
-                      accent: colorScheme.primary,
-                      sliderValue:
-                          watchTheme(ref, (t) => t.blendLevel).toDouble(),
-                      sliderMin: 0,
-                      sliderMax: 40,
-                      sliderDivisions: 40,
-                      sliderSuffix: '',
-                      type: SettingsItemType.slider,
-                      title: 'Blend Level',
-                      description: 'Change the color blend level',
-                      onSliderChanged: (value) {
-                        themeSettingsNotifier.updateSettings(
-                            (prev) => prev.copyWith(blendLevel: value.toInt()));
-                      },
-                    ),
-                  ]),
+                  ToggleableSettingsItem(
+                    icon: Icon(Iconsax.arrow_swap, color: colorScheme.primary),
+                    accent: colorScheme.primary,
+                    title: 'Swap Colors',
+                    description: 'Swap primary and secondary colors',
+                    value: theme.swapColors,
+                    onChanged: (value) {
+                      themeNotifier.updateSettings(
+                          (prev) => prev.copyWith(swapColors: value));
+                    },
+                  ),
+                  SliderSettingsItem(
+                    icon:
+                        Icon(Icons.blender_outlined, color: colorScheme.primary),
+                    accent: colorScheme.primary,
+                    value: theme.blendLevel.toDouble(),
+                    min: 0,
+                    max: 40,
+                    divisions: 40,
+                    title: 'Blend Level',
+                    description: 'Adjust the color blend intensity',
+                    onChanged: (value) {
+                      themeNotifier.updateSettings(
+                          (prev) => prev.copyWith(blendLevel: value.toInt()));
+                    },
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -148,81 +132,77 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
     );
   }
 
-  void _showColorSchemeSheet(BuildContext context, WidgetRef ref) {
+  void _showColorSchemeSheet(
+      BuildContext context, WidgetRef ref, ThemeSettingsNotifier themeNotifier) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) {
-        return Consumer(
-          builder: (context, ref, child) {
-            final themeSettingsNotifier =
-                ref.read(themeSettingsProvider.notifier);
+        final theme = ref.watch(themeSettingsProvider);
 
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
             return Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
+                    const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Handle
                   Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    width: 32,
-                    height: 3,
+                    margin: const EdgeInsets.only(top: 12, bottom: 12),
+                    width: 40,
+                    height: 5,
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .outline
-                          .withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(2),
+                      color:
+                          Theme.of(context).colorScheme.outline.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-
-                  // Header
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       'Color Scheme',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
-
-                  // Schemes list
-                  Flexible(
+                  const SizedBox(height: 8),
+                  Expanded(
                     child: ListView.builder(
+                      controller: scrollController,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      shrinkWrap: true,
                       itemCount: FlexScheme.values.length,
                       itemBuilder: (context, index) {
                         final scheme = FlexScheme.values[index];
-                        final isSelected =
-                            watchTheme(ref, (t) => t.flexScheme) == scheme.name;
+                        final isSelected = theme.flexScheme == scheme.name;
 
                         return ListTile(
                           onTap: () {
-                            themeSettingsNotifier.updateSettings(
+                            themeNotifier.updateSettings(
                               (prev) => prev.copyWith(flexScheme: scheme.name),
                             );
                           },
                           leading: _buildMinimalPreview(scheme),
                           title: Text(_formatSchemeName(scheme.name)),
-                          // The trailing icon will now update correctly.
                           trailing: isSelected
-                              ? const Icon(Icons.check, size: 20)
+                              ? Icon(Iconsax.tick_circle,
+                                  color: Theme.of(context).colorScheme.primary)
                               : null,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         );
                       },
                     ),
                   ),
-
-                  const SizedBox(height: 16),
                 ],
               ),
             );
@@ -236,47 +216,28 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
     final colors = FlexThemeData.light(scheme: scheme).colorScheme;
 
     return Container(
-      width: 40,
-      height: 40,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colors.outline.withOpacity(0.2)),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: colors.primary,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(7),
-                  bottomLeft: Radius.circular(7),
-                ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(11),
+        child: Row(
+          children: [
+            Expanded(flex: 2, child: Container(color: colors.primary)),
+            Expanded(
+              flex: 1,
+              child: Column(
+                children: [
+                  Expanded(child: Container(color: colors.secondary)),
+                  Expanded(child: Container(color: colors.tertiary)),
+                ],
               ),
             ),
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                Expanded(
-                  child: Container(
-                    color: colors.primary,
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: colors.tertiary,
-                      borderRadius: const BorderRadius.only(
-                        bottomRight: Radius.circular(7),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

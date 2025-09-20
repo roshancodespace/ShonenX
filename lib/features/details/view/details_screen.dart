@@ -73,7 +73,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
           children: [
             // About Tab
             SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+              padding: const EdgeInsets.fromLTRB(0, 16, 0, 100),
               child: DetailsContent(anime: widget.anime),
             ),
             // Episodes Tab

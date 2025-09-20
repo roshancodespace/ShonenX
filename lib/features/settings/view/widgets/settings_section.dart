@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 
+
 enum SettingsSectionLayout {
   list,
   grid,
@@ -25,7 +26,7 @@ class SettingsSection extends StatelessWidget {
     required this.title,
     required this.titleColor,
     this.onTap,
-    required this.children, // <-- updated
+    required this.children,
     this.roundness = 12,
     this.layout = SettingsSectionLayout.list,
     this.gridColumns = 2,
@@ -70,12 +71,14 @@ class SettingsSection extends StatelessWidget {
 
   Widget _buildListLayout() {
     return AnimatedSize(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOutCubic,
+      alignment: Alignment.topCenter,
       child: Column(
         children: children.asMap().entries.map((entry) {
           final index = entry.key;
           final child = entry.value;
-      
+
           return Padding(
             padding: EdgeInsets.only(
               bottom: index < children.length - 1 ? 5.0 : 0.0,
@@ -105,43 +108,111 @@ class SettingsSection extends StatelessWidget {
   }
 
   Widget _wrapChild(Widget child, bool isInGrid) {
-    if (child is SettingsItem) {
-      // clone with adjustments
-      return SettingsItem(
-        icon: child.icon,
-        leading: child.leading,
-        iconColor: child.iconColor,
-        accent: child.accent,
-        title: child.title,
-        description: child.description,
-        onTap: child.onTap,
-        roundness: roundness,
-        type: child.type,
-        isSelected: child.isSelected,
-        isInSelectionMode: child.isInSelectionMode,
-        toggleValue: child.toggleValue,
-        onToggleChanged: child.onToggleChanged,
-        sliderValue: child.sliderValue,
-        sliderMin: child.sliderMin,
-        sliderMax: child.sliderMax,
-        sliderDivisions: child.sliderDivisions,
-        sliderSuffix: child.sliderSuffix,
-        onSliderChanged: child.onSliderChanged,
-        dropdownValue: child.dropdownValue,
-        dropdownItems: child.dropdownItems,
-        onDropdownChanged: child.onDropdownChanged,
-        isCompact: isInGrid,
-        segmentedSelectedIndex: child.segmentedSelectedIndex,
-        segmentedOptions: child.segmentedOptions,
-        segmentedLabels: child.segmentedLabels,
-        onSegmentedChanged: child.onSegmentedChanged,
-        trailingWidgets: child.trailingWidgets,
-        layoutType: child.layoutType,
-      );
+    if (child is BaseSettingsItem) {
+      if (child is NormalSettingsItem) {
+        return NormalSettingsItem(
+          key: child.key,
+          icon: child.icon,
+          leading: child.leading,
+          iconColor: child.iconColor,
+          accent: child.accent,
+          title: child.title,
+          description: child.description,
+          onTap: child.onTap,
+          roundness: roundness,
+          trailingWidgets: child.trailingWidgets,
+          layoutType: child.layoutType,
+          isCompact: isInGrid,
+        );
+      } else if (child is SelectableSettingsItem) {
+        return SelectableSettingsItem(
+          key: child.key,
+          icon: child.icon,
+          leading: child.leading,
+          iconColor: child.iconColor,
+          accent: child.accent,
+          title: child.title,
+          description: child.description,
+          onTap: child.onTap,
+          roundness: roundness,
+          trailingWidgets: child.trailingWidgets,
+          layoutType: child.layoutType,
+          isSelected: child.isSelected,
+          isInSelectionMode: child.isInSelectionMode,
+          isCompact: isInGrid,
+        );
+      } else if (child is ToggleableSettingsItem) {
+        return ToggleableSettingsItem(
+          key: child.key,
+          icon: child.icon,
+          leading: child.leading,
+          iconColor: child.iconColor,
+          accent: child.accent,
+          title: child.title,
+          description: child.description,
+          roundness: roundness,
+          trailingWidgets: child.trailingWidgets,
+          layoutType: child.layoutType,
+          value: child.value,
+          onChanged: child.onChanged,
+          isCompact: isInGrid,
+        );
+      } else if (child is SliderSettingsItem) {
+        return SliderSettingsItem(
+          key: child.key,
+          icon: child.icon,
+          leading: child.leading,
+          iconColor: child.iconColor,
+          accent: child.accent,
+          title: child.title,
+          description: child.description,
+          roundness: roundness,
+          layoutType: child.layoutType,
+          value: child.value,
+          onChanged: child.onChanged,
+          min: child.min,
+          max: child.max,
+          divisions: child.divisions,
+          suffix: child.suffix,
+          isCompact: isInGrid,
+        );
+      } else if (child is DropdownSettingsItem) {
+        return DropdownSettingsItem(
+          key: child.key,
+          icon: child.icon,
+          leading: child.leading,
+          iconColor: child.iconColor,
+          accent: child.accent,
+          title: child.title,
+          description: child.description,
+          roundness: roundness,
+          layoutType: child.layoutType,
+          value: child.value,
+          items: child.items,
+          onChanged: (String? value) => child.onChanged(value),
+          isCompact: isInGrid,
+        );
+      } else if (child is SegmentedToggleSettingsItem) {
+        return SegmentedToggleSettingsItem(
+          key: child.key,
+          icon: child.icon,
+          leading: child.leading,
+          iconColor: child.iconColor,
+          accent: child.accent,
+          title: child.title,
+          description: child.description,
+          roundness: roundness,
+          layoutType: child.layoutType,
+          selectedValue: child.selectedValue,
+          children: child.children,
+          onValueChanged: (int value) => child.onValueChanged(value),
+          labels: child.labels,
+          isCompact: isInGrid, 
+        );
+      }
     }
 
-    // Not a SettingsItem → just render directly
+    // If it's not a SettingsItem, render it directly.
     return child;
   }
 }
-

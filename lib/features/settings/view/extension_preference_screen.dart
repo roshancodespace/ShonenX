@@ -95,7 +95,6 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
 
   Widget _buildPreferencesList(BuildContext context,
       List<SourcePreference> extPrefs, ColorScheme theme) {
-    // Group preferences by category if needed
     final Map<String, List<SourcePreference>> groupedPrefs =
         _groupPreferences(extPrefs);
 
@@ -124,12 +123,10 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
 
   Map<String, List<SourcePreference>> _groupPreferences(
       List<SourcePreference> prefs) {
-    // For now, put all preferences in a "General" category
-    // You can extend this to group by actual categories if your preferences have category metadata
     return {'General': prefs};
   }
 
-  SettingsItem _buildSettingsItem(
+  BaseSettingsItem _buildSettingsItem(
       BuildContext context, SourcePreference preference, ColorScheme theme) {
     if (preference.editTextPreference != null) {
       return _buildEditTextSettingsItem(
@@ -149,63 +146,59 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
     }
 
     // Fallback for unknown preference types
-    return SettingsItem(
+    return NormalSettingsItem(
       icon: const Icon(Iconsax.setting),
       accent: theme.primary,
       title: 'Unknown Setting',
       description: 'This setting type is not supported yet.',
-      type: SettingsItemType.normal,
     );
   }
 
-  SettingsItem _buildEditTextSettingsItem(BuildContext context,
+  NormalSettingsItem _buildEditTextSettingsItem(BuildContext context,
       SourcePreference preference, EditTextPreference pref, ColorScheme theme) {
-    return SettingsItem(
+    return NormalSettingsItem(
       icon: const Icon(Iconsax.edit),
       accent: theme.primary,
       title: pref.title ?? 'Text Setting',
       description: pref.summary ?? 'Tap to edit text value',
-      type: SettingsItemType.normal,
       onTap: () => _showEditTextDialog(context, preference, pref),
     );
   }
 
-  SettingsItem _buildCheckBoxSettingsItem(BuildContext context,
+  ToggleableSettingsItem _buildCheckBoxSettingsItem(BuildContext context,
       SourcePreference preference, CheckBoxPreference pref, ColorScheme theme) {
-    return SettingsItem(
+    return ToggleableSettingsItem(
       icon: const Icon(Iconsax.tick_square),
       accent: theme.primary,
       title: pref.title ?? 'Checkbox Setting',
       description: pref.summary ?? 'Toggle this option',
-      type: SettingsItemType.toggleable,
-      toggleValue: pref.value ?? false,
-      onToggleChanged: (value) {
+      value: pref.value ?? false,
+      onChanged: (value) {
         pref.value = value;
         setPreferenceSetting(preference, source);
       },
     );
   }
 
-  SettingsItem _buildSwitchSettingsItem(
+  ToggleableSettingsItem _buildSwitchSettingsItem(
       BuildContext context,
       SourcePreference preference,
       SwitchPreferenceCompat pref,
       ColorScheme theme) {
-    return SettingsItem(
+    return ToggleableSettingsItem(
       icon: const Icon(Iconsax.toggle_on),
       accent: theme.primary,
       title: pref.title ?? 'Switch Setting',
       description: pref.summary ?? 'Toggle this switch',
-      type: SettingsItemType.toggleable,
-      toggleValue: pref.value ?? false,
-      onToggleChanged: (value) {
+      value: pref.value ?? false,
+      onChanged: (value) {
         pref.value = value;
         setPreferenceSetting(preference, source);
       },
     );
   }
 
-  SettingsItem _buildListSettingsItem(BuildContext context,
+  DropdownSettingsItem<String> _buildListSettingsItem(BuildContext context,
       SourcePreference preference, ListPreference pref, ColorScheme theme) {
     final currentValue = pref.valueIndex != null &&
             pref.entries != null &&
@@ -213,16 +206,20 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
         ? pref.entries![pref.valueIndex!]
         : 'Select option';
 
-    return SettingsItem(
+    return DropdownSettingsItem<String>(
       icon: const Icon(Iconsax.menu_1),
       accent: theme.primary,
       title: pref.title ?? 'List Setting',
       description: 'Current: $currentValue',
-      type: SettingsItemType.dropdown,
       layoutType: SettingsItemLayout.horizontal,
-      dropdownValue: currentValue,
-      dropdownItems: pref.entries ?? [],
-      onDropdownChanged: (value) {
+      value: currentValue, 
+      items: (pref.entries ?? []).map((String item) {
+        return DropdownMenuItem<String>(
+          value: item,
+          child: Text(item),
+        );
+      }).toList(),
+      onChanged: (value) {
         if (value != null && pref.entries != null) {
           final index = pref.entries!.indexOf(value);
           if (index != -1) {
@@ -234,7 +231,7 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
     );
   }
 
-  SettingsItem _buildMultiSelectSettingsItem(
+  NormalSettingsItem _buildMultiSelectSettingsItem(
       BuildContext context,
       SourcePreference preference,
       MultiSelectListPreference pref,
@@ -242,12 +239,11 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
     final selectedCount = pref.values?.length ?? 0;
     final totalCount = pref.entries?.length ?? 0;
 
-    return SettingsItem(
+    return NormalSettingsItem(
       icon: const Icon(Iconsax.tick_circle),
       accent: theme.primary,
       title: pref.title ?? 'Multi-Select Setting',
       description: '$selectedCount of $totalCount selected',
-      type: SettingsItemType.normal,
       onTap: () => _showMultiSelectDialog(context, preference, pref),
     );
   }
@@ -396,7 +392,6 @@ class _ModernEditTextDialogState extends State<ModernEditTextDialog> {
     _controller = TextEditingController(text: widget.text);
     _focusNode = FocusNode();
 
-    // Auto-focus the text field when dialog opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });

@@ -12,6 +12,8 @@ class PlayerSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final playerSettings = ref.watch(playerSettingsProvider);
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton.filledTonal(
@@ -21,28 +23,30 @@ class PlayerSettingsScreen extends ConsumerWidget {
         forceMaterialTransparency: true,
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
             SettingsSection(
-                title: 'Quality',
-                titleColor: colorScheme.primary,
-                children: [
-                  SettingsItem(
-                    icon: Icon(Iconsax.video_tick, color: colorScheme.primary),
-                    accent: colorScheme.primary,
-                    title: 'Video Quality',
-                    description: 'Default streaming quality settings',
-                    onTap: () => _showQualitySettingsDialog(context, ref),
-                  ),
-                  SettingsItem(
-                    icon: Icon(Iconsax.subtitle, color: colorScheme.primary),
-                    accent: colorScheme.primary,
-                    title: 'Subtitle Customization',
-                    description: 'Customize subtitle appearance',
-                    onTap: () => context.push('/settings/player/subtitles'),
-                  ),
-                ]),
+              title: 'Quality',
+              titleColor: colorScheme.primary,
+              children: [
+                NormalSettingsItem(
+                  icon: Icon(Iconsax.video_tick, color: colorScheme.primary),
+                  accent: colorScheme.primary,
+                  title: 'Video Quality',
+                  description:
+                      'Current: ${playerSettings.defaultQuality}',
+                  onTap: () => _showQualitySettingsDialog(context, ref),
+                ),
+                NormalSettingsItem(
+                  icon: Icon(Iconsax.subtitle, color: colorScheme.primary),
+                  accent: colorScheme.primary,
+                  title: 'Subtitle Customization',
+                  description: 'Customize subtitle appearance',
+                  onTap: () => context.push('/settings/player/subtitles'),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -51,12 +55,11 @@ class PlayerSettingsScreen extends ConsumerWidget {
 
   void _showQualitySettingsDialog(BuildContext context, WidgetRef ref) async {
     final qualities = ['Auto', '1080p', '720p', '480p', '360p'];
-    String tempQuality = 'Auto'; // Placeholder
     final colorScheme = Theme.of(context).colorScheme;
     final playerSettings = ref.read(playerSettingsProvider);
-    tempQuality = playerSettings.defaultQuality;
+    String tempQuality = playerSettings.defaultQuality;
 
-    final newQuality = await showDialog<String>(
+    await showDialog<String>(
       context: context,
       builder: (context) {
         return StatefulBuilder(
@@ -73,12 +76,6 @@ class PlayerSettingsScreen extends ConsumerWidget {
                           onChanged: (value) {
                             if (value != null) {
                               setDialogState(() => tempQuality = value);
-                              ref
-                                  .read(playerSettingsProvider.notifier)
-                                  .updateSettings(
-                                    (prev) => prev.copyWith(
-                                        defaultQuality: tempQuality),
-                                  );
                             }
                           },
                         ))
@@ -91,7 +88,13 @@ class PlayerSettingsScreen extends ConsumerWidget {
                       style: TextStyle(color: colorScheme.onSurface)),
                 ),
                 ElevatedButton(
-                  onPressed: () => Navigator.pop(context, tempQuality),
+                  onPressed: () {
+                    ref.read(playerSettingsProvider.notifier).updateSettings(
+                          (prev) =>
+                              prev.copyWith(defaultQuality: tempQuality),
+                        );
+                    Navigator.pop(context);
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colorScheme.primaryContainer,
                     foregroundColor: colorScheme.onPrimaryContainer,
@@ -105,9 +108,5 @@ class PlayerSettingsScreen extends ConsumerWidget {
         );
       },
     );
-
-    if (newQuality != null) {
-      // Placeholder: Add defaultQuality to PlayerSettingsModel later
-    }
   }
 }

@@ -7,9 +7,7 @@ import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart'
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
-import 'package:shonenx/core/models/anilist/media.dart'
-    as anime_media;
-import 'package:uuid/uuid.dart';
+import 'package:shonenx/core/models/anilist/media.dart' as anime_media;
 
 class UiSettingsScreen extends ConsumerWidget {
   const UiSettingsScreen({super.key});
@@ -35,7 +33,7 @@ class UiSettingsScreen extends ConsumerWidget {
                   title: 'Content Display',
                   titleColor: colorScheme.primary,
                   children: [
-                    SettingsItem(
+                    NormalSettingsItem(
                       icon: Icon(Iconsax.card, color: colorScheme.primary),
                       accent: colorScheme.primary,
                       title: 'Card Style',
@@ -52,7 +50,8 @@ class UiSettingsScreen extends ConsumerWidget {
 
   void _showCardStyleDialog(BuildContext context, WidgetRef ref) async {
     final cardStyles = AnimeCardMode.values.map((e) => e.name).toList();
-    String tempStyle = ref.read(uiSettingsProvider).cardStyle;
+    String tempStyle =
+        ref.read(uiSettingsProvider.select((ui) => ui.cardStyle));
     final colorScheme = Theme.of(context).colorScheme;
 
     await showDialog<String>(
@@ -71,15 +70,20 @@ class UiSettingsScreen extends ConsumerWidget {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SettingsItem(
+                  DropdownSettingsItem<String>(
                     icon: Icon(Iconsax.card, color: colorScheme.primary),
                     accent: colorScheme.primary,
                     title: 'Card Style',
                     description: 'Customize card appearance',
-                    type: SettingsItemType.dropdown,
-                    dropdownValue: tempStyle,
-                    dropdownItems: cardStyles,
-                    onDropdownChanged: (value) => setDialogState(() {
+                    value: tempStyle,
+                    items: cardStyles
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (value) => setDialogState(() {
                       tempStyle = value!;
                     }),
                   ),
@@ -143,7 +147,6 @@ class UiSettingsScreen extends ConsumerWidget {
       episodes: 220,
       season: 'Fall',
     );
-    final tag = const Uuid().v4();
-    return AnimatedAnimeCard(anime: anime, tag: tag, mode: mode);
+    return AnimatedAnimeCard(anime: anime, tag: 'abcd', mode: mode);
   }
 }

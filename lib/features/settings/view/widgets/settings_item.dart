@@ -1,22 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 
-enum SettingsItemType {
-  normal,
-  selectable,
-  toggleable,
-  slider,
-  dropdown,
-  segmentedToggle,
-}
-
 enum SettingsItemLayout {
-  auto, // Automatically chooses based on screen size and content
-  horizontal, // Forces horizontal layout
-  vertical, // Forces vertical layout
+  auto,
+  horizontal,
+  vertical,
 }
 
-class SettingsItem extends StatelessWidget {
+abstract class BaseSettingsItem extends StatelessWidget {
   final Widget? leading;
   final Icon? icon;
   final Color? iconColor;
@@ -25,45 +16,11 @@ class SettingsItem extends StatelessWidget {
   final String description;
   final VoidCallback? onTap;
   final double roundness;
-
-  // Selection mode properties
-  final SettingsItemType type;
-  final bool isSelected;
-  final bool isInSelectionMode;
-
-  // Toggle properties
-  final bool? toggleValue;
-  final ValueChanged<bool>? onToggleChanged;
-
-  // Slider properties
-  final double? sliderValue;
-  final double? sliderMin;
-  final double? sliderMax;
-  final int? sliderDivisions;
-  final String? sliderSuffix;
-  final ValueChanged<double>? onSliderChanged;
-
-  // Dropdown properties
-  final String? dropdownValue;
-  final List<String>? dropdownItems;
-  final ValueChanged<String?>? onDropdownChanged;
-
-  // Segmented toggle properties
-  final int? segmentedSelectedIndex;
-  final List<Widget>? segmentedOptions;
-  final List<String>? segmentedLabels;
-  final ValueChanged<int>? onSegmentedChanged;
-
-  // Responsive and compact mode properties
   final bool isCompact;
-
-  // New trailing widgets property
   final List<Widget>? trailingWidgets;
-
-  // Layout property
   final SettingsItemLayout layoutType;
 
-  const SettingsItem({
+  const BaseSettingsItem({
     super.key,
     this.icon,
     this.iconColor,
@@ -73,34 +30,13 @@ class SettingsItem extends StatelessWidget {
     this.leading,
     this.onTap,
     this.roundness = 12,
-    this.type = SettingsItemType.normal,
-    this.isSelected = false,
-    this.isInSelectionMode = false,
-    this.toggleValue,
-    this.onToggleChanged,
-    this.sliderValue,
-    this.sliderMin,
-    this.sliderMax,
-    this.sliderDivisions,
-    this.sliderSuffix,
-    this.onSliderChanged,
-    this.dropdownValue,
-    this.dropdownItems,
-    this.onDropdownChanged,
-    this.segmentedSelectedIndex,
-    this.segmentedOptions,
-    this.segmentedLabels,
-    this.onSegmentedChanged,
     this.isCompact = false,
     this.trailingWidgets,
-    this.layoutType = SettingsItemLayout.auto, // New parameter
+    this.layoutType = SettingsItemLayout.auto,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bool shouldGreyOut =
-        type == SettingsItemType.selectable && isInSelectionMode && !isSelected;
-
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 600;
     final effectiveCompact = isCompact || isSmallScreen;
@@ -108,38 +44,28 @@ class SettingsItem extends StatelessWidget {
     final dimensions =
         _getResponsiveDimensions(effectiveCompact, isSmallScreen);
 
-    return Opacity(
-      opacity: shouldGreyOut ? 0.5 : 1.0,
-      child: Card(
-        elevation: effectiveCompact ? 1 : 2,
-        shape: RoundedRectangleBorder(
+    return Card(
+      elevation: effectiveCompact ? 1 : 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(roundness),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(roundness),
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(roundness),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(roundness),
-          child: InkWell(
-            onTap: _shouldDisableOnTap() ? null : onTap,
-            borderRadius: BorderRadius.circular(roundness),
-            child: Padding(
-              padding: dimensions.padding,
-              child: _buildLayout(
-                context,
-                effectiveCompact,
-                isSmallScreen,
-                dimensions,
-              ),
+          child: Padding(
+            padding: dimensions.padding,
+            child: _buildLayout(
+              context,
+              effectiveCompact,
+              isSmallScreen,
+              dimensions,
             ),
           ),
         ),
       ),
     );
-  }
-
-  bool _shouldDisableOnTap() {
-    return type == SettingsItemType.toggleable ||
-        type == SettingsItemType.slider ||
-        type == SettingsItemType.dropdown ||
-        type == SettingsItemType.segmentedToggle;
   }
 
   Widget _buildLayout(
@@ -148,20 +74,17 @@ class SettingsItem extends StatelessWidget {
     bool isSmallScreen,
     ResponsiveDimensions dimensions,
   ) {
-    // Determine layout based on the layoutType parameter
     final bool useVerticalLayout = _shouldUseVerticalLayout(
       isSmallScreen,
-      effectiveCompact,
     );
 
     if (useVerticalLayout) {
-      return _buildVerticalLayout(context, effectiveCompact, dimensions);
+      return buildVerticalLayout(context, effectiveCompact, dimensions);
     }
-    return _buildHorizontalLayout(context, effectiveCompact, dimensions);
+    return buildHorizontalLayout(context, effectiveCompact, dimensions);
   }
 
-  bool _shouldUseVerticalLayout(bool isSmallScreen, bool effectiveCompact) {
-    // Respect the explicit layout choice if not auto
+  bool _shouldUseVerticalLayout(bool isSmallScreen) {
     switch (layoutType) {
       case SettingsItemLayout.horizontal:
         return false;
@@ -169,42 +92,469 @@ class SettingsItem extends StatelessWidget {
         return true;
       case SettingsItemLayout.auto:
       default:
-        // Auto behavior - use vertical layout for complex controls on small screens
-        return isSmallScreen && _needsVerticalLayoutByContent();
+        return isSmallScreen && needsVerticalLayoutByContent();
     }
   }
 
-  bool _needsVerticalLayoutByContent() {
-    return type == SettingsItemType.dropdown ||
-        type == SettingsItemType.slider ||
-        type == SettingsItemType.segmentedToggle;
+  bool needsVerticalLayoutByContent();
+
+  Widget buildHorizontalLayout(
+    BuildContext context,
+    bool effectiveCompact,
+    ResponsiveDimensions dimensions,
+  );
+
+  Widget buildVerticalLayout(
+    BuildContext context,
+    bool effectiveCompact,
+    ResponsiveDimensions dimensions,
+  );
+
+  Widget buildIconContainer(
+      bool effectiveCompact, ResponsiveDimensions dimensions) {
+    return Container(
+      width: dimensions.iconContainerSize,
+      height: dimensions.iconContainerSize,
+      decoration: BoxDecoration(
+        color: (iconColor ?? accent).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(effectiveCompact ? 6 : 8),
+      ),
+      child: Center(
+        child: (icon != null)
+            ? IconTheme(
+                data: IconThemeData(
+                  color: (iconColor ?? accent),
+                  size: dimensions.iconSize,
+                ),
+                child: icon!,
+              )
+            : (leading != null)
+                ? leading
+                : const SizedBox.shrink(),
+      ),
+    );
   }
 
-  Widget _buildHorizontalLayout(
+  Widget buildTitleAndDescription(
+    bool effectiveCompact,
+    ResponsiveDimensions dimensions, {
+    bool isVertical = false,
+  }) {
+    return Expanded(
+      flex: isVertical ? 0 : 1,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: dimensions.titleFontSize,
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: (effectiveCompact || isVertical) ? 1 : 2,
+          ),
+          if (description.isNotEmpty &&
+              (!effectiveCompact || description.isNotEmpty)) ...[
+            SizedBox(height: effectiveCompact ? 1 : 2),
+            Text(
+              description,
+              style: TextStyle(
+                fontSize: dimensions.descriptionFontSize,
+                color: Colors.grey[600],
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: (effectiveCompact || isVertical) ? 1 : 2,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<Widget> buildCustomTrailingWidgets(bool effectiveCompact) {
+    if (trailingWidgets == null) return [];
+    return trailingWidgets!.map((widget) {
+      return Padding(
+        padding: EdgeInsets.only(left: effectiveCompact ? 8 : 12),
+        child: widget,
+      );
+    }).toList();
+  }
+
+  ResponsiveDimensions _getResponsiveDimensions(
+      bool effectiveCompact, bool isSmallScreen) {
+    return ResponsiveDimensions(
+      iconSize: effectiveCompact ? 20 : (isSmallScreen ? 22 : 24),
+      iconContainerSize: effectiveCompact ? 40 : (isSmallScreen ? 44 : 48),
+      titleFontSize: effectiveCompact ? 14 : (isSmallScreen ? 15 : 16),
+      descriptionFontSize: effectiveCompact ? 11 : (isSmallScreen ? 11.5 : 12),
+      padding: effectiveCompact
+          ? const EdgeInsets.all(12.0)
+          : (isSmallScreen
+              ? const EdgeInsets.all(14.0)
+              : const EdgeInsets.all(16.0)),
+      spacing: effectiveCompact ? 12 : (isSmallScreen ? 14 : 16),
+    );
+  }
+}
+
+class ResponsiveDimensions {
+  final double iconSize;
+  final double iconContainerSize;
+  final double titleFontSize;
+  final double descriptionFontSize;
+  final EdgeInsets padding;
+  final double spacing;
+
+  const ResponsiveDimensions({
+    required this.iconSize,
+    required this.iconContainerSize,
+    required this.titleFontSize,
+    required this.descriptionFontSize,
+    required this.padding,
+    required this.spacing,
+  });
+}
+
+// --- Normal Settings Item ---
+class NormalSettingsItem extends BaseSettingsItem {
+  const NormalSettingsItem({
+    super.key,
+    super.icon,
+    super.iconColor,
+    required super.accent,
+    required super.title,
+    required super.description,
+    super.leading,
+    super.onTap,
+    super.roundness,
+    super.isCompact,
+    super.trailingWidgets,
+    super.layoutType,
+  });
+
+  @override
+  bool needsVerticalLayoutByContent() => false;
+
+  @override
+  Widget buildHorizontalLayout(
     BuildContext context,
     bool effectiveCompact,
     ResponsiveDimensions dimensions,
   ) {
-    if (type == SettingsItemType.dropdown) {
-      return _buildHorizontalDropdownLayout(
-          context, effectiveCompact, dimensions);
-    }
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        _buildIconContainer(effectiveCompact, dimensions),
+        buildIconContainer(effectiveCompact, dimensions),
         SizedBox(width: dimensions.spacing),
-        _buildTitleAndDescription(effectiveCompact, dimensions),
-        if (_shouldShowDefaultTrailing())
-          _buildDefaultTrailingWidget(effectiveCompact),
-        if (trailingWidgets != null)
-          ..._buildCustomTrailingWidgets(effectiveCompact),
+        buildTitleAndDescription(effectiveCompact, dimensions),
+        if (trailingWidgets == null)
+          Icon(
+            Iconsax.arrow_right_3,
+            size: effectiveCompact ? 16 : 20,
+            color: Colors.grey[400],
+          )
+        else
+          ...buildCustomTrailingWidgets(effectiveCompact),
       ],
     );
   }
 
-  Widget _buildHorizontalDropdownLayout(
+  @override
+  Widget buildVerticalLayout(
+    BuildContext context,
+    bool effectiveCompact,
+    ResponsiveDimensions dimensions,
+  ) {
+    // A normal item doesn't typically need a vertical layout,
+    // so we default to the horizontal one.
+    return buildHorizontalLayout(context, effectiveCompact, dimensions);
+  }
+}
+
+// --- Selectable Settings Item ---
+class SelectableSettingsItem extends BaseSettingsItem {
+  final bool isSelected;
+  final bool isInSelectionMode;
+
+  const SelectableSettingsItem({
+    super.key,
+    super.icon,
+    super.iconColor,
+    required super.accent,
+    required super.title,
+    required super.description,
+    super.leading,
+    super.onTap,
+    super.roundness,
+    super.isCompact,
+    super.trailingWidgets,
+    super.layoutType,
+    this.isSelected = false,
+    this.isInSelectionMode = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool shouldGreyOut = isInSelectionMode && !isSelected;
+    return Opacity(
+      opacity: shouldGreyOut ? 0.5 : 1.0,
+      child: super.build(context),
+    );
+  }
+
+  @override
+  bool needsVerticalLayoutByContent() => false;
+
+  @override
+  Widget buildHorizontalLayout(
+    BuildContext context,
+    bool effectiveCompact,
+    ResponsiveDimensions dimensions,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        buildIconContainer(effectiveCompact, dimensions),
+        SizedBox(width: dimensions.spacing),
+        buildTitleAndDescription(effectiveCompact, dimensions),
+        if (trailingWidgets == null) ...[
+          if (isSelected)
+            Container(
+              width: effectiveCompact ? 20 : 24,
+              height: effectiveCompact ? 20 : 24,
+              decoration: BoxDecoration(
+                color: iconColor ?? accent,
+                borderRadius:
+                    BorderRadius.circular(effectiveCompact ? 10 : 12),
+              ),
+              child: Icon(
+                Icons.check,
+                size: effectiveCompact ? 14 : 16,
+                color: Colors.white,
+              ),
+            )
+        ] else
+          ...buildCustomTrailingWidgets(effectiveCompact),
+      ],
+    );
+  }
+
+  @override
+  Widget buildVerticalLayout(
+    BuildContext context,
+    bool effectiveCompact,
+    ResponsiveDimensions dimensions,
+  ) {
+    return buildHorizontalLayout(context, effectiveCompact, dimensions);
+  }
+}
+
+// --- Toggleable Settings Item ---
+class ToggleableSettingsItem extends BaseSettingsItem {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const ToggleableSettingsItem({
+    super.key,
+    super.icon,
+    super.iconColor,
+    required super.accent,
+    required super.title,
+    required super.description,
+    super.leading,
+    super.roundness,
+    super.isCompact,
+    super.trailingWidgets,
+    super.layoutType,
+    required this.value,
+    required this.onChanged,
+  }) : super(onTap: null); // Disable onTap
+
+  @override
+  bool needsVerticalLayoutByContent() => false;
+
+  @override
+  Widget buildHorizontalLayout(
+    BuildContext context,
+    bool effectiveCompact,
+    ResponsiveDimensions dimensions,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        buildIconContainer(effectiveCompact, dimensions),
+        SizedBox(width: dimensions.spacing),
+        buildTitleAndDescription(effectiveCompact, dimensions),
+        if (trailingWidgets == null)
+          Transform.scale(
+            scale: effectiveCompact ? 0.8 : 1.0,
+            child: Switch(
+              value: value,
+              onChanged: onChanged,
+              activeColor: iconColor ?? accent,
+            ),
+          )
+        else
+          ...buildCustomTrailingWidgets(effectiveCompact),
+      ],
+    );
+  }
+
+  @override
+  Widget buildVerticalLayout(
+    BuildContext context,
+    bool effectiveCompact,
+    ResponsiveDimensions dimensions,
+  ) {
+    return buildHorizontalLayout(context, effectiveCompact, dimensions);
+  }
+}
+
+// --- Slider Settings Item ---
+class SliderSettingsItem extends BaseSettingsItem {
+  final double value;
+  final ValueChanged<double> onChanged;
+  final double min;
+  final double max;
+  final int? divisions;
+  final String? suffix;
+
+  const SliderSettingsItem({
+    super.key,
+    super.icon,
+    super.iconColor,
+    required super.accent,
+    required super.title,
+    required super.description,
+    super.leading,
+    super.roundness,
+    super.isCompact,
+    super.layoutType,
+    required this.value,
+    required this.onChanged,
+    this.min = 0.0,
+    this.max = 100.0,
+    this.divisions,
+    this.suffix,
+  }) : super(onTap: null); // Disable onTap
+
+  @override
+  bool needsVerticalLayoutByContent() => true;
+
+  @override
+  Widget buildHorizontalLayout(
+    BuildContext context,
+    bool effectiveCompact,
+    ResponsiveDimensions dimensions,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        buildIconContainer(effectiveCompact, dimensions),
+        SizedBox(width: dimensions.spacing),
+        buildTitleAndDescription(effectiveCompact, dimensions),
+        SizedBox(width: dimensions.spacing),
+        Expanded(
+          flex: 2,
+          child: _buildSlider(context, effectiveCompact),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget buildVerticalLayout(
+    BuildContext context,
+    bool effectiveCompact,
+    ResponsiveDimensions dimensions,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            buildIconContainer(effectiveCompact, dimensions),
+            SizedBox(width: dimensions.spacing),
+            buildTitleAndDescription(effectiveCompact, dimensions,
+                isVertical: true),
+          ],
+        ),
+        SizedBox(height: effectiveCompact ? 8 : 12),
+        _buildSlider(context, effectiveCompact),
+      ],
+    );
+  }
+
+  Widget _buildSlider(BuildContext context, bool effectiveCompact) {
+    return Row(
+      children: [
+        Expanded(
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: accent,
+              inactiveTrackColor: accent.withOpacity(0.3),
+              thumbColor: accent,
+              overlayColor: accent.withOpacity(0.2),
+              trackHeight: effectiveCompact ? 2 : 3,
+              thumbShape: RoundSliderThumbShape(
+                enabledThumbRadius: effectiveCompact ? 6 : 8,
+              ),
+              overlayShape: RoundSliderOverlayShape(
+                overlayRadius: effectiveCompact ? 12 : 16,
+              ),
+            ),
+            child: Slider(
+              value: value,
+              min: min,
+              max: max,
+              divisions: divisions,
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+        SizedBox(width: effectiveCompact ? 6 : 8),
+        Text(
+          '${(value).toStringAsFixed(divisions != null ? 0 : 1)}${suffix ?? ''}',
+          style: TextStyle(
+            fontSize: effectiveCompact ? 13 : 14,
+            fontWeight: FontWeight.w500,
+            color: accent,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// --- Dropdown Settings Item ---
+class DropdownSettingsItem<T> extends BaseSettingsItem {
+  final String value;
+  final List<DropdownMenuItem<String>> items;
+  final ValueChanged<String?> onChanged;
+
+  const DropdownSettingsItem({
+    super.key,
+    super.icon,
+    super.iconColor,
+    required super.accent,
+    required super.title,
+    required super.description,
+    super.leading,
+    super.roundness,
+    super.isCompact,
+    super.layoutType,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  }) : super(onTap: null);
+
+  @override
+  bool needsVerticalLayoutByContent() => true;
+
+  @override
+  Widget buildHorizontalLayout(
     BuildContext context,
     bool effectiveCompact,
     ResponsiveDimensions dimensions,
@@ -216,7 +566,7 @@ class SettingsItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildIconContainer(effectiveCompact, dimensions),
+          buildIconContainer(effectiveCompact, dimensions),
           SizedBox(width: dimensions.spacing),
           Expanded(
             child: Column(
@@ -258,7 +608,7 @@ class SettingsItem extends StatelessWidget {
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                value: dropdownValue,
+                value: value,
                 isExpanded: true,
                 icon: Icon(
                   Icons.keyboard_arrow_down_rounded,
@@ -271,30 +621,13 @@ class SettingsItem extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
                 dropdownColor: isDarkMode ? Colors.grey[900] : Colors.white,
-                borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
+                borderRadius:
+                    BorderRadius.circular(effectiveCompact ? 10 : 12),
                 elevation: 2,
                 menuMaxHeight: 300,
                 itemHeight: effectiveCompact ? 48 : 52,
-                items: dropdownItems?.map((String item) {
-                  return DropdownMenuItem<String>(
-                    value: item,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: effectiveCompact ? 8 : 12,
-                      ),
-                      child: Text(
-                        item,
-                        style: TextStyle(
-                          fontSize: effectiveCompact ? 14 : 15,
-                          color: theme.textTheme.bodyMedium?.color,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  );
-                }).toList(),
-                onChanged: onDropdownChanged,
+                items: items,
+                onChanged: onChanged,
               ),
             ),
           ),
@@ -303,146 +636,155 @@ class SettingsItem extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildCustomTrailingWidgets(bool effectiveCompact) {
-    return trailingWidgets!.map((widget) {
-      return Padding(
-        padding: EdgeInsets.only(left: effectiveCompact ? 8 : 12),
-        child: widget,
-      );
-    }).toList();
-  }
-
-  Widget _buildVerticalLayout(
+  @override
+  Widget buildVerticalLayout(
     BuildContext context,
     bool effectiveCompact,
     ResponsiveDimensions dimensions,
   ) {
-    if (type == SettingsItemType.dropdown) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              _buildIconContainer(effectiveCompact, dimensions),
-              SizedBox(width: dimensions.spacing),
-              _buildTitleAndDescription(effectiveCompact, dimensions,
-                  isVertical: true),
-            ],
-          ),
-          SizedBox(height: effectiveCompact ? 8 : 12),
-          _buildDropdown(context, effectiveCompact),
-        ],
-      );
-    }
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            _buildIconContainer(effectiveCompact, dimensions),
+            buildIconContainer(effectiveCompact, dimensions),
             SizedBox(width: dimensions.spacing),
-            _buildTitleAndDescription(effectiveCompact, dimensions,
+            buildTitleAndDescription(effectiveCompact, dimensions,
                 isVertical: true),
-            const Spacer(),
-            if (_shouldShowDefaultTrailing())
-              _buildDefaultTrailingWidget(effectiveCompact),
-            if (trailingWidgets != null)
-              ..._buildCustomTrailingWidgets(effectiveCompact),
           ],
         ),
-        if (type == SettingsItemType.segmentedToggle) ...[
-          SizedBox(height: effectiveCompact ? 8 : 12),
-          _buildSegmentedToggle(context, effectiveCompact),
-        ],
-        if (type == SettingsItemType.slider) ...[
-          SizedBox(height: effectiveCompact ? 8 : 12),
-          _buildSlider(context, effectiveCompact),
-        ]
+        SizedBox(height: effectiveCompact ? 8 : 12),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? Colors.grey[850]?.withOpacity(0.5)
+                : Colors.grey[100]?.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
+            border: Border.all(
+              color: isDarkMode ? Colors.grey[700]! : accent.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: effectiveCompact ? 12 : 16,
+            vertical: effectiveCompact ? 2 : 4,
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              icon: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: (iconColor ?? accent).withOpacity(0.8),
+                size: effectiveCompact ? 20 : 24,
+              ),
+              style: TextStyle(
+                fontSize: effectiveCompact ? 14 : 15,
+                color: theme.textTheme.bodyMedium?.color,
+                fontWeight: FontWeight.w500,
+              ),
+              dropdownColor: isDarkMode ? Colors.grey[900] : Colors.white,
+              borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
+              elevation: 2,
+              menuMaxHeight: 300,
+              itemHeight: effectiveCompact ? 48 : 52,
+              items: items,
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// --- Segmented Toggle Settings Item ---
+class SegmentedToggleSettingsItem<T> extends BaseSettingsItem {
+  final T selectedValue;
+  final Map<T, Widget> children;
+  final ValueChanged<int> onValueChanged;
+  final Map<T, String>? labels;
+
+  const SegmentedToggleSettingsItem({
+    super.key,
+    super.icon,
+    super.iconColor,
+    required super.accent,
+    required super.title,
+    required super.description,
+    super.leading,
+    super.roundness,
+    super.isCompact,
+    super.layoutType,
+    required this.selectedValue,
+    required this.children,
+    required this.onValueChanged,
+    this.labels,
+  })  : assert(children.length > 1, "There must be at least 2 children."),
+        super(onTap: null);
+
+  @override
+  bool needsVerticalLayoutByContent() => true;
+
+  @override
+  Widget buildHorizontalLayout(
+    BuildContext context,
+    bool effectiveCompact,
+    ResponsiveDimensions dimensions,
+  ) {
+    return Row(
+      children: [
+        buildIconContainer(effectiveCompact, dimensions),
+        SizedBox(width: dimensions.spacing),
+        buildTitleAndDescription(effectiveCompact, dimensions),
+        SizedBox(width: dimensions.spacing),
+        Expanded(
+          flex: 2,
+          child: _buildSegmentedToggle(context, effectiveCompact),
+        ),
       ],
     );
   }
 
-  Widget _buildIconContainer(
-      bool effectiveCompact, ResponsiveDimensions dimensions) {
-    return Container(
-      width: dimensions.iconContainerSize,
-      height: dimensions.iconContainerSize,
-      decoration: BoxDecoration(
-        color: (iconColor ?? accent).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(effectiveCompact ? 6 : 8),
-      ),
-      child: Center(
-        child: (icon != null)
-            ? IconTheme(
-                data: IconThemeData(
-                  color: (iconColor ?? accent),
-                  size: dimensions.iconSize,
-                ),
-                child: icon!,
-              )
-            : (leading != null)
-                ? leading
-                : const SizedBox.shrink(),
-      ),
-    );
-  }
-
-  Widget _buildTitleAndDescription(
+  @override
+  Widget buildVerticalLayout(
+    BuildContext context,
     bool effectiveCompact,
-    ResponsiveDimensions dimensions, {
-    bool isVertical = false,
-  }) {
-    return Expanded(
-      flex: isVertical ? 0 : 1,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: dimensions.titleFontSize,
-              fontWeight: FontWeight.bold,
-            ),
-            overflow: TextOverflow.ellipsis,
-            maxLines: (effectiveCompact || isVertical) ? 1 : 2,
-          ),
-          if (description.isNotEmpty &&
-              (!effectiveCompact || description.isNotEmpty)) ...[
-            SizedBox(height: effectiveCompact ? 1 : 2),
-            Text(
-              description,
-              style: TextStyle(
-                fontSize: dimensions.descriptionFontSize,
-                color: Colors.grey[600],
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: (effectiveCompact || isVertical) ? 1 : 2,
-            ),
+    ResponsiveDimensions dimensions,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            buildIconContainer(effectiveCompact, dimensions),
+            SizedBox(width: dimensions.spacing),
+            buildTitleAndDescription(effectiveCompact, dimensions,
+                isVertical: true),
           ],
-        ],
-      ),
+        ),
+        SizedBox(height: effectiveCompact ? 8 : 12),
+        _buildSegmentedToggle(context, effectiveCompact),
+      ],
     );
   }
 
   Widget _buildSegmentedToggle(BuildContext context, bool effectiveCompact) {
-    if (segmentedOptions == null ||
-        segmentedLabels == null ||
-        segmentedOptions!.length != 3) {
-      return const SizedBox.shrink();
-    }
-
     return Container(
       decoration: BoxDecoration(
         color: accent.withOpacity(0.1),
         borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
       ),
       child: Row(
-        children: List.generate(3, (index) {
-          final isSelected = segmentedSelectedIndex == index;
+        children: children.keys.map((key) {
+          final isSelected = selectedValue == key;
           return Expanded(
             child: GestureDetector(
-              onTap: () => onSegmentedChanged?.call(index),
+              onTap: () => onValueChanged(key as int),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeInOut,
@@ -475,12 +817,12 @@ class SettingsItem extends StatelessWidget {
                             isSelected ? Colors.white : (iconColor ?? accent),
                         size: effectiveCompact ? 16 : 18,
                       ),
-                      child: segmentedOptions![index],
+                      child: children[key]!,
                     ),
-                    if (!effectiveCompact) ...[
+                    if (!effectiveCompact && labels != null && labels![key] != null) ...[
                       const SizedBox(width: 6),
                       Text(
-                        segmentedLabels![index],
+                        labels![key]!,
                         style: TextStyle(
                           fontSize: effectiveCompact ? 11 : 12,
                           fontWeight: FontWeight.w600,
@@ -494,211 +836,8 @@ class SettingsItem extends StatelessWidget {
               ),
             ),
           );
-        }),
+        }).toList(),
       ),
     );
   }
-
-  Widget _buildDropdown(BuildContext context, bool effectiveCompact) {
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: isDarkMode
-            ? Colors.grey[850]?.withOpacity(0.5)
-            : Colors.grey[100]?.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
-        border: Border.all(
-          color: isDarkMode ? Colors.grey[700]! : accent.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: effectiveCompact ? 12 : 16,
-        vertical: effectiveCompact ? 2 : 4,
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: dropdownValue,
-          isExpanded: true,
-          icon: Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: (iconColor ?? accent).withOpacity(0.8),
-            size: effectiveCompact ? 20 : 24,
-          ),
-          style: TextStyle(
-            fontSize: effectiveCompact ? 14 : 15,
-            color: theme.textTheme.bodyMedium?.color,
-            fontWeight: FontWeight.w500,
-          ),
-          dropdownColor: isDarkMode ? Colors.grey[900] : Colors.white,
-          borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
-          elevation: 2,
-          menuMaxHeight: 300,
-          itemHeight: effectiveCompact ? 48 : 52,
-          selectedItemBuilder: (BuildContext context) {
-            return dropdownItems?.map<Widget>((String item) {
-                  return Container(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      item,
-                      style: TextStyle(
-                        fontSize: effectiveCompact ? 14 : 15,
-                        color: (iconColor ?? accent),
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  );
-                }).toList() ??
-                [];
-          },
-          items: dropdownItems?.map((String item) {
-            return DropdownMenuItem<String>(
-              value: item,
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: effectiveCompact ? 8 : 12,
-                ),
-                child: Text(
-                  item,
-                  style: TextStyle(
-                    fontSize: effectiveCompact ? 14 : 15,
-                    color: theme.textTheme.bodyMedium?.color,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            );
-          }).toList(),
-          onChanged: onDropdownChanged,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSlider(BuildContext context, bool effectiveCompact) {
-    return Row(
-      children: [
-        Expanded(
-          child: SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: accent,
-              inactiveTrackColor: accent.withOpacity(0.3),
-              thumbColor: accent,
-              overlayColor: accent.withOpacity(0.2),
-              trackHeight: effectiveCompact ? 2 : 3,
-              thumbShape: RoundSliderThumbShape(
-                enabledThumbRadius: effectiveCompact ? 6 : 8,
-              ),
-              overlayShape: RoundSliderOverlayShape(
-                overlayRadius: effectiveCompact ? 12 : 16,
-              ),
-            ),
-            child: Slider(
-              value: sliderValue ?? 0,
-              min: sliderMin ?? 0,
-              max: sliderMax ?? 100,
-              divisions: sliderDivisions,
-              onChanged: onSliderChanged,
-            ),
-          ),
-        ),
-        SizedBox(width: effectiveCompact ? 6 : 8),
-        Text(
-          '${(sliderValue ?? 0).toStringAsFixed(sliderDivisions != null ? 0 : 1)}${sliderSuffix ?? ''}',
-          style: TextStyle(
-            fontSize: effectiveCompact ? 13 : 14,
-            fontWeight: FontWeight.w500,
-            color: accent,
-          ),
-        ),
-      ],
-    );
-  }
-
-  bool _shouldShowDefaultTrailing() {
-    return trailingWidgets == null &&
-        type != SettingsItemType.slider &&
-        type != SettingsItemType.dropdown &&
-        type != SettingsItemType.segmentedToggle;
-  }
-
-  Widget _buildDefaultTrailingWidget(bool effectiveCompact) {
-    switch (type) {
-      case SettingsItemType.selectable:
-        if (isSelected) {
-          return Container(
-            width: effectiveCompact ? 20 : 24,
-            height: effectiveCompact ? 20 : 24,
-            decoration: BoxDecoration(
-              color: iconColor,
-              borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
-            ),
-            child: Icon(
-              Icons.check,
-              size: effectiveCompact ? 14 : 16,
-              color: Colors.white,
-            ),
-          );
-        } else {
-          return const SizedBox.shrink();
-        }
-
-      case SettingsItemType.toggleable:
-        return Transform.scale(
-          scale: effectiveCompact ? 0.8 : 1.0,
-          child: Switch(
-            value: toggleValue ?? false,
-            onChanged: onToggleChanged,
-            activeColor: iconColor,
-          ),
-        );
-
-      case SettingsItemType.normal:
-      default:
-        return Icon(
-          Iconsax.arrow_right_3,
-          size: effectiveCompact ? 16 : 20,
-          color: Colors.grey[400],
-        );
-    }
-  }
-
-  ResponsiveDimensions _getResponsiveDimensions(
-      bool effectiveCompact, bool isSmallScreen) {
-    return ResponsiveDimensions(
-      iconSize: effectiveCompact ? 20 : (isSmallScreen ? 22 : 24),
-      iconContainerSize: effectiveCompact ? 40 : (isSmallScreen ? 44 : 48),
-      titleFontSize: effectiveCompact ? 14 : (isSmallScreen ? 15 : 16),
-      descriptionFontSize: effectiveCompact ? 11 : (isSmallScreen ? 11.5 : 12),
-      padding: effectiveCompact
-          ? const EdgeInsets.all(12.0)
-          : (isSmallScreen
-              ? const EdgeInsets.all(14.0)
-              : const EdgeInsets.all(16.0)),
-      spacing: effectiveCompact ? 12 : (isSmallScreen ? 14 : 16),
-    );
-  }
-}
-
-class ResponsiveDimensions {
-  final double iconSize;
-  final double iconContainerSize;
-  final double titleFontSize;
-  final double descriptionFontSize;
-  final EdgeInsets padding;
-  final double spacing;
-
-  const ResponsiveDimensions({
-    required this.iconSize,
-    required this.iconContainerSize,
-    required this.titleFontSize,
-    required this.descriptionFontSize,
-    required this.padding,
-    required this.spacing,
-  });
 }

@@ -25,28 +25,26 @@ class ExperimentalScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(10, 5, 10, 10),
         child: ListView(
           children: [
-            SettingsItem(
+            ToggleableSettingsItem(
               accent: colorScheme.primary,
               icon: Icon(experimentalSettings.useMangayomiExtensions
                   ? Icons.extension_outlined
                   : Icons.extension_off_outlined),
               title: 'Mangayomi extension',
               description: 'Enables the experimental extension support',
-              type: SettingsItemType.toggleable,
-              toggleValue: experimentalSettings.useMangayomiExtensions,
-              onToggleChanged: (value) {
+              value: experimentalSettings.useMangayomiExtensions,
+              onChanged: (value) {
                 experimentalNotifier.updateSettings(
                     (state) => state.copyWith(useMangayomiExtensions: value));
               },
             ),
-            SettingsItem(
+            ToggleableSettingsItem(
               accent: colorScheme.primary,
               icon: Icon(Icons.replay_outlined),
               title: 'Episode Title Sync',
               description: 'Sync episode titles using JIKAN API',
-              type: SettingsItemType.toggleable,
-              toggleValue: experimentalSettings.episodeTitleSync,
-              onToggleChanged: (value) {
+              value: experimentalSettings.episodeTitleSync,
+              onChanged: (value) {
                 experimentalNotifier.updateSettings(
                     (state) => state.copyWith(episodeTitleSync: value));
               },

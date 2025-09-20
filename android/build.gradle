@@ -6,26 +6,42 @@ allprojects {
 }
 
 rootProject.buildDir = "../build"
+
 subprojects {
     afterEvaluate { project ->
         if (project.plugins.hasPlugin("com.android.application") ||
-                project.plugins.hasPlugin("com.android.library")) {
+            project.plugins.hasPlugin("com.android.library")) {
+            
             project.android {
-                compileSdkVersion 35          
+                // Always set compileSdk + targetSdk
+                compileSdkVersion 35
+
+                defaultConfig {
+                    minSdkVersion 21
+                    targetSdkVersion 34
+                }
+
+                // Align Java + Kotlin
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_1_8
+                    targetCompatibility JavaVersion.VERSION_1_8
+                }
+
+                if (hasProperty("kotlinOptions")) {
+                    kotlinOptions {
+                        jvmTarget = "18"
+                    }
+                }
+
+                // Auto-inject namespace if missing
+                if (!project.android.hasProperty("namespace")) {
+                    namespace project.group.toString()
+                }
             }
         }
     }
 }
 
-subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty("android")) {
-            project.android {
-                compileSdk = 35
-            }
-        }
-    }
-}
 
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"

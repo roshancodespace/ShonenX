@@ -6,6 +6,7 @@ import 'package:shonenx/features/home/view_model/homepage_notifier.dart';
 import 'package:shonenx/features/home/view/widget/header_section.dart';
 import 'package:shonenx/features/home/view/widget/home_section.dart';
 import 'package:shonenx/features/home/view/widget/spotlight_section.dart';
+import 'package:shonenx/shared/providers/update_provider.dart';
 import 'package:shonenx/utils/updater.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -23,7 +24,7 @@ class HomeScreen extends ConsumerWidget {
     final home = state.homePage;
     if (home == null) return const SizedBox();
 
-    if (!kDebugMode) {
+    if (!kDebugMode && ref.read(automaticUpdatesProvider)) {
       checkForUpdates(context);
     }
 

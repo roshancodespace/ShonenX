@@ -137,7 +137,7 @@ class SettingsScreen extends ConsumerWidget {
                         final updateNotifier =
                             ref.read(automaticUpdatesProvider.notifier);
                         return ToggleableSettingsItem(
-                          icon: Icon(Iconsax.info_circle,
+                          icon: Icon(Icons.replay_outlined,
                               color: colorScheme.primary),
                           accent: colorScheme.primary,
                           title: 'Automatic updates',

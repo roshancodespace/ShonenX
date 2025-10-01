@@ -13,7 +13,8 @@ void navigateToDetail(BuildContext context, Media media, String tag) {
 void navigateToWatch(
     {required BuildContext context,
     required WidgetRef ref,
-    required String animeId,
+    required String? animeId,
+    required String mediaId,
     required String animeName,
     required List<EpisodeDataModel> episodes,
     int? startAt,
@@ -25,9 +26,8 @@ void navigateToWatch(
   // final episode = (progress?.episodeNumber ?? 0) + plusEpisode;
   // final startAt = progress?.progressInSeconds ?? 0;
   // final encodedName = Uri.encodeComponent(animeName);
-
-  final route = '/watch/$animeId'
-      '?animeName=$animeName'
+  final route = '/watch/$mediaId?animeId=$animeId'
+      '&animeName=$animeName'
       '&episode=1&mMangaUrl=$mMangaUrl&startAt=$startAt';
   AppLogger.d('Navigating to watch screen: $route');
   context.push(route, extra: episodes);

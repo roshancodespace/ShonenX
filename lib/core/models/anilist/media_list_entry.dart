@@ -26,6 +26,7 @@ class MediaListEntry {
     this.completedAt,
   });
 
+  /// AniList JSON
   factory MediaListEntry.fromJson(Map<String, dynamic> json) {
     return MediaListEntry(
       id: json['id'] as int? ?? 0,
@@ -41,6 +42,27 @@ class MediaListEntry {
           : null,
       completedAt: json['completedAt'] != null
           ? FuzzyDate.fromJson(json['completedAt'])
+          : null,
+    );
+  }
+
+  /// MAL JSON
+  factory MediaListEntry.fromMal(Map<String, dynamic> json) {
+    final node = json['node'] ?? {};
+    return MediaListEntry(
+      id: node['id'] as int? ?? 0,
+      media: Media.fromMal(node), // <- we assume you added Media.fromMal factory
+      status: node['list_status']?['status'] ?? 'UNKNOWN',
+      score: (node['list_status']?['score'] as num?)?.toDouble() ?? 0.0,
+      progress: node['list_status']?['num_episodes_watched'] as int? ?? 0,
+      repeat: node['list_status']?['num_times_rewatched'] as int? ?? 0,
+      isPrivate: node['list_status']?['private'] as bool? ?? false,
+      notes: node['list_status']?['notes'] ?? '',
+      startedAt: node['list_status']?['start_date'] != null
+          ? FuzzyDate.fromJson(node['list_status']!['start_date'])
+          : null,
+      completedAt: node['list_status']?['finish_date'] != null
+          ? FuzzyDate.fromJson(node['list_status']!['finish_date'])
           : null,
     );
   }

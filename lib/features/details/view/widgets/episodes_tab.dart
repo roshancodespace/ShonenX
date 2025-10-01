@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/features/anime/view_model/episodeDataProvider.dart';
+import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/helpers/matcher.dart';
@@ -13,13 +13,13 @@ import 'package:shonenx/main.dart';
 import 'package:shonenx/core/models/anilist/media.dart' as media;
 
 class EpisodesTab extends ConsumerStatefulWidget {
-  final media.Title animeTitle;
-  final String animeId;
+  final String mediaId;
+  final media.Title mediaTitle;
 
   const EpisodesTab({
     super.key,
-    required this.animeTitle,
-    required this.animeId,
+    required this.mediaId,
+    required this.mediaTitle,
   });
 
   @override
@@ -52,9 +52,9 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     try {
       // prepare possible titles in priority order
       final titles = [
-        widget.animeTitle.english,
-        widget.animeTitle.romaji,
-        widget.animeTitle.native,
+        widget.mediaTitle.english,
+        widget.mediaTitle.romaji,
+        widget.mediaTitle.native,
       ].where((t) => t != null && t.trim().isNotEmpty).cast<String>().toList();
 
       if (titles.isEmpty) {
@@ -116,9 +116,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
             ContentType.failure);
       }
 
-      if (!useMangayomi) {
-        animeIdForSource = best["id"];
-      }
+      animeIdForSource = best["id"];
       AppLogger.d(
           'High-confidence match found: ${best["name"]} (via "$usedTitle")');
 
@@ -200,10 +198,12 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
               AppLogger.w(animeIdForSource);
             },
             onTap: () => navigateToWatch(
-                animeId: animeIdForSource!,
-                animeName: widget.animeTitle.english!,
+                mediaId: widget.mediaId,
+                animeId: animeIdForSource,
+                animeName: (widget.mediaTitle.english ?? widget.mediaTitle.romaji ?? widget.mediaTitle.native)!,
                 ref: ref,
                 context: context,
+                mMangaUrl: animeIdForSource,
                 episodes: _episodes),
             leading: CircleAvatar(
               backgroundColor: Theme.of(context).colorScheme.primary,

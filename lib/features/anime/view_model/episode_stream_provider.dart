@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +10,7 @@ import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/features/anime/view_model/playerStateProvider.dart';
+import 'package:shonenx/features/anime/view_model/player_provider.dart';
 import 'package:shonenx/features/settings/model/experimental_model.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
@@ -133,7 +132,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   /// Fetches the list of episodes for a given anime.
   Future<List<EpisodeDataModel>> fetchEpisodes({
     required String animeTitle,
-    required String animeId,
+    String? animeId,
     required bool force,
     bool play = true,
     List<EpisodeDataModel> episodes = const [],
@@ -196,6 +195,8 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   Future<void> changeEpisode(int episodeIdx,
       {Duration startAt = Duration.zero}) async {
     if (episodeIdx < 0 || episodeIdx >= state.episodes.length) return;
+    ref.read(playerStateProvider.notifier).pause();
+    AppLogger.d('Playing episode at index: $episodeIdx');
     state = state.copyWith(selectedEpisodeIdx: episodeIdx);
     await _fetchStreamData(startAt: startAt);
   }
@@ -271,10 +272,9 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   /// Determines which source to use and fetches the episode list.
   Future<List<EpisodeDataModel>> _fetchEpisodeList(
-      String animeId, String? mMangaUrl) async {
+      String? animeId, String? mMangaUrl) async {
     final useMangayomi = _experimentalFeatures.useMangayomiExtensions;
     final url = state.mMangaUrl ?? mMangaUrl;
-
     if (useMangayomi && url != null) {
       AppLogger.w('Fetching episodes using Mangayomi extension');
       return await _safeRun<List<EpisodeDataModel>>(
@@ -309,7 +309,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     AppLogger.w('Fetching episodes using Legacy source');
     final animeProvider = _getProvider();
     if (animeProvider == null) return [];
-
+    if (animeId == null) throw Exception('animeId is null');
     return await _safeRun<List<EpisodeDataModel>>(
           () async => (await animeProvider.getEpisodes(animeId)).episodes ?? [],
           errorTitle: "Legacy Source",
@@ -321,15 +321,20 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   /// Configures servers and starts playback if requested.
   Future<void> _setupAndPlay(
       bool play, int initialEpisodeIdx, Duration startAt) async {
-    final animeProvider = _getProvider();
-    final servers = animeProvider?.getSupportedServers() ?? [];
-    final dubSubSupport = animeProvider?.getDubSubParamSupport() ?? false;
+    final bool useMangayomi = _experimentalFeatures.useMangayomiExtensions;
+    List<String> servers = [];
+    bool supportDubSub = false;
+    if (!useMangayomi) {
+      final animeProvider = _getProvider();
+      servers = await animeProvider?.getSupportedServers() ?? [];
+      supportDubSub = animeProvider?.getDubSubParamSupport() ?? false;
+    }
 
     state = state.copyWith(
       episodesLoading: false,
       servers: servers,
       selectedServer: servers.isNotEmpty ? servers.first : null,
-      dubSubSupport: dubSubSupport,
+      dubSubSupport: supportDubSub,
     );
 
     if (play) {

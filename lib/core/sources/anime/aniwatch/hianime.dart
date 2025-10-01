@@ -4,7 +4,6 @@ import 'package:html/dom.dart';
 import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
-import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/aniwatch/parser.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
@@ -92,17 +91,6 @@ class HiAnimeProvider extends AnimeProvider {
     );
   }
 
-  @override
-  Future<BaseServerModel> getServers(String episodeId) async {
-    AppLogger.d('Fetching servers for episodeId: $episodeId');
-    final response = await http.get(
-        Uri.parse("$baseUrl/ajax/v2/episode/servers?episodeId=$episodeId"),
-        headers: _getHeaders());
-    AppLogger.d('Received servers response for episodeId: $episodeId');
-    final document = parse(json.decode(response.body)['html']);
-    return parseServers(
-        document, "$baseUrl/ajax/v2/episode/servers?episodeId=$episodeId");
-  }
 
   String? retrieveServerId(Document document, int index, String category) {
     final serverItems = document.querySelectorAll(
@@ -135,14 +123,14 @@ class HiAnimeProvider extends AnimeProvider {
                     'quality'], // this might be null — handle it if needed
               ))
           .toList(),
-      tracks:
-          (data['subtitles'] as List<dynamic>?) // ✅ was 'subtitles', now 'tracks'
-                  ?.map((track) => Subtitle(
-                        url: track['url'],
-                        lang: track['lang'],
-                      ))
-                  .toList() ??
-              [],
+      tracks: (data['subtitles']
+                  as List<dynamic>?) // ✅ was 'subtitles', now 'tracks'
+              ?.map((track) => Subtitle(
+                    url: track['url'],
+                    lang: track['lang'],
+                  ))
+              .toList() ??
+          [],
     );
   }
   // @override
@@ -214,8 +202,8 @@ class HiAnimeProvider extends AnimeProvider {
   }
 
   @override
-  List<String> getSupportedServers() {
-    return ["vidcloud", "megacloud"];
+  Future<List<String>> getSupportedServers() {
+    return Future(() => ["vidcloud", "megacloud"]);
   }
 
   @override

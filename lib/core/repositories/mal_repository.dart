@@ -2,24 +2,23 @@ import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/models/anilist/media_list_entry.dart';
 import 'package:shonenx/core/models/anilist/page_response.dart';
+import 'package:shonenx/core/myanimelist/services/mal_service.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
 
 class MalRepository implements AnimeRepository {
-  // final MalService service;
+  final MyAnimeListService service;
 
-  // MalRepository(this.service);
+  MalRepository(this.service);
 
   @override
   Future<List<Media>> searchAnime(String title,
       {int page = 1, int perPage = 10}) {
-    // TODO: implement getAnimeDetails
-    throw UnimplementedError();
+    return service.searchAnime(title, page: page, perPage: perPage);
   }
 
   @override
-  Future<Media> getAnimeDetails(int animeId) {
-    // TODO: implement getAnimeDetails
-    throw UnimplementedError();
+  Future<Media?> getAnimeDetails(int animeId) {
+    return service.getAnimeDetails(animeId);
   }
 
   @override
@@ -83,20 +82,31 @@ class MalRepository implements AnimeRepository {
       {required String type,
       required String status,
       required int page,
-      required int perPage}) {
-    // TODO: implement getUserAnimeList
-    throw UnimplementedError();
+      required int perPage}) async {
+    return await service.getUserAnimeList(
+        type: type, status: status, page: page, perPage: perPage);
   }
-  
+
   @override
   Future<MediaListEntry?> getAnimeEntry(int animeId) {
     // TODO: implement getAnimeEntry
     throw UnimplementedError();
   }
-  
+
   @override
   Future<List<Media>> toggleFavorite(int animeId) {
     // TODO: implement toggleFavorite
     throw UnimplementedError();
+  }
+
+  @override
+  Future<List<String>> getSupportedStatuses() async {
+    return [
+      "watching",
+      "completed",
+      "on_hold",
+      "dropped",
+      "plan_to_watch",
+    ];
   }
 }

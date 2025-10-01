@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/features/anime/view_model/episodeDataProvider.dart';
+import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 
 class EpisodesPanel extends ConsumerStatefulWidget {
-  final String animeId;
-  const EpisodesPanel({super.key, required this.animeId});
+  const EpisodesPanel({super.key});
 
   @override
   ConsumerState<EpisodesPanel> createState() => _EpisodesPanelState();
@@ -156,7 +155,6 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                             AppLogger.w(
                                 "It's an integer: ${pageForJikan.toInt()}");
                             // episodeNotifier.syncEpisodesWithJikan(
-                            
                           }
                         });
                       }
@@ -292,7 +290,7 @@ class EpisodeTile extends ConsumerWidget {
                       Flexible(
                         child: Text(
                           episodeTitle.isEmpty
-                              ? 'Title unavailable'
+                              ? 'Episode: $episodeNumber'
                               : episodeTitle,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: titleTextColor,

@@ -6,11 +6,12 @@ import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/features/anime/view/widgets/episodes_panel.dart';
 import 'package:shonenx/features/anime/view/widgets/player/controls_overlay.dart';
 import 'package:shonenx/helpers/ui.dart';
-import 'package:shonenx/features/anime/view_model/episodeDataProvider.dart';
-import 'package:shonenx/features/anime/view_model/playerStateProvider.dart';
+import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
+import 'package:shonenx/features/anime/view_model/player_provider.dart';
 
 class WatchScreen extends ConsumerStatefulWidget {
-  final String animeId;
+  final String mediaId;
+  final String? animeId;
   final String animeName;
   final int? episode;
   final Duration startAt;
@@ -19,8 +20,9 @@ class WatchScreen extends ConsumerStatefulWidget {
 
   const WatchScreen(
       {super.key,
-      required this.animeId,
+      required this.mediaId,
       required this.animeName,
+      this.animeId,
       this.startAt = Duration.zero,
       this.episode = 1,
       this.episodes = const [],
@@ -99,7 +101,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
             wakelock: true,
             controller: playerNotifier.videoController,
             fit: fit,
-            filterQuality: kDebugMode ? FilterQuality.low : FilterQuality.none,
+            filterQuality:
+                kDebugMode ? FilterQuality.none : FilterQuality.medium,
             controls: (state) => CloudstreamControls(
               onEpisodesPressed: _toggleEpisodesPanel,
             ),
@@ -141,7 +144,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       curve: Curves.easeOutCubic,
     );
 
-    final panelContent = EpisodesPanel(animeId: widget.animeId);
+    final panelContent = EpisodesPanel();
 
     if (orientation == Orientation.landscape) {
       final screenWidth = MediaQuery.of(context).size.width;

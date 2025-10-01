@@ -88,7 +88,7 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
     _isFetching.value = true;
     try {
       final auth = ref.read(authProvider);
-      if (auth.authPlatform == null) {
+      if (auth.activePlatform == null) {
         _showSnackBar(
             'Login Required', 'Please login first!', ContentType.failure);
         return;
@@ -102,7 +102,7 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
           .expand((e) => e)
           .firstWhereOrNull((media) => media.id == widget.anime.id);
 
-      if (entry == null && auth.authPlatform == AuthPlatform.anilist) {
+      if (entry == null && auth.activePlatform == AuthPlatform.anilist) {
         entry = await animeRepo.getAnimeEntry(widget.anime.id!);
         if (entry != null) watchlistNotifier.addEntry(entry);
       }
@@ -117,7 +117,7 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
 
   Future<void> _saveChanges() async {
     final auth = ref.read(authProvider);
-    if (auth.authPlatform == null) {
+    if (auth.activePlatform == null) {
       _showSnackBar(
           'Login Required', 'Please login first!', ContentType.failure);
       return;
@@ -129,7 +129,7 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
       final progress = int.tryParse(_progressController.text) ?? 0;
       final repeats = int.tryParse(_repeatsController.text) ?? 0;
 
-      if (auth.authPlatform == AuthPlatform.anilist) {
+      if (auth.activePlatform == AuthPlatform.anilist) {
         await ref.read(anilistServiceProvider).updateUserAnimeList(
               mediaId: widget.anime.id!,
               status: _selectedStatus,

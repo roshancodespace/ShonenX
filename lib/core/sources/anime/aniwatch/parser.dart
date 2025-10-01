@@ -337,7 +337,7 @@ List<ServerData> _extractServers(dom.Document document, String type) {
       .map((value) {
     return ServerData(
       name: value.querySelector('a')?.text,
-      id: _parseNumber(value.attributes['data-id']),
+      id: value.attributes['data-id'],
     );
   }).toList();
 }

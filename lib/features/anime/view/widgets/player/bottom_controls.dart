@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/features/anime/view_model/episodeDataProvider.dart';
-import 'package:shonenx/features/anime/view_model/playerStateProvider.dart';
+import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
+import 'package:shonenx/features/anime/view_model/player_provider.dart';
 
 class BottomControls extends ConsumerWidget {
   final VoidCallback onInteraction;
@@ -38,196 +38,275 @@ class BottomControls extends ConsumerWidget {
     };
   }
 
-  T watchEpisode<T>(
-    WidgetRef ref,
-    T Function(EpisodeDataState s) selector,
-  ) {
+  T watchEpisode<T>(WidgetRef ref, T Function(EpisodeDataState s) selector) {
     return ref.watch(episodeDataProvider.select(selector));
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerState =
-        ref.watch(playerStateProvider.select((p) => (p.position, p.duration)));
     final episodeNotifier = ref.read(episodeDataProvider.notifier);
+    final scheme = Theme.of(context).colorScheme;
 
-    final positionMs = playerState.$1.inMilliseconds.toDouble();
-    final durationMs = playerState.$2.inMilliseconds.toDouble();
-    final displayedValue = (sliderValue ?? positionMs).clamp(0.0, durationMs);
-
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return GestureDetector(
-      onTap: onInteraction,
-      child: Column(
-        children: [
-          // Forward button row
-          Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.end,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [
+            scheme.surface.withOpacity(0.85),
+            scheme.surface.withOpacity(0.35),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.7, 1.0],
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.redAccent.withOpacity(0.9),
-                      Colors.deepOrangeAccent.withOpacity(0.9),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              _buildProgressBar(context, ref, scheme),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  _buildButton(
+                    icon: Icons.lock_outline,
+                    onPressed: _wrap(onLockPressed),
+                    color: scheme.onSurface,
                   ),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(30),
-                  onTap: _wrap(onForwardPressed),
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 15, vertical: 6),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Iconsax.forward, color: Colors.white, size: 18),
-                        SizedBox(width: 4),
-                        Text(
-                          '+85s',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
+                  const Spacer(),
+                  ..._buildQuickControls(context, ref, episodeNotifier, scheme),
+                  const Spacer(),
+                  _buildSkipButton(context, scheme),
+                ],
               ),
-              const SizedBox(width: 12),
             ],
           ),
+        ),
+      ),
+    );
+  }
 
-          const SizedBox(height: 10),
+  Widget _buildProgressBar(
+      BuildContext context, WidgetRef ref, ColorScheme scheme) {
+    return Row(
+      children: [
+        Consumer(
+          builder: (context, ref, child) {
+            final position = ref.watch(playerStateProvider.select((p) => p
+                .position.inMilliseconds
+                .clamp(0.0, p.duration.inMilliseconds)));
+            return Text(
+              _formatDuration(Duration(milliseconds: position.round())),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+            );
+          },
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Consumer(builder: (context, ref, child) {
+            final state = ref.watch(playerStateProvider.select(
+              (p) => (p.position, p.duration, p.buffer),
+            ));
 
-          // Progress bar row with gradient background
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.black.withOpacity(0.7),
-                  Colors.black.withOpacity(0.3),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-            child: Row(
+            final duration = state.$2.inMilliseconds.toDouble();
+            final position = state.$1.inMilliseconds.toDouble();
+            final buffer = state.$3.inMilliseconds.toDouble();
+
+            return Stack(
+              alignment: Alignment.center,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0),
-                  child: Text(
-                    _formatDuration(
-                        Duration(milliseconds: displayedValue.round())),
-                    style: const TextStyle(color: Colors.white),
+                // Buffer track
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 4,
+                    thumbShape: SliderComponentShape.noThumb,
+                    activeTrackColor: scheme.onSurface.withOpacity(0.4),
+                    inactiveTrackColor: scheme.onSurface.withOpacity(0.2),
+                    trackShape: const RectangularSliderTrackShape(),
+                  ),
+                  child: Slider(
+                    value: buffer.clamp(0.0, duration),
+                    max: duration > 0 ? duration : 1.0,
+                    onChanged: null,
                   ),
                 ),
-                Expanded(
+
+                // Playhead track
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 4,
+                    activeTrackColor: scheme.primary,
+                    inactiveTrackColor: Colors.transparent,
+                    trackShape: const RectangularSliderTrackShape(),
+                    thumbShape: RoundSliderThumbShape(
+                      enabledThumbRadius: 10,
+                      disabledThumbRadius: 8,
+                    ),
+                    overlayShape: RoundSliderOverlayShape(
+                      overlayRadius: 16,
+                    ),
+                  ),
                   child: Slider(
-                    value: displayedValue,
-                    max: durationMs > 0 ? durationMs : 1.0,
+                    value: (sliderValue ?? position).clamp(0.0, duration),
+                    max: duration > 0 ? duration : 1.0,
                     onChanged: onSliderChanged,
                     onChangeStart: onSliderChangeStart,
                     onChangeEnd: onSliderChangeEnd,
-                    activeColor: colorScheme.primary,
-                    inactiveColor: Colors.white24,
-                    thumbColor: colorScheme.primaryContainer,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
-                  child: Text(
-                    _formatDuration(playerState.$2),
-                    style: const TextStyle(color: Colors.white),
                   ),
                 ),
               ],
-            ),
-          ),
+            );
+          }),
+        ),
+        const SizedBox(width: 12),
+        Consumer(
+          builder: (context, ref, child) {
+            final duration = ref.watch(playerStateProvider.select((p) => p
+                .duration.inMilliseconds
+                .clamp(0.0, p.duration.inMilliseconds)));
+            return Text(
+              _formatDuration(Duration(milliseconds: duration.round())),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurface.withOpacity(0.7),
+                    fontWeight: FontWeight.w500,
+                  ),
+            );
+          },
+        ),
+      ],
+    );
+  }
 
-          // Control buttons row with gradient background
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.black.withOpacity(0.7),
-                  Colors.black.withOpacity(0.3),
-                ],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-              ),
+  List<Widget> _buildQuickControls(
+    BuildContext context,
+    WidgetRef ref,
+    dynamic episodeNotifier,
+    ColorScheme scheme,
+  ) {
+    final controls = <Widget>[];
+
+    if (watchEpisode(ref, (s) => s.dubSubSupport)) {
+      final isSub = watchEpisode(ref, (s) => s.selectedCategory) == 'sub';
+      controls.add(_buildInfoButton(
+        context,
+        text: isSub ? 'SUB' : 'DUB',
+        onPressed: _wrap(() => episodeNotifier.toggleDubSub()),
+        scheme: scheme,
+      ));
+    }
+
+    if (watchEpisode(ref, (s) => s.servers).length > 1) {
+      final selectedServer =
+          watchEpisode(ref, (s) => s.selectedServer) ?? 'Server 1';
+      controls.add(_buildInfoButton(
+        context,
+        text: selectedServer,
+        onPressed: _wrap(onServerPressed),
+        scheme: scheme,
+      ));
+    }
+
+    if (watchEpisode(ref, (s) => s.sources.length) > 1) {
+      final ss = watchEpisode(ref, (s) => (s.selectedSourceIdx, s.sources));
+      controls.add(_buildInfoButton(
+        context,
+        text: ss.$2[ss.$1!].quality!,
+        onPressed: _wrap(onSourcePressed),
+        scheme: scheme,
+      ));
+    }
+
+    if (watchEpisode(ref, (s) => s.subtitles).isNotEmpty) {
+      controls.add(_buildInfoButton(
+        context,
+        text: 'CC',
+        onPressed: _wrap(onSubtitlePressed),
+        scheme: scheme,
+      ));
+    }
+
+    final spacedControls = <Widget>[];
+    for (int i = 0; i < controls.length; i++) {
+      spacedControls.add(controls[i]);
+      if (i < controls.length - 1) {
+        spacedControls.add(const SizedBox(width: 16));
+      }
+    }
+    return spacedControls;
+  }
+
+  Widget _buildButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+    required Color color,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Icon(icon, color: color, size: 24),
+      ),
+    );
+  }
+
+  Widget _buildSkipButton(BuildContext context, ColorScheme scheme) {
+    return GestureDetector(
+      onTap: _wrap(onForwardPressed),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: scheme.primary.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Iconsax.forward, color: scheme.onSurface, size: 18),
+            const SizedBox(width: 4),
+            Text(
+              '+85s',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                TextButton.icon(
-                  style: ButtonStyle(
-                    foregroundColor:
-                        WidgetStatePropertyAll(colorScheme.onSurface),
-                  ),
-                  onPressed: _wrap(onLockPressed),
-                  label: const Text('Lock'),
-                  icon: const Icon(Iconsax.lock),
-                ),
-                if (watchEpisode(ref, (s) => s.dubSubSupport))
-                  TextButton.icon(
-                    style: ButtonStyle(
-                      foregroundColor:
-                          WidgetStatePropertyAll(colorScheme.onSurface),
-                    ),
-                    onPressed: _wrap(() => episodeNotifier.toggleDubSub()),
-                    label: Text(
-                        watchEpisode(ref, (s) => s.selectedCategory) == 'sub'
-                            ? 'Sub'
-                            : 'Dub'),
-                    icon: const Icon(Iconsax.text_block),
-                  ),
-                if (watchEpisode(ref, (s) => s.servers).length > 1)
-                  TextButton.icon(
-                    style: ButtonStyle(
-                      foregroundColor:
-                          WidgetStatePropertyAll(colorScheme.onSurface),
-                    ),
-                    onPressed: _wrap(onServerPressed),
-                    label: Text(
-                        watchEpisode(ref, (s) => s.selectedServer) ?? 'Server'),
-                    icon: const Icon(Iconsax.cloud),
-                  ),
-                if (watchEpisode(ref, (s) => s.sources).length > 1)
-                  TextButton.icon(
-                    style: ButtonStyle(
-                      foregroundColor:
-                          WidgetStatePropertyAll(colorScheme.onSurface),
-                    ),
-                    onPressed: watchEpisode(ref, (s) => s.sources).length > 1
-                        ? _wrap(onSourcePressed)
-                        : null,
-                    label: const Text('Source'),
-                    icon: const Icon(Iconsax.hierarchy_2),
-                  ),
-                if (watchEpisode(ref, (s) => s.subtitles).isNotEmpty)
-                  TextButton.icon(
-                    style: ButtonStyle(
-                      foregroundColor:
-                          WidgetStatePropertyAll(colorScheme.onSurface),
-                    ),
-                    onPressed: watchEpisode(ref, (s) => s.subtitles).isNotEmpty
-                        ? _wrap(onSubtitlePressed)
-                        : null,
-                    label: const Text('Subtitle'),
-                    icon: const Icon(Iconsax.subtitle),
-                  ),
-              ],
-            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoButton(
+    BuildContext context, {
+    required String text,
+    required VoidCallback? onPressed,
+    required ColorScheme scheme,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest.withOpacity(0.25),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: scheme.outline.withOpacity(0.3),
+            width: 0.5,
           ),
-        ],
+        ),
+        child: Text(
+          text,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: scheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
       ),
     );
   }

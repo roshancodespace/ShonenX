@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
@@ -59,13 +58,13 @@ void main(List<String> args) async {
   isar = await StorageProvider().initDB(null, inspector: kDebugMode);
 
   runApp(const ProviderScope(child: MyApp()));
-  unawaited(_postLaunchInit());
+  // unawaited(_postLaunchInit());
 }
 
-Future<void> _postLaunchInit() async {
-  await StorageProvider().requestPermission();
-  await StorageProvider().deleteBtDirectory();
-}
+// Future<void> _postLaunchInit() async {
+//   await StorageProvider().requestPermission();
+//   await StorageProvider().deleteBtDirectory();
+// }
 
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});

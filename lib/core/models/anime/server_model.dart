@@ -9,7 +9,7 @@ class BaseServerModel {
 
 class ServerData {
   final String? name;
-  final int? id;
+  final String? id;
 
   ServerData({this.name, this.id});
 }

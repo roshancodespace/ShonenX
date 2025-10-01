@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
-import 'package:shonenx/features/anime/view_model/episodeDataProvider.dart';
+import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
@@ -38,66 +37,148 @@ class TopControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final source = ref.watch(selectedAnimeProvider);
-    return Material(
-      color: Colors.black.withOpacity(0.5),
-      child: GestureDetector(
-        onTap: onInteraction,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Row(
-            children: [
-              IconButton(
+    final scheme = Theme.of(context).colorScheme;
+    final selectedEpisodeIdx = watchEpisode(ref, (e) => e.selectedEpisodeIdx);
+    final episodes = watchEpisode(ref, (e) => e.episodes);
+    final sources = watchEpisode(ref, (e) => e.sources);
+    final qualityOptions = watchEpisode(ref, (e) => e.qualityOptions);
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            scheme.surface.withOpacity(0.85),
+            scheme.surface.withOpacity(0.35),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.7, 1.0],
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: GestureDetector(
+          onTap: onInteraction,
+          behavior: HitTestBehavior.translucent,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+            child: Row(
+              children: [
+                // Back button
+                _buildControlButton(
+                  icon: Icons.arrow_back_ios_new_rounded,
                   onPressed: _wrap(() => context.pop()),
-                  icon: const Icon(Icons.arrow_back),
-                  tooltip: "Back"),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                        !ref.watch(experimentalProvider).useMangayomiExtensions
-                            ? (source?.providerName.toUpperCase() ?? "Legacy")
-                            : ref
-                                    .read(sourceProvider)
-                                    .activeAnimeSource
-                                    ?.name ??
-                                'Mangayomi',
-                        style: Theme.of(context).textTheme.bodySmall),
-                    if (watchEpisode(ref, (e) => e.selectedEpisodeIdx) !=
-                            null &&
-                        watchEpisode(ref, (e) => e.sources).isNotEmpty)
+                  color: scheme.onSurface,
+                ),
+
+                const SizedBox(width: 16),
+
+                // Title section
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Source name
                       Text(
-                        watchEpisode(ref, (e) => e.episodes)[watchEpisode(
-                                    ref, (e) => e.selectedEpisodeIdx)!]
-                                .title ??
-                            'Unavailable',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        _getSourceName(ref),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: scheme.onSurface.withOpacity(0.7),
+                              fontWeight: FontWeight.w500,
+                            ),
                       ),
+
+                      const SizedBox(height: 2),
+
+                      // Episode title
+                      if (selectedEpisodeIdx != null && sources.isNotEmpty)
+                        Text(
+                          (episodes[selectedEpisodeIdx].title != null &&
+                                  episodes[selectedEpisodeIdx]
+                                      .title!
+                                      .trim()
+                                      .isNotEmpty)
+                              ? episodes[selectedEpisodeIdx].title!
+                              : 'Episode: ${selectedEpisodeIdx + 1}',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: scheme.onSurface,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 16),
+
+                // Action buttons
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (qualityOptions.length > 1) ...[
+                      _buildControlButton(
+                        icon: Icons.hd_outlined,
+                        onPressed: _wrap(onQualityPressed),
+                        color: scheme.onSurface,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (onEpisodesPressed != null) ...[
+                      _buildControlButton(
+                        icon: Icons.playlist_play_rounded,
+                        onPressed: _wrap(onEpisodesPressed),
+                        color: scheme.onSurface,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    _buildControlButton(
+                      icon: Icons.more_vert_rounded,
+                      onPressed: _wrap(onSettingsPressed),
+                      color: scheme.onSurface,
+                    ),
                   ],
                 ),
-              ),
-              if (watchEpisode(ref, (e) => e.qualityOptions).length > 1)
-                IconButton(
-                    onPressed: _wrap(onQualityPressed),
-                    icon: const Icon(Icons.high_quality_outlined),
-                    tooltip: "Quality"),
-              if (onEpisodesPressed != null)
-                IconButton(
-                    onPressed: _wrap(onEpisodesPressed),
-                    icon: const Icon(Icons.playlist_play),
-                    tooltip: "Episodes"),
-              IconButton(
-                  onPressed: _wrap(onSettingsPressed),
-                  icon: const Icon(Iconsax.setting_2),
-                  tooltip: "Settings"),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildControlButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+    required Color color,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          child: Icon(
+            icon,
+            color: color,
+            size: 24,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getSourceName(WidgetRef ref) {
+    final source = ref.watch(selectedAnimeProvider);
+
+    if (!ref.watch(experimentalProvider).useMangayomiExtensions) {
+      return source?.providerName.toUpperCase() ?? "LEGACY";
+    } else {
+      return ref.read(sourceProvider).activeAnimeSource?.name ?? 'Mangayomi';
+    }
   }
 }

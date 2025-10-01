@@ -3,7 +3,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
-import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
@@ -44,11 +43,6 @@ class AnimekaiProvider extends AnimeProvider {
                 isFiller: episode['isFiller'],
                 url: episode['url']))
             .toList());
-  }
-
-  @override
-  Future<BaseServerModel> getServers(String episodeId) async {
-    throw UnimplementedError();
   }
 
   @override
@@ -125,8 +119,8 @@ class AnimekaiProvider extends AnimeProvider {
   }
 
   @override
-  List<String> getSupportedServers() {
-    return ["vidcloud", "streamsb", "vidstreaming", "streamtape"];
+  Future<List<String>> getSupportedServers() {
+    return Future(() =>  ["vidcloud", "streamsb", "vidstreaming", "streamtape"]);
   }
 
   @override

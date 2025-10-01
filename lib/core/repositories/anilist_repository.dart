@@ -96,5 +96,17 @@ class AniListRepository implements AnimeRepository {
   }
 
   @override
+  Future<List<String>> getSupportedStatuses() async {
+    return [
+      "CURRENT",
+      "PLANNING",
+      "COMPLETED",
+      "DROPPED",
+      "PAUSED",
+      "REPEATING",
+    ];
+  }
+
+  @override
   String get name => 'anilist';
 }

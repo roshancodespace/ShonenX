@@ -33,4 +33,5 @@ abstract class AnimeRepository {
   Future<List<Media>> getTopRatedAnime();
   Future<List<Media>> getRecentlyUpdatedAnime();
   Future<List<Media>> getUpcomingAnime();
+  Future<List<String>> getSupportedStatuses();
 }

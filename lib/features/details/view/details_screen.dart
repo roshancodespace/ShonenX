@@ -78,8 +78,8 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
             ),
             // Episodes Tab
             EpisodesTab(
-              animeTitle: widget.anime.title!,
-              animeId: widget.anime.id.toString(),
+              mediaId: widget.anime.id.toString(),
+              mediaTitle: widget.anime.title!,
             ),
             // Characters Tab
             const SingleChildScrollView(

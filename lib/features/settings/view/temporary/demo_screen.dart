@@ -196,7 +196,8 @@ class _DemoDetailState extends ConsumerState<DemoDetail> {
                                       navigateToWatch(
                                         context: context,
                                         ref: ref,
-                                        animeId: 'demo',
+                                        mediaId: 'demo',
+                                        animeId: null,
                                         animeName: media!.name ?? 'demo',
                                         episodes: episodes,
                                       );

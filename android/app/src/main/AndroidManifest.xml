@@ -48,6 +48,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="shonenx" android:host="callback" />
             </intent-filter>
+            
         </activity>
 
         <meta-data

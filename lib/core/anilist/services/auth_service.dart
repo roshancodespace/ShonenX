@@ -15,11 +15,10 @@ class AniListAuthService {
       final result = await FlutterWebAuth2.authenticate(
         url:
             '$authUrl?client_id=$clientId&redirect_uri=$redirectUri&response_type=code',
-        callbackUrlScheme: 'shonenx', // Must match the Redirect URL scheme
+        callbackUrlScheme: 'shonenx',
         options: FlutterWebAuth2Options(),
       );
 
-      // Extract the authorization code from the redirect URL
       final code = Uri.parse(result).queryParameters['code'];
       return code;
     } catch (e) {

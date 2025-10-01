@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
-import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/aniwatch/parser.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
@@ -75,16 +74,6 @@ class AniwatchProvider extends AnimeProvider {
           .toList(),
       totalEpisodes: data['totalEpisodes'],
     );
-  }
-
-  @override
-  Future<BaseServerModel> getServers(String episodeId) async {
-    final response = await http.get(
-        Uri.parse("$baseUrl/ajax/v2/episode/servers?episodeId=$episodeId"),
-        headers: _getHeaders());
-    final document = parse(json.decode(response.body)['html']);
-    return parseServers(
-        document, "$baseUrl/ajax/v2/episode/servers?episodeId=$episodeId");
   }
 
   String? retrieveServerId(Document document, int index, String category) {
@@ -190,8 +179,8 @@ class AniwatchProvider extends AnimeProvider {
   }
 
   @override
-  List<String> getSupportedServers() {
-    return ["hd-1", "hd-2"];
+  Future<List<String>> getSupportedServers() {
+    return Future(() => ["hd-1", "hd-2"]);
   }
 
   @override

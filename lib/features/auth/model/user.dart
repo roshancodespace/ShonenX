@@ -1,7 +1,7 @@
 class AuthUser {
-  final int id;
+  final String id;
   final String name;
-  final String avatarUrl;
+  final String? avatarUrl;
 
   const AuthUser({
     required this.id,

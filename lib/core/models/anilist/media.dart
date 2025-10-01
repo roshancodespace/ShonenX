@@ -24,6 +24,12 @@ class Media {
   final bool isFavourite;
   final List<MediaRanking> rankings;
 
+  // MAL specific fields
+  final String? source;
+  final int? rank;
+  final int? favorites;
+  final double? meanScore;
+
   const Media({
     this.id,
     this.title,
@@ -47,6 +53,10 @@ class Media {
     this.seasonYear,
     this.isFavourite = false,
     this.rankings = const [],
+    this.source,
+    this.rank,
+    this.favorites,
+    this.meanScore,
   });
 
   factory Media.fromJson(Map<String, dynamic> json) {
@@ -85,6 +95,70 @@ class Media {
       rankings: (json['rankings'] as List<dynamic>? ?? [])
           .map((r) => MediaRanking.fromJson(r))
           .toList(),
+      source: json['source'] as String?,
+      rank: json['rank'] as int?,
+      favorites: json['favorites'] as int?,
+      meanScore: (json['meanScore'] as num?)?.toDouble(),
+    );
+  }
+
+  factory Media.fromMal(Map<String, dynamic> node) {
+    return Media(
+      id: node['id'],
+      title: Title(
+        romaji: node['title'],
+        english: node['title'],
+        native: node['title_japanese'],
+      ),
+      coverImage: CoverImage(
+        large: node['main_picture']?['large'] ?? '',
+        medium: node['main_picture']?['medium'] ?? '',
+      ),
+      bannerImage: node['background'] ?? '',
+      episodes: node['num_episodes'],
+      duration: node['duration'],
+      format: node['media_type'],
+      status: node['status'],
+      description: node['synopsis'],
+      genres: (node['genres'] as List<dynamic>? ?? [])
+          .map((e) => e['name'] as String)
+          .toList(),
+      averageScore: (node['mean'] as num?)?.toDouble(),
+      popularity: (node['popularity'] as num?)?.toDouble(),
+      source: node['source'],
+      rank: node['rank'],
+      favorites: node['favorites'],
+      startDate: node['start_date'] != null
+          ? FuzzyDate.fromJson({
+              'year': int.tryParse(node['start_date'].substring(0, 4)),
+              'month': node['start_date'].length > 5
+                  ? int.tryParse(node['start_date'].substring(5, 7))
+                  : null,
+              'day': node['start_date'].length > 8
+                  ? int.tryParse(node['start_date'].substring(8, 10))
+                  : null,
+            })
+          : null,
+      endDate: node['end_date'] != null
+          ? FuzzyDate.fromJson({
+              'year': int.tryParse(node['end_date'].substring(0, 4)),
+              'month': node['end_date'].length > 5
+                  ? int.tryParse(node['end_date'].substring(5, 7))
+                  : null,
+              'day': node['end_date'].length > 8
+                  ? int.tryParse(node['end_date'].substring(8, 10))
+                  : null,
+            })
+          : null,
+      isAdult: node['nsfw'] ?? false,
+      studios: [],
+      streamingEpisodes: [],
+      trailer: null,
+      season: null,
+      seasonYear: null,
+      isFavourite: false,
+      rankings: [],
+      meanScore: (node['mean'] as num?)?.toDouble(),
     );
   }
 
@@ -112,20 +186,22 @@ class Media {
       'seasonYear': seasonYear,
       'isFavourite': isFavourite,
       'rankings': rankings.map((r) => r.toJson()).toList(),
+      'source': source,
+      'rank': rank,
+      'favorites': favorites,
+      'meanScore': meanScore,
     };
   }
 }
+
+// ---------------- Supporting Classes ----------------
 
 class Title {
   final String? romaji;
   final String? english;
   final String? native;
 
-  Title({
-    this.romaji,
-    this.english,
-    this.native,
-  });
+  Title({this.romaji, this.english, this.native});
 
   factory Title.fromJson(Map<String, dynamic> json) {
     return Title(
@@ -135,23 +211,18 @@ class Title {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'romaji': romaji,
-      'english': english,
-      'native': native,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'romaji': romaji,
+        'english': english,
+        'native': native,
+      };
 }
 
 class CoverImage {
   final String large;
   final String medium;
 
-  CoverImage({
-    required this.large,
-    required this.medium,
-  });
+  CoverImage({required this.large, required this.medium});
 
   factory CoverImage.fromJson(Map<String, dynamic> json) {
     return CoverImage(
@@ -160,12 +231,7 @@ class CoverImage {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'large': large,
-      'medium': medium,
-    };
-  }
+  Map<String, dynamic> toJson() => {'large': large, 'medium': medium};
 }
 
 class StreamingEpisode {
@@ -175,13 +241,12 @@ class StreamingEpisode {
   final String? site;
   final String? id;
 
-  StreamingEpisode({
-    required this.title,
-    required this.url,
-    this.id,
-    this.thumbnail,
-    this.site,
-  });
+  StreamingEpisode(
+      {required this.title,
+      required this.url,
+      this.id,
+      this.thumbnail,
+      this.site});
 
   factory StreamingEpisode.fromJson(Map<String, dynamic> json) {
     return StreamingEpisode(
@@ -193,12 +258,7 @@ class StreamingEpisode {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'title': title,
-      'url': url,
-      'thumbnail': thumbnail,
-      'site': site,
-    };
+    return {'title': title, 'url': url, 'thumbnail': thumbnail, 'site': site};
   }
 }
 
@@ -207,11 +267,7 @@ class Trailer {
   final String? site;
   final String? thumbnail;
 
-  Trailer({
-    required this.id,
-    this.site,
-    this.thumbnail,
-  });
+  Trailer({required this.id, this.site, this.thumbnail});
 
   factory Trailer.fromJson(Map<String, dynamic> json) {
     return Trailer(
@@ -221,23 +277,15 @@ class Trailer {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'site': site,
-      'thumbnail': thumbnail,
-    };
-  }
+  Map<String, dynamic> toJson() =>
+      {'id': id, 'site': site, 'thumbnail': thumbnail};
 }
 
 class Studio {
   final String name;
   final bool isMain;
 
-  Studio({
-    required this.name,
-    required this.isMain,
-  });
+  Studio({required this.name, required this.isMain});
 
   factory Studio.fromJson(Map<String, dynamic> json) {
     return Studio(
@@ -246,12 +294,7 @@ class Studio {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'isMain': isMain,
-    };
-  }
+  Map<String, dynamic> toJson() => {'name': name, 'isMain': isMain};
 }
 
 class MediaRanking {
@@ -262,14 +305,13 @@ class MediaRanking {
   final int? year;
   final bool allTime;
 
-  MediaRanking({
-    required this.rank,
-    required this.type,
-    required this.context,
-    this.season,
-    this.year,
-    required this.allTime,
-  });
+  MediaRanking(
+      {required this.rank,
+      required this.type,
+      required this.context,
+      this.season,
+      this.year,
+      required this.allTime});
 
   factory MediaRanking.fromJson(Map<String, dynamic> json) {
     return MediaRanking(
@@ -289,7 +331,19 @@ class MediaRanking {
       'context': context,
       'season': season,
       'year': year,
-      'allTime': allTime,
+      'allTime': allTime
     };
+  }
+}
+
+// ---------------- FuzzyDate extension for MAL ----------------
+extension FuzzyDateMal on FuzzyDate {
+  static FuzzyDate fromMal(String dateStr) {
+    final parts = dateStr.split('-');
+    return FuzzyDate(
+      year: parts.isNotEmpty ? int.tryParse(parts[0]) : null,
+      month: parts.length > 1 ? int.tryParse(parts[1]) : null,
+      day: parts.length > 2 ? int.tryParse(parts[2]) : null,
+    );
   }
 }

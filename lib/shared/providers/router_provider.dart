@@ -66,7 +66,8 @@ final _router = GoRouter(
     GoRoute(
       path: '/watch/:id',
       builder: (context, state) => WatchScreen(
-        animeId: state.pathParameters['id']!,
+        mediaId: state.pathParameters['id']!,
+        animeId: state.uri.queryParameters['animeId'],
         episode: int.tryParse(state.uri.queryParameters['episode'] ?? '1') ?? 1,
         startAt: Duration(
           seconds:

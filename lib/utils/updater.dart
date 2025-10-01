@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
 
@@ -328,7 +327,7 @@ void showUpdateBottomSheet(
                           onPressed: apkDownloadUrl == null
                               ? null
                               : downloadAndInstall,
-                          icon: const Icon(Icons.download),
+                          icon: const Icon(Icons.download_outlined),
                           label: const Text('Download & Install'),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),

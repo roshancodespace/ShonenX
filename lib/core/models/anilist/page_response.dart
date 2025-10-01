@@ -10,12 +10,32 @@ class PageResponse {
     required this.mediaList,
   });
 
+  /// AniList JSON
   factory PageResponse.fromJson(Map<String, dynamic> json) {
     final page = json['Page'];
     return PageResponse(
       pageInfo: PageInfo.fromJson(page['pageInfo']),
       mediaList: (page['mediaList'] as List<dynamic>)
           .map((e) => MediaListEntry.fromJson(e))
+          .toList(),
+    );
+  }
+
+  /// MAL JSON
+  factory PageResponse.fromMal(Map<String, dynamic> json) {
+    final data = json['data'] as List<dynamic>? ?? [];
+    final paging = json['paging'] ?? {};
+
+    return PageResponse(
+      pageInfo: PageInfo(
+        total: json['total'] ?? data.length,
+        currentPage: paging['current'] ?? 1,
+        lastPage: paging['last'] ?? 1,
+        hasNextPage: paging['next'] != null,
+        perPage: json['limit'] ?? data.length,
+      ),
+      mediaList: data
+          .map((e) => MediaListEntry.fromMal(e)) // <- you'll need to add a `fromMal` factory in MediaListEntry
           .toList(),
     );
   }

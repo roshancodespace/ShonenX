@@ -2,141 +2,250 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shonenx/core/anilist/services/anilist_service.dart';
 import 'package:shonenx/core/anilist/services/auth_service.dart';
+import 'package:shonenx/core/myanimelist/services/auth_service.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/features/auth/model/user.dart';
 import 'package:shonenx/shared/providers/auth_provider.dart';
 
+/// ------------------- Auth State -------------------
 class AuthState {
-  final bool isLoggedIn;
-  final bool isLoading;
+  final bool anilistLoading;
+  final bool malLoading;
+
   final String? anilistAccessToken;
   final String? malAccessToken;
-  final AuthUser? user;
-  final AuthPlatform? authPlatform;
+
+  final AuthUser? anilistUser;
+  final AuthUser? malUser;
+
+  final AuthPlatform activePlatform;
 
   const AuthState({
-    this.isLoggedIn = false,
-    this.isLoading = false,
+    this.anilistLoading = false,
+    this.malLoading = false,
     this.anilistAccessToken,
     this.malAccessToken,
-    this.user,
-    this.authPlatform = AuthPlatform.anilist,
+    this.anilistUser,
+    this.malUser,
+    this.activePlatform = AuthPlatform.anilist,
   });
 
   AuthState copyWith({
-    bool? isLoggedIn,
-    bool? isLoading,
+    bool? anilistLoading,
+    bool? malLoading,
     String? anilistAccessToken,
-    AuthUser? user,
-    AuthPlatform? authPlatform,
+    String? malAccessToken,
+    AuthUser? anilistUser,
+    AuthUser? malUser,
+    AuthPlatform? activePlatform,
   }) {
     return AuthState(
-      isLoggedIn: isLoggedIn ?? this.isLoggedIn,
-      isLoading: isLoading ?? this.isLoading,
+      anilistLoading: anilistLoading ?? this.anilistLoading,
+      malLoading: malLoading ?? this.malLoading,
       anilistAccessToken: anilistAccessToken ?? this.anilistAccessToken,
-      user: user ?? this.user,
-      authPlatform: authPlatform ?? this.authPlatform,
+      malAccessToken: malAccessToken ?? this.malAccessToken,
+      anilistUser: anilistUser ?? this.anilistUser,
+      malUser: malUser ?? this.malUser,
+      activePlatform: activePlatform ?? this.activePlatform,
     );
+  }
+
+  bool get isAniListAuthenticated => anilistAccessToken?.isNotEmpty == true;
+
+  bool get isMalAuthenticated => malAccessToken?.isNotEmpty == true;
+
+  bool isAuthenticatedFor(AuthPlatform platform) {
+    return switch (platform) {
+      AuthPlatform.anilist => isAniListAuthenticated,
+      AuthPlatform.mal => isMalAuthenticated,
+    };
+  }
+
+  AuthUser? userFor(AuthPlatform platform) {
+    return switch (platform) {
+      AuthPlatform.anilist => anilistUser,
+      AuthPlatform.mal => malUser,
+    };
+  }
+
+  bool isLoadingFor(AuthPlatform platform) {
+    return switch (platform) {
+      AuthPlatform.anilist => anilistLoading,
+      AuthPlatform.mal => malLoading,
+    };
   }
 }
 
+/// ------------------- Auth ViewModel -------------------
 class AuthViewModel extends StateNotifier<AuthState> {
-  final Ref _ref; // Add this
-  final AniListAuthService _authService;
-  final FlutterSecureStorage secureStorage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    lOptions: LinuxOptions(),
-  );
+  final Ref _ref;
+  final AniListAuthService _anilistAuthService;
+  final MyAnimeListAuthService _malAuthService;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
-  AuthViewModel(this._ref, this._authService) : super(const AuthState()) {
+  AuthViewModel(this._ref, this._anilistAuthService, this._malAuthService)
+      : super(const AuthState()) {
     _init();
   }
 
   Future<void> _init() async {
-    switch (state.authPlatform) {
-      case AuthPlatform.anilist:
-        return await _loadAnilistToken();
-      case AuthPlatform.mal:
-        return await _loadMalToken();
-      default:
-        break;
-    }
+    await Future.wait([
+      _loadAnilistToken(),
+      _loadMalToken(),
+    ]);
   }
 
-  Future<void> _loadAnilistToken() async {
-    final token = await secureStorage.read(key: 'anilist-token');
-    if (token != null && token.isNotEmpty) {
-      state = state.copyWith(isLoading: true);
-      final anilistService = _ref.read(anilistServiceProvider);
-      final userData = await anilistService.getUserProfile(token);
-      final user = AuthUser(
-          id: userData['id'],
-          name: userData['name'],
-          avatarUrl: userData['avatar']['large']);
-          
-      state = AuthState(
-        isLoggedIn: true,
-        isLoading: false,
-        anilistAccessToken: token,
-        user: user,
+  /// ------------------- Helpers -------------------
+  AuthUser _buildAnilistUser(Map<String, dynamic> data) => AuthUser(
+        id: data['id'].toString(),
+        name: data['name'],
+        avatarUrl: data['avatar']['large'],
       );
+
+  AuthUser _buildMalUser(Map<String, dynamic> data) => AuthUser(
+        id: data['id'].toString(),
+        name: data['name'],
+        avatarUrl: data['picture'],
+      );
+
+  /// ------------------- AniList -------------------
+  Future<void> _loadAnilistToken() async {
+    final token = await _secureStorage.read(key: 'anilist-token');
+    if (token?.isNotEmpty != true) return;
+
+    state = state.copyWith(anilistLoading: true);
+    try {
+      final userData =
+          await _ref.read(anilistServiceProvider).getUserProfile(token!);
+      state = state.copyWith(
+        anilistAccessToken: token,
+        anilistUser: _buildAnilistUser(userData),
+      );
+    } catch (_) {
+      await _secureStorage.delete(key: 'anilist-token');
+    } finally {
+      state = state.copyWith(anilistLoading: false);
     }
   }
 
-  Future<void> _loadMalToken() async {
-    // TODO: Implement MAL token loading
+  Future<void> _loginWithAnilist() async {
+    state = state.copyWith(
+        anilistLoading: true, activePlatform: AuthPlatform.anilist);
+    try {
+      final code = await _anilistAuthService.authenticate();
+      if (code == null) return;
+
+      final token = await _anilistAuthService.getAccessToken(code);
+      if (token == null) return;
+
+      await _secureStorage.write(key: 'anilist-token', value: token);
+      final userData =
+          await _ref.read(anilistServiceProvider).getUserProfile(token);
+
+      state = state.copyWith(
+        anilistAccessToken: token,
+        anilistUser: _buildAnilistUser(userData),
+        activePlatform: AuthPlatform.anilist,
+      );
+    } finally {
+      state = state.copyWith(anilistLoading: false);
+    }
   }
-  Future<void> login() async {
-    state = state.copyWith(isLoading: true);
-    if (state.authPlatform == AuthPlatform.anilist) {
-      await _loginWithAnilist();
-    } else if (state.authPlatform == AuthPlatform.mal) {
-      await _loginWithMal();
+
+  /// ------------------- MyAnimeList -------------------
+  Future<void> _loadMalToken() async {
+    final token = await _secureStorage.read(key: 'mal-token');
+    if (token?.isNotEmpty != true) return;
+
+    state = state.copyWith(malLoading: true);
+    try {
+      final profile = await _malAuthService.getUserProfile();
+      if (profile != null) {
+        state = state.copyWith(
+          malAccessToken: token,
+          malUser: _buildMalUser(profile),
+        );
+      }
+    } catch (_) {
+      await _secureStorage.delete(key: 'mal-token');
+      await _secureStorage.delete(key: 'mal-refresh-token');
+    } finally {
+      state = state.copyWith(malLoading: false);
     }
   }
 
   Future<void> _loginWithMal() async {
-    // TODO: Implement MAL login
+    state = state.copyWith(malLoading: true, activePlatform: AuthPlatform.mal);
+    try {
+      final code = await _malAuthService.authenticate();
+      if (code == null) return;
+
+      final tokenData = await _malAuthService.getAccessToken(code);
+      if (tokenData == null) return;
+
+      await _secureStorage.write(
+          key: 'mal-token', value: tokenData['access_token']);
+      await _secureStorage.write(
+          key: 'mal-refresh-token', value: tokenData['refresh_token']);
+
+      final profile = await _malAuthService.getUserProfile();
+      if (profile != null) {
+        state = state.copyWith(
+          malAccessToken: tokenData['access_token'],
+          malUser: _buildMalUser(profile),
+          activePlatform: AuthPlatform.mal,
+        );
+      }
+    } finally {
+      state = state.copyWith(malLoading: false);
+    }
   }
 
-  Future<void> _loginWithAnilist() async {
-    final code = await _authService.authenticate();
-    if (code == null) {
-      state = state.copyWith(isLoading: false);
-      return;
-    }
-
-    final token = await _authService.getAccessToken(code);
-    if (token == null) {
-      state = state.copyWith(isLoading: false);
-      return;
-    }
-
-    await secureStorage.write(key: 'anilist-token', value: token);
-
-    final anilistService = _ref.read(anilistServiceProvider);
-    final userData = await anilistService.getUserProfile(token);
-    final user = AuthUser(
-        id: userData['id'],
-        name: userData['name'],
-        avatarUrl: userData['avatar']['large']);
-
-    state = AuthState(
-      isLoggedIn: true,
-      isLoading: false,
-      anilistAccessToken: token,
-      user: user,
-    );
+  /// ------------------- Public -------------------
+  Future<void> login(AuthPlatform platform) async {
+    return switch (platform) {
+      AuthPlatform.anilist => _loginWithAnilist(),
+      AuthPlatform.mal => _loginWithMal(),
+    };
   }
 
-  Future<void> logout() async {
-    await secureStorage.delete(key: 'anilist-token');
-    state = const AuthState();
+  Future<void> logout(AuthPlatform platform) async {
+    switch (platform) {
+      case AuthPlatform.anilist:
+        await _secureStorage.delete(key: 'anilist-token');
+        state = state.copyWith(anilistAccessToken: null, anilistUser: null);
+        break;
+      case AuthPlatform.mal:
+        await _secureStorage.delete(key: 'mal-token');
+        await _secureStorage.delete(key: 'mal-refresh-token');
+        state = state.copyWith(malAccessToken: null, malUser: null,);
+        break;
+    }
+
+    if (state.activePlatform == platform) {
+      state = state.copyWith(activePlatform: null);
+    }
+  }
+
+  Future<void> refreshMalToken() async {
+    final tokenData = await _malAuthService.refreshToken();
+    if (tokenData != null) {
+      state = state.copyWith(malAccessToken: tokenData['access_token']);
+      await _secureStorage.write(
+          key: 'mal-token', value: tokenData['access_token']);
+      await _secureStorage.write(
+          key: 'mal-refresh-token', value: tokenData['refresh_token']);
+    }
+  }
+
+  void changePlatform(AuthPlatform platform) {
+    state = state.copyWith(activePlatform: platform);
   }
 }
 
+/// ------------------- Provider -------------------
 final authProvider = StateNotifierProvider<AuthViewModel, AuthState>((ref) {
-  final service =
-      ref.read(anilistAuthServiceProvider); // Assuming this is another service
-  return AuthViewModel(ref, service);
+  final aService = ref.read(anilistAuthServiceProvider);
+  final malService = ref.read(malAuthServiceProvider);
+  return AuthViewModel(ref, aService, malService);
 });

@@ -6,6 +6,7 @@ import 'package:shonenx/features/watchlist/view/widget/shonenx_gridview.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
+import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 
 class WatchlistScreen extends ConsumerStatefulWidget {
   const WatchlistScreen({super.key});
@@ -16,42 +17,58 @@ class WatchlistScreen extends ConsumerStatefulWidget {
 
 class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
     with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-  final _statuses = WatchlistStatus.values;
+  TabController? _tabController;
+  List<String> _statuses = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _statuses.length, vsync: this);
+    _initStatuses();
+  }
 
-    // Initial fetch
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+  Future<void> _initStatuses() async {
+    final repo = ref.read(animeRepositoryProvider);
+    final supportedStatuses = await repo.getSupportedStatuses();
+
+    // Always include "favorites"
+    _statuses = [...supportedStatuses, 'favorites'];
+
+    setState(() {
+      _tabController = TabController(length: _statuses.length, vsync: this);
+
+      // Initial fetch for first tab
       _fetchDataForIndex(0);
-    });
 
-    // Fetch when tab changes
-    _tabController.addListener(() {
-      if (_tabController.indexIsChanging) {
-        _fetchDataForIndex(_tabController.index);
-      }
+      _tabController!.addListener(() {
+        if (_tabController!.indexIsChanging) {
+          _fetchDataForIndex(_tabController!.index);
+        }
+      });
     });
   }
 
   void _fetchDataForIndex(int index, {bool force = false}) {
-    ref.read(watchlistProvider.notifier).fetchListForStatus(
-          _statuses[index],
-          force: force,
-        );
+    if (_statuses.isEmpty) return;
+    final status = _statuses[index];
+    ref
+        .read(watchlistProvider.notifier)
+        .fetchListForStatus(status, force: force);
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabController?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_tabController == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Watchlist'),
@@ -59,7 +76,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
           controller: _tabController,
           isScrollable: true,
           onTap: (i) => _fetchDataForIndex(i),
-          tabs: _statuses.map((s) => Tab(text: _capitalize(s.name))).toList(),
+          tabs: _statuses.map((s) => Tab(text: _capitalize(s))).toList(),
         ),
       ),
       body: TabBarView(
@@ -76,7 +93,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
 }
 
 class _WatchlistTabView extends ConsumerWidget {
-  final WatchlistStatus status;
+  final String status;
   const _WatchlistTabView({required this.status});
 
   @override
@@ -105,14 +122,13 @@ class _WatchlistTabView extends ConsumerWidget {
 
     return NotificationListener<ScrollNotification>(
       onNotification: (scrollInfo) {
+        final pageInfo = state.pageInfo[status];
         if (scrollInfo.metrics.pixels >=
-            scrollInfo.metrics.maxScrollExtent * 0.9) {
-          final pageInfo = state.pageInfo[status];
-          if (pageInfo != null &&
-              pageInfo.hasNextPage &&
-              !state.loadingStatuses.contains(status)) {
-            notifier.fetchListForStatus(status, page: pageInfo.currentPage + 1);
-          }
+                scrollInfo.metrics.maxScrollExtent * 0.9 &&
+            pageInfo != null &&
+            pageInfo.hasNextPage &&
+            !state.loadingStatuses.contains(status)) {
+          notifier.fetchListForStatus(status, page: pageInfo.currentPage + 1);
         }
         return false;
       },
@@ -138,8 +154,8 @@ class _WatchlistTabView extends ConsumerWidget {
     );
   }
 
-  List<Media> _extractMedia(WatchListState state, WatchlistStatus status) {
-    if (status == WatchlistStatus.favorites) return state.favorites;
+  List<Media> _extractMedia(WatchListState state, String status) {
+    if (status == 'favorites') return state.favorites;
     return (state.lists[status] ?? []).map((e) => e.media).toList();
   }
 }
@@ -155,12 +171,9 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text("Failed to load list.\n$message"),
+          Text("Failed to load list.\n$message", textAlign: TextAlign.center),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: onRetry,
-            child: const Text('Retry'),
-          ),
+          ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
     );

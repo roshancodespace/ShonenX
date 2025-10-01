@@ -26,7 +26,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // AniList Card
-            AniListLoginButton(),
+            AccountAuthenticationSection(),
 
             const SizedBox(height: 32),
 

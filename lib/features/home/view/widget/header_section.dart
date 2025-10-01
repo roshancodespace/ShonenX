@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/home/view/widget/action_panel.dart';
 import 'package:shonenx/features/home/view/widget/discover_card.dart';
@@ -21,7 +22,11 @@ class HeaderSection extends ConsumerWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: UserProfileCard(user: authState.user)),
+            Expanded(
+                child: UserProfileCard(
+                    user: authState.activePlatform == AuthPlatform.anilist
+                        ? authState.anilistUser
+                        : authState.malUser)),
             const SizedBox(width: 10),
             ActionPanel(isDesktop: isDesktop),
           ],

@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   desktop_webview_window
-  file_selector_linux
   flutter_qjs
   flutter_secure_storage_linux
   flutter_volume_controller

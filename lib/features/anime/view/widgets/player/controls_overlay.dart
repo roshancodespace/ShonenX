@@ -7,8 +7,8 @@ import 'package:shonenx/features/anime/view/widgets/player/bottom_controls.dart'
 import 'package:shonenx/features/anime/view/widgets/player/center_controls.dart';
 import 'package:shonenx/features/anime/view/widgets/player/subtitle_overlay.dart';
 import 'package:shonenx/features/anime/view/widgets/player/top_controls.dart';
-import 'package:shonenx/features/anime/view_model/episodeDataProvider.dart';
-import 'package:shonenx/features/anime/view_model/playerStateProvider.dart';
+import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
+import 'package:shonenx/features/anime/view_model/player_provider.dart';
 
 // --- MAIN WIDGET ---
 class CloudstreamControls extends ConsumerStatefulWidget {
@@ -129,46 +129,59 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
 
   Widget _buildFullControls() {
     final playerNotifier = ref.read(playerStateProvider.notifier);
-    return Column(
+
+    return Stack(
       children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          transform:
-              Matrix4.translationValues(0, _areControlsVisible ? 0 : -100, 0),
-          child: TopControls(
-            onInteraction: _resetHideTimer,
-            onEpisodesPressed: widget.onEpisodesPressed,
-            onSettingsPressed: _showSettingsSheet,
-            onQualityPressed: _showQualitySheet,
-          ),
-        ),
-        Expanded(
+        /// Center Controls
+        Positioned.fill(
           child: Center(
             child: CenterControls(onInteraction: _resetHideTimer),
           ),
         ),
+
+        /// Top Controls
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          transform:
+              Matrix4.translationValues(0, _areControlsVisible ? 0 : -100, 0),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: TopControls(
+              onInteraction: _resetHideTimer,
+              onEpisodesPressed: widget.onEpisodesPressed,
+              onSettingsPressed: _showSettingsSheet,
+              onQualityPressed: _showQualitySheet,
+            ),
+          ),
+        ),
+
+        // /// Bottom Controls
         AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           transform:
               Matrix4.translationValues(0, _areControlsVisible ? 0 : 150, 0),
-          child: BottomControls(
-            onInteraction: _resetHideTimer,
-            sliderValue: _draggedSliderValue,
-            onSliderChangeStart: (val) {
-              _hideControlsTimer?.cancel();
-              setState(() => _draggedSliderValue = val);
-            },
-            onForwardPressed: () => playerNotifier.forward(85),
-            onSliderChanged: (val) => setState(() => _draggedSliderValue = val),
-            onSliderChangeEnd: (val) {
-              playerNotifier.seek(Duration(milliseconds: val.round()));
-              setState(() => _draggedSliderValue = null);
-              _resetHideTimer();
-            },
-            onLockPressed: _toggleLock,
-            onSourcePressed: _showSourceSheet,
-            onSubtitlePressed: _showSubtitleSheet,
-            onServerPressed: _showServerSheet,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: BottomControls(
+              onInteraction: _resetHideTimer,
+              sliderValue: _draggedSliderValue,
+              onSliderChangeStart: (val) {
+                _hideControlsTimer?.cancel();
+                setState(() => _draggedSliderValue = val);
+              },
+              onForwardPressed: () => playerNotifier.forward(85),
+              onSliderChanged: (val) =>
+                  setState(() => _draggedSliderValue = val),
+              onSliderChangeEnd: (val) {
+                playerNotifier.seek(Duration(milliseconds: val.round()));
+                setState(() => _draggedSliderValue = null);
+                _resetHideTimer();
+              },
+              onLockPressed: _toggleLock,
+              onSourcePressed: _showSourceSheet,
+              onSubtitlePressed: _showSubtitleSheet,
+              onServerPressed: _showServerSheet,
+            ),
           ),
         ),
       ],

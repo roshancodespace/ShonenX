@@ -84,6 +84,7 @@ Future<void> providerAnimeMatchSearch({
         navigateToWatch(
           context: context,
           ref: ref,
+          mediaId: animeMedia.id.toString(),
           animeId: bestMatch.id!,
           animeName: bestMatch.name!,
           episodes: const [],
@@ -211,6 +212,7 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
     navigateToWatch(
         context: context,
         ref: ref,
+        mediaId: widget.animeMedia.id.toString(),
         animeId: anime.id!,
         animeName: anime.name ?? 'Unknown',
         episodes: const []);

@@ -133,7 +133,8 @@ class _DemoDetailState extends ConsumerState<DemoDetail> {
 
   void fetch() async {
     try {
-      final data = await ref.read(sourceProvider.notifier).getDetails(widget.url);
+      final data =
+          await ref.read(sourceProvider.notifier).getDetails(widget.url);
       setState(() => media = data);
       AppLogger.d(data?.toJson());
     } catch (err) {
@@ -146,8 +147,7 @@ class _DemoDetailState extends ConsumerState<DemoDetail> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(
-          body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (media == null) {
       return const Scaffold(
@@ -181,29 +181,29 @@ class _DemoDetailState extends ConsumerState<DemoDetail> {
                     color: Colors.black,
                     child: ListView(
                       children: sources
-                              .map((s) => ListTile(
-                                    title: Text(s?.quality ?? ''),
-                                    subtitle: Text(s?.url ?? ''),
-                                    onTap: () {
-                                      final episodes = media!.chapters!
-                                          .map((c) => EpisodeDataModel(
-                                                title: c.name,
-                                                url: c.url,
-                                                number: extractNumber(c.name),
-                                              ))
-                                          .toList();
+                          .map((s) => ListTile(
+                                title: Text(s?.quality ?? ''),
+                                subtitle: Text(s?.url ?? ''),
+                                onTap: () {
+                                  final episodes = media!.chapters!
+                                      .map((c) => EpisodeDataModel(
+                                            title: c.name,
+                                            url: c.url,
+                                            number: extractNumber(c.name),
+                                          ))
+                                      .toList();
 
-                                      navigateToWatch(
-                                        context: context,
-                                        ref: ref,
-                                        mediaId: 'demo',
-                                        animeId: null,
-                                        animeName: media!.name ?? 'demo',
-                                        episodes: episodes,
-                                      );
-                                    },
-                                  ))
-                              .toList(),
+                                  navigateToWatch(
+                                      context: context,
+                                      ref: ref,
+                                      mediaId: 'demo',
+                                      animeId: media!.name,
+                                      animeName: media!.name ?? 'demo',
+                                      episodes: episodes,
+                                      currentEpisode: 1);
+                                },
+                              ))
+                          .toList(),
                     ),
                   ),
                 );

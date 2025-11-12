@@ -32,10 +32,8 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
     // initialize from current state
     final watchlist = ref.read(watchlistProvider.notifier);
     Future.microtask(() async {
-    isFavorite = await watchlist.ensureFavorite(widget.anime.id!);
-    setState(() {
-      
-    });
+      isFavorite = await watchlist.ensureFavorite(widget.anime.id!);
+      setState(() {});
     });
   }
 
@@ -60,17 +58,22 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
 
     return SliverAppBar(
       expandedHeight: 420,
-      pinned: true,
+      pinned: false,
+      floating: true,
+      snap: true,
       elevation: 0,
-      backgroundColor: colorScheme.surfaceContainerLowest.withOpacity(0.8),
+      backgroundColor: colorScheme.surfaceContainerLowest,
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           fit: StackFit.expand,
           children: [
             CachedNetworkImage(
-              imageUrl: widget.anime.bannerImage ?? widget.anime.coverImage?.large ?? '',
+              imageUrl: widget.anime.bannerImage ??
+                  widget.anime.coverImage?.large ??
+                  '',
               fit: BoxFit.cover,
-              placeholder: (_, __) => Container(color: colorScheme.surfaceContainer),
+              placeholder: (_, __) =>
+                  Container(color: colorScheme.surfaceContainer),
             ),
             Container(
               decoration: BoxDecoration(
@@ -111,7 +114,9 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
-                          widget.anime.title?.english ?? widget.anime.title?.romaji ?? '',
+                          widget.anime.title?.english ??
+                              widget.anime.title?.romaji ??
+                              '',
                           style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.onSurface),
@@ -164,7 +169,8 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                   color: Colors.white,
                   size: 30,
                 ),
-                tooltip: isFavorite ? 'Remove from favourites' : 'Add to favourites',
+                tooltip:
+                    isFavorite ? 'Remove from favourites' : 'Add to favourites',
                 onPressed: toggleFavorite,
               ),
         const SizedBox(width: 8),
@@ -178,7 +184,6 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
     );
   }
 }
-
 
 /// Widget for displaying genre tags and status
 class GenreTags extends StatelessWidget {

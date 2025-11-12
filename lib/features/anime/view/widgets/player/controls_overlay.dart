@@ -103,6 +103,17 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
   Widget _buildControlsUI() {
     return GestureDetector(
       onTap: _hideControls,
+      onDoubleTapDown: (details) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final tapX = details.globalPosition.dx;
+
+        final playerNotifier = ref.read(playerStateProvider.notifier);
+        if (tapX < screenWidth / 2) {
+          playerNotifier.rewind(10);
+        } else {
+          playerNotifier.forward(10);
+        }
+      },
       child: Container(
         color: Colors.transparent,
         child: _isLocked ? _buildLockMode() : _buildFullControls(),

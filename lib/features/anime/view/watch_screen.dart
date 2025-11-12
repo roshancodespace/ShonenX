@@ -13,7 +13,7 @@ class WatchScreen extends ConsumerStatefulWidget {
   final String mediaId;
   final String? animeId;
   final String animeName;
-  final int? episode;
+  final int episode;
   final Duration startAt;
   final List<EpisodeDataModel>? episodes;
   final String? mMangaUrl;
@@ -49,13 +49,15 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     // Trigger the initial data fetch
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await ref.read(episodeDataProvider.notifier).fetchEpisodes(
-          animeTitle: widget.animeName,
-          animeId: widget.animeId,
-          initialEpisodeIdx: (widget.episode ?? 1) - 1,
-          startAt: widget.startAt,
-          force: false,
-          mMangaUrl: widget.mMangaUrl,
-          episodes: widget.episodes ?? []);
+            animeTitle: widget.animeName,
+            animeId: widget.animeId,
+            initialEpisodeIdx: widget.episode - 1,
+            startAt: widget.startAt,
+            force: false,
+            play: true,
+            mMangaUrl: widget.mMangaUrl,
+            episodes: widget.episodes ?? [],
+          );
     });
 
     // ref.read(playerStateProvider.notifier).open(

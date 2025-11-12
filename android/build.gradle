@@ -12,36 +12,37 @@ subprojects {
         if (project.plugins.hasPlugin("com.android.application") ||
             project.plugins.hasPlugin("com.android.library")) {
             
-            project.android {
-                // Always set compileSdk + targetSdk
+            android {
                 compileSdkVersion 35
 
                 defaultConfig {
-                    minSdkVersion 21
+                    minSdkVersion 24
                     targetSdkVersion 34
                 }
 
                 // Align Java + Kotlin
                 compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_1_8
-                    targetCompatibility JavaVersion.VERSION_1_8
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
                 }
 
-                if (hasProperty("kotlinOptions")) {
-                    kotlinOptions {
-                        jvmTarget = "18"
+                // FIX: Use the standard way to check for and configure Kotlin tasks
+                if (project.plugins.hasPlugin("org.jetbrains.kotlin.android")) {
+                    project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                        kotlinOptions {
+                            jvmTarget = "17"
+                        }
                     }
                 }
 
                 // Auto-inject namespace if missing
-                if (!project.android.hasProperty("namespace")) {
+                if (!project.android.hasProperty("namespace") || project.android.namespace == null) {
                     namespace project.group.toString()
                 }
             }
         }
     }
 }
-
 
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"

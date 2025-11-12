@@ -44,27 +44,28 @@ class EpisodeDataState {
 
   final String? mMangaUrl;
 
-  const EpisodeDataState(
-      {this.animeId,
-      this.animeTitle,
-      this.episodes = const [],
-      this.sources = const [],
-      this.subtitles = const [],
-      this.qualityOptions = const [],
-      this.servers = const [],
-      this.jikanMatches = const [],
-      this.headers,
-      this.selectedQualityIdx,
-      this.selectedSourceIdx,
-      this.selectedEpisodeIdx,
-      this.selectedSubtitleIdx,
-      this.selectedCategory = 'sub',
-      this.dubSubSupport = false,
-      this.selectedServer,
-      this.episodesLoading = true,
-      this.sourceLoading = false,
-      this.error,
-      this.mMangaUrl});
+  const EpisodeDataState({
+    this.animeId,
+    this.animeTitle,
+    this.episodes = const [],
+    this.sources = const [],
+    this.subtitles = const [],
+    this.qualityOptions = const [],
+    this.servers = const [],
+    this.jikanMatches = const [],
+    this.headers,
+    this.selectedQualityIdx,
+    this.selectedSourceIdx,
+    this.selectedEpisodeIdx,
+    this.selectedSubtitleIdx,
+    this.selectedCategory = 'sub',
+    this.dubSubSupport = false,
+    this.selectedServer,
+    this.episodesLoading = true,
+    this.sourceLoading = false,
+    this.error,
+    this.mMangaUrl,
+  });
 
   EpisodeDataState copyWith({
     String? animeId,
@@ -113,9 +114,7 @@ class EpisodeDataState {
   }
 }
 
-// The Notifier for fetching and holding episode data
 class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
-  // --- Dependencies ---
   JikanService get _jikan => JikanService();
   ExperimentalFeaturesModel get _experimentalFeatures =>
       ref.read(experimentalProvider);
@@ -126,8 +125,6 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   EpisodeDataState build() {
     return const EpisodeDataState();
   }
-
-  // --- Public API ---
 
   /// Fetches the list of episodes for a given anime.
   Future<List<EpisodeDataModel>> fetchEpisodes({
@@ -140,13 +137,15 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     Duration startAt = Duration.zero,
     String? mMangaUrl,
   }) async {
-    // If episodes are already loaded and not forcing a refresh, just set up and play.
+    AppLogger.i(
+        'Fetching episodes for: $animeTitle (Force: $force, Initial Index: $initialEpisodeIdx)');
+
     if (!force && state.episodes.isNotEmpty) {
+      AppLogger.d('Episodes already loaded. Skipping fetch.');
       await _setupAndPlay(play, initialEpisodeIdx, startAt);
       return state.episodes;
     }
 
-    // Set loading state and clear previous errors.
     state = state.copyWith(
       episodesLoading: true,
       error: null,
@@ -158,6 +157,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     final fetchedEpisodes = await _fetchEpisodeList(animeId, mMangaUrl);
 
     if (fetchedEpisodes.isEmpty) {
+      AppLogger.w('Episode list returned empty.');
       state = state.copyWith(
         episodesLoading: false,
         error: "No episodes found for this anime.",
@@ -165,7 +165,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       return [];
     }
 
-    // Update state with fetched episodes and sync with Jikan.
+    AppLogger.i('Fetched ${fetchedEpisodes.length} episodes.');
     state = state.copyWith(episodes: fetchedEpisodes);
     syncEpisodesWithJikan();
 
@@ -178,15 +178,24 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   Future<void> refreshEpisodes() async {
     final animeId = state.animeId;
     final animeTitle = state.animeTitle;
-    if (animeId == null || animeTitle == null) return;
+    if (animeId == null || animeTitle == null) {
+      AppLogger.w('Cannot refresh: animeId or animeTitle is null.');
+      return;
+    }
+    AppLogger.i('Refreshing episodes for $animeTitle.');
     await fetchEpisodes(animeId: animeId, animeTitle: animeTitle, force: true);
   }
 
   /// Toggles between 'sub' and 'dub' audio tracks if supported.
   Future<void> toggleDubSub() async {
-    if (!state.dubSubSupport) return;
+    if (!state.dubSubSupport) {
+      AppLogger.w('Toggle failed: Dub/Sub switching is not supported.');
+      return;
+    }
     final newCategory = state.selectedCategory == 'sub' ? 'dub' : 'sub';
     final currentPosition = ref.read(playerStateProvider).position;
+    AppLogger.i(
+        'Toggling category from ${state.selectedCategory} to $newCategory.');
     state = state.copyWith(selectedCategory: newCategory);
     await _fetchStreamData(startAt: currentPosition);
   }
@@ -194,23 +203,32 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   /// Changes the current episode and fetches its stream data.
   Future<void> changeEpisode(int episodeIdx,
       {Duration startAt = Duration.zero}) async {
-    if (episodeIdx < 0 || episodeIdx >= state.episodes.length) return;
+    if (episodeIdx < 0 || episodeIdx >= state.episodes.length) {
+      AppLogger.e('Attempted to change to invalid episode index: $episodeIdx');
+      return;
+    }
     ref.read(playerStateProvider.notifier).pause();
-    AppLogger.d('Playing episode at index: $episodeIdx');
+    AppLogger.i('Changing to episode index: $episodeIdx');
     state = state.copyWith(selectedEpisodeIdx: episodeIdx);
     await _fetchStreamData(startAt: startAt);
   }
 
   /// Changes the video quality and restarts the player from the current position.
   Future<void> changeQuality(int qualityIdx) async {
-    if (qualityIdx < 0 || qualityIdx >= state.qualityOptions.length) return;
+    if (qualityIdx < 0 || qualityIdx >= state.qualityOptions.length) {
+      AppLogger.e('Attempted to change to invalid quality index: $qualityIdx');
+      return;
+    }
 
     final newQualityUrl = state.qualityOptions[qualityIdx]['url'] as String?;
     if (newQualityUrl == null) {
+      AppLogger.e('Selected quality $qualityIdx has a null URL.');
       state = state.copyWith(error: "Selected quality has an invalid URL.");
       return;
     }
 
+    AppLogger.i(
+        'Changing quality to index: $qualityIdx (${state.qualityOptions[qualityIdx]['quality']})');
     state = state.copyWith(selectedQualityIdx: qualityIdx);
     final currentPosition = ref.read(playerStateProvider).position;
     ref
@@ -220,14 +238,19 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   /// Changes the streaming source and reloads the player.
   Future<void> changeSource(int sourceIdx) async {
-    if (sourceIdx < 0 || sourceIdx >= state.sources.length) return;
+    if (sourceIdx < 0 || sourceIdx >= state.sources.length) {
+      AppLogger.e('Attempted to change to invalid source index: $sourceIdx');
+      return;
+    }
     final currentPosition = ref.read(playerStateProvider).position;
+    AppLogger.i('Changing source to index: $sourceIdx');
     state = state.copyWith(selectedSourceIdx: sourceIdx);
     await _loadAndPlaySource(sourceIdx, startAt: currentPosition);
   }
 
   /// Changes the streaming server and reloads the stream.
   Future<void> changeServer(String server) async {
+    AppLogger.i('Changing server to: $server');
     final currentPosition = ref.read(playerStateProvider).position;
     state = state.copyWith(selectedServer: server);
     await _fetchStreamData(startAt: currentPosition);
@@ -235,17 +258,23 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   /// Changes the subtitle track.
   Future<void> changeSubtitle(int subtitleIdx) async {
-    if (subtitleIdx < 0 || subtitleIdx >= state.subtitles.length) return;
+    if (subtitleIdx < 0 || subtitleIdx >= state.subtitles.length) {
+      AppLogger.e(
+          'Attempted to change to invalid subtitle index: $subtitleIdx');
+      return;
+    }
     final subtitle = state.subtitles[subtitleIdx];
-    if (subtitle.url == null) return;
+    if (subtitle.url == null) {
+      AppLogger.w('Subtitle track at index $subtitleIdx has a null URL.');
+      return;
+    }
 
+    AppLogger.i('Changing subtitle to index: $subtitleIdx (${subtitle.lang})');
     await ref
         .read(playerStateProvider.notifier)
         .setSubtitle(SubtitleTrack.uri(subtitle.url!));
     state = state.copyWith(selectedSubtitleIdx: subtitleIdx);
   }
-
-  // --- Private Helper Methods ---
 
   /// Centralized async function runner with error handling.
   Future<T?> _safeRun<T>(
@@ -257,7 +286,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     try {
       return await task();
     } catch (e, st) {
-      AppLogger.e('Error in EpisodeDataNotifier: $e\n$st');
+      AppLogger.e('Error running task: $errorTitle', e, st);
       final title = errorTitle ?? 'Error';
       final msg = errorMessage ?? 'Something went wrong.';
       state = state.copyWith(
@@ -275,12 +304,16 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       String? animeId, String? mMangaUrl) async {
     final useMangayomi = _experimentalFeatures.useMangayomiExtensions;
     final url = state.mMangaUrl ?? mMangaUrl;
+
     if (useMangayomi && url != null) {
-      AppLogger.w('Fetching episodes using Mangayomi extension');
+      AppLogger.d(
+          'Attempting to fetch episodes using Mangayomi extension for URL: $url');
       return await _safeRun<List<EpisodeDataModel>>(
             () async {
               final details = await _sourceNotifier.getDetails(url);
               final chapters = details?.chapters ?? [];
+              AppLogger.d('Mangayomi returned ${chapters.length} chapters.');
+
               final mapped = chapters
                   .map((ch) => EpisodeDataModel(
                         isFiller: false,
@@ -293,26 +326,31 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
                       ))
                   .toList();
 
-              // Normalize: sort ascending by number if valid numbers exist
               if (mapped.any((e) => e.number != null && e.number! > 0)) {
                 mapped.sort((a, b) =>
                     (a.number ?? 999999).compareTo(b.number ?? 999999));
               }
               return mapped;
             },
-            errorTitle: "Mangayomi",
+            errorTitle: "Mangayomi Episode Fetch",
             errorMessage: "Failed to fetch episodes via Mangayomi.",
           ) ??
           [];
     }
 
-    AppLogger.w('Fetching episodes using Legacy source');
+    AppLogger.d('Attempting to fetch episodes using Legacy source.');
     final animeProvider = _getProvider();
-    if (animeProvider == null) return [];
-    if (animeId == null) throw Exception('animeId is null');
+    if (animeProvider == null) {
+      AppLogger.e('Legacy AnimeProvider is null.');
+      return [];
+    }
+    if (animeId == null) {
+      AppLogger.e('Legacy provider selected but animeId is null.');
+      throw Exception('animeId is null');
+    }
     return await _safeRun<List<EpisodeDataModel>>(
           () async => (await animeProvider.getEpisodes(animeId)).episodes ?? [],
-          errorTitle: "Legacy Source",
+          errorTitle: "Legacy Source Episode Fetch",
           errorMessage: "Failed to fetch episodes.",
         ) ??
         [];
@@ -324,10 +362,15 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     final bool useMangayomi = _experimentalFeatures.useMangayomiExtensions;
     List<String> servers = [];
     bool supportDubSub = false;
+
     if (!useMangayomi) {
       final animeProvider = _getProvider();
       servers = await animeProvider?.getSupportedServers() ?? [];
       supportDubSub = animeProvider?.getDubSubParamSupport() ?? false;
+      AppLogger.d(
+          'Legacy setup: ${servers.length} servers found. Dub/Sub support: $supportDubSub');
+    } else {
+      AppLogger.d('Mangayomi setup: Skipping server/dub-sub configuration.');
     }
 
     state = state.copyWith(
@@ -338,6 +381,8 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     );
 
     if (play) {
+      AppLogger.d(
+          'Starting playback from initial episode index: $initialEpisodeIdx');
       await changeEpisode(initialEpisodeIdx, startAt: startAt);
     }
   }
@@ -345,10 +390,16 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   /// Syncs episode titles with data from Jikan/MAL.
   Future<void> syncEpisodesWithJikan() async {
     if (!_experimentalFeatures.episodeTitleSync || state.episodes.isEmpty) {
+      AppLogger.d('Jikan Sync skipped: Disabled or episode list is empty.');
       return;
     }
     final animeTitle = state.animeTitle;
-    if (animeTitle == null || animeTitle.isEmpty) return;
+    if (animeTitle == null || animeTitle.isEmpty) {
+      AppLogger.w('Jikan Sync skipped: Anime title is empty.');
+      return;
+    }
+    AppLogger.i(
+        'Attempting to sync episode titles with Jikan for: $animeTitle');
 
     await _safeRun(
       () async {
@@ -362,19 +413,27 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
               );
 
         if (jikanMatches.isEmpty || jikanMatches.first.similarity < 0.55) {
+          AppLogger.d(
+              'Jikan Sync failed: No good match found (best similarity: ${jikanMatches.firstOrNull?.similarity ?? 0.0}).');
           return;
         }
 
         state = state.copyWith(jikanMatches: jikanMatches);
         final bestMatch = jikanMatches.first.result;
+        AppLogger.d(
+            'Best Jikan match: ${bestMatch.title} (MAL ID: ${bestMatch.mal_id})');
         final jikanEpisodes = await _jikan.getEpisodes(bestMatch.mal_id, 1);
 
-        if (jikanEpisodes.isEmpty) return;
+        if (jikanEpisodes.isEmpty) {
+          AppLogger.d('Jikan returned no episode list for the best match.');
+          return;
+        }
 
         final updatedEpisodes = List.of(state.episodes);
-        for (int i = 0;
-            i < updatedEpisodes.length && i < jikanEpisodes.length;
-            i++) {
+        final syncCount = updatedEpisodes.length.clamp(0, jikanEpisodes.length);
+        AppLogger.i('Syncing $syncCount episode titles.');
+
+        for (int i = 0; i < syncCount; i++) {
           updatedEpisodes[i] =
               updatedEpisodes[i].copyWith(title: jikanEpisodes[i].title);
         }
@@ -383,25 +442,32 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       },
       errorTitle: "Jikan Sync",
       errorMessage: "Couldn't sync Jikan episode titles.",
-      showSnackBar: false, // Non-critical error
+      showSnackBar: false,
     );
   }
 
   /// Fetches the streaming sources (video links, subtitles) for the current episode.
   Future<void> _fetchStreamData({Duration startAt = Duration.zero}) async {
     final episodeIdx = state.selectedEpisodeIdx;
-    if (episodeIdx == null) return;
+    if (episodeIdx == null) {
+      AppLogger.w('Cannot fetch stream data: selectedEpisodeIdx is null.');
+      return;
+    }
 
+    AppLogger.i('Fetching stream data for episode index: $episodeIdx');
     state = state.copyWith(sourceLoading: true, error: null);
 
     final data = await _fetchSources(episodeIdx);
 
     if (data == null || data.sources.isEmpty) {
+      AppLogger.e('Source fetch failed: No sources returned.');
       state = state.copyWith(
           sourceLoading: false, error: "No sources found for this episode.");
       return;
     }
 
+    AppLogger.d(
+        'Found ${data.sources.length} sources and ${data.tracks.length} subtitle tracks.');
     state = state.copyWith(
       sources: data.sources,
       subtitles: data.tracks,
@@ -419,6 +485,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     final url = episode.url;
 
     if (useMangayomi && url != null && url.isNotEmpty) {
+      AppLogger.d('Using Mangayomi source getter for URL: $url');
       return await _safeRun(
         () async {
           final sources = await _sourceNotifier.getSources(url);
@@ -427,8 +494,8 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
                 .map((s) => Source(
                       url: s?.url,
                       isM3U8: s?.url.contains('.m3u8') ?? false,
-                      isDub:
-                          s?.originalUrl.toLowerCase().contains('dub') ?? false,
+                      isDub: s?.originalUrl.toLowerCase().contains('dub') ??
+                          false,
                       quality: s?.quality,
                     ))
                 .toList(),
@@ -444,8 +511,12 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     }
 
     final animeProvider = _getProvider();
-    if (animeProvider == null) throw Exception("Legacy provider not selected.");
+    if (animeProvider == null) {
+      AppLogger.e("Legacy provider not selected.");
+      throw Exception("Legacy provider not selected.");
+    }
 
+    AppLogger.d('Using Legacy source getter for episode ID: ${episode.id}');
     return await _safeRun(
       () => animeProvider.getSources(
         episode.id ?? '',
@@ -463,11 +534,15 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       {Duration startAt = Duration.zero}) async {
     await _safeRun(() async {
       if (sourceIndex < 0 || sourceIndex >= state.sources.length) {
+        AppLogger.e('Load failed: Invalid source index $sourceIndex');
         throw Exception("Invalid source index.");
       }
       final source = state.sources[sourceIndex];
       final sourceUrl = source.url;
+      AppLogger.i('Loading source index $sourceIndex: URL: $sourceUrl');
+
       if (sourceUrl == null || sourceUrl.isEmpty) {
+        AppLogger.e("Source URL is empty.");
         throw Exception("Source URL is empty.");
       }
 
@@ -476,8 +551,12 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
           qualities.isNotEmpty ? qualities.first['url'] : sourceUrl;
 
       if (urlToPlay == null) {
+        AppLogger.e("No playable URL found after quality extraction.");
         throw Exception("No playable URL found in the selected source.");
       }
+
+      AppLogger.d(
+          'Playable URL selected: $urlToPlay. Found ${qualities.length} quality options.');
 
       state = state.copyWith(
         qualityOptions: qualities,
@@ -488,7 +567,10 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       ref
           .read(playerStateProvider.notifier)
           .open(urlToPlay, startAt, headers: state.headers);
-    });
+    },
+        errorTitle: 'Load and Play Source',
+        errorMessage: 'Failed to load video source.');
+
     state = state.copyWith(sourceLoading: false);
   }
 
@@ -500,14 +582,16 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
     try {
       if (source.isM3U8) {
+        AppLogger.d('Extracting qualities from M3U8 URL.');
         return await extractor.extractQualities(url, state.headers ?? {});
       }
       // For non-M3U8, create a single quality option.
+      AppLogger.d('Using single non-M3U8 source quality: ${source.quality}');
       return [
         {'quality': source.quality ?? 'Default', 'url': url}
       ];
-    } catch (e) {
-      AppLogger.e("Failed to extract qualities: $e");
+    } catch (e, st) {
+      AppLogger.e("Failed to extract qualities from M3U8 URL: $url", e, st);
       // Fallback to the default source URL if extraction fails.
       return [
         {'quality': source.quality ?? 'Default', 'url': url}

@@ -17,6 +17,7 @@ void navigateToWatch(
     required String mediaId,
     required String animeName,
     required List<EpisodeDataModel> episodes,
+    required int currentEpisode,
     int? startAt,
     String? mMangaUrl}) {
   // final progress = ref
@@ -28,7 +29,7 @@ void navigateToWatch(
   // final encodedName = Uri.encodeComponent(animeName);
   final route = '/watch/$mediaId?animeId=$animeId'
       '&animeName=$animeName'
-      '&episode=1&mMangaUrl=$mMangaUrl&startAt=$startAt';
+      '&episode=$currentEpisode&mMangaUrl=$mMangaUrl&startAt=$startAt';
   AppLogger.d('Navigating to watch screen: $route');
   context.push(route, extra: episodes);
 }

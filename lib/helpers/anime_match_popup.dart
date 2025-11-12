@@ -23,7 +23,6 @@ Future<void> providerAnimeMatchSearch({
   required BuildContext context,
   required WidgetRef ref,
   required Media animeMedia,
-  int plusEpisode = 0,
 }) async {
   beforeSearchCallback?.call();
   AppLogger.d('Starting anime match search for animeId: ${animeMedia.id}');
@@ -82,13 +81,13 @@ Future<void> providerAnimeMatchSearch({
             '✅ High-confidence match found: ${bestMatch.name} (via "$title")');
 
         navigateToWatch(
-          context: context,
-          ref: ref,
-          mediaId: animeMedia.id.toString(),
-          animeId: bestMatch.id!,
-          animeName: bestMatch.name!,
-          episodes: const [],
-        );
+            context: context,
+            ref: ref,
+            mediaId: animeMedia.id.toString(),
+            animeId: bestMatch.id!,
+            animeName: bestMatch.name!,
+            episodes: const [],
+            currentEpisode: 1);
         return;
       }
 
@@ -115,7 +114,6 @@ Future<void> providerAnimeMatchSearch({
         initialResults: fallbackResults ?? [],
         animeProvider: animeProvider,
         animeMedia: animeMedia,
-        plusEpisode: plusEpisode,
         initialQuery: usedTitle ?? titles.first,
       ),
     );
@@ -138,14 +136,12 @@ class _AnimeSearchDialog extends ConsumerStatefulWidget {
   final List<BaseAnimeModel> initialResults;
   final AnimeProvider animeProvider;
   final Media animeMedia;
-  final int plusEpisode;
   final String initialQuery;
 
   const _AnimeSearchDialog({
     required this.initialResults,
     required this.animeProvider,
     required this.animeMedia,
-    required this.plusEpisode,
     required this.initialQuery,
   });
 
@@ -210,12 +206,14 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
   void _selectAnime(BaseAnimeModel anime) {
     Navigator.of(context).pop();
     navigateToWatch(
-        context: context,
-        ref: ref,
-        mediaId: widget.animeMedia.id.toString(),
-        animeId: anime.id!,
-        animeName: anime.name ?? 'Unknown',
-        episodes: const []);
+      context: context,
+      ref: ref,
+      mediaId: widget.animeMedia.id.toString(),
+      animeId: anime.id!,
+      animeName: anime.name ?? 'Unknown',
+      episodes: const [],
+      currentEpisode: 1,
+    );
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iconsax/iconsax.dart';
 
 import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/features/details/view/widgets/episodes_tab.dart';
@@ -114,47 +115,67 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
           ),
         ),
       ),
-      // Watch Button as FAB - no margin
       floatingActionButton: !useMangayomi
-          ? FloatingActionButton.extended(
-              onPressed: _isWatchLoading
-                  ? null
-                  : () async {
-                      setState(() => _isWatchLoading = true);
-                      await providerAnimeMatchSearch(
-                        context: context,
-                        ref: ref,
-                        animeMedia: widget.anime,
-                      );
-                      if (mounted) {
-                        setState(() => _isWatchLoading = false);
-                      }
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Fix Match (round)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FloatingActionButton(
+                    heroTag: 'retry_btn',
+                    onPressed: () {
+                      // TODO: Add retry functionality later
                     },
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
-              elevation: 6,
-              icon: _isWatchLoading
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          colorScheme.onPrimary,
-                        ),
-                      ),
-                    )
-                  : const Icon(Icons.play_arrow, size: 24),
-              label: Text(
-                _isWatchLoading ? 'Loading...' : 'Watch Now',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                    backgroundColor: colorScheme.secondaryContainer,
+                    foregroundColor: colorScheme.onSecondaryContainer,
+                    elevation: 4,
+                    child: const Icon(Iconsax.search_normal),
+                  ),
                 ),
-              ),
+
+                // Watch Now Button (extended)
+                FloatingActionButton.extended(
+                  heroTag: 'watch_btn',
+                  onPressed: _isWatchLoading
+                      ? null
+                      : () async {
+                          setState(() => _isWatchLoading = true);
+                          await providerAnimeMatchSearch(
+                            context: context,
+                            ref: ref,
+                            animeMedia: widget.anime,
+                          );
+                          if (mounted) {
+                            setState(() => _isWatchLoading = false);
+                          }
+                        },
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  elevation: 6,
+                  icon: _isWatchLoading
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                colorScheme.onPrimary),
+                          ),
+                        )
+                      : const Icon(Icons.play_arrow, size: 24),
+                  label: Text(
+                    _isWatchLoading ? 'Loading...' : 'Watch Now',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             )
           : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }

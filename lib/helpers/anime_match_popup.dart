@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -13,16 +14,13 @@ import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/main.dart';
 
-/// Searches for an anime match and navigates to the watch screen.
-///
-/// It first attempts a high-confidence automatic match. If unsuccessful,
-/// it displays a search dialog for manual selection.
-Future<void> providerAnimeMatchSearch({
+Future<BaseAnimeModel?> providerAnimeMatchSearch({
   Function? beforeSearchCallback,
   Function? afterSearchCallback,
   required BuildContext context,
   required WidgetRef ref,
   required Media animeMedia,
+  bool withAnimeMatch = true,
 }) async {
   beforeSearchCallback?.call();
   AppLogger.d('Starting anime match search for animeId: ${animeMedia.id}');
@@ -33,90 +31,16 @@ Future<void> providerAnimeMatchSearch({
       throw Exception('Anime provider is missing.');
     }
 
-    // Collect titles in priority order
-    final titles = [
-      animeMedia.title?.english,
-      animeMedia.title?.romaji,
-      animeMedia.title?.native,
-    ].where((t) => t != null && t.trim().isNotEmpty).cast<String>().toList();
-
-    if (titles.isEmpty) {
-      throw Exception('No valid titles available for search.');
-    }
-
-    List<BaseAnimeModel>? fallbackResults;
-    String? usedTitle;
-
-    // Try each title until one gives confident match or usable results
-    for (final title in titles) {
-      AppLogger.d('🔎 Trying search with title: $title');
-
-      final initialResponse = await animeProvider.getSearch(
-        Uri.encodeComponent(title.trim()),
-        animeMedia.format,
-        1,
-      );
-
-      if (!context.mounted) return;
-
-      if (initialResponse.results.isEmpty) {
-        AppLogger.d('No results for "$title". Trying next title...');
-        continue;
-      }
-
-      // Step 2: calculate similarity
-      final matches = getBestMatches<BaseAnimeModel>(
-        results: initialResponse.results,
-        title: title,
-        nameSelector: (r) => r.name,
-        idSelector: (r) => r.id,
-      );
-
-      if (!context.mounted) return;
-
-      if (matches.isNotEmpty && matches.first.similarity >= 0.8) {
-        final bestMatch = matches.first.result;
-        usedTitle = title;
-        AppLogger.d(
-            '✅ High-confidence match found: ${bestMatch.name} (via "$title")');
-
-        navigateToWatch(
-            context: context,
-            ref: ref,
-            mediaId: animeMedia.id.toString(),
-            animeId: bestMatch.id!,
-            animeName: bestMatch.name!,
-            episodes: const [],
-            currentEpisode: 1);
-        return;
-      }
-
-      // No confident match → store results for manual selection
-      fallbackResults = initialResponse.results;
-      usedTitle = title;
-      break;
-    }
-
-    // If no results from any title
-    if (fallbackResults == null || fallbackResults.isEmpty) {
-      showAppSnackBar(
-        'Anime Not Found',
-        'We couldn\'t locate this anime with any available title.',
-        type: ContentType.failure,
-      );
-      return;
-    }
-
-    // Show manual selection dialog
-    await showDialog(
+    final result = await showDialog<BaseAnimeModel>(
       context: context,
+      barrierColor: Colors.black54,
       builder: (_) => _AnimeSearchDialog(
-        initialResults: fallbackResults ?? [],
         animeProvider: animeProvider,
         animeMedia: animeMedia,
-        initialQuery: usedTitle ?? titles.first,
+        withAnimeMatch: withAnimeMatch,
       ),
     );
+    return result;
   } catch (e, stackTrace) {
     AppLogger.e('Anime match search failed', e, stackTrace);
     if (context.mounted) {
@@ -126,23 +50,21 @@ Future<void> providerAnimeMatchSearch({
         type: ContentType.failure,
       );
     }
+    return null;
   } finally {
     afterSearchCallback?.call();
   }
 }
 
-/// A minimal dialog for searching and selecting an anime.
 class _AnimeSearchDialog extends ConsumerStatefulWidget {
-  final List<BaseAnimeModel> initialResults;
   final AnimeProvider animeProvider;
   final Media animeMedia;
-  final String initialQuery;
+  final bool withAnimeMatch;
 
   const _AnimeSearchDialog({
-    required this.initialResults,
     required this.animeProvider,
     required this.animeMedia,
-    required this.initialQuery,
+    required this.withAnimeMatch,
   });
 
   @override
@@ -153,16 +75,15 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
   late final TextEditingController _searchController;
   final FocusNode _searchFocusNode = FocusNode();
   List<BaseAnimeModel> _results = [];
-  bool _isLoading = false;
+  bool _isLoading = true;
   Timer? _debounceTimer;
+  // String? _currentSearchTerm;
 
   @override
   void initState() {
     super.initState();
-    _results = widget.initialResults;
-    _searchController = TextEditingController(text: widget.initialQuery);
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _searchFocusNode.requestFocus());
+    _searchController = TextEditingController();
+    _initSearch();
   }
 
   @override
@@ -173,38 +94,107 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
     super.dispose();
   }
 
+  Future<void> _initSearch() async {
+    final titles = [
+      widget.animeMedia.title?.english,
+      widget.animeMedia.title?.romaji,
+      widget.animeMedia.title?.native,
+    ].where((t) => t != null && t.trim().isNotEmpty).cast<String>().toList();
+
+    if (titles.isEmpty) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+
+    _searchController.text = titles.first;
+    // _currentSearchTerm = titles.first;
+
+    for (final title in titles) {
+      if (!mounted) return;
+
+      if (_searchController.text != title) {
+        _searchController.text = title;
+      }
+
+      final success =
+          await _performSearch(title, autoMatch: widget.withAnimeMatch);
+      if (success) return;
+    }
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+      if (_results.isEmpty) {
+        _searchFocusNode.requestFocus();
+      }
+    }
+  }
+
+  Future<bool> _performSearch(String query, {bool autoMatch = false}) async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await widget.animeProvider.getSearch(
+        Uri.encodeComponent(query.trim()),
+        widget.animeMedia.format,
+        1,
+      );
+
+      if (!mounted) return true;
+
+      if (response.results.isEmpty) {
+        return false; // Try next title
+      }
+
+      if (autoMatch) {
+        final matches = getBestMatches<BaseAnimeModel>(
+          results: response.results,
+          title: query,
+          nameSelector: (r) => r.name,
+          idSelector: (r) => r.id,
+        );
+
+        if (matches.isNotEmpty && matches.first.similarity >= 0.8) {
+          final bestMatch = matches.first.result;
+          AppLogger.d('✅ High-confidence match found: ${bestMatch.name}');
+
+          if (mounted) {
+            Navigator.of(context).pop();
+            navigateToWatch(
+              context: context,
+              ref: ref,
+              mediaId: widget.animeMedia.id.toString(),
+              animeId: bestMatch.id!,
+              animeName: bestMatch.name!,
+              episodes: const [],
+              currentEpisode: 1,
+            );
+          }
+          return true;
+        }
+      }
+
+      setState(() {
+        _results = response.results.where((r) => r.id != null).toList();
+        _isLoading = false;
+      });
+      return true;
+    } catch (e) {
+      AppLogger.e('Search failed for $query', e);
+      return false;
+    }
+  }
+
   void _onSearchChanged(String query) {
     _debounceTimer?.cancel();
     if (query.trim().length < 2) return;
     _debounceTimer = Timer(
-      const Duration(milliseconds: 500),
-      () => _searchAnime(query),
+      const Duration(milliseconds: 600),
+      () => _performSearch(query, autoMatch: false),
     );
   }
 
-  Future<void> _searchAnime(String query) async {
-    setState(() => _isLoading = true);
-    try {
-      final response = await widget.animeProvider.getSearch(
-          Uri.encodeComponent(query.trim()), widget.animeMedia.format, 1);
-      if (mounted) {
-        setState(() =>
-            _results = response.results.where((r) => r.id != null).toList());
-      }
-    } catch (e, stackTrace) {
-      AppLogger.e('Anime search in dialog failed', e, stackTrace);
-      if (mounted) {
-        showAppSnackBar('Search Error', 'Could not fetch results.',
-            type: ContentType.failure);
-        setState(() => _results = []);
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
   void _selectAnime(BaseAnimeModel anime) {
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(anime);
+    if (!widget.withAnimeMatch) return;
     navigateToWatch(
       context: context,
       ref: ref,
@@ -219,49 +209,113 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      insetPadding: const EdgeInsets.all(16),
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 600),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Find Your Anime', style: theme.textTheme.headlineSmall),
-            const SizedBox(height: 4),
-            Text(
-              'Select the correct match or try a new search.',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+      child: Dialog(
+        backgroundColor: theme.colorScheme.surface.withOpacity(0.9),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        insetPadding: const EdgeInsets.all(16),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500, maxHeight: 700),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.1),
+              width: 1,
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _searchController,
-              focusNode: _searchFocusNode,
-              onChanged: _onSearchChanged,
-              decoration: InputDecoration(
-                hintText: 'Search by title...',
-                prefixIcon: const Icon(Iconsax.search_normal_1, size: 20),
-                filled: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Iconsax.search_favorite,
+                      color: theme.colorScheme.primary, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Select Anime Source',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        Text(
+                          'Choose the correct match below',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                    style: IconButton.styleFrom(
+                      backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                onChanged: _onSearchChanged,
+                style: theme.textTheme.bodyLarge,
+                decoration: InputDecoration(
+                  hintText: 'Search anime title...',
+                  prefixIcon: const Icon(Iconsax.search_normal_1),
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest
+                      .withOpacity(0.5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                        color: theme.colorScheme.primary, width: 1.5),
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(child: _buildResultsContent(theme)),
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
+              const SizedBox(height: 16),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color:
+                        theme.colorScheme.surfaceContainerLow.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withOpacity(0.05),
+                    ),
+                  ),
+                  child: _buildResultsContent(theme),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -269,7 +323,21 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
 
   Widget _buildResultsContent(ThemeData theme) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              'Searching for best match...',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     if (_results.isEmpty) {
@@ -277,19 +345,31 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Iconsax.search_status, size: 48, color: theme.disabledColor),
+            Icon(Iconsax.search_status,
+                size: 64, color: theme.colorScheme.outline.withOpacity(0.5)),
             const SizedBox(height: 16),
-            Text('No Anime Found', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text('Try different keywords.', style: theme.textTheme.bodySmall),
+            Text(
+              'No Matches Found',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try searching with a different title',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.zero,
+    return ListView.separated(
+      padding: const EdgeInsets.all(12),
       itemCount: _results.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, index) => _AnimeTile(
         anime: _results[index],
         onTap: () => _selectAnime(_results[index]),
@@ -298,7 +378,6 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
   }
 }
 
-/// A minimal, stateless widget to display an anime search result.
 class _AnimeTile extends StatelessWidget {
   final BaseAnimeModel anime;
   final VoidCallback onTap;
@@ -312,57 +391,93 @@ class _AnimeTile extends StatelessWidget {
         .where((s) => s != null && s.isNotEmpty)
         .join(' • ');
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      hoverColor: theme.colorScheme.primary.withOpacity(0.05),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 50,
-              height: 70,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: CachedNetworkImage(
-                  imageUrl: anime.poster ?? '',
-                  fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => Container(
-                    color: theme.colorScheme.surfaceContainerHigh,
-                    child: Icon(Iconsax.image, color: theme.disabledColor),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.05),
+            ),
+            color: theme.colorScheme.surface,
+          ),
+          child: Row(
+            children: [
+              Hero(
+                tag: anime.id ?? anime.name ?? 'unknown',
+                child: Container(
+                  width: 60,
+                  height: 85,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: CachedNetworkImage(
+                      imageUrl: anime.poster ?? '',
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => Container(
+                        color: theme.colorScheme.surfaceContainerHigh,
+                        child: Icon(Iconsax.image,
+                            color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    anime.name ?? 'No Title',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (metadata.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      metadata,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      anime.name ?? 'No Title',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    if (metadata.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.secondaryContainer
+                              .withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          metadata,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onSecondaryContainer,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Icon(Iconsax.arrow_right_3,
-                color: theme.colorScheme.onSurfaceVariant),
-          ],
+              const SizedBox(width: 12),
+              Icon(Iconsax.arrow_circle_right,
+                  color: theme.colorScheme.primary, size: 24),
+              const SizedBox(width: 8),
+            ],
+          ),
         ),
       ),
     );

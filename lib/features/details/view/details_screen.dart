@@ -120,19 +120,19 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Fix Match (round)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FloatingActionButton(
-                    heroTag: 'retry_btn',
-                    onPressed: () {
-                      // TODO: Add retry functionality later
-                    },
-                    backgroundColor: colorScheme.secondaryContainer,
-                    foregroundColor: colorScheme.onSecondaryContainer,
-                    elevation: 4,
-                    child: const Icon(Iconsax.search_normal),
-                  ),
-                ),
+                // Padding(
+                //   padding: const EdgeInsets.only(right: 8),
+                //   child: FloatingActionButton(
+                //     heroTag: 'retry_btn',
+                //     onPressed: () {
+                //       // TODO: Add retry functionality later
+                //     },
+                //     backgroundColor: colorScheme.secondaryContainer,
+                //     foregroundColor: colorScheme.onSecondaryContainer,
+                //     elevation: 4,
+                //     child: const Icon(Iconsax.search_normal),
+                //   ),
+                // ),
 
                 // Watch Now Button (extended)
                 FloatingActionButton.extended(

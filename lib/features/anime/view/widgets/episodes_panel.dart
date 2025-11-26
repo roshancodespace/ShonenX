@@ -117,87 +117,89 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
           epNumber <= (_currentStart + _rangeSize - 1);
     }).toList();
 
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // --- REDESIGNED HEADER ---
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: Row(
-              children: [
-                Text("Episodes", style: theme.textTheme.titleMedium),
-                const Spacer(),
-                // A standard DropdownButton for a better, more consistent UX
-                if (ranges.isNotEmpty)
-                  DropdownButton<int>(
-                    value: _currentStart,
-                    underline:
-                        const SizedBox.shrink(), // Hides the default underline
-                    items: ranges.map((range) {
-                      return DropdownMenuItem<int>(
-                        value: range['start'],
-                        child: Text("${range['start']}-${range['end']}"),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          _currentStart = value;
-                          // Scroll to the top of the list when changing range
-                          if (_scrollController.hasClients) {
-                            _scrollController.jumpTo(0);
-                          }
+    return Material(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // --- REDESIGNED HEADER ---
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Row(
+                children: [
+                  Text("Episodes", style: theme.textTheme.titleMedium),
+                  const Spacer(),
+                  // A standard DropdownButton for a better, more consistent UX
+                  if (ranges.isNotEmpty)
+                    DropdownButton<int>(
+                      value: _currentStart,
+                      underline: const SizedBox
+                          .shrink(), // Hides the default underline
+                      items: ranges.map((range) {
+                        return DropdownMenuItem<int>(
+                          value: range['start'],
+                          child: Text("${range['start']}-${range['end']}"),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _currentStart = value;
+                            // Scroll to the top of the list when changing range
+                            if (_scrollController.hasClients) {
+                              _scrollController.jumpTo(0);
+                            }
 
-                          final pageForJikan = (value - 1) / 100;
-                          if (pageForJikan == pageForJikan.toInt()) {
-                            AppLogger.w(
-                                "It's an integer: ${pageForJikan.toInt()}");
-                            // episodeNotifier.syncEpisodesWithJikan(
-                          }
-                        });
-                      }
-                    },
+                            final pageForJikan = (value - 1) / 100;
+                            if (pageForJikan == pageForJikan.toInt()) {
+                              AppLogger.w(
+                                  "It's an integer: ${pageForJikan.toInt()}");
+                              // episodeNotifier.syncEpisodesWithJikan(
+                            }
+                          });
+                        }
+                      },
+                    ),
+                  IconButton(
+                    icon: const Icon(Iconsax.refresh, size: 20),
+                    onPressed: () => episodeNotifier.refreshEpisodes(),
+                    tooltip: "Refresh episodes",
                   ),
-                IconButton(
-                  icon: const Icon(Iconsax.refresh, size: 20),
-                  onPressed: () => episodeNotifier.refreshEpisodes(),
-                  tooltip: "Refresh episodes",
-                ),
-                IconButton(
-                  icon: const Icon(Iconsax.setting_2, size: 20),
-                  onPressed: () =>
-                      _showRangeSizeDialog(context, episodeNotifier),
-                  tooltip: "Change episode range size",
-                ),
-              ],
+                  IconButton(
+                    icon: const Icon(Iconsax.setting_2, size: 20),
+                    onPressed: () =>
+                        _showRangeSizeDialog(context, episodeNotifier),
+                    tooltip: "Change episode range size",
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          // --- REDESIGNED EPISODE LIST ---
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: EdgeInsets.zero,
-              itemCount: filteredEpisodes.length,
-              itemBuilder: (context, index) {
-                final episode = filteredEpisodes[index];
-                // Get the actual index from the original, unfiltered list
-                final actualIndex = episodeData.$1.indexOf(episode);
-                final isSelected = episodeData.$2 == actualIndex;
+            const SizedBox(height: 8),
+            // --- REDESIGNED EPISODE LIST ---
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: EdgeInsets.zero,
+                itemCount: filteredEpisodes.length,
+                itemBuilder: (context, index) {
+                  final episode = filteredEpisodes[index];
+                  // Get the actual index from the original, unfiltered list
+                  final actualIndex = episodeData.$1.indexOf(episode);
+                  final isSelected = episodeData.$2 == actualIndex;
 
-                return EpisodeTile(
-                  isFiller: episode.isFiller == true,
-                  episodeNumber: episode.number.toString(),
-                  episodeTitle: episode.title ?? 'Episode ${episode.number}',
-                  isSelected: isSelected,
-                  onTap: () => episodeNotifier.changeEpisode(actualIndex),
-                );
-              },
+                  return EpisodeTile(
+                    isFiller: episode.isFiller == true,
+                    episodeNumber: episode.number.toString(),
+                    episodeTitle: episode.title ?? 'Episode ${episode.number}',
+                    isSelected: isSelected,
+                    onTap: () => episodeNotifier.changeEpisode(actualIndex),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

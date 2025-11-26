@@ -7,6 +7,7 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
+import 'package:shonenx/helpers/anime_match_popup.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/main.dart';
@@ -49,8 +50,10 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     Future.microtask(() => _fetchEpisodes(ref));
   }
 
-  Future<void> _fetchEpisodes(WidgetRef ref) async {
-    if (_episodes.isNotEmpty || _loading) return;
+  Future<void> _fetchEpisodes(WidgetRef ref, {bool force = false}) async {
+    if (!force && (_episodes.isNotEmpty || _loading)) return;
+
+    AppLogger.d("Fetching episodes for ${widget.mediaTitle}");
 
     final useMangayomi = ref.read(experimentalProvider).useMangayomiExtensions;
 
@@ -60,78 +63,82 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     });
 
     try {
-      final titles = [
-        widget.mediaTitle.english,
-        widget.mediaTitle.romaji,
-        widget.mediaTitle.native,
-      ].where((t) => t != null && t.trim().isNotEmpty).cast<String>().toList();
+      if (animeIdForSource == null) {
+        final titles = [
+          widget.mediaTitle.english,
+          widget.mediaTitle.romaji,
+          widget.mediaTitle.native,
+        ]
+            .where((t) => t != null && t.trim().isNotEmpty)
+            .cast<String>()
+            .toList();
 
-      if (titles.isEmpty) throw Exception("No valid title available.");
+        if (titles.isEmpty) throw Exception("No valid title available.");
 
-      List<Map<String, String>> candidates = [];
-      Map<String, String>? best;
-      String? usedTitle;
+        List<Map<String, String>> candidates = [];
+        Map<String, String>? best;
+        String? usedTitle;
 
-      for (final title in titles) {
-        if (useMangayomi) {
-          final res = await ref.read(sourceProvider.notifier).search(title);
-          candidates = res.list
-              .where((r) => r.name != null && r.link != null)
-              .map((r) => {"id": r.link!, "name": r.name!})
-              .toList();
-        } else {
-          final provider = ref.read(selectedAnimeProvider);
-          if (provider == null) continue;
+        for (final title in titles) {
+          if (useMangayomi) {
+            final res = await ref.read(sourceProvider.notifier).search(title);
+            candidates = res.list
+                .where((r) => r.name != null && r.link != null)
+                .map((r) => {"id": r.link!, "name": r.name!})
+                .toList();
+          } else {
+            final provider = ref.read(selectedAnimeProvider);
+            if (provider == null) continue;
 
-          final res =
-              await provider.getSearch(Uri.encodeComponent(title), null, 1);
-          candidates = res.results
-              .where((r) => r.id != null && r.name != null)
-              .map((r) => {"id": r.id!, "name": r.name!})
-              .toList();
+            final res =
+                await provider.getSearch(Uri.encodeComponent(title), null, 1);
+            candidates = res.results
+                .where((r) => r.id != null && r.name != null)
+                .map((r) => {"id": r.id!, "name": r.name!})
+                .toList();
+          }
+
+          if (!mounted) return;
+          if (candidates.isEmpty) continue;
+
+          final matches = getBestMatches<Map<String, String>>(
+            results: candidates,
+            title: title,
+            nameSelector: (r) => r["name"]!,
+            idSelector: (r) => r["id"]!,
+          );
+
+          if (!mounted) return;
+
+          if (matches.isNotEmpty && matches.first.similarity >= 0.8) {
+            best = matches.first.result;
+            usedTitle = title;
+            break;
+          }
         }
 
-        if (!mounted) return;
-        if (candidates.isEmpty) continue;
-
-        final matches = getBestMatches<Map<String, String>>(
-          results: candidates,
-          title: title,
-          nameSelector: (r) => r["name"]!,
-          idSelector: (r) => r["id"]!,
-        );
-
-        if (!mounted) return;
-
-        if (matches.isNotEmpty && matches.first.similarity >= 0.8) {
-          best = matches.first.result;
-          usedTitle = title;
-          break;
+        if (best == null) {
+          return _fail('Anime Match', 'No suitable match found for any title.',
+              ContentType.failure);
         }
+
+        animeIdForSource = best["id"];
+
+        if (mounted) {
+          ref.read(bestMatchNameProvider.notifier).state = best["name"];
+          setState(() => _bestMatchName = best?["name"]);
+        }
+
+        AppLogger.d(
+            'High-confidence match found: ${best["name"]} (via "$usedTitle")');
       }
-
-      if (best == null) {
-        return _fail('Anime Match', 'No suitable match found for any title.',
-            ContentType.failure);
-      }
-
-      animeIdForSource = best["id"];
-
-      if (mounted) {
-        ref.read(bestMatchNameProvider.notifier).state = best["name"];
-        setState(() => _bestMatchName = best?["name"]);
-      }
-
-      AppLogger.d(
-          'High-confidence match found: ${best["name"]} (via "$usedTitle")');
-
       final episodes =
           await ref.read(episodeDataProvider.notifier).fetchEpisodes(
-                animeTitle: best["name"]!,
-                animeId: best["id"]!,
+                animeTitle: _bestMatchName!,
+                animeId: animeIdForSource!,
                 play: false,
                 force: false,
-                mMangaUrl: useMangayomi ? best["id"]! : null,
+                mMangaUrl: useMangayomi ? animeIdForSource! : null,
               );
 
       if (!mounted) return;
@@ -179,13 +186,48 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     await _fetchEpisodes(ref);
   }
 
-  void _handleWrongMatch() {
+  Future<void> _handleWrongMatch(BuildContext context, WidgetRef ref) async {
     AppLogger.i('User reported a wrong match. Best match was: $_bestMatchName');
-    showAppSnackBar(
-      'Wrong Match?',
-      'Functionality to re-select anime is not yet implemented.',
-      type: ContentType.help,
+    // showAppSnackBar(
+    //   'Wrong Match?',
+    //   'Functionality to re-select anime is not yet implemented.',
+    //   type: ContentType.help,
+    // );
+    final anime = await providerAnimeMatchSearch(
+      withAnimeMatch: false,
+      beforeSearchCallback: () {
+        setState(() {
+          _loading = true;
+          _error = null;
+          _bestMatchName = null;
+          _selectedRange = 'All';
+          _isSortedDescending = false;
+          _watchedEpisodes.clear();
+        });
+      },
+      afterSearchCallback: () {
+        setState(() {
+          _loading = false;
+          _watchedEpisodes.clear();
+        });
+      },
+      context: context,
+      ref: ref,
+      animeMedia: media.Media(title: widget.mediaTitle),
     );
+    AppLogger.d('Selected anime: ${anime?.id}');
+    if (!mounted) return;
+    if (anime == null) {
+      setState(() {
+        _loading = false;
+        _error = 'No anime found';
+      });
+      return;
+    }
+    ref.read(bestMatchNameProvider.notifier).state = anime.name;
+    setState(() => _bestMatchName = anime.name);
+    animeIdForSource = anime.id;
+    await _fetchEpisodes(ref, force: true);
   }
 
   List<EpisodeDataModel> _getVisibleEpisodes() {
@@ -304,9 +346,11 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
             Text(_error!, style: const TextStyle(color: Colors.red)),
             const SizedBox(height: 8),
             ElevatedButton(
-              onPressed: () => _refresh(ref),
-              child: const Text('Retry'),
+              onPressed: () => _handleWrongMatch(context, ref),
+              child: const Text('Manual Selection'),
             ),
+            ElevatedButton(
+                onPressed: () => _refresh(ref), child: const Text('Retry')),
           ],
         ),
       );
@@ -356,7 +400,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                       icon: Icon(Icons.help_outline_rounded,
                           color: theme.hintColor),
                       tooltip: 'Wrong match?',
-                      onPressed: _handleWrongMatch,
+                      onPressed: () => _handleWrongMatch(context, ref),
                     ),
                   ],
                 ),

@@ -57,7 +57,7 @@ class EpisodeDataState {
     this.selectedQualityIdx,
     this.selectedSourceIdx,
     this.selectedEpisodeIdx,
-    this.selectedSubtitleIdx,
+    this.selectedSubtitleIdx = 0,
     this.selectedCategory = 'sub',
     this.dubSubSupport = false,
     this.selectedServer,
@@ -258,6 +258,15 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   /// Changes the subtitle track.
   Future<void> changeSubtitle(int subtitleIdx) async {
+    AppLogger.i('Changing subtitle to index: $subtitleIdx');
+    if (subtitleIdx == 0) {
+      AppLogger.i('Changing subtitle to none.');
+      await ref
+          .read(playerStateProvider.notifier)
+          .setSubtitle(SubtitleTrack.no());
+      state = state.copyWith(selectedSubtitleIdx: 0);
+      return;
+    }
     if (subtitleIdx < 0 || subtitleIdx >= state.subtitles.length) {
       AppLogger.e(
           'Attempted to change to invalid subtitle index: $subtitleIdx');
@@ -470,7 +479,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
         'Found ${data.sources.length} sources and ${data.tracks.length} subtitle tracks.');
     state = state.copyWith(
       sources: data.sources,
-      subtitles: data.tracks,
+      subtitles: [Subtitle(lang: 'None'), ...data.tracks],
       headers: data.headers,
       selectedSourceIdx: 0,
     );
@@ -494,8 +503,8 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
                 .map((s) => Source(
                       url: s?.url,
                       isM3U8: s?.url.contains('.m3u8') ?? false,
-                      isDub: s?.originalUrl.toLowerCase().contains('dub') ??
-                          false,
+                      isDub:
+                          s?.originalUrl.toLowerCase().contains('dub') ?? false,
                       quality: s?.quality,
                     ))
                 .toList(),

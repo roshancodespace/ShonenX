@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:iconsax/iconsax.dart';
+
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/features/anime/view/widgets/player/bottom_controls.dart';
 import 'package:shonenx/features/anime/view/widgets/player/center_controls.dart';
 import 'package:shonenx/features/anime/view/widgets/player/subtitle_overlay.dart';
 import 'package:shonenx/features/anime/view/widgets/player/top_controls.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
+import 'package:shonenx/features/anime/view/widgets/player/components/seek_indicator.dart';
+import 'package:shonenx/features/anime/view/widgets/player/sheets/generic_selection_sheet.dart';
+import 'package:shonenx/features/anime/view/widgets/player/sheets/settings_sheet.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 
 // --- MAIN WIDGET ---
@@ -31,6 +34,12 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
   Timer? _hideControlsTimer;
   double? _draggedSliderValue;
 
+  // Double tap seek state
+  Timer? _seekResetTimer;
+  int _cumulativeSeek = 0;
+  bool _showForwardSeek = false;
+  bool _showRewindSeek = false;
+
   // --- LIFECYCLE & TIMER LOGIC ---
   @override
   void initState() {
@@ -41,6 +50,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
   @override
   void dispose() {
     _hideControlsTimer?.cancel();
+    _seekResetTimer?.cancel();
     super.dispose();
   }
 
@@ -61,7 +71,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
   void _showControls() {
     if (mounted && !_areControlsVisible) {
       setState(() => _areControlsVisible = true);
-      _resetHideTimer(); // Start the auto-hide timer after showing.
+      _resetHideTimer();
     }
   }
 
@@ -74,10 +84,52 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     });
   }
 
+  // Handle Double Click
+  void _handleDoubleClick(TapDownDetails details) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final tapX = details.globalPosition.dx;
+    final isForward = tapX > screenWidth / 2;
+
+    _seekResetTimer?.cancel();
+
+    setState(() {
+      if (isForward) {
+        _showForwardSeek = true;
+        _showRewindSeek = false;
+        _cumulativeSeek += 10;
+      } else {
+        _showForwardSeek = false;
+        _showRewindSeek = true;
+        _cumulativeSeek -= 10;
+      }
+    });
+
+    final playerNotifier = ref.read(playerStateProvider.notifier);
+    if (isForward) {
+      playerNotifier.forward(10);
+    } else {
+      playerNotifier.rewind(10);
+    }
+
+    _seekResetTimer = Timer(const Duration(milliseconds: 1000), () {
+      if (mounted) {
+        setState(() {
+          _showForwardSeek = false;
+          _showRewindSeek = false;
+          _cumulativeSeek = 0;
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Keep the provider alive to prevent state loss
+    ref.watch(episodeDataProvider);
+
     return GestureDetector(
       onTap: _showControls,
+      onDoubleTapDown: _handleDoubleClick,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -89,10 +141,36 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
               child: _buildControlsUI(),
             ),
           ),
+
+          // Rewind Indicator
+          if (_showRewindSeek)
+            Positioned.fill(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: SeekIndicatorOverlay(
+                  isForward: false,
+                  seconds: _cumulativeSeek.abs(),
+                ),
+              ),
+            ),
+
+          // Forward Indicator
+          if (_showForwardSeek)
+            Positioned.fill(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: SeekIndicatorOverlay(
+                  isForward: true,
+                  seconds: _cumulativeSeek.abs(),
+                ),
+              ),
+            ),
+
           Positioned(
-            bottom: _areControlsVisible && !_isLocked ? 150 : 20,
-            left: 20,
-            right: 20,
+            left: 8,
+            right: 8,
+            top: _areControlsVisible && !_isLocked ? 90 : 20,
+            bottom: _areControlsVisible && !_isLocked ? 90 : 20,
             child: const SubtitleOverlay(),
           ),
         ],
@@ -103,17 +181,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
   Widget _buildControlsUI() {
     return GestureDetector(
       onTap: _hideControls,
-      onDoubleTapDown: (details) {
-        final screenWidth = MediaQuery.of(context).size.width;
-        final tapX = details.globalPosition.dx;
-
-        final playerNotifier = ref.read(playerStateProvider.notifier);
-        if (tapX < screenWidth / 2) {
-          playerNotifier.rewind(10);
-        } else {
-          playerNotifier.forward(10);
-        }
-      },
+      onDoubleTapDown: _handleDoubleClick,
       child: Container(
         color: Colors.transparent,
         child: _isLocked ? _buildLockMode() : _buildFullControls(),
@@ -211,7 +279,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
   }
 
   void _showSettingsSheet() => _showPlayerModalSheet(
-        builder: (context) => _SettingsSheetContent(
+        builder: (context) => SettingsSheetContent(
           onDismiss: () => Navigator.pop(context),
         ),
       );
@@ -220,7 +288,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     final episodeData = ref.read(episodeDataProvider);
     final episodeNotifier = ref.read(episodeDataProvider.notifier);
     _showPlayerModalSheet(
-      builder: (context) => _GenericSelectionSheet<Map<String, dynamic>>(
+      builder: (context) => GenericSelectionSheet<Map<String, dynamic>>(
         title: 'Quality',
         items: episodeData.qualityOptions,
         selectedIndex: episodeData.selectedQualityIdx ?? -1,
@@ -237,7 +305,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     final episodeData = ref.read(episodeDataProvider);
     final episodeNotifier = ref.read(episodeDataProvider.notifier);
     _showPlayerModalSheet(
-      builder: (context) => _GenericSelectionSheet<Source>(
+      builder: (context) => GenericSelectionSheet<Source>(
         title: 'Source',
         items: episodeData.sources,
         selectedIndex: episodeData.selectedSourceIdx ?? -1,
@@ -255,7 +323,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     final episodeNotifier = ref.read(episodeDataProvider.notifier);
     if (episodeData.selectedServer == null) return;
     _showPlayerModalSheet(
-      builder: (context) => _GenericSelectionSheet<String>(
+      builder: (context) => GenericSelectionSheet<String>(
         title: 'Server',
         items: episodeData.servers,
         selectedIndex: episodeData.servers.indexOf(episodeData.selectedServer!),
@@ -272,7 +340,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     final episodeData = ref.read(episodeDataProvider);
     final episodeNotifier = ref.read(episodeDataProvider.notifier);
     _showPlayerModalSheet(
-      builder: (context) => _GenericSelectionSheet<Subtitle>(
+      builder: (context) => GenericSelectionSheet<Subtitle>(
         title: 'Subtitle',
         items: episodeData.subtitles,
         selectedIndex: episodeData.selectedSubtitleIdx ?? -1,
@@ -283,213 +351,5 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
         },
       ),
     );
-  }
-}
-
-class _GenericSelectionSheet<T> extends StatelessWidget {
-  final String title;
-  final List<T> items;
-  final int selectedIndex;
-  final String Function(T item) displayBuilder;
-  final void Function(int index) onItemSelected;
-
-  const _GenericSelectionSheet({
-    required this.title,
-    required this.items,
-    required this.selectedIndex,
-    required this.displayBuilder,
-    required this.onItemSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.headlineSmall),
-            const Divider(height: 24),
-            if (items.isEmpty)
-              const Center(child: Text("No options available"))
-            else
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.4),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    final isSelected = selectedIndex == index;
-                    return ListTile(
-                      title: Text(displayBuilder(item)),
-                      selected: isSelected,
-                      trailing:
-                          isSelected ? const Icon(Iconsax.tick_circle) : null,
-                      onTap: () => onItemSelected(index),
-                    );
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsSheetContent extends ConsumerWidget {
-  final VoidCallback onDismiss;
-  const _SettingsSheetContent({required this.onDismiss});
-
-  void _showDialog(BuildContext context,
-      {required Widget Function(BuildContext) builder}) {
-    showDialog(context: context, builder: builder).then((_) {
-      if (!context.mounted) return;
-      if (Navigator.of(context).canPop()) onDismiss();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Settings", style: Theme.of(context).textTheme.headlineSmall),
-            const Divider(height: 24),
-            ListTile(
-              leading: const Icon(Iconsax.speedometer),
-              title: const Text("Playback Speed"),
-              trailing: Text(
-                  "${ref.watch(playerStateProvider.select((p) => p.playbackSpeed))}x"),
-              onTap: () =>
-                  _showDialog(context, builder: (ctx) => _SpeedDialog()),
-            ),
-            ListTile(
-              leading: const Icon(Iconsax.crop),
-              title: const Text("Video Fit"),
-              trailing: Text(_fitModeToString(
-                  ref.watch(playerStateProvider.select((p) => p.fit)))),
-              onTap: () => _showDialog(context, builder: (ctx) => _FitDialog()),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SpeedDialog extends ConsumerStatefulWidget {
-  @override
-  ConsumerState<_SpeedDialog> createState() => _SpeedDialogState();
-}
-
-class _SpeedDialogState extends ConsumerState<_SpeedDialog> {
-  late double _selectedSpeed;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedSpeed = ref.read(playerStateProvider).playbackSpeed;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("Playback Speed"),
-      content: Wrap(
-        spacing: 8.0,
-        runSpacing: 4.0,
-        children: [0.5, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0]
-            .map((speed) => ChoiceChip(
-                  label: Text("${speed}x"),
-                  selected: _selectedSpeed == speed,
-                  onSelected: (isSelected) {
-                    if (isSelected) setState(() => _selectedSpeed = speed);
-                  },
-                ))
-            .toList(),
-      ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel")),
-        TextButton(
-          onPressed: () {
-            ref.read(playerStateProvider.notifier).setSpeed(_selectedSpeed);
-            Navigator.pop(context);
-          },
-          child: const Text("OK"),
-        ),
-      ],
-    );
-  }
-}
-
-class _FitDialog extends ConsumerStatefulWidget {
-  @override
-  ConsumerState<_FitDialog> createState() => _FitDialogState();
-}
-
-class _FitDialogState extends ConsumerState<_FitDialog> {
-  late BoxFit _selectedFit;
-  static const fitModes = [BoxFit.contain, BoxFit.cover, BoxFit.fill];
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedFit = ref.read(playerStateProvider).fit;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("Video Fit"),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: fitModes
-            .map((fit) => RadioListTile<BoxFit>(
-                  title: Text(_fitModeToString(fit)),
-                  value: fit,
-                  groupValue: _selectedFit,
-                  onChanged: (value) {
-                    if (value != null) setState(() => _selectedFit = value);
-                  },
-                ))
-            .toList(),
-      ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel")),
-        TextButton(
-          onPressed: () {
-            ref.read(playerStateProvider.notifier).setFit(_selectedFit);
-            Navigator.pop(context);
-          },
-          child: const Text("OK"),
-        ),
-      ],
-    );
-  }
-}
-
-String _fitModeToString(BoxFit fit) {
-  switch (fit) {
-    case BoxFit.contain:
-      return 'Contain';
-    case BoxFit.cover:
-      return 'Cover';
-    case BoxFit.fill:
-      return 'Fill';
-    default:
-      return 'Fit';
   }
 }

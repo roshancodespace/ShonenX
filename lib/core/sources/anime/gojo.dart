@@ -5,7 +5,7 @@ import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
 
-class Gojo implements AnimeProvider {
+class GojoProvider implements AnimeProvider {
   @override
   // TODO: implement apiUrl
   String get apiUrl => "https://backend.animetsu.cc/api/anime";
@@ -85,5 +85,5 @@ class Gojo implements AnimeProvider {
 
   @override
   // TODO: implement providerName
-  String get providerName => throw UnimplementedError();
+  String get providerName => 'gojo';
 }

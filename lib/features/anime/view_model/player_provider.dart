@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
@@ -139,6 +141,10 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
       Duration(seconds: (player?.state.position.inSeconds ?? 0) + seconds));
   void rewind(int seconds) => player?.seek(
       Duration(seconds: (player?.state.position.inSeconds ?? 0) - seconds));
+
+  Future<Uint8List?> getThumbnail() async {
+    return await player?.platform?.screenshot(format: 'image/png',);
+  }
 }
 
 final playerStateProvider =

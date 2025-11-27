@@ -16,6 +16,8 @@ void navigateToWatch(
     required String? animeId,
     required String mediaId,
     required String animeName,
+    required String animeFormat,
+    required String animeCover,
     required List<EpisodeDataModel> episodes,
     required int currentEpisode,
     int? startAt,
@@ -29,6 +31,8 @@ void navigateToWatch(
   // final encodedName = Uri.encodeComponent(animeName);
   final route = '/watch/$mediaId?animeId=$animeId'
       '&animeName=$animeName'
+      '&animeFormat=$animeFormat'
+      '&animeCover=$animeCover'
       '&episode=$currentEpisode&mMangaUrl=$mMangaUrl&startAt=$startAt';
   AppLogger.d('Navigating to watch screen: $route');
   context.push(route, extra: episodes);

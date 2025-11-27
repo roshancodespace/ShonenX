@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
+import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
@@ -18,11 +21,15 @@ final bestMatchNameProvider = StateProvider<String?>((ref) => null);
 class EpisodesTab extends ConsumerStatefulWidget {
   final String mediaId;
   final media.Title mediaTitle;
+  final String mediaFormat;
+  final String mediaCover;
 
   const EpisodesTab({
     super.key,
     required this.mediaId,
     required this.mediaTitle,
+    required this.mediaFormat,
+    required this.mediaCover,
   });
 
   @override
@@ -289,15 +296,19 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                   title:
                       Text(isWatched ? 'Mark as Unwatched' : 'Mark as Watched'),
                   onTap: () {
-                    setState(() {
-                      if (isWatched) {
-                        _watchedEpisodes.remove(episode.number ?? -1);
-                      } else {
-                        _watchedEpisodes.add(episode.number ?? -1);
-                      }
-                    });
+                    // setState(() {
+                    //   if (isWatched) {
+                    //     _watchedEpisodes.remove(episode.number ?? -1);
+                    //   } else {
+                    //     _watchedEpisodes.add(episode.number ?? -1);
+                    //   }
+                    // });
+                    showAppSnackBar('Mark as Watched',
+                        'Functionality to mark as watched is not yet implemented.',
+                        type: ContentType.help);
                     AppLogger.i(
                         'Tapped Mark as Watched for Ep: ${episode.number}');
+                    // TODO: Implement mark as watched logic
                     Navigator.pop(sheetContext);
                   },
                 ),
@@ -306,6 +317,9 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                   title: const Text('Download'),
                   onTap: () {
                     AppLogger.i('Tapped Download for Ep: ${episode.number}');
+                    showAppSnackBar('Download',
+                        'Functionality to download is not yet implemented.',
+                        type: ContentType.help);
                     Navigator.pop(sheetContext);
                     // TODO: Implement download logic
                   },
@@ -316,6 +330,9 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                   onTap: () {
                     AppLogger.i(
                         'Tapped Add to Playlist for Ep: ${episode.number}');
+                    showAppSnackBar('Add to Playlist',
+                        'Functionality to add to playlist is not yet implemented.',
+                        type: ContentType.help);
                     Navigator.pop(sheetContext);
                     // TODO: Implement playlist logic
                   },
@@ -333,6 +350,9 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
   Widget build(BuildContext context) {
     super.build(context);
     final exposedName = ref.watch(bestMatchNameProvider);
+    final progress = ref
+        .watch(watchProgressRepositoryProvider)
+        .getProgress(widget.mediaId.toString());
 
     if (_loading && _episodes.isEmpty) {
       return const Center(child: CircularProgressIndicator());
@@ -474,12 +494,13 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   final ep = visibleEpisodes[index];
-                  final isWatched = _watchedEpisodes.contains(ep.number ?? -1);
-                  final double watchProgress = isWatched
-                      ? 1.0
-                      : (ep.number ?? 0) % 5 == 0
-                          ? 0.3
-                          : 0.0;
+                  final epProgress =
+                      progress?.episodesProgress[ep.number ?? -1];
+                  final isWatched = epProgress?.isCompleted ?? false;
+                  final watchProgress =
+                      ((epProgress?.progressInSeconds ?? 0.0) /
+                              (epProgress?.durationInSeconds ?? 1.0))
+                          .clamp(0.0, 1.0);
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -489,7 +510,8 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                           contentPadding:
                               const EdgeInsets.symmetric(horizontal: 16.0),
                           leading: _buildEpisodeThumbnail(context, ep, index,
-                              isWatched: isWatched),
+                              isWatched: isWatched,
+                              episodeThumbnail: epProgress?.episodeThumbnail),
                           title: Text(
                             ep.title ?? 'Episode ${ep.number ?? index + 1}',
                             maxLines: 2,
@@ -522,6 +544,8 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                             animeName: (widget.mediaTitle.english ??
                                 widget.mediaTitle.romaji ??
                                 widget.mediaTitle.native)!,
+                            animeFormat: widget.mediaFormat,
+                            animeCover: widget.mediaCover,
                             ref: ref,
                             context: context,
                             mMangaUrl: animeIdForSource,
@@ -538,7 +562,9 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                               backgroundColor: theme
                                   .colorScheme.primaryContainer
                                   .withOpacity(0.2),
-                              color: isWatched ? Colors.green.shade600 : null,
+                              color: isWatched
+                                  ? theme.colorScheme.tertiaryContainer
+                                  : theme.colorScheme.primaryContainer,
                               minHeight: isWatched ? 3 : 2,
                             ),
                           ),
@@ -557,7 +583,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
 
   Widget _buildEpisodeThumbnail(
       BuildContext context, EpisodeDataModel ep, int index,
-      {bool isWatched = false}) {
+      {bool isWatched = false, String? episodeThumbnail}) {
     final theme = Theme.of(context);
     final episodeNumber = ep.number ?? index + 1;
 
@@ -568,16 +594,23 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Container(
-              color: theme.colorScheme.primaryContainer,
-              child: Center(
-                child: Icon(
-                  Icons.play_arrow_rounded,
-                  color: theme.colorScheme.onPrimaryContainer.withOpacity(0.5),
-                  size: 30,
+            if (episodeThumbnail != null)
+              Image.memory(
+                base64Decode(episodeThumbnail),
+                fit: BoxFit.cover,
+              )
+            else
+              Container(
+                color: theme.colorScheme.primaryContainer,
+                child: Center(
+                  child: Icon(
+                    Icons.play_arrow_rounded,
+                    color:
+                        theme.colorScheme.onPrimaryContainer.withOpacity(0.5),
+                    size: 30,
+                  ),
                 ),
               ),
-            ),
             Positioned(
               left: 4,
               bottom: 4,

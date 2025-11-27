@@ -1,8 +1,12 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
+import 'package:shonenx/core/repositories/watch_progress_repository.dart';
+import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/features/anime/view/widgets/episodes_panel.dart';
 import 'package:shonenx/features/anime/view/widgets/player/controls_overlay.dart';
 import 'package:shonenx/helpers/ui.dart';
@@ -13,6 +17,8 @@ class WatchScreen extends ConsumerStatefulWidget {
   final String mediaId;
   final String? animeId;
   final String animeName;
+  final String animeFormat;
+  final String animeCover;
   final int episode;
   final Duration startAt;
   final List<EpisodeDataModel>? episodes;
@@ -22,6 +28,8 @@ class WatchScreen extends ConsumerStatefulWidget {
       {super.key,
       required this.mediaId,
       required this.animeName,
+      required this.animeFormat,
+      required this.animeCover,
       this.animeId,
       this.startAt = Duration.zero,
       this.episode = 1,
@@ -36,6 +44,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     with TickerProviderStateMixin {
   late final AnimationController _panelAnimationController;
 
+  Timer? _progressTimer;
+
   @override
   void initState() {
     super.initState();
@@ -48,21 +58,109 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
     // Trigger the initial data fetch
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      Duration startAt = widget.startAt;
+
+      if (widget.animeId != null) {
+        final animeId = widget.animeId ?? '';
+        if (animeId.isNotEmpty) {
+          final repo = ref.read(watchProgressRepositoryProvider);
+          final progress = repo.getEpisodeProgress(animeId, widget.episode);
+          if (progress != null && progress.progressInSeconds != null) {
+            // Only resume if not completed or if user explicitly wants to (logic can be refined)
+            // For now, resume if progress > 5 seconds and not completed
+            if ((progress.progressInSeconds! > 5) && !progress.isCompleted) {
+              startAt = Duration(seconds: progress.progressInSeconds!);
+            }
+          }
+        }
+      }
+
       await ref.read(episodeDataProvider.notifier).fetchEpisodes(
             animeTitle: widget.animeName,
             animeId: widget.animeId,
             initialEpisodeIdx: widget.episode - 1,
-            startAt: widget.startAt,
+            startAt: startAt,
             force: false,
             play: true,
             mMangaUrl: widget.mMangaUrl,
             episodes: widget.episodes ?? [],
           );
+      _startProgressTimer();
     });
+  }
 
-    // ref.read(playerStateProvider.notifier).open(
-    //     "https://ed.netmagcdn.com:2228/hls-playback/a2f735133a52c59ba600de41f3338b5d922ce3cad0b5ffbe500a7aacb5c1ae1a2c7f327dc4fefa0d9be07dc52c4249a839a96410b3fbae79007318ed3b2587772dbf5b55f0feb28cf1f20258417d66eead5572d9a4d53213671c9e57f0d991e4ed535f6c32139ddc9caf4e359a4253d121ac83dcbe45b20a95821ed43e08eb8dbfe36d87ac7e873b8c62ab7eb9cca24e/master.m3u8",
-    //     null);
+  void _startProgressTimer() {
+    int ticks = 0;
+    _progressTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      ticks++;
+      _saveProgress(takeScreenshot: ticks % 12 == 0);
+    });
+  }
+
+  Future<void> _saveProgress({bool takeScreenshot = false}) async {
+    if (!mounted) return;
+    final playerState = ref.read(playerStateProvider);
+    final playerNotifier = ref.read(playerStateProvider.notifier);
+    final episodeData = ref.read(episodeDataProvider);
+    final currentEpisodeIdx = episodeData.selectedEpisodeIdx;
+
+    if (currentEpisodeIdx == null ||
+        currentEpisodeIdx < 0 ||
+        currentEpisodeIdx >= episodeData.episodes.length) {
+      return;
+    }
+
+    final currentEpisode = episodeData.episodes[currentEpisodeIdx];
+    final position = playerState.position.inSeconds;
+    final duration = playerState.duration.inSeconds;
+
+    if (duration <= 0) return;
+
+    String? thumbnailToSave;
+    final repo = ref.read(watchProgressRepositoryProvider);
+
+    if (takeScreenshot) {
+      final screenshot = await playerNotifier.getThumbnail();
+      if (screenshot != null) {
+        thumbnailToSave = base64Encode(screenshot);
+      }
+    }
+
+    if (thumbnailToSave == null) {
+      final existingProgress = repo.getEpisodeProgress(
+          widget.mediaId, currentEpisode.number ?? (currentEpisodeIdx + 1));
+      thumbnailToSave = existingProgress?.episodeThumbnail;
+    }
+
+    thumbnailToSave ??= currentEpisode.thumbnail;
+
+    final progress = EpisodeProgress(
+      episodeNumber: currentEpisode.number ?? (currentEpisodeIdx + 1),
+      episodeTitle: currentEpisode.title ?? 'Episode ${currentEpisodeIdx + 1}',
+      episodeThumbnail: thumbnailToSave,
+      progressInSeconds: position,
+      durationInSeconds: duration,
+      isCompleted: (position / duration) > 0.9, // Mark as completed if > 90%
+      watchedAt: DateTime.now(),
+    );
+
+    if (widget.mediaId.isNotEmpty && mounted) {
+      // Ensure we have an entry for the anime first
+
+      var entry = repo.getProgress(widget.mediaId);
+      if (entry == null && widget.mediaId.isNotEmpty) {
+        entry = AnimeWatchProgressEntry(
+          animeId: widget.mediaId,
+          animeTitle: widget.animeName,
+          animeFormat: widget.animeFormat, // Default or fetch from somewhere
+          animeCover: widget.animeCover, // Need cover image
+          totalEpisodes: episodeData.episodes.length,
+        );
+        await repo.saveProgress(entry);
+      }
+
+      await repo.updateEpisodeProgress(widget.mediaId, progress);
+    }
   }
 
   void _toggleEpisodesPanel() {
@@ -85,6 +183,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   @override
   void dispose() {
+    _progressTimer?.cancel();
+    _saveProgress(takeScreenshot: false); // Save one last time
     _panelAnimationController.dispose();
     _resetSystemUI();
     super.dispose();
@@ -94,6 +194,12 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   Widget build(BuildContext context) {
     final fit = ref.watch(playerStateProvider.select((p) => p.fit));
     final playerNotifier = ref.read(playerStateProvider.notifier);
+
+    ref.listen(playerStateProvider.select((p) => p.isPlaying), (prev, next) {
+      if (prev == true && next == false) {
+        _saveProgress(takeScreenshot: true);
+      }
+    });
 
     return Scaffold(
       backgroundColor: Colors.black,

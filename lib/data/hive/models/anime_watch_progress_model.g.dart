@@ -18,20 +18,22 @@ class AnimeWatchProgressEntryAdapter
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return AnimeWatchProgressEntry(
-      animeId: fields[0] as int,
+      animeId: fields[0] as String,
       animeTitle: fields[1] as String,
       animeFormat: fields[2] as String,
       animeCover: fields[3] as String,
       totalEpisodes: fields[4] as int,
       episodesProgress: (fields[5] as Map).cast<int, EpisodeProgress>(),
       lastUpdated: fields[6] as DateTime?,
+      currentEpisode: fields[7] as int,
+      status: fields[8] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, AnimeWatchProgressEntry obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.animeId)
       ..writeByte(1)
@@ -45,7 +47,11 @@ class AnimeWatchProgressEntryAdapter
       ..writeByte(5)
       ..write(obj.episodesProgress)
       ..writeByte(6)
-      ..write(obj.lastUpdated);
+      ..write(obj.lastUpdated)
+      ..writeByte(7)
+      ..write(obj.currentEpisode)
+      ..writeByte(8)
+      ..write(obj.status);
   }
 
   @override

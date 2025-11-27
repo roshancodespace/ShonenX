@@ -164,6 +164,8 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
               mediaId: widget.animeMedia.id.toString(),
               animeId: bestMatch.id!,
               animeName: bestMatch.name!,
+              animeFormat: widget.animeMedia.format ?? '',
+              animeCover: widget.animeMedia.coverImage?.large ?? widget.animeMedia.coverImage?.medium ?? '',
               episodes: const [],
               currentEpisode: 1,
             );
@@ -200,6 +202,8 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
       ref: ref,
       mediaId: widget.animeMedia.id.toString(),
       animeId: anime.id!,
+      animeFormat: widget.animeMedia.format ?? '',
+      animeCover: widget.animeMedia.coverImage?.large ?? widget.animeMedia.coverImage?.medium ?? '',
       animeName: anime.name ?? 'Unknown',
       episodes: const [],
       currentEpisode: 1,

@@ -6,7 +6,7 @@ part 'anime_watch_progress_model.g.dart';
 @HiveType(typeId: HiveTypeIds.progressEntry)
 class AnimeWatchProgressEntry extends HiveObject {
   @HiveField(0)
-  final int animeId;
+  final String animeId;
   @HiveField(1)
   final String animeTitle;
   @HiveField(2)
@@ -21,6 +21,12 @@ class AnimeWatchProgressEntry extends HiveObject {
   @HiveField(6)
   final DateTime? lastUpdated;
 
+  @HiveField(7)
+  final int currentEpisode;
+
+  @HiveField(8)
+  final String status;
+
   AnimeWatchProgressEntry({
     required this.animeId,
     required this.animeTitle,
@@ -29,16 +35,20 @@ class AnimeWatchProgressEntry extends HiveObject {
     required this.totalEpisodes,
     this.episodesProgress = const {},
     this.lastUpdated,
+    this.currentEpisode = 1,
+    this.status = 'watching',
   });
 
   AnimeWatchProgressEntry copyWith({
-    int? animeId,
+    String? animeId,
     String? animeTitle,
     String? animeFormat,
     String? animeCover,
     int? totalEpisodes,
     Map<int, EpisodeProgress>? episodesProgress,
     DateTime? lastUpdated,
+    int? currentEpisode,
+    String? status,
   }) {
     return AnimeWatchProgressEntry(
       animeId: animeId ?? this.animeId,
@@ -48,6 +58,8 @@ class AnimeWatchProgressEntry extends HiveObject {
       totalEpisodes: totalEpisodes ?? this.totalEpisodes,
       episodesProgress: episodesProgress ?? this.episodesProgress,
       lastUpdated: lastUpdated ?? this.lastUpdated,
+      currentEpisode: currentEpisode ?? this.currentEpisode,
+      status: status ?? this.status,
     );
   }
 }

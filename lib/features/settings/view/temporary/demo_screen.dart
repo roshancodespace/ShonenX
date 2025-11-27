@@ -194,6 +194,8 @@ class _DemoDetailState extends ConsumerState<DemoDetail> {
                                       .toList();
 
                                   navigateToWatch(
+                                      animeFormat: 'DEMO',
+                                      animeCover: media?.imageUrl ?? '',
                                       context: context,
                                       ref: ref,
                                       mediaId: 'demo',

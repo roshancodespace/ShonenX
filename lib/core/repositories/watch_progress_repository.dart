@@ -10,7 +10,6 @@ final watchProgressRepositoryProvider =
   return WatchProgressRepository();
 });
 
-
 class WatchProgressRepository {
   final Box<AnimeWatchProgressEntry> _box;
 
@@ -64,20 +63,15 @@ class WatchProgressRepository {
 
   EpisodeProgress? getEpisodeProgress(String animeId, int episodeNumber) {
     final entry = _box.get(animeId);
-    if (entry == null) {
-      AppLogger.w(
-          'Cannot get episode progress: Entry not found for anime ID $animeId');
-      showAppSnackBar(
-        'Save Failed',
-        'Failed to automatically save watch progress.',
-        type: ContentType.failure,
-      );
-    }
     return entry?.episodesProgress[episodeNumber];
   }
 
   Future<void> deleteProgress(String animeId) async {
     await _box.delete(animeId);
     AppLogger.d('Deleted progress for anime: $animeId');
+  }
+
+  List<AnimeWatchProgressEntry> getAllProgress() {
+    return _box.values.toList();
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shonenx/core/models/anime/source_model.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/anime/view/widgets/player/bottom_controls.dart';
 import 'package:shonenx/features/anime/view/widgets/player/center_controls.dart';
 import 'package:shonenx/features/anime/view/widgets/player/subtitle_overlay.dart';
@@ -13,14 +14,10 @@ import 'package:shonenx/features/anime/view/widgets/player/sheets/generic_select
 import 'package:shonenx/features/anime/view/widgets/player/sheets/settings_sheet.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 
-// --- MAIN WIDGET ---
 class CloudstreamControls extends ConsumerStatefulWidget {
   final VoidCallback? onEpisodesPressed;
 
-  const CloudstreamControls({
-    super.key,
-    this.onEpisodesPressed,
-  });
+  const CloudstreamControls({super.key, this.onEpisodesPressed});
 
   @override
   ConsumerState<CloudstreamControls> createState() =>
@@ -28,67 +25,64 @@ class CloudstreamControls extends ConsumerStatefulWidget {
 }
 
 class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
-  // --- STATE VARIABLES ---
-  bool _areControlsVisible = true;
+  bool _isVisible = true;
   bool _isLocked = false;
-  Timer? _hideControlsTimer;
   double? _draggedSliderValue;
 
-  // Double tap seek state
-  Timer? _seekResetTimer;
+  // Seek State
   int _cumulativeSeek = 0;
+  double _cumulativeVolume = 0;
   bool _showForwardSeek = false;
   bool _showRewindSeek = false;
+  bool _showVolumeSeek = false;
 
-  // --- LIFECYCLE & TIMER LOGIC ---
+  Timer? _hideTimer;
+  Timer? _seekResetTimer;
+
   @override
   void initState() {
     super.initState();
-    _resetHideTimer();
+    _startHideTimer();
   }
 
   @override
   void dispose() {
-    _hideControlsTimer?.cancel();
+    _hideTimer?.cancel();
     _seekResetTimer?.cancel();
     super.dispose();
   }
 
-  void _resetHideTimer() {
-    _hideControlsTimer?.cancel();
-    if (_isLocked || !_areControlsVisible) return;
-
-    _hideControlsTimer = Timer(const Duration(seconds: 5), _hideControls);
-  }
-
-  void _hideControls() {
-    if (mounted) {
-      setState(() => _areControlsVisible = false);
-      _hideControlsTimer?.cancel();
-    }
-  }
-
-  void _showControls() {
-    if (mounted && !_areControlsVisible) {
-      setState(() => _areControlsVisible = true);
-      _resetHideTimer();
-    }
-  }
-
-  /// Toggles the screen lock.
-  void _toggleLock() {
-    setState(() {
-      _isLocked = !_isLocked;
-      _areControlsVisible = true;
-      _resetHideTimer();
+  void _startHideTimer() {
+    _hideTimer?.cancel();
+    if (_isLocked || !_isVisible) return;
+    _hideTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) setState(() => _isVisible = false);
     });
   }
 
-  // Handle Double Click
-  void _handleDoubleClick(TapDownDetails details) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final tapX = details.globalPosition.dx;
-    final isForward = tapX > screenWidth / 2;
+  void _toggleVisibility() {
+    if (_isVisible) {
+      setState(() => _isVisible = false);
+      _hideTimer?.cancel();
+    } else {
+      setState(() => _isVisible = true);
+      _startHideTimer();
+    }
+  }
+
+  void _toggleLock() {
+    setState(() {
+      _isLocked = !_isLocked;
+      _isVisible = true;
+    });
+    _startHideTimer();
+  }
+
+  void _handleDoubleTap(TapDownDetails details) {
+    if (_isLocked) return;
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isForward = details.globalPosition.dx > screenWidth / 2;
 
     _seekResetTimer?.cancel();
 
@@ -104,14 +98,10 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
       }
     });
 
-    final playerNotifier = ref.read(playerStateProvider.notifier);
-    if (isForward) {
-      playerNotifier.forward(10);
-    } else {
-      playerNotifier.rewind(10);
-    }
+    final notifier = ref.read(playerStateProvider.notifier);
+    isForward ? notifier.forward(10) : notifier.rewind(10);
 
-    _seekResetTimer = Timer(const Duration(milliseconds: 1000), () {
+    _seekResetTimer = Timer(const Duration(seconds: 1), () {
       if (mounted) {
         setState(() {
           _showForwardSeek = false;
@@ -122,55 +112,70 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     });
   }
 
+  void _handleVerticalDragUpdate(DragUpdateDetails details) {
+    final screenSize = MediaQuery.sizeOf(context);
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
+    final isRight = details.globalPosition.dx > screenWidth / 2;
+    setState(() {
+      _showVolumeSeek = isRight;
+    });
+
+    if (isRight) {
+      AppLogger.d(details.globalPosition.dy / screenHeight);
+    } else {
+      AppLogger.d(details.globalPosition.dx / screenWidth);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Keep the provider alive to prevent state loss
-    ref.watch(episodeDataProvider);
-
+    final theme = Theme.of(context);
     return GestureDetector(
-      onTap: _showControls,
-      onDoubleTapDown: _handleDoubleClick,
+      onTap: _toggleVisibility,
+      onDoubleTapDown: _handleDoubleTap,
+      // onVerticalDragUpdate: _handleVerticalDragUpdate,
+      onVerticalDragEnd: (details) => setState(() => _showVolumeSeek = false),
+      behavior: HitTestBehavior.translucent,
       child: Stack(
         fit: StackFit.expand,
         children: [
+          // UI Overlay
           AnimatedOpacity(
-            opacity: _areControlsVisible ? 1.0 : 0.0,
+            opacity: _isVisible ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 300),
             child: AbsorbPointer(
-              absorbing: !_areControlsVisible,
-              child: _buildControlsUI(),
+              absorbing: !_isVisible,
+              child: _isLocked ? _buildLockBtn() : _buildControls(),
             ),
           ),
 
-          // Rewind Indicator
-          if (_showRewindSeek)
-            Positioned.fill(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: SeekIndicatorOverlay(
-                  isForward: false,
-                  seconds: _cumulativeSeek.abs(),
-                ),
-              ),
-            ),
+          // Seek Indicators
+          if (_showRewindSeek) _buildSeekOverlay(false),
+          if (_showForwardSeek) _buildSeekOverlay(true),
 
-          // Forward Indicator
-          if (_showForwardSeek)
-            Positioned.fill(
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: SeekIndicatorOverlay(
-                  isForward: true,
-                  seconds: _cumulativeSeek.abs(),
-                ),
-              ),
-            ),
+          // if (_showVolumeSeek)
+          //   Positioned(
+          //     top: 90,
+          //     right: 30,
+          //     bottom: 120,
+          //     child: Expanded(
+          //       child: Container(
+          //         width: 40,
+          //         decoration: BoxDecoration(
+          //           color: theme.colorScheme.onSurface,
+          //           borderRadius: BorderRadius.circular(50),
+          //         ),
+          //       ),
+          //     ),
+          //   ),
 
+          // Subtitles
           Positioned(
             left: 8,
             right: 8,
-            top: _areControlsVisible && !_isLocked ? 90 : 20,
-            bottom: _areControlsVisible && !_isLocked ? 90 : 20,
+            top: _isVisible && !_isLocked ? 90 : 20,
+            bottom: _isVisible && !_isLocked ? 90 : 20,
             child: const SubtitleOverlay(),
           ),
         ],
@@ -178,175 +183,172 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     );
   }
 
-  Widget _buildControlsUI() {
-    return GestureDetector(
-      onTap: _hideControls,
-      onDoubleTapDown: _handleDoubleClick,
-      child: Container(
-        color: Colors.transparent,
-        child: _isLocked ? _buildLockMode() : _buildFullControls(),
+  Widget _buildSeekOverlay(bool isForward) {
+    return Positioned.fill(
+      child: Align(
+        alignment: isForward ? Alignment.centerRight : Alignment.centerLeft,
+        child: SeekIndicatorOverlay(
+          isForward: isForward,
+          seconds: _cumulativeSeek.abs(),
+        ),
       ),
     );
   }
 
-  Widget _buildLockMode() {
+  Widget _buildLockBtn() {
     return Center(
-      child: GestureDetector(
-        onTap: _resetHideTimer,
-        child: IconButton(
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.black54,
-            padding: const EdgeInsets.all(16),
-          ),
-          onPressed: _toggleLock,
-          icon: const Icon(Icons.lock_open, size: 32, color: Colors.white),
-          tooltip: 'Unlock',
+      child: IconButton(
+        style: IconButton.styleFrom(
+          backgroundColor: Colors.black54,
+          padding: const EdgeInsets.all(16),
         ),
+        onPressed: () => _toggleLock(), // Unlocks and resets timer
+        icon: const Icon(Icons.lock_open, size: 32, color: Colors.white),
+        tooltip: 'Unlock',
       ),
     );
   }
 
-  Widget _buildFullControls() {
-    final playerNotifier = ref.read(playerStateProvider.notifier);
+  Widget _buildControls() {
+    final notifier = ref.read(playerStateProvider.notifier);
 
-    return Stack(
-      children: [
-        /// Center Controls
-        Positioned.fill(
-          child: Center(
-            child: CenterControls(onInteraction: _resetHideTimer),
-          ),
-        ),
+    return GestureDetector(
+      onTap: _toggleVisibility, // Ensures tapping empty space toggles UI
+      child: Stack(
+        children: [
+          Center(child: CenterControls(onInteraction: _startHideTimer)),
 
-        /// Top Controls
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          transform:
-              Matrix4.translationValues(0, _areControlsVisible ? 0 : -100, 0),
-          child: Align(
-            alignment: Alignment.topCenter,
+          // Top Bar
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            top: _isVisible ? 0 : -100,
+            left: 0,
+            right: 0,
             child: TopControls(
-              onInteraction: _resetHideTimer,
+              onInteraction: _startHideTimer,
               onEpisodesPressed: widget.onEpisodesPressed,
-              onSettingsPressed: _showSettingsSheet,
-              onQualityPressed: _showQualitySheet,
+              onSettingsPressed: _openSettings,
+              onQualityPressed: _openQualitySheet,
             ),
           ),
-        ),
 
-        // /// Bottom Controls
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          transform:
-              Matrix4.translationValues(0, _areControlsVisible ? 0 : 150, 0),
-          child: Align(
-            alignment: Alignment.bottomCenter,
+          // Bottom Bar
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            bottom: _isVisible ? 0 : -150,
+            left: 0,
+            right: 0,
             child: BottomControls(
-              onInteraction: _resetHideTimer,
+              onInteraction: _startHideTimer,
               sliderValue: _draggedSliderValue,
               onSliderChangeStart: (val) {
-                _hideControlsTimer?.cancel();
+                _hideTimer?.cancel();
                 setState(() => _draggedSliderValue = val);
               },
-              onForwardPressed: () => playerNotifier.forward(85),
               onSliderChanged: (val) =>
                   setState(() => _draggedSliderValue = val),
               onSliderChangeEnd: (val) {
-                playerNotifier.seek(Duration(milliseconds: val.round()));
+                notifier.seek(Duration(milliseconds: val.round()));
                 setState(() => _draggedSliderValue = null);
-                _resetHideTimer();
+                _startHideTimer();
               },
+              onForwardPressed: () => notifier.forward(85),
               onLockPressed: _toggleLock,
-              onSourcePressed: _showSourceSheet,
-              onSubtitlePressed: _showSubtitleSheet,
-              onServerPressed: _showServerSheet,
+              onSourcePressed: _openSourceSheet,
+              onSubtitlePressed: _openSubtitleSheet,
+              onServerPressed: _openServerSheet,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Future<void> _showPlayerModalSheet({required WidgetBuilder builder}) async {
-    _hideControlsTimer?.cancel();
+  // --- Sheets Logic ---
+
+  Future<void> _showSheet({required WidgetBuilder builder}) async {
+    _hideTimer?.cancel();
     await showModalBottomSheet(
       context: context,
       builder: builder,
       backgroundColor: Theme.of(context).colorScheme.surface.withAlpha(240),
       isScrollControlled: true,
     );
-    if (mounted) _resetHideTimer();
+    if (mounted) _startHideTimer();
   }
 
-  void _showSettingsSheet() => _showPlayerModalSheet(
-        builder: (context) => SettingsSheetContent(
-          onDismiss: () => Navigator.pop(context),
-        ),
+  void _openSettings() => _showSheet(
+        builder: (context) =>
+            SettingsSheetContent(onDismiss: () => Navigator.pop(context)),
       );
 
-  void _showQualitySheet() {
-    final episodeData = ref.read(episodeDataProvider);
-    final episodeNotifier = ref.read(episodeDataProvider.notifier);
-    _showPlayerModalSheet(
+  void _openQualitySheet() {
+    final data = ref.read(episodeDataProvider);
+    final notifier = ref.read(episodeDataProvider.notifier);
+
+    _showSheet(
       builder: (context) => GenericSelectionSheet<Map<String, dynamic>>(
         title: 'Quality',
-        items: episodeData.qualityOptions,
-        selectedIndex: episodeData.selectedQualityIdx ?? -1,
+        items: data.qualityOptions,
+        selectedIndex: data.selectedQualityIdx ?? -1,
         displayBuilder: (item) => item['quality'] ?? 'Unknown',
         onItemSelected: (index) {
-          episodeNotifier.changeQuality(index);
+          notifier.changeQuality(index);
           Navigator.pop(context);
         },
       ),
     );
   }
 
-  void _showSourceSheet() {
-    final episodeData = ref.read(episodeDataProvider);
-    final episodeNotifier = ref.read(episodeDataProvider.notifier);
-    _showPlayerModalSheet(
+  void _openSourceSheet() {
+    final data = ref.read(episodeDataProvider);
+    final notifier = ref.read(episodeDataProvider.notifier);
+
+    _showSheet(
       builder: (context) => GenericSelectionSheet<Source>(
         title: 'Source',
-        items: episodeData.sources,
-        selectedIndex: episodeData.selectedSourceIdx ?? -1,
+        items: data.sources,
+        selectedIndex: data.selectedSourceIdx ?? -1,
         displayBuilder: (item) => item.quality ?? 'Default Source',
         onItemSelected: (index) {
-          episodeNotifier.changeSource(index);
+          notifier.changeSource(index);
           Navigator.pop(context);
         },
       ),
     );
   }
 
-  void _showServerSheet() {
-    final episodeData = ref.read(episodeDataProvider);
-    final episodeNotifier = ref.read(episodeDataProvider.notifier);
-    if (episodeData.selectedServer == null) return;
-    _showPlayerModalSheet(
+  void _openServerSheet() {
+    final data = ref.read(episodeDataProvider);
+    if (data.selectedServer == null) return;
+
+    _showSheet(
       builder: (context) => GenericSelectionSheet<String>(
         title: 'Server',
-        items: episodeData.servers,
-        selectedIndex: episodeData.servers.indexOf(episodeData.selectedServer!),
+        items: data.servers,
+        selectedIndex: data.servers.indexOf(data.selectedServer!),
         displayBuilder: (item) => item,
         onItemSelected: (index) {
-          episodeNotifier.changeServer(episodeData.servers.elementAt(index));
+          ref
+              .read(episodeDataProvider.notifier)
+              .changeServer(data.servers.elementAt(index));
           Navigator.pop(context);
         },
       ),
     );
   }
 
-  void _showSubtitleSheet() {
-    final episodeData = ref.read(episodeDataProvider);
-    final episodeNotifier = ref.read(episodeDataProvider.notifier);
-    _showPlayerModalSheet(
+  void _openSubtitleSheet() {
+    final data = ref.read(episodeDataProvider);
+
+    _showSheet(
       builder: (context) => GenericSelectionSheet<Subtitle>(
         title: 'Subtitle',
-        items: episodeData.subtitles,
-        selectedIndex: episodeData.selectedSubtitleIdx ?? -1,
-        displayBuilder: (item) => item.lang ?? 'Unknown Subtitle',
+        items: data.subtitles,
+        selectedIndex: data.selectedSubtitleIdx ?? -1,
+        displayBuilder: (item) => item.lang ?? 'Unknown',
         onItemSelected: (index) {
-          episodeNotifier.changeSubtitle(index);
+          ref.read(episodeDataProvider.notifier).changeSubtitle(index);
           Navigator.pop(context);
         },
       ),

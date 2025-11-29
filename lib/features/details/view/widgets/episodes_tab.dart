@@ -7,6 +7,7 @@ import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
@@ -260,6 +261,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
 
   void _showEpisodeMenu(
       BuildContext context, EpisodeDataModel episode, bool isWatched) {
+    final repo = ref.read(watchProgressRepositoryProvider);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -296,19 +298,17 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                   title:
                       Text(isWatched ? 'Mark as Unwatched' : 'Mark as Watched'),
                   onTap: () {
-                    // setState(() {
-                    //   if (isWatched) {
-                    //     _watchedEpisodes.remove(episode.number ?? -1);
-                    //   } else {
-                    //     _watchedEpisodes.add(episode.number ?? -1);
-                    //   }
-                    // });
-                    showAppSnackBar('Mark as Watched',
-                        'Functionality to mark as watched is not yet implemented.',
-                        type: ContentType.help);
+                    repo.updateEpisodeProgress(
+                        widget.mediaId,
+                        EpisodeProgress(
+                            episodeNumber: episode.number!,
+                            episodeTitle:
+                                episode.title ?? 'Episode ${episode.number}',
+                            episodeThumbnail: episode.thumbnail,
+                            isCompleted: !isWatched));
                     AppLogger.i(
                         'Tapped Mark as Watched for Ep: ${episode.number}');
-                    // TODO: Implement mark as watched logic
+                    setState(() {});
                     Navigator.pop(sheetContext);
                   },
                 ),
@@ -350,9 +350,8 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
   Widget build(BuildContext context) {
     super.build(context);
     final exposedName = ref.watch(bestMatchNameProvider);
-    final progress = ref
-        .watch(watchProgressRepositoryProvider)
-        .getProgress(widget.mediaId.toString());
+    final progress = ref.watch(watchProgressRepositoryProvider
+        .select((w) => w.getProgress(widget.mediaId)));
 
     if (_loading && _episodes.isEmpty) {
       return const Center(child: CircularProgressIndicator());

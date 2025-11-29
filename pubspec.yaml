@@ -26,7 +26,7 @@ dependencies:
   grouped_list: ^6.0.0
   cached_network_image: ^3.4.1
   media_kit: ^1.2.0
-  media_kit_video: ^1.3.0
+  media_kit_video: 1.3.0
   media_kit_libs_video: ^1.0.6
   media_kit_libs_android_video: ^1.3.7
   device_info_plus: ^11.2.1

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
+import 'package:shonenx/features/settings/utils/subtitle_utils.dart';
 import 'package:shonenx/features/settings/view_model/subtitle_notifier.dart';
 
 class SubtitleOverlay extends ConsumerWidget {
@@ -8,7 +9,7 @@ class SubtitleOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final subtitleStyle = ref.read(subtitleAppearanceProvider);
+    final subtitleStyle = ref.watch(subtitleAppearanceProvider);
     final subtitleText =
         ref.watch(playerStateProvider.select((s) => s.subtitle.firstOrNull));
 
@@ -35,21 +36,7 @@ class SubtitleOverlay extends ConsumerWidget {
                 ? subtitleText.toUpperCase()
                 : subtitleText,
             textAlign: TextAlign.center,
-            style: TextStyle(
-                shadows: subtitleStyle.hasShadow
-                    ? [
-                        Shadow(
-                            color: Colors.black
-                                .withOpacity(subtitleStyle.shadowOpacity),
-                            offset: const Offset(0, 0),
-                            blurRadius: subtitleStyle.shadowBlur)
-                      ]
-                    : [],
-                fontSize: subtitleStyle.fontSize,
-                fontWeight: subtitleStyle.boldText
-                    ? FontWeight.bold
-                    : FontWeight.normal,
-                color: Color(subtitleStyle.textColor)),
+            style: SubtitleUtils.getSubtitleTextStyle(subtitleStyle),
           ),
         ),
       ),

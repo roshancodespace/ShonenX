@@ -326,8 +326,7 @@ class SelectableSettingsItem extends BaseSettingsItem {
               height: effectiveCompact ? 20 : 24,
               decoration: BoxDecoration(
                 color: iconColor ?? accent,
-                borderRadius:
-                    BorderRadius.circular(effectiveCompact ? 10 : 12),
+                borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
               ),
               child: Icon(
                 Icons.check,
@@ -621,8 +620,7 @@ class DropdownSettingsItem extends BaseSettingsItem {
                   fontWeight: FontWeight.w500,
                 ),
                 dropdownColor: isDarkMode ? Colors.grey[900] : Colors.white,
-                borderRadius:
-                    BorderRadius.circular(effectiveCompact ? 10 : 12),
+                borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
                 elevation: 2,
                 menuMaxHeight: 300,
                 itemHeight: effectiveCompact ? 48 : 52,
@@ -819,7 +817,9 @@ class SegmentedToggleSettingsItem<T> extends BaseSettingsItem {
                       ),
                       child: children[key]!,
                     ),
-                    if (!effectiveCompact && labels != null && labels![key] != null) ...[
+                    if (!effectiveCompact &&
+                        labels != null &&
+                        labels![key] != null) ...[
                       const SizedBox(width: 6),
                       Text(
                         labels![key]!,

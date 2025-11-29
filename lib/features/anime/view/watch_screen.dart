@@ -6,12 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
+
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/features/anime/view/widgets/episodes_panel.dart';
 import 'package:shonenx/features/anime/view/widgets/player/controls_overlay.dart';
 import 'package:shonenx/helpers/ui.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
+import 'package:shonenx/utils/formatter.dart';
 
 class WatchScreen extends ConsumerStatefulWidget {
   final String mediaId;
@@ -43,8 +45,10 @@ class WatchScreen extends ConsumerStatefulWidget {
 class _WatchScreenState extends ConsumerState<WatchScreen>
     with TickerProviderStateMixin {
   late final AnimationController _panelAnimationController;
+  late final CurvedAnimation _panelAnimation;
 
   Timer? _progressTimer;
+  bool _hasShownResumeDialog = false;
 
   @override
   void initState() {
@@ -55,31 +59,20 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
+    _panelAnimation = CurvedAnimation(
+      parent: _panelAnimationController,
+      curve: Curves.easeOutCubic,
+    );
 
     // Trigger the initial data fetch
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      Duration startAt = widget.startAt;
-
-      if (widget.animeId != null) {
-        final animeId = widget.animeId ?? '';
-        if (animeId.isNotEmpty) {
-          final repo = ref.read(watchProgressRepositoryProvider);
-          final progress = repo.getEpisodeProgress(animeId, widget.episode);
-          if (progress != null && progress.progressInSeconds != null) {
-            // Only resume if not completed or if user explicitly wants to (logic can be refined)
-            // For now, resume if progress > 5 seconds and not completed
-            if ((progress.progressInSeconds! > 5) && !progress.isCompleted) {
-              startAt = Duration(seconds: progress.progressInSeconds!);
-            }
-          }
-        }
-      }
+      if (!mounted) return;
 
       await ref.read(episodeDataProvider.notifier).fetchEpisodes(
             animeTitle: widget.animeName,
             animeId: widget.animeId,
             initialEpisodeIdx: widget.episode - 1,
-            startAt: startAt,
+            startAt: widget.startAt,
             force: false,
             play: true,
             mMangaUrl: widget.mMangaUrl,
@@ -92,13 +85,17 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   void _startProgressTimer() {
     int ticks = 0;
     _progressTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      ticks++;
-      _saveProgress(takeScreenshot: ticks % 12 == 0);
+      if (!mounted) return;
+      final isPlaying = ref.read(playerStateProvider).isPlaying;
+      if (isPlaying) {
+        ticks++;
+        _saveProgress(takeScreenshot: ticks % 12 == 0);
+      }
     });
   }
 
   Future<void> _saveProgress({bool takeScreenshot = false}) async {
-    if (!mounted) return;
+    if (!ref.context.mounted && !mounted && !context.mounted) return;
     final playerState = ref.read(playerStateProvider);
     final playerNotifier = ref.read(playerStateProvider.notifier);
     final episodeData = ref.read(episodeDataProvider);
@@ -185,6 +182,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   void dispose() {
     _progressTimer?.cancel();
     _saveProgress(takeScreenshot: false); // Save one last time
+    _panelAnimation.dispose();
     _panelAnimationController.dispose();
     _resetSystemUI();
     super.dispose();
@@ -198,6 +196,68 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     ref.listen(playerStateProvider.select((p) => p.isPlaying), (prev, next) {
       if (prev == true && next == false) {
         _saveProgress(takeScreenshot: true);
+      }
+    });
+
+    ref.listen(episodeDataProvider.select((d) => d.selectedEpisodeIdx),
+        (_, __) {
+      _hasShownResumeDialog = false;
+    });
+
+    ref.listen(playerStateProvider, (prev, next) async {
+      if (_hasShownResumeDialog) return;
+      if (next.duration != Duration.zero) {
+        _hasShownResumeDialog = true;
+
+        final episodeData = ref.read(episodeDataProvider);
+        final currentIdx = episodeData.selectedEpisodeIdx;
+        if (currentIdx == null) return;
+        final currentEpisode = episodeData.episodes[currentIdx];
+
+        // If this is the initial episode and we have a forced start time, skip
+        if (widget.startAt != Duration.zero &&
+            (currentEpisode.number == widget.episode ||
+                currentIdx == (widget.episode - 1))) {
+          return;
+        }
+
+        final animeId = widget.mediaId;
+        if (animeId.isEmpty) return;
+
+        final repo = ref.read(watchProgressRepositoryProvider);
+        final progress = repo.getEpisodeProgress(
+            animeId, currentEpisode.number ?? (currentIdx + 1));
+
+        if (progress != null &&
+            progress.progressInSeconds != null &&
+            progress.progressInSeconds! > 5) {
+          final playerNotifier = ref.read(playerStateProvider.notifier);
+          playerNotifier.pause();
+
+          final shouldResume = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Resume?'),
+              content: Text(
+                  'Resume from ${formatDuration(Duration(seconds: progress.progressInSeconds!))}?'),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('No')),
+                TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Yes')),
+              ],
+            ),
+          );
+
+          if (shouldResume == true) {
+            playerNotifier.seek(Duration(seconds: progress.progressInSeconds!));
+            playerNotifier.play();
+          } else {
+            playerNotifier.play();
+          }
+        }
       }
     });
 
@@ -247,10 +307,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   }
 
   Widget _buildEpisodesPanel(BuildContext context, Orientation orientation) {
-    final animation = CurvedAnimation(
-      parent: _panelAnimationController,
-      curve: Curves.easeOutCubic,
-    );
+    final animation = _panelAnimation;
 
     final panelContent = EpisodesPanel();
 

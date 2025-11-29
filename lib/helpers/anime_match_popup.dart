@@ -10,6 +10,8 @@ import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
+import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/main.dart';
@@ -21,6 +23,7 @@ Future<BaseAnimeModel?> providerAnimeMatchSearch({
   required WidgetRef ref,
   required Media animeMedia,
   bool withAnimeMatch = true,
+  int? startAt,
 }) async {
   beforeSearchCallback?.call();
   AppLogger.d('Starting anime match search for animeId: ${animeMedia.id}');
@@ -38,6 +41,7 @@ Future<BaseAnimeModel?> providerAnimeMatchSearch({
         animeProvider: animeProvider,
         animeMedia: animeMedia,
         withAnimeMatch: withAnimeMatch,
+        startAt: startAt,
       ),
     );
     return result;
@@ -60,11 +64,13 @@ class _AnimeSearchDialog extends ConsumerStatefulWidget {
   final AnimeProvider animeProvider;
   final Media animeMedia;
   final bool withAnimeMatch;
+  final int? startAt;
 
   const _AnimeSearchDialog({
     required this.animeProvider,
     required this.animeMedia,
     required this.withAnimeMatch,
+    this.startAt,
   });
 
   @override
@@ -130,26 +136,61 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
   }
 
   Future<bool> _performSearch(String query, {bool autoMatch = false}) async {
+    if (!mounted) return false;
     setState(() => _isLoading = true);
+    List<BaseAnimeModel> fetchedCandidates = [];
+
     try {
-      final response = await widget.animeProvider.getSearch(
-        Uri.encodeComponent(query.trim()),
-        widget.animeMedia.format,
-        1,
-      );
+      final useMangayomi =
+          ref.read(experimentalProvider).useMangayomiExtensions;
 
-      if (!mounted) return true;
+      if (useMangayomi) {
+        AppLogger.d('Using Mangayomi for search with query: $query');
+        final res = await ref.read(sourceProvider.notifier).search(query);
+        fetchedCandidates = res.list
+            .where((e) => e.name != null && e.link != null)
+            .map((e) => BaseAnimeModel(
+                  id: e.link ?? '',
+                  name: e.name ?? '',
+                  poster: e.imageUrl ?? '',
+                ))
+            .toList();
+      } else {
+        AppLogger.d('Using Legacy source for search with query: $query');
+        final res = await widget.animeProvider.getSearch(
+          Uri.encodeComponent(query.trim()),
+          widget.animeMedia.format,
+          1,
+        );
+        fetchedCandidates = res.results
+            .where((e) => e.name != null && e.id != null)
+            .map((e) => BaseAnimeModel(
+                  id: e.id.toString(),
+                  name: e.name!,
+                  poster: e.poster ?? '',
+                ))
+            .toList();
+      }
 
-      if (response.results.isEmpty) {
-        return false; // Try next title
+      if (!mounted) return false;
+
+      if (fetchedCandidates.isEmpty) {
+        if (!autoMatch) {
+          // Only update results if not auto-matching and no candidates found
+          setState(() {
+            _results = [];
+            _isLoading = false;
+          });
+        }
+        return false; // Indicate no results found or no auto-match occurred
       }
 
       if (autoMatch) {
         final matches = getBestMatches<BaseAnimeModel>(
-          results: response.results,
+          results: fetchedCandidates,
           title: query,
-          nameSelector: (r) => r.name,
-          idSelector: (r) => r.id,
+          nameSelector: (r) => r.name!,
+          idSelector: (r) => r.id!,
         );
 
         if (matches.isNotEmpty && matches.first.similarity >= 0.8) {
@@ -157,7 +198,7 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
           AppLogger.d('✅ High-confidence match found: ${bestMatch.name}');
 
           if (mounted) {
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(); // Close the dialog
             navigateToWatch(
               context: context,
               ref: ref,
@@ -165,23 +206,38 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
               animeId: bestMatch.id!,
               animeName: bestMatch.name!,
               animeFormat: widget.animeMedia.format ?? '',
-              animeCover: widget.animeMedia.coverImage?.large ?? widget.animeMedia.coverImage?.medium ?? '',
+              animeCover: bestMatch.poster ??
+                  widget.animeMedia.coverImage?.large ??
+                  widget.animeMedia.coverImage?.medium ??
+                  '',
               episodes: const [],
-              currentEpisode: 1,
+              currentEpisode: widget.startAt ?? 1,
             );
           }
-          return true;
+          return true; // Auto-match successful and navigated
         }
       }
 
+      // If no auto-match or autoMatch is false, update the results for display
       setState(() {
-        _results = response.results.where((r) => r.id != null).toList();
+        _results = fetchedCandidates;
         _isLoading = false;
       });
-      return true;
-    } catch (e) {
-      AppLogger.e('Search failed for $query', e);
-      return false;
+      return true; // Search completed and results updated (or auto-match failed)
+    } catch (e, stackTrace) {
+      AppLogger.e('Search failed for $query', e, stackTrace);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _results = []; // Clear results on error
+        });
+        showAppSnackBar(
+          'Error',
+          'Failed to search for anime. Please try again.',
+          type: ContentType.failure,
+        );
+      }
+      return false; // Indicate search failed
     }
   }
 
@@ -203,10 +259,12 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
       mediaId: widget.animeMedia.id.toString(),
       animeId: anime.id!,
       animeFormat: widget.animeMedia.format ?? '',
-      animeCover: widget.animeMedia.coverImage?.large ?? widget.animeMedia.coverImage?.medium ?? '',
+      animeCover: widget.animeMedia.coverImage?.large ??
+          widget.animeMedia.coverImage?.medium ??
+          '',
       animeName: anime.name ?? 'Unknown',
       episodes: const [],
-      currentEpisode: 1,
+      currentEpisode: widget.startAt ?? 1,
     );
   }
 

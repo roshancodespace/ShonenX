@@ -2,6 +2,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/repositories/watch_progress_repository.dart';
+import 'package:shonenx/features/home/view/widget/continue_section.dart';
 import 'package:shonenx/features/home/view_model/homepage_notifier.dart';
 import 'package:shonenx/features/home/view/widget/header_section.dart';
 import 'package:shonenx/features/home/view/widget/home_section.dart';
@@ -36,6 +38,10 @@ class HomeScreen extends ConsumerWidget {
           const HeaderSection(isDesktop: false),
           SpotlightSection(homePage: home),
           const SizedBox(height: 16),
+          Consumer(builder: (context, ref, child) {
+            final allProgress = ref.watch(watchProgressRepositoryProvider).getAllProgress();
+            return ContinueSection(allProgress: allProgress);
+          }),
           if (home.trendingAnime.isNotEmpty)
             HomeSectionWidget(
                 title: 'Trending Anime', mediaList: home.trendingAnime),

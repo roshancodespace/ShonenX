@@ -126,6 +126,10 @@ class SourceNotifier extends Notifier<SourceState> {
       {int page = 1, List filters = const []}) async {
     try {
       AppLogger.d('Searching');
+      if (state.activeAnimeSource == null) {
+        AppLogger.w('No active anime source selected');
+        return MPages(list: []);
+      }
       final service = getExtensionService(state.activeAnimeSource!);
       return service.search(query, page, filters);
     } catch (err) {
@@ -137,6 +141,10 @@ class SourceNotifier extends Notifier<SourceState> {
   Future<MManga?> getDetails(String url) async {
     try {
       AppLogger.d('Searching');
+      if (state.activeAnimeSource == null) {
+        AppLogger.w('No active anime source selected');
+        return null;
+      }
       final service = getExtensionService(state.activeAnimeSource!);
       return service.getDetail(url);
     } catch (err) {
@@ -148,6 +156,10 @@ class SourceNotifier extends Notifier<SourceState> {
   Future<List<Video?>> getSources(String url) async {
     try {
       AppLogger.d('Searching');
+      if (state.activeAnimeSource == null) {
+        AppLogger.w('No active anime source selected');
+        return [];
+      }
       final service = getExtensionService(state.activeAnimeSource!);
       return service.getVideoList(url);
     } catch (err) {

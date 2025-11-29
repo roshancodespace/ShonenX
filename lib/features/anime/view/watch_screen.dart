@@ -205,8 +205,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     });
 
     ref.listen(playerStateProvider, (prev, next) async {
-      if (_hasShownResumeDialog) return;
-      if (next.duration != Duration.zero) {
+      if (next.duration != Duration.zero && !_hasShownResumeDialog) {
         _hasShownResumeDialog = true;
 
         final episodeData = ref.read(episodeDataProvider);
@@ -309,7 +308,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   Widget _buildEpisodesPanel(BuildContext context, Orientation orientation) {
     final animation = _panelAnimation;
 
-    final panelContent = EpisodesPanel();
+    final panelContent =
+        EpisodesPanel(panelAnimation: _panelAnimationController);
 
     if (orientation == Orientation.landscape) {
       final screenWidth = MediaQuery.of(context).size.width;

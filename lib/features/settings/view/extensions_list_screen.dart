@@ -158,8 +158,9 @@ class ExtensionsListScreen extends ConsumerWidget {
                   builder: (context) {
                     final TextEditingController controller =
                         TextEditingController(
-                      text:
-                          'https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/anime_index.json',
+                      text: sourceState.activeAnimeRepo.isNotEmpty
+                          ? sourceState.activeAnimeRepo
+                          : 'https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/anime_index.json',
                     );
 
                     return AlertDialog(

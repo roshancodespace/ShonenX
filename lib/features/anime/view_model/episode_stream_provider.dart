@@ -578,7 +578,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       state = state.copyWith(
         qualityOptions: qualities,
         selectedSourceIdx: sourceIndex,
-        selectedQualityIdx: qualityIndex, 
+        selectedQualityIdx: qualityIndex,
       );
 
       ref

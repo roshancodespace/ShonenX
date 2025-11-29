@@ -18,7 +18,9 @@ class UserProfileCard extends StatelessWidget {
     // Use the base card as the foundation
     return HeaderBaseCard(
       color: theme.colorScheme.surface, // A solid, clean background
-      onTap: user != null ? () => context.push('/settings/profile') : () => context.push('/login'),
+      onTap: user != null
+          ? () => context.push('/settings/account/profile')
+          : () => context.push('/settings/account'),
       child: Row(
         children: [
           _buildAvatar(context),
@@ -65,7 +67,7 @@ class UserProfileCard extends StatelessWidget {
         child: Icon(Iconsax.user, size: 24, color: theme.colorScheme.primary),
       );
     }
-    
+
     // Logged-in User Avatar
     return Hero(
       tag: 'user-avatar',
@@ -80,7 +82,8 @@ class UserProfileCard extends StatelessWidget {
             fit: BoxFit.cover,
             placeholder: (_, __) => Container(
               color: theme.colorScheme.surfaceContainerHighest,
-              child: Icon(Icons.person_outline, color: theme.colorScheme.onSurfaceVariant),
+              child: Icon(Icons.person_outline,
+                  color: theme.colorScheme.onSurfaceVariant),
             ),
             errorWidget: (_, __, ___) => Container(
               color: theme.colorScheme.errorContainer,

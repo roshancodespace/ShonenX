@@ -57,16 +57,16 @@ class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(config.radius),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context)
-                    .colorScheme
-                    .shadow
-                    .withOpacity(_isHovered ? 0.25 : 0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            // boxShadow: [
+            //   BoxShadow(
+            //     color: Theme.of(context)
+            //         .colorScheme
+            //         .shadow
+            //         .withOpacity(_isHovered ? 0.25 : 0.1),
+            //     blurRadius: 8,
+            //     offset: const Offset(0, 2),
+            //   ),
+            // ],
           ),
           child: config.builder(
             anime: widget.anime,

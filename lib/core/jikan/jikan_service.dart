@@ -34,11 +34,9 @@ class JikanService {
       final data = await _fetch('/anime/$animeId/episodes?page=$page');
       return (data?['data'] as List<dynamic>)
           .map((itemJson) => StreamingEpisode(
-                title: _parseJikanTitle(itemJson['title']),
-                url: itemJson['url'] ?? '',
-                id: itemJson['mal_id']
-                
-              ))
+              title: _parseJikanTitle(itemJson['title']),
+              url: itemJson['url'] ?? '',
+              id: itemJson['mal_id']))
           .toList();
     } catch (err) {
       throw Exception(err);

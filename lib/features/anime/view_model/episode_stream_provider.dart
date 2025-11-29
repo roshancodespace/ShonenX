@@ -13,6 +13,7 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 import 'package:shonenx/features/settings/model/experimental_model.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
+import 'package:shonenx/features/settings/view_model/player_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/main.dart';
@@ -541,6 +542,9 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   /// Loads a source, extracts qualities if necessary, and starts playback.
   Future<void> _loadAndPlaySource(int sourceIndex,
       {Duration startAt = Duration.zero}) async {
+    final qualityPreference = ref
+        .read(playerSettingsProvider)
+        .defaultQuality; // Auto | 1080p --- 360p
     await _safeRun(() async {
       if (sourceIndex < 0 || sourceIndex >= state.sources.length) {
         AppLogger.e('Load failed: Invalid source index $sourceIndex');
@@ -556,8 +560,12 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       }
 
       final qualities = await _extractQualitiesFromSource(source);
+      final qualityIndex = qualityPreference == 'Auto'
+          ? 0
+          : qualities.indexWhere((q) => (q['quality'] as String)
+              .contains(qualityPreference.split('p').first));
       final urlToPlay =
-          qualities.isNotEmpty ? qualities.first['url'] : sourceUrl;
+          qualityIndex != -1 ? qualities[qualityIndex]['url'] : sourceUrl;
 
       if (urlToPlay == null) {
         AppLogger.e("No playable URL found after quality extraction.");

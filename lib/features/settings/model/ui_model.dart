@@ -7,8 +7,11 @@ part 'ui_model.g.dart';
 
 @HiveType(typeId: HiveTypeIds.ui)
 class UiModel {
-  @HiveField(3, defaultValue: 'defaults')
+  @HiveField(2, defaultValue: 'defaults')
   final String cardStyle;
+
+  @HiveField(3, defaultValue: 'defaults')
+  final String spotlightCardStyle;
 
   @HiveField(5, defaultValue: false)
   final bool immersiveMode;
@@ -16,15 +19,18 @@ class UiModel {
   UiModel({
     this.cardStyle = 'defaults',
     this.immersiveMode = false,
+    this.spotlightCardStyle = 'defaults',
   });
 
   UiModel copyWith({
     String? cardStyle,
     bool? immersiveMode,
+    String? spotlightCardStyle,
   }) {
     return UiModel(
       cardStyle: cardStyle ?? this.cardStyle,
       immersiveMode: immersiveMode ?? this.immersiveMode,
+      spotlightCardStyle: spotlightCardStyle ?? this.spotlightCardStyle,
     );
   }
 }

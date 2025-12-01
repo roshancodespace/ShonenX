@@ -4,6 +4,8 @@ import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
+import 'package:shonenx/features/anime/view/widgets/card/anime_spotlight_card.dart';
+import 'package:shonenx/features/home/view/widgets/spotlight/spotlight_card_config.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
@@ -40,6 +42,14 @@ class UiSettingsScreen extends ConsumerWidget {
                       description: 'Customize card appearance',
                       onTap: () => _showCardStyleDialog(context, ref),
                     ),
+                    NormalSettingsItem(
+                      icon: Icon(Iconsax.card, color: colorScheme.primary),
+                      accent: colorScheme.primary,
+                      title: 'Spotlight Card Style',
+                      description: 'Customize Spotlight card appearance',
+                      onTap: () => _showCardStyleDialog(context, ref,
+                          isSpotlightCard: true),
+                    ),
                   ]),
             ],
           ),
@@ -48,8 +58,11 @@ class UiSettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showCardStyleDialog(BuildContext context, WidgetRef ref) async {
-    final cardStyles = AnimeCardMode.values.map((e) => e.name).toList();
+  void _showCardStyleDialog(BuildContext context, WidgetRef ref,
+      {bool isSpotlightCard = false}) async {
+    final cardStyles = isSpotlightCard
+        ? SpotlightCardMode.values.map((e) => e.name).toList()
+        : AnimeCardMode.values.map((e) => e.name).toList();
     String tempStyle =
         ref.read(uiSettingsProvider.select((ui) => ui.cardStyle));
     final colorScheme = Theme.of(context).colorScheme;
@@ -60,6 +73,8 @@ class UiSettingsScreen extends ConsumerWidget {
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
             return AlertDialog(
+              insetPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               actionsPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               contentPadding:
@@ -67,34 +82,49 @@ class UiSettingsScreen extends ConsumerWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownSettingsItem(
-                    icon: Icon(Iconsax.card, color: colorScheme.primary),
-                    accent: colorScheme.primary,
-                    title: 'Card Style',
-                    description: 'Customize card appearance',
-                    value: tempStyle,
-                    items: cardStyles
-                        .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                    onChanged: (value) => setDialogState(() {
-                      tempStyle = value!;
-                    }),
-                  ),
-                  Container(
-                      color: colorScheme.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      width: double.infinity,
-                      child: Center(
-                        child: _buildLivePreview(tempStyle),
-                      )),
-                ],
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownSettingsItem(
+                      icon: Icon(Iconsax.card, color: colorScheme.primary),
+                      accent: colorScheme.primary,
+                      title:
+                          '${isSpotlightCard ? 'Spotlight' : 'Normal'} Card Style',
+                      description:
+                          'Customize ${isSpotlightCard ? 'Spotlight' : 'Normal'} card appearance',
+                      value: tempStyle,
+                      items: cardStyles
+                          .map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (value) => setDialogState(() {
+                        tempStyle = value!;
+                      }),
+                    ),
+                    Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              colorScheme.primary,
+                              colorScheme.primaryContainer,
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        width: double.infinity,
+                        child: Center(
+                          child: _buildLivePreview(tempStyle,
+                              isSpotlightCard: isSpotlightCard),
+                        )),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -105,11 +135,18 @@ class UiSettingsScreen extends ConsumerWidget {
                   child: Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: () => {
-                    ref.read(uiSettingsProvider.notifier).updateSettings(
-                          (prev) => prev.copyWith(cardStyle: tempStyle),
-                        ),
-                    Navigator.pop(dialogContext)
+                  onPressed: () {
+                    if (isSpotlightCard) {
+                      ref.read(uiSettingsProvider.notifier).updateSettings(
+                            (prev) =>
+                                prev.copyWith(spotlightCardStyle: tempStyle),
+                          );
+                    } else {
+                      ref.read(uiSettingsProvider.notifier).updateSettings(
+                            (prev) => prev.copyWith(cardStyle: tempStyle),
+                          );
+                    }
+                    Navigator.pop(dialogContext);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colorScheme.primary,
@@ -125,8 +162,10 @@ class UiSettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLivePreview(String cardStyle) {
-    final mode = AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
+  Widget _buildLivePreview(String cardStyle, {bool isSpotlightCard = false}) {
+    final mode = isSpotlightCard
+        ? SpotlightCardMode.values.firstWhere((e) => e.name == cardStyle)
+        : AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
     final anime = anime_media.Media(
       id: 1,
       coverImage: anime_media.CoverImage(
@@ -147,6 +186,11 @@ class UiSettingsScreen extends ConsumerWidget {
       episodes: 220,
       season: 'Fall',
     );
-    return AnimatedAnimeCard(anime: anime, tag: 'abcd', mode: mode);
+    if (isSpotlightCard) {
+      return AnimeSpotlightCard(
+          anime: anime, heroTag: 'abcd', mode: mode as SpotlightCardMode);
+    }
+    return AnimatedAnimeCard(
+        anime: anime, tag: 'abcd', mode: mode as AnimeCardMode);
   }
 }

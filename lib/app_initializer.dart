@@ -81,7 +81,8 @@ class AppInitializer {
         Hive.openBox<ExperimentalFeaturesModel>('experimental_features'),
         Hive.openBox<DownloadItem>('downloads'),
         // ------------------------------------
-        Hive.openBox('settings')
+        Hive.openBox('settings'),
+        Hive.openBox('onboard')
       ]);
 
       AppLogger.i("✅ Hive adapters registered and boxes opened.");

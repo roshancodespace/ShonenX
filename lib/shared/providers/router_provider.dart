@@ -21,6 +21,8 @@ import 'package:shonenx/features/settings/view/temporary/demo_screen.dart';
 import 'package:shonenx/features/settings/view/theme_settings_screen.dart';
 import 'package:shonenx/features/settings/view/ui_settings_screen.dart';
 import 'package:shonenx/router/router.dart';
+import 'package:shonenx/features/onboarding/view/onboarding_screen.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return _router;
@@ -80,7 +82,26 @@ final _router = GoRouter(
         mMangaUrl: state.uri.queryParameters['mMangaUrl'],
       ),
     ),
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
   ],
+  redirect: (context, state) {
+    final box = Hive.box('onboard');
+    final isOnboarded = box.get('is_onboarded', defaultValue: false);
+    final isGoingToOnboarding = state.matchedLocation == '/onboarding';
+
+    if (!isOnboarded && !isGoingToOnboarding) {
+      return '/onboarding';
+    }
+
+    if (isOnboarded && isGoingToOnboarding) {
+      return '/';
+    }
+
+    return null;
+  },
 );
 
 GoRoute _buildSettingsRoute() {

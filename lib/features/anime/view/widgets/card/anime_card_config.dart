@@ -8,6 +8,7 @@ import 'package:shonenx/features/anime/view/widgets/card/modes/liquid_glass_card
 import 'package:shonenx/features/anime/view/widgets/card/modes/manga_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/modes/minimal_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/modes/neon_card.dart';
+import 'package:shonenx/features/anime/view/widgets/card/modes/polaroid_card.dart';
 
 enum AnimeCardMode {
   defaults,
@@ -18,6 +19,7 @@ enum AnimeCardMode {
   neon,
   manga,
   compact,
+  polaroid,
 }
 
 typedef ResponsiveSize = ({double small, double large});
@@ -99,5 +101,12 @@ final Map<AnimeCardMode, AnimeCardConfig> cardConfigs = {
     radius: 8.0,
     builder: ({required anime, required tag, required isHovered}) =>
         CompactCard(anime: anime, tag: tag, isHovered: isHovered),
+  ),
+  AnimeCardMode.polaroid: AnimeCardConfig(
+    responsiveWidth: (small: 150.0, large: 170.0),
+    responsiveHeight: (small: 220.0, large: 250.0),
+    radius: 4.0,
+    builder: ({required anime, required tag, required isHovered}) =>
+        PolaroidCard(anime: anime, tag: tag, isHovered: isHovered),
   ),
 };

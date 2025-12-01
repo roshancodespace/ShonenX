@@ -23,17 +23,23 @@ class MangaCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: bgColor,
-        border: Border.all(color: borderColor, width: 2),
+        border: Border.all(color: borderColor, width: 3), // Thicker border
         borderRadius: BorderRadius.zero, // Sharp corners for manga panel look
         boxShadow: isHovered
             ? [
                 BoxShadow(
                   color: Colors.black,
-                  offset: const Offset(4, 4),
+                  offset: const Offset(6, 6),
                   blurRadius: 0, // Hard shadow
                 ),
               ]
-            : [],
+            : [
+                BoxShadow(
+                  color: Colors.black,
+                  offset: const Offset(3, 3),
+                  blurRadius: 0,
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -42,36 +48,85 @@ class MangaCard extends StatelessWidget {
             child: Container(
               margin: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.black, width: 1),
+                border: Border.all(color: Colors.black, width: 1.5),
               ),
-              child:
-                  AnimeImage(anime: anime, tag: tag, height: double.infinity),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ColorFiltered(
+                    colorFilter: isHovered
+                        ? const ColorFilter.mode(
+                            Colors.transparent, BlendMode.multiply)
+                        : const ColorFilter.mode(Colors.grey,
+                            BlendMode.saturation), // B&W by default
+                    child: AnimeImage(
+                        anime: anime, tag: tag, height: double.infinity),
+                  ),
+
+                  // Rating Badge (Comic Style)
+                  if (anime?.averageScore != null)
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          border: Border(
+                            left: BorderSide(color: Colors.white, width: 2),
+                            bottom: BorderSide(color: Colors.white, width: 2),
+                          ),
+                        ),
+                        child: Text(
+                          '${anime!.averageScore}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                            fontFamily: 'Roboto',
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   (anime?.title?.english ?? anime?.title?.romaji ?? 'Unknown')
                       .toUpperCase(),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.w900,
-                    fontSize: 12,
+                    fontSize: 13,
                     fontFamily:
                         'Roboto', // Or a more comic-like font if available
+                    letterSpacing: 0.5,
                   ),
                 ),
-                Text(
-                  'VOL. ${anime?.episodes ?? "?"}',
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
+                const SizedBox(height: 2),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: Text(
+                    'VOL. ${anime?.episodes ?? "?"}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
                   ),
                 ),
               ],

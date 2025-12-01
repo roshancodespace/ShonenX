@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
 
@@ -17,7 +18,7 @@ class LiquidGlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final theme = Theme.of(context);
+    final theme = Theme.of(context);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
@@ -27,6 +28,50 @@ class LiquidGlassCard extends StatelessWidget {
           // Background Image
           AnimeImage(anime: anime, tag: tag, height: double.infinity),
 
+          // Rating Tag (Top Left)
+          if (anime?.averageScore != null)
+            Positioned(
+              top: 12,
+              left: 12,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Iconsax.star1,
+                          size: 12,
+                          color: Colors.amber,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${anime!.averageScore}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
           // Glass Overlay (Bottom Section)
           Align(
             alignment: Alignment.bottomCenter,
@@ -34,9 +79,9 @@ class LiquidGlassCard extends StatelessWidget {
               borderRadius:
                   const BorderRadius.vertical(bottom: Radius.circular(16)),
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
                 child: Container(
-                  height: 90,
+                  height: 110,
                   width: double.infinity,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -49,7 +94,7 @@ class LiquidGlassCard extends StatelessWidget {
                     ),
                     border: Border(
                       top: BorderSide(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withOpacity(0.3),
                         width: 1.0,
                       ),
                     ),
@@ -62,10 +107,19 @@ class LiquidGlassCard extends StatelessWidget {
                       AnimeTitle(
                         anime: anime,
                         maxLines: 2,
-                        enhanced:
-                            true, // Use enhanced text for better visibility on glass
+                        enhanced: true,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.5),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       EpisodesInfo(anime: anime, compact: true),
                     ],
                   ),
@@ -76,13 +130,13 @@ class LiquidGlassCard extends StatelessWidget {
 
           // Liquid/Shine Effect on Hover
           AnimatedPositioned(
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
-            top: isHovered ? -100 : 300,
-            left: isHovered ? -100 : 300,
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeInOutCubic,
+            top: isHovered ? -100 : 400,
+            left: isHovered ? -100 : 400,
             child: Container(
-              width: 200,
-              height: 200,
+              width: 250,
+              height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(

@@ -614,7 +614,7 @@ class DropdownSettingsItem extends BaseSettingsItem {
                   color: (iconColor ?? accent).withOpacity(0.8),
                   size: effectiveCompact ? 20 : 24,
                 ),
-                style: TextStyle(
+                style: theme.dropdownMenuTheme.textStyle?.copyWith(
                   fontSize: effectiveCompact ? 14 : 15,
                   color: theme.textTheme.bodyMedium?.color,
                   fontWeight: FontWeight.w500,
@@ -680,7 +680,7 @@ class DropdownSettingsItem extends BaseSettingsItem {
                 color: (iconColor ?? accent).withOpacity(0.8),
                 size: effectiveCompact ? 20 : 24,
               ),
-              style: TextStyle(
+              style: theme.dropdownMenuTheme.textStyle?.copyWith(
                 fontSize: effectiveCompact ? 14 : 15,
                 color: theme.textTheme.bodyMedium?.color,
                 fontWeight: FontWeight.w500,

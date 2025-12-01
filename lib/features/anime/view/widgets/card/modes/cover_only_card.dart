@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
 
@@ -21,7 +22,46 @@ class CoverOnlyCard extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          AnimeImage(anime: anime, tag: tag, height: double.infinity),
+          // Image with Scale Animation
+          AnimatedScale(
+            scale: isHovered ? 1.1 : 1.0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            child: AnimeImage(anime: anime, tag: tag, height: double.infinity),
+          ),
+
+          // Rating Tag (Top Right)
+          if (anime?.averageScore != null)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Iconsax.star1,
+                      size: 10,
+                      color: Colors.amber,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      '${anime!.averageScore}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
           // Title Overlay on Hover
           AnimatedOpacity(

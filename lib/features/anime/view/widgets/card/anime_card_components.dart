@@ -43,16 +43,16 @@ class EpisodesInfo extends StatelessWidget {
 
 class Tag extends StatelessWidget {
   final String text;
-  final Color color;
-  final Color textColor;
+  final Color? color;
+  final Color? textColor;
   final IconData? icon;
   final bool hasShadow;
 
   const Tag({
     super.key,
     required this.text,
-    required this.color,
-    required this.textColor,
+    this.color,
+    this.textColor,
     this.icon,
     this.hasShadow = false,
   });
@@ -60,10 +60,16 @@ class Tag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final bgColor = color ?? colorScheme.primaryContainer;
+    final txtColor = textColor ?? colorScheme.onPrimaryContainer;
+    final iconColor = textColor ?? colorScheme.primary;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color,
+        color: bgColor,
         borderRadius: BorderRadius.circular(8),
         boxShadow: hasShadow
             ? [
@@ -79,13 +85,13 @@ class Tag extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 12, color: textColor),
+            Icon(icon, size: 12, color: iconColor),
             const SizedBox(width: 4),
           ],
           Text(
             text,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: textColor,
+              color: txtColor,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.3,
             ),
@@ -101,6 +107,7 @@ class AnimeTitle extends StatelessWidget {
   final int maxLines;
   final bool minimal;
   final bool enhanced;
+  final TextStyle? style;
 
   const AnimeTitle({
     super.key,
@@ -108,6 +115,7 @@ class AnimeTitle extends StatelessWidget {
     required this.maxLines,
     this.minimal = false,
     this.enhanced = false,
+    this.style,
   });
 
   @override
@@ -135,18 +143,19 @@ class AnimeTitle extends StatelessWidget {
         title,
         maxLines: maxLines,
         overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.2,
-          color: Colors.white,
-          shadows: [
-            Shadow(
-              color: Colors.black.withOpacity(0.7),
-              offset: const Offset(0, 1),
-              blurRadius: 3,
+        style: style ??
+            theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.2,
+              color: Colors.white,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withOpacity(0.7),
+                  offset: const Offset(0, 1),
+                  blurRadius: 3,
+                ),
+              ],
             ),
-          ],
-        ),
       );
     }
 
@@ -155,17 +164,18 @@ class AnimeTitle extends StatelessWidget {
       title,
       maxLines: maxLines,
       overflow: TextOverflow.ellipsis,
-      style: theme.textTheme.titleSmall?.copyWith(
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-        shadows: [
-          Shadow(
-            color: Colors.black.withOpacity(0.5),
-            offset: const Offset(0, 1),
-            blurRadius: 2,
+      style: style ??
+          theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.5),
+                offset: const Offset(0, 1),
+                blurRadius: 2,
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }

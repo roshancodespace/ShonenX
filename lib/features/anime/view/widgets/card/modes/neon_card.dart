@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
 
@@ -18,21 +21,31 @@ class NeonCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final neonColor = theme.colorScheme.primary;
+    final isMobile = Platform.isAndroid || Platform.isIOS;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isHovered ? neonColor : Colors.transparent,
-          width: 2,
+          color: isMobile
+              ? neonColor
+              : isHovered
+                  ? neonColor
+                  : neonColor.withOpacity(0.5),
+          width: isMobile ? 1 : 2,
         ),
         boxShadow: isHovered
             ? [
                 BoxShadow(
-                  color: neonColor.withOpacity(0.6),
-                  blurRadius: 12,
+                  color: neonColor.withOpacity(0.8),
+                  blurRadius: 16,
                   spreadRadius: 2,
+                ),
+                BoxShadow(
+                  color: neonColor.withOpacity(0.4),
+                  blurRadius: 32,
+                  spreadRadius: 8,
                 ),
               ]
             : [],
@@ -43,6 +56,56 @@ class NeonCard extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             AnimeImage(anime: anime, tag: tag, height: double.infinity),
+
+            // Rating Tag (Top Right)
+            if (anime?.averageScore != null)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: neonColor.withOpacity(0.8),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: neonColor.withOpacity(0.4),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Iconsax.star1,
+                        size: 10,
+                        color: neonColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${anime!.averageScore}',
+                        style: TextStyle(
+                          color: neonColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              color: neonColor,
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
             // Dark Overlay
             Container(
@@ -61,7 +124,7 @@ class NeonCard extends StatelessWidget {
             ),
 
             Padding(
-              padding: const EdgeInsets.all(10.0),
+              padding: const EdgeInsets.all(12.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,23 +140,24 @@ class NeonCard extends StatelessWidget {
                           ? [
                               Shadow(
                                 color: neonColor,
-                                blurRadius: 8,
+                                blurRadius: 12,
                               ),
                             ]
                           : [],
                     ),
                   ),
                   if (isHovered) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Container(
                       height: 2,
-                      width: 40,
+                      width: 60,
                       decoration: BoxDecoration(
                         color: neonColor,
                         boxShadow: [
                           BoxShadow(
                             color: neonColor,
-                            blurRadius: 4,
+                            blurRadius: 6,
+                            spreadRadius: 1,
                           ),
                         ],
                       ),

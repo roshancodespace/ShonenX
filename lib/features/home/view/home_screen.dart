@@ -41,6 +41,7 @@ class HomeScreen extends ConsumerWidget {
           Consumer(builder: (context, ref, child) {
             final allProgress =
                 ref.watch(watchProgressRepositoryProvider).getAllProgress();
+            if (allProgress.isEmpty) return const SizedBox.shrink();
             return ContinueSection(allProgress: allProgress);
           }),
           if (home.trendingAnime.isNotEmpty)

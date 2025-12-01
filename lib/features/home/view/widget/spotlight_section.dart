@@ -1,24 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_carousel_widget/flutter_carousel_widget.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_spotlight_card.dart';
 import 'package:shonenx/features/home/view/widget/slider_indicator.dart';
+import 'package:shonenx/features/home/view/widgets/spotlight/spotlight_card_config.dart';
+import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';
 
-class SpotlightSection extends StatelessWidget {
+class SpotlightSection extends ConsumerWidget {
   final HomePage? homePage;
 
   const SpotlightSection({super.key, required this.homePage});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final trendingAnimes =
         homePage?.trendingAnime ?? List<Media?>.filled(9, null);
     final carouselHeight =
         MediaQuery.of(context).size.width > 900 ? 500.0 : 240.0;
-
+    final cardMode =
+        ref.watch(uiSettingsProvider.select((ui) => ui.spotlightCardStyle));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -48,6 +52,8 @@ class SpotlightSection extends StatelessWidget {
                               context, media, anime?.id.toString() ?? '')
                           : null,
                       anime: anime,
+                      mode: SpotlightCardMode.values
+                          .firstWhere((e) => e.name == cardMode),
                       heroTag: anime?.id.toString() ?? 'loading',
                     ),
                   ))

@@ -39,7 +39,8 @@ class HomeScreen extends ConsumerWidget {
           SpotlightSection(homePage: home),
           const SizedBox(height: 16),
           Consumer(builder: (context, ref, child) {
-            final allProgress = ref.watch(watchProgressRepositoryProvider).getAllProgress();
+            final allProgress =
+                ref.watch(watchProgressRepositoryProvider).getAllProgress();
             return ContinueSection(allProgress: allProgress);
           }),
           if (home.trendingAnime.isNotEmpty)

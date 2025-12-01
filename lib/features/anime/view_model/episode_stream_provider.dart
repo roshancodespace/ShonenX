@@ -124,8 +124,11 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   @override
   EpisodeDataState build() {
+    final link = ref.keepAlive();
     return const EpisodeDataState();
   }
+
+  List<EpisodeDataModel> get episodes => state.episodes;
 
   /// Fetches the list of episodes for a given anime.
   Future<List<EpisodeDataModel>> fetchEpisodes({
@@ -395,6 +398,57 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
           'Starting playback from initial episode index: $initialEpisodeIdx');
       await changeEpisode(initialEpisodeIdx, startAt: startAt);
     }
+  }
+
+  // Return Downloadable Sources
+  Future<BaseSourcesModel?> downloadSources(int episodeIdx) async {
+    final episode = state.episodes[episodeIdx];
+    final useMangayomi = _experimentalFeatures.useMangayomiExtensions;
+    final url = episode.url;
+
+    if (useMangayomi && url != null && url.isNotEmpty) {
+      AppLogger.d('Using Mangayomi source getter for URL: $url');
+      return await _safeRun(
+        () async {
+          final sources = await _sourceNotifier.getSources(url);
+          return BaseSourcesModel(
+            sources: sources
+                .map((s) => Source(
+                      url: s?.url,
+                      isM3U8: s?.url.contains('.m3u8') ?? false,
+                      isDub:
+                          s?.originalUrl.toLowerCase().contains('dub') ?? false,
+                      quality: s?.quality,
+                    ))
+                .toList(),
+            tracks: sources.firstOrNull?.subtitles
+                    ?.map((sub) => Subtitle(url: sub.file, lang: sub.label))
+                    .toList() ??
+                [],
+          );
+        },
+        errorTitle: "Mangayomi Stream",
+        errorMessage: "Failed to get sources from Mangayomi.",
+      );
+    }
+
+    final animeProvider = _getProvider();
+    if (animeProvider == null) {
+      AppLogger.e("Legacy provider not selected.");
+      throw Exception("Legacy provider not selected.");
+    }
+
+    AppLogger.d('Using Legacy source getter for episode ID: ${episode.id}');
+    return await _safeRun(
+      () => animeProvider.getSources(
+        episode.id ?? '',
+        episode.id ?? '',
+        state.selectedServer,
+        state.selectedCategory,
+      ),
+      errorTitle: "Legacy Stream",
+      errorMessage: "Failed to get sources from Legacy provider.",
+    );
   }
 
   /// Syncs episode titles with data from Jikan/MAL.

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/features/browse/view/browse_screen.dart';
+import 'package:shonenx/features/downloads/view/downloads_screen.dart';
 import 'package:shonenx/features/loading/view/loading_screen.dart';
 import 'package:shonenx/features/watchlist/view/watchlist_screen.dart';
 import 'package:shonenx/features/loading/view_model/initialization_notifier.dart';
@@ -21,7 +22,12 @@ class NavItem {
 
 final List<NavItem> navItems = [
   NavItem(path: '/', icon: Iconsax.home, screen: const h_screen.HomeScreen()),
-  NavItem(path: '/browse', icon: Iconsax.discover_1, screen: BrowseScreen()),
+  NavItem(
+      path: '/browse', icon: Iconsax.discover_1, screen: const BrowseScreen()),
+  NavItem(
+      path: '/downloads',
+      icon: Iconsax.receive_square,
+      screen: const DownloadsScreen()),
   NavItem(
       path: '/watchlist',
       icon: Iconsax.bookmark,

@@ -10,4 +10,6 @@ class HiveTypeIds {
   static const anilistMedia = 9;
   static const subtitle = 10;
   static const experimental = 11;
+  static const downloads = 12;
+  static const downloadStatus = 13;
 }

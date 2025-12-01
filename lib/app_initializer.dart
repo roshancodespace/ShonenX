@@ -12,6 +12,8 @@ import 'package:shonenx/data/hive/models/settings/provider_model.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 import 'package:shonenx/features/home/model/home_page.dart';
+import 'package:shonenx/features/downloads/model/download_status.dart';
+import 'package:shonenx/features/downloads/model/download_item.dart';
 import 'package:shonenx/features/settings/model/experimental_model.dart';
 import 'package:shonenx/features/settings/model/player_model.dart';
 import 'package:shonenx/features/settings/model/subtitle_appearance_model.dart';
@@ -47,7 +49,8 @@ class AppInitializer {
   static Future<void> _initializeHive() async {
     try {
       final appDocDir = await getApplicationDocumentsDirectory();
-      final customPath = '${appDocDir.path}${Platform.pathSeparator}shonenx';
+      final customPath =
+          '${appDocDir.path}${Platform.pathSeparator}ShonenX/appdata';
 
       await Hive.initFlutter(customPath);
       AppLogger.i("✅ Hive initialized at: $customPath");
@@ -61,6 +64,9 @@ class AppInitializer {
       Hive.registerAdapter(AnimeWatchProgressEntryAdapter());
       Hive.registerAdapter(EpisodeProgressAdapter());
       Hive.registerAdapter(ExperimentalFeaturesModelAdapter());
+      // Downloads
+      Hive.registerAdapter(DownloadItemAdapter());
+      Hive.registerAdapter(DownloadStatusAdapter());
 
       await Future.wait([
         Hive.openBox<ThemeModel>('theme_settings'),
@@ -73,6 +79,7 @@ class AppInitializer {
         Hive.openBox<PlayerModel>('player_settings'),
         Hive.openBox<AnimeWatchProgressEntry>('anime_watch_progress'),
         Hive.openBox<ExperimentalFeaturesModel>('experimental_features'),
+        Hive.openBox<DownloadItem>('downloads'),
         // ------------------------------------
         Hive.openBox('settings')
       ]);

@@ -9,6 +9,9 @@ import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
+import 'package:shonenx/features/downloads/model/download_item.dart';
+import 'package:shonenx/features/downloads/model/download_status.dart';
+import 'package:shonenx/features/downloads/view_model/downloads_notifier.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
@@ -16,6 +19,8 @@ import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/main.dart';
 import 'package:shonenx/core/models/anilist/media.dart' as media;
+import 'package:shonenx/storage_provider.dart';
+import 'package:shonenx/utils/extractors.dart';
 
 final bestMatchNameProvider = StateProvider<String?>((ref) => null);
 
@@ -315,13 +320,93 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                 ListTile(
                   leading: const Icon(Icons.download_for_offline_outlined),
                   title: const Text('Download'),
-                  onTap: () {
+                  onTap: () async {
                     AppLogger.i('Tapped Download for Ep: ${episode.number}');
-                    showAppSnackBar('Download',
-                        'Functionality to download is not yet implemented.',
-                        type: ContentType.help);
+
+                    // 1. Close the sheet first
                     Navigator.pop(sheetContext);
-                    // TODO: Implement download logic
+
+                    // Check if widget is mounted before starting async work
+                    if (!mounted) return;
+
+                    final episodeNotifier =
+                        ref.read(episodeDataProvider.notifier);
+
+                    // 2. Do Async Work
+                    final downloadSources = await episodeNotifier
+                        .downloadSources(episode.number! - 1);
+                    final path =
+                        (await StorageProvider().getDefaultDirectory())?.path;
+
+                    if (path == null) return;
+
+                    final filePath =
+                        "$path/${widget.mediaTitle.english ?? widget.mediaTitle.romaji ?? widget.mediaTitle.native}/${episode.number} - ${episode.title?.replaceAll(RegExp(r'[:\\/\?\*\"\<\>\|]'), '_') ?? "Episode ${episode.number}"}";
+
+                    // 3. Do heavier async work
+                    final Map<String, String> headers =
+                        downloadSources?.headers != null
+                            ? Map<String, String>.from(downloadSources!.headers)
+                            : {
+                                'User-Agent':
+                                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                              };
+
+                    final qualities = await extractQualities(
+                        downloadSources!.sources.first.url!, headers);
+                    AppLogger.w(qualities.last['url']);
+
+                    // 4. CRITICAL: Check if the PARENT context is still valid
+                    // before trying to show a dialog.
+                    if (!context.mounted) return;
+
+                    await showDialog(
+                      context:
+                          context, // <--- FIX: Use parent 'context', not 'sheetContext'
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Text('Download'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize
+                              .min, // Added min size to avoid layout issues
+                          children: qualities
+                              .map((quality) => InkWell(
+                                  onTap: () {
+                                    final downloadItem = DownloadItem(
+                                        downloadUrl: quality['url']!,
+                                        episodeTitle: episode.title ??
+                                            'Episode ${episode.number}',
+                                        thumbnail: episode.thumbnail ?? '',
+                                        state: DownloadStatus.queued,
+                                        progress: 0,
+                                        quality: quality['quality']!,
+                                        episodeNumber: episode.number!,
+                                        animeTitle:
+                                            (widget.mediaTitle.english ??
+                                                widget.mediaTitle.romaji ??
+                                                widget.mediaTitle.native)!,
+                                        filePath: filePath,
+                                        headers: headers);
+                                    ref
+                                        .read(downloadsProvider.notifier)
+                                        .addDownload(downloadItem);
+                                    // Close the Alert Dialog
+                                    Navigator.pop(dialogContext);
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child:
+                                        Text(quality['quality'] ?? 'Unknown'),
+                                  )))
+                              .toList(),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext),
+                            child: const Text('Cancel'),
+                          ),
+                        ],
+                      ),
+                    );
                   },
                 ),
                 ListTile(
@@ -330,10 +415,13 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                   onTap: () {
                     AppLogger.i(
                         'Tapped Add to Playlist for Ep: ${episode.number}');
+                    Navigator.pop(sheetContext); // Pop first
+
+                    // Use parent context for snackbar
+                    if (!context.mounted) return;
                     showAppSnackBar('Add to Playlist',
                         'Functionality to add to playlist is not yet implemented.',
                         type: ContentType.help);
-                    Navigator.pop(sheetContext);
                     // TODO: Implement playlist logic
                   },
                 ),

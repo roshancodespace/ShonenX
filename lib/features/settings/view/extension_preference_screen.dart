@@ -8,6 +8,13 @@ import 'package:shonenx/core_new/providers/extension_preference_provider.dart';
 import 'package:shonenx/core_new/providers/get_source_preference.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
+import 'package:shonenx/main.dart';
+import 'package:isar/isar.dart';
+
+final sourcePreferencesStreamProvider =
+    StreamProvider.autoDispose.family<void, int>((ref, sourceId) {
+  return isar.sourcePreferences.filter().sourceIdEqualTo(sourceId).watchLazy();
+});
 
 class ExtensionPreferenceScreen extends ConsumerWidget {
   final Source source;
@@ -16,6 +23,7 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(sourcePreferencesStreamProvider(source.id!));
     final extPrefs = getSourcePreference(source: source)
         .map((e) => getSourcePreferenceEntry(e.key!, source.id!))
         .toList();
@@ -212,7 +220,7 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
       title: pref.title ?? 'List Setting',
       description: 'Current: $currentValue',
       layoutType: SettingsItemLayout.horizontal,
-      value: currentValue, 
+      value: currentValue,
       items: (pref.entries ?? []).map((String item) {
         return DropdownMenuItem<String>(
           value: item,

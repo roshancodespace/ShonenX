@@ -8,7 +8,6 @@ import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/aniwatch/parser.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
 import 'package:html/parser.dart' show parse;
-import 'package:shonenx/core/utils/app_logger.dart';
 
 class HiAnimeProvider extends AnimeProvider {
   HiAnimeProvider({String? customApiUrl})
@@ -27,12 +26,14 @@ class HiAnimeProvider extends AnimeProvider {
   }
 
   @override
+  Map<String, String> get headers => _getHeaders();
+
+  @override
   Future<HomePage> getHome() async {
-    AppLogger.d('Fetching home page from $baseUrl');
     return HomePage();
     // final response =
     //     await http.get(Uri.parse('$baseUrl/home'), headers: _getHeaders());
-    // AppLogger.d('Received home page response');
+
     // final document = parse(response.body);
     // return HomePage(
     //   spotlight: parseSpotlight(document, baseUrl),
@@ -43,42 +44,36 @@ class HiAnimeProvider extends AnimeProvider {
 
   @override
   Future<DetailPage> getDetails(String animeId) async {
-    AppLogger.d('Fetching details for animeId: $animeId');
     final response =
         await http.get(Uri.parse('$baseUrl/$animeId'), headers: _getHeaders());
-    AppLogger.d('Received details response for animeId: $animeId');
     final document = parse(response.body);
     return parseDetail(document, baseUrl, animeId: animeId);
   }
 
   @override
   Future<WatchPage> getWatch(String animeId) async {
-    AppLogger.d('Fetching watch page for animeId: $animeId');
     final response = await http.get(Uri.parse('$baseUrl/watch/$animeId'),
         headers: _getHeaders());
-    AppLogger.d('Received watch page response for animeId: $animeId');
     final document = parse(response.body);
     return parseWatch(document, baseUrl, animeId: animeId);
   }
 
   // @override
   // Future<BaseEpisodeModel> getEpisodes(String animeId) async {
-  //   AppLogger.d('Fetching episodes for animeId: $animeId');
+
   //   final response = await http.get(
   //       Uri.parse("$baseUrl/ajax/v2/episode/list/${animeId.split('-').last}"),
   //       headers: _getHeaders());
-  //   AppLogger.d('Received episodes response for animeId: $animeId');
+
   //   final document = parse(json.decode(response.body)['html']);
   //   return parseEpisodes(document, "$baseUrl/ajax/v2/episode/list/",
   //       animeId: animeId);
   // }
   @override
   Future<BaseEpisodeModel> getEpisodes(String animeId) async {
-    AppLogger.w('Fetching episodes for animeId: $animeId');
     final response = await http.get(Uri.parse(
         "https://shonenx-aniwatch-instance.vercel.app/api/v2/hianime/anime/$animeId/episodes"));
     final data = jsonDecode(response.body)['data'];
-    AppLogger.w(data.toString());
     return BaseEpisodeModel(
       episodes: (data['episodes'] as List<dynamic>)
           .map((episode) => EpisodeDataModel(
@@ -90,7 +85,6 @@ class HiAnimeProvider extends AnimeProvider {
       totalEpisodes: data['totalEpisodes'],
     );
   }
-
 
   String? retrieveServerId(Document document, int index, String category) {
     final serverItems = document.querySelectorAll(
@@ -105,14 +99,11 @@ class HiAnimeProvider extends AnimeProvider {
       String? serverName, String? category) async {
     final actualAnimeId = episodeId.split('?').first;
     final actualEpisodeId = episodeId.split('?').last.split('=').last;
-    AppLogger.d(
-        'Fetching sources for animeId: $actualAnimeId, episodeId: $actualEpisodeId, server: $serverName, category: $category');
     final response = await http.get(
       Uri.parse(
           'https://yumaapi.vercel.app/watch?episodeId=$actualAnimeId\$episode\$$actualEpisodeId&type=dub&server=$serverName'),
     );
     final data = jsonDecode(response.body);
-    AppLogger.w(data.toString());
 
     return BaseSourcesModel(
       sources: (data['sources'] as List<dynamic>)
@@ -136,14 +127,11 @@ class HiAnimeProvider extends AnimeProvider {
   // @override
   // Future<BaseSourcesModel> getSources(String animeId, String episodeId,
   //     String? serverName, String? category) async {
-  //   AppLogger.d(
-  //       'Fetching sources for animeId: $animeId, episodeId: $episodeId, server: $serverName, category: $category');
   //   final response = await http.get(
   //     Uri.parse(
   //         'https://shonenx-aniwatch-instance.vercel.app/api/v2/hianime/episode/sources?animeEpisodeId=$episodeId&server=$serverName&category=${category ?? 'sub'}'),
   //   );
   //   final data = jsonDecode(response.body)['data'];
-  //   AppLogger.w(data.toString());
 
   //   return BaseSourcesModel(
   //     sources: (data['sources'] as List<dynamic>)
@@ -172,19 +160,15 @@ class HiAnimeProvider extends AnimeProvider {
     final url = hianimeType != null
         ? '$baseUrl/search?keyword=$keyword&type=$hianimeType&page=$page'
         : '$baseUrl/search?keyword=$keyword&page=$page';
-    AppLogger.d('Searching with URL: $url');
     final response = await http.get(Uri.parse(url), headers: _getHeaders());
-    AppLogger.d('Received search response for keyword: $keyword');
     final document = parse(response.body);
     return parseSearch(document, baseUrl, keyword: keyword, page: page);
   }
 
   @override
   Future<SearchPage> getPage(String route, int page) async {
-    AppLogger.d('Fetching page for route: $route, page: $page');
     final response = await http.get(Uri.parse('$baseUrl/$route?page=$page'),
         headers: _getHeaders());
-    AppLogger.d('Received page response for route: $route');
     final document = parse(response.body);
     return parsePage(document, baseUrl, route: route, page: page);
   }

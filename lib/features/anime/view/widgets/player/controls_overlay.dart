@@ -31,10 +31,10 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
 
   // Seek State
   int _cumulativeSeek = 0;
-  double _cumulativeVolume = 0;
+  // double _cumulativeVolume = 0;
   bool _showForwardSeek = false;
   bool _showRewindSeek = false;
-  bool _showVolumeSeek = false;
+  // bool _showVolumeSeek = false;
 
   Timer? _hideTimer;
   Timer? _seekResetTimer;
@@ -42,7 +42,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
   @override
   void initState() {
     super.initState();
-    _startHideTimer();
+    _restartHideTimer();
   }
 
   @override
@@ -52,7 +52,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     super.dispose();
   }
 
-  void _startHideTimer() {
+  void _restartHideTimer() {
     _hideTimer?.cancel();
     if (_isLocked || !_isVisible) return;
     _hideTimer = Timer(const Duration(seconds: 5), () {
@@ -61,13 +61,14 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
   }
 
   void _toggleVisibility() {
-    if (_isVisible) {
-      setState(() => _isVisible = false);
-      _hideTimer?.cancel();
-    } else {
-      setState(() => _isVisible = true);
-      _startHideTimer();
-    }
+    setState(() {
+      _isVisible = !_isVisible;
+      if (_isVisible) {
+        _restartHideTimer();
+      } else {
+        _hideTimer?.cancel();
+      }
+    });
   }
 
   void _toggleLock() {
@@ -75,7 +76,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
       _isLocked = !_isLocked;
       _isVisible = true;
     });
-    _startHideTimer();
+    _restartHideTimer();
   }
 
   void _handleDoubleTap(TapDownDetails details) {
@@ -117,9 +118,9 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     final screenWidth = screenSize.width;
     final screenHeight = screenSize.height;
     final isRight = details.globalPosition.dx > screenWidth / 2;
-    setState(() {
-      _showVolumeSeek = isRight;
-    });
+    // setState(() {
+    //   _showVolumeSeek = isRight;
+    // });
 
     if (isRight) {
       AppLogger.d(details.globalPosition.dy / screenHeight);
@@ -130,12 +131,11 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return GestureDetector(
       onTap: _toggleVisibility,
       onDoubleTapDown: _handleDoubleTap,
       // onVerticalDragUpdate: _handleVerticalDragUpdate,
-      onVerticalDragEnd: (details) => setState(() => _showVolumeSeek = false),
+      // onVerticalDragEnd: (details) => setState(() => _showVolumeSeek = false),
       behavior: HitTestBehavior.translucent,
       child: Stack(
         fit: StackFit.expand,
@@ -213,10 +213,10 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     final notifier = ref.read(playerStateProvider.notifier);
 
     return GestureDetector(
-      onTap: _toggleVisibility, // Ensures tapping empty space toggles UI
+      onTap: _toggleVisibility,
       child: Stack(
         children: [
-          Center(child: CenterControls(onInteraction: _startHideTimer)),
+          Center(child: CenterControls(onInteraction: _restartHideTimer)),
 
           // Top Bar
           AnimatedPositioned(
@@ -225,7 +225,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
             left: 0,
             right: 0,
             child: TopControls(
-              onInteraction: _startHideTimer,
+              onInteraction: _restartHideTimer,
               onEpisodesPressed: widget.onEpisodesPressed,
               onSettingsPressed: _openSettings,
               onQualityPressed: _openQualitySheet,
@@ -239,7 +239,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
             left: 0,
             right: 0,
             child: BottomControls(
-              onInteraction: _startHideTimer,
+              onInteraction: _restartHideTimer,
               sliderValue: _draggedSliderValue,
               onSliderChangeStart: (val) {
                 _hideTimer?.cancel();
@@ -250,7 +250,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
               onSliderChangeEnd: (val) {
                 notifier.seek(Duration(milliseconds: val.round()));
                 setState(() => _draggedSliderValue = null);
-                _startHideTimer();
+                _restartHideTimer();
               },
               onForwardPressed: () => notifier.forward(85),
               onLockPressed: _toggleLock,
@@ -274,7 +274,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
       backgroundColor: Theme.of(context).colorScheme.surface.withAlpha(240),
       isScrollControlled: true,
     );
-    if (mounted) _startHideTimer();
+    if (mounted) _restartHideTimer();
   }
 
   void _openSettings() => _showSheet(

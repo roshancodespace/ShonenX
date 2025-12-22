@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
+import 'package:shonenx/utils/formatter.dart';
 
 class BottomControls extends ConsumerWidget {
   final VoidCallback onInteraction;
@@ -99,7 +100,7 @@ class BottomControls extends ConsumerWidget {
                 .position.inMilliseconds
                 .clamp(0.0, p.duration.inMilliseconds)));
             return Text(
-              _formatDuration(Duration(milliseconds: position.round())),
+              formatDuration(Duration(milliseconds: position.round())),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: scheme.onSurface,
                     fontWeight: FontWeight.w500,
@@ -171,7 +172,7 @@ class BottomControls extends ConsumerWidget {
                 .duration.inMilliseconds
                 .clamp(0.0, p.duration.inMilliseconds)));
             return Text(
-              _formatDuration(Duration(milliseconds: duration.round())),
+              formatDuration(Duration(milliseconds: duration.round())),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: scheme.onSurface.withOpacity(0.7),
                     fontWeight: FontWeight.w500,
@@ -189,47 +190,50 @@ class BottomControls extends ConsumerWidget {
     dynamic episodeNotifier,
     ColorScheme scheme,
   ) {
-    final controls = <Widget>[];
+    // Declarative list construction using collection-if
+    final controls = <Widget?>[
+      if (watchEpisode(ref, (s) => s.dubSubSupport))
+        _buildInfoButton(
+          context,
+          text: watchEpisode(ref, (s) => s.selectedCategory) == 'sub'
+              ? 'SUB'
+              : 'DUB',
+          onPressed: _wrap(() => episodeNotifier.toggleDubSub()),
+          scheme: scheme,
+        ),
+      if (watchEpisode(ref, (s) => s.servers).length > 1)
+        _buildInfoButton(
+          context,
+          text: watchEpisode(ref, (s) => s.selectedServer) ?? 'Server 1',
+          onPressed: _wrap(onServerPressed),
+          scheme: scheme,
+        ),
+      if (watchEpisode(ref, (s) => s.sources.length) > 1) ...[
+        Builder(builder: (context) {
+          final sources = watchEpisode(ref, (s) => s.sources);
+          final index = watchEpisode(ref, (s) => s.selectedSourceIdx) ?? 0;
+          if (index >= 0 && index < sources.length) {
+            return _buildInfoButton(
+              context,
+              text: sources[index].quality ?? 'Default',
+              onPressed: _wrap(onSourcePressed),
+              scheme: scheme,
+            );
+          }
+          return const SizedBox.shrink();
+        }),
+      ],
+      if (watchEpisode(ref, (s) => s.subtitles).isNotEmpty)
+        _buildInfoButton(
+          context,
+          text: 'CC',
+          onPressed: _wrap(onSubtitlePressed),
+          scheme: scheme,
+        ),
+    ].whereType<Widget>().toList();
 
-    if (watchEpisode(ref, (s) => s.dubSubSupport)) {
-      final isSub = watchEpisode(ref, (s) => s.selectedCategory) == 'sub';
-      controls.add(_buildInfoButton(
-        context,
-        text: isSub ? 'SUB' : 'DUB',
-        onPressed: _wrap(() => episodeNotifier.toggleDubSub()),
-        scheme: scheme,
-      ));
-    }
-
-    if (watchEpisode(ref, (s) => s.servers).length > 1) {
-      final selectedServer =
-          watchEpisode(ref, (s) => s.selectedServer) ?? 'Server 1';
-      controls.add(_buildInfoButton(
-        context,
-        text: selectedServer,
-        onPressed: _wrap(onServerPressed),
-        scheme: scheme,
-      ));
-    }
-
-    if (watchEpisode(ref, (s) => s.sources.length) > 1) {
-      final ss = watchEpisode(ref, (s) => (s.selectedSourceIdx, s.sources));
-      controls.add(_buildInfoButton(
-        context,
-        text: ss.$2[ss.$1!].quality!,
-        onPressed: _wrap(onSourcePressed),
-        scheme: scheme,
-      ));
-    }
-
-    if (watchEpisode(ref, (s) => s.subtitles).isNotEmpty) {
-      controls.add(_buildInfoButton(
-        context,
-        text: 'CC',
-        onPressed: _wrap(onSubtitlePressed),
-        scheme: scheme,
-      ));
-    }
+    // Add spacing between items
+    if (controls.isEmpty) return [];
 
     final spacedControls = <Widget>[];
     for (int i = 0; i < controls.length; i++) {
@@ -310,16 +314,4 @@ class BottomControls extends ConsumerWidget {
       ),
     );
   }
-}
-
-/// Formats a Duration into hh:mm:ss or mm:ss.
-String _formatDuration(Duration duration) {
-  if (duration.isNegative) return '00:00';
-  final hours = duration.inHours;
-  final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-  final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-  if (hours > 0) {
-    return '$hours:$minutes:$seconds';
-  }
-  return '$minutes:$seconds';
 }

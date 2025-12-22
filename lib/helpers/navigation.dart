@@ -5,23 +5,24 @@ import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
-void navigateToDetail(BuildContext context, Media media, String tag) {
-  context.push('/details?tag=$tag', extra: media);
+void navigateToDetail(BuildContext context, Media media, String tag,
+    {bool forceFetch = false}) {
+  context.push('/details?tag=$tag&forceFetch=$forceFetch', extra: media);
 }
 
 /// Helper to construct the route and navigate to the watch screen.
-void navigateToWatch(
-    {required BuildContext context,
-    required WidgetRef ref,
-    required String? animeId,
-    required String mediaId,
-    required String animeName,
-    required String animeFormat,
-    required String animeCover,
-    required List<EpisodeDataModel> episodes,
-    required int currentEpisode,
-    int? startAt,
-    String? mMangaUrl}) {
+void navigateToWatch({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String? animeId,
+  required String mediaId,
+  required String animeName,
+  required String animeFormat,
+  required String animeCover,
+  required List<EpisodeDataModel> episodes,
+  required int currentEpisode,
+  int? startAt,
+}) {
   // final progress = ref
   //     .read(animeWatchProgressProvider.notifier)
   //     .getMostRecentEpisodeProgressByAnimeId(animeMedia.id!);
@@ -33,7 +34,7 @@ void navigateToWatch(
       '&animeName=$animeName'
       '&animeFormat=$animeFormat'
       '&animeCover=$animeCover'
-      '&episode=$currentEpisode&mMangaUrl=$mMangaUrl&startAt=$startAt';
+      '&episode=$currentEpisode&startAt=$startAt';
   AppLogger.d('Navigating to watch screen: $route');
   context.push(route, extra: episodes);
 }

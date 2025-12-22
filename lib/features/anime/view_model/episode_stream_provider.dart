@@ -43,8 +43,6 @@ class EpisodeDataState {
   final bool sourceLoading;
   final String? error;
 
-  final String? mMangaUrl;
-
   const EpisodeDataState({
     this.animeId,
     this.animeTitle,
@@ -65,7 +63,6 @@ class EpisodeDataState {
     this.episodesLoading = true,
     this.sourceLoading = false,
     this.error,
-    this.mMangaUrl,
   });
 
   EpisodeDataState copyWith({
@@ -88,7 +85,6 @@ class EpisodeDataState {
     bool? episodesLoading,
     bool? sourceLoading,
     String? error,
-    String? mMangaUrl,
   }) {
     return EpisodeDataState(
       animeId: animeId ?? this.animeId,
@@ -110,7 +106,6 @@ class EpisodeDataState {
       episodesLoading: episodesLoading ?? this.episodesLoading,
       sourceLoading: sourceLoading ?? this.sourceLoading,
       error: error ?? this.error,
-      mMangaUrl: mMangaUrl ?? this.mMangaUrl,
     );
   }
 }
@@ -124,7 +119,6 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   @override
   EpisodeDataState build() {
-    final link = ref.keepAlive();
     return const EpisodeDataState();
   }
 
@@ -139,7 +133,6 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     List<EpisodeDataModel> episodes = const [],
     int initialEpisodeIdx = 0,
     Duration startAt = Duration.zero,
-    String? mMangaUrl,
   }) async {
     AppLogger.i(
         'Fetching episodes for: $animeTitle (Force: $force, Initial Index: $initialEpisodeIdx)');
@@ -155,10 +148,18 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       error: null,
       animeId: animeId,
       animeTitle: animeTitle,
-      mMangaUrl: mMangaUrl,
     );
 
-    final fetchedEpisodes = await _fetchEpisodeList(animeId, mMangaUrl);
+    if (episodes.isNotEmpty) {
+      AppLogger.i('Using provided episode list (${episodes.length} episodes).');
+      state = state.copyWith(episodes: episodes, episodesLoading: false);
+      // Still attempt to sync or setup play
+      // syncEpisodesWithJikan(); // Optional: might be redundant if already synced in details
+      await _setupAndPlay(play, initialEpisodeIdx, startAt);
+      return episodes;
+    }
+
+    final fetchedEpisodes = await _fetchEpisodeList(animeId);
 
     if (fetchedEpisodes.isEmpty) {
       AppLogger.w('Episode list returned empty.');
@@ -313,17 +314,15 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   }
 
   /// Determines which source to use and fetches the episode list.
-  Future<List<EpisodeDataModel>> _fetchEpisodeList(
-      String? animeId, String? mMangaUrl) async {
+  Future<List<EpisodeDataModel>> _fetchEpisodeList(String? animeId) async {
     final useMangayomi = _experimentalFeatures.useMangayomiExtensions;
-    final url = state.mMangaUrl ?? mMangaUrl;
 
-    if (useMangayomi && url != null) {
+    if (useMangayomi) {
       AppLogger.d(
-          'Attempting to fetch episodes using Mangayomi extension for URL: $url');
+          'Attempting to fetch episodes using Mangayomi extension for URL: $animeId');
       return await _safeRun<List<EpisodeDataModel>>(
             () async {
-              final details = await _sourceNotifier.getDetails(url);
+              final details = await _sourceNotifier.getDetails(animeId!);
               final chapters = details?.chapters ?? [];
               AppLogger.d('Mangayomi returned ${chapters.length} chapters.');
 
@@ -508,6 +507,11 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       errorMessage: "Couldn't sync Jikan episode titles.",
       showSnackBar: false,
     );
+  }
+
+  /// Reset Entire State
+  void reset() {
+    state = const EpisodeDataState();
   }
 
   /// Fetches the streaming sources (video links, subtitles) for the current episode.

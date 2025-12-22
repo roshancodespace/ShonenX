@@ -44,7 +44,8 @@ class HomeSectionWidget extends ConsumerWidget {
               return AnimatedAnimeCard(
                 anime: media,
                 tag: tag,
-                onTap: () => navigateToDetail(context, media, tag),
+                onTap: () =>
+                    navigateToDetail(context, media, tag, forceFetch: true),
                 mode: mode,
               );
             },

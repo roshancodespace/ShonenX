@@ -9,7 +9,6 @@ import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/aniwatch/parser.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
 import 'package:html/parser.dart' show parse;
-import 'package:shonenx/core/utils/app_logger.dart';
 
 class AniwatchProvider extends AnimeProvider {
   AniwatchProvider({String? customApiUrl})
@@ -31,14 +30,6 @@ class AniwatchProvider extends AnimeProvider {
   Future<HomePage> getHome() async {
     debugPrint('Fetching home page from $baseUrl');
     return HomePage();
-    // final response =
-    //     await http.get(Uri.parse('$baseUrl/home'), headers: _getHeaders());
-    // final document = parse(response.body);
-    // return HomePage(
-    //   spotlight: parseSpotlight(document, baseUrl),
-    //   trending: parseTrending(document, baseUrl),
-    //   featured: parseFeatured(document, baseUrl),
-    // );
   }
 
   @override
@@ -59,11 +50,10 @@ class AniwatchProvider extends AnimeProvider {
 
   @override
   Future<BaseEpisodeModel> getEpisodes(String animeId) async {
-    AppLogger.w('Fetching episodes for animeId: $animeId');
     final response =
         await http.get(Uri.parse("$apiUrl/anime/$animeId/episodes"));
     final data = jsonDecode(response.body)['data'];
-    AppLogger.w(data.toString());
+
     return BaseEpisodeModel(
       episodes: (data['episodes'] as List<dynamic>)
           .map((episode) => EpisodeDataModel(
@@ -92,25 +82,22 @@ class AniwatchProvider extends AnimeProvider {
           '$apiUrl/episode/sources?animeEpisodeId=$episodeId&server=$serverName&category=${category ?? 'sub'}'),
     );
     final data = jsonDecode(response.body)['data'];
-    AppLogger.w(data.toString());
 
     return BaseSourcesModel(
       sources: (data['sources'] as List<dynamic>)
           .map((source) => Source(
                 url: source['url'],
                 isM3U8: source['isM3U8'],
-                quality: source[
-                    'quality'], // this might be null — handle it if needed
+                quality: source['quality'],
               ))
           .toList(),
-      tracks:
-          (data['tracks'] as List<dynamic>?) // ✅ was 'subtitles', now 'tracks'
-                  ?.map((track) => Subtitle(
-                        url: track['url'],
-                        lang: track['lang'],
-                      ))
-                  .toList() ??
-              [],
+      tracks: (data['tracks'] as List<dynamic>?)
+              ?.map((track) => Subtitle(
+                    url: track['url'],
+                    lang: track['lang'],
+                  ))
+              .toList() ??
+          [],
     );
   }
 
@@ -121,11 +108,10 @@ class AniwatchProvider extends AnimeProvider {
     final url = hianimeType != null
         ? '$apiUrl/search?q=$keyword&page=$page'
         : '$apiUrl/search?q=$keyword&page=$page';
-    AppLogger.d('Searching with URL: $url');
+
     final response = await http.get(Uri.parse(url), headers: _getHeaders());
     final data = jsonDecode(response.body)['data'];
-    AppLogger.w(data.toString());
-    AppLogger.d('Received search response for keyword: $keyword');
+
     return SearchPage(
       totalPages: data['totalPages'],
       currentPage: data['currentPage'],

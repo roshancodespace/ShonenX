@@ -88,11 +88,6 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
     _isFetching.value = true;
     try {
       final auth = ref.read(authProvider);
-      if (auth.activePlatform == null) {
-        _showSnackBar(
-            'Login Required', 'Please login first!', ContentType.failure);
-        return;
-      }
 
       final watchlistNotifier = ref.read(watchlistProvider.notifier);
       final animeRepo = ref.read(animeRepositoryProvider);
@@ -117,11 +112,6 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
 
   Future<void> _saveChanges() async {
     final auth = ref.read(authProvider);
-    if (auth.activePlatform == null) {
-      _showSnackBar(
-          'Login Required', 'Please login first!', ContentType.failure);
-      return;
-    }
 
     _isSaving.value = true;
     try {

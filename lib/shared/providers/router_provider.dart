@@ -23,6 +23,7 @@ import 'package:shonenx/features/settings/view/ui_settings_screen.dart';
 import 'package:shonenx/router/router.dart';
 import 'package:shonenx/features/onboarding/view/onboarding_screen.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:shonenx/features/home/view/watch_history_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return _router;
@@ -63,6 +64,7 @@ final _router = GoRouter(
       builder: (context, state) => AnimeDetailsScreen(
         anime: state.extra as Media,
         tag: state.uri.queryParameters['tag'] ?? '',
+        forceFetch: state.uri.queryParameters['forceFetch'] == 'true',
       ),
     ),
     GoRoute(
@@ -79,7 +81,6 @@ final _router = GoRouter(
               int.tryParse(state.uri.queryParameters['startAt'] ?? '0') ?? 0,
         ),
         episodes: state.extra as List<EpisodeDataModel>,
-        mMangaUrl: state.uri.queryParameters['mMangaUrl'],
       ),
     ),
     GoRoute(
@@ -161,7 +162,11 @@ GoRoute _buildSettingsRoute() {
       GoRoute(
         path: 'experimental',
         builder: (context, state) => ExperimentalScreen(),
-      )
+      ),
+      GoRoute(
+        path: 'watch-history',
+        builder: (context, state) => const WatchHistoryScreen(),
+      ),
     ],
   );
 }

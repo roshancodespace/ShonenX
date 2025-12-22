@@ -5,6 +5,7 @@ import 'package:iconsax/iconsax.dart';
 
 import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
+import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 import 'package:shonenx/features/details/view/widgets/episodes_tab.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
@@ -13,8 +14,14 @@ import 'widgets/widgets.dart';
 class AnimeDetailsScreen extends ConsumerStatefulWidget {
   final Media anime;
   final String tag;
+  final bool forceFetch;
 
-  const AnimeDetailsScreen({super.key, required this.anime, required this.tag});
+  const AnimeDetailsScreen({
+    super.key,
+    required this.anime,
+    required this.tag,
+    this.forceFetch = false,
+  });
 
   @override
   ConsumerState<AnimeDetailsScreen> createState() => _AnimeDetailsScreenState();
@@ -23,13 +30,40 @@ class AnimeDetailsScreen extends ConsumerStatefulWidget {
 class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  late Media _anime;
   bool _isWatchLoading = false;
+  bool _isLoadingDetails = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _anime = widget.anime;
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+    if (widget.forceFetch) {
+      _fetchDetails();
+    }
+  }
+
+  Future<void> _fetchDetails() async {
+    setState(() => _isLoadingDetails = true);
+    try {
+      final repo = ref.read(animeRepositoryProvider);
+      final fullDetails =
+          await repo.getAnimeDetails(widget.anime.id?.toInt() ?? 0);
+      if (fullDetails != null) {
+        if (mounted) {
+          setState(() => _anime = fullDetails);
+        }
+      }
+    } catch (e) {
+      // Handle error or just keep showing partial data
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingDetails = false);
+      }
+    }
   }
 
   @override
@@ -47,12 +81,17 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => EditListBottomSheet(anime: widget.anime),
+      builder: (context) => EditListBottomSheet(anime: _anime),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    // Show loading overlay or indicator if fetching detailed info?
+    // User requested "immediately tell the screen... and fetch".
+    // We can show partial data while fetching, or a loader.
+    // Showing partial data is better UX. We can show a small linear progress indicator if loading.
+
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final useMangayomi = ref.watch(
@@ -64,38 +103,40 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             DetailsHeader(
-              anime: widget.anime,
+              anime: _anime,
               tag: widget.tag,
               onEditPressed: _showEditListBottomSheet,
             ),
           ];
         },
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            // About Tab
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(0, 16, 0, 100),
-              child: DetailsContent(anime: widget.anime),
-            ),
-            // Episodes Tab
-            EpisodesTab(
-              mediaId: widget.anime.id.toString(),
-              mediaTitle: widget.anime.title!,
-              mediaFormat: widget.anime.format!,
-              mediaCover: widget.anime.coverImage?.large ??
-                  widget.anime.coverImage?.medium ??
-                  '',
-            ),
-            // Characters Tab
-            const SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 100),
-              child: Center(
-                child: Text('Characters Tab Content'),
+        body: _isLoadingDetails
+            ? const Center(child: CircularProgressIndicator())
+            : TabBarView(
+                controller: _tabController,
+                children: [
+                  // About Tab
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(0, 16, 0, 100),
+                    child: DetailsContent(anime: _anime),
+                  ),
+                  // Episodes Tab
+                  EpisodesTab(
+                    mediaId: widget.anime.id.toString(),
+                    mediaTitle: widget.anime.title!,
+                    mediaFormat: widget.anime.format!,
+                    mediaCover: widget.anime.coverImage?.large ??
+                        widget.anime.coverImage?.medium ??
+                        '',
+                  ),
+                  // Characters Tab
+                  const SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 100),
+                    child: Center(
+                      child: Text('Characters Tab Content'),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
       // Bottom Tab Bar - cleaner design
       bottomNavigationBar: Material(
@@ -127,7 +168,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
                 // Watch Now Button (extended)
                 Consumer(builder: (context, ref, child) {
                   final repo = ref.watch(watchProgressRepositoryProvider);
-                  final progress = repo.getProgress(widget.anime.id.toString());
+                  final progress = repo.getProgress(_anime.id.toString());
                   return FloatingActionButton.extended(
                     heroTag: 'watch_btn',
                     onPressed: _isWatchLoading
@@ -137,7 +178,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
                             await providerAnimeMatchSearch(
                               context: context,
                               ref: ref,
-                              animeMedia: widget.anime,
+                              animeMedia: _anime,
                             );
                             if (mounted) {
                               setState(() => _isWatchLoading = false);

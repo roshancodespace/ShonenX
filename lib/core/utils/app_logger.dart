@@ -16,6 +16,15 @@ class AppLogger {
     ),
   );
 
+  // ANSI Colors for custom formatting
+  static const String _reset = '\x1B[0m';
+  static const String _bold = '\x1B[1m';
+  static const String _red = '\x1B[31m';
+  static const String _green = '\x1B[32m';
+  static const String _yellow = '\x1B[33m';
+  static const String _cyan = '\x1B[36m';
+  static const String _blue = '\x1B[34m';
+
   /// Logs a debug message
   /// [message] The message to be logged
   static void d(dynamic message) {
@@ -47,4 +56,41 @@ class AppLogger {
   static void v(dynamic message) {
     if (kDebugMode) _logger.t(message);
   }
+
+  // --- CLI-Style Formatting Methods ---
+
+  /// Prints a section header
+  static void section(String title) {
+    // Using simple print to preserve exact ANSI formatting without Logger interference
+    if (kDebugMode) debugPrint('\n$_bold$_cyan=== $title ===$_reset');
+  }
+
+  /// Prints a key-value pair info
+  static void infoPair(String key, dynamic value) {
+    if (kDebugMode) debugPrint('$_blue$key:$_reset $value');
+  }
+
+  /// Prints a success message
+  static void success(String message) {
+    if (kDebugMode) debugPrint('$_green✓ $message$_reset');
+  }
+
+  /// Prints a failure/error message (simple)
+  static void fail(String message) {
+    if (kDebugMode) debugPrint('$_red✗ $message$_reset');
+  }
+
+  /// Prints a raw message with optional color
+  static void raw(String message) {
+    if (kDebugMode) debugPrint(message);
+  }
+
+  // Expose colors for external usage if needed
+  static String get bold => _bold;
+  static String get reset => _reset;
+  static String get green => _green;
+  static String get blue => _blue;
+  static String get red => _red;
+  static String get yellow => _yellow;
+  static String get cyan => _cyan;
 }

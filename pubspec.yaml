@@ -82,6 +82,7 @@ dependencies:
   dio: ^5.9.0
   install_plugin: ^2.1.0
   ffmpeg_kit_flutter_new_min: ^3.1.0
+  screenshot: ^3.0.0
 
 dev_dependencies:
   build_runner: ^2.4.13

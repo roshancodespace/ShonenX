@@ -49,7 +49,8 @@ class SpotlightSection extends ConsumerWidget {
                     child: AnimeSpotlightCard(
                       onTap: (media) => anime?.id != null
                           ? navigateToDetail(
-                              context, media, anime?.id.toString() ?? '')
+                              context, media, anime?.id.toString() ?? '',
+                              forceFetch: true)
                           : null,
                       anime: anime,
                       mode: SpotlightCardMode.values

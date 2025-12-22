@@ -6,6 +6,7 @@ abstract class AnimeProvider {
   final String providerName;
   final String baseUrl;
   final String apiUrl;
+  Map<String, String> get headers => {};
 
   AnimeProvider({required this.baseUrl, required this.providerName, required this.apiUrl});
 

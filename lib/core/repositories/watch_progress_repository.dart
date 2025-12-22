@@ -10,6 +10,12 @@ final watchProgressRepositoryProvider =
   return WatchProgressRepository();
 });
 
+final watchProgressStreamProvider =
+    StreamProvider.autoDispose<List<AnimeWatchProgressEntry>>((ref) {
+  final repository = ref.watch(watchProgressRepositoryProvider);
+  return repository.watchAllProgress();
+});
+
 class WatchProgressRepository {
   final Box<AnimeWatchProgressEntry> _box;
 
@@ -71,7 +77,44 @@ class WatchProgressRepository {
     AppLogger.d('Deleted progress for anime: $animeId');
   }
 
+  Future<void> deleteEpisodeProgress(String animeId, int episodeNumber) async {
+    final entry = _box.get(animeId);
+    if (entry != null) {
+      final updatedEpisodes =
+          Map<int, EpisodeProgress>.from(entry.episodesProgress);
+      updatedEpisodes.remove(episodeNumber);
+
+      if (updatedEpisodes.isEmpty) {
+        await deleteProgress(animeId);
+      } else {
+        final newCurrentEpisode =
+            updatedEpisodes.keys.reduce((a, b) => a > b ? a : b);
+
+        final updatedEntry = entry.copyWith(
+          episodesProgress: updatedEpisodes,
+          lastUpdated: DateTime.now(),
+          currentEpisode: newCurrentEpisode,
+        );
+        await saveProgress(updatedEntry);
+      }
+      AppLogger.d(
+          'Deleted episode $episodeNumber progress for anime: $animeId');
+    }
+  }
+
+  Future<void> deleteMultipleProgress(List<String> animeIds) async {
+    await _box.deleteAll(animeIds);
+    AppLogger.d('Deleted progress for ${animeIds.length} animes');
+  }
+
   List<AnimeWatchProgressEntry> getAllProgress() {
     return _box.values.toList();
+  }
+
+  Stream<List<AnimeWatchProgressEntry>> watchAllProgress() async* {
+    yield getAllProgress();
+    await for (final _ in _box.watch()) {
+      yield getAllProgress();
+    }
   }
 }

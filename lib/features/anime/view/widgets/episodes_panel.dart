@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/utils/app_logger.dart';
+
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 
 class EpisodesPanel extends ConsumerStatefulWidget {
@@ -13,7 +13,6 @@ class EpisodesPanel extends ConsumerStatefulWidget {
 }
 
 class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
-  // Local UI state for the panel
   int _rangeSize = 50;
   int _currentStart = 1;
   final ScrollController _scrollController = ScrollController();
@@ -24,19 +23,16 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
     super.dispose();
   }
 
-  // Helper to generate the list of ranges for the dropdown
   List<Map<String, int>> _generateRanges(int totalEpisodes) {
     if (totalEpisodes == 0) return [];
     final ranges = <Map<String, int>>[];
     for (int start = 1; start <= totalEpisodes; start += _rangeSize) {
       final end = (start + _rangeSize - 1).clamp(0, totalEpisodes);
       ranges.add({'start': start, 'end': end});
-      if (end >= totalEpisodes) break;
     }
     return ranges;
   }
 
-  // A redesigned, theme-aware dialog for changing the range size
   void _showRangeSizeDialog(
       BuildContext context, EpisodeDataNotifier episodeNotifier) {
     int? selectedSize = _rangeSize;
@@ -44,7 +40,6 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
       context: context,
       builder: (context) {
         return StatefulBuilder(
-          // Use StatefulBuilder for temporary state inside the dialog
           builder: (context, setDialogState) {
             return AlertDialog(
               title: const Text("Episode Range Size"),
@@ -62,9 +57,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                         selected: selectedSize == size,
                         onSelected: (isSelected) {
                           if (isSelected) {
-                            setDialogState(() {
-                              selectedSize = size;
-                            });
+                            setDialogState(() => selectedSize = size);
                           }
                         },
                       );
@@ -82,7 +75,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                     if (selectedSize != null) {
                       setState(() {
                         _rangeSize = selectedSize!;
-                        _currentStart = 1; // Reset to the first range
+                        _currentStart = 1;
                       });
                       episodeNotifier.syncEpisodesWithJikan();
                     }
@@ -101,91 +94,41 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final episodeData = ref.watch(episodeDataProvider
-        .select((ed) => (ed.episodes, ed.selectedEpisodeIdx)));
+    final episodes = ref.watch(episodeDataProvider.select((ed) => ed.episodes));
+    final selectedIdx =
+        ref.watch(episodeDataProvider.select((ed) => ed.selectedEpisodeIdx));
     final episodeNotifier = ref.read(episodeDataProvider.notifier);
 
-    final totalEpisodes = episodeData.$1.length;
+    final totalEpisodes = episodes.length;
     final ranges = _generateRanges(totalEpisodes);
 
-    // Filter episodes based on the selected range
-    final filteredEpisodes = episodeData.$1.where((episode) {
-      final match = RegExp(r'\d+').firstMatch(episode.number.toString());
+    final filteredEpisodes = episodes.where((episode) {
+      final epNumStr = episode.number.toString();
+      final match = RegExp(r'\d+').firstMatch(epNumStr);
       final epNumber = match != null ? int.tryParse(match.group(0)!) : null;
 
-      return epNumber != null &&
-          epNumber >= _currentStart &&
+      if (epNumber == null) return false;
+      return epNumber >= _currentStart &&
           epNumber <= (_currentStart + _rangeSize - 1);
     }).toList();
 
     return Material(
+      color: Colors.transparent,
       child: GestureDetector(
         onHorizontalDragEnd: (details) {
-          // Check if the drag was a significant swipe to the left
           if (details.primaryVelocity != null &&
               details.primaryVelocity! > 200) {
             widget.panelAnimation.reverse();
           }
         },
-        child: Padding(
+        child: Container(
+          color: theme.colorScheme.surface,
           padding: const EdgeInsets.all(8.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- REDESIGNED HEADER ---
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: Row(
-                  children: [
-                    Text("Episodes", style: theme.textTheme.titleMedium),
-                    const Spacer(),
-                    // A standard DropdownButton for a better, more consistent UX
-                    if (ranges.isNotEmpty)
-                      DropdownButton<int>(
-                        value: _currentStart,
-                        underline: const SizedBox
-                            .shrink(), // Hides the default underline
-                        items: ranges.map((range) {
-                          return DropdownMenuItem<int>(
-                            value: range['start'],
-                            child: Text("${range['start']}-${range['end']}"),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              _currentStart = value;
-                              // Scroll to the top of the list when changing range
-                              if (_scrollController.hasClients) {
-                                _scrollController.jumpTo(0);
-                              }
-
-                              final pageForJikan = (value - 1) / 100;
-                              if (pageForJikan == pageForJikan.toInt()) {
-                                AppLogger.w(
-                                    "It's an integer: ${pageForJikan.toInt()}");
-                                // episodeNotifier.syncEpisodesWithJikan(
-                              }
-                            });
-                          }
-                        },
-                      ),
-                    IconButton(
-                      icon: const Icon(Iconsax.refresh, size: 20),
-                      onPressed: () => episodeNotifier.refreshEpisodes(),
-                      tooltip: "Refresh episodes",
-                    ),
-                    IconButton(
-                      icon: const Icon(Iconsax.setting_2, size: 20),
-                      onPressed: () =>
-                          _showRangeSizeDialog(context, episodeNotifier),
-                      tooltip: "Change episode range size",
-                    ),
-                  ],
-                ),
-              ),
+              _buildHeader(context, theme, ranges, episodeNotifier),
               const SizedBox(height: 8),
-              // --- REDESIGNED EPISODE LIST ---
               Expanded(
                 child: ListView.builder(
                   controller: _scrollController,
@@ -193,9 +136,8 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                   itemCount: filteredEpisodes.length,
                   itemBuilder: (context, index) {
                     final episode = filteredEpisodes[index];
-                    // Get the actual index from the original, unfiltered list
-                    final actualIndex = episodeData.$1.indexOf(episode);
-                    final isSelected = episodeData.$2 == actualIndex;
+                    final actualIndex = episodes.indexOf(episode);
+                    final isSelected = selectedIdx == actualIndex;
 
                     return EpisodeTile(
                       isFiller: episode.isFiller == true,
@@ -211,6 +153,50 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, ThemeData theme,
+      List<Map<String, int>> ranges, EpisodeDataNotifier episodeNotifier) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: Row(
+        children: [
+          Text("Episodes", style: theme.textTheme.titleMedium),
+          const Spacer(),
+          if (ranges.isNotEmpty)
+            DropdownButton<int>(
+              value: _currentStart,
+              underline: const SizedBox.shrink(),
+              items: ranges.map((range) {
+                return DropdownMenuItem<int>(
+                  value: range['start'],
+                  child: Text("${range['start']}-${range['end']}"),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _currentStart = value;
+                    if (_scrollController.hasClients) {
+                      _scrollController.jumpTo(0);
+                    }
+                  });
+                }
+              },
+            ),
+          IconButton(
+            icon: const Icon(Iconsax.refresh, size: 20),
+            onPressed: () => episodeNotifier.refreshEpisodes(),
+            tooltip: "Refresh episodes",
+          ),
+          IconButton(
+            icon: const Icon(Iconsax.setting_2, size: 20),
+            onPressed: () => _showRangeSizeDialog(context, episodeNotifier),
+            tooltip: "Change episode range size",
+          ),
+        ],
       ),
     );
   }

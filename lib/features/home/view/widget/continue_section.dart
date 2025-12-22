@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/anilist/media.dart' as m;
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
@@ -16,7 +18,17 @@ class ContinueSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Continue Watching', style: theme.textTheme.titleLarge),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Continue Watching', style: theme.textTheme.titleLarge),
+            IconButton(
+              onPressed: () => context.push('/settings/watch-history'),
+              icon: const Icon(Iconsax.arrow_right_1),
+              tooltip: 'View All History',
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
         SizedBox(
           height: 200,
@@ -40,7 +52,10 @@ class ContinueSection extends ConsumerWidget {
               return InkWell(
                 onTap: () {
                   providerAnimeMatchSearch(
-                      context: context, ref: ref, animeMedia: media, startAt: entry.currentEpisode);
+                      context: context,
+                      ref: ref,
+                      animeMedia: media,
+                      startAt: entry.currentEpisode);
                 },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

@@ -54,9 +54,6 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
   List<String> _rangeOptions = ['All'];
   bool _isSortedDescending = false;
 
-  // In a real app, you'd get this from a database or state provider.
-  final Set<int> _watchedEpisodes = {};
-
   @override
   void initState() {
     super.initState();
@@ -68,7 +65,8 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
 
     AppLogger.d("Fetching episodes for ${widget.mediaTitle}");
 
-    final useMangayomi = ref.read(experimentalProvider).useMangayomiExtensions;
+    final useMangayomi =
+        ref.read(experimentalProvider.select((s) => s.useMangayomiExtensions));
 
     setState(() {
       _loading = true;
@@ -151,7 +149,6 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                 animeId: animeIdForSource!,
                 play: false,
                 force: false,
-                mMangaUrl: useMangayomi ? animeIdForSource! : null,
               );
 
       if (!mounted) return;
@@ -194,9 +191,114 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
       _bestMatchName = null;
       _selectedRange = 'All';
       _isSortedDescending = false;
-      _watchedEpisodes.clear();
     });
     await _fetchEpisodes(ref);
+  }
+
+  void _showSourceSelectionDialog(BuildContext context, WidgetRef ref) {
+    final useMangayomi = ref.read(experimentalProvider).useMangayomiExtensions;
+    final theme = Theme.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.8,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    'Select Source',
+                    style: theme.textTheme.titleLarge,
+                  ),
+                ),
+                Expanded(
+                  child: useMangayomi
+                      ? _buildMangayomiSourceList(ref, scrollController)
+                      : _buildLegacySourceList(ref, scrollController),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMangayomiSourceList(
+      WidgetRef ref, ScrollController scrollController) {
+    final sourceState = ref.watch(sourceProvider);
+    final sources = sourceState.installedAnimeExtensions;
+    final activeId = sourceState.activeAnimeSource?.id;
+
+    if (sources.isEmpty) {
+      return const Center(child: Text('No Mangayomi extensions installed.'));
+    }
+
+    return ListView.builder(
+      controller: scrollController,
+      itemCount: sources.length,
+      itemBuilder: (context, index) {
+        final source = sources[index];
+        final isSelected = source.id == activeId;
+        return ListTile(
+          title: Text(source.name ?? 'Unknown'),
+          subtitle: Text(source.lang ?? ''),
+          trailing: isSelected
+              ? Icon(Icons.check_circle,
+                  color: Theme.of(context).colorScheme.primary)
+              : null,
+          onTap: () {
+            ref.read(sourceProvider.notifier).setActiveSource(source);
+            Navigator.pop(context);
+            _refresh(ref);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildLegacySourceList(
+      WidgetRef ref, ScrollController scrollController) {
+    final registry = ref.read(animeSourceRegistryProvider);
+    final selectedAnimeSource = ref.watch(selectedAnimeProvider);
+    final sources = registry.keys;
+
+    if (sources.isEmpty) {
+      return const Center(child: Text('No legacy sources available.'));
+    }
+
+    return ListView.builder(
+      controller: scrollController,
+      itemCount: sources.length,
+      itemBuilder: (context, index) {
+        final source = sources[index];
+        final isSelected =
+            source.toLowerCase() == selectedAnimeSource?.providerName;
+        return ListTile(
+          title: Text(source),
+          trailing: isSelected
+              ? Icon(Icons.check_circle,
+                  color: Theme.of(context).colorScheme.primary)
+              : null,
+          onTap: () {
+            ref.read(selectedProviderKeyProvider.notifier).select(source);
+            Navigator.pop(context);
+            _refresh(ref);
+          },
+        );
+      },
+    );
   }
 
   Future<void> _handleWrongMatch(BuildContext context, WidgetRef ref) async {
@@ -215,15 +317,9 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
           _bestMatchName = null;
           _selectedRange = 'All';
           _isSortedDescending = false;
-          _watchedEpisodes.clear();
         });
       },
-      afterSearchCallback: () {
-        setState(() {
-          _loading = false;
-          _watchedEpisodes.clear();
-        });
-      },
+      afterSearchCallback: () => setState(() => _loading = false),
       context: context,
       ref: ref,
       animeMedia: media.Media(title: widget.mediaTitle),
@@ -352,22 +448,24 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                                     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
                               };
 
-                    final qualities = await extractQualities(
-                        downloadSources!.sources.first.url!, headers);
+                    final qualities = ((downloadSources!.sources.first.url ??
+                                '')
+                            .endsWith('.m3u8'))
+                        ? await extractQualities(
+                            downloadSources.sources.first.url!, headers)
+                        : downloadSources.sources
+                            .map((s) => {'url': s.url, 'quality': s.quality})
+                            .toList();
                     AppLogger.w(qualities.last['url']);
 
-                    // 4. CRITICAL: Check if the PARENT context is still valid
-                    // before trying to show a dialog.
                     if (!context.mounted) return;
 
                     await showDialog(
-                      context:
-                          context, // <--- FIX: Use parent 'context', not 'sheetContext'
+                      context: context,
                       builder: (dialogContext) => AlertDialog(
                         title: const Text('Download'),
                         content: Column(
-                          mainAxisSize: MainAxisSize
-                              .min, // Added min size to avoid layout issues
+                          mainAxisSize: MainAxisSize.min,
                           children: qualities
                               .map((quality) => InkWell(
                                   onTap: () {
@@ -409,22 +507,22 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                     );
                   },
                 ),
-                ListTile(
-                  leading: const Icon(Icons.playlist_add_rounded),
-                  title: const Text('Add to Playlist'),
-                  onTap: () {
-                    AppLogger.i(
-                        'Tapped Add to Playlist for Ep: ${episode.number}');
-                    Navigator.pop(sheetContext); // Pop first
+                // ListTile(
+                //   leading: const Icon(Icons.playlist_add_rounded),
+                //   title: const Text('Add to Playlist'),
+                //   onTap: () {
+                //     AppLogger.i(
+                //         'Tapped Add to Playlist for Ep: ${episode.number}');
+                //     Navigator.pop(sheetContext); // Pop first
 
-                    // Use parent context for snackbar
-                    if (!context.mounted) return;
-                    showAppSnackBar('Add to Playlist',
-                        'Functionality to add to playlist is not yet implemented.',
-                        type: ContentType.help);
-                    // TODO: Implement playlist logic
-                  },
-                ),
+                //     // Use parent context for snackbar
+                //     if (!context.mounted) return;
+                //     showAppSnackBar('Add to Playlist',
+                //         'Functionality to add to playlist is not yet implemented.',
+                //         type: ContentType.help);
+                //     // TODO: Implement playlist logic
+                //   },
+                // ),
                 const SizedBox(height: 8),
               ],
             ),
@@ -502,6 +600,12 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                           ),
                         ],
                       ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.swap_horiz_rounded,
+                          color: theme.hintColor),
+                      tooltip: 'Change Source',
+                      onPressed: () => _showSourceSelectionDialog(context, ref),
                     ),
                     IconButton(
                       icon: Icon(Icons.help_outline_rounded,
@@ -635,7 +739,6 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                             animeCover: widget.mediaCover,
                             ref: ref,
                             context: context,
-                            mMangaUrl: animeIdForSource,
                             episodes: _episodes,
                             currentEpisode: ep.number ?? 1,
                           ),

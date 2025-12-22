@@ -5,7 +5,7 @@ import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
-import 'package:shonenx/core/utils/app_logger.dart';
+
 import 'package:http/http.dart' as http;
 
 class AnimekaiProvider extends AnimeProvider {
@@ -29,10 +29,9 @@ class AnimekaiProvider extends AnimeProvider {
 
   @override
   Future<BaseEpisodeModel> getEpisodes(String animeId) async {
-    AppLogger.d('Fetching episodes for animeId: $animeId');
     final response = await http.get(Uri.parse('$apiUrl/info?id=$animeId'));
     final data = jsonDecode(response.body);
-    AppLogger.d('Received episodes data for animeId: $animeId');
+
     return BaseEpisodeModel(
         totalEpisodes: data['totalEpisodes'],
         episodes: (data['episodes'] as List<dynamic>)
@@ -57,10 +56,9 @@ class AnimekaiProvider extends AnimeProvider {
 
   @override
   Future<SearchPage> getSearch(String keyword, String? type, int page) async {
-    AppLogger.d('Searching for keyword: $keyword, type: $type, page: $page');
     final response = await http.get(Uri.parse('$apiUrl/$keyword'));
     final data = jsonDecode(response.body);
-    AppLogger.d('Search results for $keyword: ${data['results'].length} items');
+
     return SearchPage(
         totalPages: data['totalPages'],
         currentPage: data['cucurrentPage'],
@@ -91,7 +89,7 @@ class AnimekaiProvider extends AnimeProvider {
     String? category,
   ) async {
     final dub = category == 'dub' ? 1 : 0;
-    AppLogger.d('Fetching sources for animeId: $animeId, episodeId: $episodeId, dub: $dub');
+
     try {
       final response =
           await http.get(Uri.parse('$apiUrl/watch/$episodeId?dub=$dub'));
@@ -103,7 +101,7 @@ class AnimekaiProvider extends AnimeProvider {
       if (!data.containsKey('sources')) {
         throw Exception('API response missing "sources" key');
       }
-      AppLogger.d('Received sources for episodeId: $episodeId');
+
       return BaseSourcesModel(
         sources: (data['sources'] as List<dynamic>)
             .map((source) => Source(
@@ -112,15 +110,14 @@ class AnimekaiProvider extends AnimeProvider {
                 ))
             .toList(),
       );
-    } catch (e, stackTrace) {
-      AppLogger.e('Error fetching sources for episodeId: $episodeId', e, stackTrace);
+    } catch (e) {
       rethrow; // Propagate the error to the caller (e.g., WatchScreen)
     }
   }
 
   @override
   Future<List<String>> getSupportedServers() {
-    return Future(() =>  ["vidcloud", "streamsb", "vidstreaming", "streamtape"]);
+    return Future(() => ["vidcloud", "streamsb", "vidstreaming", "streamtape"]);
   }
 
   @override

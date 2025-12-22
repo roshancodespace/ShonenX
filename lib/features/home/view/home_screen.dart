@@ -39,10 +39,16 @@ class HomeScreen extends ConsumerWidget {
           SpotlightSection(homePage: home),
           const SizedBox(height: 16),
           Consumer(builder: (context, ref, child) {
-            final allProgress =
-                ref.watch(watchProgressRepositoryProvider).getAllProgress();
-            if (allProgress.isEmpty) return const SizedBox.shrink();
-            return ContinueSection(allProgress: allProgress);
+            final progressAsync = ref.watch(watchProgressStreamProvider);
+
+            return progressAsync.when(
+              data: (allProgress) {
+                if (allProgress.isEmpty) return const SizedBox.shrink();
+                return ContinueSection(allProgress: allProgress);
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (error, stack) => const SizedBox.shrink(),
+            );
           }),
           if (home.trendingAnime.isNotEmpty)
             HomeSectionWidget(
@@ -53,6 +59,15 @@ class HomeScreen extends ConsumerWidget {
           if (home.mostFavoriteAnime.isNotEmpty)
             HomeSectionWidget(
                 title: 'Most Favorite', mediaList: home.mostFavoriteAnime),
+          if (home.mostWatchedAnime.isNotEmpty)
+            HomeSectionWidget(
+                title: 'Most Watched', mediaList: home.mostWatchedAnime),
+          if (home.topRatedAnime.isNotEmpty)
+            HomeSectionWidget(
+                title: 'Top Rated', mediaList: home.topRatedAnime),
+          if (home.recentlyUpdated.isNotEmpty)
+            HomeSectionWidget(
+                title: 'Recently Updated', mediaList: home.recentlyUpdated),
           const SizedBox(height: 80),
         ],
       ),

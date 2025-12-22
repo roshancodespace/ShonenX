@@ -6,9 +6,9 @@ import 'package:shonenx/core/utils/app_logger.dart';
 
 // --- CONFIGURATION ---
 // ignore: prefer_const_declarations
-final String targetProvider = 'hianime'; // Options: 'gojo', 'aniwatch', 'hianime'
+final String targetProvider = 'gojo';
 // ignore: prefer_const_declarations
-final String searchQuery = 'Naruto';
+final String searchQuery = 'one piece';
 // ---------------------
 
 void main() {

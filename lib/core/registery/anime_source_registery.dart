@@ -5,6 +5,7 @@ import 'package:shonenx/core/sources/anime/aniwatch/aniwatch.dart';
 import 'package:shonenx/core/sources/anime/aniwatch/hianime.dart';
 import 'package:shonenx/core/sources/anime/aniwatch/kaido.dart';
 import 'package:shonenx/core/sources/anime/gojo.dart';
+import 'package:shonenx/core/sources/anime/animeonsen.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 enum RegistryStatus { uninitialized, initializing, initialized, error }
@@ -34,6 +35,7 @@ class AnimeSourceRegistry {
       register('animekai', AnimekaiProvider());
       register('animepahe', AnimePaheProvider());
       register('gojo', GojoProvider());
+      register('animeonsen', AnimeOnsenProvider());
       setStatus(RegistryStatus.initialized);
       return this;
     } catch (e, stackTrace) {

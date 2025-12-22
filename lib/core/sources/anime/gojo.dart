@@ -171,6 +171,7 @@ class GojoProvider implements AnimeProvider {
     }
 
     return BaseSourcesModel(
+      headers: headers,
       sources: sources,
       tracks: tracks,
       intro: Intro(start: 0, end: 0),

@@ -3,7 +3,7 @@ name: Notify Release
 on:
   workflow_run:
     workflows:
-      - "Android Release"
+      - "Release Build"
     types:
       - completed
   workflow_dispatch:
@@ -27,7 +27,7 @@ jobs:
             ALL_SUCCESS=true
           fi
 
-          REQUIRED_JOBS=("build-android")
+          REQUIRED_JOBS=("build-android" "build-linux")
 
           if [ -n "$JOBS" ] && [ "$JOBS" != "null" ]; then
             for JOB in "${REQUIRED_JOBS[@]}"; do
@@ -143,6 +143,8 @@ jobs:
               echo "apk_x86_64_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
             elif [[ "$FILE_NAME" == *".exe" ]] || [[ "$FILE_NAME" == *".msi" ]]; then
               echo "setup_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
+            elif [[ "$FILE_NAME" == *"Linux.zip" ]]; then
+              echo "linux_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
             fi
           done
 
@@ -226,8 +228,13 @@ jobs:
             MESSAGE="${MESSAGE}🔹 $setup_message | **Windows Setup**"$'\n'
           fi
 
+          # Add Linux bundle if available
+          if [ -n "$linux_message" ]; then
+            MESSAGE="${MESSAGE}🔹 $linux_message | **Linux (Zip)**"$'\n'
+          fi
+
           # Only send if we have at least one asset
-          if [ -n "$apk_arm64_message" ] || [ -n "$apk_armeabi_message" ] || [ -n "$apk_x86_64_message" ] || [ -n "$setup_message" ]; then
+          if [ -n "$apk_arm64_message" ] || [ -n "$apk_armeabi_message" ] || [ -n "$apk_x86_64_message" ] || [ -n "$setup_message" ] || [ -n "$linux_message" ]; then
             PAYLOAD=$(jq -n --arg content "$MESSAGE" '{ content: $content }')
             curl -X POST "$DISCORD_WEBHOOK_URL" \
               -H "Content-Type: application/json" \

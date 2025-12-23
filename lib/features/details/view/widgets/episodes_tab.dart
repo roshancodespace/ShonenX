@@ -425,14 +425,18 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                                     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
                               };
 
-                    final qualities = ((downloadSources!.sources.first.url ??
-                                '')
-                            .endsWith('.m3u8'))
-                        ? await extractQualities(
-                            downloadSources.sources.first.url!, headers)
-                        : downloadSources.sources
-                            .map((s) => {'url': s.url, 'quality': s.quality})
-                            .toList();
+                    final qualities =
+                        ((downloadSources!.sources.first.url ?? '')
+                                .endsWith('.m3u8'))
+                            ? await extractQualities(
+                                downloadSources.sources.first.url!, headers)
+                            : downloadSources.sources
+                                .map((s) => {
+                                      'url': s.url,
+                                      'quality': s.quality,
+                                      'headers': s.headers
+                                    })
+                                .toList();
                     AppLogger.w(qualities.last['url']);
 
                     if (!context.mounted) return;
@@ -447,20 +451,25 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                               .map((quality) => InkWell(
                                   onTap: () {
                                     final downloadItem = DownloadItem(
-                                        downloadUrl: quality['url']!,
+                                        downloadUrl:
+                                            quality['url'] as String? ?? '',
                                         episodeTitle: episode.title ??
                                             'Episode ${episode.number}',
                                         thumbnail: episode.thumbnail ?? '',
                                         state: DownloadStatus.queued,
                                         progress: 0,
-                                        quality: quality['quality']!,
+                                        quality:
+                                            quality['quality'] as String? ??
+                                                'Unknown',
                                         episodeNumber: episode.number!,
                                         animeTitle:
                                             (widget.mediaTitle.english ??
                                                 widget.mediaTitle.romaji ??
                                                 widget.mediaTitle.native)!,
                                         filePath: filePath,
-                                        headers: headers);
+                                        headers: quality['headers']
+                                                as Map<String, String>? ??
+                                            headers);
                                     ref
                                         .read(downloadsProvider.notifier)
                                         .addDownload(downloadItem);
@@ -469,8 +478,8 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                                   },
                                   child: Padding(
                                     padding: const EdgeInsets.all(8.0),
-                                    child:
-                                        Text(quality['quality'] ?? 'Unknown'),
+                                    child: Text(quality['quality'] as String? ??
+                                        'Unknown'),
                                   )))
                               .toList(),
                         ),
@@ -508,7 +517,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
       },
     );
   }
-
+  
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -555,7 +564,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'MATCHED ANIME',
+                          'MATCHED ( by ${ref.watch(experimentalProvider).useMangayomiExtensions ? ref.read(sourceProvider).activeAnimeSource?.name : ref.read(selectedAnimeProvider)?.providerName} )',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.bold,

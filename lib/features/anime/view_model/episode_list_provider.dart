@@ -50,7 +50,7 @@ class EpisodeListState {
   }
 }
 
-class EpisodeListNotifier extends Notifier<EpisodeListState> {
+class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
   JikanService get _jikan => JikanService();
   ExperimentalFeaturesModel get _experimentalFeatures =>
       ref.read(experimentalProvider);
@@ -258,5 +258,5 @@ class EpisodeListNotifier extends Notifier<EpisodeListState> {
 }
 
 final episodeListProvider =
-    NotifierProvider<EpisodeListNotifier, EpisodeListState>(
+    AutoDisposeNotifierProvider<EpisodeListNotifier, EpisodeListState>(
         EpisodeListNotifier.new);

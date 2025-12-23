@@ -66,6 +66,7 @@ class Source {
   bool isM3U8;
   bool isDub;
   String? quality;
+  Map<String, String>? headers;
 
   Source({
     this.url,
@@ -73,6 +74,7 @@ class Source {
     this.isM3U8 = false,
     this.isDub = false,
     this.quality,
+    this.headers = const {},
   });
 
   Source.fromJson(Map<String, dynamic> json)
@@ -80,5 +82,6 @@ class Source {
         type = json['type'],
         isM3U8 = json['isM3U8'] ?? false,
         isDub = json['isDub'] ?? false,
-        quality = json['quality'] ?? 'Default';
+        quality = json['quality'] ?? 'Default',
+        headers = json['headers'] ?? const {};
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
+import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
@@ -39,7 +40,7 @@ class TopControls extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final selectedEpisodeIdx = watchEpisode(ref, (e) => e.selectedEpisodeIdx);
-    final episodes = watchEpisode(ref, (e) => e.episodes);
+    final episodes = ref.watch(episodeListProvider).episodes;
     final sources = watchEpisode(ref, (e) => e.sources);
     final qualityOptions = watchEpisode(ref, (e) => e.qualityOptions);
 

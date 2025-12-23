@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 
+import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 
 class EpisodesPanel extends ConsumerStatefulWidget {
@@ -34,7 +35,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
   }
 
   void _showRangeSizeDialog(
-      BuildContext context, EpisodeDataNotifier episodeNotifier) {
+      BuildContext context, EpisodeListNotifier episodeListNotifier) {
     int? selectedSize = _rangeSize;
     showDialog(
       context: context,
@@ -77,7 +78,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                         _rangeSize = selectedSize!;
                         _currentStart = 1;
                       });
-                      episodeNotifier.syncEpisodesWithJikan();
+                      episodeListNotifier.syncEpisodesWithJikan();
                     }
                     Navigator.pop(context);
                   },
@@ -94,10 +95,11 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final episodes = ref.watch(episodeDataProvider.select((ed) => ed.episodes));
+    final episodes = ref.watch(episodeListProvider.select((ed) => ed.episodes));
     final selectedIdx =
         ref.watch(episodeDataProvider.select((ed) => ed.selectedEpisodeIdx));
     final episodeNotifier = ref.read(episodeDataProvider.notifier);
+    final episodeListNotifier = ref.read(episodeListProvider.notifier);
 
     final totalEpisodes = episodes.length;
     final ranges = _generateRanges(totalEpisodes);
@@ -127,7 +129,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(context, theme, ranges, episodeNotifier),
+              _buildHeader(context, theme, ranges, episodeListNotifier),
               const SizedBox(height: 8),
               Expanded(
                 child: ListView.builder(
@@ -158,7 +160,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
   }
 
   Widget _buildHeader(BuildContext context, ThemeData theme,
-      List<Map<String, int>> ranges, EpisodeDataNotifier episodeNotifier) {
+      List<Map<String, int>> ranges, EpisodeListNotifier episodeListNotifier) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: Row(
@@ -188,12 +190,12 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
             ),
           IconButton(
             icon: const Icon(Iconsax.refresh, size: 20),
-            onPressed: () => episodeNotifier.refreshEpisodes(),
+            onPressed: () => episodeListNotifier.refreshEpisodes(),
             tooltip: "Refresh episodes",
           ),
           IconButton(
             icon: const Icon(Iconsax.setting_2, size: 20),
-            onPressed: () => _showRangeSizeDialog(context, episodeNotifier),
+            onPressed: () => _showRangeSizeDialog(context, episodeListNotifier),
             tooltip: "Change episode range size",
           ),
         ],

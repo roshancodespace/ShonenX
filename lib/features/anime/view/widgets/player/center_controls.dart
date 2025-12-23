@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 
@@ -19,7 +20,7 @@ class CenterControls extends ConsumerWidget {
     final sourceLoading =
         ref.watch(episodeDataProvider.select((e) => e.sourceLoading));
     final episodesLoading =
-        ref.watch(episodeDataProvider.select((e) => e.episodesLoading));
+        ref.watch(episodeListProvider.select((e) => e.isLoading));
 
     return GestureDetector(
       onTap: onInteraction,

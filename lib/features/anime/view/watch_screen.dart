@@ -13,6 +13,7 @@ import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/features/anime/view/widgets/episodes_panel.dart';
 import 'package:shonenx/features/anime/view/widgets/player/controls_overlay.dart';
 import 'package:shonenx/helpers/ui.dart';
+import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 import 'package:shonenx/utils/formatter.dart';
@@ -70,15 +71,15 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
 
-      await ref.read(episodeDataProvider.notifier).fetchEpisodes(
+      await ref.read(episodeListProvider.notifier).fetchEpisodes(
             animeTitle: widget.animeName,
             animeId: widget.animeId,
-            initialEpisodeIdx: widget.episode - 1,
-            startAt: widget.startAt,
-            force: false,
-            play: true,
             episodes: widget.episodes ?? [],
+            force: false,
           );
+      await ref
+          .read(episodeDataProvider.notifier)
+          .loadEpisode(episodeIdx: widget.episode - 1, startAt: widget.startAt);
       _startProgressTimer();
     });
   }
@@ -98,16 +99,17 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   Future<void> _saveProgress({bool takeScreenshot = false}) async {
     if (!ref.context.mounted && !mounted && !context.mounted) return;
     final playerState = ref.read(playerStateProvider);
+    final episodes = ref.read(episodeListProvider).episodes;
     final episodeData = ref.read(episodeDataProvider);
     final currentEpisodeIdx = episodeData.selectedEpisodeIdx;
 
     if (currentEpisodeIdx == null ||
         currentEpisodeIdx < 0 ||
-        currentEpisodeIdx >= episodeData.episodes.length) {
+        currentEpisodeIdx >= episodes.length) {
       return;
     }
 
-    final currentEpisode = episodeData.episodes[currentEpisodeIdx];
+    final currentEpisode = episodes[currentEpisodeIdx];
     final position = playerState.position.inSeconds;
     final duration = playerState.duration.inSeconds;
 
@@ -152,7 +154,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
           animeTitle: widget.animeName,
           animeFormat: widget.animeFormat, // Default or fetch from somewhere
           animeCover: widget.animeCover, // Need cover image
-          totalEpisodes: episodeData.episodes.length,
+          totalEpisodes: ref.read(episodeListProvider).episodes.length,
         );
         await repo.saveProgress(entry);
       }
@@ -280,7 +282,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     final episodeData = ref.read(episodeDataProvider);
     final currentIdx = episodeData.selectedEpisodeIdx;
     if (currentIdx == null) return;
-    final currentEpisode = episodeData.episodes[currentIdx];
+    final currentEpisode = ref.read(episodeListProvider).episodes[currentIdx];
 
     // Skip if explicitly starting at a position or for the specific requested episode
     if (widget.startAt != Duration.zero &&

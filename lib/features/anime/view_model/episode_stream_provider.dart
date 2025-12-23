@@ -3,33 +3,28 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 
-import 'package:shonenx/core/jikan/jikan_service.dart';
-import 'package:shonenx/core/jikan/models/jikan_media.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 import 'package:shonenx/features/settings/model/experimental_model.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view_model/player_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
-import 'package:shonenx/helpers/matcher.dart';
+
 import 'package:shonenx/main.dart';
 import 'package:shonenx/utils/extractors.dart' as extractor;
 
 @immutable
 class EpisodeDataState {
-  final String? animeId;
-  final String? animeTitle;
-  final List<EpisodeDataModel> episodes;
   final Map<String, String>? headers;
   final List<Source> sources;
   final List<Subtitle> subtitles;
   final List<Map<String, dynamic>> qualityOptions;
   final List<String> servers;
-  final List<({JikanMedia result, double similarity})> jikanMatches;
 
   final int? selectedQualityIdx;
   final int? selectedSourceIdx;
@@ -39,19 +34,14 @@ class EpisodeDataState {
   final String? selectedServer;
 
   final bool dubSubSupport;
-  final bool episodesLoading;
   final bool sourceLoading;
   final String? error;
 
   const EpisodeDataState({
-    this.animeId,
-    this.animeTitle,
-    this.episodes = const [],
     this.sources = const [],
     this.subtitles = const [],
     this.qualityOptions = const [],
     this.servers = const [],
-    this.jikanMatches = const [],
     this.headers,
     this.selectedQualityIdx,
     this.selectedSourceIdx,
@@ -60,15 +50,11 @@ class EpisodeDataState {
     this.selectedCategory = 'sub',
     this.dubSubSupport = false,
     this.selectedServer,
-    this.episodesLoading = true,
     this.sourceLoading = false,
     this.error,
   });
 
   EpisodeDataState copyWith({
-    String? animeId,
-    String? animeTitle,
-    List<EpisodeDataModel>? episodes,
     Map<String, String>? headers,
     List<Source>? sources,
     List<Subtitle>? subtitles,
@@ -80,16 +66,11 @@ class EpisodeDataState {
     int? selectedSubtitleIdx,
     String? selectedCategory,
     String? selectedServer,
-    List<({JikanMedia result, double similarity})>? jikanMatches,
     bool? dubSubSupport,
-    bool? episodesLoading,
     bool? sourceLoading,
     String? error,
   }) {
     return EpisodeDataState(
-      animeId: animeId ?? this.animeId,
-      animeTitle: animeTitle ?? this.animeTitle,
-      episodes: episodes ?? this.episodes,
       headers: headers ?? this.headers,
       sources: sources ?? this.sources,
       subtitles: subtitles ?? this.subtitles,
@@ -102,8 +83,6 @@ class EpisodeDataState {
       selectedCategory: selectedCategory ?? this.selectedCategory,
       selectedServer: selectedServer ?? this.selectedServer,
       dubSubSupport: dubSubSupport ?? this.dubSubSupport,
-      jikanMatches: jikanMatches ?? this.jikanMatches,
-      episodesLoading: episodesLoading ?? this.episodesLoading,
       sourceLoading: sourceLoading ?? this.sourceLoading,
       error: error ?? this.error,
     );
@@ -111,7 +90,9 @@ class EpisodeDataState {
 }
 
 class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
-  JikanService get _jikan => JikanService();
+  List<EpisodeDataModel> get _episodes =>
+      ref.read(episodeListProvider).episodes;
+
   ExperimentalFeaturesModel get _experimentalFeatures =>
       ref.read(experimentalProvider);
   AnimeProvider? _getProvider() => ref.read(selectedAnimeProvider);
@@ -122,73 +103,15 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     return const EpisodeDataState();
   }
 
-  List<EpisodeDataModel> get episodes => state.episodes;
-
-  /// Fetches the list of episodes for a given anime.
-  Future<List<EpisodeDataModel>> fetchEpisodes({
-    required String animeTitle,
-    String? animeId,
-    required bool force,
+  /// Loads and plays a specific episode.
+  Future<void> loadEpisode({
+    required int episodeIdx,
     bool play = true,
-    List<EpisodeDataModel> episodes = const [],
-    int initialEpisodeIdx = 0,
     Duration startAt = Duration.zero,
   }) async {
-    AppLogger.i(
-        'Fetching episodes for: $animeTitle (Force: $force, Initial Index: $initialEpisodeIdx)');
+    AppLogger.i('Loading episode index: $episodeIdx');
 
-    if (!force && state.episodes.isNotEmpty) {
-      AppLogger.d('Episodes already loaded. Skipping fetch.');
-      await _setupAndPlay(play, initialEpisodeIdx, startAt);
-      return state.episodes;
-    }
-
-    state = state.copyWith(
-      episodesLoading: true,
-      error: null,
-      animeId: animeId,
-      animeTitle: animeTitle,
-    );
-
-    if (episodes.isNotEmpty) {
-      AppLogger.i('Using provided episode list (${episodes.length} episodes).');
-      state = state.copyWith(episodes: episodes, episodesLoading: false);
-      // Still attempt to sync or setup play
-      // syncEpisodesWithJikan(); // Optional: might be redundant if already synced in details
-      await _setupAndPlay(play, initialEpisodeIdx, startAt);
-      return episodes;
-    }
-
-    final fetchedEpisodes = await _fetchEpisodeList(animeId);
-
-    if (fetchedEpisodes.isEmpty) {
-      AppLogger.w('Episode list returned empty.');
-      state = state.copyWith(
-        episodesLoading: false,
-        error: "No episodes found for this anime.",
-      );
-      return [];
-    }
-
-    AppLogger.i('Fetched ${fetchedEpisodes.length} episodes.');
-    state = state.copyWith(episodes: fetchedEpisodes);
-    syncEpisodesWithJikan();
-
-    await _setupAndPlay(play, initialEpisodeIdx, startAt);
-
-    return fetchedEpisodes;
-  }
-
-  /// Refreshes the current episode list.
-  Future<void> refreshEpisodes() async {
-    final animeId = state.animeId;
-    final animeTitle = state.animeTitle;
-    if (animeId == null || animeTitle == null) {
-      AppLogger.w('Cannot refresh: animeId or animeTitle is null.');
-      return;
-    }
-    AppLogger.i('Refreshing episodes for $animeTitle.');
-    await fetchEpisodes(animeId: animeId, animeTitle: animeTitle, force: true);
+    await _setupAndPlay(play, episodeIdx, startAt);
   }
 
   /// Toggles between 'sub' and 'dub' audio tracks if supported.
@@ -208,7 +131,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   /// Changes the current episode and fetches its stream data.
   Future<void> changeEpisode(int episodeIdx,
       {Duration startAt = Duration.zero}) async {
-    if (episodeIdx < 0 || episodeIdx >= state.episodes.length) {
+    if (episodeIdx < 0 || episodeIdx >= _episodes.length) {
       AppLogger.e('Attempted to change to invalid episode index: $episodeIdx');
       return;
     }
@@ -303,69 +226,13 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       AppLogger.e('Error running task: $errorTitle', e, st);
       final title = errorTitle ?? 'Error';
       final msg = errorMessage ?? 'Something went wrong.';
-      state = state.copyWith(
-          error: msg, episodesLoading: false, sourceLoading: false);
+      state = state.copyWith(error: msg, sourceLoading: false);
 
       if (showSnackBar) {
         showAppSnackBar(title, msg, type: ContentType.failure);
       }
       return null;
     }
-  }
-
-  /// Determines which source to use and fetches the episode list.
-  Future<List<EpisodeDataModel>> _fetchEpisodeList(String? animeId) async {
-    final useMangayomi = _experimentalFeatures.useMangayomiExtensions;
-
-    if (useMangayomi) {
-      AppLogger.d(
-          'Attempting to fetch episodes using Mangayomi extension for URL: $animeId');
-      return await _safeRun<List<EpisodeDataModel>>(
-            () async {
-              final details = await _sourceNotifier.getDetails(animeId!);
-              final chapters = details?.chapters ?? [];
-              AppLogger.d('Mangayomi returned ${chapters.length} chapters.');
-
-              final mapped = chapters
-                  .map((ch) => EpisodeDataModel(
-                        isFiller: false,
-                        title: ch.name,
-                        url: ch.url,
-                        number: int.tryParse(
-                          RegExp(r'\d+').firstMatch(ch.name ?? '')?.group(0) ??
-                              '',
-                        ),
-                      ))
-                  .toList();
-
-              if (mapped.any((e) => e.number != null && e.number! > 0)) {
-                mapped.sort((a, b) =>
-                    (a.number ?? 999999).compareTo(b.number ?? 999999));
-              }
-              return mapped;
-            },
-            errorTitle: "Mangayomi Episode Fetch",
-            errorMessage: "Failed to fetch episodes via Mangayomi.",
-          ) ??
-          [];
-    }
-
-    AppLogger.d('Attempting to fetch episodes using Legacy source.');
-    final animeProvider = _getProvider();
-    if (animeProvider == null) {
-      AppLogger.e('Legacy AnimeProvider is null.');
-      return [];
-    }
-    if (animeId == null) {
-      AppLogger.e('Legacy provider selected but animeId is null.');
-      throw Exception('animeId is null');
-    }
-    return await _safeRun<List<EpisodeDataModel>>(
-          () async => (await animeProvider.getEpisodes(animeId)).episodes ?? [],
-          errorTitle: "Legacy Source Episode Fetch",
-          errorMessage: "Failed to fetch episodes.",
-        ) ??
-        [];
   }
 
   /// Configures servers and starts playback if requested.
@@ -385,13 +252,6 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       AppLogger.d('Mangayomi setup: Skipping server/dub-sub configuration.');
     }
 
-    state = state.copyWith(
-      episodesLoading: false,
-      servers: servers,
-      selectedServer: servers.isNotEmpty ? servers.first : null,
-      dubSubSupport: supportDubSub,
-    );
-
     if (play) {
       AppLogger.d(
           'Starting playback from initial episode index: $initialEpisodeIdx');
@@ -401,7 +261,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   // Return Downloadable Sources
   Future<BaseSourcesModel?> downloadSources(int episodeIdx) async {
-    final episode = state.episodes[episodeIdx];
+    final episode = _episodes[episodeIdx];
     final useMangayomi = _experimentalFeatures.useMangayomiExtensions;
     final url = episode.url;
 
@@ -450,65 +310,6 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     );
   }
 
-  /// Syncs episode titles with data from Jikan/MAL.
-  Future<void> syncEpisodesWithJikan() async {
-    if (!_experimentalFeatures.episodeTitleSync || state.episodes.isEmpty) {
-      AppLogger.d('Jikan Sync skipped: Disabled or episode list is empty.');
-      return;
-    }
-    final animeTitle = state.animeTitle;
-    if (animeTitle == null || animeTitle.isEmpty) {
-      AppLogger.w('Jikan Sync skipped: Anime title is empty.');
-      return;
-    }
-    AppLogger.i(
-        'Attempting to sync episode titles with Jikan for: $animeTitle');
-
-    await _safeRun(
-      () async {
-        final jikanMatches = state.jikanMatches.isNotEmpty
-            ? state.jikanMatches
-            : getBestMatches<JikanMedia>(
-                results: await _jikan.getSearch(title: animeTitle, limit: 10),
-                title: animeTitle,
-                nameSelector: (e) => e.title,
-                idSelector: (e) => e.mal_id.toString(),
-              );
-
-        if (jikanMatches.isEmpty || jikanMatches.first.similarity < 0.55) {
-          AppLogger.d(
-              'Jikan Sync failed: No good match found (best similarity: ${jikanMatches.firstOrNull?.similarity ?? 0.0}).');
-          return;
-        }
-
-        state = state.copyWith(jikanMatches: jikanMatches);
-        final bestMatch = jikanMatches.first.result;
-        AppLogger.d(
-            'Best Jikan match: ${bestMatch.title} (MAL ID: ${bestMatch.mal_id})');
-        final jikanEpisodes = await _jikan.getEpisodes(bestMatch.mal_id, 1);
-
-        if (jikanEpisodes.isEmpty) {
-          AppLogger.d('Jikan returned no episode list for the best match.');
-          return;
-        }
-
-        final updatedEpisodes = List.of(state.episodes);
-        final syncCount = updatedEpisodes.length.clamp(0, jikanEpisodes.length);
-        AppLogger.i('Syncing $syncCount episode titles.');
-
-        for (int i = 0; i < syncCount; i++) {
-          updatedEpisodes[i] =
-              updatedEpisodes[i].copyWith(title: jikanEpisodes[i].title);
-        }
-
-        state = state.copyWith(episodes: updatedEpisodes);
-      },
-      errorTitle: "Jikan Sync",
-      errorMessage: "Couldn't sync Jikan episode titles.",
-      showSnackBar: false,
-    );
-  }
-
   /// Reset Entire State
   void reset() {
     state = const EpisodeDataState();
@@ -548,7 +349,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   /// Determines the source type and fetches the source data.
   Future<BaseSourcesModel?> _fetchSources(int episodeIdx) async {
-    final episode = state.episodes[episodeIdx];
+    final episode = _episodes[episodeIdx];
     final useMangayomi = _experimentalFeatures.useMangayomiExtensions;
     final url = episode.url;
 

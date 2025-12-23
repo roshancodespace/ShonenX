@@ -9,17 +9,17 @@ import 'package:shonenx/core/sources/anime/anime_provider.dart';
 
 class GojoProvider implements AnimeProvider {
   @override
-  String get apiUrl => "https://backend.animetsu.to/api/anime";
+  String get apiUrl => "https://backend.animetsu.cc/api/anime";
 
   @override
-  String get baseUrl => "https://animetsu.to";
+  String get baseUrl => "https://animetsu.cc";
 
   @override
   Map<String, String> get headers => {
         'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-        'Origin': 'https://animetsu.to',
-        'Referer': 'https://animetsu.to/',
+        'Origin': 'https://animetsu.cc',
+        'Referer': 'https://animetsu.cc/',
       };
 
   @override

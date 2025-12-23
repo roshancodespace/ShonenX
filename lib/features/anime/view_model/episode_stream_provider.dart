@@ -278,6 +278,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
                       isDub:
                           s?.originalUrl.toLowerCase().contains('dub') ?? false,
                       quality: s?.quality,
+                      headers: s?.headers
                     ))
                 .toList(),
             tracks: sources.firstOrNull?.subtitles

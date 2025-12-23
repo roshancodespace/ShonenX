@@ -31,8 +31,7 @@ class BottomControls extends ConsumerWidget {
     required this.onForwardPressed,
   });
 
-  VoidCallback? _wrap(VoidCallback? action) {
-    if (action == null) return null;
+  VoidCallback _wrap(VoidCallback action) {
     return () {
       onInteraction();
       action();
@@ -54,231 +53,86 @@ class BottomControls extends ConsumerWidget {
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
           colors: [
-            scheme.surface.withOpacity(0.85),
-            scheme.surface.withOpacity(0.35),
+            Colors.black.withOpacity(0.8),
+            Colors.black.withOpacity(0.4),
             Colors.transparent,
           ],
-          stops: const [0.0, 0.7, 1.0],
+          stops: const [0.0, 0.6, 1.0],
         ),
       ),
+      padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 10),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildProgressBar(context, ref, scheme),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  _buildButton(
-                    icon: Icons.lock_outline,
-                    onPressed: _wrap(onLockPressed),
-                    color: scheme.onSurface,
-                  ),
-                  const Spacer(),
-                  ..._buildQuickControls(context, ref, episodeNotifier, scheme),
-                  const Spacer(),
-                  _buildSkipButton(context, scheme),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Seek Bar
+            _buildProgressBar(context, ref, scheme),
+            const SizedBox(height: 4),
 
-  Widget _buildProgressBar(
-      BuildContext context, WidgetRef ref, ColorScheme scheme) {
-    return Row(
-      children: [
-        Consumer(
-          builder: (context, ref, child) {
-            final position = ref.watch(playerStateProvider.select((p) => p
-                .position.inMilliseconds
-                .clamp(0.0, p.duration.inMilliseconds)));
-            return Text(
-              formatDuration(Duration(milliseconds: position.round())),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurface,
-                    fontWeight: FontWeight.w500,
-                  ),
-            );
-          },
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Consumer(builder: (context, ref, child) {
-            final state = ref.watch(playerStateProvider.select(
-              (p) => (p.position, p.duration, p.buffer),
-            ));
-
-            final duration = state.$2.inMilliseconds.toDouble();
-            final position = state.$1.inMilliseconds.toDouble();
-            final buffer = state.$3.inMilliseconds.toDouble();
-
-            return Stack(
-              alignment: Alignment.center,
+            // Controls Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Buffer track
-                SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    trackHeight: 4,
-                    thumbShape: SliderComponentShape.noThumb,
-                    activeTrackColor: scheme.onSurface.withOpacity(0.4),
-                    inactiveTrackColor: scheme.onSurface.withOpacity(0.2),
-                    trackShape: const RectangularSliderTrackShape(),
-                  ),
-                  child: Slider(
-                    value: buffer.clamp(0.0, duration),
-                    max: duration > 0 ? duration : 1.0,
-                    onChanged: null,
-                  ),
+                // Left: Play/Pause and Time
+                Row(
+                  children: [
+                    _buildPlayPauseButton(ref, scheme),
+                    const SizedBox(width: 12),
+                    _buildTimeDisplay(context, ref, scheme),
+                  ],
                 ),
 
-                // Playhead track
-                SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    trackHeight: 4,
-                    activeTrackColor: scheme.primary,
-                    inactiveTrackColor: Colors.transparent,
-                    trackShape: const RectangularSliderTrackShape(),
-                    thumbShape: RoundSliderThumbShape(
-                      enabledThumbRadius: 10,
-                      disabledThumbRadius: 8,
+                // Right: Actions
+                Row(
+                  children: [
+                    if (watchEpisode(ref, (s) => s.dubSubSupport))
+                      _buildSettingsPill(
+                        context,
+                        text: watchEpisode(ref, (s) => s.selectedCategory) ==
+                                'sub'
+                            ? 'SUB'
+                            : 'DUB',
+                        onPressed: () => episodeNotifier.toggleDubSub(),
+                        scheme: scheme,
+                      ),
+                    if (watchEpisode(ref, (s) => s.sources.length) > 1) ...[
+                      const SizedBox(width: 8),
+                      Builder(builder: (context) {
+                        final sources = watchEpisode(ref, (s) => s.sources);
+                        final index =
+                            watchEpisode(ref, (s) => s.selectedSourceIdx) ?? 0;
+                        if (index >= 0 && index < sources.length) {
+                          return _buildSettingsPill(
+                            context,
+                            text: sources[index].quality ?? 'Auto',
+                            onPressed: onSourcePressed,
+                            scheme: scheme,
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      }),
+                    ],
+                    const SizedBox(width: 8),
+                    _buildIconButton(
+                      icon: Iconsax.subtitle,
+                      onPressed: onSubtitlePressed,
+                      color: scheme.onSurface,
+                      tooltip: 'Subtitles',
                     ),
-                    overlayShape: RoundSliderOverlayShape(
-                      overlayRadius: 16,
+                    const SizedBox(width: 8),
+                    _buildIconButton(
+                      icon: Iconsax.lock,
+                      onPressed: onLockPressed,
+                      color: scheme.onSurface,
+                      tooltip: 'Lock',
                     ),
-                  ),
-                  child: Slider(
-                    value: (sliderValue ?? position).clamp(0.0, duration),
-                    max: duration > 0 ? duration : 1.0,
-                    onChanged: onSliderChanged,
-                    onChangeStart: onSliderChangeStart,
-                    onChangeEnd: onSliderChangeEnd,
-                  ),
+                    const SizedBox(width: 12),
+                    _buildSkipButton(context, scheme),
+                  ],
                 ),
               ],
-            );
-          }),
-        ),
-        const SizedBox(width: 12),
-        Consumer(
-          builder: (context, ref, child) {
-            final duration = ref.watch(playerStateProvider.select((p) => p
-                .duration.inMilliseconds
-                .clamp(0.0, p.duration.inMilliseconds)));
-            return Text(
-              formatDuration(Duration(milliseconds: duration.round())),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurface.withOpacity(0.7),
-                    fontWeight: FontWeight.w500,
-                  ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  List<Widget> _buildQuickControls(
-    BuildContext context,
-    WidgetRef ref,
-    dynamic episodeNotifier,
-    ColorScheme scheme,
-  ) {
-    // Declarative list construction using collection-if
-    final controls = <Widget?>[
-      if (watchEpisode(ref, (s) => s.dubSubSupport))
-        _buildInfoButton(
-          context,
-          text: watchEpisode(ref, (s) => s.selectedCategory) == 'sub'
-              ? 'SUB'
-              : 'DUB',
-          onPressed: _wrap(() => episodeNotifier.toggleDubSub()),
-          scheme: scheme,
-        ),
-      if (watchEpisode(ref, (s) => s.servers).length > 1)
-        _buildInfoButton(
-          context,
-          text: watchEpisode(ref, (s) => s.selectedServer) ?? 'Server 1',
-          onPressed: _wrap(onServerPressed),
-          scheme: scheme,
-        ),
-      if (watchEpisode(ref, (s) => s.sources.length) > 1) ...[
-        Builder(builder: (context) {
-          final sources = watchEpisode(ref, (s) => s.sources);
-          final index = watchEpisode(ref, (s) => s.selectedSourceIdx) ?? 0;
-          if (index >= 0 && index < sources.length) {
-            return _buildInfoButton(
-              context,
-              text: sources[index].quality ?? 'Default',
-              onPressed: _wrap(onSourcePressed),
-              scheme: scheme,
-            );
-          }
-          return const SizedBox.shrink();
-        }),
-      ],
-      if (watchEpisode(ref, (s) => s.subtitles).isNotEmpty)
-        _buildInfoButton(
-          context,
-          text: 'CC',
-          onPressed: _wrap(onSubtitlePressed),
-          scheme: scheme,
-        ),
-    ].whereType<Widget>().toList();
-
-    // Add spacing between items
-    if (controls.isEmpty) return [];
-
-    final spacedControls = <Widget>[];
-    for (int i = 0; i < controls.length; i++) {
-      spacedControls.add(controls[i]);
-      if (i < controls.length - 1) {
-        spacedControls.add(const SizedBox(width: 16));
-      }
-    }
-    return spacedControls;
-  }
-
-  Widget _buildButton({
-    required IconData icon,
-    required VoidCallback? onPressed,
-    required Color color,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Icon(icon, color: color, size: 24),
-      ),
-    );
-  }
-
-  Widget _buildSkipButton(BuildContext context, ColorScheme scheme) {
-    return GestureDetector(
-      onTap: _wrap(onForwardPressed),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: scheme.primary.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Iconsax.forward, color: scheme.onSurface, size: 18),
-            const SizedBox(width: 4),
-            Text(
-              '+85s',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: scheme.onSurface,
-                    fontWeight: FontWeight.w600,
-                  ),
             ),
           ],
         ),
@@ -286,30 +140,186 @@ class BottomControls extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoButton(
+  Widget _buildProgressBar(
+      BuildContext context, WidgetRef ref, ColorScheme scheme) {
+    return SizedBox(
+      height: 20,
+      child: Consumer(builder: (context, ref, child) {
+        final state = ref.watch(playerStateProvider.select(
+          (p) => (p.position, p.duration, p.buffer),
+        ));
+
+        final duration = state.$2.inMilliseconds.toDouble();
+        final position = state.$1.inMilliseconds.toDouble();
+        final buffer = state.$3.inMilliseconds.toDouble();
+
+        return Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            // Buffer track
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 4,
+                thumbShape: SliderComponentShape.noThumb,
+                activeTrackColor: scheme.onSurface.withOpacity(0.4),
+                inactiveTrackColor: scheme.onSurface.withOpacity(0.2),
+                trackShape: const RectangularSliderTrackShape(),
+              ),
+              child: Slider(
+                value: buffer.clamp(0.0, duration),
+                max: duration > 0 ? duration : 1.0,
+                onChanged: null,
+              ),
+            ),
+
+            // Playhead track
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 4,
+                activeTrackColor: scheme.primary,
+                inactiveTrackColor: Colors.transparent,
+                trackShape: const RectangularSliderTrackShape(),
+                thumbShape: RoundSliderThumbShape(
+                  enabledThumbRadius: 10,
+                  disabledThumbRadius: 8,
+                ),
+                overlayShape: RoundSliderOverlayShape(
+                  overlayRadius: 16,
+                ),
+              ),
+              child: Slider(
+                value: (sliderValue ?? position).clamp(0.0, duration),
+                max: duration > 0 ? duration : 1.0,
+                onChanged: onSliderChanged,
+                onChangeStart: onSliderChangeStart,
+                onChangeEnd: onSliderChangeEnd,
+              ),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+
+  Widget _buildTimeDisplay(
+      BuildContext context, WidgetRef ref, ColorScheme scheme) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final state = ref.watch(playerStateProvider.select(
+          (p) => (p.position, p.duration),
+        ));
+        final position = state.$1;
+        final duration = state.$2;
+
+        return Text(
+          '${formatDuration(position)} / ${formatDuration(duration)}',
+          style: TextStyle(
+            color: scheme.onSurface,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPlayPauseButton(WidgetRef ref, ColorScheme scheme) {
+    final isPlaying = ref.watch(playerStateProvider.select((p) => p.isPlaying));
+    final notifier = ref.read(playerStateProvider.notifier);
+
+    return InkWell(
+      onTap: _wrap(() => notifier.togglePlay()),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          isPlaying ? Iconsax.pause : Iconsax.play,
+          color: Colors.white,
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required Color color,
+    required String tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: _wrap(onPressed),
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(icon, color: color, size: 22),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsPill(
     BuildContext context, {
     required String text,
-    required VoidCallback? onPressed,
+    required VoidCallback onPressed,
     required ColorScheme scheme,
   }) {
-    return GestureDetector(
-      onTap: onPressed,
+    return InkWell(
+      onTap: _wrap(onPressed),
+      borderRadius: BorderRadius.circular(6),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest.withOpacity(0.25),
+          color: Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: scheme.outline.withOpacity(0.3),
-            width: 0.5,
+            color: Colors.white.withOpacity(0.2),
+            width: 1,
           ),
         ),
         child: Text(
           text,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: scheme.onSurface,
-                fontWeight: FontWeight.w600,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkipButton(BuildContext context, ColorScheme scheme) {
+    return InkWell(
+      onTap: _wrap(onForwardPressed),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: scheme.primary,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Iconsax.forward, color: Colors.black, size: 16),
+            const SizedBox(width: 4),
+            const Text(
+              '+85s',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
               ),
+            ),
+          ],
         ),
       ),
     );

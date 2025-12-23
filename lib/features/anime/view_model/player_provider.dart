@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
@@ -68,9 +69,12 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
   PlayerState build() {
     player = Player(
         configuration: const PlayerConfiguration(
-      bufferSize: 60 * 1024 * 1024,
+      bufferSize: 32 * 1024 * 1024,
     ));
-    videoController = VideoController(player!);
+
+    videoController = VideoController(player!, configuration: VideoControllerConfiguration(
+      androidAttachSurfaceAfterVideoParameters: Platform.isAndroid ? true : null,
+    ));
     ref.onDispose(() {
       player?.dispose();
     });

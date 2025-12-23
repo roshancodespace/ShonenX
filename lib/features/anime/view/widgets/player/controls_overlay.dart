@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shonenx/core/models/anime/source_model.dart';
@@ -38,15 +39,18 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
 
   Timer? _hideTimer;
   Timer? _seekResetTimer;
+  late FocusNode _focusNode;
 
   @override
   void initState() {
     super.initState();
+    _focusNode = FocusNode();
     _restartHideTimer();
   }
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _hideTimer?.cancel();
     _seekResetTimer?.cancel();
     super.dispose();
@@ -131,54 +135,94 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _toggleVisibility,
-      onDoubleTapDown: _handleDoubleTap,
-      // onVerticalDragUpdate: _handleVerticalDragUpdate,
-      // onVerticalDragEnd: (details) => setState(() => _showVolumeSeek = false),
-      behavior: HitTestBehavior.translucent,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // UI Overlay
-          AnimatedOpacity(
-            opacity: _isVisible ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 300),
-            child: AbsorbPointer(
-              absorbing: !_isVisible,
-              child: _isLocked ? _buildLockBtn() : _buildControls(),
-            ),
+    final notifier = ref.read(playerStateProvider.notifier);
+
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.space): () =>
+            notifier.togglePlay(),
+        const SingleActivator(LogicalKeyboardKey.keyK): () =>
+            notifier.togglePlay(),
+        const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
+            notifier.rewind(10),
+        const SingleActivator(LogicalKeyboardKey.keyJ): () =>
+            notifier.rewind(10),
+        const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
+            notifier.forward(10),
+        const SingleActivator(LogicalKeyboardKey.keyL): () =>
+            notifier.forward(10),
+        const SingleActivator(LogicalKeyboardKey.arrowUp): () {
+          final player = notifier.player;
+          if (player != null) {
+            player.setVolume((player.state.volume + 10).clamp(0.0, 100.0));
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.arrowDown): () {
+          final player = notifier.player;
+          if (player != null) {
+            player.setVolume((player.state.volume - 10).clamp(0.0, 100.0));
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.keyM): () {
+          final player = notifier.player;
+          if (player != null) {
+            player.setVolume(player.state.volume == 0 ? 100.0 : 0.0);
+          }
+        },
+      },
+      child: Focus(
+        focusNode: _focusNode,
+        autofocus: true,
+        child: GestureDetector(
+          onTap: _toggleVisibility,
+          onDoubleTapDown: _handleDoubleTap,
+          // onVerticalDragUpdate: _handleVerticalDragUpdate,
+          // onVerticalDragEnd: (details) => setState(() => _showVolumeSeek = false),
+          behavior: HitTestBehavior.translucent,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // UI Overlay
+              AnimatedOpacity(
+                opacity: _isVisible ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: AbsorbPointer(
+                  absorbing: !_isVisible,
+                  child: _isLocked ? _buildLockBtn() : _buildControls(),
+                ),
+              ),
+
+              // Seek Indicators
+              if (_showRewindSeek) _buildSeekOverlay(false),
+              if (_showForwardSeek) _buildSeekOverlay(true),
+
+              // if (_showVolumeSeek)
+              //   Positioned(
+              //     top: 90,
+              //     right: 30,
+              //     bottom: 120,
+              //     child: Expanded(
+              //       child: Container(
+              //         width: 40,
+              //         decoration: BoxDecoration(
+              //           color: theme.colorScheme.onSurface,
+              //           borderRadius: BorderRadius.circular(50),
+              //         ),
+              //       ),
+              //     ),
+              //   ),
+
+              // Subtitles
+              Positioned(
+                left: 8,
+                right: 8,
+                top: _isVisible && !_isLocked ? 90 : 20,
+                bottom: _isVisible && !_isLocked ? 90 : 20,
+                child: const SubtitleOverlay(),
+              ),
+            ],
           ),
-
-          // Seek Indicators
-          if (_showRewindSeek) _buildSeekOverlay(false),
-          if (_showForwardSeek) _buildSeekOverlay(true),
-
-          // if (_showVolumeSeek)
-          //   Positioned(
-          //     top: 90,
-          //     right: 30,
-          //     bottom: 120,
-          //     child: Expanded(
-          //       child: Container(
-          //         width: 40,
-          //         decoration: BoxDecoration(
-          //           color: theme.colorScheme.onSurface,
-          //           borderRadius: BorderRadius.circular(50),
-          //         ),
-          //       ),
-          //     ),
-          //   ),
-
-          // Subtitles
-          Positioned(
-            left: 8,
-            right: 8,
-            top: _isVisible && !_isLocked ? 90 : 20,
-            bottom: _isVisible && !_isLocked ? 90 : 20,
-            child: const SubtitleOverlay(),
-          ),
-        ],
+        ),
       ),
     );
   }

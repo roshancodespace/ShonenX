@@ -140,6 +140,19 @@ flutter build apk --release
 flutter build windows --release
 ```
 
+### Linux (One-Line Installer)
+For Arch, Debian/Ubuntu, and Fedora users, you can install ShonenX with a single command:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/Darkx-dev/ShonenX/main/install.sh)
+```
+This script will:
+- Install necessary dependencies (`libmpv`, `curl`, `unzip`)
+- Download and install the latest version of ShonenX
+- Create a desktop entry & app icon
+- Create a `shonenx` command line shortcut
+
+
 ## 💡 Usage Guide
 
 ### Initial Setup
@@ -201,5 +214,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   
 ### Star the repo if you like what you see! ⭐
 
-Made with ❤️ by [roshancodespace](https://github.com/roshancodespace)
+Made with ❤️ by [Darkx-dev](https://github.com/Darkx-dev) or [roshancodespace](https://github.com/roshancodespace)
 </div>

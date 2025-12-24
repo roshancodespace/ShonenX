@@ -76,7 +76,8 @@ class KaidoProvider extends AnimeProvider {
   }
 
   @override
-  Future<BaseEpisodeModel> getEpisodes(String animeId) async {
+  Future<BaseEpisodeModel> getEpisodes(String animeId,
+      {String? anilistId, String? malId}) async {
     final episodeUrl = "$baseUrl/ajax/episode/list/${animeId.split('-').last}";
     final response =
         await http.get(Uri.parse(episodeUrl), headers: _getHeaders());

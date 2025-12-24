@@ -1,26 +1,36 @@
 import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:math';
+import 'package:http/http.dart' as http;
+import 'package:html/parser.dart' as html;
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
 
-import 'package:http/http.dart' as http;
-
 class AnimePaheProvider extends AnimeProvider {
-  AnimePaheProvider({String? customApiUrl})
+  final Map<String, String> _sourceHeaders = {
+    'Cookie': '__ddg1=; __ddg2_=',
+    'Referer': 'https://animepahe.si/',
+    'Origin': 'https://animepahe.si',
+    'Accept': '*/*',
+    'Accept-Encoding': 'identity',
+    'Cache-Control': 'no-cache',
+    'Range': 'bytes=0-',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+        'AppleWebKit/537.36 (KHTML, like Gecko) '
+        'Chrome/133.0.0.0 Safari/537.36',
+  };
+
+  AnimePaheProvider()
       : super(
-            apiUrl: customApiUrl != null
-                ? '$customApiUrl/anime/animepahe'
-                : "${dotenv.env['API_URL']}/anime/animepahe",
-            baseUrl: 'https://animepahe.ru/',
-            providerName: 'animepahe');
+          baseUrl: "https://animepahe.si",
+          apiUrl: "https://animepahe.si/api",
+          providerName: "animepahe",
+        );
 
   @override
-  Future<HomePage> getHome() {
-    throw UnimplementedError();
-  }
+  Map<String, String> get headers => _sourceHeaders;
 
   @override
   Future<DetailPage> getDetails(String animeId) {
@@ -28,30 +38,12 @@ class AnimePaheProvider extends AnimeProvider {
   }
 
   @override
-  Future<BaseEpisodeModel> getEpisodes(String animeId) async {
-    final response = await http.get(Uri.parse('$apiUrl/info/$animeId'));
-    if (response.statusCode != 200) {
-      throw Exception('Failed to fetch episodes: HTTP ${response.statusCode}');
-    }
-    final data = jsonDecode(response.body);
-
-    return BaseEpisodeModel(
-        totalEpisodes: data['totalEpisodes'],
-        episodes: (data['episodes'] as List<dynamic>)
-            .map(
-              (episode) => EpisodeDataModel(
-                id: episode['id'],
-                number: episode['number'] as int,
-                title: episode['title'],
-                thumbnail: episode['image'],
-                url: episode['url'],
-              ),
-            )
-            .toList());
+  bool getDubSubParamSupport() {
+    return true;
   }
 
   @override
-  Future<WatchPage> getWatch(String animeId) {
+  Future<HomePage> getHome() {
     throw UnimplementedError();
   }
 
@@ -62,72 +54,278 @@ class AnimePaheProvider extends AnimeProvider {
 
   @override
   Future<SearchPage> getSearch(String keyword, String? type, int page) async {
-    final response = await http.get(Uri.parse('$apiUrl/$keyword'));
-    final data = jsonDecode(response.body);
+    final query = keyword.replaceAll("-", "");
+    final url = Uri.parse("$apiUrl?m=search&q=$query");
 
-    return SearchPage(
-      totalPages: data['totalPages'],
-      currentPage: data['cucurrentPage'],
-      results: (data['results'] as List<dynamic>)
-          .map(
-            (anime) => BaseAnimeModel(
-              id: anime['id'],
-              name: anime['title'],
-              url: anime['url'],
-              jname: anime['japaneseTitle'],
-              type: anime['type'],
-              episodes: EpisodesModel(
-                sub: anime['sub'],
-                dub: anime['dub'],
-                total: anime['sub'],
-              ),
-              poster: anime['image'],
-            ),
-          )
-          .toList(),
+    final res = await http.get(url, headers: headers);
+    final Map<String, dynamic> decoded = json.decode(res.body);
+
+    final List<dynamic>? results = decoded['data'];
+    final List<BaseAnimeModel> searchResults = [];
+
+    if (results != null) {
+      for (final result in results) {
+        searchResults.add(BaseAnimeModel(
+          id: result['session'],
+          anilistId: null,
+          name: result['title'],
+          jname: null,
+          type: result['type'],
+          description: null,
+          poster: result['poster'],
+          banner: null,
+          genres: [],
+          releaseDate: result['year']?.toString(),
+          number: result['episodes'],
+        ));
+      }
+    }
+
+    return SearchPage(results: searchResults);
+  }
+
+  @override
+  Future<BaseEpisodeModel> getEpisodes(String animeId,
+      {String? anilistId, String? malId}) async {
+    List<dynamic> list = [];
+    final String url = "$apiUrl?m=release&id=$animeId&sort=episode_asc";
+
+    final res = await http.get(Uri.parse(url), headers: headers);
+    final bodyDecoded = json.decode(res.body);
+
+    if (bodyDecoded['data'] != null) {
+      list.add(bodyDecoded['data']);
+    }
+
+    final int totalPages = bodyDecoded['last_page'] ?? 1;
+
+    for (int i = 1; i < totalPages; i++) {
+      if (i >= 5) break;
+      final nextRes =
+          await http.get(Uri.parse("$url&page=${i + 1}"), headers: headers);
+      final nextBody = json.decode(nextRes.body);
+      if (nextBody['data'] != null) {
+        list.add(nextBody['data']);
+      }
+    }
+
+    final flatList = list.expand((item) => item as List<dynamic>).toList();
+
+    List<EpisodeDataModel> episodes = [];
+
+    for (int i = 0; i < flatList.length; i++) {
+      final item = flatList[i];
+      final String episodeSession = item['session'];
+
+      final String combinedId = "$animeId+$episodeSession";
+
+      final int calculatedEpNum = flatList.length - i;
+
+      final String? title = item['title'] == "" ? null : item['title'];
+      final String? thumbnail = item['snapshot'];
+      final bool isFiller = (item['filler'] ?? 0) != 0;
+
+      episodes.add(EpisodeDataModel(
+        id: combinedId,
+        number: calculatedEpNum.toInt(),
+        title: title ?? 'Episode $calculatedEpNum',
+        thumbnail: thumbnail,
+        isFiller: isFiller,
+      ));
+    }
+
+    final reversedEpisodes = episodes.reversed.toList();
+
+    return BaseEpisodeModel(
+      episodes: reversedEpisodes,
+      totalEpisodes: reversedEpisodes.length,
     );
   }
 
   @override
-  Future<BaseSourcesModel> getSources(
-    String animeId,
-    String episodeId,
-    String? serverName,
-    String? category,
-  ) async {
-    try {
-      final response =
-          await http.get(Uri.parse('$apiUrl/watch?episodeId=$episodeId'));
-      if (response.statusCode != 200) {
-        throw Exception('Failed to fetch sources: HTTP ${response.statusCode}');
-      }
-      final jsonString = response.body;
-      final data = jsonDecode(jsonString) as Map<String, dynamic>;
-      if (!data.containsKey('sources')) {
-        throw Exception('API response missing "sources" key');
-      }
-
-      return BaseSourcesModel(
-        sources: (data['sources'] as List<dynamic>)
-            .map((source) => Source.fromJson(source))
-            .toList(),
-        tracks: (data['tracks'] as List<dynamic>?)
-                ?.map((track) => Subtitle.fromJson(track))
-                .toList() ??
-            [],
-      );
-    } catch (e) {
-      rethrow; // Propagate the error to the caller (e.g., WatchScreen)
+  Future<BaseSourcesModel> getSources(String animeId, String episodeId,
+      String? serverName, String? category) async {
+    final parts = episodeId.split("+");
+    if (parts.length < 2) {
+      throw Exception("Invalid ID format");
     }
+    final String animeSession = parts[0];
+    final String epSession = parts[1];
+
+    // Construct episodeUrl
+    final episodeUrl = "https://animepahe.si/play/$animeSession/$epSession";
+    final bool isRequestingDub = category?.toLowerCase() == 'dub';
+
+    final data = await http.get(Uri.parse(episodeUrl), headers: headers);
+    final document = html.parse(data.body);
+
+    final downloadQualities = document.querySelectorAll('div#pickDownload > a');
+
+    List<Source> sources = [];
+    List<Future<void>> extractTasks = [];
+
+    for (final e in downloadQualities) {
+      final link = e.attributes['href'] ?? '';
+      final text = e.text; // e.g., "Kwik · 1080p (200MB) · eng"
+
+      final quality =
+          text.split('·')[1].trim().replaceAll(RegExp(r'\(\d+MB\)'), "");
+      final size = RegExp(r'(\d+MB)').firstMatch(text)?.group(1) ?? '?? MB';
+
+      // Check dub availability
+      final bool isStreamDub = e.attributes['data-audio'] == 'eng' ||
+          text.toLowerCase().contains('eng');
+
+      // Filter based on user request (dub/sub)
+      if (isStreamDub != isRequestingDub) {
+        continue;
+      }
+
+      // Add extraction task
+      extractTasks.add(() async {
+        try {
+          final mp4Url = await _extractDownloadLink(link);
+          sources.add(Source(
+            url: mp4Url,
+            quality: "$quality [$size]",
+            type: "mp4",
+            isM3U8: false,
+            isDub: isStreamDub,
+          ));
+        } catch (e) {
+          print("Error extracting $quality: $e");
+        }
+      }());
+    }
+
+    await Future.wait(extractTasks);
+
+    return BaseSourcesModel(
+      sources: sources,
+      tracks: [],
+      intro: Intro(start: 0, end: 0),
+      outro: Intro(start: 0, end: 0),
+      headers: _sourceHeaders,
+    );
   }
 
   @override
-  Future<List<String>> getSupportedServers() {
-    return Future(() => []);
+  Future<List<String>> getSupportedServers() async {
+    return ['AnimePahe'];
   }
 
   @override
-  bool getDubSubParamSupport() {
-    return false;
+  Future<WatchPage> getWatch(String animeId) {
+    throw UnimplementedError();
+  }
+
+  static const String _map =
+      "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/";
+
+  int _getString(List<String> content, int s1) {
+    final s2 = 10;
+    final slice = _map.substring(0, s2);
+    int acc = 0;
+
+    // Exact reversed.toList().asMap()
+    content.reversed.toList().asMap().forEach((index, c) {
+      acc += (RegExp(r'\d').hasMatch(c) ? int.parse(c) : 0) *
+          pow(s1, index).toInt();
+    });
+
+    String k = "";
+    while (acc > 0) {
+      k = slice[acc % s2] + k;
+      acc = (acc / s2).floor();
+    }
+    return int.parse(k);
+  }
+
+  String _decrypt(String fullKey, String key, int v1, int v2) {
+    String r = "";
+    int i = 0;
+    while (i < fullKey.length) {
+      String s = "";
+      while (fullKey[i] != key[v2]) {
+        s += fullKey[i];
+        i++;
+      }
+      for (int j = 0; j < key.length; j++) {
+        s = s.replaceAll(RegExp(key[j]), j.toString());
+      }
+      r += String.fromCharCode(_getString(s.split(""), v2) - v1);
+      i++;
+    }
+    return r;
+  }
+
+  Future<String> _extractDownloadLink(String downloadLink) async {
+    if (downloadLink == '') throw Exception("Invalid download link");
+
+    final redirectRegex = RegExp(r'\("href","(.*?)"\)');
+    final paramRegex = RegExp(r'\("(\w+)",\d+,"(\w+)",(\d+),(\d+),(\d+)\)');
+    final urlRegex = RegExp(r'action="(.+?)"');
+    final tokenRegex = RegExp(r'value="(.+?)"');
+
+    // Reference: Headers here are ONLY referer
+    final resp = await http
+        .get(Uri.parse(downloadLink), headers: {'referer': downloadLink});
+
+    final document = html.parse(resp.body);
+    final scripts = document.querySelectorAll('script');
+
+    String? kwikLink;
+
+    // Exact Iterating scripts to find the redirect
+    for (var e in scripts) {
+      if (kwikLink != null) break;
+      if (e.text.isNotEmpty || e.innerHtml.isNotEmpty) {
+        final match = redirectRegex.allMatches(e.innerHtml);
+        if (match.isNotEmpty) {
+          if (match.length > 1) {
+            kwikLink = match.toList()[1].group(1);
+          }
+        }
+      }
+    }
+
+    if (kwikLink == null) throw Exception("Could not extract kwik link");
+
+    final kwikRes = await http
+        .get(Uri.parse(kwikLink), headers: {'Referer': "https://animepahe.si"});
+    final cookies = kwikRes.headers['set-cookie'];
+
+    final match = paramRegex.firstMatch(kwikRes.body);
+    if (match == null) throw Exception("Could not extract download params");
+
+    final fullKey = match.group(1)!;
+    final key = match.group(2)!;
+    final v1 = int.parse(match.group(3)!);
+    final v2 = int.parse(match.group(4)!);
+
+    final decrypted = _decrypt(fullKey, key, v1, v2);
+
+    final postUrl = urlRegex.firstMatch(decrypted)?.group(1);
+    final token = tokenRegex.firstMatch(decrypted)?.group(1);
+
+    if (postUrl == null || token == null) throw Exception("Decryption failed");
+
+    try {
+      final r2 = await http.post(
+        Uri.parse(postUrl),
+        body: {'_token': token},
+        headers: {
+          'Referer': kwikLink,
+          'Cookie': cookies ?? "",
+          'User-Agent': headers['User-Agent']!
+        },
+      );
+
+      final mp4Url = r2.headers['location'];
+      if (mp4Url == null) throw Exception("Could not extract media link");
+      return mp4Url;
+    } catch (err) {
+      rethrow;
+    }
   }
 }

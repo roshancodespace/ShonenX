@@ -33,7 +33,8 @@ class GojoProvider implements AnimeProvider {
   }
 
   @override
-  Future<BaseEpisodeModel> getEpisodes(String animeId) async {
+  Future<BaseEpisodeModel> getEpisodes(String animeId,
+      {String? anilistId, String? malId}) async {
     final url = Uri.parse("$apiUrl/eps/$animeId");
     final res = await http.get(url, headers: headers);
 

@@ -49,7 +49,8 @@ class AniwatchProvider extends AnimeProvider {
   }
 
   @override
-  Future<BaseEpisodeModel> getEpisodes(String animeId) async {
+  Future<BaseEpisodeModel> getEpisodes(String animeId,
+      {String? anilistId, String? malId}) async {
     final response =
         await http.get(Uri.parse("$apiUrl/anime/$animeId/episodes"));
     final data = jsonDecode(response.body)['data'];

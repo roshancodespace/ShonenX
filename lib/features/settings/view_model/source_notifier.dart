@@ -30,43 +30,72 @@ class SourceNotifier extends Notifier<SourceState> {
 
   Future<void> initialize() async {
     try {
+      // Listen to extension streams for real-time updates
+      for (final type in [ItemType.anime, ItemType.manga, ItemType.novel]) {
+        ref.listen<AsyncValue<List<Source>>>(
+          getExtensionsStreamProvider(type),
+          (previous, next) {
+            next.whenData((extensions) {
+              _updateExtensions(type, extensions);
+            });
+          },
+        );
+      }
+
+      // Initial fetch
       fetchSources(ItemType.anime);
       fetchSources(ItemType.manga);
       fetchSources(ItemType.novel);
-      final animeExtensions =
-          await ref.read(getExtensionsStreamProvider(ItemType.anime).future);
-      final mangaExtensions =
-          await ref.read(getExtensionsStreamProvider(ItemType.manga).future);
-      final novelExtensions =
-          await ref.read(getExtensionsStreamProvider(ItemType.novel).future);
+
+      // Force initial update from current stream values
+      for (final type in [ItemType.anime, ItemType.manga, ItemType.novel]) {
+        final extensions =
+            await ref.read(getExtensionsStreamProvider(type).future);
+        _updateExtensions(type, extensions);
+      }
 
       state = state.copyWith(
-        installedAnimeExtensions:
-            animeExtensions.where((ext) => ext.isAdded ?? false).toList(),
-        installedMangaExtensions:
-            mangaExtensions.where((ext) => ext.isAdded ?? false).toList(),
-        installedNovelExtensions:
-            novelExtensions.where((ext) => ext.isAdded ?? false).toList(),
         activeAnimeRepo: _repo.getActiveAnimeRepo(),
         activeMangaRepo: _repo.getActiveMangaRepo(),
         activeNovelRepo: _repo.getActiveNovelRepo(),
-        activeAnimeSource: animeExtensions
-            .where((ext) => ext.isAdded ?? false)
-            .firstWhereOrNull(
-                (source) => source.id == _repo.getActiveAnimeSourceId()),
-        activeMangaSource: mangaExtensions
-            .where((ext) => ext.isAdded ?? false)
-            .firstWhereOrNull(
-                (source) => source.id == _repo.getActiveMangaSourceId()),
-        activeNovelSource: novelExtensions
-            .where((ext) => ext.isAdded ?? false)
-            .firstWhereOrNull(
-                (source) => source.id == _repo.getActiveNovelSourceId()),
+        isLoading: false,
       );
+
+      // Set active sources after extensions are loaded
+      _restoreActiveSources();
     } catch (e, st) {
       AppLogger.e('Error initializing extensions: $e\n$st');
       state = state.copyWith(isLoading: false);
     }
+  }
+
+  void _updateExtensions(ItemType type, List<Source> extensions) {
+    final installed = extensions.where((ext) => ext.isAdded ?? false).toList();
+
+    switch (type) {
+      case ItemType.anime:
+        state = state.copyWith(installedAnimeExtensions: installed);
+        break;
+      case ItemType.manga:
+        state = state.copyWith(installedMangaExtensions: installed);
+        break;
+      case ItemType.novel:
+        state = state.copyWith(installedNovelExtensions: installed);
+        break;
+    }
+    // Re-verify active source whenever extensions change
+    _restoreActiveSources();
+  }
+
+  void _restoreActiveSources() {
+    state = state.copyWith(
+      activeAnimeSource: state.installedAnimeExtensions
+          .firstWhereOrNull((s) => s.id == _repo.getActiveAnimeSourceId()),
+      activeMangaSource: state.installedMangaExtensions
+          .firstWhereOrNull((s) => s.id == _repo.getActiveMangaSourceId()),
+      activeNovelSource: state.installedNovelExtensions
+          .firstWhereOrNull((s) => s.id == _repo.getActiveNovelSourceId()),
+    );
   }
 
   void setActiveSource(Source source) {

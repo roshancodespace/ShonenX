@@ -74,7 +74,8 @@ class AnimeOnsenProvider extends AnimeProvider {
   }
 
   @override
-  Future<BaseEpisodeModel> getEpisodes(String animeId) async {
+  Future<BaseEpisodeModel> getEpisodes(String animeId,
+      {String? anilistId, String? malId}) async {
     await _checkAndUpdateToken();
 
     final url = Uri.parse('$apiUrl/content/$animeId/episodes');

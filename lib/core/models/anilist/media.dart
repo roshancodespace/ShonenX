@@ -1,4 +1,5 @@
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
+import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 
 class Media {
   final int? id;
@@ -159,6 +160,26 @@ class Media {
       isFavourite: false,
       rankings: [],
       meanScore: (node['mean'] as num?)?.toDouble(),
+    );
+  }
+
+  BaseAnimeModel toBaseAnimeModel(Media media) {
+    return BaseAnimeModel(
+      id: media.id.toString(),
+      name: media.title?.english ?? media.title?.romaji ?? media.title?.native,
+      poster: media.coverImage?.large ?? media.coverImage?.medium,
+      banner: media.bannerImage,
+      type: media.format,
+      description: media.description,
+      genres: media.genres,
+      rank: media.rank,
+      duration: media.duration.toString(),
+      episodes: EpisodesModel(
+        sub: media.episodes,
+        dub: media.episodes,
+        total: media.episodes,
+      ),
+      releaseDate: media.startDate?.toDateTime?.toIso8601String(),
     );
   }
 

@@ -8,11 +8,15 @@ abstract class AnimeProvider {
   final String apiUrl;
   Map<String, String> get headers => {};
 
-  AnimeProvider({required this.baseUrl, required this.providerName, required this.apiUrl});
+  AnimeProvider(
+      {required this.baseUrl,
+      required this.providerName,
+      required this.apiUrl});
 
   Future<HomePage> getHome();
   Future<DetailPage> getDetails(String animeId);
-  Future<BaseEpisodeModel> getEpisodes(String animeId);
+  Future<BaseEpisodeModel> getEpisodes(String animeId,
+      {String? anilistId, String? malId});
   Future<BaseSourcesModel> getSources(
       String animeId, String episodeId, String? serverName, String? category);
   Future<SearchPage> getSearch(String keyword, String? type, int page);

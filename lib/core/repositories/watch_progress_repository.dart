@@ -47,7 +47,20 @@ class WatchProgressRepository {
     if (entry != null) {
       final updatedEpisodes =
           Map<int, EpisodeProgress>.from(entry.episodesProgress);
-      updatedEpisodes[episodeProgress.episodeNumber] = episodeProgress;
+
+      // Preserve existing thumbnail if new one is null
+      EpisodeProgress? existingEp =
+          updatedEpisodes[episodeProgress.episodeNumber];
+      String? thumbnailToUse = episodeProgress.episodeThumbnail;
+      if (thumbnailToUse == null && existingEp != null) {
+        thumbnailToUse = existingEp.episodeThumbnail;
+      }
+
+      final mergedEpisodeProgress = episodeProgress.copyWith(
+        episodeThumbnail: thumbnailToUse,
+      );
+
+      updatedEpisodes[episodeProgress.episodeNumber] = mergedEpisodeProgress;
 
       final updatedEntry = entry.copyWith(
         episodesProgress: updatedEpisodes,

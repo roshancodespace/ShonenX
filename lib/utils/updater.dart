@@ -1,14 +1,11 @@
 import 'dart:developer' as developer;
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/main.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:install_plugin/install_plugin.dart';
+import 'package:shonenx/utils/update_dialog.dart';
 
 enum UpdateType { stable, beta, alpha, hotfix }
 
@@ -149,211 +146,35 @@ void showUpdateBottomSheet(
   String? releaseNotes,
   String? apkDownloadUrl,
 }) {
-  final typeText = type.name.toUpperCase();
-  final colorScheme = Theme.of(context).colorScheme;
-
-  showModalBottomSheet(
+  // Using showGeneralDialog allows us to have more control over the overlay
+  // and ensure it sits on top of everything including the nav bar.
+  showGeneralDialog(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) {
-      double progress = 0.0;
-      bool downloading = false;
-
-      return StatefulBuilder(builder: (context, setState) {
-        Future<void> downloadAndInstall() async {
-          if (apkDownloadUrl == null) return;
-          setState(() {
-            downloading = true;
-            progress = 0;
-          });
-
-          final tempDir = await getTemporaryDirectory();
-          final savePath = '${tempDir.path}/app-update.apk';
-
-          try {
-            await Dio().download(
-              apkDownloadUrl,
-              savePath,
-              onReceiveProgress: (rec, total) {
-                setState(() {
-                  progress = rec / total;
-                });
-              },
-            );
-            developer.log('Downloaded APK: $savePath');
-
-            await InstallPlugin.install(savePath, appId: 'com.example.shonenx')
-                .then((_) async {
-              developer.log('Install triggered');
-            }).catchError((e) {
-              developer.log('Installation failed: $e');
-            });
-          } catch (e) {
-            developer.log('Download failed: $e');
-          } finally {
-            if (await File(savePath).exists()) {
-              await File(savePath).delete();
-              developer.log('Deleted APK file after install or failure');
-            }
-            setState(() {
-              downloading = false;
-              progress = 0;
-            });
-          }
-        }
-
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+    useRootNavigator: true, // This is crucial for covering bottom nav
+    barrierDismissible: true,
+    barrierLabel: 'Dismiss',
+    barrierColor: Colors.black.withOpacity(0.5),
+    transitionDuration: const Duration(milliseconds: 300),
+    pageBuilder: (context, animation, secondaryAnimation) {
+      return UpdateDialog(
+        latestVersion: latestVersion,
+        currentVersion: currentVersion,
+        type: type,
+        releaseNotes: releaseNotes,
+        apkDownloadUrl: apkDownloadUrl,
+      );
+    },
+    transitionBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: animation,
+        child: ScaleTransition(
+          scale: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutBack,
           ),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 32,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: colorScheme.onSurface.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Update Available',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    Row(
-                      children: [
-                        Chip(
-                          label: Text(
-                            typeText,
-                            style: TextStyle(
-                              color: type == UpdateType.stable
-                                  ? colorScheme.onPrimary
-                                  : colorScheme.onSecondary,
-                            ),
-                          ),
-                          backgroundColor: type == UpdateType.stable
-                              ? colorScheme.primary
-                              : colorScheme.secondary,
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          onPressed: () => launchUrl(Uri.parse(
-                              'https://shonenx.vercel.app/#downloads')),
-                          icon: const Icon(Icons.public, size: 20),
-                          tooltip: 'Website',
-                        ),
-                        IconButton(
-                          onPressed: () => launchUrl(Uri.parse(
-                              'https://github.com/roshancodespace/ShonenX/releases')),
-                          icon: const Icon(Icons.code, size: 20),
-                          tooltip: 'GitHub',
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Current Version',
-                            style: Theme.of(context).textTheme.bodyMedium),
-                        const SizedBox(height: 4),
-                        Text(currentVersion,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('Latest Version',
-                            style: Theme.of(context).textTheme.bodyMedium),
-                        const SizedBox(height: 4),
-                        Text(latestVersion,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (releaseNotes != null && releaseNotes.isNotEmpty)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Release Notes',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      Text(releaseNotes,
-                          style: Theme.of(context).textTheme.bodyMedium),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
-                Text(
-                  'You can download and install this update directly from the app.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: downloading
-                      ? LinearProgressIndicator(value: progress)
-                      : ElevatedButton.icon(
-                          onPressed: apkDownloadUrl == null
-                              ? null
-                              : downloadAndInstall,
-                          icon: const Icon(Icons.download_outlined),
-                          label: const Text('Download & Install'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            textStyle: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      textStyle: const TextStyle(fontSize: 16),
-                    ),
-                    child: const Text('Close'),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        );
-      });
+          child: child,
+        ),
+      );
     },
   );
 }

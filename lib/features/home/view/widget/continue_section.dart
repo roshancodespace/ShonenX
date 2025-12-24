@@ -77,10 +77,20 @@ class ContinueSection extends ConsumerWidget {
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               )
-                            : Icon(
-                                Icons.image_outlined,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
+                            : (entry.animeCover.isNotEmpty
+                                ? Image.network(
+                                    entry.animeCover,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) => Icon(
+                                      Icons.broken_image_outlined,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.image_outlined,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  )),
                       ),
                     ),
                     const SizedBox(height: 8),

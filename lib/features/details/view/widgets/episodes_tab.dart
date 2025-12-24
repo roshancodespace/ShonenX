@@ -517,7 +517,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
       },
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -732,7 +732,8 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                                 const EdgeInsets.symmetric(horizontal: 16.0),
                             leading: _buildEpisodeThumbnail(context, ep, index,
                                 isWatched: isWatched,
-                                episodeThumbnail: epProgress?.episodeThumbnail),
+                                episodeThumbnail: epProgress?.episodeThumbnail,
+                                fallbackUrl: widget.mediaCover),
                             title: Text(
                               ep.title ?? 'Episode ${ep.number ?? index + 1}',
                               maxLines: 2,
@@ -804,7 +805,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
 
   Widget _buildEpisodeThumbnail(
       BuildContext context, EpisodeDataModel ep, int index,
-      {bool isWatched = false, String? episodeThumbnail}) {
+      {bool isWatched = false, String? episodeThumbnail, String? fallbackUrl}) {
     final theme = Theme.of(context);
     final episodeNumber = ep.number ?? index + 1;
 
@@ -819,19 +820,16 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
               Image.memory(
                 base64Decode(episodeThumbnail),
                 fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildFallbackIcon(theme),
+              )
+            else if (fallbackUrl != null && fallbackUrl.isNotEmpty)
+              Image.network(
+                fallbackUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildFallbackIcon(theme),
               )
             else
-              Container(
-                color: theme.colorScheme.primaryContainer,
-                child: Center(
-                  child: Icon(
-                    Icons.play_arrow_rounded,
-                    color:
-                        theme.colorScheme.onPrimaryContainer.withOpacity(0.5),
-                    size: 30,
-                  ),
-                ),
-              ),
+              _buildFallbackContainer(theme),
             Positioned(
               left: 4,
               bottom: 4,
@@ -869,6 +867,31 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
 
   @override
   bool get wantKeepAlive => true;
+
+  Widget _buildFallbackContainer(ThemeData theme) {
+    return Container(
+      color: theme.colorScheme.primaryContainer,
+      child: Center(
+        child: Icon(
+          Icons.play_arrow_rounded,
+          color: theme.colorScheme.onPrimaryContainer.withOpacity(0.5),
+          size: 30,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFallbackIcon(ThemeData theme) {
+    return Container(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Icon(
+          Icons.broken_image_outlined,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
 }
 
 class _SliverToolbarDelegate extends SliverPersistentHeaderDelegate {

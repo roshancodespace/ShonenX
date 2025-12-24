@@ -83,6 +83,9 @@ dependencies:
   install_plugin: ^2.1.0
   ffmpeg_kit_flutter_new_min: ^3.1.0
   screenshot: ^3.0.0
+  pointycastle: ^3.9.1
+  flutter_markdown: ^0.7.7+1
+  glass_kit: ^4.0.2
 
 dev_dependencies:
   build_runner: ^2.4.13

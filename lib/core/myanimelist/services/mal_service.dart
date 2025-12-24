@@ -230,4 +230,3 @@ final malServiceProvider = Provider<MyAnimeListService>((ref) {
   final authService = ref.read(malAuthServiceProvider);
   return MyAnimeListService(ref, authService);
 });
-

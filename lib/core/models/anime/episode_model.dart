@@ -33,6 +33,11 @@ class EpisodeDataModel implements BaseEpisode {
   final bool? isFiller;
   @override
   final int? number;
+  final String? description;
+  final String? date;
+  final bool? sub;
+  final bool? dub;
+  
 
   EpisodeDataModel({
     this.id,
@@ -41,6 +46,10 @@ class EpisodeDataModel implements BaseEpisode {
     this.thumbnail,
     this.isFiller,
     this.number,
+    this.description,
+    this.date,
+    this.sub,
+    this.dub,
   });
 
   EpisodeDataModel copyWith({
@@ -50,6 +59,10 @@ class EpisodeDataModel implements BaseEpisode {
     String? thumbnail,
     bool? isFiller,
     int? number,
+    String? description,
+    String? date,
+    bool? sub,
+    bool? dub,
   }) {
     return EpisodeDataModel(
       id: id ?? this.id,
@@ -58,6 +71,10 @@ class EpisodeDataModel implements BaseEpisode {
       thumbnail: thumbnail ?? this.thumbnail,
       isFiller: isFiller ?? this.isFiller,
       number: number ?? this.number,
+      description: description ?? this.description,
+      date: date ?? this.date,
+      sub: sub ?? this.sub,
+      dub: dub ?? this.dub,
     );
   }
 }

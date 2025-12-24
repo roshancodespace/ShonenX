@@ -12,6 +12,7 @@ permissions:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,20 +30,41 @@ jobs:
       - name: Install CMake 3.18.1
         run: |
           yes | sdkmanager "cmake;3.18.1"
-          echo "cmake.dir=$ANDROID_HOME/cmake/3.18.1" >> $GITHUB_WORKSPACE/android/local.properties
+          echo "cmake.dir=$ANDROID_HOME/cmake/3.18.1" >> android/local.properties
 
       - name: Install dependencies
         run: flutter pub get
+
+      # 🔐 ANDROID SIGNING (KEYSTORE)
+      - name: Decode Android keystore
+        run: |
+          mkdir -p android/app/keystore
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore/upload-keystore.jks
+
+      - name: Create key.properties
+        run: |
+          cat <<EOF > android/key.properties
+          storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=keystore/upload-keystore.jks
+          EOF
 
       - name: Create .env file
         run: |
           echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" >> .env
           echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
           echo "API_URL=${{ secrets.API_URL }}" >> .env
-        shell: bash
 
       - name: Build APK (split per ABI)
         run: flutter build apk --release --split-per-abi
+
+      - name: Verify APK signing
+        run: |
+          for apk in build/app/outputs/flutter-apk/*.apk; do
+            echo "Verifying $apk"
+            apksigner verify --verbose "$apk"
+          done
 
       - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4
@@ -52,6 +74,7 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -59,7 +82,11 @@ jobs:
       - name: Install Linux Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libwebkit2gtk-4.1-dev libsecret-1-dev libasound2-dev libmpv-dev
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            libwebkit2gtk-4.1-dev libsecret-1-dev \
+            libasound2-dev libmpv-dev
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -74,7 +101,6 @@ jobs:
           echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" >> .env
           echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
           echo "API_URL=${{ secrets.API_URL }}" >> .env
-        shell: bash
 
       - name: Build Linux
         run: flutter build linux --release
@@ -93,6 +119,7 @@ jobs:
   publish-release:
     needs: [build-android, build-linux]
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -114,71 +141,37 @@ jobs:
       - name: Generate Changelog
         id: changelog
         run: |
-          # Finds the tag before the one currently being pushed
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          
+
           if [ -z "$PREVIOUS_TAG" ]; then
-            echo "No previous tag found. Generating log from initial commit."
-            COMMITS=$(git log HEAD --pretty=format:'%s')
-            echo "$COMMITS" > all_commits.txt
+            git log HEAD --pretty=format:'%s' > all_commits.txt
           else
-            echo "Generating changelog from $PREVIOUS_TAG to HEAD"
-            COMMITS=$(git log $PREVIOUS_TAG..HEAD --pretty=format:'%s')
-            echo "$COMMITS" > all_commits.txt
+            git log $PREVIOUS_TAG..HEAD --pretty=format:'%s' > all_commits.txt
           fi
 
-          # --- RELEASE TYPE WARNING ---
           TAG_NAME=${GITHUB_REF_NAME}
           WARNING_MSG=""
 
           if [[ "$TAG_NAME" == *"debug"* ]]; then
-            WARNING_MSG="> [!WARNING]\n> **DEBUG BUILD**: This release is for debugging purposes only. It may be unstable and contain verbose logging."
+            WARNING_MSG="> [!WARNING]\n> **DEBUG BUILD**"
           elif [[ "$TAG_NAME" == *"beta"* ]]; then
-            WARNING_MSG="> [!IMPORTANT]\n> **BETA RELEASE**: This is a pre-release version for testing. Features may be incomplete or contain bugs."
+            WARNING_MSG="> [!IMPORTANT]\n> **BETA RELEASE**"
           elif [[ "$TAG_NAME" == *"alpha"* ]]; then
-            WARNING_MSG="> [!CAUTION]\n> **ALPHA RELEASE**: Highly experimental. Use with caution."
+            WARNING_MSG="> [!CAUTION]\n> **ALPHA RELEASE**"
           elif [[ "$TAG_NAME" == *"hotfix"* ]]; then
-            WARNING_MSG="> [!NOTE]\n> **HOTFIX**: Critical fixes applied on top of the previous release."
+            WARNING_MSG="> [!NOTE]\n> **HOTFIX RELEASE**"
           fi
 
-          if [ -n "$WARNING_MSG" ]; then
-             echo -e "$WARNING_MSG\n" > release_notes.md
-          else
-             echo "" > release_notes.md
-          fi
-          # ---------------------------
+          echo -e "$WARNING_MSG\n## Changelog" > release_notes.md
 
-          echo "## Changelog" >> release_notes.md
-          extract_category() {
-            local TYPE=$1
-            local TITLE=$2
-            local PATTERN="^$TYPE"
-            
-            # Count commits of this type
-            COUNT=$(grep -i "$PATTERN" all_commits.txt | wc -l)
-            
-            if [ "$COUNT" -gt 0 ]; then
-              echo "### $TITLE" >> release_notes.md
-              grep -i "$PATTERN" all_commits.txt | sed "s/^$TYPE[: ]*//" | sed "s/^/- /" >> release_notes.md
-              echo "" >> release_notes.md
-            fi
-          }
+          grep -i "^feat" all_commits.txt | sed "s/^feat[: ]*/- /" >> release_notes.md || true
+          grep -i "^fix" all_commits.txt | sed "s/^fix[: ]*/- /" >> release_notes.md || true
+          grep -i "^perf" all_commits.txt | sed "s/^perf[: ]*/- /" >> release_notes.md || true
+          grep -i "^refactor" all_commits.txt | sed "s/^refactor[: ]*/- /" >> release_notes.md || true
+          grep -i "^chore" all_commits.txt | sed "s/^chore[: ]*/- /" >> release_notes.md || true
 
-          extract_category "feat" "🚀 Features"
-          extract_category "fix" "🐛 Bug Fixes"
-          extract_category "perf" "⚡ Performance"
-          extract_category "refactor" "♻️ Refactor"
-          extract_category "chore" "🔧 Chores & Maintenance"
-          
-          # Add unmatched commits to "Other Changes" if desired, or skip.
-          # For stricter conventional commits, the above covers most.
-          
-          # Read file content into variable safely
-          RELEASE_BODY=$(cat release_notes.md)
-          
-          # Multiline output for GITHUB_OUTPUT
           echo "notes<<EOF" >> $GITHUB_OUTPUT
-          echo "$RELEASE_BODY" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release

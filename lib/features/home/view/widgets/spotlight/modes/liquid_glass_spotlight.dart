@@ -1,9 +1,8 @@
-import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:glass_kit/glass_kit.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
-import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
 
 class LiquidGlassSpotlight extends StatelessWidget {
   final Media? anime;
@@ -39,33 +38,29 @@ class LiquidGlassSpotlight extends StatelessWidget {
             ),
           ),
 
-          // Glass Overlay
+          // Glass Capsule Info
           Align(
             alignment: Alignment.bottomCenter,
-            child: ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(bottom: Radius.circular(20)),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
-                child: Container(
-                  height: 90,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.white.withOpacity(0.1),
-                        Colors.white.withOpacity(0.05),
-                      ],
-                    ),
-                    border: Border(
-                      top: BorderSide(
-                        color: Colors.white.withOpacity(0.2),
-                        width: 1.0,
-                      ),
-                    ),
-                  ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: GlassContainer.frostedGlass(
+                height: 100,
+                width: double.infinity,
+                borderRadius: BorderRadius.circular(24),
+                borderWidth: 1.5,
+                borderColor: Colors.white.withOpacity(0.3),
+                blur: 20,
+                elevation: 10,
+                // Inner gradient for depth
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.15),
+                    Colors.white.withOpacity(0.05),
+                  ],
+                ),
+                child: Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   child: Row(
@@ -92,22 +87,61 @@ class LiquidGlassSpotlight extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${anime!.episodes ?? "?"} EP • ${anime!.status ?? "Unknown"}',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: Colors.white.withOpacity(0.8),
-                              ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    anime!.format ?? 'TV',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${anime!.episodes ?? "?"} EP • ${anime!.status ?? "Unknown"}',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: Colors.white.withOpacity(0.9),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
                       if (anime!.averageScore != null)
-                        Tag(
-                          text: '${anime!.averageScore}',
-                          icon: Iconsax.star1,
-                          color: Colors.black.withOpacity(0.3),
-                          textColor: Colors.white,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.2)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Iconsax.star1,
+                                  color: Colors.amber, size: 16),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${anime!.averageScore}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                     ],
                   ),

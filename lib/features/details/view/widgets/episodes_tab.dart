@@ -149,6 +149,8 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
             'High-confidence match found: ${best["name"]} (via "$usedTitle")');
       }
 
+      if (mounted) setState(() => _isSearchingMatch = false);
+
       await ref.read(episodeListProvider.notifier).fetchEpisodes(
             animeTitle: _bestMatchName!,
             animeId: animeIdForSource!,

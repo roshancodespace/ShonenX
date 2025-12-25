@@ -225,7 +225,7 @@ class _HistoryEntryTile extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
-                    '${_formatDuration(ep.progressInSeconds!)} / ${_formatDuration(ep.durationInSeconds!)}',
+                    '${_formatDuration(ep.progressInSeconds)} / ${_formatDuration(ep.durationInSeconds)}',
                     style: theme.textTheme.bodySmall,
                   ),
                   trailing: IconButton(
@@ -240,7 +240,8 @@ class _HistoryEntryTile extends StatelessWidget {
     );
   }
 
-  String _formatDuration(int seconds) {
+  String _formatDuration(int? seconds) {
+    if (seconds == null || seconds <= 0) return '0:00';
     final duration = Duration(seconds: seconds);
     final minutes = duration.inMinutes;
     final remainingSeconds = duration.inSeconds % 60;

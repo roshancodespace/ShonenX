@@ -48,6 +48,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     with AutomaticKeepAliveClientMixin<EpisodesTab> {
   String? animeIdForSource;
   String? _bestMatchName;
+  bool _isSearchingMatch = false;
 
   String _selectedRange = 'All';
   List<String> _rangeOptions = ['All'];
@@ -68,14 +69,16 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     final useMangayomi =
         ref.read(experimentalProvider.select((s) => s.useMangayomiExtensions));
 
-    // Reset best match if it's a fresh (forced) fetch or we don't have one
-    if (force) {
+    // Reset best match ONLY if we don't have a forced ID (manual selection)
+    if (force && animeIdForSource == null) {
       ref.read(_bestMatchNameProvider.notifier).state = null;
       setState(() => _bestMatchName = null);
     }
 
     try {
       if (animeIdForSource == null) {
+        if (mounted) setState(() => _isSearchingMatch = true);
+
         final titles = [
           widget.mediaTitle.english,
           widget.mediaTitle.romaji,
@@ -153,11 +156,16 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
           );
     } catch (err, stack) {
       AppLogger.e(err, stack);
+    } finally {
+      if (mounted) setState(() => _isSearchingMatch = false);
     }
   }
 
   void _fail(String title, String message, ContentType type) {
     if (!mounted) return;
+    if (mounted) {
+      setState(() => _isSearchingMatch = false); // Ensure loading stops on fail
+    }
     showAppSnackBar(title, message, type: ContentType.failure);
     // Just show snackbar, state is managed by provider or local UI variables
     // ref.read(_bestMatchNameProvider.notifier).state = null; // Maybe keep this?
@@ -602,7 +610,20 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
               ),
             ),
           ),
-          if (loading && episodes.isEmpty)
+          if (_isSearchingMatch)
+            const SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Searching for best match...'),
+                  ],
+                ),
+              ),
+            )
+          else if (loading && episodes.isEmpty)
             const SliverFillRemaining(
               child: Center(child: CircularProgressIndicator()),
             )

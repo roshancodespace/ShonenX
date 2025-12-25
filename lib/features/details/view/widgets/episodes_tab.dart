@@ -189,7 +189,6 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
   }
 
   void _showSourceSelectionDialog(BuildContext context, WidgetRef ref) {
-    final useMangayomi = ref.read(experimentalProvider).useMangayomiExtensions;
     final theme = Theme.of(context);
 
     showModalBottomSheet(
@@ -206,21 +205,52 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
           maxChildSize: 0.8,
           expand: false,
           builder: (context, scrollController) {
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    'Select Source',
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ),
-                Expanded(
-                  child: useMangayomi
-                      ? _buildMangayomiSourceList(ref, scrollController)
-                      : _buildLegacySourceList(ref, scrollController),
-                ),
-              ],
+            return Consumer(
+              builder: (context, ref, _) {
+                final useMangayomi =
+                    ref.watch(experimentalProvider).useMangayomiExtensions;
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      child: Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: theme.dividerColor.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Text(
+                        'Select Source',
+                        style: theme.textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    SwitchListTile(
+                      title: const Text('Use Mangayomi Extensions'),
+                      value: useMangayomi,
+                      onChanged: (value) {
+                        ref.read(experimentalProvider.notifier).updateSettings(
+                              (state) =>
+                                  state.copyWith(useMangayomiExtensions: value),
+                            );
+                      },
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: useMangayomi
+                          ? _buildMangayomiSourceList(ref, scrollController)
+                          : _buildLegacySourceList(ref, scrollController),
+                    ),
+                  ],
+                );
+              },
             );
           },
         );

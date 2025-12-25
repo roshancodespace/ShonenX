@@ -17,6 +17,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -30,12 +36,14 @@ jobs:
       - name: Install CMake 3.18.1
         run: |
           yes | sdkmanager "cmake;3.18.1"
-          echo "cmake.dir=$ANDROID_HOME/cmake/3.18.1" >> android/local.properties
+          cat <<EOF > android/local.properties
+          sdk.dir=$ANDROID_HOME
+          cmake.dir=$ANDROID_HOME/cmake/3.18.1
+          EOF
 
       - name: Install dependencies
         run: flutter pub get
 
-      # 🔐 ANDROID SIGNING (KEYSTORE)
       - name: Decode Android keystore
         run: |
           mkdir -p android/app/keystore
@@ -61,9 +69,12 @@ jobs:
 
       - name: Verify APK signing
         run: |
+          BUILD_TOOLS_VERSION=$(ls $ANDROID_HOME/build-tools | sort -V | tail -n 1)
+          APKSIGNER_PATH="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
+          echo "Using apksigner at: $APKSIGNER_PATH"
           for apk in build/app/outputs/flutter-apk/*.apk; do
             echo "Verifying $apk"
-            apksigner verify --verbose "$apk"
+            "$APKSIGNER_PATH" verify --verbose "$apk"
           done
 
       - name: Upload APK Artifacts

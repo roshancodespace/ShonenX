@@ -739,10 +739,11 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                     final epProgress =
                         progress?.episodesProgress[ep.number ?? -1];
                     final isWatched = epProgress?.isCompleted ?? false;
-                    final watchProgress =
-                        ((epProgress?.progressInSeconds ?? 0.0) /
-                                (epProgress?.durationInSeconds ?? 1.0))
-                            .clamp(0.0, 1.0);
+                    final duration = epProgress?.durationInSeconds ?? 0;
+                    final progressSec = epProgress?.progressInSeconds ?? 0;
+                    final watchProgress = (duration > 0)
+                        ? (progressSec / duration).clamp(0.0, 1.0)
+                        : 0.0;
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4.0),

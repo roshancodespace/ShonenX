@@ -61,8 +61,13 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
   }
 
   Future<void> _fetchEpisodes(WidgetRef ref, {bool force = false}) async {
+    // Check local state to avoid redundant fetches if already loaded and match is set
     final state = ref.read(episodeListProvider);
-    if (!force && (state.episodes.isNotEmpty || state.isLoading)) return;
+    if (!force &&
+        animeIdForSource != null &&
+        (state.episodes.isNotEmpty || state.isLoading)) {
+      return;
+    }
 
     AppLogger.d("Fetching episodes for ${widget.mediaTitle}");
 
@@ -149,12 +154,17 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
             'High-confidence match found: ${best["name"]} (via "$usedTitle")');
       }
 
+      // Final safety check
+      if (animeIdForSource == null || _bestMatchName == null) {
+        return;
+      }
+
       if (mounted) setState(() => _isSearchingMatch = false);
 
       await ref.read(episodeListProvider.notifier).fetchEpisodes(
             animeTitle: _bestMatchName!,
             animeId: animeIdForSource!,
-            force: force, // Pass the force flag correctly
+            force: force,
           );
     } catch (err, stack) {
       AppLogger.e(err, stack);

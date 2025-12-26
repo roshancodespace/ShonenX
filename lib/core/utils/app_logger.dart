@@ -48,6 +48,9 @@ class AppLogger {
   /// [error] Optional error object
   /// [stackTrace] Optional stack trace
   static void e(dynamic message, [Object? error, StackTrace? stackTrace]) {
+    if (error is StackTrace) {
+      error = {error};
+    }
     if (kDebugMode) _logger.e(message, error: error, stackTrace: stackTrace);
   }
 

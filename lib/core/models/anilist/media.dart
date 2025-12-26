@@ -2,7 +2,7 @@ import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 
 class Media {
-  final int? id;
+  final dynamic id;
   final Title? title;
   final CoverImage? coverImage;
   final String? bannerImage;

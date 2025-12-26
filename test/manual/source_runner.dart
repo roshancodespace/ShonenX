@@ -6,7 +6,7 @@ import 'package:shonenx/core/utils/app_logger.dart';
 
 // --- CONFIGURATION ---
 // ignore: prefer_const_declarations
-final String targetProvider = 'gojo';
+final String targetProvider = 'hianime';
 // ignore: prefer_const_declarations
 final String searchQuery = 'one piece';
 // ---------------------

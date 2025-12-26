@@ -123,12 +123,16 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
   /// Centralized async function runner with error handling.
   Future<T?> _safeRun<T>(
     Future<T> Function() task, {
+    Function(T)? onSuccess,
+    Function()? onError,
     String? errorTitle,
     String? errorMessage,
     bool showSnackBar = true,
   }) async {
     try {
-      return await task();
+      final result = await task();
+      onSuccess?.call(result);
+      return result;
     } catch (e, st) {
       AppLogger.e('Error running task: $errorTitle', e, st);
       final title = errorTitle ?? 'Error';
@@ -138,6 +142,7 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
       if (showSnackBar) {
         showAppSnackBar(title, msg, type: ContentType.failure);
       }
+      onError?.call();
       return null;
     }
   }
@@ -175,6 +180,7 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
             },
             errorTitle: "Mangayomi Episode Fetch",
             errorMessage: "Failed to fetch episodes via Mangayomi.",
+            onError: () => reset(),
           ) ??
           [];
     }
@@ -193,6 +199,7 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
           () async => (await animeProvider.getEpisodes(animeId)).episodes ?? [],
           errorTitle: "Legacy Source Episode Fetch",
           errorMessage: "Failed to fetch episodes.",
+          onError: () => reset(),
         ) ??
         [];
   }
@@ -254,6 +261,11 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
       errorMessage: "Couldn't sync Jikan episode titles.",
       showSnackBar: false,
     );
+  }
+
+  // Reset State
+  void reset() {
+    state = const EpisodeListState();
   }
 }
 

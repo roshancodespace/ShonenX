@@ -1,9 +1,6 @@
 import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
@@ -17,14 +14,11 @@ import 'package:shonenx/features/downloads/view_model/downloads_notifier.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
-import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/helpers/navigation.dart';
-import 'package:shonenx/main.dart';
 import 'package:shonenx/core/models/anilist/media.dart' as media;
 import 'package:shonenx/storage_provider.dart';
 import 'package:shonenx/utils/extractors.dart';
-
-final _bestMatchNameProvider = StateProvider<String?>((ref) => null);
+import 'package:shonenx/features/details/view_model/episodes_tab_notifier.dart';
 
 class EpisodesTab extends ConsumerStatefulWidget {
   final String mediaId;
@@ -46,159 +40,318 @@ class EpisodesTab extends ConsumerStatefulWidget {
 
 class _EpisodesTabState extends ConsumerState<EpisodesTab>
     with AutomaticKeepAliveClientMixin<EpisodesTab> {
-  String? animeIdForSource;
-  String? _bestMatchName;
-  bool _isSearchingMatch = false;
-
-  String _selectedRange = 'All';
-  List<String> _rangeOptions = ['All'];
-  bool _isSortedDescending = false;
+  @override
+  bool get wantKeepAlive => true;
 
   @override
-  void initState() {
-    super.initState();
-    Future.microtask(() => _fetchEpisodes(ref));
-  }
+  Widget build(BuildContext context) {
+    super.build(context);
 
-  Future<void> _fetchEpisodes(WidgetRef ref, {bool force = false}) async {
-    // Check local state to avoid redundant fetches if already loaded and match is set
-    final state = ref.read(episodeListProvider);
-    if (!force &&
-        animeIdForSource != null &&
-        (state.episodes.isNotEmpty || state.isLoading)) {
-      return;
-    }
+    // Watch State
+    final notifierProvider = episodesTabNotifierProvider(widget.mediaTitle);
+    final notifier = ref.read(notifierProvider.notifier);
+    final state = ref.watch(notifierProvider);
 
-    AppLogger.d("Fetching episodes for ${widget.mediaTitle}");
+    // Watch other providers
+    final episodeListState = ref.watch(episodeListProvider);
+    final episodes = episodeListState.episodes;
+    final loading = episodeListState.isLoading;
+    final error = episodeListState.error;
 
-    final useMangayomi =
-        ref.read(experimentalProvider.select((s) => s.useMangayomiExtensions));
+    // UI state
+    final exposedName = state.bestMatchName;
 
-    // Reset best match ONLY if we don't have a forced ID (manual selection)
-    if (force && animeIdForSource == null) {
-      ref.read(_bestMatchNameProvider.notifier).state = null;
-      setState(() => _bestMatchName = null);
-    }
+    final progress = ref.watch(watchProgressRepositoryProvider
+        .select((w) => w.getProgress(widget.mediaId)));
+    final theme = Theme.of(context);
 
-    try {
-      if (animeIdForSource == null) {
-        if (mounted) setState(() => _isSearchingMatch = true);
-
-        final titles = [
-          widget.mediaTitle.english,
-          widget.mediaTitle.romaji,
-          widget.mediaTitle.native,
-        ]
-            .where((t) => t != null && t.trim().isNotEmpty)
-            .cast<String>()
-            .toList();
-
-        if (titles.isEmpty) throw Exception("No valid title available.");
-
-        List<Map<String, String>> candidates = [];
-        Map<String, String>? best;
-        String? usedTitle;
-
-        for (final title in titles) {
-          if (useMangayomi) {
-            final res = await ref.read(sourceProvider.notifier).search(title);
-            candidates = res.list
-                .where((r) => r.name != null && r.link != null)
-                .map((r) => {"id": r.link!, "name": r.name!})
-                .toList();
-          } else {
-            final provider = ref.read(selectedAnimeProvider);
-            if (provider == null) continue;
-
-            final res =
-                await provider.getSearch(Uri.encodeComponent(title), null, 1);
-            candidates = res.results
-                .where((r) => r.id != null && r.name != null)
-                .map((r) => {"id": r.id!, "name": r.name!})
-                .toList();
-          }
-
-          if (!mounted) return;
-          if (candidates.isEmpty) continue;
-
-          final matches = getBestMatches<Map<String, String>>(
-            results: candidates,
-            title: title,
-            nameSelector: (r) => r["name"]!,
-            idSelector: (r) => r["id"]!,
-          );
-
-          if (!mounted) return;
-
-          if (matches.isNotEmpty && matches.first.similarity >= 0.8) {
-            best = matches.first.result;
-            usedTitle = title;
-            break;
-          }
-        }
-
-        if (best == null) {
-          _fail('Anime Match', 'No suitable match found for any title.',
-              ContentType.failure);
-          return;
-        }
-
-        animeIdForSource = best["id"];
-
-        if (mounted) {
-          ref.read(_bestMatchNameProvider.notifier).state = best["name"];
-          setState(() => _bestMatchName = best?["name"]);
-        }
-
-        AppLogger.d(
-            'High-confidence match found: ${best["name"]} (via "$usedTitle")');
+    // Filtering logic
+    List<EpisodeDataModel> visibleEpisodes = episodes;
+    if (state.selectedRange != 'All') {
+      final parts = state.selectedRange.split('–');
+      if (parts.length == 2) {
+        final start = int.tryParse(parts[0]) ?? 1;
+        final end = int.tryParse(parts[1]) ?? episodes.length;
+        visibleEpisodes = episodes.sublist(
+            (start - 1).clamp(0, episodes.length),
+            end.clamp(0, episodes.length));
       }
-
-      // Final safety check
-      if (animeIdForSource == null || _bestMatchName == null) {
-        return;
-      }
-
-      if (mounted) setState(() => _isSearchingMatch = false);
-
-      await ref.read(episodeListProvider.notifier).fetchEpisodes(
-            animeTitle: _bestMatchName!,
-            animeId: animeIdForSource!,
-            force: force,
-          );
-    } catch (err, stack) {
-      AppLogger.e(err, stack);
-    } finally {
-      if (mounted) setState(() => _isSearchingMatch = false);
     }
-  }
-
-  void _fail(String title, String message, ContentType type) {
-    if (!mounted) return;
-    if (mounted) {
-      setState(() => _isSearchingMatch = false); // Ensure loading stops on fail
+    if (state.isSortedDescending) {
+      visibleEpisodes = visibleEpisodes.reversed.toList();
     }
-    showAppSnackBar(title, message, type: ContentType.failure);
-    // Just show snackbar, state is managed by provider or local UI variables
-    // ref.read(_bestMatchNameProvider.notifier).state = null; // Maybe keep this?
-    // setState(() {
-    //   _loading = false;
-    //   _error = message;
-    // });
+
+    final totalEpisodes = episodes.length;
+
+    return RefreshIndicator(
+      onRefresh: () async => await notifier.refresh(),
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'MATCHED ( by ${ref.watch(experimentalProvider).useMangayomiExtensions ? ref.read(sourceProvider).activeAnimeSource?.name : ref.read(selectedAnimeProvider)?.providerName} )',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          exposedName ?? 'None',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: exposedName == null ? theme.hintColor : null,
+                            fontStyle: exposedName == null
+                                ? FontStyle.italic
+                                : FontStyle.normal,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon:
+                        Icon(Icons.swap_horiz_rounded, color: theme.hintColor),
+                    tooltip: 'Change Source',
+                    onPressed: () =>
+                        _showSourceSelectionDialog(context, ref, notifier),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.help_outline_rounded,
+                        color: theme.hintColor),
+                    tooltip: 'Wrong match?',
+                    onPressed: () => _handleWrongMatch(context, ref, notifier),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (state.isSearchingMatch)
+            const SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Searching for best match...'),
+                  ],
+                ),
+              ),
+            )
+          else if (loading)
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if ((error != null || state.error != null) && episodes.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        state.error ?? error ?? 'Unknown Error',
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 8,
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: () =>
+                                _handleWrongMatch(context, ref, notifier),
+                            icon: const Icon(Icons.search),
+                            label: const Text('Manual Selection'),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () => notifier.refresh(),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else if (episodes.isEmpty)
+            const SliverFillRemaining(
+              child: Center(child: Text('No episodes found')),
+            )
+          else ...[
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverToolbarDelegate(
+                minHeight: 110.0,
+                maxHeight: 110.0,
+                child: Container(
+                  color: theme.scaffoldBackgroundColor,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '$totalEpisodes Episodes',
+                              style: theme.textTheme.titleSmall,
+                            ),
+                            IconButton(
+                              icon: Icon(state.isSortedDescending
+                                  ? Icons.arrow_downward_rounded
+                                  : Icons.arrow_upward_rounded),
+                              tooltip: state.isSortedDescending
+                                  ? 'Sort Ascending'
+                                  : 'Sort Descending',
+                              onPressed: () => notifier.toggleSort(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        height: 50,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          itemCount: state.rangeOptions.length,
+                          itemBuilder: (context, index) {
+                            final range = state.rangeOptions[index];
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: ChoiceChip(
+                                label: Text(range),
+                                selected: state.selectedRange == range,
+                                onSelected: (isSelected) {
+                                  if (isSelected) {
+                                    notifier.updateRange(range);
+                                  }
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final ep = visibleEpisodes[index];
+                    final epProgress =
+                        progress?.episodesProgress[ep.number ?? -1];
+                    final isWatched = epProgress?.isCompleted ?? false;
+                    final duration = epProgress?.durationInSeconds ?? 0;
+                    final progressSec = epProgress?.progressInSeconds ?? 0;
+                    final watchProgress = (duration > 0)
+                        ? (progressSec / duration).clamp(0.0, 1.0)
+                        : 0.0;
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Column(
+                        children: [
+                          ListTile(
+                            contentPadding:
+                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            leading: _buildEpisodeThumbnail(context, ep, index,
+                                isWatched: isWatched,
+                                episodeThumbnail: epProgress?.episodeThumbnail,
+                                fallbackUrl: ep.thumbnail ?? widget.mediaCover),
+                            title: Text(
+                              ep.title ?? 'Episode ${ep.number ?? index + 1}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: isWatched ? theme.hintColor : null,
+                              ),
+                            ),
+                            subtitle: ep.isFiller == true
+                                ? Text(
+                                    'FILLER',
+                                    style: TextStyle(
+                                      color: Colors.orange.shade700,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 12,
+                                    ),
+                                  )
+                                : null,
+                            trailing: IconButton(
+                              icon: const Icon(Icons.more_vert),
+                              tooltip: 'More options',
+                              onPressed: () {
+                                _showEpisodeMenu(context, ep, isWatched);
+                              },
+                            ),
+                            onTap: () => navigateToWatch(
+                              mediaId: widget.mediaId,
+                              animeId: state.animeIdForSource, // Use state ID
+                              animeName: (widget.mediaTitle.english ??
+                                  widget.mediaTitle.romaji ??
+                                  widget.mediaTitle.native)!,
+                              animeFormat: widget.mediaFormat,
+                              animeCover: widget.mediaCover,
+                              ref: ref,
+                              context: context,
+                              episodes: episodes,
+                              currentEpisode: ep.number ?? 1,
+                            ),
+                          ),
+                          if (watchProgress > 0)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: LinearProgressIndicator(
+                                value: watchProgress,
+                                backgroundColor: theme
+                                    .colorScheme.primaryContainer
+                                    .withOpacity(0.2),
+                                color: isWatched
+                                    ? theme.colorScheme.tertiaryContainer
+                                    : theme.colorScheme.primaryContainer,
+                                minHeight: isWatched ? 3 : 2,
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                  childCount: visibleEpisodes.length,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
-  Future<void> _refresh(WidgetRef ref) async {
-    ref.read(_bestMatchNameProvider.notifier).state = null;
-    setState(() {
-      _bestMatchName = null;
-      _selectedRange = 'All';
-      _isSortedDescending = false;
-      animeIdForSource = null;
-    });
-    await _fetchEpisodes(ref, force: true);
-  }
-
-  void _showSourceSelectionDialog(BuildContext context, WidgetRef ref) {
+  void _showSourceSelectionDialog(
+      BuildContext context, WidgetRef ref, EpisodesTabNotifier notifier) {
     final theme = Theme.of(context);
 
     showModalBottomSheet(
@@ -255,8 +408,10 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                     const Divider(height: 1),
                     Expanded(
                       child: useMangayomi
-                          ? _buildMangayomiSourceList(ref, scrollController)
-                          : _buildLegacySourceList(ref, scrollController),
+                          ? _buildMangayomiSourceList(
+                              ref, scrollController, notifier)
+                          : _buildLegacySourceList(
+                              ref, scrollController, notifier),
                     ),
                   ],
                 );
@@ -268,8 +423,8 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     );
   }
 
-  Widget _buildMangayomiSourceList(
-      WidgetRef ref, ScrollController scrollController) {
+  Widget _buildMangayomiSourceList(WidgetRef ref,
+      ScrollController scrollController, EpisodesTabNotifier notifier) {
     final sourceState = ref.watch(sourceProvider);
     final sources = sourceState.installedAnimeExtensions;
     final activeId = sourceState.activeAnimeSource?.id;
@@ -294,15 +449,15 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
           onTap: () {
             ref.read(sourceProvider.notifier).setActiveSource(source);
             Navigator.pop(context);
-            _refresh(ref);
+            notifier.refresh();
           },
         );
       },
     );
   }
 
-  Widget _buildLegacySourceList(
-      WidgetRef ref, ScrollController scrollController) {
+  Widget _buildLegacySourceList(WidgetRef ref,
+      ScrollController scrollController, EpisodesTabNotifier notifier) {
     final registry = ref.read(animeSourceRegistryProvider);
     final selectedAnimeSource = ref.watch(selectedAnimeProvider);
     final sources = registry.keys;
@@ -327,64 +482,42 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
           onTap: () {
             ref.read(selectedProviderKeyProvider.notifier).select(source);
             Navigator.pop(context);
-            _refresh(ref);
+            notifier.refresh();
           },
         );
       },
     );
   }
 
-  Future<void> _handleWrongMatch(BuildContext context, WidgetRef ref) async {
-    AppLogger.i('User reported a wrong match. Best match was: $_bestMatchName');
-    // showAppSnackBar(
-    //   'Wrong Match?',
-    //   'Functionality to re-select anime is not yet implemented.',
-    //   type: ContentType.help,
-    // );
+  Future<void> _handleWrongMatch(
+      BuildContext context, WidgetRef ref, EpisodesTabNotifier notifier) async {
+    final currentState =
+        ref.read(episodesTabNotifierProvider(widget.mediaTitle));
+    AppLogger.i(
+        'User reported a wrong match. Best match was: ${currentState.bestMatchName}');
+
     final anime = await providerAnimeMatchSearch(
       withAnimeMatch: false,
-      beforeSearchCallback: () {
-        setState(() {
-          _bestMatchName = null;
-          _selectedRange = 'All';
-          _isSortedDescending = false;
-        });
-      },
-      afterSearchCallback: () {},
+      beforeSearchCallback: () => null,
+      afterSearchCallback: () => null,
       context: context,
       ref: ref,
-      animeMedia: media.Media(title: widget.mediaTitle),
+      animeMedia: media.Media(
+        title: widget.mediaTitle,
+        id: widget.mediaId,
+        format: widget.mediaCover,
+        coverImage: media.CoverImage(
+          large: widget.mediaCover,
+          medium: widget.mediaCover,
+        ),
+      ),
     );
-    AppLogger.d('Selected anime: ${anime?.id}');
+
     if (!mounted) return;
-    if (anime == null) {
-      return;
+    if (anime != null) {
+      AppLogger.d('Selected anime: ${anime.id}');
+      notifier.setManualMatch(anime.id!, anime.name!);
     }
-    ref.read(_bestMatchNameProvider.notifier).state = anime.name;
-    setState(() => _bestMatchName = anime.name);
-    animeIdForSource = anime.id;
-    await _fetchEpisodes(ref, force: true);
-  }
-
-  List<EpisodeDataModel> _getVisibleEpisodes(List<EpisodeDataModel> episodes) {
-    List<EpisodeDataModel> filtered;
-    if (_selectedRange == 'All') {
-      filtered = episodes;
-    } else {
-      final parts = _selectedRange.split('–');
-      if (parts.length != 2) {
-        filtered = episodes;
-      } else {
-        final start = int.tryParse(parts[0]) ?? 1;
-        final end = int.tryParse(parts[1]) ?? episodes.length;
-        filtered = episodes.sublist(start - 1, end.clamp(0, episodes.length));
-      }
-    }
-
-    if (_isSortedDescending) {
-      return filtered.reversed.toList();
-    }
-    return filtered;
   }
 
   void _showEpisodeMenu(
@@ -543,327 +676,12 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                     );
                   },
                 ),
-                // ListTile(
-                //   leading: const Icon(Icons.playlist_add_rounded),
-                //   title: const Text('Add to Playlist'),
-                //   onTap: () {
-                //     AppLogger.i(
-                //         'Tapped Add to Playlist for Ep: ${episode.number}');
-                //     Navigator.pop(sheetContext); // Pop first
-
-                //     // Use parent context for snackbar
-                //     if (!context.mounted) return;
-                //     showAppSnackBar('Add to Playlist',
-                //         'Functionality to add to playlist is not yet implemented.',
-                //         type: ContentType.help);
-                //     // TODO: Implement playlist logic
-                //   },
-                // ),
                 const SizedBox(height: 8),
               ],
             ),
           ),
         );
       },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    // Watch the episode list provider for updates
-    final episodeListState = ref.watch(episodeListProvider);
-    final episodes = episodeListState.episodes;
-    final loading = episodeListState.isLoading;
-    final error = episodeListState.error;
-
-    // Calculate ranges dynamically
-    final total = episodes.length;
-    final ranges = <String>['All'];
-    for (int i = 0; i < total; i += 50) {
-      final start = i + 1;
-      final end = (i + 50).clamp(0, total);
-      ranges.add('$start–$end');
-    }
-    // Update local range options if changed (though regenerating lists in build is cheap enough here)
-    if (!listEquals(_rangeOptions, ranges)) {
-      // Defer to next frame or just update local var if we remove setState
-      _rangeOptions = ranges;
-    }
-
-    final exposedName = ref.watch(_bestMatchNameProvider);
-    final progress = ref.watch(watchProgressRepositoryProvider
-        .select((w) => w.getProgress(widget.mediaId)));
-    final theme = Theme.of(context);
-
-    final visibleEpisodes = _getVisibleEpisodes(episodes);
-    final totalEpisodes = episodes.length;
-
-    return RefreshIndicator(
-      onRefresh: () => _refresh(ref),
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'MATCHED ( by ${ref.watch(experimentalProvider).useMangayomiExtensions ? ref.read(sourceProvider).activeAnimeSource?.name : ref.read(selectedAnimeProvider)?.providerName} )',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          exposedName ?? 'None',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: exposedName == null ? theme.hintColor : null,
-                            fontStyle: exposedName == null
-                                ? FontStyle.italic
-                                : FontStyle.normal,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon:
-                        Icon(Icons.swap_horiz_rounded, color: theme.hintColor),
-                    tooltip: 'Change Source',
-                    onPressed: () => _showSourceSelectionDialog(context, ref),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.help_outline_rounded,
-                        color: theme.hintColor),
-                    tooltip: 'Wrong match?',
-                    onPressed: () => _handleWrongMatch(context, ref),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_isSearchingMatch)
-            const SliverFillRemaining(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Searching for best match...'),
-                  ],
-                ),
-              ),
-            )
-          else if (loading && episodes.isEmpty)
-            const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (error != null && episodes.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        error,
-                        style: const TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 8,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: () => _handleWrongMatch(context, ref),
-                            icon: const Icon(Icons.search),
-                            label: const Text('Manual Selection'),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () => _refresh(ref),
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          else if (episodes.isEmpty)
-            const SliverFillRemaining(
-              child: Center(child: Text('No episodes found')),
-            )
-          else ...[
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _SliverToolbarDelegate(
-                minHeight: 110.0,
-                maxHeight: 110.0,
-                child: Container(
-                  color: theme.scaffoldBackgroundColor,
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '$totalEpisodes Episodes',
-                              style: theme.textTheme.titleSmall,
-                            ),
-                            IconButton(
-                              icon: Icon(_isSortedDescending
-                                  ? Icons.arrow_downward_rounded
-                                  : Icons.arrow_upward_rounded),
-                              tooltip: _isSortedDescending
-                                  ? 'Sort Ascending'
-                                  : 'Sort Descending',
-                              onPressed: () {
-                                setState(() =>
-                                    _isSortedDescending = !_isSortedDescending);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(
-                        height: 50,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          itemCount: _rangeOptions.length,
-                          itemBuilder: (context, index) {
-                            final range = _rangeOptions[index];
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4.0),
-                              child: ChoiceChip(
-                                label: Text(range),
-                                selected: _selectedRange == range,
-                                onSelected: (isSelected) {
-                                  if (isSelected) {
-                                    setState(() => _selectedRange = range);
-                                  }
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final ep = visibleEpisodes[index];
-                    final epProgress =
-                        progress?.episodesProgress[ep.number ?? -1];
-                    final isWatched = epProgress?.isCompleted ?? false;
-                    final duration = epProgress?.durationInSeconds ?? 0;
-                    final progressSec = epProgress?.progressInSeconds ?? 0;
-                    final watchProgress = (duration > 0)
-                        ? (progressSec / duration).clamp(0.0, 1.0)
-                        : 0.0;
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: Column(
-                        children: [
-                          ListTile(
-                            contentPadding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
-                            leading: _buildEpisodeThumbnail(context, ep, index,
-                                isWatched: isWatched,
-                                episodeThumbnail: epProgress?.episodeThumbnail,
-                                fallbackUrl: widget.mediaCover),
-                            title: Text(
-                              ep.title ?? 'Episode ${ep.number ?? index + 1}',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                color: isWatched ? theme.hintColor : null,
-                              ),
-                            ),
-                            subtitle: ep.isFiller == true
-                                ? Text(
-                                    'FILLER',
-                                    style: TextStyle(
-                                      color: Colors.orange.shade700,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 12,
-                                    ),
-                                  )
-                                : null,
-                            trailing: IconButton(
-                              icon: const Icon(Icons.more_vert),
-                              tooltip: 'More options',
-                              onPressed: () {
-                                _showEpisodeMenu(context, ep, isWatched);
-                              },
-                            ),
-                            onTap: () => navigateToWatch(
-                              mediaId: widget.mediaId,
-                              animeId: animeIdForSource,
-                              animeName: (widget.mediaTitle.english ??
-                                  widget.mediaTitle.romaji ??
-                                  widget.mediaTitle.native)!,
-                              animeFormat: widget.mediaFormat,
-                              animeCover: widget.mediaCover,
-                              ref: ref,
-                              context: context,
-                              episodes: episodes,
-                              currentEpisode: ep.number ?? 1,
-                            ),
-                          ),
-                          if (watchProgress > 0)
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16.0),
-                              child: LinearProgressIndicator(
-                                value: watchProgress,
-                                backgroundColor: theme
-                                    .colorScheme.primaryContainer
-                                    .withOpacity(0.2),
-                                color: isWatched
-                                    ? theme.colorScheme.tertiaryContainer
-                                    : theme.colorScheme.primaryContainer,
-                                minHeight: isWatched ? 3 : 2,
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                  childCount: visibleEpisodes.length,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
     );
   }
 
@@ -928,9 +746,6 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
       ),
     );
   }
-
-  @override
-  bool get wantKeepAlive => true;
 
   Widget _buildFallbackContainer(ThemeData theme) {
     return Container(

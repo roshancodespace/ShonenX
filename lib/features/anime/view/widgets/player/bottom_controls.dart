@@ -4,6 +4,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 import 'package:shonenx/utils/formatter.dart';
+import 'package:go_router/go_router.dart';
 
 class BottomControls extends ConsumerWidget {
   final VoidCallback onInteraction;
@@ -16,6 +17,7 @@ class BottomControls extends ConsumerWidget {
   final VoidCallback onSubtitlePressed;
   final VoidCallback onServerPressed;
   final VoidCallback onForwardPressed;
+  final VoidCallback? onEpisodePressed;
 
   const BottomControls({
     super.key,
@@ -29,12 +31,13 @@ class BottomControls extends ConsumerWidget {
     required this.onSubtitlePressed,
     required this.onServerPressed,
     required this.onForwardPressed,
+    required this.onEpisodePressed,
   });
 
-  VoidCallback _wrap(VoidCallback action) {
+  VoidCallback _wrap(VoidCallback? action) {
     return () {
+      if (action != null) action();
       onInteraction();
-      action();
     };
   }
 
@@ -67,6 +70,12 @@ class BottomControls extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _buildSkipButton(context, scheme),
+              ],
+            ),
             // Seek Bar
             _buildProgressBar(context, ref, scheme),
             const SizedBox(height: 4),
@@ -116,8 +125,13 @@ class BottomControls extends ConsumerWidget {
                     ],
                     const SizedBox(width: 8),
                     _buildIconButton(
-                      icon: Iconsax.subtitle,
+                      icon:
+                          (watchEpisode(ref, (s) => s.selectedSubtitleIdx != 0)
+                              ? Iconsax.subtitle5
+                              : Iconsax.subtitle),
                       onPressed: onSubtitlePressed,
+                      onLongPress: () =>
+                          context.push('/settings/player/subtitles'),
                       color: scheme.onSurface,
                       tooltip: 'Subtitles',
                     ),
@@ -128,8 +142,13 @@ class BottomControls extends ConsumerWidget {
                       color: scheme.onSurface,
                       tooltip: 'Lock',
                     ),
-                    const SizedBox(width: 12),
-                    _buildSkipButton(context, scheme),
+                    const SizedBox(width: 8),
+                    _buildIconButton(
+                      icon: Icons.playlist_play_rounded,
+                      onPressed: onEpisodePressed,
+                      color: scheme.onSurface,
+                      tooltip: 'Episode',
+                    ),
                   ],
                 ),
               ],
@@ -248,7 +267,8 @@ class BottomControls extends ConsumerWidget {
 
   Widget _buildIconButton({
     required IconData icon,
-    required VoidCallback onPressed,
+    VoidCallback? onPressed,
+    VoidCallback? onLongPress,
     required Color color,
     required String tooltip,
   }) {
@@ -256,6 +276,7 @@ class BottomControls extends ConsumerWidget {
       message: tooltip,
       child: InkWell(
         onTap: _wrap(onPressed),
+        onLongPress: _wrap(onLongPress),
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(8),

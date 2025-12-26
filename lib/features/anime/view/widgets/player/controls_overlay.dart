@@ -301,6 +301,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
               onSourcePressed: _openSourceSheet,
               onSubtitlePressed: _openSubtitleSheet,
               onServerPressed: _openServerSheet,
+              onEpisodePressed: widget.onEpisodesPressed,
             ),
           ),
         ],

@@ -24,8 +24,8 @@ class TopControls extends ConsumerWidget {
   VoidCallback? _wrap(VoidCallback? action) {
     if (action == null) return null;
     return () {
-      onInteraction();
       action();
+      onInteraction();
     };
   }
 
@@ -128,14 +128,14 @@ class TopControls extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                     ],
-                    if (onEpisodesPressed != null) ...[
-                      _buildControlButton(
-                        icon: Icons.playlist_play_rounded,
-                        onPressed: _wrap(onEpisodesPressed),
-                        color: scheme.onSurface,
-                      ),
-                      const SizedBox(width: 8),
-                    ],
+                    // if (onEpisodesPressed != null) ...[
+                    //   _buildControlButton(
+                    //     icon: Icons.playlist_play_rounded,
+                    //     onPressed: _wrap(onEpisodesPressed),
+                    //     color: scheme.onSurface,
+                    //   ),
+                    //   const SizedBox(width: 8),
+                    // ],
                     _buildControlButton(
                       icon: Icons.more_vert_rounded,
                       onPressed: _wrap(onSettingsPressed),

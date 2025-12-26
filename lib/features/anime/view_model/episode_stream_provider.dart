@@ -438,6 +438,8 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
         qualityOptions: qualities,
         selectedSourceIdx: sourceIndex,
         selectedQualityIdx: qualityIndex,
+        selectedSubtitleIdx: state.subtitles
+            .indexWhere((s) => s.lang!.toLowerCase().contains('eng')),
       );
 
       ref

@@ -69,7 +69,8 @@ class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
             // ],
           ),
           child: config.builder(
-            anime: widget.anime,
+            anime: widget.anime
+                .copyWith(averageScore: (widget.anime.averageScore ?? 0) / 10),
             tag: widget.tag,
             isHovered: _isHovered,
           ),

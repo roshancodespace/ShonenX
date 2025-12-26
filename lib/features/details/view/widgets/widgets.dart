@@ -6,3 +6,5 @@ export 'rankings_widget.dart';
 export 'watch_button_widget.dart';
 export 'edit_list_bottom_sheet.dart';
 export 'content_widget.dart';
+export 'related_entries_widget.dart';
+export 'similar_anime_widget.dart';

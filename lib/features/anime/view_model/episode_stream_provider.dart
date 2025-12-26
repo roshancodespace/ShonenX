@@ -273,13 +273,12 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
           return BaseSourcesModel(
             sources: sources
                 .map((s) => Source(
-                      url: s?.url,
-                      isM3U8: s?.url.contains('.m3u8') ?? false,
-                      isDub:
-                          s?.originalUrl.toLowerCase().contains('dub') ?? false,
-                      quality: s?.quality,
-                      headers: s?.headers
-                    ))
+                    url: s?.url,
+                    isM3U8: s?.url.contains('.m3u8') ?? false,
+                    isDub:
+                        s?.originalUrl.toLowerCase().contains('dub') ?? false,
+                    quality: s?.quality,
+                    headers: s?.headers))
                 .toList(),
             tracks: sources.firstOrNull?.subtitles
                     ?.map((sub) => Subtitle(url: sub.file, lang: sub.label))
@@ -341,7 +340,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     state = state.copyWith(
       sources: data.sources,
       subtitles: [Subtitle(lang: 'None'), ...data.tracks],
-      headers: data.headers,
+      headers: (data.headers as Map<dynamic, dynamic>).cast<String, String>(),
       selectedSourceIdx: 0,
     );
 

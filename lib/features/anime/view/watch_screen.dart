@@ -97,10 +97,33 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   }
 
   Future<void> _saveProgress({bool takeScreenshot = false}) async {
-    if (!ref.context.mounted && !mounted && !context.mounted) return;
-    final playerState = ref.read(playerStateProvider);
-    final episodes = ref.read(episodeListProvider).episodes;
-    final episodeData = ref.read(episodeDataProvider);
+    if (!mounted) return;
+
+    try {
+      final playerState = ref.read(playerStateProvider);
+      final episodes = ref.read(episodeListProvider).episodes;
+      final episodeData = ref.read(episodeDataProvider);
+      final repo = ref.read(watchProgressRepositoryProvider);
+
+      await _performSave(
+        playerState: playerState,
+        episodes: episodes,
+        episodeData: episodeData,
+        repo: repo,
+        takeScreenshot: takeScreenshot,
+      );
+    } catch (e) {
+      AppLogger.e('Failed to save progress: $e');
+    }
+  }
+
+  Future<void> _performSave({
+    required PlayerState playerState,
+    required List<EpisodeDataModel> episodes,
+    required EpisodeDataState episodeData,
+    required WatchProgressRepository repo,
+    bool takeScreenshot = false,
+  }) async {
     final currentEpisodeIdx = episodeData.selectedEpisodeIdx;
 
     if (currentEpisodeIdx == null ||
@@ -116,13 +139,16 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     if (duration <= 0) return;
 
     String? thumbnailToSave;
-    final repo = ref.read(watchProgressRepositoryProvider);
 
-    if (takeScreenshot) {
+    if (takeScreenshot && mounted) {
       AppLogger.i('Taking screenshot');
-      final screenshot = await _screenshotController.capture(pixelRatio: 1.5);
-      if (screenshot != null) {
-        thumbnailToSave = base64Encode(screenshot);
+      try {
+        final screenshot = await _screenshotController.capture(pixelRatio: 1.5);
+        if (screenshot != null) {
+          thumbnailToSave = base64Encode(screenshot);
+        }
+      } catch (e) {
+        // Ignore screenshot errors
       }
     }
 
@@ -144,17 +170,16 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       watchedAt: DateTime.now(),
     );
 
-    if (widget.mediaId.isNotEmpty && mounted) {
+    if (widget.mediaId.isNotEmpty) {
       // Ensure we have an entry for the anime first
-
       var entry = repo.getProgress(widget.mediaId);
-      if (entry == null && widget.mediaId.isNotEmpty) {
+      if (entry == null) {
         entry = AnimeWatchProgressEntry(
           animeId: widget.mediaId,
           animeTitle: widget.animeName,
-          animeFormat: widget.animeFormat, // Default or fetch from somewhere
-          animeCover: widget.animeCover, // Need cover image
-          totalEpisodes: ref.read(episodeListProvider).episodes.length,
+          animeFormat: widget.animeFormat,
+          animeCover: widget.animeCover,
+          totalEpisodes: episodes.length,
         );
         await repo.saveProgress(entry);
       }

@@ -23,7 +23,11 @@ class Media {
   final String? season;
   final int? seasonYear;
   final bool isFavourite;
+
   final List<MediaRanking> rankings;
+  final List<MediaRelation> relations;
+  final List<Media> recommendations;
+  final List<Character> characters;
 
   // MAL specific fields
   final String? source;
@@ -54,6 +58,9 @@ class Media {
     this.seasonYear,
     this.isFavourite = false,
     this.rankings = const [],
+    this.relations = const [],
+    this.recommendations = const [],
+    this.characters = const [],
     this.source,
     this.rank,
     this.favorites,
@@ -100,6 +107,16 @@ class Media {
       rank: json['rank'] as int?,
       favorites: json['favorites'] as int?,
       meanScore: (json['meanScore'] as num?)?.toDouble(),
+      relations: (json['relations']?['edges'] as List<dynamic>? ?? [])
+          .map((e) => MediaRelation.fromJson(e))
+          .toList(),
+      recommendations:
+          (json['recommendations']?['nodes'] as List<dynamic>? ?? [])
+              .map((e) => Media.fromJson(e['mediaRecommendation']))
+              .toList(),
+      characters: (json['characters']?['edges'] as List<dynamic>? ?? [])
+          .map((e) => Character.fromJson(e))
+          .toList(),
     );
   }
 
@@ -159,6 +176,9 @@ class Media {
       seasonYear: null,
       isFavourite: false,
       rankings: [],
+      relations: [],
+      recommendations: [],
+      characters: [],
       meanScore: (node['mean'] as num?)?.toDouble(),
     );
   }
@@ -211,6 +231,17 @@ class Media {
       'rank': rank,
       'favorites': favorites,
       'meanScore': meanScore,
+      'relations': {
+        'edges': relations.map((r) => r.toJson()).toList(),
+      },
+      'recommendations': {
+        'nodes': recommendations
+            .map((r) => {'mediaRecommendation': r.toJson()})
+            .toList(),
+      },
+      'characters': {
+        'edges': characters.map((c) => c.toJson()).toList(),
+      },
     };
   }
 }
@@ -367,4 +398,56 @@ extension FuzzyDateMal on FuzzyDate {
       day: parts.length > 2 ? int.tryParse(parts[2]) : null,
     );
   }
+}
+
+class MediaRelation {
+  final String relationType;
+  final Media media;
+
+  MediaRelation({required this.relationType, required this.media});
+
+  factory MediaRelation.fromJson(Map<String, dynamic> json) {
+    return MediaRelation(
+      relationType: json['relationType'] ?? 'UNKNOWN',
+      media: Media.fromJson(json['node'] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'relationType': relationType,
+        'node': media.toJson(),
+      };
+}
+
+class Character {
+  final int id;
+  final String name;
+  final String? image;
+  final String? role;
+
+  Character({
+    required this.id,
+    required this.name,
+    this.image,
+    this.role,
+  });
+
+  factory Character.fromJson(Map<String, dynamic> json) {
+    final node = json['node'] ?? {};
+    return Character(
+      id: node['id'] ?? 0,
+      name: node['name']?['full'] ?? 'Unknown',
+      image: node['image']?['large'],
+      role: json['role'],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'role': role,
+        'node': {
+          'id': id,
+          'name': {'full': name},
+          'image': {'large': image},
+        },
+      };
 }

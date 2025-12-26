@@ -176,7 +176,7 @@ class AnilistQueries {
     }
   ''';
 
-    // Query: Fetch a MediaListEntry for a specific anime (requires userId or auth token)
+  // Query: Fetch a MediaListEntry for a specific anime (requires userId or auth token)
   static const String mediaListEntryByAnimeIdQuery = '''
     query (\$userId: Int, \$animeId: Int) {
       MediaList(userId: \$userId, mediaId: \$animeId) {
@@ -204,7 +204,6 @@ class AnilistQueries {
     }
   ''';
 
-
   // Query: Fetch detailed anime information by ID
   static const String animeDetailsQuery = '''
     query (\$id: Int) {
@@ -213,14 +212,33 @@ class AnilistQueries {
         season
         seasonYear
         genres
-        studios {
-          nodes {
-            name
+        relations {
+          edges {
+            relationType
+            node {
+              $mediaFields
+            }
           }
         }
-        characters {
+        recommendations(sort: RATING_DESC, perPage: 10) {
           nodes {
-           $mediaFields
+            mediaRecommendation {
+              $mediaFields
+            }
+          }
+        }
+        characters(sort: ROLE, perPage: 10) {
+          edges {
+            role
+            node {
+              id
+              name {
+                full
+              }
+              image {
+                large
+              }
+            }
           }
         }
       }
@@ -366,5 +384,4 @@ class AnilistQueries {
       }
     }
   ''';
-
 }

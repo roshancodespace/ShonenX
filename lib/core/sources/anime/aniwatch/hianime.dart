@@ -15,7 +15,7 @@ class HiAnimeProvider extends AnimeProvider {
             apiUrl: customApiUrl != null
                 ? '$customApiUrl/anime/zoro'
                 : "${dotenv.env['API_URL']}/anime/zoro",
-            baseUrl: 'https://hianime.in',
+            baseUrl: 'https://hianime.nz',
             providerName: 'hianime');
 
   Map<String, String> _getHeaders() {

@@ -59,7 +59,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     _setUpSystemUI();
 
     _panelAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 250),
       vsync: this,
     );
     _panelAnimation = CurvedAnimation(

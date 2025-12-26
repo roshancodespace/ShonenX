@@ -72,9 +72,11 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
       bufferSize: 32 * 1024 * 1024,
     ));
 
-    videoController = VideoController(player!, configuration: VideoControllerConfiguration(
-      androidAttachSurfaceAfterVideoParameters: Platform.isAndroid ? true : null,
-    ));
+    videoController = VideoController(player!,
+        configuration: VideoControllerConfiguration(
+          androidAttachSurfaceAfterVideoParameters:
+              Platform.isAndroid ? true : null,
+        ));
     ref.onDispose(() {
       player?.dispose();
     });
@@ -114,8 +116,14 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
       {Map<String, String>? headers}) async {
     await player?.open(Media(url, httpHeaders: headers));
     if (startAt != null) {
-      await player?.stream.duration.firstWhere((d) => d > Duration.zero);
-      await player?.seek(startAt);
+      try {
+        await player?.stream.duration
+            .firstWhere((d) => d > Duration.zero)
+            .timeout(const Duration(seconds: 10));
+        await player?.seek(startAt);
+      } catch (e) {
+        // AppLogger.w("Failed to seek to start position: $e");
+      }
     }
   }
 
@@ -147,7 +155,9 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
       Duration(seconds: (player?.state.position.inSeconds ?? 0) - seconds));
 
   Future<Uint8List?> getThumbnail() async {
-    return await player?.platform?.screenshot(format: 'image/png',);
+    return await player?.platform?.screenshot(
+      format: 'image/png',
+    );
   }
 }
 

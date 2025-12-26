@@ -103,7 +103,8 @@ String _normalize(String input) {
       (m) => 'season ${m.group(1)}');
 
   // Remove non-alphanumeric characters and collapse multiple spaces.
-  s = s.replaceAll(RegExp(r'[^a-z0-9\s]'), ' ');
+  s = s.replaceAllMapped(
+      RegExp(r'×|[^a-z0-9\s]'), (m) => m[0] == '×' ? ' x ' : ' ');
   return s.replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 

@@ -96,13 +96,12 @@ class BottomControls extends ConsumerWidget {
                 // Right: Actions
                 Row(
                   children: [
-                    if (watchEpisode(ref, (s) => s.dubSubSupport))
+                    if (episodeNotifier.dubSubSupport)
                       _buildSettingsPill(
                         context,
-                        text: watchEpisode(ref, (s) => s.selectedCategory) ==
-                                'sub'
-                            ? 'SUB'
-                            : 'DUB',
+                        text: watchEpisode(ref, (s) => s.selectedServer?.isDub == true)
+                            ? 'DUB'
+                            : 'SUB',
                         onPressed: () => episodeNotifier.toggleDubSub(),
                         scheme: scheme,
                       ),

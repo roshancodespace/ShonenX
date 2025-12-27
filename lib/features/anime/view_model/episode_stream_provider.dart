@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'package:shonenx/core/models/anime/episode_model.dart';
+import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
@@ -24,16 +25,14 @@ class EpisodeDataState {
   final List<Source> sources;
   final List<Subtitle> subtitles;
   final List<Map<String, dynamic>> qualityOptions;
-  final List<String> servers;
+  final List<ServerData> servers;
 
   final int? selectedQualityIdx;
   final int? selectedSourceIdx;
   final int? selectedEpisodeIdx;
   final int? selectedSubtitleIdx;
-  final String selectedCategory;
-  final String? selectedServer;
+  final ServerData? selectedServer;
 
-  final bool dubSubSupport;
   final bool sourceLoading;
   final String? error;
 
@@ -47,8 +46,6 @@ class EpisodeDataState {
     this.selectedSourceIdx,
     this.selectedEpisodeIdx,
     this.selectedSubtitleIdx = 0,
-    this.selectedCategory = 'sub',
-    this.dubSubSupport = false,
     this.selectedServer,
     this.sourceLoading = false,
     this.error,
@@ -59,13 +56,12 @@ class EpisodeDataState {
     List<Source>? sources,
     List<Subtitle>? subtitles,
     List<Map<String, dynamic>>? qualityOptions,
-    List<String>? servers,
+    List<ServerData>? servers,
     int? selectedQualityIdx,
     int? selectedSourceIdx,
     int? selectedEpisodeIdx,
     int? selectedSubtitleIdx,
-    String? selectedCategory,
-    String? selectedServer,
+    ServerData? selectedServer,
     bool? dubSubSupport,
     bool? sourceLoading,
     String? error,
@@ -80,9 +76,7 @@ class EpisodeDataState {
       selectedSourceIdx: selectedSourceIdx ?? this.selectedSourceIdx,
       selectedEpisodeIdx: selectedEpisodeIdx ?? this.selectedEpisodeIdx,
       selectedSubtitleIdx: selectedSubtitleIdx ?? this.selectedSubtitleIdx,
-      selectedCategory: selectedCategory ?? this.selectedCategory,
       selectedServer: selectedServer ?? this.selectedServer,
-      dubSubSupport: dubSubSupport ?? this.dubSubSupport,
       sourceLoading: sourceLoading ?? this.sourceLoading,
       error: error ?? this.error,
     );
@@ -97,9 +91,13 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       ref.read(experimentalProvider);
   AnimeProvider? _getProvider() => ref.read(selectedAnimeProvider);
   SourceNotifier get _sourceNotifier => ref.read(sourceProvider.notifier);
+  bool get dubSubSupport => state.servers.any((s) => s.isDub == true);
 
   @override
   EpisodeDataState build() {
+    ref.onDispose(() {
+      ref.read(episodeListProvider.notifier).reset();
+    });
     return const EpisodeDataState();
   }
 
@@ -110,22 +108,17 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     Duration startAt = Duration.zero,
   }) async {
     AppLogger.i('Loading episode index: $episodeIdx');
-
+    state = state.copyWith(selectedEpisodeIdx: episodeIdx);
     await _setupAndPlay(play, episodeIdx, startAt);
   }
 
   /// Toggles between 'sub' and 'dub' audio tracks if supported.
   Future<void> toggleDubSub() async {
-    if (!state.dubSubSupport) {
-      AppLogger.w('Toggle failed: Dub/Sub switching is not supported.');
-      return;
-    }
-    final newCategory = state.selectedCategory == 'sub' ? 'dub' : 'sub';
-    final currentPosition = ref.read(playerStateProvider).position;
+    final newServer =
+        state.servers.firstWhere((s) => s.isDub != state.selectedServer?.isDub);
     AppLogger.i(
-        'Toggling category from ${state.selectedCategory} to $newCategory.');
-    state = state.copyWith(selectedCategory: newCategory);
-    await _fetchStreamData(startAt: currentPosition);
+        'Toggling category from ${state.selectedServer?.isDub == true ? 'dub' : 'sub'} to $newServer.');
+    await changeServer(newServer);
   }
 
   /// Changes the current episode and fetches its stream data.
@@ -177,7 +170,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   }
 
   /// Changes the streaming server and reloads the stream.
-  Future<void> changeServer(String server) async {
+  Future<void> changeServer(ServerData server) async {
     AppLogger.i('Changing server to: $server');
     final currentPosition = ref.read(playerStateProvider).position;
     state = state.copyWith(selectedServer: server);
@@ -239,15 +232,19 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   Future<void> _setupAndPlay(
       bool play, int initialEpisodeIdx, Duration startAt) async {
     final bool useMangayomi = _experimentalFeatures.useMangayomiExtensions;
-    List<String> servers = [];
-    bool supportDubSub = false;
+    List<ServerData> servers = [];
 
     if (!useMangayomi) {
       final animeProvider = _getProvider();
-      servers = await animeProvider?.getSupportedServers() ?? [];
-      supportDubSub = animeProvider?.getDubSubParamSupport() ?? false;
-      AppLogger.d(
-          'Legacy setup: ${servers.length} servers found. Dub/Sub support: $supportDubSub');
+      final currentEpisode =
+          ref.read(episodeListProvider).episodes[initialEpisodeIdx];
+      servers = (await animeProvider?.getSupportedServers(metadata: {
+        'id': currentEpisode.id,
+        'epNumber': currentEpisode.number
+      }))!
+          .flatten();
+      state = state.copyWith(servers: servers, selectedServer: servers.first);
+      AppLogger.d('Legacy setup: ${servers.length} servers found.');
     } else {
       AppLogger.d('Mangayomi setup: Skipping server/dub-sub configuration.');
     }
@@ -302,8 +299,8 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       () => animeProvider.getSources(
         episode.id ?? '',
         episode.id ?? '',
-        state.selectedServer,
-        state.selectedCategory,
+        state.selectedServer?.id,
+        state.selectedServer?.isDub == true ? 'dub' : 'sub',
       ),
       errorTitle: "Legacy Stream",
       errorMessage: "Failed to get sources from Legacy provider.",
@@ -390,8 +387,8 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       () => animeProvider.getSources(
         episode.id ?? '',
         episode.id ?? '',
-        state.selectedServer,
-        state.selectedCategory,
+        state.selectedServer?.id,
+        state.selectedServer?.isDub == true ? 'dub' : 'sub',
       ),
       errorTitle: "Legacy Stream",
       errorMessage: "Failed to get sources from Legacy provider.",

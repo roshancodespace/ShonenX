@@ -49,6 +49,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   late final AnimationController _panelAnimationController;
   late final CurvedAnimation _panelAnimation;
   final ScreenshotController _screenshotController = ScreenshotController();
+  bool _isPlaying = false;
 
   Timer? _progressTimer;
   bool _hasShownResumeDialog = false;
@@ -88,8 +89,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     int ticks = 0;
     _progressTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (!mounted) return;
-      final isPlaying = ref.read(playerStateProvider).isPlaying;
-      if (isPlaying) {
+      if (_isPlaying) {
         ticks++;
         _saveProgress(takeScreenshot: ticks % 12 == 0);
       }
@@ -208,12 +208,11 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   @override
   void dispose() {
-    _resetSystemUI();
-    if (mounted && context.mounted && ref.context.mounted) {
-      ref.read(episodeDataProvider.notifier).reset();
-    }
+    unawaited(_resetSystemUI());
     _progressTimer?.cancel();
-    _saveProgress(takeScreenshot: false); // Save one last time
+    Future.microtask(() {
+      if (mounted) _saveProgress(takeScreenshot: false);
+    });
     _panelAnimation.dispose();
     _panelAnimationController.dispose();
     super.dispose();
@@ -221,8 +220,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   @override
   Widget build(BuildContext context) {
-    _registerListeners();
-
+    _setupListeners();
     final fit = ref.watch(playerStateProvider.select((p) => p.fit));
     final playerNotifier = ref.read(playerStateProvider.notifier);
 
@@ -239,6 +237,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                 Screenshot(
                   controller: _screenshotController,
                   child: Video(
+                    fill: Theme.of(context).colorScheme.surfaceContainerLowest,
                     wakelock: true,
                     controller: playerNotifier.videoController,
                     fit: fit,
@@ -282,8 +281,9 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     );
   }
 
-  void _registerListeners() {
+  void _setupListeners() {
     ref.listen(playerStateProvider.select((p) => p.isPlaying), (prev, next) {
+      _isPlaying = next;
       if (prev == true && next == false) {
         _saveProgress(takeScreenshot: true);
       }

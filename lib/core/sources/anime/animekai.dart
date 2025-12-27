@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
+import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
 
@@ -117,12 +118,8 @@ class AnimekaiProvider extends AnimeProvider {
   }
 
   @override
-  Future<List<String>> getSupportedServers() {
-    return Future(() => ["vidcloud", "streamsb", "vidstreaming", "streamtape"]);
-  }
-
-  @override
-  bool getDubSubParamSupport() {
-    return true;
+  Future<BaseServerModel> getSupportedServers({dynamic metadata}) {
+    // return Future(() => ["vidcloud", "streamsb", "vidstreaming", "streamtape"]);
+    return Future(() => BaseServerModel());
   }
 }

@@ -1,12 +1,13 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 // --- CONFIGURATION ---
 // ignore: prefer_const_declarations
-final String targetProvider = 'hianime';
+final String targetProvider = 'gojo';
 // ignore: prefer_const_declarations
 final String searchQuery = 'one piece';
 // ---------------------
@@ -88,22 +89,30 @@ void main() {
       // 5. Servers
       AppLogger.section('STEP 3: SERVERS');
       // Some providers might throw or return empty if they don't support explicit servers
-      List<String> servers = [];
+      BaseServerModel servers = BaseServerModel(dub: [], sub: []);
+
       try {
-        servers = await provider.getSupportedServers();
-        AppLogger.infoPair('Supported Servers',
-            servers.isEmpty ? 'Default/None' : servers.join(', '));
+        servers = await provider.getSupportedServers(metadata: {
+          'id': selectedEpisode.id,
+          'epNum': selectedEpisode.number
+        });
+
+        final allServers = [...servers.dub, ...servers.sub];
+
+        AppLogger.infoPair(
+          'Supported Servers',
+          allServers.isEmpty
+              ? 'Default/None'
+              : allServers.map((s) => s.id).join(', '),
+        );
       } catch (e) {
         AppLogger.raw(
-            '${AppLogger.yellow}⚠ Failed to fetch servers (might not be supported): $e${AppLogger.reset}');
+          '${AppLogger.yellow}⚠ Failed to fetch servers (might not be supported): $e${AppLogger.reset}',
+        );
       }
 
-      String? selectedServer;
-      if (servers.isNotEmpty) {
-        selectedServer = servers.first;
-        AppLogger.raw(
-            '\n${AppLogger.green}➔ Selecting first server: $selectedServer${AppLogger.reset}');
-      }
+      String? selectedServer =
+          servers.flatten().isNotEmpty ? servers.flatten().first.id : null;
 
       // 6. Sources
       AppLogger.section('STEP 4: SOURCES');

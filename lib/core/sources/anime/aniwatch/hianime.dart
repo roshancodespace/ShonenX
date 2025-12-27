@@ -4,6 +4,7 @@ import 'package:html/dom.dart';
 import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
+import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/aniwatch/parser.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
@@ -18,21 +19,17 @@ class HiAnimeProvider extends AnimeProvider {
             baseUrl: 'https://hianime.nz',
             providerName: 'hianime');
 
-  Map<String, String> _getHeaders() {
-    return {
-      'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-    };
-  }
-
   @override
-  Map<String, String> get headers => _getHeaders();
+  Map<String, String> get headers => {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+      };
 
   @override
   Future<HomePage> getHome() async {
     return HomePage();
     // final response =
-    //     await http.get(Uri.parse('$baseUrl/home'), headers: _getHeaders());
+    //     await http.get(Uri.parse('$baseUrl/home'), headers: headers);
 
     // final document = parse(response.body);
     // return HomePage(
@@ -45,15 +42,15 @@ class HiAnimeProvider extends AnimeProvider {
   @override
   Future<DetailPage> getDetails(String animeId) async {
     final response =
-        await http.get(Uri.parse('$baseUrl/$animeId'), headers: _getHeaders());
+        await http.get(Uri.parse('$baseUrl/$animeId'), headers: headers);
     final document = parse(response.body);
     return parseDetail(document, baseUrl, animeId: animeId);
   }
 
   @override
   Future<WatchPage> getWatch(String animeId) async {
-    final response = await http.get(Uri.parse('$baseUrl/watch/$animeId'),
-        headers: _getHeaders());
+    final response =
+        await http.get(Uri.parse('$baseUrl/watch/$animeId'), headers: headers);
     final document = parse(response.body);
     return parseWatch(document, baseUrl, animeId: animeId);
   }
@@ -63,7 +60,7 @@ class HiAnimeProvider extends AnimeProvider {
 
   //   final response = await http.get(
   //       Uri.parse("$baseUrl/ajax/v2/episode/list/${animeId.split('-').last}"),
-  //       headers: _getHeaders());
+  //       headers: headers);
 
   //   final document = parse(json.decode(response.body)['html']);
   //   return parseEpisodes(document, "$baseUrl/ajax/v2/episode/list/",
@@ -105,18 +102,24 @@ class HiAnimeProvider extends AnimeProvider {
           'https://yumaapi.vercel.app/watch?episodeId=$actualAnimeId\$episode\$$actualEpisodeId&type=dub&server=$serverName'),
     );
     final data = jsonDecode(response.body);
-
+    final preview = (data['previews'] as List<dynamic>).first;
     return BaseSourcesModel(
+      headers: data['headers'],
+      preview: Subtitle(url: preview['url'], lang: preview['type']),
+      intro: Intro(
+          start: data['intro']['start'] as int,
+          end: data['intro']['end'] as int),
+      outro: Intro(
+          start: data['intro']['start'] as int,
+          end: data['intro']['end'] as int),
       sources: (data['sources'] as List<dynamic>)
           .map((source) => Source(
                 url: source['url'],
                 isM3U8: source['isM3U8'],
-                quality: source[
-                    'quality'], // this might be null — handle it if needed
+                quality: source['quality'],
               ))
           .toList(),
-      tracks: (data['subtitles']
-                  as List<dynamic>?) // ✅ was 'subtitles', now 'tracks'
+      tracks: (data['subtitles'] as List<dynamic>?)
               ?.map((track) => Subtitle(
                     url: track['url'],
                     lang: track['lang'],
@@ -161,7 +164,7 @@ class HiAnimeProvider extends AnimeProvider {
     final url = hianimeType != null
         ? '$baseUrl/search?keyword=$keyword&type=$hianimeType&page=$page'
         : '$baseUrl/search?keyword=$keyword&page=$page';
-    final response = await http.get(Uri.parse(url), headers: _getHeaders());
+    final response = await http.get(Uri.parse(url), headers: headers);
     final document = parse(response.body);
     return parseSearch(document, baseUrl, keyword: keyword, page: page);
   }
@@ -169,7 +172,7 @@ class HiAnimeProvider extends AnimeProvider {
   @override
   Future<SearchPage> getPage(String route, int page) async {
     final response = await http.get(Uri.parse('$baseUrl/$route?page=$page'),
-        headers: _getHeaders());
+        headers: headers);
     final document = parse(response.body);
     return parsePage(document, baseUrl, route: route, page: page);
   }
@@ -187,12 +190,13 @@ class HiAnimeProvider extends AnimeProvider {
   }
 
   @override
-  Future<List<String>> getSupportedServers() {
-    return Future(() => ["vidcloud", "megacloud"]);
-  }
-
-  @override
-  bool getDubSubParamSupport() {
-    return true;
+  Future<BaseServerModel> getSupportedServers({dynamic metadata}) {
+    return Future(() => BaseServerModel(sub: [
+          ServerData(name: 'Vidcloud', id: 'vidcloud', isDub: false),
+          ServerData(name: 'Megacloud', id: 'megacloud', isDub: false)
+        ], dub: [
+          ServerData(name: 'Vidcloud', id: 'vidcloud', isDub: true),
+          ServerData(name: 'Megacloud', id: 'megacloud', isDub: true)
+        ]));
   }
 }

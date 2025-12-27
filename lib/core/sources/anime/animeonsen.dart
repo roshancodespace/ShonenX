@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
+import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
 
@@ -66,11 +67,6 @@ class AnimeOnsenProvider extends AnimeProvider {
   @override
   Future<DetailPage> getDetails(String animeId) {
     throw UnimplementedError();
-  }
-
-  @override
-  bool getDubSubParamSupport() {
-    return false;
   }
 
   @override
@@ -214,8 +210,8 @@ class AnimeOnsenProvider extends AnimeProvider {
   }
 
   @override
-  Future<List<String>> getSupportedServers() async {
-    return ['AnimeOnsen'];
+  Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {
+    return BaseServerModel();
   }
 
   @override

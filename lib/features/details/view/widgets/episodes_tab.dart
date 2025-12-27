@@ -309,7 +309,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                             ),
                             onTap: () => navigateToWatch(
                               mediaId: widget.mediaId,
-                              animeId: state.animeIdForSource, // Use state ID
+                              animeId: state.animeIdForSource,
                               animeName: (widget.mediaTitle.english ??
                                   widget.mediaTitle.romaji ??
                                   widget.mediaTitle.native)!,

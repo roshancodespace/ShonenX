@@ -5,11 +5,16 @@ class BaseServerModel {
 
   BaseServerModel(
       {this.sub = const [], this.dub = const [], this.raw = const []});
+
+  List<ServerData> flatten() {
+    return [...sub, ...dub, ...raw];
+  }
 }
 
 class ServerData {
+  final bool isDub;
   final String? name;
   final String? id;
 
-  ServerData({this.name, this.id});
+  ServerData({this.isDub = false, this.name, this.id});
 }

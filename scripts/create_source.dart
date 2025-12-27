@@ -25,8 +25,8 @@ void main() {
 
   final snakeCaseName = _toSnakeCase(name);
   final pascalCaseName = _toPascalCase(name);
-  
-  final filePath = 'lib/core/sources/anime/$snakeCaseName.dart'; 
+
+  final filePath = 'lib/core/sources/anime/$snakeCaseName.dart';
   final file = File(filePath);
 
   // 3. Validation
@@ -44,7 +44,7 @@ void main() {
     if (!dir.existsSync()) {
       dir.createSync(recursive: true);
     }
-    
+
     _createProviderFile(filePath, snakeCaseName, pascalCaseName, baseUrl);
     AppLogger.success('Source "$name" created successfully!');
   } catch (e) {
@@ -130,7 +130,7 @@ class ${className}Provider extends AnimeProvider {
   }
 
   @override
-  Future<List<String>> getSupportedServers() async {
+  Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {
     return [];
   }
 

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
@@ -53,14 +54,41 @@ class MangaCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  ColorFiltered(
-                    colorFilter: isHovered
-                        ? const ColorFilter.mode(
-                            Colors.transparent, BlendMode.multiply)
-                        : const ColorFilter.mode(Colors.grey,
-                            BlendMode.saturation), // B&W by default
-                    child: AnimeImage(
-                        anime: anime, tag: tag, height: double.infinity),
+                  Hero(
+                    tag: tag,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(0),
+                      child: CachedNetworkImage(
+                        imageUrl: anime?.coverImage?.large ??
+                            anime?.coverImage?.medium ??
+                            '',
+                        fit: BoxFit.cover,
+                        memCacheHeight: 400,
+                        placeholder: (_, __) =>
+                            const AnimeCardShimmer(height: double.infinity),
+                        errorWidget: (_, __, ___) =>
+                            const AnimeCardShimmer(height: double.infinity),
+                        imageBuilder: (context, imageProvider) {
+                          if (isHovered) {
+                            return Image(
+                              image: imageProvider,
+                              fit: BoxFit.cover,
+                            );
+                          }
+                          return ColorFiltered(
+                            colorFilter: const ColorFilter.mode(
+                              Colors.grey,
+                              BlendMode.saturation,
+                            ),
+                            child: Image(
+                              image: imageProvider,
+                              fit: BoxFit.cover,
+                            ),
+                          );
+                        },
+                        useOldImageOnUrlChange: true,
+                      ),
+                    ),
                   ),
 
                   // Rating Badge (Comic Style)

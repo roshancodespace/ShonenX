@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
 
 class LiquidGlassSpotlight extends StatelessWidget {
   final Media? anime;
@@ -35,6 +36,12 @@ class LiquidGlassSpotlight extends StatelessWidget {
             child: CachedNetworkImage(
               imageUrl: imageUrl,
               fit: BoxFit.cover,
+              memCacheWidth: 800,
+              placeholder: (_, __) =>
+                  const AnimeCardShimmer(height: double.infinity),
+              errorWidget: (_, __, ___) =>
+                  const AnimeCardShimmer(height: double.infinity),
+              useOldImageOnUrlChange: true,
             ),
           ),
 

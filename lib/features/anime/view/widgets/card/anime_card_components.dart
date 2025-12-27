@@ -208,10 +208,11 @@ class AnimeImage extends StatelessWidget {
             imageUrl:
                 anime?.coverImage?.large ?? anime?.coverImage?.medium ?? '',
             fit: BoxFit.cover,
-            fadeInDuration: const Duration(milliseconds: 150),
-            placeholder: (_, __) => _AnimeCardShimmer(height: height),
-            errorWidget: (_, __, ___) => _AnimeCardShimmer(height: height),
-            filterQuality: FilterQuality.high,
+            fadeInDuration: const Duration(milliseconds: 300),
+            memCacheHeight: 400,
+            placeholder: (_, __) => AnimeCardShimmer(height: height),
+            errorWidget: (_, __, ___) => AnimeCardShimmer(height: height),
+            filterQuality: FilterQuality.medium,
             useOldImageOnUrlChange: true,
           ),
         ),
@@ -220,23 +221,23 @@ class AnimeImage extends StatelessWidget {
   }
 }
 
-class _AnimeCardShimmer extends StatelessWidget {
+class AnimeCardShimmer extends StatelessWidget {
   final double height;
+  final double? width;
 
-  const _AnimeCardShimmer({required this.height});
+  const AnimeCardShimmer({
+    super.key,
+    required this.height,
+    this.width,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
       height: height,
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-      child: Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: theme.colorScheme.primary,
-        ),
-      ),
+      width: width,
+      color: theme.colorScheme.surfaceContainer.withOpacity(0.5),
     );
   }
 }

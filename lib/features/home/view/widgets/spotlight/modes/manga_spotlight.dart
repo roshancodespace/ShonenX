@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
 
 class MangaSpotlight extends StatelessWidget {
   final Media? anime;
@@ -48,17 +49,27 @@ class MangaSpotlight extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    ColorFiltered(
-                      colorFilter: const ColorFilter.mode(
-                        Colors.grey,
-                        BlendMode.saturation,
-                      ),
-                      child: Hero(
-                        tag: heroTag,
-                        child: CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          fit: BoxFit.cover,
+                    Hero(
+                      tag: heroTag,
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 800,
+                        placeholder: (_, __) =>
+                            const AnimeCardShimmer(height: double.infinity),
+                        errorWidget: (_, __, ___) =>
+                            const AnimeCardShimmer(height: double.infinity),
+                        imageBuilder: (context, imageProvider) => ColorFiltered(
+                          colorFilter: const ColorFilter.mode(
+                            Colors.grey,
+                            BlendMode.saturation,
+                          ),
+                          child: Image(
+                            image: imageProvider,
+                            fit: BoxFit.cover,
+                          ),
                         ),
+                        useOldImageOnUrlChange: true,
                       ),
                     ),
                     if (anime!.averageScore != null)

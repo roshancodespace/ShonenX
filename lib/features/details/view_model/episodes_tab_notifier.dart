@@ -110,6 +110,8 @@ class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
                 .map((r) => {"id": r.link!, "name": r.name!})
                 .toList();
           }
+          if (!mounted)
+            return;
           // Legacy Source
           else {
             final provider = ref.read(selectedAnimeProvider);
@@ -121,6 +123,7 @@ class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
                 .map((r) => {"id": r.id!, "name": r.name!})
                 .toList();
           }
+          if (!mounted) return;
 
           if (candidates.isEmpty) continue;
 
@@ -167,12 +170,15 @@ class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
             force: force,
           );
 
+      if (!mounted) return;
+
       _updateRanges();
     } catch (err, stack) {
       AppLogger.e(err, stack);
+      if (!mounted) return;
       state = state.copyWith(isSearchingMatch: false, error: err.toString());
     } finally {
-      if (state.isSearchingMatch) {
+      if (mounted && state.isSearchingMatch) {
         state = state.copyWith(isSearchingMatch: false);
       }
     }

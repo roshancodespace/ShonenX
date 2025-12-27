@@ -5,6 +5,7 @@ import 'package:html/dom.dart';
 import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
+import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/aniwatch/parser.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
@@ -108,7 +109,7 @@ class KaidoProvider extends AnimeProvider {
   Future<BaseSourcesModel> getSources(String animeId, String episodeId,
       String? serverName, String? category) async {
     final apiUrl =
-        '${this.apiUrl}/watch/$animeId\$episode\$$episodeId\$$category?server=${serverName ?? (await getSupportedServers()).first}';
+        '${this.apiUrl}/watch/$animeId\$episode\$$episodeId\$$category?server=${serverName ?? (await getSupportedServers()).sub.first}';
 
     try {
       log("Fetching sources from: $apiUrl", name: providerName);
@@ -157,13 +158,9 @@ class KaidoProvider extends AnimeProvider {
   }
 
   @override
-  Future<List<String>> getSupportedServers() {
-    return Future(() => ["vidcloud", "streamsb", "vidstreaming", "streamtape"]);
-  }
-
-  @override
-  bool getDubSubParamSupport() {
-    return true;
+  Future<BaseServerModel> getSupportedServers({dynamic metadata}) {
+    // return Future(() => ["vidcloud", "streamsb", "vidstreaming", "streamtape"]);
+    return Future(() => BaseServerModel());
   }
 
   int? _mapTypeToHianimeType(String type) {

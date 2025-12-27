@@ -5,21 +5,18 @@ import 'package:html/parser.dart' as html;
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
+import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
 
 class AnimePaheProvider extends AnimeProvider {
+  static const String _userAgent =
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36';
+  
   final Map<String, String> _sourceHeaders = {
-    'Cookie': '__ddg1=; __ddg2_=',
+    'Cookie': '__ddg1=;__ddg2_=',
     'Referer': 'https://animepahe.si/',
-    'Origin': 'https://animepahe.si',
-    'Accept': '*/*',
-    'Accept-Encoding': 'identity',
-    'Cache-Control': 'no-cache',
-    'Range': 'bytes=0-',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-        'AppleWebKit/537.36 (KHTML, like Gecko) '
-        'Chrome/133.0.0.0 Safari/537.36',
+    'User-Agent': _userAgent,
   };
 
   AnimePaheProvider()
@@ -38,11 +35,6 @@ class AnimePaheProvider extends AnimeProvider {
   }
 
   @override
-  bool getDubSubParamSupport() {
-    return true;
-  }
-
-  @override
   Future<HomePage> getHome() {
     throw UnimplementedError();
   }
@@ -54,7 +46,7 @@ class AnimePaheProvider extends AnimeProvider {
 
   @override
   Future<SearchPage> getSearch(String keyword, String? type, int page) async {
-    final query = keyword.replaceAll("-", "");
+    final query = keyword.replaceAll("-", " ");
     final url = Uri.parse("$apiUrl?m=search&q=$query");
 
     final res = await http.get(url, headers: headers);
@@ -91,7 +83,7 @@ class AnimePaheProvider extends AnimeProvider {
     final String url = "$apiUrl?m=release&id=$animeId&sort=episode_asc";
 
     final res = await http.get(Uri.parse(url), headers: headers);
-    final bodyDecoded = json.decode(res.body);
+    var bodyDecoded = json.decode(res.body);
 
     if (bodyDecoded['data'] != null) {
       list.add(bodyDecoded['data']);
@@ -110,35 +102,36 @@ class AnimePaheProvider extends AnimeProvider {
     }
 
     final flatList = list.expand((item) => item as List<dynamic>).toList();
-
     List<EpisodeDataModel> episodes = [];
 
     for (int i = 0; i < flatList.length; i++) {
       final item = flatList[i];
       final String episodeSession = item['session'];
-
       final String combinedId = "$animeId+$episodeSession";
 
-      final int calculatedEpNum = flatList.length - i;
+      final num? epNumFromApi = item['episode'];
+      final int calculatedEpNum =
+          (epNumFromApi != null) ? epNumFromApi.toInt() : (i + 1);
 
-      final String? title = item['title'] == "" ? null : item['title'];
+      final String? title =
+          (item['title'] == null || item['title'].toString().isEmpty)
+              ? null
+              : item['title'];
       final String? thumbnail = item['snapshot'];
       final bool isFiller = (item['filler'] ?? 0) != 0;
 
       episodes.add(EpisodeDataModel(
         id: combinedId,
-        number: calculatedEpNum.toInt(),
+        number: calculatedEpNum,
         title: title ?? 'Episode $calculatedEpNum',
         thumbnail: thumbnail,
         isFiller: isFiller,
       ));
     }
 
-    final reversedEpisodes = episodes.reversed.toList();
-
     return BaseEpisodeModel(
-      episodes: reversedEpisodes,
-      totalEpisodes: reversedEpisodes.length,
+      episodes: episodes.reversed.toList(),
+      totalEpisodes: episodes.length,
     );
   }
 
@@ -146,13 +139,10 @@ class AnimePaheProvider extends AnimeProvider {
   Future<BaseSourcesModel> getSources(String animeId, String episodeId,
       String? serverName, String? category) async {
     final parts = episodeId.split("+");
-    if (parts.length < 2) {
-      throw Exception("Invalid ID format");
-    }
+    if (parts.length < 2) throw Exception("Invalid ID format");
     final String animeSession = parts[0];
     final String epSession = parts[1];
 
-    // Construct episodeUrl
     final episodeUrl = "https://animepahe.si/play/$animeSession/$epSession";
     final bool isRequestingDub = category?.toLowerCase() == 'dub';
 
@@ -166,22 +156,27 @@ class AnimePaheProvider extends AnimeProvider {
 
     for (final e in downloadQualities) {
       final link = e.attributes['href'] ?? '';
-      final text = e.text; // e.g., "Kwik · 1080p (200MB) · eng"
+      final text = e.text;
 
-      final quality =
-          text.split('·')[1].trim().replaceAll(RegExp(r'\(\d+MB\)'), "");
-      final size = RegExp(r'(\d+MB)').firstMatch(text)?.group(1) ?? '?? MB';
+      String quality = "Unknown";
+      String size = "?? MB";
 
-      // Check dub availability
+      if (text.contains('·')) {
+        final split = text.split('·');
+        if (split.length >= 2) {
+          quality = split[1].trim().replaceAll(RegExp(r'\(\d+MB\)'), "");
+        }
+      }
+      final sizeMatch = RegExp(r'(\d+MB)').firstMatch(text);
+      if (sizeMatch != null) {
+        size = sizeMatch.group(1)!;
+      }
+
       final bool isStreamDub = e.attributes['data-audio'] == 'eng' ||
           text.toLowerCase().contains('eng');
 
-      // Filter based on user request (dub/sub)
-      if (isStreamDub != isRequestingDub) {
-        continue;
-      }
+      if (isStreamDub != isRequestingDub) continue;
 
-      // Add extraction task
       extractTasks.add(() async {
         try {
           final mp4Url = await _extractDownloadLink(link);
@@ -193,7 +188,7 @@ class AnimePaheProvider extends AnimeProvider {
             isDub: isStreamDub,
           ));
         } catch (e) {
-          print("Error extracting $quality: $e");
+          // ignore error
         }
       }());
     }
@@ -205,13 +200,17 @@ class AnimePaheProvider extends AnimeProvider {
       tracks: [],
       intro: Intro(start: 0, end: 0),
       outro: Intro(start: 0, end: 0),
-      headers: _sourceHeaders,
+      // IMPORTANT: Provide the headers so the player/tester can bypass the 403
+      headers: {
+        'Referer': 'https://kwik.cx/',
+        'User-Agent': _userAgent,
+      },
     );
   }
 
   @override
-  Future<List<String>> getSupportedServers() async {
-    return ['AnimePahe'];
+  Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {
+    return BaseServerModel(dub: [], sub: []);
   }
 
   @override
@@ -219,20 +218,18 @@ class AnimePaheProvider extends AnimeProvider {
     throw UnimplementedError();
   }
 
-  static const String _map =
-      "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/";
+  // --- Kwik Decryption Logic ---
+
+  final _map = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/";
 
   int _getString(List<String> content, int s1) {
     final s2 = 10;
     final slice = _map.substring(0, s2);
     int acc = 0;
-
-    // Exact reversed.toList().asMap()
     content.reversed.toList().asMap().forEach((index, c) {
       acc += (RegExp(r'\d').hasMatch(c) ? int.parse(c) : 0) *
           pow(s1, index).toInt();
     });
-
     String k = "";
     while (acc > 0) {
       k = slice[acc % s2] + k;
@@ -250,8 +247,9 @@ class AnimePaheProvider extends AnimeProvider {
         s += fullKey[i];
         i++;
       }
+      // Use replaceAll instead of RegExp to avoid special char issues in key
       for (int j = 0; j < key.length; j++) {
-        s = s.replaceAll(RegExp(key[j]), j.toString());
+        s = s.replaceAll(key[j], j.toString());
       }
       r += String.fromCharCode(_getString(s.split(""), v2) - v1);
       i++;
@@ -267,62 +265,68 @@ class AnimePaheProvider extends AnimeProvider {
     final urlRegex = RegExp(r'action="(.+?)"');
     final tokenRegex = RegExp(r'value="(.+?)"');
 
-    // Reference: Headers here are ONLY referer
-    final resp = await http
-        .get(Uri.parse(downloadLink), headers: {'referer': downloadLink});
-
-    final document = html.parse(resp.body);
-    final scripts = document.querySelectorAll('script');
-
+    final resp = await http.get(Uri.parse(downloadLink), headers: headers);
+    final scripts = html.parse(resp.body).querySelectorAll('script');
+    
     String? kwikLink;
-
-    // Exact Iterating scripts to find the redirect
     for (var e in scripts) {
       if (kwikLink != null) break;
-      if (e.text.isNotEmpty || e.innerHtml.isNotEmpty) {
-        final match = redirectRegex.allMatches(e.innerHtml);
-        if (match.isNotEmpty) {
-          if (match.length > 1) {
-            kwikLink = match.toList()[1].group(1);
-          }
+      if (e.text.isNotEmpty) {
+        final matches = redirectRegex.allMatches(e.innerHtml).toList();
+        if (matches.isNotEmpty) {
+           // Often the real link is in the last match if there are multiple
+           final candidate = matches.last.group(1);
+           if (candidate != null && candidate.contains('http')) {
+             kwikLink = candidate;
+           }
         }
       }
     }
+    
+    if (kwikLink == null) throw Exception("Couldnt extract kwik link");
 
-    if (kwikLink == null) throw Exception("Could not extract kwik link");
-
-    final kwikRes = await http
-        .get(Uri.parse(kwikLink), headers: {'Referer': "https://animepahe.si"});
-    final cookies = kwikRes.headers['set-cookie'];
+    final kwikRes = await http.get(Uri.parse(kwikLink), headers: {
+      'referer': downloadLink,
+      'User-Agent': _userAgent,
+    });
+    
+    String cookieHeader = "";
+    if (kwikRes.headers['set-cookie'] != null) {
+      cookieHeader = kwikRes.headers['set-cookie']!;
+    }
 
     final match = paramRegex.firstMatch(kwikRes.body);
-    if (match == null) throw Exception("Could not extract download params");
-
+    if (match == null) throw Exception("Couldnt extract download params");
+    
     final fullKey = match.group(1)!;
     final key = match.group(2)!;
     final v1 = int.parse(match.group(3)!);
     final v2 = int.parse(match.group(4)!);
 
     final decrypted = _decrypt(fullKey, key, v1, v2);
+    
+    final postUrlMatch = urlRegex.firstMatch(decrypted);
+    final tokenMatch = tokenRegex.firstMatch(decrypted);
 
-    final postUrl = urlRegex.firstMatch(decrypted)?.group(1);
-    final token = tokenRegex.firstMatch(decrypted)?.group(1);
+    if (postUrlMatch == null || tokenMatch == null) {
+      throw Exception("Decryption failed to produce valid form data");
+    }
 
-    if (postUrl == null || token == null) throw Exception("Decryption failed");
+    final postUrl = postUrlMatch.group(1)!;
+    final token = tokenMatch.group(1)!;
 
     try {
       final r2 = await http.post(
         Uri.parse(postUrl),
         body: {'_token': token},
         headers: {
-          'Referer': kwikLink,
-          'Cookie': cookies ?? "",
-          'User-Agent': headers['User-Agent']!
+          'referer': kwikLink, 
+          'cookie': cookieHeader,
+          'User-Agent': _userAgent
         },
       );
-
       final mp4Url = r2.headers['location'];
-      if (mp4Url == null) throw Exception("Could not extract media link");
+      if (mp4Url == null) throw Exception("Couldnt extract media link location");
       return mp4Url;
     } catch (err) {
       rethrow;

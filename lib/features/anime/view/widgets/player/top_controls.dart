@@ -40,7 +40,13 @@ class TopControls extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final selectedEpisodeIdx = watchEpisode(ref, (e) => e.selectedEpisodeIdx);
-    final episodes = ref.watch(episodeListProvider).episodes;
+    final episodeTitle = ref.watch(
+      episodeListProvider.select((s) {
+        final idx = selectedEpisodeIdx;
+        if (idx == null || idx >= s.episodes.length) return null;
+        return s.episodes[idx].title;
+      }),
+    );
     final sources = watchEpisode(ref, (e) => e.sources);
     final qualityOptions = watchEpisode(ref, (e) => e.qualityOptions);
 
@@ -61,7 +67,7 @@ class TopControls extends ConsumerWidget {
         bottom: false,
         child: GestureDetector(
           onTap: onInteraction,
-          behavior: HitTestBehavior.translucent,
+          behavior: HitTestBehavior.deferToChild,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
             child: Row(
@@ -95,13 +101,7 @@ class TopControls extends ConsumerWidget {
                       // Episode title
                       if (selectedEpisodeIdx != null && sources.isNotEmpty)
                         Text(
-                          (episodes[selectedEpisodeIdx].title != null &&
-                                  episodes[selectedEpisodeIdx]
-                                      .title!
-                                      .trim()
-                                      .isNotEmpty)
-                              ? episodes[selectedEpisodeIdx].title!
-                              : 'Episode: ${selectedEpisodeIdx + 1}',
+                          episodeTitle ?? 'Episode: ${selectedEpisodeIdx + 1}',
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: scheme.onSurface,
@@ -130,7 +130,7 @@ class TopControls extends ConsumerWidget {
                     ],
                     // if (onEpisodesPressed != null) ...[
                     //   _buildControlButton(
-                    //     icon: Icons.playlist_play_rounded,
+                    //     icon: Icons.,
                     //     onPressed: _wrap(onEpisodesPressed),
                     //     color: scheme.onSurface,
                     //   ),
@@ -179,7 +179,8 @@ class TopControls extends ConsumerWidget {
     if (!ref.watch(experimentalProvider).useMangayomiExtensions) {
       return source?.providerName.toUpperCase() ?? "LEGACY";
     } else {
-      return ref.read(sourceProvider).activeAnimeSource?.name ?? 'Mangayomi';
+      final sourceNotifier = ref.watch(sourceProvider);
+      return sourceNotifier.activeAnimeSource?.name ?? 'Mangayomi';
     }
   }
 }

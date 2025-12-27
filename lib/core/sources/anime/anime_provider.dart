@@ -1,5 +1,6 @@
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
+import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 
 abstract class AnimeProvider {
@@ -22,6 +23,5 @@ abstract class AnimeProvider {
   Future<SearchPage> getSearch(String keyword, String? type, int page);
   Future<SearchPage> getPage(String route, int page);
   Future<WatchPage> getWatch(String animeId);
-  Future<List<String>> getSupportedServers();
-  bool getDubSubParamSupport();
+  Future<BaseServerModel> getSupportedServers({dynamic metadata});
 }

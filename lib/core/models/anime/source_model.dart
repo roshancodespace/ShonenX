@@ -1,6 +1,7 @@
 class BaseSourcesModel {
   dynamic headers;
   List<Subtitle> tracks;
+  Subtitle? preview;
   Intro? intro;
   Intro? outro;
   List<Source> sources;
@@ -9,6 +10,7 @@ class BaseSourcesModel {
 
   BaseSourcesModel({
     this.headers,
+    this.preview,
     this.tracks = const [],
     this.intro,
     this.outro,

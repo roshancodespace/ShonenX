@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -62,65 +63,80 @@ class PlayerState {
 }
 
 class PlayerController extends AutoDisposeNotifier<PlayerState> {
-  late final Player? player;
+  late final Player player;
   late final VideoController videoController;
+  final List<StreamSubscription> _subs = [];
 
   @override
   PlayerState build() {
     player = Player(
         configuration: const PlayerConfiguration(
       bufferSize: 32 * 1024 * 1024,
+      logLevel: MPVLogLevel.v,
     ));
 
-    videoController = VideoController(player!,
+    videoController = VideoController(player,
         configuration: VideoControllerConfiguration(
           androidAttachSurfaceAfterVideoParameters:
               Platform.isAndroid ? true : null,
         ));
     ref.onDispose(() {
-      player?.dispose();
+      player.dispose();
+      videoController.notifier.dispose();
     });
     _setupListners();
     return PlayerState.initial();
   }
 
   void _setupListners() {
-    final stream = player?.stream;
+    final stream = player.stream;
 
-    stream?.position.listen((pos) {
-      if ((player?.state.duration.inSeconds ?? 0) > 0) {
+    _subs.add(stream.position.listen((pos) {
+      if (player.state.duration > Duration.zero) {
         state = state.copyWith(position: pos);
       }
-    });
-    stream?.duration.listen((dur) {
+    }));
+
+    _subs.add(stream.duration.listen((dur) {
       state = state.copyWith(duration: dur);
-    });
-    stream?.buffering.listen((isBuf) {
+    }));
+
+    _subs.add(stream.buffering.listen((isBuf) {
       state = state.copyWith(isBuffering: isBuf);
-    });
-    stream?.playing.listen((isPlay) {
+    }));
+
+    _subs.add(stream.playing.listen((isPlay) {
       state = state.copyWith(isPlaying: isPlay);
-    });
-    stream?.rate.listen((rate) {
+    }));
+
+    _subs.add(stream.rate.listen((rate) {
       state = state.copyWith(playbackSpeed: rate);
-    });
-    stream?.subtitle.listen((subtitle) {
+    }));
+
+    _subs.add(stream.subtitle.listen((subtitle) {
       state = state.copyWith(subtitle: subtitle);
-    });
-    stream?.buffer.listen((buffer) {
+    }));
+
+    _subs.add(stream.buffer.listen((buffer) {
       state = state.copyWith(buffer: buffer);
+    }));
+
+    ref.onDispose(() {
+      for (final sub in _subs) {
+        sub.cancel();
+      }
     });
   }
 
   Future<void> open(String url, Duration? startAt,
       {Map<String, String>? headers}) async {
-    await player?.open(Media(url, httpHeaders: headers));
+    await player.open(Media(url, httpHeaders: headers));
     if (startAt != null) {
       try {
-        await player?.stream.duration
+        await player.stream.duration
             .firstWhere((d) => d > Duration.zero)
             .timeout(const Duration(seconds: 10));
-        await player?.seek(startAt);
+        await player.seek(startAt);
       } catch (e) {
         // AppLogger.w("Failed to seek to start position: $e");
       }
@@ -128,11 +144,15 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
   }
 
   Future<void> togglePlay() async {
-    await (state.isPlaying ? player?.pause() : player?.play());
+    if (player.state.playing) {
+      await player.pause();
+    } else {
+      await player.play();
+    }
   }
 
   Future<void> setSpeed(double speed) async {
-    await player?.setRate(speed);
+    await player.setRate(speed);
   }
 
   void setFit(BoxFit newFit) {
@@ -140,22 +160,30 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
   }
 
   Future<void> play() async {
-    await player?.play();
+    await player.play();
   }
 
   Future<void> setSubtitle(SubtitleTrack track) async {
-    await player?.setSubtitleTrack(track);
+    await player.setSubtitleTrack(track);
   }
 
-  void pause() => player?.pause();
-  void seek(Duration pos) => player?.seek(pos);
-  void forward(int seconds) => player?.seek(
-      Duration(seconds: (player?.state.position.inSeconds ?? 0) + seconds));
-  void rewind(int seconds) => player?.seek(
-      Duration(seconds: (player?.state.position.inSeconds ?? 0) - seconds));
+  void pause() => player.pause();
+  void seek(Duration pos) => player.seek(pos);
+  void forward(int seconds) => player
+      .seek(Duration(seconds: (player.state.position.inSeconds) + seconds));
+  void rewind(int seconds) {
+    final current = player.state.position;
+    final target = current - Duration(seconds: seconds);
+    player.seek(target < Duration.zero ? Duration.zero : target);
+  }
+
+  void volumeUp() => player.setVolume((player.state.volume + 10).clamp(0, 100));
+  void volumeDown() =>
+      player.setVolume((player.state.volume - 10).clamp(0, 100));
+  void toggleMute() => player.setVolume(player.state.volume == 0 ? 100 : 0);
 
   Future<Uint8List?> getThumbnail() async {
-    return await player?.platform?.screenshot(
+    return await player.platform?.screenshot(
       format: 'image/png',
     );
   }

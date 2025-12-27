@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shonenx/core/anilist/services/anilist_service.dart';
-import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
+import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
 
@@ -28,11 +28,6 @@ class GojoProvider implements AnimeProvider {
   }
 
   @override
-  bool getDubSubParamSupport() {
-    return true;
-  }
-
-  @override
   Future<BaseEpisodeModel> getEpisodes(String animeId,
       {String? anilistId, String? malId}) async {
     final url = Uri.parse("$apiUrl/eps/$animeId");
@@ -51,7 +46,7 @@ class GojoProvider implements AnimeProvider {
       final String? title = item['title'];
 
       return EpisodeDataModel(
-        id: epNum.toString(),
+        id: animeId,
         number: epNum,
         title: title ?? 'Episode $epNum',
         thumbnail: img,
@@ -80,24 +75,8 @@ class GojoProvider implements AnimeProvider {
 
   @override
   Future<SearchPage> getSearch(String keyword, String? type, int page) async {
-    // Existing logic matches the source's reliance on Anilist
     final res = await AnilistService(null).searchAnime(keyword, page: page);
-    return SearchPage(
-        results: res
-            .map((a) => BaseAnimeModel(
-                  id: a.id.toString(),
-                  anilistId: a.id,
-                  name: a.title?.english ?? a.title?.romaji ?? a.title?.native,
-                  jname: a.title?.native,
-                  type: a.format,
-                  description: a.description,
-                  poster: a.coverImage?.medium ?? a.coverImage?.large,
-                  banner: a.bannerImage,
-                  genres: a.genres,
-                  releaseDate: a.startDate?.toDateTime?.toIso8601String(),
-                  number: a.episodes,
-                ))
-            .toList());
+    return SearchPage(results: res.map((a) => a.toBaseAnimeModel(a)).toList());
   }
 
   @override
@@ -181,8 +160,33 @@ class GojoProvider implements AnimeProvider {
   }
 
   @override
-  Future<List<String>> getSupportedServers() async {
-    return ['Gojo'];
+  Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {
+    if (metadata != null) {
+      final res = (await http.get(
+          Uri.parse(
+              '$apiUrl/servers?id=${metadata['id']}&num=${metadata['epNum']}'),
+          headers: headers));
+      final List<dynamic> data = jsonDecode(res.body);
+      final dub = <ServerData>[];
+      final sub = <ServerData>[];
+
+      for (final d in data) {
+        final server =
+            ServerData(name: d['tip'], id: d['id'], isDub: d['hasDub']);
+
+        if (d['hasDub'] == 'true') {
+          dub.add(server);
+        } else {
+          sub.add(server);
+        }
+      }
+
+      return BaseServerModel(
+        dub: dub,
+        sub: sub,
+      );
+    }
+    return BaseServerModel();
   }
 
   @override

@@ -45,6 +45,9 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
   void initState() {
     super.initState();
     _focusNode = FocusNode();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
     _restartHideTimer();
   }
 
@@ -151,24 +154,12 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
             notifier.forward(10),
         const SingleActivator(LogicalKeyboardKey.keyL): () =>
             notifier.forward(10),
-        const SingleActivator(LogicalKeyboardKey.arrowUp): () {
-          final player = notifier.player;
-          if (player != null) {
-            player.setVolume((player.state.volume + 10).clamp(0.0, 100.0));
-          }
-        },
-        const SingleActivator(LogicalKeyboardKey.arrowDown): () {
-          final player = notifier.player;
-          if (player != null) {
-            player.setVolume((player.state.volume - 10).clamp(0.0, 100.0));
-          }
-        },
-        const SingleActivator(LogicalKeyboardKey.keyM): () {
-          final player = notifier.player;
-          if (player != null) {
-            player.setVolume(player.state.volume == 0 ? 100.0 : 0.0);
-          }
-        },
+        const SingleActivator(LogicalKeyboardKey.arrowUp): () =>
+            notifier.volumeUp(),
+        const SingleActivator(LogicalKeyboardKey.arrowDown): () =>
+            notifier.volumeDown(),
+        const SingleActivator(LogicalKeyboardKey.keyM): () =>
+            notifier.toggleMute(),
       },
       child: Focus(
         focusNode: _focusNode,
@@ -370,8 +361,12 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     _showSheet(
       builder: (context) => GenericSelectionSheet<String>(
         title: 'Server',
-        items: data.servers,
-        selectedIndex: data.servers.indexOf(data.selectedServer!),
+        items: data.servers
+            .map((s) => '${s.id}-${s.isDub ? 'Dubbed' : ''}')
+            .toList(),
+        selectedIndex: data.servers.indexWhere((s) =>
+            s.id == data.selectedServer?.id &&
+            s.isDub == data.selectedServer?.isDub),
         displayBuilder: (item) => item,
         onItemSelected: (index) {
           ref

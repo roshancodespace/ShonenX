@@ -261,8 +261,10 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                   fit: fit,
                   wakelock: true,
                   filterQuality:
-                      kDebugMode ? FilterQuality.none : FilterQuality.medium,
+                      kDebugMode ? FilterQuality.none : FilterQuality.low,
                   controls: NoVideoControls,
+                  subtitleViewConfiguration:
+                      SubtitleViewConfiguration(visible: false),
                 ),
               ),
               CloudstreamControls(onEpisodesPressed: _togglePanel),

@@ -6,6 +6,7 @@ import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
 
 class GojoProvider implements AnimeProvider {
   @override
@@ -46,7 +47,7 @@ class GojoProvider implements AnimeProvider {
       final String? title = item['title'];
 
       return EpisodeDataModel(
-        id: animeId,
+        id: epNum.toString(),
         number: epNum,
         title: title ?? 'Episode $epNum',
         thumbnail: img,
@@ -82,17 +83,18 @@ class GojoProvider implements AnimeProvider {
   @override
   Future<BaseSourcesModel> getSources(String animeId, String episodeId,
       String? serverName, String? category) async {
-    // Logic extracted from getStreams
     final id = animeId;
-    final epNum = episodeId; // In getEpisodes, we set ID as the number
+    final epNum = episodeId;
+    if (id.isEmpty || epNum.isEmpty) {
+      return BaseSourcesModel();
+    }
     final isDub = category?.toLowerCase() == 'dub';
-
     // 1. Get the list of servers
     final serverUrl = Uri.parse("$apiUrl/servers?id=$id&num=$epNum");
     final serverListRes = await http.get(serverUrl, headers: headers);
 
     if (serverListRes.statusCode != 200) {
-      return BaseSourcesModel(sources: [], tracks: []);
+      return BaseSourcesModel();
     }
 
     final List<dynamic> serversJson = jsonDecode(serverListRes.body);
@@ -134,12 +136,10 @@ class GojoProvider implements AnimeProvider {
 
       // Extract Sources
       if (sourceList != null) {
-        final currentServerName =
-            serversJson[i]['id'] ?? 'Gojo'; // Use server ID as name
+        final currentServerName = serversJson[i]['id'] ?? 'Gojo';
 
         for (var item in sourceList) {
           String quality = item['quality'] ?? 'default';
-          // Logic from source: rename 'master' to 'multi-quality' or 'auto'
           if (quality.trim() == 'master') quality = 'Auto';
 
           sources.add(Source(
@@ -161,10 +161,11 @@ class GojoProvider implements AnimeProvider {
 
   @override
   Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {
+    AppLogger.w(metadata);
     if (metadata != null) {
       final res = (await http.get(
           Uri.parse(
-              '$apiUrl/servers?id=${metadata['id']}&num=${metadata['epNum']}'),
+              '$apiUrl/servers?id=${metadata['id']}&num=${metadata['epNumber']}'),
           headers: headers));
       final List<dynamic> data = jsonDecode(res.body);
       final dub = <ServerData>[];

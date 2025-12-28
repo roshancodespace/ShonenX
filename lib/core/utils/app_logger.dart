@@ -39,8 +39,8 @@ class AppLogger {
 
   /// Logs a warning message
   /// [message] The message to be logged
-  static void w(dynamic message) {
-    if (kDebugMode) _logger.w(message);
+  static void w(dynamic message, [Object? error, StackTrace? stackTrace]) {
+    if (kDebugMode) _logger.w(message, error: error, stackTrace: stackTrace);
   }
 
   /// Logs an error message with optional error object and stack trace

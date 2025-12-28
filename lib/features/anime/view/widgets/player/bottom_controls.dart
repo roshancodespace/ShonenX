@@ -1,17 +1,21 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:go_router/go_router.dart';
+
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 import 'package:shonenx/utils/formatter.dart';
-import 'package:go_router/go_router.dart';
 
 class BottomControls extends ConsumerWidget {
   final VoidCallback onInteraction;
+
   final double? sliderValue;
-  final Function(double) onSliderChanged;
-  final Function(double) onSliderChangeStart;
-  final Function(double) onSliderChangeEnd;
+  final ValueChanged<double>? onSliderChanged;
+  final ValueChanged<double>? onSliderChangeStart;
+  final ValueChanged<double>? onSliderChangeEnd;
+
   final VoidCallback onLockPressed;
   final VoidCallback onSourcePressed;
   final VoidCallback onSubtitlePressed;
@@ -23,34 +27,35 @@ class BottomControls extends ConsumerWidget {
     super.key,
     required this.onInteraction,
     this.sliderValue,
-    required this.onSliderChanged,
-    required this.onSliderChangeStart,
-    required this.onSliderChangeEnd,
+    this.onSliderChanged,
+    this.onSliderChangeStart,
+    this.onSliderChangeEnd,
     required this.onLockPressed,
     required this.onSourcePressed,
     required this.onSubtitlePressed,
     required this.onServerPressed,
     required this.onForwardPressed,
-    required this.onEpisodePressed,
+    this.onEpisodePressed,
   });
 
-  VoidCallback _wrap(VoidCallback? action) {
+  VoidCallback _wrap(VoidCallback? cb) {
     return () {
-      if (action != null) action();
+      cb?.call();
       onInteraction();
     };
   }
 
-  T watchEpisode<T>(WidgetRef ref, T Function(EpisodeDataState s) selector) {
-    return ref.watch(episodeDataProvider.select(selector));
+  T _watch<T>(WidgetRef ref, T Function(EpisodeDataState s) sel) {
+    return ref.watch(episodeDataProvider.select(sel));
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final episodeNotifier = ref.read(episodeDataProvider.notifier);
     final scheme = Theme.of(context).colorScheme;
+    final episodeNotifier = ref.read(episodeDataProvider.notifier);
 
     return Container(
+      padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
@@ -63,191 +68,200 @@ class BottomControls extends ConsumerWidget {
           stops: const [0.0, 0.6, 1.0],
         ),
       ),
-      padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 10),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _buildSkipButton(context, scheme),
-              ],
-            ),
-            // Seek Bar
-            _buildProgressBar(context, ref, scheme),
-            const SizedBox(height: 4),
-
-            // Controls Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Left: Play/Pause and Time
-                Row(
-                  children: [
-                    _buildPlayPauseButton(ref, scheme),
-                    const SizedBox(width: 12),
-                    _buildTimeDisplay(context, ref, scheme),
-                  ],
-                ),
-
-                // Right: Actions
-                Row(
-                  children: [
-                    if (episodeNotifier.dubSubSupport)
-                      _buildSettingsPill(
-                        context,
-                        text: watchEpisode(ref, (s) => s.selectedServer?.isDub == true)
-                            ? 'DUB'
-                            : 'SUB',
-                        onPressed: () => episodeNotifier.toggleDubSub(),
-                        scheme: scheme,
-                      ),
-                    if (watchEpisode(ref, (s) => s.sources.length) > 1) ...[
-                      const SizedBox(width: 8),
-                      Builder(builder: (context) {
-                        final sources = watchEpisode(ref, (s) => s.sources);
-                        final index =
-                            watchEpisode(ref, (s) => s.selectedSourceIdx) ?? 0;
-                        if (index >= 0 && index < sources.length) {
-                          return _buildSettingsPill(
-                            context,
-                            text: sources[index].quality ?? 'Auto',
-                            onPressed: onSourcePressed,
-                            scheme: scheme,
-                          );
-                        }
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [_buildSkipButton(scheme)],
+          ),
+          _buildProgressBar(context, ref, scheme),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  _buildPlayPause(ref),
+                  const SizedBox(width: 12),
+                  _buildTime(ref, scheme),
+                ],
+              ),
+              Row(
+                children: [
+                  if (_watch(
+                      ref,
+                      (s) =>
+                          s.selectedServer?.isDub != null &&
+                          s.servers.any((e) => e.isDub)))
+                    _pill(
+                      text: _watch(ref, (s) => s.selectedServer?.isDub == true)
+                          ? 'DUB'
+                          : 'SUB',
+                      onTap: () => episodeNotifier.toggleDubSub(),
+                    ),
+                  if (_watch(ref, (s) => s.sources.length) > 1) ...[
+                    const SizedBox(width: 8),
+                    Builder(builder: (_) {
+                      final list = _watch(ref, (s) => s.sources);
+                      final idx = _watch(ref, (s) => s.selectedSourceIdx) ?? 0;
+                      if (idx < 0 || idx >= list.length) {
                         return const SizedBox.shrink();
-                      }),
-                    ],
-                    const SizedBox(width: 8),
-                    _buildIconButton(
-                      icon:
-                          (watchEpisode(ref, (s) => s.selectedSubtitleIdx != 0)
-                              ? Iconsax.subtitle5
-                              : Iconsax.subtitle),
-                      onPressed: onSubtitlePressed,
-                      onLongPress: () =>
-                          context.push('/settings/player/subtitles'),
-                      color: scheme.onSurface,
-                      tooltip: 'Subtitles',
-                    ),
-                    const SizedBox(width: 8),
-                    _buildIconButton(
-                      icon: Iconsax.lock,
-                      onPressed: onLockPressed,
-                      color: scheme.onSurface,
-                      tooltip: 'Lock',
-                    ),
-                    const SizedBox(width: 8),
-                    _buildIconButton(
-                      icon: Icons.playlist_play_rounded,
-                      onPressed: onEpisodePressed,
-                      color: scheme.onSurface,
-                      tooltip: 'Episode',
-                    ),
+                      }
+                      return _pill(
+                        text: list[idx].quality ?? 'Auto',
+                        onTap: onSourcePressed,
+                      );
+                    }),
                   ],
-                ),
-              ],
-            ),
-          ],
-        ),
+                  const SizedBox(width: 8),
+                  _icon(
+                    icon: _watch(ref, (s) => s.selectedSubtitleIdx != 0)
+                        ? Iconsax.subtitle5
+                        : Iconsax.subtitle,
+                    tooltip: 'Subtitles',
+                    onTap: onSubtitlePressed,
+                    onLong: () => context.push('/settings/player/subtitles'),
+                  ),
+                  const SizedBox(width: 8),
+                  _icon(
+                    icon: Iconsax.lock,
+                    tooltip: 'Lock',
+                    onTap: onLockPressed,
+                  ),
+                  const SizedBox(width: 8),
+                  _icon(
+                    icon: Icons.playlist_play_rounded,
+                    tooltip: 'Episodes',
+                    onTap: onEpisodePressed,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildProgressBar(
-      BuildContext context, WidgetRef ref, ColorScheme scheme) {
+    BuildContext context,
+    WidgetRef ref,
+    ColorScheme scheme,
+  ) {
     return SizedBox(
-      height: 20,
-      child: Consumer(builder: (context, ref, child) {
-        final state = ref.watch(playerStateProvider.select(
-          (p) => (p.position, p.duration, p.buffer),
-        ));
-
-        final duration = state.$2.inMilliseconds.toDouble();
-        final position = state.$1.inMilliseconds.toDouble();
-        final buffer = state.$3.inMilliseconds.toDouble();
-
-        return Stack(
-          alignment: Alignment.centerLeft,
-          children: [
-            // Buffer track
-            SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                trackHeight: 4,
-                thumbShape: SliderComponentShape.noThumb,
-                activeTrackColor: scheme.onSurface.withOpacity(0.4),
-                inactiveTrackColor: scheme.onSurface.withOpacity(0.2),
-                trackShape: const RectangularSliderTrackShape(),
-              ),
-              child: Slider(
-                value: buffer.clamp(0.0, duration),
-                max: duration > 0 ? duration : 1.0,
-                onChanged: null,
-              ),
+      height: 30,
+      child: Consumer(
+        builder: (_, ref, __) {
+          final (pos, dur, buf) = ref.watch(
+            playerStateProvider.select(
+              (p) => (p.position, p.duration, p.buffer),
             ),
+          );
 
-            // Playhead track
-            SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                trackHeight: 4,
-                activeTrackColor: scheme.primary,
-                inactiveTrackColor: Colors.transparent,
-                trackShape: const RectangularSliderTrackShape(),
-                thumbShape: RoundSliderThumbShape(
-                  enabledThumbRadius: 10,
-                  disabledThumbRadius: 8,
+          final max =
+              dur.inMilliseconds > 0 ? dur.inMilliseconds.toDouble() : 1.0;
+
+          final position = pos.inMilliseconds.toDouble().clamp(0, max);
+          final buffer = buf.inMilliseconds.toDouble().clamp(0, max);
+          final value = (sliderValue ?? position).clamp(0, max);
+
+          final baseTheme = SliderTheme.of(context);
+
+          return Stack(
+            alignment: Alignment.centerLeft,
+            children: [
+              // buffer slider
+              SliderTheme(
+                data: baseTheme.copyWith(
+                  trackShape: const RectangularSliderTrackShape(),
+                  trackHeight: 4,
+                  thumbShape: SliderComponentShape.noThumb,
+                  overlayShape: SliderComponentShape.noOverlay,
+                  activeTrackColor: scheme.onSurface.withOpacity(0.4),
+                  inactiveTrackColor: scheme.onSurface.withOpacity(0.2),
                 ),
-                overlayShape: RoundSliderOverlayShape(
-                  overlayRadius: 16,
+                child: Slider(
+                  value: buffer.toDouble(),
+                  max: max,
+                  onChanged: null,
                 ),
               ),
-              child: Slider(
-                value: (sliderValue ?? position).clamp(0.0, duration),
-                max: duration > 0 ? duration : 1.0,
-                onChanged: onSliderChanged,
-                onChangeStart: onSliderChangeStart,
-                onChangeEnd: onSliderChangeEnd,
+
+              // progress slider
+              SliderTheme(
+                data: baseTheme.copyWith(
+                  trackShape: const RectangularSliderTrackShape(),
+                  trackHeight: 4,
+                  activeTrackColor: scheme.primary,
+                  inactiveTrackColor: Colors.transparent,
+                  thumbShape: SliderComponentShape.noThumb,
+                  overlayShape: SliderComponentShape.noOverlay,
+                ),
+                child: Slider(
+                  value: value.toDouble(),
+                  max: max,
+                  onChanged: onSliderChanged,
+                  onChangeStart: onSliderChangeStart,
+                  onChangeEnd: onSliderChangeEnd,
+                ),
               ),
-            ),
-          ],
-        );
-      }),
+
+              // custom rectangular thumb
+              Positioned.fill(
+                child: LayoutBuilder(
+                  builder: (_, constraints) {
+                    final dx = constraints.maxWidth * (value / max);
+
+                    return IgnorePointer(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Transform.translate(
+                          offset: Offset(dx - 4, 0),
+                          child: Container(
+                            width: 6,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: scheme.primary,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildTimeDisplay(
-      BuildContext context, WidgetRef ref, ColorScheme scheme) {
-    return Consumer(
-      builder: (context, ref, child) {
-        final state = ref.watch(playerStateProvider.select(
-          (p) => (p.position, p.duration),
-        ));
-        final position = state.$1;
-        final duration = state.$2;
+  Widget _buildTime(WidgetRef ref, ColorScheme scheme) {
+    final (pos, dur) = ref.watch(
+      playerStateProvider.select((p) => (p.position, p.duration)),
+    );
 
-        return Text(
-          '${formatDuration(position)} / ${formatDuration(duration)}',
-          style: TextStyle(
-            color: scheme.onSurface,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
-        );
-      },
+    return Text(
+      '${formatDuration(pos)} / ${formatDuration(dur)}',
+      style: TextStyle(
+        color: scheme.onSurface,
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
     );
   }
 
-  Widget _buildPlayPauseButton(WidgetRef ref, ColorScheme scheme) {
+  Widget _buildPlayPause(WidgetRef ref) {
     final isPlaying = ref.watch(playerStateProvider.select((p) => p.isPlaying));
     final notifier = ref.read(playerStateProvider.notifier);
 
     return InkWell(
-      onTap: _wrap(() => notifier.togglePlay()),
+      onTap: _wrap(notifier.togglePlay),
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(8),
@@ -264,45 +278,36 @@ class BottomControls extends ConsumerWidget {
     );
   }
 
-  Widget _buildIconButton({
+  Widget _icon({
     required IconData icon,
-    VoidCallback? onPressed,
-    VoidCallback? onLongPress,
-    required Color color,
     required String tooltip,
+    VoidCallback? onTap,
+    VoidCallback? onLong,
   }) {
     return Tooltip(
       message: tooltip,
       child: InkWell(
-        onTap: _wrap(onPressed),
-        onLongPress: _wrap(onLongPress),
+        onTap: _wrap(onTap),
+        onLongPress: _wrap(onLong),
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(8),
-          child: Icon(icon, color: color, size: 22),
+          child: Icon(icon, color: Colors.white, size: 22),
         ),
       ),
     );
   }
 
-  Widget _buildSettingsPill(
-    BuildContext context, {
-    required String text,
-    required VoidCallback onPressed,
-    required ColorScheme scheme,
-  }) {
+  Widget _pill({required String text, required VoidCallback onTap}) {
     return InkWell(
-      onTap: _wrap(onPressed),
+      onTap: _wrap(onTap),
       borderRadius: BorderRadius.circular(6),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.2),
-            width: 1,
-          ),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
         ),
         child: Text(
           text,
@@ -316,7 +321,7 @@ class BottomControls extends ConsumerWidget {
     );
   }
 
-  Widget _buildSkipButton(BuildContext context, ColorScheme scheme) {
+  Widget _buildSkipButton(ColorScheme scheme) {
     return InkWell(
       onTap: _wrap(onForwardPressed),
       borderRadius: BorderRadius.circular(20),
@@ -326,12 +331,12 @@ class BottomControls extends ConsumerWidget {
           color: scheme.primary,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Row(
+        child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Iconsax.forward, color: Colors.black, size: 16),
-            const SizedBox(width: 4),
-            const Text(
+            Icon(Iconsax.forward, color: Colors.black, size: 16),
+            SizedBox(width: 4),
+            Text(
               '+85s',
               style: TextStyle(
                 color: Colors.black,

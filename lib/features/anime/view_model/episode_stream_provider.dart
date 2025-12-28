@@ -247,11 +247,12 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       (s) => s.lang?.toLowerCase().contains('eng') ?? false,
     );
 
+    changeSubtitle(engIdx);
+
     state = state.copyWith(
       qualityOptions: qualities,
       selectedSourceIdx: idx,
       selectedQualityIdx: finalIdx,
-      selectedSubtitleIdx: engIdx > 0 ? engIdx : 0,
     );
   }
 

@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/features/home/view/widget/continue_section.dart';
 import 'package:shonenx/features/home/view_model/homepage_notifier.dart';
@@ -24,11 +25,28 @@ class HomeScreen extends ConsumerWidget {
       return Center(child: Text('Error: ${state.error}'));
 
     final home = state.homePage;
-    if (home == null) return const SizedBox();
+    if (home == null) return const SizedBox.shrink();
 
     if (!kDebugMode && ref.read(automaticUpdatesProvider)) {
       checkForUpdates(context);
     }
+
+    final sections = [
+      if (home.trendingAnime.isNotEmpty)
+        _buildHomeSection('Trending Anime', home.trendingAnime),
+      if (home.popularAnime.isNotEmpty)
+        _buildHomeSection('Popular Anime', home.popularAnime),
+      if (home.mostFavoriteAnime.isNotEmpty)
+        _buildHomeSection('Most Favorite', home.mostFavoriteAnime),
+      if (home.mostWatchedAnime.isNotEmpty)
+        _buildHomeSection('Most Watched', home.mostWatchedAnime),
+      if (home.topRatedAnime.isNotEmpty)
+        _buildHomeSection('Top Rated', home.topRatedAnime),
+      if (home.recentlyUpdated.isNotEmpty)
+        _buildHomeSection('Recently Updated', home.recentlyUpdated),
+      if (home.upcomingAnime.isNotEmpty)
+        _buildHomeSection('Upcoming', home.upcomingAnime),
+    ];
 
     return RefreshIndicator(
       onRefresh: () => ref.read(homepageProvider.notifier).fetchHomePage(),
@@ -38,39 +56,24 @@ class HomeScreen extends ConsumerWidget {
           const HeaderSection(isDesktop: false),
           SpotlightSection(homePage: home),
           const SizedBox(height: 16),
-          Consumer(builder: (context, ref, child) {
-            final progressAsync = ref.watch(watchProgressStreamProvider);
 
-            return progressAsync.when(
-              data: (allProgress) {
-                if (allProgress.isEmpty) return const SizedBox.shrink();
-                return ContinueSection(allProgress: allProgress);
-              },
-              loading: () => const SizedBox.shrink(),
-              error: (error, stack) => const SizedBox.shrink(),
-            );
-          }),
-          if (home.trendingAnime.isNotEmpty)
-            HomeSectionWidget(
-                title: 'Trending Anime', mediaList: home.trendingAnime),
-          if (home.popularAnime.isNotEmpty)
-            HomeSectionWidget(
-                title: 'Popular Anime', mediaList: home.popularAnime),
-          if (home.mostFavoriteAnime.isNotEmpty)
-            HomeSectionWidget(
-                title: 'Most Favorite', mediaList: home.mostFavoriteAnime),
-          if (home.mostWatchedAnime.isNotEmpty)
-            HomeSectionWidget(
-                title: 'Most Watched', mediaList: home.mostWatchedAnime),
-          if (home.topRatedAnime.isNotEmpty)
-            HomeSectionWidget(
-                title: 'Top Rated', mediaList: home.topRatedAnime),
-          if (home.recentlyUpdated.isNotEmpty)
-            HomeSectionWidget(
-                title: 'Recently Updated', mediaList: home.recentlyUpdated),
+          // Continue Watching Section
+          ref.watch(watchProgressStreamProvider).when(
+                data: (allProgress) => allProgress.isNotEmpty
+                    ? ContinueSection(allProgress: allProgress)
+                    : const SizedBox.shrink(),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+
+          // All home sections
+          ...sections,
           const SizedBox(height: 80),
         ],
       ),
     );
   }
+
+  Widget _buildHomeSection(String title, List<Media> mediaList) =>
+      HomeSectionWidget(title: title, mediaList: mediaList);
 }

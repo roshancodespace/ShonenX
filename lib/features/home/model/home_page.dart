@@ -26,6 +26,7 @@ class HomePageModel {
         topRatedAnime: _parseMediaList('topRatedAnime'),
         mostFavoriteAnime: _parseMediaList('mostFavoriteAnime'),
         mostWatchedAnime: _parseMediaList('mostWatchedAnime'),
+        upcomingAnime: _parseMediaList('upcomingAnime'),
       );
 
   List<Media> _parseMediaList(String key) =>
@@ -39,6 +40,7 @@ class HomePageModel {
           'topRatedAnime': page.topRatedAnime.map((e) => e.toJson()).toList(),
           'mostFavoriteAnime': page.mostFavoriteAnime.map((e) => e.toJson()).toList(),
           'mostWatchedAnime': page.mostWatchedAnime.map((e) => e.toJson()).toList(),
+          'upcomingAnime': page.upcomingAnime.map((e) => e.toJson()).toList(),
         },
         lastUpdated: DateTime.now(),
       );

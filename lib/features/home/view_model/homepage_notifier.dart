@@ -74,7 +74,7 @@ class HomepageNotifier extends Notifier<HomepageState> {
     try {
       final trending = await _repo.getTrendingAnime();
       final popular = await _repo.getPopularAnime();
-      final mostFavorite = await _repo.getTopRatedAnime();
+      final upcoming = await _repo.getUpcomingAnime();
       final recentlyUpdated = await _repo.getRecentlyUpdatedAnime();
       final topRated = await _repo.getTopRatedAnime();
 
@@ -83,7 +83,8 @@ class HomepageNotifier extends Notifier<HomepageState> {
         popularAnime: popular,
         recentlyUpdated: recentlyUpdated,
         topRatedAnime: topRated,
-        mostFavoriteAnime: mostFavorite,
+        upcomingAnime: upcoming,
+        mostFavoriteAnime: [],
         mostWatchedAnime: [],
       );
 

@@ -16,6 +16,7 @@ class HomePage {
   final List<Media> topRatedAnime;
   final List<Media> mostFavoriteAnime;
   final List<Media> mostWatchedAnime;
+  final List<Media> upcomingAnime;
 
   HomePage({
     this.trendingAnime = const [],
@@ -24,6 +25,7 @@ class HomePage {
     this.topRatedAnime = const [],
     this.mostFavoriteAnime = const [],
     this.mostWatchedAnime = const [],
+    this.upcomingAnime = const [],
   });
 }
 

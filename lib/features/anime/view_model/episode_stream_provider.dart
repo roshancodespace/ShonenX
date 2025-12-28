@@ -1,4 +1,3 @@
-import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
@@ -15,8 +14,6 @@ import 'package:shonenx/features/settings/model/experimental_model.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view_model/player_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
-
-import 'package:shonenx/main.dart';
 import 'package:shonenx/utils/extractors.dart' as extractor;
 
 @immutable
@@ -30,18 +27,18 @@ class EpisodeDataState {
   final int? selectedQualityIdx;
   final int? selectedSourceIdx;
   final int? selectedEpisodeIdx;
-  final int? selectedSubtitleIdx;
+  final int selectedSubtitleIdx;
   final ServerData? selectedServer;
 
   final bool sourceLoading;
   final String? error;
 
   const EpisodeDataState({
+    this.headers,
     this.sources = const [],
     this.subtitles = const [],
     this.qualityOptions = const [],
     this.servers = const [],
-    this.headers,
     this.selectedQualityIdx,
     this.selectedSourceIdx,
     this.selectedEpisodeIdx,
@@ -62,7 +59,6 @@ class EpisodeDataState {
     int? selectedEpisodeIdx,
     int? selectedSubtitleIdx,
     ServerData? selectedServer,
-    bool? dubSubSupport,
     bool? sourceLoading,
     String? error,
   }) {
@@ -78,396 +74,236 @@ class EpisodeDataState {
       selectedSubtitleIdx: selectedSubtitleIdx ?? this.selectedSubtitleIdx,
       selectedServer: selectedServer ?? this.selectedServer,
       sourceLoading: sourceLoading ?? this.sourceLoading,
-      error: error ?? this.error,
+      error: error,
     );
   }
 }
 
 class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
-  List<EpisodeDataModel> get _episodes =>
-      ref.read(episodeListProvider).episodes;
+  EpisodeListState get _episodeState => ref.read(episodeListProvider);
+  List<EpisodeDataModel> get _episodes => _episodeState.episodes;
 
-  ExperimentalFeaturesModel get _experimentalFeatures =>
-      ref.read(experimentalProvider);
-  AnimeProvider? _getProvider() => ref.read(selectedAnimeProvider);
+  ExperimentalFeaturesModel get _exp => ref.read(experimentalProvider);
+  AnimeProvider? get _animeProvider => ref.read(selectedAnimeProvider);
   SourceNotifier get _sourceNotifier => ref.read(sourceProvider.notifier);
-  bool get dubSubSupport => state.servers.any((s) => s.isDub == true);
 
   @override
-  EpisodeDataState build() {
-    ref.onDispose(() {
-      ref.read(episodeListProvider.notifier).reset();
-    });
-    return const EpisodeDataState();
-  }
+  EpisodeDataState build() => const EpisodeDataState();
 
-  /// Loads and plays a specific episode.
+  /* ───────────────────────── PUBLIC API ───────────────────────── */
+
   Future<void> loadEpisode({
-    required int episodeIdx,
+    required int epIdx,
     bool play = true,
     Duration startAt = Duration.zero,
   }) async {
-    AppLogger.i('Loading episode index: $episodeIdx');
-    state = state.copyWith(selectedEpisodeIdx: episodeIdx);
-    await _setupAndPlay(play, episodeIdx, startAt);
+    if (!_validEpisode(epIdx)) return;
+    await _setupServers(epIdx);
+    if (play) {
+      await changeEpisode(epIdx, startAt: startAt);
+    }
   }
 
-  /// Toggles between 'sub' and 'dub' audio tracks if supported.
-  Future<void> toggleDubSub() async {
-    final newServer =
-        state.servers.firstWhere((s) => s.isDub != state.selectedServer?.isDub);
-    AppLogger.i(
-        'Toggling category from ${state.selectedServer?.isDub == true ? 'dub' : 'sub'} to $newServer.');
-    await changeServer(newServer);
-  }
-
-  /// Changes the current episode and fetches its stream data.
-  Future<void> changeEpisode(int episodeIdx,
+  Future<void> changeEpisode(int epIdx,
       {Duration startAt = Duration.zero}) async {
-    if (episodeIdx < 0 || episodeIdx >= _episodes.length) {
-      AppLogger.e('Attempted to change to invalid episode index: $episodeIdx');
-      return;
-    }
-    ref.read(playerStateProvider.notifier).pause();
-    AppLogger.i('Changing to episode index: $episodeIdx');
-    state = state.copyWith(selectedEpisodeIdx: episodeIdx);
-    await _fetchStreamData(startAt: startAt);
+    if (!_validEpisode(epIdx)) return;
+    state = state.copyWith(selectedEpisodeIdx: epIdx);
+    await _fetchAndPlay(startAt);
   }
 
-  /// Changes the video quality and restarts the player from the current position.
-  Future<void> changeQuality(int qualityIdx) async {
-    if (qualityIdx < 0 || qualityIdx >= state.qualityOptions.length) {
-      AppLogger.e('Attempted to change to invalid quality index: $qualityIdx');
-      return;
-    }
-
-    final newQualityUrl = state.qualityOptions[qualityIdx]['url'] as String?;
-    if (newQualityUrl == null) {
-      AppLogger.e('Selected quality $qualityIdx has a null URL.');
-      state = state.copyWith(error: "Selected quality has an invalid URL.");
-      return;
-    }
-
-    AppLogger.i(
-        'Changing quality to index: $qualityIdx (${state.qualityOptions[qualityIdx]['quality']})');
-    state = state.copyWith(selectedQualityIdx: qualityIdx);
-    final currentPosition = ref.read(playerStateProvider).position;
-    ref
-        .read(playerStateProvider.notifier)
-        .open(newQualityUrl, currentPosition, headers: state.headers);
-  }
-
-  /// Changes the streaming source and reloads the player.
-  Future<void> changeSource(int sourceIdx) async {
-    if (sourceIdx < 0 || sourceIdx >= state.sources.length) {
-      AppLogger.e('Attempted to change to invalid source index: $sourceIdx');
-      return;
-    }
-    final currentPosition = ref.read(playerStateProvider).position;
-    AppLogger.i('Changing source to index: $sourceIdx');
-    state = state.copyWith(selectedSourceIdx: sourceIdx);
-    await _loadAndPlaySource(sourceIdx, startAt: currentPosition);
-  }
-
-  /// Changes the streaming server and reloads the stream.
   Future<void> changeServer(ServerData server) async {
-    AppLogger.i('Changing server to: $server');
-    final currentPosition = ref.read(playerStateProvider).position;
     state = state.copyWith(selectedServer: server);
-    await _fetchStreamData(startAt: currentPosition);
+    await _fetchAndPlay(ref.read(playerStateProvider).position);
   }
 
-  /// Changes the subtitle track.
-  Future<void> changeSubtitle(int subtitleIdx) async {
-    AppLogger.i('Changing subtitle to index: $subtitleIdx');
-    if (subtitleIdx == 0) {
-      AppLogger.i('Changing subtitle to none.');
+  Future<void> toggleDubSub() async {
+    final current = state.selectedServer;
+    if (current == null) return;
+
+    final alt = state.servers.firstWhere(
+      (s) => s.isDub != current.isDub,
+      orElse: () => current,
+    );
+
+    if (alt == current) return;
+    await changeServer(alt);
+  }
+
+  Future<void> changeSource(int idx) async {
+    if (idx < 0 || idx >= state.sources.length) return;
+    await _loadAndPlaySource(
+      idx,
+      startAt: ref.read(playerStateProvider).position,
+    );
+  }
+
+  Future<void> changeQuality(int idx) async {
+    if (idx < 0 || idx >= state.qualityOptions.length) return;
+    final url = state.qualityOptions[idx]['url'] as String?;
+    if (url == null) return;
+
+    state = state.copyWith(selectedQualityIdx: idx);
+
+    ref.read(playerStateProvider.notifier).open(
+          url,
+          ref.read(playerStateProvider).position,
+          headers: state.headers,
+        );
+  }
+
+  Future<void> changeSubtitle(int idx) async {
+    if (idx == 0) {
       await ref
           .read(playerStateProvider.notifier)
           .setSubtitle(SubtitleTrack.no());
       state = state.copyWith(selectedSubtitleIdx: 0);
       return;
     }
-    if (subtitleIdx < 0 || subtitleIdx >= state.subtitles.length) {
-      AppLogger.e(
-          'Attempted to change to invalid subtitle index: $subtitleIdx');
-      return;
-    }
-    final subtitle = state.subtitles[subtitleIdx];
-    if (subtitle.url == null) {
-      AppLogger.w('Subtitle track at index $subtitleIdx has a null URL.');
-      return;
-    }
 
-    AppLogger.i('Changing subtitle to index: $subtitleIdx (${subtitle.lang})');
+    if (idx < 0 || idx >= state.subtitles.length) return;
+    final sub = state.subtitles[idx];
+    if (sub.url == null) return;
+
     await ref
         .read(playerStateProvider.notifier)
-        .setSubtitle(SubtitleTrack.uri(subtitle.url!));
-    state = state.copyWith(selectedSubtitleIdx: subtitleIdx);
+        .setSubtitle(SubtitleTrack.uri(sub.url!));
+
+    state = state.copyWith(selectedSubtitleIdx: idx);
   }
 
-  /// Centralized async function runner with error handling.
-  Future<T?> _safeRun<T>(
-    Future<T> Function() task, {
-    String? errorTitle,
-    String? errorMessage,
-    bool showSnackBar = true,
-  }) async {
-    try {
-      return await task();
-    } catch (e, st) {
-      AppLogger.e('Error running task: $errorTitle', e, st);
-      final title = errorTitle ?? 'Error';
-      final msg = errorMessage ?? 'Something went wrong.';
-      state = state.copyWith(error: msg, sourceLoading: false);
+  void reset() => state = const EpisodeDataState();
 
-      if (showSnackBar) {
-        showAppSnackBar(title, msg, type: ContentType.failure);
-      }
-      return null;
-    }
-  }
+  /* ───────────────────────── INTERNAL LOGIC ───────────────────────── */
 
-  /// Configures servers and starts playback if requested.
-  Future<void> _setupAndPlay(
-      bool play, int initialEpisodeIdx, Duration startAt) async {
-    final bool useMangayomi = _experimentalFeatures.useMangayomiExtensions;
-    List<ServerData> servers = [];
+  bool _validEpisode(int idx) => idx >= 0 && idx < _episodes.length;
 
-    if (!useMangayomi) {
-      final animeProvider = _getProvider();
-      final currentEpisode =
-          ref.read(episodeListProvider).episodes[initialEpisodeIdx];
-      servers = (await animeProvider?.getSupportedServers(metadata: {
-        'id': currentEpisode.id,
-        'epNumber': currentEpisode.number
-      }))!
-          .flatten();
-      state = state.copyWith(servers: servers, selectedServer: servers.first);
-      AppLogger.d('Legacy setup: ${servers.length} servers found.');
-    } else {
-      AppLogger.d('Mangayomi setup: Skipping server/dub-sub configuration.');
-    }
+  Future<void> _setupServers(int epIdx) async {
+    if (_exp.useMangayomiExtensions) return;
 
-    if (play) {
-      AppLogger.d(
-          'Starting playback from initial episode index: $initialEpisodeIdx');
-      await changeEpisode(initialEpisodeIdx, startAt: startAt);
-    }
-  }
+    final ep = _episodes[epIdx];
+    final servers = await _animeProvider!.getSupportedServers(metadata: {
+      'id': ep.id,
+      'epNumber': ep.number,
+      'epId': ep.id,
+    });
 
-  // Return Downloadable Sources
-  Future<BaseSourcesModel?> downloadSources(int episodeIdx) async {
-    final episode = _episodes[episodeIdx];
-    final useMangayomi = _experimentalFeatures.useMangayomiExtensions;
-    final url = episode.url;
-
-    if (useMangayomi && url != null && url.isNotEmpty) {
-      AppLogger.d('Using Mangayomi source getter for URL: $url');
-      return await _safeRun(
-        () async {
-          final sources = await _sourceNotifier.getSources(url);
-          return BaseSourcesModel(
-            sources: sources
-                .map((s) => Source(
-                    url: s?.url,
-                    isM3U8: s?.url.contains('.m3u8') ?? false,
-                    isDub:
-                        s?.originalUrl.toLowerCase().contains('dub') ?? false,
-                    quality: s?.quality,
-                    headers: s?.headers))
-                .toList(),
-            tracks: sources.firstOrNull?.subtitles
-                    ?.map((sub) => Subtitle(url: sub.file, lang: sub.label))
-                    .toList() ??
-                [],
-          );
-        },
-        errorTitle: "Mangayomi Stream",
-        errorMessage: "Failed to get sources from Mangayomi.",
-      );
-    }
-
-    final animeProvider = _getProvider();
-    if (animeProvider == null) {
-      AppLogger.e("Legacy provider not selected.");
-      throw Exception("Legacy provider not selected.");
-    }
-
-    AppLogger.d('Using Legacy source getter for episode ID: ${episode.id}');
-    return await _safeRun(
-      () => animeProvider.getSources(
-        episode.id ?? '',
-        episode.id ?? '',
-        state.selectedServer?.id,
-        state.selectedServer?.isDub == true ? 'dub' : 'sub',
-      ),
-      errorTitle: "Legacy Stream",
-      errorMessage: "Failed to get sources from Legacy provider.",
+    final flat = servers.flatten();
+    state = state.copyWith(
+      servers: flat,
+      selectedServer: flat.firstOrNull,
     );
   }
 
-  /// Reset Entire State
-  void reset() {
-    state = const EpisodeDataState();
-  }
+  Future<void> _fetchAndPlay(Duration startAt) async {
+    final epIdx = state.selectedEpisodeIdx;
+    if (epIdx == null) return;
 
-  /// Fetches the streaming sources (video links, subtitles) for the current episode.
-  Future<void> _fetchStreamData({Duration startAt = Duration.zero}) async {
-    final episodeIdx = state.selectedEpisodeIdx;
-    if (episodeIdx == null) {
-      AppLogger.w('Cannot fetch stream data: selectedEpisodeIdx is null.');
-      return;
-    }
-
-    AppLogger.i('Fetching stream data for episode index: $episodeIdx');
     state = state.copyWith(sourceLoading: true, error: null);
 
-    final data = await _fetchSources(episodeIdx);
-
+    final data = await _getSources(epIdx);
     if (data == null || data.sources.isEmpty) {
-      AppLogger.e('Source fetch failed: No sources returned.');
       state = state.copyWith(
-          sourceLoading: false, error: "No sources found for this episode.");
+        sourceLoading: false,
+        error: 'No sources found',
+      );
       return;
     }
 
-    AppLogger.d(
-        'Found ${data.sources.length} sources and ${data.tracks.length} subtitle tracks.');
     state = state.copyWith(
       sources: data.sources,
       subtitles: [Subtitle(lang: 'None'), ...data.tracks],
-      headers: (data.headers as Map<dynamic, dynamic>).cast<String, String>(),
-      selectedSourceIdx: 0,
+      headers: data.headers?.cast<String, String>(),
     );
 
     await _loadAndPlaySource(0, startAt: startAt);
-  }
-
-  /// Determines the source type and fetches the source data.
-  Future<BaseSourcesModel?> _fetchSources(int episodeIdx) async {
-    final episode = _episodes[episodeIdx];
-    final useMangayomi = _experimentalFeatures.useMangayomiExtensions;
-    final url = episode.url;
-
-    if (useMangayomi && url != null && url.isNotEmpty) {
-      AppLogger.d('Using Mangayomi source getter for URL: $url');
-      return await _safeRun(
-        () async {
-          final sources = await _sourceNotifier.getSources(url);
-          return BaseSourcesModel(
-            sources: sources
-                .map((s) => Source(
-                      url: s?.url,
-                      isM3U8: s?.url.contains('.m3u8') ?? false,
-                      isDub:
-                          s?.originalUrl.toLowerCase().contains('dub') ?? false,
-                      quality: s?.quality,
-                    ))
-                .toList(),
-            tracks: sources.firstOrNull?.subtitles
-                    ?.map((sub) => Subtitle(url: sub.file, lang: sub.label))
-                    .toList() ??
-                [],
-          );
-        },
-        errorTitle: "Mangayomi Stream",
-        errorMessage: "Failed to get sources from Mangayomi.",
-      );
-    }
-
-    final animeProvider = _getProvider();
-    if (animeProvider == null) {
-      AppLogger.e("Legacy provider not selected.");
-      throw Exception("Legacy provider not selected.");
-    }
-
-    AppLogger.d('Using Legacy source getter for episode ID: ${episode.id}');
-    return await _safeRun(
-      () => animeProvider.getSources(
-        episode.id ?? '',
-        episode.id ?? '',
-        state.selectedServer?.id,
-        state.selectedServer?.isDub == true ? 'dub' : 'sub',
-      ),
-      errorTitle: "Legacy Stream",
-      errorMessage: "Failed to get sources from Legacy provider.",
-    );
-  }
-
-  /// Loads a source, extracts qualities if necessary, and starts playback.
-  Future<void> _loadAndPlaySource(int sourceIndex,
-      {Duration startAt = Duration.zero}) async {
-    final qualityPreference = ref
-        .read(playerSettingsProvider)
-        .defaultQuality; // Auto | 1080p --- 360p
-    await _safeRun(() async {
-      if (sourceIndex < 0 || sourceIndex >= state.sources.length) {
-        AppLogger.e('Load failed: Invalid source index $sourceIndex');
-        throw Exception("Invalid source index.");
-      }
-      final source = state.sources[sourceIndex];
-      final sourceUrl = source.url;
-      AppLogger.i('Loading source index $sourceIndex: URL: $sourceUrl');
-
-      if (sourceUrl == null || sourceUrl.isEmpty) {
-        AppLogger.e("Source URL is empty.");
-        throw Exception("Source URL is empty.");
-      }
-
-      final qualities = await _extractQualitiesFromSource(source);
-      final qualityIndex = qualityPreference == 'Auto'
-          ? 0
-          : qualities.indexWhere((q) => (q['quality'] as String)
-              .contains(qualityPreference.split('p').first));
-      final urlToPlay =
-          qualityIndex != -1 ? qualities[qualityIndex]['url'] : sourceUrl;
-
-      if (urlToPlay == null) {
-        AppLogger.e("No playable URL found after quality extraction.");
-        throw Exception("No playable URL found in the selected source.");
-      }
-
-      AppLogger.d(
-          'Playable URL selected: $urlToPlay. Found ${qualities.length} quality options.');
-
-      state = state.copyWith(
-        qualityOptions: qualities,
-        selectedSourceIdx: sourceIndex,
-        selectedQualityIdx: qualityIndex,
-        selectedSubtitleIdx: state.subtitles
-            .indexWhere((s) => s.lang!.toLowerCase().contains('eng')),
-      );
-
-      ref
-          .read(playerStateProvider.notifier)
-          .open(urlToPlay, startAt, headers: state.headers);
-    },
-        errorTitle: 'Load and Play Source',
-        errorMessage: 'Failed to load video source.');
-
     state = state.copyWith(sourceLoading: false);
   }
 
-  /// Extracts video quality options from a source URL (primarily for M3U8).
-  Future<List<Map<String, dynamic>>> _extractQualitiesFromSource(
-      Source source) async {
+  Future<void> _loadAndPlaySource(
+    int idx, {
+    required Duration startAt,
+  }) async {
+    final source = state.sources[idx];
+    final qualities = await _extractQualities(source);
+
+    final pref = ref.read(playerSettingsProvider).defaultQuality;
+
+    final qIdx = pref == 'Auto'
+        ? 0
+        : qualities.indexWhere(
+            (q) => (q['quality'] as String).contains(pref),
+          );
+
+    final finalIdx = qIdx >= 0 ? qIdx : 0;
+    final url = qualities[finalIdx]['url'] as String;
+
+    ref.read(playerStateProvider.notifier).open(
+          url,
+          startAt,
+          headers: state.headers,
+        );
+
+    final engIdx = state.subtitles.indexWhere(
+      (s) => s.lang?.toLowerCase().contains('eng') ?? false,
+    );
+
+    state = state.copyWith(
+      qualityOptions: qualities,
+      selectedSourceIdx: idx,
+      selectedQualityIdx: finalIdx,
+      selectedSubtitleIdx: engIdx > 0 ? engIdx : 0,
+    );
+  }
+
+  Future<BaseSourcesModel?> _getSources(int epIdx) async {
+    final ep = _episodes[epIdx];
+
+    if (_exp.useMangayomiExtensions && ep.url != null) {
+      final res = await _sourceNotifier.getSources(ep.url!);
+      return BaseSourcesModel(
+        sources: res
+            .map((s) => Source(
+                  url: s?.url,
+                  isM3U8: s?.url.contains('.m3u8') ?? false,
+                  quality: s?.quality,
+                  isDub: s?.originalUrl.toLowerCase().contains('dub') ?? false,
+                ))
+            .toList(),
+        tracks: res.firstOrNull?.subtitles
+                ?.map((e) => Subtitle(
+                      url: e.file,
+                      lang: e.label,
+                    ))
+                .toList() ??
+            [],
+      );
+    }
+
+    return _animeProvider?.getSources(
+      _episodeState.animeId ?? '',
+      ep.id ?? '',
+      state.selectedServer?.id,
+      state.selectedServer?.isDub == true ? 'dub' : 'sub',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> _extractQualities(Source source) async {
     final url = source.url;
     if (url == null) return [];
 
-    try {
-      if (source.isM3U8) {
-        AppLogger.d('Extracting qualities from M3U8 URL.');
-        return await extractor.extractQualities(url, state.headers ?? {});
-      }
-      // For non-M3U8, create a single quality option.
-      AppLogger.d('Using single non-M3U8 source quality: ${source.quality}');
+    if (!source.isM3U8) {
       return [
         {'quality': source.quality ?? 'Default', 'url': url}
       ];
+    }
+
+    try {
+      return await extractor.extractQualities(
+        url,
+        state.headers ?? {},
+      );
     } catch (e, st) {
-      AppLogger.e("Failed to extract qualities from M3U8 URL: $url", e, st);
-      // Fallback to the default source URL if extraction fails.
+      AppLogger.e('Quality extraction failed', e, st);
       return [
         {'quality': source.quality ?? 'Default', 'url': url}
       ];

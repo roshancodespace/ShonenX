@@ -93,8 +93,9 @@ void main() {
 
       try {
         servers = await provider.getSupportedServers(metadata: {
-          'id': selectedEpisode.id,
-          'epNum': selectedEpisode.number
+          'id': selectedAnime.id,
+          'epNumber': selectedEpisode.number,
+          'epId': selectedEpisode.id,
         });
 
         final allServers = [...servers.dub, ...servers.sub];
@@ -103,7 +104,10 @@ void main() {
           'Supported Servers',
           allServers.isEmpty
               ? 'Default/None'
-              : allServers.map((s) => s.id).join(', '),
+              : allServers
+                  .map(
+                      (s) => '${s.id} (${s.name}) - ${s.isDub ? 'Dub' : 'Sub'}')
+                  .join(', '),
         );
       } catch (e) {
         AppLogger.raw(

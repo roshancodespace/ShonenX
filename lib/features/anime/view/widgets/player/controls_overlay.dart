@@ -4,20 +4,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shonenx/core/models/anime/source_model.dart';
-import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/anime/view/widgets/player/bottom_controls.dart';
 import 'package:shonenx/features/anime/view/widgets/player/center_controls.dart';
 import 'package:shonenx/features/anime/view/widgets/player/subtitle_overlay.dart';
 import 'package:shonenx/features/anime/view/widgets/player/top_controls.dart';
-import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view/widgets/player/components/seek_indicator.dart';
 import 'package:shonenx/features/anime/view/widgets/player/sheets/generic_selection_sheet.dart';
 import 'package:shonenx/features/anime/view/widgets/player/sheets/settings_sheet.dart';
+import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 
 class CloudstreamControls extends ConsumerStatefulWidget {
   final VoidCallback? onEpisodesPressed;
-
   const CloudstreamControls({super.key, this.onEpisodesPressed});
 
   @override
@@ -26,114 +24,68 @@ class CloudstreamControls extends ConsumerStatefulWidget {
 }
 
 class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
-  bool _isVisible = true;
-  bool _isLocked = false;
-  double? _draggedSliderValue;
-
-  // Seek State
-  int _cumulativeSeek = 0;
-  // double _cumulativeVolume = 0;
-  bool _showForwardSeek = false;
-  bool _showRewindSeek = false;
-  // bool _showVolumeSeek = false;
+  bool _visible = true;
+  bool _locked = false;
+  int _seekAccum = 0;
 
   Timer? _hideTimer;
   Timer? _seekResetTimer;
-  late FocusNode _focusNode;
+  late FocusNode _focus;
 
   @override
   void initState() {
     super.initState();
-    _focusNode = FocusNode();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focusNode.requestFocus();
-    });
-    _restartHideTimer();
+    _focus = FocusNode();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
+    _restartHide();
   }
 
   @override
   void dispose() {
-    _focusNode.dispose();
+    _focus.dispose();
     _hideTimer?.cancel();
     _seekResetTimer?.cancel();
     super.dispose();
   }
 
-  void _restartHideTimer() {
+  void _restartHide() {
     _hideTimer?.cancel();
-    if (_isLocked || !_isVisible) return;
+    if (_locked || !_visible) return;
     _hideTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted) setState(() => _isVisible = false);
+      if (mounted) setState(() => _visible = false);
     });
   }
 
-  void _toggleVisibility() {
-    setState(() {
-      _isVisible = !_isVisible;
-      if (_isVisible) {
-        _restartHideTimer();
-      } else {
-        _hideTimer?.cancel();
-      }
-    });
+  void _toggle() {
+    setState(() => _visible = !_visible);
+    _visible ? _restartHide() : _hideTimer?.cancel();
   }
 
   void _toggleLock() {
     setState(() {
-      _isLocked = !_isLocked;
-      _isVisible = true;
+      _locked = !_locked;
+      _visible = true;
     });
-    _restartHideTimer();
+    _restartHide();
   }
 
-  void _handleDoubleTap(TapDownDetails details) {
-    if (_isLocked) return;
+  void _onDoubleTap(TapDownDetails d) {
+    if (_locked) return;
 
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final isForward = details.globalPosition.dx > screenWidth / 2;
+    final w = MediaQuery.of(context).size.width;
+    final forward = d.globalPosition.dx > w / 2;
+    final notifier = ref.read(playerStateProvider.notifier);
 
     _seekResetTimer?.cancel();
-
     setState(() {
-      if (isForward) {
-        _showForwardSeek = true;
-        _showRewindSeek = false;
-        _cumulativeSeek += 10;
-      } else {
-        _showForwardSeek = false;
-        _showRewindSeek = true;
-        _cumulativeSeek -= 10;
-      }
+      _seekAccum += forward ? 10 : -10;
     });
 
-    final notifier = ref.read(playerStateProvider.notifier);
-    isForward ? notifier.forward(10) : notifier.rewind(10);
+    forward ? notifier.forward(10) : notifier.rewind(10);
 
     _seekResetTimer = Timer(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          _showForwardSeek = false;
-          _showRewindSeek = false;
-          _cumulativeSeek = 0;
-        });
-      }
+      if (mounted) setState(() => _seekAccum = 0);
     });
-  }
-
-  void _handleVerticalDragUpdate(DragUpdateDetails details) {
-    final screenSize = MediaQuery.sizeOf(context);
-    final screenWidth = screenSize.width;
-    final screenHeight = screenSize.height;
-    final isRight = details.globalPosition.dx > screenWidth / 2;
-    // setState(() {
-    //   _showVolumeSeek = isRight;
-    // });
-
-    if (isRight) {
-      AppLogger.d(details.globalPosition.dy / screenHeight);
-    } else {
-      AppLogger.d(details.globalPosition.dx / screenWidth);
-    }
   }
 
   @override
@@ -142,73 +94,52 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
 
     return CallbackShortcuts(
       bindings: {
-        const SingleActivator(LogicalKeyboardKey.space): () =>
-            notifier.togglePlay(),
-        const SingleActivator(LogicalKeyboardKey.keyK): () =>
-            notifier.togglePlay(),
-        const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
-            notifier.rewind(10),
+        const SingleActivator(LogicalKeyboardKey.space): notifier.togglePlay,
+        const SingleActivator(LogicalKeyboardKey.keyK): notifier.togglePlay,
         const SingleActivator(LogicalKeyboardKey.keyJ): () =>
+            notifier.rewind(10),
+        const SingleActivator(LogicalKeyboardKey.keyL): () =>
+            notifier.forward(10),
+        const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
             notifier.rewind(10),
         const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
             notifier.forward(10),
-        const SingleActivator(LogicalKeyboardKey.keyL): () =>
-            notifier.forward(10),
-        const SingleActivator(LogicalKeyboardKey.arrowUp): () =>
-            notifier.volumeUp(),
-        const SingleActivator(LogicalKeyboardKey.arrowDown): () =>
-            notifier.volumeDown(),
-        const SingleActivator(LogicalKeyboardKey.keyM): () =>
-            notifier.toggleMute(),
+        const SingleActivator(LogicalKeyboardKey.keyM): notifier.toggleMute,
       },
       child: Focus(
-        focusNode: _focusNode,
+        focusNode: _focus,
         autofocus: true,
         child: GestureDetector(
-          onTap: _toggleVisibility,
-          onDoubleTapDown: _handleDoubleTap,
-          // onVerticalDragUpdate: _handleVerticalDragUpdate,
-          // onVerticalDragEnd: (details) => setState(() => _showVolumeSeek = false),
+          onTap: _toggle,
+          onDoubleTapDown: _onDoubleTap,
           behavior: HitTestBehavior.translucent,
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // UI Overlay
               AnimatedOpacity(
-                opacity: _isVisible ? 1.0 : 0.0,
+                opacity: _visible ? 1 : 0,
                 duration: const Duration(milliseconds: 300),
                 child: AbsorbPointer(
-                  absorbing: !_isVisible,
-                  child: _isLocked ? _buildLockBtn() : _buildControls(),
+                  absorbing: !_visible,
+                  child: _locked ? _lockBtn() : _controls(),
                 ),
               ),
-
-              // Seek Indicators
-              if (_showRewindSeek) _buildSeekOverlay(false),
-              if (_showForwardSeek) _buildSeekOverlay(true),
-
-              // if (_showVolumeSeek)
-              //   Positioned(
-              //     top: 90,
-              //     right: 30,
-              //     bottom: 120,
-              //     child: Expanded(
-              //       child: Container(
-              //         width: 40,
-              //         decoration: BoxDecoration(
-              //           color: theme.colorScheme.onSurface,
-              //           borderRadius: BorderRadius.circular(50),
-              //         ),
-              //       ),
-              //     ),
-              //   ),
-
-              // Subtitles
+              if (_seekAccum != 0)
+                Positioned.fill(
+                  child: Align(
+                    alignment: _seekAccum > 0
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: SeekIndicatorOverlay(
+                      isForward: _seekAccum > 0,
+                      seconds: _seekAccum.abs(),
+                    ),
+                  ),
+                ),
               Positioned(
                 left: 8,
                 right: 8,
-                top: _isVisible && !_isLocked ? 90 : 20,
-                bottom: _isVisible && !_isLocked ? 90 : 20,
+                bottom: _visible ? 90 : 20,
                 child: const SubtitleOverlay(),
               ),
             ],
@@ -218,177 +149,139 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     );
   }
 
-  Widget _buildSeekOverlay(bool isForward) {
-    return Positioned.fill(
-      child: Align(
-        alignment: isForward ? Alignment.centerRight : Alignment.centerLeft,
-        child: SeekIndicatorOverlay(
-          isForward: isForward,
-          seconds: _cumulativeSeek.abs(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLockBtn() {
+  Widget _lockBtn() {
     return Center(
       child: IconButton(
-        style: IconButton.styleFrom(
-          backgroundColor: Colors.black54,
-          padding: const EdgeInsets.all(16),
-        ),
-        onPressed: () => _toggleLock(), // Unlocks and resets timer
+        onPressed: _toggleLock,
         icon: const Icon(Icons.lock_open, size: 32, color: Colors.white),
-        tooltip: 'Unlock',
+        style: IconButton.styleFrom(backgroundColor: Colors.black54),
       ),
     );
   }
 
-  Widget _buildControls() {
+  Widget _controls() {
+    double? draggedSliderValue;
     final notifier = ref.read(playerStateProvider.notifier);
 
-    return GestureDetector(
-      onTap: _toggleVisibility,
-      child: Stack(
-        children: [
-          Center(child: CenterControls(onInteraction: _restartHideTimer)),
-
-          // Top Bar
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            top: _isVisible ? 0 : -100,
-            left: 0,
-            right: 0,
-            child: TopControls(
-              onInteraction: _restartHideTimer,
-              onEpisodesPressed: widget.onEpisodesPressed,
-              onSettingsPressed: _openSettings,
-              onQualityPressed: _openQualitySheet,
-            ),
+    return Stack(
+      children: [
+        Center(child: CenterControls(onInteraction: _restartHide)),
+        TopControls(
+          onInteraction: _restartHide,
+          onEpisodesPressed: widget.onEpisodesPressed,
+          onSettingsPressed: _openSettings,
+          onQualityPressed: _openQuality,
+        ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: BottomControls(
+            onInteraction: _restartHide,
+            onLockPressed: _toggleLock,
+            onEpisodePressed: widget.onEpisodesPressed,
+            onForwardPressed: () => notifier.forward(85),
+            onSourcePressed: _openSource,
+            onSubtitlePressed: _openSubtitle,
+            onServerPressed: _openServer,
+            onSliderChangeStart: (val) {
+              _hideTimer?.cancel();
+              setState(() => draggedSliderValue = val);
+            },
+            onSliderChanged: (val) => setState(() => draggedSliderValue = val),
+            onSliderChangeEnd: (val) {
+              notifier.seek(Duration(milliseconds: val.round()));
+              setState(() => draggedSliderValue = null);
+              _restartHide();
+            },
+            sliderValue: draggedSliderValue,
           ),
-
-          // Bottom Bar
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            bottom: _isVisible ? 0 : -150,
-            left: 0,
-            right: 0,
-            child: BottomControls(
-              onInteraction: _restartHideTimer,
-              sliderValue: _draggedSliderValue,
-              onSliderChangeStart: (val) {
-                _hideTimer?.cancel();
-                setState(() => _draggedSliderValue = val);
-              },
-              onSliderChanged: (val) =>
-                  setState(() => _draggedSliderValue = val),
-              onSliderChangeEnd: (val) {
-                notifier.seek(Duration(milliseconds: val.round()));
-                setState(() => _draggedSliderValue = null);
-                _restartHideTimer();
-              },
-              onForwardPressed: () => notifier.forward(85),
-              onLockPressed: _toggleLock,
-              onSourcePressed: _openSourceSheet,
-              onSubtitlePressed: _openSubtitleSheet,
-              onServerPressed: _openServerSheet,
-              onEpisodePressed: widget.onEpisodesPressed,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  // --- Sheets Logic ---
-
-  Future<void> _showSheet({required WidgetBuilder builder}) async {
+  Future<void> _sheet(Widget child) async {
     _hideTimer?.cancel();
     await showModalBottomSheet(
       context: context,
-      builder: builder,
-      backgroundColor: Theme.of(context).colorScheme.surface.withAlpha(240),
       isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface.withAlpha(240),
+      builder: (_) => child,
     );
-    if (mounted) _restartHideTimer();
+    _restartHide();
   }
 
-  void _openSettings() => _showSheet(
-        builder: (context) =>
-            SettingsSheetContent(onDismiss: () => Navigator.pop(context)),
+  void _openSettings() => _sheet(
+        SettingsSheetContent(onDismiss: () => Navigator.pop(context)),
       );
 
-  void _openQualitySheet() {
+  void _openQuality() {
     final data = ref.read(episodeDataProvider);
     final notifier = ref.read(episodeDataProvider.notifier);
 
-    _showSheet(
-      builder: (context) => GenericSelectionSheet<Map<String, dynamic>>(
+    _sheet(
+      GenericSelectionSheet<Map<String, dynamic>>(
         title: 'Quality',
         items: data.qualityOptions,
         selectedIndex: data.selectedQualityIdx ?? -1,
-        displayBuilder: (item) => item['quality'] ?? 'Unknown',
-        onItemSelected: (index) {
-          notifier.changeQuality(index);
+        displayBuilder: (e) => e['quality'],
+        onItemSelected: (i) {
+          notifier.changeQuality(i);
           Navigator.pop(context);
         },
       ),
     );
   }
 
-  void _openSourceSheet() {
+  void _openSource() {
     final data = ref.read(episodeDataProvider);
     final notifier = ref.read(episodeDataProvider.notifier);
 
-    _showSheet(
-      builder: (context) => GenericSelectionSheet<Source>(
+    _sheet(
+      GenericSelectionSheet<Source>(
         title: 'Source',
         items: data.sources,
         selectedIndex: data.selectedSourceIdx ?? -1,
-        displayBuilder: (item) => item.quality ?? 'Default Source',
-        onItemSelected: (index) {
-          notifier.changeSource(index);
+        displayBuilder: (e) => e.quality ?? '',
+        onItemSelected: (i) {
+          notifier.changeSource(i);
           Navigator.pop(context);
         },
       ),
     );
   }
 
-  void _openServerSheet() {
+  void _openServer() {
     final data = ref.read(episodeDataProvider);
     if (data.selectedServer == null) return;
 
-    _showSheet(
-      builder: (context) => GenericSelectionSheet<String>(
+    _sheet(
+      GenericSelectionSheet<String>(
         title: 'Server',
-        items: data.servers
-            .map((s) => '${s.id}-${s.isDub ? 'Dubbed' : ''}')
-            .toList(),
-        selectedIndex: data.servers.indexWhere((s) =>
-            s.id == data.selectedServer?.id &&
-            s.isDub == data.selectedServer?.isDub),
-        displayBuilder: (item) => item,
-        onItemSelected: (index) {
-          ref
-              .read(episodeDataProvider.notifier)
-              .changeServer(data.servers.elementAt(index));
+        items:
+            data.servers.map((e) => '${e.id}-${e.isDub ? "Dub" : ""}').toList(),
+        selectedIndex: data.servers.indexOf(data.selectedServer!),
+        displayBuilder: (e) => e,
+        onItemSelected: (i) {
+          ref.read(episodeDataProvider.notifier).changeServer(data.servers[i]);
           Navigator.pop(context);
         },
       ),
     );
   }
 
-  void _openSubtitleSheet() {
+  void _openSubtitle() {
     final data = ref.read(episodeDataProvider);
 
-    _showSheet(
-      builder: (context) => GenericSelectionSheet<Subtitle>(
+    _sheet(
+      GenericSelectionSheet<Subtitle>(
         title: 'Subtitle',
         items: data.subtitles,
-        selectedIndex: data.selectedSubtitleIdx ?? -1,
-        displayBuilder: (item) => item.lang ?? 'Unknown',
-        onItemSelected: (index) {
-          ref.read(episodeDataProvider.notifier).changeSubtitle(index);
+        selectedIndex: data.selectedSubtitleIdx,
+        displayBuilder: (e) => e.lang ?? '',
+        onItemSelected: (i) {
+          ref.read(episodeDataProvider.notifier).changeSubtitle(i);
           Navigator.pop(context);
         },
       ),

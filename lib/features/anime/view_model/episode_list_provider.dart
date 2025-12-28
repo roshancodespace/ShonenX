@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,34 +47,33 @@ class EpisodeListState {
       episodes: episodes ?? this.episodes,
       jikanMatches: jikanMatches ?? this.jikanMatches,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: error,
     );
   }
 }
 
 class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
-  JikanService get _jikan => JikanService();
-  ExperimentalFeaturesModel get _experimentalFeatures =>
-      ref.read(experimentalProvider);
-  AnimeProvider? _getProvider() => ref.read(selectedAnimeProvider);
+  final JikanService _jikan = JikanService();
+
+  ExperimentalFeaturesModel get _exp => ref.read(experimentalProvider);
+
+  AnimeProvider? get _animeProvider => ref.read(selectedAnimeProvider);
+
   SourceNotifier get _sourceNotifier => ref.read(sourceProvider.notifier);
 
   @override
-  EpisodeListState build() {
-    return const EpisodeListState();
-  }
+  EpisodeListState build() => const EpisodeListState();
 
-  /// Fetches the list of episodes for a given anime.
+  /* ───────────────────────── PUBLIC API ───────────────────────── */
+
   Future<List<EpisodeDataModel>> fetchEpisodes({
     required String animeTitle,
     String? animeId,
     required bool force,
     List<EpisodeDataModel> episodes = const [],
   }) async {
-    AppLogger.i('Fetching episodes list for: $animeTitle (Force: $force)');
-
     if (!force && state.episodes.isNotEmpty && state.animeId == animeId) {
-      AppLogger.d('Episodes already loaded. Skipping fetch.');
+      AppLogger.d('Episode list cache hit');
       return state.episodes;
     }
 
@@ -84,191 +85,160 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
     );
 
     if (episodes.isNotEmpty) {
-      AppLogger.i('Using provided episode list (${episodes.length} episodes).');
-      state = state.copyWith(episodes: episodes, isLoading: false);
-      syncEpisodesWithJikan();
+      state = state.copyWith(
+        episodes: episodes,
+        isLoading: false,
+      );
+      _syncJikanIfEnabled();
       return episodes;
     }
 
-    final fetchedEpisodes = await _fetchEpisodeList(animeId);
+    final fetched = await _fetchEpisodesInternal(animeId);
 
-    if (fetchedEpisodes.isEmpty) {
-      AppLogger.w('Episode list returned empty.');
+    if (fetched.isEmpty) {
       state = state.copyWith(
         isLoading: false,
-        error: "No episodes found for this anime.",
+        error: 'No episodes found',
       );
       return [];
     }
 
-    AppLogger.i('Fetched ${fetchedEpisodes.length} episodes.');
-    state = state.copyWith(episodes: fetchedEpisodes, isLoading: false);
-    syncEpisodesWithJikan();
+    state = state.copyWith(
+      episodes: fetched,
+      isLoading: false,
+    );
 
-    return fetchedEpisodes;
+    _syncJikanIfEnabled();
+    return fetched;
   }
 
-  /// Refreshes the current episode list.
   Future<void> refreshEpisodes() async {
-    final animeId = state.animeId;
-    final animeTitle = state.animeTitle;
-    if (animeId == null || animeTitle == null) {
-      AppLogger.w('Cannot refresh: animeId or animeTitle is null.');
-      return;
-    }
-    AppLogger.i('Refreshing episodes for $animeTitle.');
-    await fetchEpisodes(animeId: animeId, animeTitle: animeTitle, force: true);
-  }
+    final id = state.animeId;
+    final title = state.animeTitle;
+    if (id == null || title == null) return;
 
-  /// Centralized async function runner with error handling.
-  Future<T?> _safeRun<T>(
-    Future<T> Function() task, {
-    Function(T)? onSuccess,
-    Function()? onError,
-    String? errorTitle,
-    String? errorMessage,
-    bool showSnackBar = true,
-  }) async {
-    try {
-      final result = await task();
-      onSuccess?.call(result);
-      return result;
-    } catch (e, st) {
-      AppLogger.e('Error running task: $errorTitle', e, st);
-      final title = errorTitle ?? 'Error';
-      final msg = errorMessage ?? 'Something went wrong.';
-      state = state.copyWith(error: msg, isLoading: false);
-
-      if (showSnackBar) {
-        showAppSnackBar(title, msg, type: ContentType.failure);
-      }
-      onError?.call();
-      return null;
-    }
-  }
-
-  /// Determines which source to use and fetches the episode list.
-  Future<List<EpisodeDataModel>> _fetchEpisodeList(String? animeId) async {
-    final useMangayomi = _experimentalFeatures.useMangayomiExtensions;
-
-    if (useMangayomi) {
-      AppLogger.d(
-          'Attempting to fetch episodes using Mangayomi extension for URL: $animeId');
-      return await _safeRun<List<EpisodeDataModel>>(
-            () async {
-              final details = await _sourceNotifier.getDetails(animeId!);
-              final chapters = details?.chapters ?? [];
-              AppLogger.d('Mangayomi returned ${chapters.length} chapters.');
-
-              final mapped = chapters
-                  .map((ch) => EpisodeDataModel(
-                        isFiller: false,
-                        title: ch.name,
-                        url: ch.url,
-                        number: int.tryParse(
-                          RegExp(r'\d+').firstMatch(ch.name ?? '')?.group(0) ??
-                              '',
-                        ),
-                      ))
-                  .toList();
-
-              if (mapped.any((e) => e.number != null && e.number! > 0)) {
-                mapped.sort((a, b) =>
-                    (a.number ?? 999999).compareTo(b.number ?? 999999));
-              }
-              return mapped;
-            },
-            errorTitle: "Mangayomi Episode Fetch",
-            errorMessage: "Failed to fetch episodes via Mangayomi.",
-            onError: () => reset(),
-          ) ??
-          [];
-    }
-
-    AppLogger.d('Attempting to fetch episodes using Legacy source.');
-    final animeProvider = _getProvider();
-    if (animeProvider == null) {
-      AppLogger.e('Legacy AnimeProvider is null.');
-      return [];
-    }
-    if (animeId == null) {
-      AppLogger.e('Legacy provider selected but animeId is null.');
-      throw Exception('animeId is null');
-    }
-    return await _safeRun<List<EpisodeDataModel>>(
-          () async => (await animeProvider.getEpisodes(animeId)).episodes ?? [],
-          errorTitle: "Legacy Source Episode Fetch",
-          errorMessage: "Failed to fetch episodes.",
-          onError: () => reset(),
-        ) ??
-        [];
-  }
-
-  /// Syncs episode titles with data from Jikan/MAL.
-  Future<void> syncEpisodesWithJikan() async {
-    if (!_experimentalFeatures.episodeTitleSync || state.episodes.isEmpty) {
-      AppLogger.d('Jikan Sync skipped: Disabled or episode list is empty.');
-      return;
-    }
-    final animeTitle = state.animeTitle;
-    if (animeTitle == null || animeTitle.isEmpty) {
-      AppLogger.w('Jikan Sync skipped: Anime title is empty.');
-      return;
-    }
-    AppLogger.i(
-        'Attempting to sync episode titles with Jikan for: $animeTitle');
-
-    await _safeRun(
-      () async {
-        final jikanMatches = state.jikanMatches.isNotEmpty
-            ? state.jikanMatches
-            : getBestMatches<JikanMedia>(
-                results: await _jikan.getSearch(title: animeTitle, limit: 10),
-                title: animeTitle,
-                nameSelector: (e) => e.title,
-                idSelector: (e) => e.mal_id.toString(),
-              );
-
-        if (jikanMatches.isEmpty || jikanMatches.first.similarity < 0.55) {
-          AppLogger.d(
-              'Jikan Sync failed: No good match found (best similarity: ${jikanMatches.firstOrNull?.similarity ?? 0.0}).');
-          return;
-        }
-
-        state = state.copyWith(jikanMatches: jikanMatches);
-        final bestMatch = jikanMatches.first.result;
-        AppLogger.d(
-            'Best Jikan match: ${bestMatch.title} (MAL ID: ${bestMatch.mal_id})');
-        final jikanEpisodes = await _jikan.getEpisodes(bestMatch.mal_id, 1);
-
-        if (jikanEpisodes.isEmpty) {
-          AppLogger.d('Jikan returned no episode list for the best match.');
-          return;
-        }
-
-        final updatedEpisodes = List.of(state.episodes);
-        final syncCount = updatedEpisodes.length.clamp(0, jikanEpisodes.length);
-        AppLogger.i('Syncing $syncCount episode titles.');
-
-        for (int i = 0; i < syncCount; i++) {
-          updatedEpisodes[i] =
-              updatedEpisodes[i].copyWith(title: jikanEpisodes[i].title);
-        }
-
-        state = state.copyWith(episodes: updatedEpisodes);
-      },
-      errorTitle: "Jikan Sync",
-      errorMessage: "Couldn't sync Jikan episode titles.",
-      showSnackBar: false,
+    await fetchEpisodes(
+      animeId: id,
+      animeTitle: title,
+      force: true,
     );
   }
 
-  // Reset State
-  void reset() {
-    state = const EpisodeListState();
+  void reset() => state = const EpisodeListState();
+
+  /* ───────────────────────── INTERNAL ───────────────────────── */
+
+  Future<List<EpisodeDataModel>> _fetchEpisodesInternal(String? animeId) async {
+    try {
+      return _exp.useMangayomiExtensions
+          ? await _fetchMangayomiEpisodes(animeId)
+          : await _fetchLegacyEpisodes(animeId);
+    } catch (e, st) {
+      AppLogger.e('Episode fetch failed', e, st);
+      showAppSnackBar(
+        'Episode Fetch',
+        'Failed to load episodes',
+        type: ContentType.failure,
+      );
+      reset();
+      return [];
+    }
+  }
+
+  Future<List<EpisodeDataModel>> _fetchMangayomiEpisodes(
+      String? animeId) async {
+    if (animeId == null) return [];
+
+    final details = await _sourceNotifier.getDetails(animeId);
+    final chapters = details?.chapters ?? [];
+
+    final mapped = chapters
+        .map(
+          (ch) => EpisodeDataModel(
+            title: ch.name,
+            url: ch.url,
+            isFiller: false,
+            number: int.tryParse(
+              RegExp(r'\d+').firstMatch(ch.name ?? '')?.group(0) ?? '',
+            ),
+          ),
+        )
+        .toList();
+
+    if (mapped.any((e) => (e.number ?? 0) > 0)) {
+      mapped.sort(
+        (a, b) => (a.number ?? 999999).compareTo(b.number ?? 999999),
+      );
+    }
+
+    return mapped;
+  }
+
+  Future<List<EpisodeDataModel>> _fetchLegacyEpisodes(String? animeId) async {
+    final provider = _animeProvider;
+    if (provider == null || animeId == null) return [];
+
+    return (await provider.getEpisodes(animeId)).episodes ?? [];
+  }
+
+  /* ───────────────────────── JIKAN SYNC ───────────────────────── */
+
+  void _syncJikanIfEnabled() {
+    if (!_exp.episodeTitleSync ||
+        state.episodes.isEmpty ||
+        state.animeTitle == null) {
+      return;
+    }
+
+    // fire & forget (non-blocking)
+    unawaited(_syncWithJikan());
+  }
+
+  Future<void> _syncWithJikan() async {
+    try {
+      final matches = state.jikanMatches.isNotEmpty
+          ? state.jikanMatches
+          : getBestMatches<JikanMedia>(
+              results: await _jikan.getSearch(
+                title: state.animeTitle!,
+                limit: 10,
+              ),
+              title: state.animeTitle!,
+              nameSelector: (e) => e.title,
+              idSelector: (e) => e.mal_id.toString(),
+            );
+
+      if (matches.isEmpty || matches.first.similarity < 0.55) {
+        return;
+      }
+
+      state = state.copyWith(jikanMatches: matches);
+
+      final malId = matches.first.result.mal_id;
+      final jikanEpisodes = await _jikan.getEpisodes(malId, 1);
+
+      if (jikanEpisodes.isEmpty) return;
+
+      final updated = List<EpisodeDataModel>.of(
+        state.episodes,
+      );
+
+      final count = updated.length.clamp(0, jikanEpisodes.length);
+
+      for (var i = 0; i < count; i++) {
+        updated[i] = updated[i].copyWith(
+          title: jikanEpisodes[i].title,
+        );
+      }
+
+      state = state.copyWith(episodes: updated);
+    } catch (e, st) {
+      AppLogger.w('Jikan sync failed', e, st);
+    }
   }
 }
 
 final episodeListProvider =
     AutoDisposeNotifierProvider<EpisodeListNotifier, EpisodeListState>(
-        EpisodeListNotifier.new);
+  EpisodeListNotifier.new,
+);

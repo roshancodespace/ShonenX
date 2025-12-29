@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shonenx/data/hive/hive_type_ids.dart';
 import 'package:shonenx/data/hive/models/subtitle_style_model.dart';
 
@@ -53,7 +53,7 @@ class PlayerSettings extends HiveObject {
 
   @HiveField(14)
   final bool subtitleBoldText;
-  
+
   @HiveField(15)
   final bool subtitleForceUppercase;
 

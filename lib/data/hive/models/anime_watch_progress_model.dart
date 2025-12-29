@@ -1,4 +1,4 @@
-import 'package:hive/hive.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:shonenx/data/hive/hive_type_ids.dart';
 
 part 'anime_watch_progress_model.g.dart';
@@ -76,7 +76,7 @@ class EpisodeProgress {
   final int? progressInSeconds; // For continue watching
   @HiveField(4)
   final int? durationInSeconds;
-  @HiveField(5)
+  @HiveField(5, defaultValue: false)
   final bool isCompleted;
   @HiveField(6)
   final DateTime? watchedAt;

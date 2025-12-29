@@ -64,8 +64,7 @@ class SettingsSection extends StatelessWidget {
       case SettingsSectionLayout.grid:
         return _buildGridLayout();
       case SettingsSectionLayout.list:
-      default:
-        return _buildListLayout();
+      return _buildListLayout();
     }
   }
 

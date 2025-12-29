@@ -16,12 +16,12 @@ android {
     ndkVersion = "29.0.14033849"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
+        jvmTarget = JavaVersion.VERSION_17
     }
 
     defaultConfig { 
@@ -34,7 +34,6 @@ android {
 
     packagingOptions {
         jniLibs.useLegacyPackaging = true
-        doNotStrip "**/*.so"
     }
 
     signingConfigs {
@@ -54,8 +53,8 @@ android {
         }
         release {
             signingConfig = signingConfigs.release
-            shrinkResources false
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
                           'proguard-rules.pro'
         }

@@ -71,6 +71,7 @@ class MyAnimeListService {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
+  // ignore: unused_element
   Future<Map<String, dynamic>> _post(
     String url,
     Map<String, dynamic> body,

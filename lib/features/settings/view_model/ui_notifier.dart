@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shonenx/features/settings/model/ui_model.dart';
 
 final uiSettingsProvider = NotifierProvider<UiSettingsNotifier, UiModel>(

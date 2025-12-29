@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shonenx/features/settings/model/subtitle_appearance_model.dart';
 
 final subtitleAppearanceProvider =
@@ -29,7 +29,8 @@ class SubtitleAppearanceNotifier extends Notifier<SubtitleAppearanceModel> {
         );
   }
 
-  void updateSettings(SubtitleAppearanceModel Function(SubtitleAppearanceModel) updater) {
+  void updateSettings(
+      SubtitleAppearanceModel Function(SubtitleAppearanceModel) updater) {
     state = updater(state);
     Hive.box<SubtitleAppearanceModel>(_boxName).put(_key, state);
   }

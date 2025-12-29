@@ -1,4 +1,4 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 class SourceRepository {
@@ -35,4 +35,3 @@ class SourceRepository {
     AppLogger.d("Saved Novel Repo: $repo");
   }
 }
-

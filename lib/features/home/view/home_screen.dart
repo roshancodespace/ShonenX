@@ -47,7 +47,7 @@ class HomeScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         children: [
           const HeaderSection(isDesktop: false),
-          SpotlightSection(homePage: home),
+          SpotlightSection(spotlightAnime: home.trendingAnime),
           const SizedBox(height: 16),
 
           // Continue Watching Section

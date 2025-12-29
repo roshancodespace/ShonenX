@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 
+import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 
 class EpisodesPanel extends ConsumerStatefulWidget {
   final AnimationController panelAnimation;
-  const EpisodesPanel({super.key, required this.panelAnimation});
+  final String mediaId;
+
+  const EpisodesPanel({
+    super.key,
+    required this.panelAnimation,
+    required this.mediaId,
+  });
 
   @override
   ConsumerState<EpisodesPanel> createState() => _EpisodesPanelState();
@@ -80,8 +87,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final episodes =
-        ref.watch(episodeListProvider.select((s) => s.episodes));
+    final episodes = ref.watch(episodeListProvider.select((s) => s.episodes));
     final selectedIdx =
         ref.watch(episodeDataProvider.select((s) => s.selectedEpisodeIdx));
 
@@ -95,6 +101,12 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
     final endIdx = (_currentStart + _rangeSize - 1).clamp(0, total);
 
     final visibleEpisodes = episodes.sublist(startIdx, endIdx);
+
+    final progressAsync = ref.watch(watchProgressStreamProvider);
+    final allProgress = progressAsync.valueOrNull ?? [];
+
+    final animeProgress =
+        allProgress.where((e) => e.animeId == widget.mediaId).firstOrNull;
 
     return Material(
       color: Colors.transparent,
@@ -153,15 +165,19 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                     final episode = visibleEpisodes[i];
                     final actualIndex = startIdx + i;
 
+                    final epNum = episode.number ?? (actualIndex + 1);
+                    final isCompleted =
+                        animeProgress?.episodesProgress[epNum]?.isCompleted ??
+                            false;
+
                     return EpisodeTile(
                       isFiller: episode.isFiller ?? false,
-                      episodeNumber:
-                          episode.number?.toString() ?? "?",
+                      isCompleted: isCompleted,
+                      episodeNumber: episode.number?.toString() ?? "?",
                       episodeTitle:
                           episode.title ?? "Episode ${episode.number}",
                       isSelected: selectedIdx == actualIndex,
-                      onTap: () =>
-                          episodeNotifier.changeEpisode(actualIndex),
+                      onTap: () => episodeNotifier.changeEpisode(actualIndex),
                     );
                   },
                 ),
@@ -176,6 +192,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
 
 class EpisodeTile extends StatelessWidget {
   final bool isFiller;
+  final bool isCompleted;
   final String episodeNumber;
   final String episodeTitle;
   final bool isSelected;
@@ -184,6 +201,7 @@ class EpisodeTile extends StatelessWidget {
   const EpisodeTile({
     super.key,
     required this.isFiller,
+    required this.isCompleted,
     required this.episodeNumber,
     required this.episodeTitle,
     required this.isSelected,
@@ -193,6 +211,21 @@ class EpisodeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // Using grey for completed episodes if not selected
+    final textColor = isSelected
+        ? theme.colorScheme.onPrimary
+        : isCompleted
+            ? theme.colorScheme.outline
+            : theme.colorScheme.onSurfaceVariant;
+
+    final bgColor = isSelected
+        ? theme.colorScheme.primary
+        : isFiller
+            ? theme.colorScheme.errorContainer
+            : isCompleted
+                ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.5)
+                : theme.colorScheme.surfaceContainerHighest;
 
     return InkWell(
       onTap: onTap,
@@ -213,20 +246,14 @@ class EpisodeTile extends StatelessWidget {
               height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : isFiller
-                        ? theme.colorScheme.errorContainer
-                        : theme.colorScheme.surfaceContainerHighest,
+                color: bgColor,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 episodeNumber,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: isSelected
-                      ? theme.colorScheme.onPrimary
-                      : theme.colorScheme.onSurfaceVariant,
+                  color: textColor,
                 ),
               ),
             ),
@@ -237,8 +264,12 @@ class EpisodeTile extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight:
-                      isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected
+                      ? theme.colorScheme.onSurface
+                      : isCompleted
+                          ? theme.colorScheme.outline
+                          : theme.colorScheme.onSurface,
                 ),
               ),
             ),
@@ -247,6 +278,12 @@ class EpisodeTile extends StatelessWidget {
                 Iconsax.play5,
                 size: 18,
                 color: theme.colorScheme.primary,
+              ),
+            if (!isSelected && isCompleted)
+              Icon(
+                Iconsax.tick_circle,
+                size: 18,
+                color: theme.colorScheme.secondary,
               ),
           ],
         ),

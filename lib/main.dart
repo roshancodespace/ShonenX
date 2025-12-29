@@ -16,8 +16,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/app_initializer.dart';
 import 'package:shonenx/core/utils/app_logger.dart'; 
 import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
-import 'package:shonenx/shared/providers/router_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:shonenx/shared/providers/router_provider.dart';
 import 'package:shonenx/storage_provider.dart';
 
 late Isar isar;
@@ -73,7 +73,6 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeSettingsProvider);
-    final router = ref.read(routerProvider);
 
     final lightTheme = FlexThemeData.light(
       swapColors: theme.swapColors,
@@ -99,7 +98,7 @@ class MyApp extends ConsumerWidget {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: scaffoldMessengerKey,
-      routerConfig: router,
+      routerConfig: routerConfig,
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: themeMode,

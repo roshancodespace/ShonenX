@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
@@ -25,11 +24,7 @@ import 'package:shonenx/features/onboarding/view/onboarding_screen.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shonenx/features/home/view/watch_history_screen.dart';
 
-final routerProvider = Provider<GoRouter>((ref) {
-  return _router;
-});
-
-final _router = GoRouter(
+final routerConfig = GoRouter(
   errorBuilder: (context, state) => ErrorScreen(error: state.error),
   initialLocation: '/',
   routes: [

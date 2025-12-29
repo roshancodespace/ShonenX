@@ -22,8 +22,8 @@ class CenterControls extends ConsumerWidget {
       ),
     );
 
-    final sourceLoading =
-        ref.watch(episodeDataProvider.select((e) => e.sourceLoading));
+    final episodeStreamState =
+        ref.watch(episodeDataProvider.select((e) => e.states));
     final episodesLoading =
         ref.watch(episodeListProvider.select((e) => e.isLoading));
 
@@ -39,7 +39,8 @@ class CenterControls extends ConsumerWidget {
               ? _LoadingState(
                   scheme: scheme,
                   textTheme: textTheme,
-                  sourceLoading: sourceLoading,
+                  sourceLoading: episodeStreamState
+                      .contains(EpisodeStreamState.SOURCE_LOADING),
                   episodesLoading: episodesLoading,
                 )
               : _PlayPauseButton(

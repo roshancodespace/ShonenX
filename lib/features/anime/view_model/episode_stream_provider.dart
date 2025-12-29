@@ -1,3 +1,4 @@
+// ignore_for_file: constant_identifier_names
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
@@ -16,6 +17,13 @@ import 'package:shonenx/features/settings/view_model/player_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/utils/extractors.dart' as extractor;
 
+enum EpisodeStreamState {
+  SOURCE_LOADING,
+  SUBTITLE_LOADING,
+  SERVER_LOADING,
+  QUALITY_LOADING,
+}
+
 @immutable
 class EpisodeDataState {
   final Map<String, String>? headers;
@@ -30,7 +38,7 @@ class EpisodeDataState {
   final int selectedSubtitleIdx;
   final ServerData? selectedServer;
 
-  final bool sourceLoading;
+  final List<EpisodeStreamState> states;
   final String? error;
 
   const EpisodeDataState({
@@ -44,7 +52,7 @@ class EpisodeDataState {
     this.selectedEpisodeIdx,
     this.selectedSubtitleIdx = 0,
     this.selectedServer,
-    this.sourceLoading = false,
+    this.states = const [],
     this.error,
   });
 
@@ -59,9 +67,18 @@ class EpisodeDataState {
     int? selectedEpisodeIdx,
     int? selectedSubtitleIdx,
     ServerData? selectedServer,
-    bool? sourceLoading,
+    List<EpisodeStreamState>? states,
+    EpisodeStreamState? addState,
+    EpisodeStreamState? removeState,
     String? error,
   }) {
+    final updatedStates = <EpisodeStreamState>{
+      ...states ?? this.states,
+    };
+
+    if (removeState != null) updatedStates.remove(removeState);
+    if (addState != null) updatedStates.add(addState);
+
     return EpisodeDataState(
       headers: headers ?? this.headers,
       sources: sources ?? this.sources,
@@ -73,7 +90,7 @@ class EpisodeDataState {
       selectedEpisodeIdx: selectedEpisodeIdx ?? this.selectedEpisodeIdx,
       selectedSubtitleIdx: selectedSubtitleIdx ?? this.selectedSubtitleIdx,
       selectedServer: selectedServer ?? this.selectedServer,
-      sourceLoading: sourceLoading ?? this.sourceLoading,
+      states: updatedStates.toList(),
       error: error,
     );
   }
@@ -152,6 +169,8 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   }
 
   Future<void> changeSubtitle(int idx) async {
+    state = state.copyWith(
+        addState: EpisodeStreamState.SUBTITLE_LOADING, error: null);
     if (idx == 0) {
       await ref
           .read(playerStateProvider.notifier)
@@ -168,7 +187,9 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
         .read(playerStateProvider.notifier)
         .setSubtitle(SubtitleTrack.uri(sub.url!));
 
-    state = state.copyWith(selectedSubtitleIdx: idx);
+    state = state.copyWith(
+        selectedSubtitleIdx: idx,
+        removeState: EpisodeStreamState.SUBTITLE_LOADING);
   }
 
   void reset() => state = const EpisodeDataState();
@@ -179,6 +200,9 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   Future<void> _setupServers(int epIdx) async {
     if (_exp.useMangayomiExtensions) return;
+
+    state = state.copyWith(
+        addState: EpisodeStreamState.SERVER_LOADING, error: null);
 
     final ep = _episodes[epIdx];
     final servers = await _animeProvider!.getSupportedServers(metadata: {
@@ -191,6 +215,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     state = state.copyWith(
       servers: flat,
       selectedServer: flat.firstOrNull,
+      removeState: EpisodeStreamState.SERVER_LOADING,
     );
   }
 
@@ -198,12 +223,13 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     final epIdx = state.selectedEpisodeIdx;
     if (epIdx == null) return;
 
-    state = state.copyWith(sourceLoading: true, error: null);
+    state = state.copyWith(
+        addState: EpisodeStreamState.SOURCE_LOADING, error: null);
 
     final data = await _getSources(epIdx);
     if (data == null || data.sources.isEmpty) {
       state = state.copyWith(
-        sourceLoading: false,
+        addState: EpisodeStreamState.SOURCE_LOADING,
         error: 'No sources found',
       );
       return;
@@ -216,7 +242,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     );
 
     await _loadAndPlaySource(0, startAt: startAt);
-    state = state.copyWith(sourceLoading: false);
+    state = state.copyWith(removeState: EpisodeStreamState.SOURCE_LOADING);
   }
 
   Future<void> _loadAndPlaySource(
@@ -292,22 +318,34 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     final url = source.url;
     if (url == null) return [];
 
-    if (!source.isM3U8) {
-      return [
-        {'quality': source.quality ?? 'Default', 'url': url}
-      ];
-    }
+    state = state.copyWith(
+      addState: EpisodeStreamState.QUALITY_LOADING,
+      error: null,
+    );
 
     try {
-      return await extractor.extractQualities(
+      if (!source.isM3U8) {
+        return [
+          {'quality': source.quality ?? 'Default', 'url': url}
+        ];
+      }
+
+      final qualities = await extractor.extractQualities(
         url,
         state.headers ?? {},
       );
+
+      return qualities;
     } catch (e, st) {
+      state = state.copyWith(error: 'Quality extraction failed');
       AppLogger.e('Quality extraction failed', e, st);
       return [
         {'quality': source.quality ?? 'Default', 'url': url}
       ];
+    } finally {
+      state = state.copyWith(
+        removeState: EpisodeStreamState.QUALITY_LOADING,
+      );
     }
   }
 }

@@ -280,7 +280,10 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                   axis: Axis.horizontal,
                   child: SizedBox(
                     width: MediaQuery.of(context).size.width * 0.35,
-                    child: EpisodesPanel(panelAnimation: _panelController),
+                    child: EpisodesPanel(
+                      panelAnimation: _panelController,
+                      mediaId: widget.mediaId,
+                    ),
                   ),
                 ),
               ],
@@ -294,7 +297,10 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                 child: SizeTransition(
                   sizeFactor: _panelAnimation,
                   axis: Axis.vertical,
-                  child: EpisodesPanel(panelAnimation: _panelController),
+                  child: EpisodesPanel(
+                    panelAnimation: _panelController,
+                    mediaId: widget.mediaId,
+                  ),
                 ),
               ),
             ],

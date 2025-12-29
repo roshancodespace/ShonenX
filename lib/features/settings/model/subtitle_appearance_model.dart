@@ -1,4 +1,4 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shonenx/data/hive/hive_type_ids.dart';
 part 'subtitle_appearance_model.g.dart';
 

@@ -22,7 +22,7 @@ import 'package:shonenx/features/settings/view/theme_settings_screen.dart';
 import 'package:shonenx/features/settings/view/ui_settings_screen.dart';
 import 'package:shonenx/router/router.dart';
 import 'package:shonenx/features/onboarding/view/onboarding_screen.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shonenx/features/home/view/watch_history_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {

@@ -2,7 +2,7 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/anilist/media.dart' as anime_media;
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';

@@ -91,8 +91,7 @@ abstract class BaseSettingsItem extends StatelessWidget {
       case SettingsItemLayout.vertical:
         return true;
       case SettingsItemLayout.auto:
-      default:
-        return isSmallScreen && needsVerticalLayoutByContent();
+      return isSmallScreen && needsVerticalLayoutByContent();
     }
   }
 

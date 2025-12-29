@@ -134,7 +134,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
       if (takeScreenshot) {
         try {
-          final bytes = await _screenshotController.capture(pixelRatio: 1.5);
+          final bytes = await _screenshotController.capture(pixelRatio: 1);
           if (bytes != null) thumbnail = base64Encode(bytes);
         } catch (_) {}
       }

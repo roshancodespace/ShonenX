@@ -335,11 +335,11 @@ class MProviderBridged {
       'evaluateJavascriptViaWebview',
       (visitor, positionalArgs, namedArgs, _) =>
           MBridge.evaluateJavascriptViaWebview(
-            positionalArgs[0] as String,
-            (positionalArgs[1] as Map).cast(),
-            (positionalArgs[2] as List).cast(),
-            time: namedArgs.get<int?>('time') ?? 30,
-          ),
+        positionalArgs[0] as String,
+        (positionalArgs[1] as Map).cast(),
+        (positionalArgs[2] as List).cast(),
+        time: namedArgs.get<int?>('time') ?? 30,
+      ),
     );
   }
 }

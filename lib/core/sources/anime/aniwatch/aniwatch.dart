@@ -142,18 +142,6 @@ class AniwatchProvider extends AnimeProvider {
     return parsePage(document, baseUrl, route: route, page: page);
   }
 
-  int? _mapToAniwatchType(String type) {
-    return switch (type) {
-      'movie' => 1,
-      'tv' => 2,
-      'ova' => 3,
-      'ona' => 4,
-      'special' => 5,
-      'music' => 6,
-      _ => null
-    };
-  }
-
   int? _mapTypeToHianimeType(String type) {
     return switch (type) {
       'movie' => 1,

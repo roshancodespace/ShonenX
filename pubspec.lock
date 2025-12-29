@@ -73,14 +73,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
-  bot_toast:
-    dependency: "direct main"
-    description:
-      name: bot_toast
-      sha256: "6b93030a99a98335b8827ecd83021e92e885ffc61d261d3825ffdecdd17f3bdf"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.1.3"
   build:
     dependency: transitive
     description:
@@ -241,14 +233,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.2"
-  cross_file:
-    dependency: transitive
-    description:
-      name: cross_file
-      sha256: "7caf6a750a0c04effbb52a676dce9a4a592e10ad35c34d6d2d0e4811160d5670"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.4+2"
   crypto:
     dependency: "direct main"
     description:
@@ -454,54 +438,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.21.2"
-  flutter_image_compress:
-    dependency: "direct main"
-    description:
-      name: flutter_image_compress
-      sha256: "51d23be39efc2185e72e290042a0da41aed70b14ef97db362a6b5368d0523b27"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.4.0"
-  flutter_image_compress_common:
-    dependency: transitive
-    description:
-      name: flutter_image_compress_common
-      sha256: c5c5d50c15e97dd7dc72ff96bd7077b9f791932f2076c5c5b6c43f2c88607bfb
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.6"
-  flutter_image_compress_macos:
-    dependency: transitive
-    description:
-      name: flutter_image_compress_macos
-      sha256: "20019719b71b743aba0ef874ed29c50747461e5e8438980dfa5c2031898f7337"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.3"
-  flutter_image_compress_ohos:
-    dependency: transitive
-    description:
-      name: flutter_image_compress_ohos
-      sha256: e76b92bbc830ee08f5b05962fc78a532011fcd2041f620b5400a593e96da3f51
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.3"
-  flutter_image_compress_platform_interface:
-    dependency: transitive
-    description:
-      name: flutter_image_compress_platform_interface
-      sha256: "579cb3947fd4309103afe6442a01ca01e1e6f93dc53bb4cbd090e8ce34a41889"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.5"
-  flutter_image_compress_web:
-    dependency: transitive
-    description:
-      name: flutter_image_compress_web
-      sha256: b9b141ac7c686a2ce7bb9a98176321e1182c9074650e47bb140741a44b6f5a96
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.5"
   flutter_inappwebview:
     dependency: "direct main"
     description:
@@ -1091,75 +1027,67 @@ packages:
   media_kit:
     dependency: "direct main"
     description:
-      path: media_kit
-      ref: HEAD
-      resolved-ref: ef6279dddf85934faed673a41821c6dc5be59e5e
-      url: "https://github.com/Schnitzel5/media-kit.git"
-    source: git
-    version: "1.2.2"
+      name: media_kit
+      sha256: ae9e79597500c7ad6083a3c7b7b7544ddabfceacce7ae5c9709b0ec16a5d6643
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.6"
   media_kit_libs_android_video:
     dependency: transitive
     description:
-      path: "libs/android/media_kit_libs_android_video"
-      ref: HEAD
-      resolved-ref: ef6279dddf85934faed673a41821c6dc5be59e5e
-      url: "https://github.com/Schnitzel5/media-kit.git"
-    source: git
+      name: media_kit_libs_android_video
+      sha256: "3f6274e5ab2de512c286a25c327288601ee445ed8ac319e0ef0b66148bd8f76c"
+      url: "https://pub.dev"
+    source: hosted
     version: "1.3.8"
   media_kit_libs_ios_video:
     dependency: transitive
     description:
-      path: "libs/ios/media_kit_libs_ios_video"
-      ref: HEAD
-      resolved-ref: ef6279dddf85934faed673a41821c6dc5be59e5e
-      url: "https://github.com/Schnitzel5/media-kit.git"
-    source: git
+      name: media_kit_libs_ios_video
+      sha256: b5382994eb37a4564c368386c154ad70ba0cc78dacdd3fb0cd9f30db6d837991
+      url: "https://pub.dev"
+    source: hosted
     version: "1.1.4"
   media_kit_libs_linux:
     dependency: transitive
     description:
-      path: "libs/linux/media_kit_libs_linux"
-      ref: HEAD
-      resolved-ref: ef6279dddf85934faed673a41821c6dc5be59e5e
-      url: "https://github.com/Schnitzel5/media-kit.git"
-    source: git
+      name: media_kit_libs_linux
+      sha256: "2b473399a49ec94452c4d4ae51cfc0f6585074398d74216092bf3d54aac37ecf"
+      url: "https://pub.dev"
+    source: hosted
     version: "1.2.1"
   media_kit_libs_macos_video:
     dependency: transitive
     description:
-      path: "libs/macos/media_kit_libs_macos_video"
-      ref: HEAD
-      resolved-ref: ef6279dddf85934faed673a41821c6dc5be59e5e
-      url: "https://github.com/Schnitzel5/media-kit.git"
-    source: git
+      name: media_kit_libs_macos_video
+      sha256: f26aa1452b665df288e360393758f84b911f70ffb3878032e1aabba23aa1032d
+      url: "https://pub.dev"
+    source: hosted
     version: "1.1.4"
   media_kit_libs_video:
     dependency: "direct main"
     description:
-      path: "libs/universal/media_kit_libs_video"
-      ref: HEAD
-      resolved-ref: ef6279dddf85934faed673a41821c6dc5be59e5e
-      url: "https://github.com/Schnitzel5/media-kit.git"
-    source: git
+      name: media_kit_libs_video
+      sha256: "2b235b5dac79c6020e01eef5022c6cc85fedc0df1738aadc6ea489daa12a92a9"
+      url: "https://pub.dev"
+    source: hosted
     version: "1.0.7"
   media_kit_libs_windows_video:
     dependency: transitive
     description:
-      path: "libs/windows/media_kit_libs_windows_video"
-      ref: HEAD
-      resolved-ref: ef6279dddf85934faed673a41821c6dc5be59e5e
-      url: "https://github.com/Schnitzel5/media-kit.git"
-    source: git
+      name: media_kit_libs_windows_video
+      sha256: dff76da2778729ab650229e6b4ec6ec111eb5151431002cbd7ea304ff1f112ab
+      url: "https://pub.dev"
+    source: hosted
     version: "1.0.11"
   media_kit_video:
     dependency: "direct main"
     description:
-      path: media_kit_video
-      ref: HEAD
-      resolved-ref: ef6279dddf85934faed673a41821c6dc5be59e5e
-      url: "https://github.com/Schnitzel5/media-kit.git"
-    source: git
-    version: "2.0.0"
+      name: media_kit_video
+      sha256: a656a9463298c1adc64c57f2d012874f7f2900f0c614d9545a3e7b8bb9e2137b
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.0"
   meta:
     dependency: transitive
     description:

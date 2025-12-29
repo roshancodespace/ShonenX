@@ -7,7 +7,6 @@ import 'package:media_kit/media_kit.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
-import 'package:shonenx/data/hive/models/settings/provider_model.dart';
 
 import 'package:shonenx/core/utils/app_logger.dart';
 
@@ -59,7 +58,6 @@ class AppInitializer {
       Hive.registerAdapter(SubtitleAppearanceModelAdapter());
       Hive.registerAdapter(HomePageModelAdapter());
       Hive.registerAdapter(UiModelAdapter());
-      Hive.registerAdapter(ProviderSettingsAdapter());
       Hive.registerAdapter(PlayerModelAdapter());
       Hive.registerAdapter(AnimeWatchProgressEntryAdapter());
       Hive.registerAdapter(EpisodeProgressAdapter());
@@ -75,7 +73,6 @@ class AppInitializer {
         Hive.openBox<HomePageModel>('home_page'),
         Hive.openBox<String>('selected_provider'),
         Hive.openBox<UiModel>('ui_settings'),
-        Hive.openBox<ProviderSettings>('provider_settings'),
         Hive.openBox<PlayerModel>('player_settings'),
         Hive.openBox<AnimeWatchProgressEntry>('anime_watch_progress'),
         Hive.openBox<ExperimentalFeaturesModel>('experimental_features'),

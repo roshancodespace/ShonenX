@@ -81,7 +81,7 @@ class EpisodeProgressAdapter extends TypeAdapter<EpisodeProgress> {
       episodeThumbnail: fields[2] as String?,
       progressInSeconds: fields[3] as int?,
       durationInSeconds: fields[4] as int?,
-      isCompleted: fields[5] as bool,
+      isCompleted: fields[5] == null ? false : fields[5] as bool,
       watchedAt: fields[6] as DateTime?,
     );
   }

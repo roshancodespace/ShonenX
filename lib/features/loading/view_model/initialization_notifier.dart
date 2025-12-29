@@ -139,9 +139,6 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
       await _applyThemeSettings();
       AppLogger.d('✅ Settings applied');
 
-      _updateState(progress: 0.95, message: 'Finalizing setup...');
-      await Future.delayed(const Duration(milliseconds: 800));
-
       _timeoutTimer?.cancel();
       _updateState(
         status: InitializationStatus.success,

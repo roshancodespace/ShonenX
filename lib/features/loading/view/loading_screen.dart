@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/loading/view_model/initialization_notifier.dart';
+import 'package:shonenx/shared/providers/update_provider.dart';
+import 'package:shonenx/utils/updater.dart';
 
 class LoadingScreen extends ConsumerStatefulWidget {
   const LoadingScreen({super.key});
@@ -46,10 +49,11 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen>
     _initializeAnimations();
     _startQuoteRotation();
 
-    // Trigger the initialization process. Use `read` as it only needs to be called once.
-    // Use a post-frame callback to ensure the widget is fully built.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(initializationProvider.notifier).initialize();
+      if (!kDebugMode && ref.read(automaticUpdatesProvider)) {
+        checkForUpdates(context);
+      }
     });
   }
 

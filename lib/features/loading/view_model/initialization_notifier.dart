@@ -10,10 +10,8 @@ import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/helpers/ui.dart';
 
-// A unique object to represent "no error" for clarity in the state.
 const noError = Object();
 
-// 1. Define the possible states of initialization.
 enum InitializationStatus {
   idle,
   initializing,
@@ -25,7 +23,6 @@ enum InitializationStatus {
   error,
 }
 
-// 2. Create an immutable state class to hold all initialization data.
 class InitializationState {
   final InitializationStatus status;
   final String message;
@@ -41,15 +38,13 @@ class InitializationState {
     this.stackTrace,
   });
 
-  // Initial state constructor
   factory InitializationState.initial() => const InitializationState(
         status: InitializationStatus.idle,
-        message: 'Initializing...',
+        message: 'Initializing…',
         progress: 0.0,
         error: noError,
       );
 
-  // Getters for easier consumption in the UI
   bool get hasError => error != noError;
   bool get isCompleted => status == InitializationStatus.success;
 
@@ -70,135 +65,161 @@ class InitializationState {
   }
 }
 
-// 3. Create the StateNotifier to manage the state and logic.
 class InitializationNotifier extends StateNotifier<InitializationState> {
-  final Ref _ref;
-  Timer? _timeoutTimer;
-  static const Duration _initializationTimeout = Duration(seconds: 30);
-
   InitializationNotifier(this._ref) : super(InitializationState.initial());
 
-  Future<void> initialize() async {
-    // Prevent re-initialization if already running or completed
-    if (state.status != InitializationStatus.idle && !state.hasError) return;
+  final Ref _ref;
 
-    _startTimeoutTimer();
+  Timer? _timeoutTimer;
+  static const _timeout = Duration(seconds: 30);
+
+  Future<void> initialize() async {
+    if (_isAlreadyRunning) {
+      AppLogger.v('Initialization already running — skipped');
+      return;
+    }
+
+    AppLogger.section('APP INITIALIZATION');
+    _startTimeout();
 
     try {
-      _updateState(
-        status: InitializationStatus.initializing,
-        message: 'Setting up core services...',
-        progress: 0.1,
-      );
+      await _initializeCore();
+      await _initializeSources();
+      await _authenticate();
+      await _initializeHomepage();
+      await _applySettings();
 
-      _updateState(
-        status: InitializationStatus.loadingSources,
-        message: 'Loading anime sources...',
-        progress: 0.3,
-      );
-      _ref.read(animeSourceRegistryProvider).initialize();
-
-      _updateState(
-        status: InitializationStatus.authenticating,
-        message: 'Logging you in',
-        progress: 0.35
-      );
-      _ref.read(authProvider.notifier);
-
-      final registryState = _ref.read(animeSourceRegistryProvider);
-      if (!registryState.isInitialized) {
-        throw Exception(
-            'Anime source registry failed to initialize: ${registryState.error ?? 'Unknown error'}');
-      }
-      AppLogger.d('✅ Anime source registry initialized');
-
-      _updateState(
-          status: InitializationStatus.initializing,
-          message: 'Loading extensions',
-          progress: 0.4);
-
-      final sourceState = _ref.read(sourceProvider.notifier);
-      await sourceState.initialize();
-
-      AppLogger.d('✅ Extensions loaded');
-
-      _updateState(
-        status: InitializationStatus.loadingHomepage,
-        message: 'Preparing homepage...',
-        progress: 0.6,
-      );
-      await _ref.read(homepageProvider.notifier).initialize();
-      AppLogger.d('✅ Homepage initialized');
-
-      _updateState(
-        status: InitializationStatus.applyingSettings,
-        message: 'Applying settings...',
-        progress: 0.8,
-      );
-      await _applyUISettings();
-      await _applyThemeSettings();
-      AppLogger.d('✅ Settings applied');
-
-      _timeoutTimer?.cancel();
-      _updateState(
-        status: InitializationStatus.success,
-        message: 'Ready!',
-        progress: 1.0,
-      );
-      AppLogger.d('✅ App initialization successful');
-    } catch (e, stack) {
-      _timeoutTimer?.cancel();
-      AppLogger.e('Critical initialization error', e, stack);
-      _updateState(
-        status: InitializationStatus.error,
-        message: 'Error occurred',
-        error: e,
-        stackTrace: stack,
-      );
+      _complete();
+    } catch (e, st) {
+      _fail(e, st);
     }
   }
 
   void retry() {
-    // Reset state and re-initialize
+    AppLogger.section('INITIALIZATION RETRY');
     state = InitializationState.initial();
     initialize();
   }
 
-  void _startTimeoutTimer() {
-    _timeoutTimer?.cancel();
-    _timeoutTimer = Timer(_initializationTimeout, () {
-      if (state.status != InitializationStatus.success) {
-        AppLogger.e('Initialization timeout');
-        _updateState(
-          status: InitializationStatus.error,
-          message: 'Error occurred',
-          error:
-              'Initialization timed out. Please check your network connection and restart the app.',
-        );
-      }
-    });
+  // ---------------------------------------------------------------------------
+  // Pipeline steps
+  // ---------------------------------------------------------------------------
+
+  Future<void> _initializeCore() async {
+    AppLogger.section('CORE SERVICES');
+
+    _emit(
+      status: InitializationStatus.initializing,
+      message: 'Setting up core services…',
+      progress: 0.1,
+    );
+
+    final registry = _ref.read(animeSourceRegistryProvider);
+
+    AppLogger.infoPair('Registry initialized', registry.isInitialized);
+
+    if (!registry.isInitialized) {
+      AppLogger.fail('Anime source registry failed');
+      throw StateError(
+        registry.error?.toString() ?? 'Unknown registry error',
+      );
+    }
+
+    AppLogger.success('Core registry ready');
   }
+
+  Future<void> _initializeSources() async {
+    AppLogger.section('EXTENSIONS');
+
+    _emit(
+      status: InitializationStatus.loadingSources,
+      message: 'Loading extensions…',
+      progress: 0.35,
+    );
+
+    await _ref.read(sourceProvider.notifier).initialize();
+
+    AppLogger.success('Extensions loaded');
+  }
+
+  Future<void> _authenticate() async {
+    AppLogger.section('AUTHENTICATION');
+
+    _emit(
+      status: InitializationStatus.authenticating,
+      message: 'Authenticating…',
+      progress: 0.45,
+    );
+
+    _ref.read(authProvider.notifier);
+
+    AppLogger.success('Auth bootstrap complete');
+  }
+
+  Future<void> _initializeHomepage() async {
+    AppLogger.section('HOMEPAGE');
+
+    _emit(
+      status: InitializationStatus.loadingHomepage,
+      message: 'Preparing homepage…',
+      progress: 0.65,
+    );
+
+    await _ref.read(homepageProvider.notifier).initialize();
+
+    AppLogger.success('Homepage initialized');
+  }
+
+  Future<void> _applySettings() async {
+    AppLogger.section('SETTINGS');
+
+    _emit(
+      status: InitializationStatus.applyingSettings,
+      message: 'Applying settings…',
+      progress: 0.85,
+    );
+
+    await _applyUISettings();
+    _applyThemeSettings();
+
+    AppLogger.success('Settings applied');
+  }
+
+  // ---------------------------------------------------------------------------
+  // Settings helpers (non-fatal)
+  // ---------------------------------------------------------------------------
 
   Future<void> _applyUISettings() async {
     try {
-      final uiSettings = _ref.read(uiSettingsProvider);
-      if (uiSettings.immersiveMode) {
+      final ui = _ref.read(uiSettingsProvider);
+      AppLogger.infoPair('Immersive mode', ui.immersiveMode);
+
+      if (ui.immersiveMode) {
         await UIHelper.enableImmersiveMode();
+        AppLogger.success('Immersive mode enabled');
       }
-    } catch (e) {
-      AppLogger.w('Failed to apply UI settings: $e');
+    } catch (e, st) {
+      AppLogger.w('UI settings failed', e, st);
     }
   }
 
-  Future<void> _applyThemeSettings() async {
+  void _applyThemeSettings() {
     try {
       _ref.read(themeSettingsProvider);
-    } catch (e) {
-      AppLogger.w('Failed to apply Theme settings: $e');
+      AppLogger.success('Theme applied');
+    } catch (e, st) {
+      AppLogger.w('Theme settings failed', e, st);
     }
   }
 
-  void _updateState({
+  // ---------------------------------------------------------------------------
+  // State & lifecycle helpers
+  // ---------------------------------------------------------------------------
+
+  bool get _isAlreadyRunning =>
+      state.status != InitializationStatus.idle && !state.hasError;
+
+  void _emit({
     InitializationStatus? status,
     String? message,
     double? progress,
@@ -206,6 +227,7 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
     StackTrace? stackTrace,
   }) {
     if (!mounted) return;
+
     state = state.copyWith(
       status: status,
       message: message,
@@ -213,8 +235,53 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
       error: error,
       stackTrace: stackTrace,
     );
+
     AppLogger.d(
-        'Init State: ${state.message} (${(state.progress * 100).toInt()}%)');
+      'State → ${state.status.name} | ${(state.progress * 100).toInt()}%',
+    );
+  }
+
+  void _complete() {
+    _timeoutTimer?.cancel();
+
+    _emit(
+      status: InitializationStatus.success,
+      message: 'Ready!',
+      progress: 1.0,
+    );
+
+    AppLogger.section('BOOT COMPLETE');
+    AppLogger.success('Application is ready 🚀');
+  }
+
+  void _fail(Object error, StackTrace stackTrace) {
+    _timeoutTimer?.cancel();
+
+    AppLogger.section('BOOT FAILED');
+    AppLogger.e('Critical initialization failure', error, stackTrace);
+
+    _emit(
+      status: InitializationStatus.error,
+      message: 'Something went wrong',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
+  void _startTimeout() {
+    _timeoutTimer?.cancel();
+
+    _timeoutTimer = Timer(_timeout, () {
+      if (state.status == InitializationStatus.success) return;
+
+      AppLogger.section('BOOT TIMEOUT');
+      AppLogger.fail('Initialization timed out');
+
+      _fail(
+        'Initialization timed out. Check your network and restart the app.',
+        StackTrace.current,
+      );
+    });
   }
 
   @override
@@ -224,7 +291,6 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
   }
 }
 
-// 4. Create the final provider that the UI will interact with.
 final initializationProvider =
     StateNotifierProvider<InitializationNotifier, InitializationState>(
   (ref) => InitializationNotifier(ref),

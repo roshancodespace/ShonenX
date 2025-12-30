@@ -8,7 +8,7 @@ const selectedProviderBox = 'selected_provider';
 const selectedProviderKey = 'selected_key';
 
 final animeSourceRegistryProvider = Provider<AnimeSourceRegistry>((ref) {
-  return AnimeSourceRegistry().initialize();
+  return AnimeSourceRegistry();
 });
 
 final selectedProviderKeyProvider =

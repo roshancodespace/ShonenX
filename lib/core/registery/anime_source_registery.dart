@@ -26,7 +26,11 @@ class AnimeSourceRegistry {
     return true;
   }
 
-  AnimeSourceRegistry initialize() {
+  AnimeSourceRegistry() {
+    _init();
+  }
+
+  AnimeSourceRegistry _init() {
     setStatus(RegistryStatus.initializing);
     try {
       register('aniwatch', AniwatchProvider());

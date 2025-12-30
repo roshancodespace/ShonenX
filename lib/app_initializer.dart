@@ -28,43 +28,62 @@ class AppInitializer {
       return;
     }
 
+    AppLogger.section('App Initialization');
+
     WidgetsFlutterBinding.ensureInitialized();
-    AppLogger.i("✅ Flutter bindings initialized.");
+    AppLogger.success('Flutter bindings initialized');
 
     await _initializeHive();
     await _initializeWindowManager();
     await _initializeMediaKit();
+
+    AppLogger.section('Initialization Complete');
   }
 
   static Future<void> _initializeMediaKit() async {
+    AppLogger.section('MediaKit');
+
     try {
       MediaKit.ensureInitialized();
-      AppLogger.i("✅ MediaKit initialized.");
+      AppLogger.success('MediaKit initialized');
     } catch (e, st) {
-      AppLogger.e("❌ MediaKit Initialization Error", e, st);
+      AppLogger.fail('MediaKit initialization failed');
+      AppLogger.e('MediaKit Initialization Error', e, st);
     }
   }
 
   static Future<void> _initializeHive() async {
+    AppLogger.section('Hive Database');
+
     try {
       final appDocDir = await getApplicationDocumentsDirectory();
       final customPath =
           '${appDocDir.path}${Platform.pathSeparator}ShonenX/appdata';
 
-      await Hive.initFlutter(customPath);
-      AppLogger.i("✅ Hive initialized at: $customPath");
+      AppLogger.infoPair('Hive Path', customPath);
 
-      Hive.registerAdapter(ThemeModelAdapter());
-      Hive.registerAdapter(SubtitleAppearanceModelAdapter());
-      Hive.registerAdapter(HomePageModelAdapter());
-      Hive.registerAdapter(UiModelAdapter());
-      Hive.registerAdapter(PlayerModelAdapter());
-      Hive.registerAdapter(AnimeWatchProgressEntryAdapter());
-      Hive.registerAdapter(EpisodeProgressAdapter());
-      Hive.registerAdapter(ExperimentalFeaturesModelAdapter());
-      // Downloads
-      Hive.registerAdapter(DownloadItemAdapter());
-      Hive.registerAdapter(DownloadStatusAdapter());
+      await Hive.initFlutter(customPath);
+      AppLogger.success('Hive initialized');
+
+      // --- Register adapters ---
+      AppLogger.section('Hive Adapters');
+
+      Hive
+        ..registerAdapter(ThemeModelAdapter())
+        ..registerAdapter(SubtitleAppearanceModelAdapter())
+        ..registerAdapter(HomePageModelAdapter())
+        ..registerAdapter(UiModelAdapter())
+        ..registerAdapter(PlayerModelAdapter())
+        ..registerAdapter(AnimeWatchProgressEntryAdapter())
+        ..registerAdapter(EpisodeProgressAdapter())
+        ..registerAdapter(ExperimentalFeaturesModelAdapter())
+        ..registerAdapter(DownloadItemAdapter())
+        ..registerAdapter(DownloadStatusAdapter());
+
+      AppLogger.success('Hive adapters registered');
+
+      // --- Open boxes ---
+      AppLogger.section('Hive Boxes');
 
       await Future.wait([
         Hive.openBox<ThemeModel>('theme_settings'),
@@ -77,19 +96,23 @@ class AppInitializer {
         Hive.openBox<AnimeWatchProgressEntry>('anime_watch_progress'),
         Hive.openBox<ExperimentalFeaturesModel>('experimental_features'),
         Hive.openBox<DownloadItem>('downloads'),
-        // ------------------------------------
         Hive.openBox('settings'),
-        Hive.openBox('onboard')
+        Hive.openBox('onboard'),
       ]);
 
-      AppLogger.i("✅ Hive adapters registered and boxes opened.");
+      AppLogger.success('Hive boxes opened');
     } catch (e, st) {
-      AppLogger.e("❌ Hive Initialization Error", e, st);
+      AppLogger.fail('Hive initialization failed');
+      AppLogger.e('Hive Initialization Error', e, st);
     }
   }
 
   static Future<void> _initializeWindowManager() async {
+    AppLogger.section('Window / System UI');
+
     if (!kIsWeb && !Platform.isAndroid && !Platform.isIOS) {
+      AppLogger.infoPair('Platform', Platform.operatingSystem);
+
       try {
         await windowManager.ensureInitialized();
 
@@ -98,7 +121,7 @@ class AppInitializer {
             center: true,
             backgroundColor: Colors.black,
             skipTaskbar: false,
-            title: "ShonenX Beta",
+            title: 'ShonenX Beta',
           ),
           () async {
             await windowManager.show();
@@ -106,19 +129,19 @@ class AppInitializer {
           },
         );
 
-        AppLogger.i("✅ Window Manager Initialized");
+        AppLogger.success('Window manager initialized');
       } catch (e, st) {
-        AppLogger.e("❌ Window Manager Initialization Error", e, st);
+        AppLogger.fail('Window manager initialization failed');
+        AppLogger.e('Window Manager Error', e, st);
       }
     } else {
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       await SystemChrome.setPreferredOrientations([]);
       SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-        ),
+        const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
       );
-      AppLogger.i("✅ System UI Mode set to edge-to-edge.");
+
+      AppLogger.success('Mobile system UI configured');
     }
   }
 }

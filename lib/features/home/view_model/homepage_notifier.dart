@@ -55,7 +55,9 @@ class HomepageNotifier extends Notifier<HomepageState> {
         state.homePage == null ||
         state.homePage!.trendingAnime.isEmpty ||
         state.homePage!.popularAnime.isEmpty ||
-        state.homePage!.mostFavoriteAnime.isEmpty ||
+        state.homePage!.upcomingAnime.isEmpty ||
+        state.homePage!.recentlyUpdated.isEmpty ||
+        state.homePage!.topRatedAnime.isEmpty ||
         state.lastUpdated
             .isBefore(DateTime.now().subtract(const Duration(hours: 6)));
 

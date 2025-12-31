@@ -14,49 +14,37 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        leading: IconButton.filledTonal(
-            onPressed: () => context.pop(), icon: Icon(Iconsax.arrow_left_2)),
-        title: const Text('Account Settings'),
-        forceMaterialTransparency: true,
+        leading: IconButton(
+          onPressed: () => context.pop(),
+          icon: const Icon(Iconsax.arrow_left_2),
+        ),
+        title: Text(
+          'Account Settings',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // AniList Card
-            AccountAuthenticationSection(),
-
-            const SizedBox(height: 32),
-
-            // Additional Settings Section
-            // const Text(
-            //   'Sync Settings',
-            //   style: TextStyle(
-            //     fontSize: 20,
-            //     fontWeight: FontWeight.bold,
-            //   ),
-            // ),
-            // const SizedBox(height: 16),
-
-            // _buildSyncOption(
-            //   title: 'Auto Sync',
-            //   subtitle: 'Automatically sync progress between accounts',
-            //   value: true,
-            //   onChanged: (value) {
-            //     // Handle auto sync toggle
-            //   },
-            // ),
-
-            // _buildSyncOption(
-            //   title: 'Sync on Wi-Fi only',
-            //   subtitle: 'Only sync when connected to Wi-Fi',
-            //   value: false,
-            //   onChanged: (value) {
-            //     // Handle wifi sync toggle
-            //   },
-            // ),
+            Text("Manage your sync services",
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.7),
+                    )),
+            const SizedBox(height: 16),
+            const AccountAuthenticationSection(),
+            // ... Future settings can be added here
           ],
         ),
       ),

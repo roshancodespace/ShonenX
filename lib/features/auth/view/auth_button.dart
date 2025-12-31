@@ -91,9 +91,10 @@ class AccountAuthenticationSection extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
+        color: theme.cardColor,
         borderRadius: BorderRadius.vertical(
-          top: isFirst ? const Radius.circular(16.0) : Radius.zero,
-          bottom: isLast ? const Radius.circular(16.0) : Radius.zero,
+          top: isFirst ? const Radius.circular(24.0) : Radius.zero,
+          bottom: isLast ? const Radius.circular(24.0) : Radius.zero,
         ),
       ),
       child: Material(
@@ -101,40 +102,40 @@ class AccountAuthenticationSection extends ConsumerWidget {
         child: InkWell(
           onTap: () => notifier.changePlatform(platform),
           borderRadius: BorderRadius.vertical(
-            top: isFirst ? const Radius.circular(16.0) : Radius.zero,
-            bottom: isLast ? const Radius.circular(16.0) : Radius.zero,
+            top: isFirst ? const Radius.circular(24.0) : Radius.zero,
+            bottom: isLast ? const Radius.circular(24.0) : Radius.zero,
           ),
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.all(24.0),
             child: Row(
               children: [
                 // Logo
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
                     color: primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12.0),
+                    borderRadius: BorderRadius.circular(16.0),
                     border: isActive
                         ? Border.all(color: primaryColor, width: 2)
                         : null,
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12.0),
+                    borderRadius: BorderRadius.circular(16.0),
                     child: Image.network(
                       logoUrl,
-                      width: 48,
-                      height: 48,
+                      width: 56,
+                      height: 56,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Icon(
                           Icons.image_not_supported_rounded,
                           color: primaryColor,
-                          size: 24),
+                          size: 28),
                     ),
                   ),
                 ),
 
-                const SizedBox(width: 16),
+                const SizedBox(width: 20),
 
                 // Info
                 Expanded(
@@ -146,52 +147,53 @@ class AccountAuthenticationSection extends ConsumerWidget {
                           Text(
                             serviceName,
                             style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: theme.textTheme.bodyLarge?.color,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
                             ),
                           ),
                           if (isActive) ...[
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: primaryColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4.0),
-                                border: Border.all(
-                                    color: primaryColor.withOpacity(0.3),
-                                    width: 1),
+                                color: primaryColor.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8.0),
                               ),
                               child: Text(
                                 'ACTIVE',
-                                style: theme.textTheme.bodySmall?.copyWith(
+                                style: theme.textTheme.labelSmall?.copyWith(
                                   color: primaryColor,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ),
                           ],
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       if (isAuthenticated && user != null)
                         Row(
                           children: [
                             Container(
-                              width: 6,
-                              height: 6,
+                              width: 8,
+                              height: 8,
                               decoration: const BoxDecoration(
-                                color: Colors.green,
+                                color: Color(0xFF4CAF50),
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'Connected as ${user.name}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.green.shade700,
-                                fontWeight: FontWeight.w500,
+                            Expanded(
+                              child: Text(
+                                'Connected as ${user.name}',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.8),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -199,14 +201,16 @@ class AccountAuthenticationSection extends ConsumerWidget {
                       else
                         Text(
                           description,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.textTheme.bodyLarge?.color
-                                ?.withOpacity(0.7),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.textTheme.bodyMedium?.color
+                                ?.withOpacity(0.6),
                           ),
                         ),
                     ],
                   ),
                 ),
+
+                const SizedBox(width: 12),
 
                 // Action
                 if (isLoading)
@@ -214,73 +218,37 @@ class AccountAuthenticationSection extends ConsumerWidget {
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2,
+                      strokeWidth: 2.5,
                       valueColor: AlwaysStoppedAnimation(primaryColor),
                     ),
                   )
                 else if (isAuthenticated)
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      switch (value) {
-                        case 'logout':
-                          _showLogoutDialog(context, serviceName,
-                              () => notifier.logout(platform));
-                          break;
-                        case 'set_active':
-                          notifier.changePlatform(platform);
-                          break;
-                      }
-                    },
-                    itemBuilder: (_) => [
-                      if (!isActive)
-                        PopupMenuItem(
-                          value: 'set_active',
-                          child: Row(
-                            children: [
-                              Icon(Icons.radio_button_checked,
-                                  color: primaryColor, size: 18),
-                              const SizedBox(width: 8),
-                              const Text('Set as Active'),
-                            ],
-                          ),
-                        ),
-                      PopupMenuItem(
-                        value: 'logout',
-                        child: Row(
-                          children: [
-                            Icon(Icons.logout_rounded,
-                                color: theme.colorScheme.errorContainer,
-                                size: 18),
-                            const SizedBox(width: 8),
-                            const Text('Disconnect'),
-                          ],
-                        ),
-                      ),
-                    ],
-                    child: Container(
-                      padding: const EdgeInsets.all(8.0),
-                      decoration: BoxDecoration(
-                        color: theme.dividerColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                      child: Icon(Icons.more_vert_rounded,
-                          size: 18, color: theme.iconTheme.color),
-                    ),
-                  )
+                  IconButton.filledTonal(
+                      onPressed: () {
+                        // Simplify popup to just logout for now, or keep existing logic
+                        _showLogoutDialog(context, serviceName,
+                            () => notifier.logout(platform));
+                      },
+                      icon: Icon(Icons.logout_rounded,
+                          color: theme.colorScheme.error),
+                      style: IconButton.styleFrom(
+                        backgroundColor:
+                            theme.colorScheme.error.withOpacity(0.1),
+                      ))
                 else
-                  ElevatedButton.icon(
+                  ElevatedButton(
                     onPressed: () => notifier.login(platform),
-                    icon: const Icon(Icons.link_rounded, size: 16),
-                    label: const Text('Connect'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0)),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                          horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.0)),
                     ),
+                    child: const Text('Connect',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
               ],
             ),

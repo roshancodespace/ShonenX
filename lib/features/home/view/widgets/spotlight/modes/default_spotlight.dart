@@ -104,7 +104,8 @@ class DefaultSpotlight extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '${anime!.averageScore}% Match',
+                                ((anime!.averageScore ?? 0) / 10)
+                                    .toStringAsFixed(1),
                                 style: theme.textTheme.labelMedium?.copyWith(
                                   color: colorScheme.onPrimaryContainer,
                                   fontWeight: FontWeight.bold,
@@ -146,22 +147,21 @@ class DefaultSpotlight extends StatelessWidget {
                       ],
 
                       // Meta Tags Row
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           _SpotlightTag(
                             icon: Iconsax.video_play,
                             label: '${anime?.episodes ?? "?"} Episodes',
                             colorScheme: colorScheme,
                           ),
-                          if (anime?.duration != null) ...[
-                            const SizedBox(width: 8),
+                          if (anime?.duration != null)
                             _SpotlightTag(
                               icon: Iconsax.timer_1,
                               label: '${anime!.duration} min',
                               colorScheme: colorScheme,
                             ),
-                          ],
-                          const SizedBox(width: 8),
                           _SpotlightTag(
                             icon: Iconsax.calendar_1,
                             label: anime?.seasonYear?.toString() ??

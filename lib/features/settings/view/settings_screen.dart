@@ -54,6 +54,14 @@ class SettingsScreen extends ConsumerWidget {
                       description: 'Manage anime content providers',
                       onTap: () => context.push('/settings/anime-sources'),
                     ),
+                    NormalSettingsItem(
+                      icon: Icon(Iconsax.document_download,
+                          color: colorScheme.primary),
+                      accent: colorScheme.primary,
+                      title: 'Download Settings',
+                      description: 'Manage download paths and behavior',
+                      onTap: () => context.push('/settings/downloads'),
+                    ),
                     if (experimental.useMangayomiExtensions)
                       NormalSettingsItem(
                         icon: Icon(Icons.extension_outlined,

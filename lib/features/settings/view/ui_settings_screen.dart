@@ -50,6 +50,38 @@ class UiSettingsScreen extends ConsumerWidget {
                       onTap: () => _showCardStyleDialog(context, ref,
                           isSpotlightCard: true),
                     ),
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final currentMode = ref.watch(uiSettingsProvider
+                            .select((ui) => ui.episodeViewMode));
+                        return DropdownSettingsItem(
+                          icon: Icon(Iconsax.task, color: colorScheme.primary),
+                          accent: colorScheme.primary,
+                          title: 'Episode View Mode',
+                          description: 'Choose how episodes are displayed',
+                          value: currentMode,
+                          items: const [
+                            DropdownMenuItem(
+                                value: 'list', child: Text('List')),
+                            DropdownMenuItem(
+                                value: 'compact', child: Text('Compact')),
+                            DropdownMenuItem(
+                                value: 'grid', child: Text('Grid')),
+                            DropdownMenuItem(
+                                value: 'block', child: Text('Block')),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              ref
+                                  .read(uiSettingsProvider.notifier)
+                                  .updateSettings(
+                                    (s) => s.copyWith(episodeViewMode: value),
+                                  );
+                            }
+                          },
+                        );
+                      },
+                    ),
                   ]),
             ],
           ),

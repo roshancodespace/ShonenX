@@ -45,6 +45,7 @@ class DownloadItem {
   final int? totalSegments;
 
   bool get isM3U8 =>
+      contentType == 'video/MP2T' ||
       contentType == 'application/vnd.apple.mpegurl' ||
       contentType == 'application/x-mpegurl' ||
       downloadUrl.contains('.m3u8');

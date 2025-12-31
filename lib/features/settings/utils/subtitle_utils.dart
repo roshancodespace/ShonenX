@@ -18,12 +18,21 @@ class SubtitleUtils {
     'Ubuntu',
   ];
 
-  static TextStyle getSubtitleTextStyle(SubtitleAppearanceModel style) {
+  static TextStyle getSubtitleTextStyle(SubtitleAppearanceModel style,
+      {bool stroke = false}) {
     TextStyle baseStyle = TextStyle(
       fontSize: style.fontSize,
       fontWeight: style.boldText ? FontWeight.bold : FontWeight.normal,
-      color: Color(style.textColor),
-      shadows: style.hasShadow
+      color: stroke ? null : Color(style.textColor),
+      foreground: stroke
+          ? (Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = style.outlineWidth
+            ..strokeCap = StrokeCap.round
+            ..strokeJoin = StrokeJoin.round
+            ..color = Color(style.outlineColor))
+          : null,
+      shadows: !stroke && style.hasShadow
           ? [
               Shadow(
                 color: Colors.black.withOpacity(style.shadowOpacity),

@@ -12,13 +12,18 @@ class SubtitleOverlay extends ConsumerWidget {
     final subtitleStyle = ref.watch(subtitleAppearanceProvider);
     final subtitleText =
         ref.watch(playerStateProvider.select((s) => s.subtitle.firstOrNull));
-
+    final margin = subtitleStyle.bottomMargin;
     if (subtitleText == null || subtitleText.isEmpty) {
       return const SizedBox.shrink();
     }
 
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: EdgeInsets.only(
+        left: 8.0,
+        right: 8.0,
+        bottom: subtitleStyle.position == 1 ? margin : 10.0,
+        top: subtitleStyle.position == 3 ? margin : 10.0,
+      ),
       child: Align(
         alignment: subtitleStyle.position == 1
             ? Alignment.bottomCenter
@@ -26,17 +31,30 @@ class SubtitleOverlay extends ConsumerWidget {
                 ? Alignment.center
                 : Alignment.topCenter,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(subtitleStyle.backgroundOpacity),
+            color: Color(subtitleStyle.backgroundColor)
+                .withOpacity(subtitleStyle.backgroundOpacity),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(
-            subtitleStyle.forceUppercase
-                ? subtitleText.toUpperCase()
-                : subtitleText,
-            textAlign: TextAlign.center,
-            style: SubtitleUtils.getSubtitleTextStyle(subtitleStyle),
+          child: Stack(
+            children: [
+              if (subtitleStyle.outlineWidth > 0)
+                Text(
+                  subtitleStyle.forceUppercase
+                      ? subtitleText.toUpperCase()
+                      : subtitleText,
+                  textAlign: TextAlign.center,
+                  style: SubtitleUtils.getSubtitleTextStyle(subtitleStyle,
+                      stroke: true),
+                ),
+              Text(
+                subtitleStyle.forceUppercase
+                    ? subtitleText.toUpperCase()
+                    : subtitleText,
+                textAlign: TextAlign.center,
+                style: SubtitleUtils.getSubtitleTextStyle(subtitleStyle),
+              ),
+            ],
           ),
         ),
       ),

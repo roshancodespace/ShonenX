@@ -24,6 +24,14 @@ class SubtitleAppearanceModel {
   final bool boldText;
   @HiveField(9, defaultValue: false)
   final bool forceUppercase;
+  @HiveField(10, defaultValue: 20.0)
+  final double bottomMargin;
+  @HiveField(11, defaultValue: 0xFF000000)
+  final int backgroundColor;
+  @HiveField(12, defaultValue: 0xFF000000)
+  final int outlineColor;
+  @HiveField(13, defaultValue: 0.0)
+  final double outlineWidth;
 
   SubtitleAppearanceModel({
     this.fontSize = 16.0,
@@ -36,6 +44,10 @@ class SubtitleAppearanceModel {
     this.position = 1,
     this.boldText = true,
     this.forceUppercase = false,
+    this.bottomMargin = 20.0,
+    this.backgroundColor = 0xFF000000,
+    this.outlineColor = 0xFF000000,
+    this.outlineWidth = 0.0,
   });
 
   SubtitleAppearanceModel copyWith({
@@ -49,6 +61,10 @@ class SubtitleAppearanceModel {
     int? position,
     bool? boldText,
     bool? forceUppercase,
+    double? bottomMargin,
+    int? backgroundColor,
+    int? outlineColor,
+    double? outlineWidth,
   }) {
     return SubtitleAppearanceModel(
       fontSize: fontSize ?? this.fontSize,
@@ -61,6 +77,10 @@ class SubtitleAppearanceModel {
       position: position ?? this.position,
       boldText: boldText ?? this.boldText,
       forceUppercase: forceUppercase ?? this.forceUppercase,
+      bottomMargin: bottomMargin ?? this.bottomMargin,
+      backgroundColor: backgroundColor ?? this.backgroundColor,
+      outlineColor: outlineColor ?? this.outlineColor,
+      outlineWidth: outlineWidth ?? this.outlineWidth,
     );
   }
 }

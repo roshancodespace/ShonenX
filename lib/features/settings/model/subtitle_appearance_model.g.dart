@@ -28,6 +28,10 @@ class SubtitleAppearanceModelAdapter
       position: fields[7] == null ? 1 : fields[7] as int,
       boldText: fields[8] == null ? true : fields[8] as bool,
       forceUppercase: fields[9] == null ? false : fields[9] as bool,
+      bottomMargin: fields[10] == null ? 20.0 : fields[10] as double,
+      backgroundColor: fields[11] == null ? 4294967295 : fields[11] as int,
+      outlineColor: fields[12] == null ? 4294967295 : fields[12] as int,
+      outlineWidth: fields[13] == null ? 0.0 : fields[13] as double,
     );
   }
 
@@ -54,7 +58,15 @@ class SubtitleAppearanceModelAdapter
       ..writeByte(8)
       ..write(obj.boldText)
       ..writeByte(9)
-      ..write(obj.forceUppercase);
+      ..write(obj.forceUppercase)
+      ..writeByte(10)
+      ..write(obj.bottomMargin)
+      ..writeByte(11)
+      ..write(obj.backgroundColor)
+      ..writeByte(12)
+      ..write(obj.outlineColor)
+      ..writeByte(13)
+      ..write(obj.outlineWidth);
   }
 
   @override

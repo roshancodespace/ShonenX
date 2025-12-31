@@ -29,28 +29,24 @@ class CenterControls extends ConsumerWidget {
 
     final playerNotifier = ref.read(playerStateProvider.notifier);
 
-    return GestureDetector(
-      onTap: onInteraction,
-      behavior: HitTestBehavior.translucent,
-      child: Center(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          child: isBuffering
-              ? _LoadingState(
-                  scheme: scheme,
-                  textTheme: textTheme,
-                  sourceLoading: episodeStreamState
-                      .contains(EpisodeStreamState.SOURCE_LOADING),
-                  episodesLoading: episodesLoading,
-                )
-              : _PlayPauseButton(
-                  isPlaying: isPlaying,
-                  onPressed: () {
-                    onInteraction();
-                    playerNotifier.togglePlay();
-                  },
-                ),
-        ),
+    return Center(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: isBuffering
+            ? _LoadingState(
+                scheme: scheme,
+                textTheme: textTheme,
+                sourceLoading: episodeStreamState
+                    .contains(EpisodeStreamState.SOURCE_LOADING),
+                episodesLoading: episodesLoading,
+              )
+            : _PlayPauseButton(
+                isPlaying: isPlaying,
+                onPressed: () {
+                  onInteraction();
+                  playerNotifier.togglePlay();
+                },
+              ),
       ),
     );
   }

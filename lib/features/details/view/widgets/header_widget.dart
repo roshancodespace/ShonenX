@@ -100,7 +100,9 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: CachedNetworkImage(
-                        imageUrl: widget.anime.coverImage?.large ?? '',
+                        imageUrl: widget.anime.coverImage?.large ??
+                            widget.anime.coverImage?.medium ??
+                            '',
                         width: 105,
                         height: 160,
                         fit: BoxFit.cover,

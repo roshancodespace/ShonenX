@@ -209,7 +209,6 @@ class AnimeImage extends StatelessWidget {
                 anime?.coverImage?.large ?? anime?.coverImage?.medium ?? '',
             fit: BoxFit.cover,
             fadeInDuration: const Duration(milliseconds: 300),
-            memCacheHeight: 400,
             placeholder: (_, __) => AnimeCardShimmer(height: height),
             errorWidget: (_, __, ___) => AnimeCardShimmer(height: height),
             filterQuality: FilterQuality.medium,

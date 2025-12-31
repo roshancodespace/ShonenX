@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
@@ -28,13 +29,19 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
     duration: const Duration(milliseconds: 400),
     vsync: this,
   );
+  Timer? _debounce;
 
   // State variables
   List<Media> _results = [];
+  List<Media> _trending = [];
+  List<Media> _popular = [];
+  List<Media> _upcoming = [];
+
   var _currentPage = 1;
   var _isLoading = false;
   var _hasMore = true;
   var _isSearchFocused = false;
+  var _isExploreLoading = true;
 
   @override
   void initState() {
@@ -42,6 +49,8 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
     _animationController.forward();
     if (widget.keyword?.isNotEmpty == true) {
       _search();
+    } else {
+      _fetchExploreData();
     }
   }
 
@@ -56,10 +65,34 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     _animationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchExploreData() async {
+    if (mounted) setState(() => _isExploreLoading = true);
+    try {
+      final results = await Future.wait([
+        _repo.getTrendingAnime(),
+        _repo.getPopularAnime(),
+        _repo.getUpcomingAnime(),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _trending = results[0];
+          _popular = results[1];
+          _upcoming = results[2];
+          _isExploreLoading = false;
+        });
+      }
+    } catch (e, s) {
+      AppLogger.e("Failed to fetch explore data", e, s);
+      if (mounted) setState(() => _isExploreLoading = false);
+    }
   }
 
   Future<void> _fetchResults(String keyword, int page) async {
@@ -88,14 +121,28 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+    if (_results.isNotEmpty &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200) {
       _fetchResults(_searchController.text, ++_currentPage);
     }
   }
 
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _search();
+    });
+  }
+
   Future<void> _search() async {
-    if (_searchController.text.isEmpty) return;
+    if (_searchController.text.isEmpty) {
+      setState(() {
+        _results.clear();
+        _isExploreLoading = false; // Show explore content
+      });
+      return;
+    }
 
     setState(() {
       _currentPage = 1;
@@ -132,17 +179,25 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
             onFocusChange: (focused) =>
                 setState(() => _isSearchFocused = focused),
             isSearchFocused: _isSearchFocused,
+            onSearchChanged: _onSearchChanged,
           ),
           Expanded(
-            child: _results.isEmpty && !_isLoading
-                ? _EmptyState()
-                : _ResultsGrid(
-                    results: _results,
-                    scrollController: _scrollController,
-                    columnCount: _getColumnCount(),
-                    isLoading: _isLoading,
-                    animation: _animationController,
-                  ),
+            child: _searchController.text.isEmpty
+                ? _ExploreView(
+                    trending: _trending,
+                    popular: _popular,
+                    upcoming: _upcoming,
+                    isLoading: _isExploreLoading,
+                  )
+                : _results.isEmpty && !_isLoading
+                    ? _EmptyState()
+                    : _ResultsGrid(
+                        results: _results,
+                        scrollController: _scrollController,
+                        columnCount: _getColumnCount(),
+                        isLoading: _isLoading,
+                        animation: _animationController,
+                      ),
           ),
         ],
       ),
@@ -156,6 +211,7 @@ class _Header extends StatelessWidget {
   final VoidCallback onSearch;
   final ValueChanged<bool> onFocusChange;
   final bool isSearchFocused;
+  final Function(String) onSearchChanged;
 
   const _Header({
     required this.controller,
@@ -163,6 +219,7 @@ class _Header extends StatelessWidget {
     required this.onSearch,
     required this.onFocusChange,
     required this.isSearchFocused,
+    required this.onSearchChanged,
   });
 
   @override
@@ -201,6 +258,7 @@ class _Header extends StatelessWidget {
                     onSearch: onSearch,
                     onFocusChange: onFocusChange,
                     isSearchFocused: isSearchFocused,
+                    onSearchChanged: onSearchChanged,
                   ),
                 ],
               ),
@@ -217,12 +275,14 @@ class _SearchBar extends StatelessWidget {
   final VoidCallback onSearch;
   final ValueChanged<bool> onFocusChange;
   final bool isSearchFocused;
+  final Function(String) onSearchChanged;
 
   const _SearchBar({
     required this.controller,
     required this.onSearch,
     required this.onFocusChange,
     required this.isSearchFocused,
+    required this.onSearchChanged,
   });
 
   @override
@@ -244,6 +304,7 @@ class _SearchBar extends StatelessWidget {
         child: TextField(
           controller: controller,
           onSubmitted: (_) => onSearch(),
+          onChanged: onSearchChanged,
           decoration: InputDecoration(
             hintText: 'Search anime titles...',
             hintStyle: TextStyle(
@@ -258,7 +319,10 @@ class _SearchBar extends StatelessWidget {
             suffixIcon: controller.text.isNotEmpty
                 ? IconButton(
                     icon: const Icon(Icons.clear),
-                    onPressed: () => controller.clear(),
+                    onPressed: () {
+                      controller.clear();
+                      onSearchChanged('');
+                    },
                   )
                 : null,
             border: InputBorder.none,
@@ -330,7 +394,7 @@ class _ResultsGrid extends ConsumerWidget {
                     ...results.map((anime) => AnimatedAnimeCard(
                           onTap: () => navigateToDetail(
                               context, anime, anime.id.toString()),
-                          anime: anime ,
+                          anime: anime,
                           mode: mode,
                           tag: anime.id.toString(),
                         )),
@@ -427,6 +491,99 @@ class _LoadingIndicator extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ExploreView extends StatelessWidget {
+  final List<Media> trending;
+  final List<Media> popular;
+  final List<Media> upcoming;
+  final bool isLoading;
+
+  const _ExploreView({
+    required this.trending,
+    required this.popular,
+    required this.upcoming,
+    required this.isLoading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 100),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _HorizontalSection(title: 'Trending Now', items: trending),
+          _HorizontalSection(title: 'All Time Popular', items: popular),
+          _HorizontalSection(title: 'Upcoming Seasons', items: upcoming),
+        ],
+      ),
+    );
+  }
+}
+
+class _HorizontalSection extends ConsumerWidget {
+  final String title;
+  final List<Media> items;
+
+  const _HorizontalSection({required this.title, required this.items});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    final cardStyle = ref.watch(uiSettingsProvider).cardStyle;
+    final mode = AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              Icon(Iconsax.arrow_right_1,
+                  size: 20, color: Theme.of(context).colorScheme.primary),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 250, // Height for anime cards
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            scrollDirection: Axis.horizontal,
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final anime = items[index];
+              return SizedBox(
+                width: 155, // Fixed width for horizontal items
+                child: AnimatedAnimeCard(
+                  onTap: () =>
+                      navigateToDetail(context, anime, anime.id.toString()),
+                  anime: anime,
+                  mode: mode,
+                  tag: 'explore_${anime.id}',
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 }

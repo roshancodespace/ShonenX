@@ -22,13 +22,15 @@ class ThemeModelAdapter extends TypeAdapter<ThemeModel> {
       flexScheme: fields[2] as String?,
       blendLevel: fields[3] == null ? 11 : fields[3] as int,
       swapColors: fields[4] == null ? false : fields[4] as bool,
+      useMaterial3: fields[5] == null ? true : fields[5] as bool,
+      useDynamicColors: fields[6] == null ? false : fields[6] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, ThemeModel obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.themeMode)
       ..writeByte(1)
@@ -38,7 +40,11 @@ class ThemeModelAdapter extends TypeAdapter<ThemeModel> {
       ..writeByte(3)
       ..write(obj.blendLevel)
       ..writeByte(4)
-      ..write(obj.swapColors);
+      ..write(obj.swapColors)
+      ..writeByte(5)
+      ..write(obj.useMaterial3)
+      ..writeByte(6)
+      ..write(obj.useDynamicColors);
   }
 
   @override

@@ -2,27 +2,29 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+import 'package:desktop_webview_window/desktop_webview_window.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:desktop_webview_window/desktop_webview_window.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:isar/isar.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/app_initializer.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
-import 'package:path/path.dart' as p;
 import 'package:shonenx/shared/providers/router_provider.dart';
 import 'package:shonenx/storage_provider.dart';
 
 late Isar isar;
 WebViewEnvironment? webViewEnvironment;
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 void main(List<String> args) async {
   await dotenv.load(fileName: '.env');
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,34 +76,51 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeSettingsProvider);
 
-    final lightTheme = FlexThemeData.light(
-      swapColors: theme.swapColors,
-      blendLevel: theme.blendLevel,
-      scheme: theme.flexSchemeEnum,
-      textTheme: GoogleFonts.montserratTextTheme(),
-    );
+    return DynamicColorBuilder(
+      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+        final ColorScheme? lightScheme =
+            (theme.useDynamicColors && lightDynamic != null)
+                ? lightDynamic
+                : null;
+        final ColorScheme? darkScheme =
+            (theme.useDynamicColors && darkDynamic != null)
+                ? darkDynamic
+                : null;
 
-    final darkTheme = FlexThemeData.dark(
-      swapColors: theme.swapColors,
-      blendLevel: theme.blendLevel,
-      scheme: theme.flexSchemeEnum,
-      darkIsTrueBlack: theme.amoled,
-      textTheme: GoogleFonts.montserratTextTheme(),
-    );
+        final lightTheme = FlexThemeData.light(
+          colorScheme: lightScheme,
+          swapColors: theme.swapColors,
+          blendLevel: theme.blendLevel,
+          scheme: lightScheme != null ? null : theme.flexSchemeEnum,
+          useMaterial3: theme.useMaterial3,
+          textTheme: GoogleFonts.montserratTextTheme(),
+        );
 
-    final themeMode = theme.themeMode == 'light'
-        ? ThemeMode.light
-        : theme.themeMode == 'dark'
-            ? ThemeMode.dark
-            : ThemeMode.system;
+        final darkTheme = FlexThemeData.dark(
+          colorScheme: darkScheme,
+          swapColors: theme.swapColors,
+          blendLevel: theme.blendLevel,
+          scheme: darkScheme != null ? null : theme.flexSchemeEnum,
+          darkIsTrueBlack: theme.amoled,
+          useMaterial3: theme.useMaterial3,
+          textTheme: GoogleFonts.montserratTextTheme(),
+        );
 
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      routerConfig: routerConfig,
-      theme: lightTheme,
-      darkTheme: darkTheme,
-      themeMode: themeMode,
+        final themeMode = theme.themeMode == 'light'
+            ? ThemeMode.light
+            : theme.themeMode == 'dark'
+                ? ThemeMode.dark
+                : ThemeMode.system;
+
+        return MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          scaffoldMessengerKey: scaffoldMessengerKey,
+          routerConfig: routerConfig,
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          themeMode: themeMode,
+        );
+      },
     );
   }
 }

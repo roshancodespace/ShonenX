@@ -32,7 +32,7 @@ class ContinueSection extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         SizedBox(
-          height: 200,
+          height: 230,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: allProgress.length,
@@ -50,7 +50,11 @@ class ContinueSection extends ConsumerWidget {
                 coverImage: m.CoverImage(
                     large: entry.animeCover, medium: entry.animeCover),
               );
+
+              final colorScheme = theme.colorScheme;
+
               return InkWell(
+                borderRadius: BorderRadius.circular(16),
                 onTap: () {
                   providerAnimeMatchSearch(
                       context: context,
@@ -58,80 +62,150 @@ class ContinueSection extends ConsumerWidget {
                       animeMedia: media,
                       startAt: entry.currentEpisode);
                 },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Thumbnail with aspect ratio and loading state
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        height: 130,
-                        width: 230,
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        child: currentEp?.episodeThumbnail != null
-                            ? currentEp!.episodeThumbnail!.startsWith('http')
-                                ? CachedNetworkImage(
-                                    imageUrl: currentEp.episodeThumbnail!,
-                                    fit: BoxFit.cover,
-                                    errorWidget: (context, error, stackTrace) =>
-                                        Icon(
-                                      Icons.broken_image_outlined,
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  )
-                                : Image.memory(
-                                    base64Decode(currentEp.episodeThumbnail!),
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) => Icon(
-                                      Icons.broken_image_outlined,
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  )
-                            : (entry.animeCover.isNotEmpty
-                                ? Image.network(
-                                    entry.animeCover,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) => Icon(
-                                      Icons.broken_image_outlined,
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  )
-                                : Icon(
-                                    Icons.image_outlined,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  )),
+                child: SizedBox(
+                  width: 280,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Thumbnail Section
+                      Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(16)),
+                            child: AspectRatio(
+                              aspectRatio: 16 / 8.5,
+                              child: currentEp?.episodeThumbnail != null
+                                  ? currentEp!.episodeThumbnail!
+                                          .startsWith('http')
+                                      ? CachedNetworkImage(
+                                          imageUrl: currentEp.episodeThumbnail!,
+                                          fit: BoxFit.cover,
+                                          errorWidget:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                            color: colorScheme
+                                                .surfaceContainerHighest,
+                                            child: Icon(Icons.broken_image,
+                                                color: colorScheme
+                                                    .onSurfaceVariant),
+                                          ),
+                                        )
+                                      : Image.memory(
+                                          base64Decode(
+                                              currentEp.episodeThumbnail!),
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                            color: colorScheme
+                                                .surfaceContainerHighest,
+                                            child: Icon(Icons.broken_image,
+                                                color: colorScheme
+                                                    .onSurfaceVariant),
+                                          ),
+                                        )
+                                  : (entry.animeCover.isNotEmpty
+                                      ? Image.network(
+                                          entry.animeCover,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                            color: colorScheme
+                                                .surfaceContainerHighest,
+                                            child: Icon(Icons.broken_image,
+                                                color: colorScheme
+                                                    .onSurfaceVariant),
+                                          ),
+                                        )
+                                      : Container(
+                                          color: colorScheme
+                                              .surfaceContainerHighest,
+                                          child: Icon(Icons.image,
+                                              color:
+                                                  colorScheme.onSurfaceVariant),
+                                        )),
+                            ),
+                          ),
+                          // Play Icon Overlay
+                          Positioned.fill(
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.5),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: Colors.white.withOpacity(0.5)),
+                                ),
+                                child: const Icon(Iconsax.play,
+                                    color: Colors.white, size: 24),
+                              ),
+                            ),
+                          ),
+                          // Episode Badge
+                          Positioned(
+                            bottom: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.7),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'EP ${currentEp?.episodeNumber ?? entry.currentEpisode}',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
 
-                    // Title
-                    SizedBox(
-                      width: 220,
-                      child: Text(
-                        currentEp?.episodeTitle ?? entry.animeTitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          height: 1.3,
+                      // Info Section
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              entry.animeTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              currentEp?.episodeTitle ?? 'Continue Watching',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Simple Progress Bar Visual
+                            LinearProgressIndicator(
+                              value:
+                                  1.0, // entry.progress / entry.totalDuration if we had it
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  colorScheme.primary),
+                              backgroundColor:
+                                  colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(2),
+                              minHeight: 3,
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-
-                    // Episode number
-                    Text(
-                      'Episode ${currentEp?.episodeNumber ?? '—'}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },

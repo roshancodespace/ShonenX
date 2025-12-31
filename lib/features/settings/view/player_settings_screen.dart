@@ -30,14 +30,46 @@ class PlayerSettingsScreen extends ConsumerWidget {
               title: 'Quality',
               titleColor: colorScheme.primary,
               children: [
-                NormalSettingsItem(
+                DropdownSettingsItem(
                   icon: Icon(Iconsax.video_tick, color: colorScheme.primary),
                   accent: colorScheme.primary,
                   title: 'Video Quality',
-                  description:
-                      'Current: ${playerSettings.defaultQuality}',
-                  onTap: () => _showQualitySettingsDialog(context, ref),
+                  description: 'Current: ${playerSettings.defaultQuality}',
+                  value: playerSettings.defaultQuality,
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'Auto',
+                      child: Text('Auto'),
+                    ),
+                    DropdownMenuItem(
+                      value: '1080p',
+                      child: Text('1080p'),
+                    ),
+                    DropdownMenuItem(
+                      value: '720p',
+                      child: Text('720p'),
+                    ),
+                    DropdownMenuItem(
+                      value: '480p',
+                      child: Text('480p'),
+                    ),
+                    DropdownMenuItem(
+                      value: '360p',
+                      child: Text('360p'),
+                    ),
+                  ],
+                  onChanged: (value) => ref
+                      .read(playerSettingsProvider.notifier)
+                      .updateSettings((prev) => prev.copyWith(
+                            defaultQuality: value!,
+                          )),
                 ),
+              ],
+            ),
+            SettingsSection(
+              title: 'Subtitle',
+              titleColor: colorScheme.primary,
+              children: [
                 NormalSettingsItem(
                   icon: Icon(Iconsax.subtitle, color: colorScheme.primary),
                   accent: colorScheme.primary,
@@ -90,8 +122,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
                 ElevatedButton(
                   onPressed: () {
                     ref.read(playerSettingsProvider.notifier).updateSettings(
-                          (prev) =>
-                              prev.copyWith(defaultQuality: tempQuality),
+                          (prev) => prev.copyWith(defaultQuality: tempQuality),
                         );
                     Navigator.pop(context);
                   },

@@ -26,6 +26,8 @@ class ColorPickerSettingsItem extends BaseSettingsItem {
       0xFF00FF00, // Green
       0xFFFF00FF, // Magenta
       0xFFFF0000, // Red
+      0xFF0000FF, // Blue
+      0xFF000000, // Black
     ],
   }) : super(onTap: null);
 

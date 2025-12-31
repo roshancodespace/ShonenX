@@ -83,6 +83,7 @@ class AccountAuthenticationSection extends ConsumerWidget {
   }) {
     final theme = Theme.of(context);
     final notifier = ref.read(authProvider.notifier);
+    final isSmallScreen = MediaQuery.of(context).size.width < 400;
 
     final isAuthenticated = state.isAuthenticatedFor(platform);
     final isLoading = state.isLoadingFor(platform);
@@ -106,36 +107,38 @@ class AccountAuthenticationSection extends ConsumerWidget {
             bottom: isLast ? const Radius.circular(24.0) : Radius.zero,
           ),
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: EdgeInsets.all(isSmallScreen ? 16.0 : 24.0),
             child: Row(
               children: [
                 // Logo
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: isSmallScreen ? 40 : 56,
+                  height: isSmallScreen ? 40 : 56,
                   decoration: BoxDecoration(
                     color: primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16.0),
+                    borderRadius:
+                        BorderRadius.circular(isSmallScreen ? 12.0 : 16.0),
                     border: isActive
                         ? Border.all(color: primaryColor, width: 2)
                         : null,
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16.0),
+                    borderRadius:
+                        BorderRadius.circular(isSmallScreen ? 12.0 : 16.0),
                     child: Image.network(
                       logoUrl,
-                      width: 56,
-                      height: 56,
+                      width: isSmallScreen ? 40 : 56,
+                      height: isSmallScreen ? 40 : 56,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Icon(
                           Icons.image_not_supported_rounded,
                           color: primaryColor,
-                          size: 28),
+                          size: isSmallScreen ? 20 : 28),
                     ),
                   ),
                 ),
 
-                const SizedBox(width: 20),
+                SizedBox(width: isSmallScreen ? 12 : 20),
 
                 // Info
                 Expanded(
@@ -148,23 +151,26 @@ class AccountAuthenticationSection extends ConsumerWidget {
                             serviceName,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                              fontSize: isSmallScreen ? 16 : 18,
                             ),
                           ),
                           if (isActive) ...[
-                            const SizedBox(width: 8),
+                            SizedBox(width: isSmallScreen ? 6 : 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: isSmallScreen ? 6 : 8,
+                                  vertical: isSmallScreen ? 2 : 4),
                               decoration: BoxDecoration(
                                 color: primaryColor.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(8.0),
+                                borderRadius: BorderRadius.circular(
+                                    isSmallScreen ? 6.0 : 8.0),
                               ),
                               child: Text(
                                 'ACTIVE',
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   color: primaryColor,
                                   fontWeight: FontWeight.w800,
+                                  fontSize: isSmallScreen ? 10 : null,
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -172,19 +178,19 @@ class AccountAuthenticationSection extends ConsumerWidget {
                           ],
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       if (isAuthenticated && user != null)
                         Row(
                           children: [
                             Container(
-                              width: 8,
-                              height: 8,
+                              width: 6,
+                              height: 6,
                               decoration: const BoxDecoration(
                                 color: Color(0xFF4CAF50),
                                 shape: BoxShape.circle,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 'Connected as ${user.name}',
@@ -192,7 +198,9 @@ class AccountAuthenticationSection extends ConsumerWidget {
                                   color: theme.colorScheme.onSurface
                                       .withOpacity(0.8),
                                   fontWeight: FontWeight.w500,
+                                  fontSize: isSmallScreen ? 13 : null,
                                 ),
+                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -204,13 +212,16 @@ class AccountAuthenticationSection extends ConsumerWidget {
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.textTheme.bodyMedium?.color
                                 ?.withOpacity(0.6),
+                            fontSize: isSmallScreen ? 12 : null,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                     ],
                   ),
                 ),
 
-                const SizedBox(width: 12),
+                SizedBox(width: isSmallScreen ? 8 : 12),
 
                 // Action
                 if (isLoading)
@@ -223,15 +234,16 @@ class AccountAuthenticationSection extends ConsumerWidget {
                     ),
                   )
                 else if (isAuthenticated)
-                  IconButton.filledTonal(
+                  IconButton(
                       onPressed: () {
-                        // Simplify popup to just logout for now, or keep existing logic
                         _showLogoutDialog(context, serviceName,
                             () => notifier.logout(platform));
                       },
                       icon: Icon(Icons.logout_rounded,
+                          size: isSmallScreen ? 20 : 24,
                           color: theme.colorScheme.error),
                       style: IconButton.styleFrom(
+                        padding: EdgeInsets.all(isSmallScreen ? 8 : 8),
                         backgroundColor:
                             theme.colorScheme.error.withOpacity(0.1),
                       ))
@@ -242,13 +254,17 @@ class AccountAuthenticationSection extends ConsumerWidget {
                       backgroundColor: primaryColor,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: isSmallScreen ? 12 : 20,
+                          vertical: isSmallScreen ? 8 : 12),
+                      minimumSize: isSmallScreen ? const Size(0, 32) : null,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.0)),
                     ),
-                    child: const Text('Connect',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text('Connect',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: isSmallScreen ? 12 : null)),
                   ),
               ],
             ),

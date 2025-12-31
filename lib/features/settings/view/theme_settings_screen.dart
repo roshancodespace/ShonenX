@@ -109,6 +109,29 @@ class ThemeSettingsScreen extends ConsumerWidget {
                           (prev) => prev.copyWith(swapColors: value));
                     },
                   ),
+                  ToggleableSettingsItem(
+                    icon:
+                        Icon(Iconsax.color_swatch, color: colorScheme.primary),
+                    accent: colorScheme.primary,
+                    title: 'System Colors',
+                    description: 'Use colors from your wallpaper',
+                    value: theme.useDynamicColors,
+                    onChanged: (value) {
+                      themeNotifier.updateSettings(
+                          (prev) => prev.copyWith(useDynamicColors: value));
+                    },
+                  ),
+                  ToggleableSettingsItem(
+                    icon: Icon(Iconsax.magicpen, color: colorScheme.primary),
+                    accent: colorScheme.primary,
+                    title: 'Material 3',
+                    description: 'Use the latest Material 3 design system',
+                    value: theme.useMaterial3,
+                    onChanged: (value) {
+                      themeNotifier.updateSettings(
+                          (prev) => prev.copyWith(useMaterial3: value));
+                    },
+                  ),
                   SliderSettingsItem(
                     icon: Icon(Icons.blender_outlined,
                         color: colorScheme.primary),

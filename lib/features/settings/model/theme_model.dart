@@ -18,6 +18,10 @@ class ThemeModel {
   final int blendLevel;
   @HiveField(4, defaultValue: false)
   final bool swapColors;
+  @HiveField(5, defaultValue: true)
+  final bool useMaterial3;
+  @HiveField(6, defaultValue: false)
+  final bool useDynamicColors;
 
   ThemeModel({
     this.themeMode = 'system',
@@ -25,6 +29,8 @@ class ThemeModel {
     this.flexScheme,
     this.blendLevel = 11,
     this.swapColors = false,
+    this.useMaterial3 = true,
+    this.useDynamicColors = false,
   });
 
   ThemeModel copyWith({
@@ -33,6 +39,8 @@ class ThemeModel {
     String? flexScheme,
     int? blendLevel,
     bool? swapColors,
+    bool? useMaterial3,
+    bool? useDynamicColors,
   }) {
     return ThemeModel(
       themeMode: themeMode ?? this.themeMode,
@@ -40,6 +48,8 @@ class ThemeModel {
       flexScheme: flexScheme ?? this.flexScheme,
       blendLevel: blendLevel ?? this.blendLevel,
       swapColors: swapColors ?? this.swapColors,
+      useMaterial3: useMaterial3 ?? this.useMaterial3,
+      useDynamicColors: useDynamicColors ?? this.useDynamicColors,
     );
   }
 

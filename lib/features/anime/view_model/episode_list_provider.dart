@@ -205,7 +205,7 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
               ),
               title: state.animeTitle!,
               nameSelector: (e) => e.title,
-              idSelector: (e) => e.mal_id.toString(),
+              idSelector: (e) => e.malId.toString(),
             );
 
       if (matches.isEmpty || matches.first.similarity < 0.55) {
@@ -214,7 +214,7 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
 
       state = state.copyWith(jikanMatches: matches);
 
-      final malId = matches.first.result.mal_id;
+      final malId = matches.first.result.malId;
       final jikanEpisodes = await _jikan.getEpisodes(malId, 1);
 
       if (jikanEpisodes.isEmpty) return;

@@ -179,6 +179,7 @@ class MyAnimeListService {
   Future<MediaListEntry?> getAnimeEntry(int animeId) async {
     final url = 'https://api.myanimelist.net/v2/users/@me/animelist/$animeId';
     try {
+      
       final data = await _get(url);
       return MediaListEntry.fromMal(data);
     } catch (e) {

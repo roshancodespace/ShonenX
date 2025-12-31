@@ -1,26 +1,29 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/services/download_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
+import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/downloads/repository/downloads_repository.dart';
+import 'package:shonenx/features/settings/view_model/download_settings_notifier.dart';
+import 'package:shonenx/storage_provider.dart';
+import 'package:path/path.dart' as p;
 
 class DownloadsState {
   final List<DownloadItem> downloads;
-  final bool hasError;
+  final dynamic error;
 
   DownloadsState({
     required this.downloads,
-    required this.hasError,
+    required this.error,
   });
 
   DownloadsState copyWith({
     List<DownloadItem>? downloads,
-    bool? hasError,
+    dynamic error,
   }) {
     return DownloadsState(
       downloads: downloads ?? this.downloads,
-      hasError: hasError ?? this.hasError,
+      error: error ?? this.error,
     );
   }
 }
@@ -28,9 +31,10 @@ class DownloadsState {
 class DownloadNotifier extends StateNotifier<DownloadsState> {
   final DownloadService _service;
   final DownloadsRepository _repository;
+  final Ref ref;
 
-  DownloadNotifier(this._service, this._repository)
-      : super(DownloadsState(downloads: [], hasError: false)) {
+  DownloadNotifier(this._service, this._repository, this.ref)
+      : super(DownloadsState(downloads: [], error: null)) {
     _loadDownloads();
   }
 
@@ -41,34 +45,77 @@ class DownloadNotifier extends StateNotifier<DownloadsState> {
       state = state.copyWith(downloads: downloads);
     } catch (e, st) {
       AppLogger.e("Failed to load downloads", e, st);
-      state = state.copyWith(hasError: true);
+      state = state.copyWith(error: e);
     }
   }
 
-  void addDownload(DownloadItem download) {
+  Future<void> addDownload(DownloadItem download) async {
+    final settings = ref.read(downloadSettingsProvider);
+    String baseDir;
+
+    if (settings.useCustomPath && settings.customDownloadPath != null) {
+      baseDir = settings.customDownloadPath!;
+    } else {
+      final defaultDir = await StorageProvider().getDefaultDirectory();
+      if (defaultDir == null) {
+        AppLogger.w("Cannot store download: No storage directory");
+        return;
+      }
+      baseDir = defaultDir.path;
+    }
+
+    final sanitizedAnime =
+        download.animeTitle.replaceAll(RegExp(r'[\\/:*?"<>|]'), '');
+    final sanitizedEpisode =
+        download.episodeTitle.replaceAll(RegExp(r'[\\/:*?"<>|]'), '');
+
+    String fullFolder;
+    if (settings.folderStructure == 'Anime/Season/Episode') {
+      fullFolder = p.join(baseDir, sanitizedAnime, sanitizedEpisode);
+    } else if (settings.folderStructure == 'Anime/Episode') {
+      fullFolder = p.join(baseDir, sanitizedAnime, sanitizedEpisode);
+    } else if (settings.folderStructure == 'Anime') {
+      fullFolder = p.join(baseDir, sanitizedAnime);
+    } else {
+      fullFolder = baseDir;
+    }
+
+    final fileName = p.basename(download.filePath);
+    final finalPath = p.join(fullFolder, fileName);
+
+    final finalDownload = download.copyWith(filePath: finalPath);
+
+    if (state.downloads.any((d) => d.filePath == finalDownload.filePath)) {
+      AppLogger.w("Download already exists: ${finalDownload.episodeTitle}");
+      return;
+    }
+
     state = state.copyWith(
-      downloads: [...state.downloads, download],
+      downloads: [...state.downloads, finalDownload],
     );
-    _repository.saveDownload(download);
-    _service.downloadFile(download);
+    _repository.saveDownload(finalDownload).then((_) {
+      _service.startDownload(finalDownload);
+    }).onError((error, stackTrace) {
+      setError(error);
+    });
   }
 
   void pauseDownload(DownloadItem item) {
-    final updatedItem = item.copyWith(state: DownloadStatus.paused);
-    updateProgress(updatedItem);
-    _service.pauseDownload(updatedItem);
+    _service.pauseDownload(item);
   }
 
   void resumeDownload(DownloadItem item) {
-    final updatedItem = item.copyWith(state: DownloadStatus.downloading);
-    updateProgress(updatedItem);
-    _service.resumeDownload(updatedItem);
+    updateDownloadState(item.copyWith(state: DownloadStatus.downloading));
+    _service.resumeDownload(item);
   }
 
   void deleteDownload(DownloadItem item) {
-    _service.deleteDownload(item);
-    _repository.deleteDownload(item.filePath);
-    removeDownload(item);
+    _service.deleteDownload(item).then((_) {
+      _repository.deleteDownload(item.filePath);
+      removeDownload(item);
+    }).onError((error, stackTrace) {
+      setError(error);
+    });
   }
 
   void removeDownload(DownloadItem item) {
@@ -78,12 +125,9 @@ class DownloadNotifier extends StateNotifier<DownloadsState> {
     );
   }
 
-  void updateProgress(DownloadItem item) {
-    if (item.state == DownloadStatus.paused ||
-        item.state == DownloadStatus.downloaded ||
-        item.state == DownloadStatus.error) {
-      AppLogger.w(item.toString());
-    }
+  void updateDownloadState(DownloadItem item) {
+    AppLogger.d(
+        'State update: ${item.episodeTitle} -> ${item.state} (progress: ${item.progress}/${item.totalSegments ?? item.size})');
     state = state.copyWith(
       downloads: state.downloads
           .map((d) => d.filePath == item.filePath ? item : d)
@@ -92,8 +136,8 @@ class DownloadNotifier extends StateNotifier<DownloadsState> {
     _repository.saveDownload(item);
   }
 
-  void setError(bool error) {
-    state = state.copyWith(hasError: error);
+  void setError(dynamic error) {
+    state = state.copyWith(error: error);
   }
 
   void clearDownloads() {
@@ -104,5 +148,5 @@ class DownloadNotifier extends StateNotifier<DownloadsState> {
 
 final downloadsProvider =
     StateNotifierProvider<DownloadNotifier, DownloadsState>((ref) {
-  return DownloadNotifier(DownloadService(ref), DownloadsRepository());
+  return DownloadNotifier(DownloadService(ref), DownloadsRepository(), ref);
 });

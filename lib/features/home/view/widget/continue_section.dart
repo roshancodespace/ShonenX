@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -68,15 +69,25 @@ class ContinueSection extends ConsumerWidget {
                         width: 230,
                         color: theme.colorScheme.surfaceContainerHighest,
                         child: currentEp?.episodeThumbnail != null
-                            ? Image.memory(
-                                base64Decode(currentEp!.episodeThumbnail!),
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Icon(
-                                  Icons.broken_image_outlined,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              )
+                            ? currentEp!.episodeThumbnail!.startsWith('http')
+                                ? CachedNetworkImage(
+                                    imageUrl: currentEp.episodeThumbnail!,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (context, error, stackTrace) =>
+                                        Icon(
+                                      Icons.broken_image_outlined,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  )
+                                : Image.memory(
+                                    base64Decode(currentEp.episodeThumbnail!),
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) => Icon(
+                                      Icons.broken_image_outlined,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  )
                             : (entry.animeCover.isNotEmpty
                                 ? Image.network(
                                     entry.animeCover,

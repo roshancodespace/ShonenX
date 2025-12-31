@@ -12,7 +12,7 @@ import 'package:shonenx/core/sources/anime/anime_provider.dart';
 class AnimePaheProvider extends AnimeProvider {
   static const String _userAgent =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36';
-  
+
   final Map<String, String> _sourceHeaders = {
     'Cookie': '__ddg1=;__ddg2_=',
     'Referer': 'https://animepahe.si/',
@@ -128,9 +128,9 @@ class AnimePaheProvider extends AnimeProvider {
         isFiller: isFiller,
       ));
     }
-
+    episodes.sort((a, b) => a.number!.compareTo(b.number!));
     return BaseEpisodeModel(
-      episodes: episodes.reversed.toList(),
+      episodes: episodes,
       totalEpisodes: episodes.length,
     );
   }
@@ -220,7 +220,8 @@ class AnimePaheProvider extends AnimeProvider {
 
   // --- Kwik Decryption Logic ---
 
-  final _map = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/";
+  final _map =
+      "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/";
 
   int _getString(List<String> content, int s1) {
     final s2 = 10;
@@ -267,29 +268,29 @@ class AnimePaheProvider extends AnimeProvider {
 
     final resp = await http.get(Uri.parse(downloadLink), headers: headers);
     final scripts = html.parse(resp.body).querySelectorAll('script');
-    
+
     String? kwikLink;
     for (var e in scripts) {
       if (kwikLink != null) break;
       if (e.text.isNotEmpty) {
         final matches = redirectRegex.allMatches(e.innerHtml).toList();
         if (matches.isNotEmpty) {
-           // Often the real link is in the last match if there are multiple
-           final candidate = matches.last.group(1);
-           if (candidate != null && candidate.contains('http')) {
-             kwikLink = candidate;
-           }
+          // Often the real link is in the last match if there are multiple
+          final candidate = matches.last.group(1);
+          if (candidate != null && candidate.contains('http')) {
+            kwikLink = candidate;
+          }
         }
       }
     }
-    
+
     if (kwikLink == null) throw Exception("Couldnt extract kwik link");
 
     final kwikRes = await http.get(Uri.parse(kwikLink), headers: {
       'referer': downloadLink,
       'User-Agent': _userAgent,
     });
-    
+
     String cookieHeader = "";
     if (kwikRes.headers['set-cookie'] != null) {
       cookieHeader = kwikRes.headers['set-cookie']!;
@@ -297,14 +298,14 @@ class AnimePaheProvider extends AnimeProvider {
 
     final match = paramRegex.firstMatch(kwikRes.body);
     if (match == null) throw Exception("Couldnt extract download params");
-    
+
     final fullKey = match.group(1)!;
     final key = match.group(2)!;
     final v1 = int.parse(match.group(3)!);
     final v2 = int.parse(match.group(4)!);
 
     final decrypted = _decrypt(fullKey, key, v1, v2);
-    
+
     final postUrlMatch = urlRegex.firstMatch(decrypted);
     final tokenMatch = tokenRegex.firstMatch(decrypted);
 
@@ -320,13 +321,14 @@ class AnimePaheProvider extends AnimeProvider {
         Uri.parse(postUrl),
         body: {'_token': token},
         headers: {
-          'referer': kwikLink, 
+          'referer': kwikLink,
           'cookie': cookieHeader,
           'User-Agent': _userAgent
         },
       );
       final mp4Url = r2.headers['location'];
-      if (mp4Url == null) throw Exception("Couldnt extract media link location");
+      if (mp4Url == null)
+        throw Exception("Couldnt extract media link location");
       return mp4Url;
     } catch (err) {
       rethrow;

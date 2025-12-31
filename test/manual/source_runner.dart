@@ -4,12 +4,13 @@ import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/utils/extractors.dart' as extractor;
 
 // --- CONFIGURATION ---
 // ignore: prefer_const_declarations
 final String targetProvider = 'gojo';
 // ignore: prefer_const_declarations
-final String searchQuery = 'one piece';
+final String searchQuery = 'attack on titan';
 // ---------------------
 
 void main() {
@@ -26,7 +27,7 @@ void main() {
     }
 
     // 2. Initialize Registry
-    final registry = AnimeSourceRegistry().initialize();
+    final registry = AnimeSourceRegistry();
     AppLogger.infoPair('Available Providers', registry.keys.join(', '));
     AppLogger.infoPair('Target Provider', targetProvider);
 
@@ -107,7 +108,7 @@ void main() {
               : allServers
                   .map(
                       (s) => '${s.id} (${s.name}) - ${s.isDub ? 'Dub' : 'Sub'}')
-                  .join(', '),
+                  .join(' | '),
         );
       } catch (e) {
         AppLogger.raw(
@@ -148,6 +149,9 @@ void main() {
           }
         }
 
+        await extractor.extractQualities(sourcesResult.sources.first.url!,
+            sourcesResult.headers.cast<String, String>());
+
         // 7. Verify Streams
         AppLogger.section('STEP 5: VERIFYING STREAMS (HEALTH CHECK)');
         AppLogger.infoPair('Testing connection to',
@@ -165,7 +169,7 @@ void main() {
             final response = await http.get(uri, headers: {
               ...headers,
               'Range': 'bytes=0-1024', // Request first 1KB
-            }).timeout(const Duration(seconds: 10));
+            }).timeout(const Duration(seconds: 20));
 
             if (response.statusCode >= 200 && response.statusCode < 300) {
               AppLogger.success('Connection OK (Sub-300)');

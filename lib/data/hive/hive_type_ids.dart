@@ -12,4 +12,5 @@ class HiveTypeIds {
   static const experimental = 11;
   static const downloads = 12;
   static const downloadStatus = 13;
+  static const downloadSettings = 14;
 }

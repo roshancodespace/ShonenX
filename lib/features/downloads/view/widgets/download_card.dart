@@ -17,281 +17,280 @@ class DownloadCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final downloadNotifier = ref.read(downloadsProvider.notifier);
+
     final isDownloading = item.state == DownloadStatus.downloading;
     final isPaused = item.state == DownloadStatus.paused;
     final isCompleted = item.state == DownloadStatus.downloaded;
     final isFailed = item.state == DownloadStatus.failed;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainer,
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-        ),
+        side: BorderSide(
+            color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
       ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              // Thumbnail
-              ClipRRect(
-                borderRadius:
-                    const BorderRadius.horizontal(left: Radius.circular(12)),
-                child: SizedBox(
-                  width: 100,
-                  height: 100,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      CachedNetworkImage(
-                        imageUrl: item.thumbnail,
-                        fit: BoxFit.cover,
-                        errorWidget: (context, url, error) => Container(
-                          color: theme.colorScheme.surfaceContainerHigh,
-                          child: const Icon(Iconsax.image),
-                        ),
-                      ),
-                      if (isCompleted)
-                        Center(
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.6),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Iconsax.play,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                          ),
-                        ),
-                    ],
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: isCompleted
+            ? () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => LocalPlayerScreen(
+                      filePath: item.filePath,
+                      title: '${item.animeTitle} - ${item.episodeTitle}',
+                    ),
                   ),
+                )
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              _buildThumbnail(theme, isCompleted),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildInfoSection(
+                  theme,
+                  isDownloading,
+                  isPaused,
+                  isCompleted,
+                  isFailed,
                 ),
               ),
-              // Info
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.animeTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.episodeTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      if (isDownloading || isPaused) ...[
-                        LinearProgressIndicator(
-                          value: item.size != null && item.size! > 0
-                              ? (item.progress / item.size!).clamp(0.0, 1.0)
-                              : 0,
-                          backgroundColor:
-                              theme.colorScheme.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Status / Percentage
-                            if (item.size != null &&
-                                item.progress >= item.size! &&
-                                isDownloading)
-                              Text(
-                                'Merging...',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              )
-                            else
-                              Text(
-                                '${((item.progress / (item.size ?? 1)) * 100).clamp(0, 100).toStringAsFixed(0)}%',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-
-                            // Details (Size | Speed | ETA)
-                            if (isDownloading &&
-                                item.size != null &&
-                                item.progress < item.size!)
-                              Row(
-                                children: [
-                                  Text(
-                                    '${(item.progress / 1024 / 1024).toStringAsFixed(1)} / ${(item.size! / 1024 / 1024).toStringAsFixed(1)} MB',
-                                    style: theme.textTheme.bodySmall
-                                        ?.copyWith(fontSize: 10),
-                                  ),
-                                  if (item.speed > 0) ...[
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      '•  ${(item.speed / 1024 / 1024).toStringAsFixed(1)} MB/s',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(fontSize: 10),
-                                    ),
-                                  ],
-                                  if (item.eta != null) ...[
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      '•  ${formatDuration(item.eta!)}',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(fontSize: 10),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                          ],
-                        ),
-                      ] else if (isCompleted) ...[
-                        Row(
-                          children: [
-                            Icon(
-                              Iconsax.tick_circle,
-                              size: 16,
-                              color: theme.colorScheme.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Downloaded',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                            const Spacer(),
-                            if (item.size != null)
-                              Text(
-                                '${(item.size! / 1024 / 1024).toStringAsFixed(1)} MB',
-                                style: theme.textTheme.bodySmall,
-                              ),
-                          ],
-                        ),
-                      ] else if (isFailed) ...[
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.error,
-                              size: 16,
-                              color: theme.colorScheme.error,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Failed',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.error,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+              _buildActionButtons(
+                theme,
+                downloadNotifier,
+                isDownloading,
+                isPaused,
+                isCompleted,
+                isFailed,
               ),
             ],
           ),
-          // Actions
-          if (!isCompleted)
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-                  ),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  if (isDownloading)
-                    TextButton.icon(
-                      onPressed: () {
-                        downloadNotifier.pauseDownload(item);
-                      },
-                      icon: const Icon(Iconsax.pause, size: 18),
-                      label: const Text('Pause'),
-                    ),
-                  if (isPaused || isFailed)
-                    TextButton.icon(
-                      onPressed: () {
-                        downloadNotifier.resumeDownload(item);
-                      },
-                      icon: const Icon(Iconsax.play, size: 18),
-                      label: const Text('Resume'),
-                    ),
-                  TextButton.icon(
-                    onPressed: () {
-                      downloadNotifier.deleteDownload(item);
-                    },
-                    icon: Icon(Iconsax.trash,
-                        size: 18, color: theme.colorScheme.error),
-                    label: Text(
-                      'Delete',
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (isCompleted)
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-                  ),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => LocalPlayerScreen(
-                            filePath: item.filePath,
-                            title: '${item.animeTitle} - ${item.episodeTitle}',
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Iconsax.play, size: 18),
-                    label: const Text('Play'),
-                  ),
-                  TextButton.icon(
-                    onPressed: () {
-                      ref.read(downloadsProvider.notifier).deleteDownload(item);
-                    },
-                    icon: Icon(Iconsax.trash,
-                        size: 18, color: theme.colorScheme.error),
-                    label: Text(
-                      'Delete',
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildThumbnail(ThemeData theme, bool isCompleted) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: CachedNetworkImage(
+            imageUrl: item.thumbnail,
+            height: 64,
+            width: 64,
+            fit: BoxFit.cover,
+            placeholder: (_, __) =>
+                Container(color: theme.colorScheme.surfaceContainerHigh),
+            errorWidget: (_, __, ___) => const Icon(Iconsax.image),
+          ),
+        ),
+        if (isCompleted)
+          Container(
+            decoration: const BoxDecoration(
+              color: Colors.black54,
+              shape: BoxShape.circle,
+            ),
+            padding: const EdgeInsets.all(4),
+            child: const Icon(Iconsax.play5, color: Colors.white, size: 20),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildInfoSection(
+    ThemeData theme,
+    bool isDownloading,
+    bool isPaused,
+    bool isCompleted,
+    bool isFailed,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          item.animeTitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          item.episodeTitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 6),
+        if (isCompleted)
+          _buildCompletedStatus(theme)
+        else if (isFailed)
+          _buildFailedStatus(theme)
+        else if (isPaused)
+          _buildPausedStatus(theme)
+        else if (isDownloading)
+          _buildProgressSection(theme),
+      ],
+    );
+  }
+
+  Widget _buildCompletedStatus(ThemeData theme) {
+    final sizeMB = ((item.size ?? 0) / 1024 / 1024).toStringAsFixed(1);
+    return Text(
+      '$sizeMB MB • Downloaded',
+      style: theme.textTheme.labelSmall?.copyWith(
+        color: theme.colorScheme.primary,
+      ),
+    );
+  }
+
+  Widget _buildFailedStatus(ThemeData theme) {
+    return Text(
+      'Download Failed',
+      style: theme.textTheme.labelSmall?.copyWith(
+        color: theme.colorScheme.error,
+      ),
+    );
+  }
+
+  Widget _buildPausedStatus(ThemeData theme) {
+    return Text(
+      'Paused • ${item.getProgressText()}',
+      style: theme.textTheme.labelSmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+
+  Widget _buildProgressSection(ThemeData theme) {
+    final progressValue = item.progressPercentage;
+    final isIndeterminate = !item.hasByteSize && !item.hasSegmentCount;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: LinearProgressIndicator(
+            value: isIndeterminate ? null : progressValue,
+            backgroundColor: theme.colorScheme.surfaceContainerHigh,
+            minHeight: 4,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatusText(theme),
+            ),
+            Text(
+              '${(progressValue * 100).toStringAsFixed(0)}%',
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusText(ThemeData theme) {
+    // Check if we're in stitching phase
+    if (item.hasSegmentCount &&
+        item.progress >= item.totalSegments! &&
+        item.state == DownloadStatus.downloading) {
+      return Text(
+        'Merging segments...',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+    }
+
+    // Show speed and ETA for byte-based downloads
+    if (item.hasByteSize && item.speed > 0) {
+      final speedMB = (item.speed / 1024 / 1024).toStringAsFixed(1);
+      final etaText = item.eta != null ? formatDuration(item.eta!) : '--:--';
+      return Text(
+        '$speedMB MB/s • $etaText',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.secondary,
+          fontSize: 10,
+        ),
+      );
+    }
+
+    // Show progress text for segment-based or unknown
+    return Text(
+      item.getProgressText(),
+      style: theme.textTheme.labelSmall?.copyWith(
+        color: theme.colorScheme.secondary,
+        fontSize: 10,
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(
+    ThemeData theme,
+    DownloadNotifier downloadNotifier,
+    bool isDownloading,
+    bool isPaused,
+    bool isCompleted,
+    bool isFailed,
+  ) {
+    if (isCompleted) {
+      return IconButton(
+        onPressed: () => downloadNotifier.deleteDownload(item),
+        icon: Icon(Iconsax.trash, color: theme.colorScheme.onSurfaceVariant),
+        iconSize: 18,
+        constraints: const BoxConstraints(),
+        padding: const EdgeInsets.all(8),
+        tooltip: 'Delete',
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isDownloading)
+          IconButton(
+            onPressed: () => downloadNotifier.pauseDownload(item),
+            icon: const Icon(Iconsax.pause),
+            iconSize: 20,
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.all(8),
+            tooltip: 'Pause',
+          )
+        else if (isPaused || isFailed)
+          IconButton(
+            onPressed: () => downloadNotifier.resumeDownload(item),
+            icon: const Icon(Iconsax.play),
+            iconSize: 20,
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.all(8),
+            tooltip: 'Resume',
+          ),
+        IconButton(
+          onPressed: () => downloadNotifier.deleteDownload(item),
+          icon: Icon(Iconsax.close_circle, color: theme.colorScheme.error),
+          iconSize: 20,
+          constraints: const BoxConstraints(),
+          padding: const EdgeInsets.all(8),
+          tooltip: 'Cancel',
+        ),
+      ],
     );
   }
 }

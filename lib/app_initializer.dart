@@ -18,6 +18,7 @@ import 'package:shonenx/features/settings/model/player_model.dart';
 import 'package:shonenx/features/settings/model/subtitle_appearance_model.dart';
 import 'package:shonenx/features/settings/model/theme_model.dart';
 import 'package:shonenx/features/settings/model/ui_model.dart';
+import 'package:shonenx/features/settings/model/download_settings_model.dart';
 
 import 'package:window_manager/window_manager.dart';
 
@@ -78,7 +79,8 @@ class AppInitializer {
         ..registerAdapter(EpisodeProgressAdapter())
         ..registerAdapter(ExperimentalFeaturesModelAdapter())
         ..registerAdapter(DownloadItemAdapter())
-        ..registerAdapter(DownloadStatusAdapter());
+        ..registerAdapter(DownloadStatusAdapter())
+        ..registerAdapter(DownloadSettingsModelAdapter());
 
       AppLogger.success('Hive adapters registered');
 
@@ -98,6 +100,7 @@ class AppInitializer {
         Hive.openBox<DownloadItem>('downloads'),
         Hive.openBox('settings'),
         Hive.openBox('onboard'),
+        Hive.openBox<DownloadSettingsModel>('download_settings'),
       ]);
 
       AppLogger.success('Hive boxes opened');

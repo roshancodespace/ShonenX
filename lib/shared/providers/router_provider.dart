@@ -19,6 +19,7 @@ import 'package:shonenx/features/settings/view/subtitle_customization_screen.dar
 import 'package:shonenx/features/settings/view/temporary/demo_screen.dart';
 import 'package:shonenx/features/settings/view/theme_settings_screen.dart';
 import 'package:shonenx/features/settings/view/ui_settings_screen.dart';
+import 'package:shonenx/features/settings/view/download_settings_screen.dart';
 import 'package:shonenx/router/router.dart';
 import 'package:shonenx/features/onboarding/view/onboarding_screen.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -113,6 +114,10 @@ GoRoute _buildSettingsRoute() {
       GoRoute(
         path: 'anime-sources',
         builder: (context, state) => const AnimeSourcesSettingsScreen(),
+      ),
+      GoRoute(
+        path: 'downloads',
+        builder: (context, state) => const DownloadSettingsScreen(),
       ),
       GoRoute(
         path: 'theme',

@@ -7,6 +7,7 @@ import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/features/details/view_model/details_provider.dart';
 import 'package:shonenx/features/details/view/widgets/episodes_tab.dart';
+import 'package:shonenx/features/details/view/widgets/characters_tab.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
 import 'widgets/widgets.dart';
@@ -128,11 +129,10 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
                   displayedAnime.coverImage?.medium ??
                   '',
             ),
-            const SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 100),
-              child: Center(
-                child: Text('Characters coming soon...'),
-              ),
+            // Characters Tab
+            CharactersTab(
+              characters: displayedAnime.characters,
+              isLoading: isLoading,
             ),
           ],
         ),

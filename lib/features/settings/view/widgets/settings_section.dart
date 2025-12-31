@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 
-
 enum SettingsSectionLayout {
   list,
   grid,
@@ -64,7 +63,7 @@ class SettingsSection extends StatelessWidget {
       case SettingsSectionLayout.grid:
         return _buildGridLayout();
       case SettingsSectionLayout.list:
-      return _buildListLayout();
+        return _buildListLayout();
     }
   }
 
@@ -206,7 +205,7 @@ class SettingsSection extends StatelessWidget {
           children: child.children,
           onValueChanged: (int value) => child.onValueChanged(value),
           labels: child.labels,
-          isCompact: isInGrid, 
+          isCompact: isInGrid,
         );
       }
     }

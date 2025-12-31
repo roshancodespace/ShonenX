@@ -53,8 +53,8 @@ class ThemeSettingsScreen extends ConsumerWidget {
                           : index == 1
                               ? 'light'
                               : 'dark';
-                      themeNotifier
-                          .updateSettings((prev) => prev.copyWith(themeMode: newMode));
+                      themeNotifier.updateSettings(
+                          (prev) => prev.copyWith(themeMode: newMode));
                     },
                     children: const {
                       0: Icon(Iconsax.monitor),
@@ -76,7 +76,8 @@ class ThemeSettingsScreen extends ConsumerWidget {
                 titleColor: colorScheme.primary,
                 children: [
                   NormalSettingsItem(
-                    icon: Icon(Iconsax.colors_square, color: colorScheme.primary),
+                    icon:
+                        Icon(Iconsax.colors_square, color: colorScheme.primary),
                     accent: colorScheme.primary,
                     title: 'Color Scheme',
                     description: _formatSchemeName(theme.flexScheme ?? ''),
@@ -93,8 +94,8 @@ class ThemeSettingsScreen extends ConsumerWidget {
                       description: 'Use pure black for dark backgrounds',
                       value: theme.amoled,
                       onChanged: (value) {
-                        themeNotifier
-                            .updateSettings((prev) => prev.copyWith(amoled: value));
+                        themeNotifier.updateSettings(
+                            (prev) => prev.copyWith(amoled: value));
                       },
                     ),
                   ToggleableSettingsItem(
@@ -109,8 +110,8 @@ class ThemeSettingsScreen extends ConsumerWidget {
                     },
                   ),
                   SliderSettingsItem(
-                    icon:
-                        Icon(Icons.blender_outlined, color: colorScheme.primary),
+                    icon: Icon(Icons.blender_outlined,
+                        color: colorScheme.primary),
                     accent: colorScheme.primary,
                     value: theme.blendLevel.toDouble(),
                     min: 0,
@@ -132,8 +133,8 @@ class ThemeSettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showColorSchemeSheet(
-      BuildContext context, WidgetRef ref, ThemeSettingsNotifier themeNotifier) {
+  void _showColorSchemeSheet(BuildContext context, WidgetRef ref,
+      ThemeSettingsNotifier themeNotifier) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -160,8 +161,10 @@ class ThemeSettingsScreen extends ConsumerWidget {
                     width: 40,
                     height: 5,
                     decoration: BoxDecoration(
-                      color:
-                          Theme.of(context).colorScheme.outline.withOpacity(0.4),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withOpacity(0.4),
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
@@ -197,8 +200,8 @@ class ThemeSettingsScreen extends ConsumerWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
                         );
                       },
                     ),

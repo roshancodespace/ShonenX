@@ -16,7 +16,7 @@ class HiAnimeProvider extends AnimeProvider {
             apiUrl: customApiUrl != null
                 ? '$customApiUrl/anime/zoro'
                 : "${dotenv.env['API_URL']}/anime/zoro",
-            baseUrl: 'https://hianime.nz',
+            baseUrl: 'https://hianime.to',
             providerName: 'hianime');
 
   @override
@@ -103,6 +103,7 @@ class HiAnimeProvider extends AnimeProvider {
     );
     final data = jsonDecode(response.body);
     final preview = (data['previews'] as List<dynamic>).first;
+    print(data);
     return BaseSourcesModel(
       headers: data['headers'],
       preview: Subtitle(url: preview['url'], lang: preview['type']),

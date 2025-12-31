@@ -36,7 +36,7 @@ class JikanService {
           .map((itemJson) => StreamingEpisode(
               title: _parseJikanTitle(itemJson['title']),
               url: itemJson['url'] ?? '',
-              id: itemJson['mal_id'].toString()))
+              id: itemJson['malId'].toString()))
           .toList();
     } catch (err) {
       throw Exception(err);

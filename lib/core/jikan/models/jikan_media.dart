@@ -2,34 +2,34 @@
 import 'dart:convert';
 
 class JikanMedia {
-  final int mal_id;
+  final int malId;
   final String title;
 
   JikanMedia({
-    required this.mal_id,
+    required this.malId,
     required this.title,
   });
 
   JikanMedia copyWith({
-    int? mal_id,
+    int? malId,
     String? title,
   }) {
     return JikanMedia(
-      mal_id: mal_id ?? this.mal_id,
+      malId: malId ?? this.malId,
       title: title ?? this.title,
     );
   }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'mal_id': mal_id,
+      'malId': malId,
       'title': title,
     };
   }
 
   factory JikanMedia.fromMap(Map<String, dynamic> map) {
     return JikanMedia(
-      mal_id: map['mal_id'] as int,
+      malId: map['malId'] as int,
       title: map['title'] as String,
     );
   }
@@ -40,15 +40,15 @@ class JikanMedia {
       JikanMedia.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
-  String toString() => 'JikanMedia(mal_id: $mal_id, title: $title)';
+  String toString() => 'JikanMedia(malId: $malId, title: $title)';
 
   @override
   bool operator ==(covariant JikanMedia other) {
     if (identical(this, other)) return true;
 
-    return other.mal_id == mal_id && other.title == title;
+    return other.malId == malId && other.title == title;
   }
 
   @override
-  int get hashCode => mal_id.hashCode ^ title.hashCode;
+  int get hashCode => malId.hashCode ^ title.hashCode;
 }

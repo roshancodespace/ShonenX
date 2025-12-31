@@ -40,13 +40,24 @@ class Subtitle {
   String? url;
   String? lang;
   bool? isSub;
+  String? type;
 
-  Subtitle({this.url, this.lang, this.isSub = false});
+  Subtitle({this.url, this.lang, this.isSub = false, this.type});
 
   Subtitle.fromJson(Map<String, dynamic> json) {
     url = json['url'];
     lang = json['lang'];
     isSub = json['isSub'] ?? false;
+    type = json['type'];
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'url': url,
+      'lang': lang,
+      'isSub': isSub,
+      'type': type,
+    };
   }
 }
 

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
@@ -7,12 +8,16 @@ import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
+import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/core/models/anilist/media.dart' as media;
 import 'package:shonenx/features/details/view_model/episodes_tab_notifier.dart';
+import 'package:collection/collection.dart';
+import 'package:shonenx/features/downloads/model/download_status.dart';
+import 'package:shonenx/features/downloads/view_model/downloads_notifier.dart';
 
 class EpisodesTab extends ConsumerStatefulWidget {
   final String mediaId;
@@ -264,6 +269,13 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                         ? (progressSec / duration).clamp(0.0, 1.0)
                         : 0.0;
 
+                    final downloadState = ref.watch(downloadsProvider);
+                    final download = downloadState.downloads.firstWhereOrNull(
+                      (d) =>
+                          d.animeTitle == episodeListState.animeTitle &&
+                          d.episodeNumber == ep.number,
+                    );
+
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4.0),
                       child: Column(
@@ -284,16 +296,61 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                                 color: isWatched ? theme.hintColor : null,
                               ),
                             ),
-                            subtitle: ep.isFiller == true
-                                ? Text(
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (ep.isFiller == true)
+                                  Text(
                                     'FILLER',
                                     style: TextStyle(
                                       color: Colors.orange.shade700,
                                       fontWeight: FontWeight.w500,
                                       fontSize: 12,
                                     ),
-                                  )
-                                : null,
+                                  ),
+                                if (download != null) ...[
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      if (download.state ==
+                                          DownloadStatus.downloading)
+                                        SizedBox(
+                                          width: 12,
+                                          height: 12,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            value: download.progressPercentage,
+                                          ),
+                                        )
+                                      else if (download.state ==
+                                          DownloadStatus.downloaded)
+                                        Icon(Icons.download_done_rounded,
+                                            size: 14,
+                                            color: theme.colorScheme.primary)
+                                      else if (download.state ==
+                                          DownloadStatus.paused)
+                                        Icon(Icons.pause_circle_outline,
+                                            size: 14,
+                                            color: theme.colorScheme.tertiary),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        download.state ==
+                                                DownloadStatus.downloaded
+                                            ? 'Downloaded'
+                                            : download.state ==
+                                                    DownloadStatus.downloading
+                                                ? '${(download.progressPercentage * 100).toStringAsFixed(0)}%'
+                                                : download.state.name,
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                                color: theme.hintColor,
+                                                fontSize: 10),
+                                      ),
+                                    ],
+                                  ),
+                                ]
+                              ],
+                            ),
                             trailing: IconButton(
                               icon: const Icon(Icons.more_vert),
                               tooltip: 'More options',
@@ -570,7 +627,11 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                 ListTile(
                   leading: const Icon(Icons.download_for_offline_outlined),
                   title: const Text('Download'),
-                  onTap: () {},
+                  onTap: () {
+                    ref
+                        .read(episodeDataProvider.notifier)
+                        .downloadEpisode(context, episode.number!);
+                  },
                 ),
                 const SizedBox(height: 8),
               ],
@@ -601,10 +662,10 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                 errorBuilder: (_, __, ___) => _buildFallbackIcon(theme),
               )
             else if (fallbackUrl != null && fallbackUrl.isNotEmpty)
-              Image.network(
-                fallbackUrl,
+              CachedNetworkImage(
+                imageUrl: fallbackUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildFallbackIcon(theme),
+                errorWidget: (_, __, ___) => _buildFallbackIcon(theme),
               )
             else
               _buildFallbackContainer(theme),

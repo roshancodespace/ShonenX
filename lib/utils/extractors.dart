@@ -1,57 +1,120 @@
 import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
+import 'package:shonenx/core/utils/app_logger.dart';
 
 Future<List<Map<String, dynamic>>> extractQualities(
-    String m3u8Url, Map<String, String>? headers) async {
+    String url, Map<String, String>? headers) async {
   try {
-    // 1. Fetch the master playlist
-    final response = await http.get(Uri.parse(m3u8Url), headers: headers);
-    if (response.statusCode != 200) {
-      log('Failed to fetch master M3U8: HTTP ${response.statusCode}');
-      return [];
+    // 1. Try HEAD request first to check Content-Type
+    try {
+      final headResponse =
+          await http.head(Uri.parse(url), headers: headers).timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    http.Response('', 405), // Fallback if HEAD times out
+              );
+
+      if (headResponse.statusCode == 200) {
+        final contentType = headResponse.headers['content-type'] ?? '';
+        final contentLength =
+            int.tryParse(headResponse.headers['content-length'] ?? '0') ?? 0;
+
+        // If it's definitely a video file or very large, return directly
+        if (contentType.startsWith('video/') ||
+            contentType == 'application/octet-stream' ||
+            contentLength > 10 * 1024 * 1024) {
+          // > 10MB
+          return [
+            {'quality': 'Default', 'url': url}
+          ];
+        }
+      }
+    } catch (e) {
+      // Ignore HEAD errors, fall through to GET
     }
 
-    final lines = response.body.split('\n');
-    final List<Map<String, dynamic>> extractedQualities = [];
+    // 2. Perform a Range GET request (first 4KB)
+    final rangeHeaders = Map<String, String>.from(headers ?? {});
+    rangeHeaders['Range'] = 'bytes=0-4095'; // First 4KB
 
-    for (int i = 0; i < lines.length; i++) {
-      if (lines[i].contains('#EXT-X-STREAM-INF')) {
-        // Look for quality (RESOLUTION or NAME)
-        final resolutionMatch =
-            RegExp(r'RESOLUTION=(\d+x\d+)').firstMatch(lines[i]);
-        final nameMatch = RegExp(r'NAME="([^"]+)"').firstMatch(lines[i]);
+    final response = await http.get(Uri.parse(url), headers: rangeHeaders);
 
-        // Use resolution, fallback to NAME, then 'Unknown'
-        final quality =
-            resolutionMatch?.group(1) ?? nameMatch?.group(1) ?? 'Unknown';
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final body = response.body;
 
-        if (i + 1 < lines.length) {
-          final videoUrl = lines[i + 1].trim();
-          if (videoUrl.isNotEmpty && !videoUrl.startsWith('#')) {
-            // 2. Resolve the URL relative to the master playlist URL
-            final fullUrl = Uri.parse(m3u8Url).resolve(videoUrl).toString();
-
-            extractedQualities.add({
-              'quality': quality,
-              'url': fullUrl,
-              // 'size_mb' is now omitted for speed
-            });
-          }
+      // Check specific signatures
+      if (body.contains('#EXTM3U')) {
+        if (body.contains('#EXT-X-STREAM-INF') &&
+            !body.trim().endsWith('#EXT-X-ENDLIST')) {
+          // Fetch full if it looks like a master playlist
+          final fullResponse = await http.get(Uri.parse(url), headers: headers);
+          return _parseM3U8(fullResponse.body, url);
         }
+        return _parseM3U8(body, url);
+      } else if (body.contains('<MPD') || url.endsWith('.mpd')) {
+        return [
+          {'quality': 'Auto', 'url': url}
+        ];
+      } else {
+        // Likely a direct file that we peeked at
+        return [
+          {'quality': 'Default', 'url': url}
+        ];
       }
     }
 
-    // Fallback if no variants found (original URL is the stream)
-    if (extractedQualities.isEmpty) {
-      extractedQualities.add({'quality': 'Default', 'url': m3u8Url});
+    // Fallback: If Range failed (server doesn't support it), try full GET
+    // ONLY if we haven't already determined it's likely a big file from HEAD (if HEAD worked)
+    // But be careful about size.
+    final fullResponse = await http.get(Uri.parse(url), headers: headers);
+    if (fullResponse.statusCode == 200) {
+      if (fullResponse.body.contains('#EXTM3U')) {
+        return _parseM3U8(fullResponse.body, url);
+      }
     }
 
-    return extractedQualities;
+    return [
+      {'quality': 'Default', 'url': url}
+    ];
   } catch (e) {
     log('Error extracting qualities: $e');
-    return [];
+    // Return the original url as a fallback instead of empty,
+    // so the player at least tries to play it.
+    return [
+      {'quality': 'Default', 'url': url}
+    ];
   }
+}
+
+List<Map<String, dynamic>> _parseM3U8(String body, String url) {
+  final lines = body.split('\n');
+  final extractedQualities = <Map<String, dynamic>>[];
+
+  for (int i = 0; i < lines.length; i++) {
+    if (lines[i].contains('#EXT-X-STREAM-INF')) {
+      final resolutionMatch =
+          RegExp(r'RESOLUTION=(\d+x\d+)').firstMatch(lines[i]);
+      final nameMatch = RegExp(r'NAME="([^"]+)"').firstMatch(lines[i]);
+      final quality =
+          resolutionMatch?.group(1) ?? nameMatch?.group(1) ?? 'Unknown';
+
+      if (i + 1 < lines.length) {
+        final videoUrl = lines[i + 1].trim();
+        if (videoUrl.isNotEmpty && !videoUrl.startsWith('#')) {
+          final fullUrl = Uri.parse(url).resolve(videoUrl).toString();
+          extractedQualities.add({'quality': quality, 'url': fullUrl});
+        }
+      }
+    }
+  }
+
+  if (extractedQualities.isEmpty) {
+    extractedQualities.add({'quality': 'Default', 'url': url});
+  }
+
+  AppLogger.d('Extracted qualities: $extractedQualities');
+  return extractedQualities;
 }
 
 Future<List<String>> parseSegments(String m3u8Url,

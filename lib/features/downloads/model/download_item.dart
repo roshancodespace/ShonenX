@@ -33,6 +33,45 @@ class DownloadItem {
   final Map<dynamic, dynamic> headers;
   final int speed;
   final Duration? eta;
+  final dynamic error;
+
+  @HiveField(11)
+  final String? contentType;
+
+  @HiveField(12)
+  final List<dynamic>? subtitles;
+
+  @HiveField(13)
+  final int? totalSegments;
+
+  bool get isM3U8 =>
+      contentType == 'application/vnd.apple.mpegurl' ||
+      contentType == 'application/x-mpegurl' ||
+      downloadUrl.contains('.m3u8');
+
+  bool get hasByteSize => size != null && size! > 0;
+  bool get hasSegmentCount => totalSegments != null && totalSegments! > 0;
+  bool get hasError => error != null;
+
+  double get progressPercentage {
+    if (hasByteSize) {
+      return (progress / size!).clamp(0.0, 1.0);
+    } else if (hasSegmentCount) {
+      return (progress / totalSegments!).clamp(0.0, 1.0);
+    }
+    return 0.0;
+  }
+
+  String getProgressText() {
+    if (hasByteSize) {
+      final currentMB = (progress / 1024 / 1024).toStringAsFixed(1);
+      final totalMB = (size! / 1024 / 1024).toStringAsFixed(1);
+      return '$currentMB / $totalMB MB';
+    } else if (hasSegmentCount) {
+      return '$progress / $totalSegments segments';
+    }
+    return 'Downloading...';
+  }
 
   DownloadItem({
     this.quality = 'Default',
@@ -51,6 +90,10 @@ class DownloadItem {
     },
     this.speed = 0,
     this.eta,
+    this.contentType,
+    this.error,
+    this.subtitles,
+    this.totalSegments,
   });
 
   DownloadItem copyWith({
@@ -67,6 +110,9 @@ class DownloadItem {
     Map<dynamic, dynamic>? headers,
     int? speed,
     Duration? eta,
+    dynamic error,
+    String? contentType,
+    int? totalSegments,
   }) {
     return DownloadItem(
       animeTitle: animeTitle ?? this.animeTitle,
@@ -82,11 +128,14 @@ class DownloadItem {
       headers: headers ?? this.headers,
       speed: speed ?? this.speed,
       eta: eta ?? this.eta,
+      error: error ?? this.error,
+      contentType: contentType ?? this.contentType,
+      totalSegments: totalSegments ?? this.totalSegments,
     );
   }
 
   @override
   String toString() {
-    return 'DownloadItem(animeTitle: $animeTitle, episodeTitle: $episodeTitle, episodeNumber: $episodeNumber, thumbnail: $thumbnail, size: $size, state: $state, progress: $progress, downloadUrl: $downloadUrl, quality: $quality, filePath: $filePath, headers: $headers, speed: $speed, eta: $eta)';
+    return 'DownloadItem(animeTitle: $animeTitle, episodeTitle: $episodeTitle, episodeNumber: $episodeNumber, thumbnail: $thumbnail, size: $size, state: $state, progress: $progress, downloadUrl: $downloadUrl, quality: $quality, filePath: $filePath, headers: $headers, speed: $speed, eta: $eta, contentType: $contentType, totalSegments: $totalSegments, error: $error)';
   }
 }

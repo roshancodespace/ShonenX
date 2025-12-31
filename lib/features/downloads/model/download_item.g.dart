@@ -33,13 +33,16 @@ class DownloadItemAdapter extends TypeAdapter<DownloadItem> {
                   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             }
           : fields[10] as Map<dynamic, dynamic>,
+      contentType: fields[11] as String?,
+      subtitles: fields[12] as List<dynamic>?,
+      totalSegments: fields[13] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, DownloadItem obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.animeTitle)
       ..writeByte(1)
@@ -61,7 +64,13 @@ class DownloadItemAdapter extends TypeAdapter<DownloadItem> {
       ..writeByte(9)
       ..write(obj.filePath)
       ..writeByte(10)
-      ..write(obj.headers);
+      ..write(obj.headers)
+      ..writeByte(11)
+      ..write(obj.contentType)
+      ..writeByte(12)
+      ..write(obj.subtitles)
+      ..writeByte(13)
+      ..write(obj.totalSegments);
   }
 
   @override

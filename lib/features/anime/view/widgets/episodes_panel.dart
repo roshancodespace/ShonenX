@@ -5,6 +5,10 @@ import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
+import 'package:shonenx/features/downloads/model/download_item.dart';
+import 'package:shonenx/features/downloads/view_model/downloads_notifier.dart';
+import 'package:shonenx/features/downloads/model/download_status.dart';
+import 'package:collection/collection.dart';
 
 class EpisodesPanel extends ConsumerStatefulWidget {
   final AnimationController panelAnimation;
@@ -101,6 +105,8 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
     final endIdx = (_currentStart + _rangeSize - 1).clamp(0, total);
 
     final visibleEpisodes = episodes.sublist(startIdx, endIdx);
+    final animeTitle =
+        ref.watch(episodeListProvider.select((s) => s.animeTitle));
 
     final progressAsync = ref.watch(watchProgressStreamProvider);
     final allProgress = progressAsync.valueOrNull ?? [];
@@ -170,6 +176,12 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                         animeProgress?.episodesProgress[epNum]?.isCompleted ??
                             false;
 
+                    final downloadState = ref.watch(downloadsProvider);
+                    final download = downloadState.downloads.firstWhereOrNull(
+                        (d) =>
+                            d.animeTitle == animeTitle &&
+                            d.episodeNumber == epNum);
+
                     return EpisodeTile(
                       isFiller: episode.isFiller ?? false,
                       isCompleted: isCompleted,
@@ -177,6 +189,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                       episodeTitle:
                           episode.title ?? "Episode ${episode.number}",
                       isSelected: selectedIdx == actualIndex,
+                      download: download,
                       onTap: () => episodeNotifier.changeEpisode(actualIndex),
                     );
                   },
@@ -196,6 +209,7 @@ class EpisodeTile extends StatelessWidget {
   final String episodeNumber;
   final String episodeTitle;
   final bool isSelected;
+  final DownloadItem? download;
   final VoidCallback onTap;
 
   const EpisodeTile({
@@ -205,6 +219,7 @@ class EpisodeTile extends StatelessWidget {
     required this.episodeNumber,
     required this.episodeTitle,
     required this.isSelected,
+    this.download,
     required this.onTap,
   });
 
@@ -278,8 +293,10 @@ class EpisodeTile extends StatelessWidget {
                 Iconsax.play5,
                 size: 18,
                 color: theme.colorScheme.primary,
-              ),
-            if (!isSelected && isCompleted)
+              )
+            else if (download != null)
+              _buildDownloadIndicator(theme, download!)
+            else if (isCompleted)
               Icon(
                 Iconsax.tick_circle,
                 size: 18,
@@ -289,5 +306,32 @@ class EpisodeTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildDownloadIndicator(ThemeData theme, DownloadItem item) {
+    if (item.state == DownloadStatus.downloading) {
+      return SizedBox(
+        width: 16,
+        height: 16,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          value: item.progressPercentage,
+          color: theme.colorScheme.primary,
+        ),
+      );
+    } else if (item.state == DownloadStatus.downloaded) {
+      return Icon(
+        Icons.download_done_rounded,
+        size: 18,
+        color: theme.colorScheme.primary,
+      );
+    } else if (item.state == DownloadStatus.paused) {
+      return Icon(
+        Icons.pause_circle_outline,
+        size: 18,
+        color: theme.colorScheme.tertiary,
+      );
+    }
+    return const SizedBox.shrink();
   }
 }

@@ -68,14 +68,16 @@ class DownloadsScreen extends ConsumerWidget {
                       'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbUFgoWQMHU93hyXCzppyDfhPEcAf76WscJg&s',
                   state: DownloadStatus.downloading,
                   downloadUrl:
-                      'https://df.netmagcdn.com:2228/hls-playback/619f0387b8b950fc3328082648ad396513324777461e825607c87e90b410cd33289b1f7222d3e5be1feedcd609864be98315b6a58082d74e07062a178073734430761d9207fe7c5e091d6a4e79d125501501f6515396d7141ca1ee9f052fbdc55410739582a4c28c49407a1653feac93b7b681911964cb5a19c408bdf7c3cd81ba23cf4ea4084d419383b509506f006f/index-f3-v1-a1.m3u8',
+                      'https://proxy.animetsu.cc/oppai/pahe/Fw8cARFZQkZuChkMER0eWl4OHkYeEQYWFC1KX1BdSUdbSQNbWA8GEktNIVdXW0EaEUAfB1hQVQQWQEAiBw8HFEpHTElUCghYAEMRRnNVDFBLHUFMT1FbDQxTTBBCcwBbV10MBwEEDF0cVQ',
                   quality: 'Auto',
                   progress: 0,
                   filePath: '$path/Anime Title/1 - Episode Title/Auto',
                   headers: {
                     'User-Agent':
                         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-                    'Referer': 'https://df.netmagcdn.com/',
+                    // 'Referer':
+                    //     'https://megacloud.blog/embed-2/v3/e-1/j7cbMWEbkUys?k=1',
+                    // 'Origin': 'https://megacloud.blog',
                   },
                 ));
           },

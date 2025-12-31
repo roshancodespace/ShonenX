@@ -6,7 +6,6 @@ import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
-import 'package:shonenx/core/utils/app_logger.dart';
 
 class GojoProvider implements AnimeProvider {
   @override
@@ -160,8 +159,7 @@ class GojoProvider implements AnimeProvider {
   }
 
   @override
-  Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {
-    AppLogger.w(metadata);
+  Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {;
     if (metadata != null) {
       final res = (await http.get(
           Uri.parse(

@@ -29,7 +29,7 @@ class JikanMedia {
 
   factory JikanMedia.fromMap(Map<String, dynamic> map) {
     return JikanMedia(
-      malId: map['malId'] as int,
+      malId: map['mal_id'] as int,
       title: map['title'] as String,
     );
   }

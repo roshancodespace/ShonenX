@@ -22,6 +22,7 @@ class EpisodeListState {
   final List<EpisodeDataModel> episodes;
   final List<({JikanMedia result, double similarity})> jikanMatches;
   final bool isLoading;
+  final bool isJikanSyncing;
   final String? error;
 
   const EpisodeListState({
@@ -30,6 +31,7 @@ class EpisodeListState {
     this.episodes = const [],
     this.jikanMatches = const [],
     this.isLoading = false,
+    this.isJikanSyncing = false,
     this.error,
   });
 
@@ -39,6 +41,7 @@ class EpisodeListState {
     List<EpisodeDataModel>? episodes,
     List<({JikanMedia result, double similarity})>? jikanMatches,
     bool? isLoading,
+    bool? isJikanSyncing,
     String? error,
   }) {
     return EpisodeListState(
@@ -47,6 +50,7 @@ class EpisodeListState {
       episodes: episodes ?? this.episodes,
       jikanMatches: jikanMatches ?? this.jikanMatches,
       isLoading: isLoading ?? this.isLoading,
+      isJikanSyncing: isJikanSyncing ?? this.isJikanSyncing,
       error: error,
     );
   }
@@ -190,8 +194,9 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
       return;
     }
 
+    state = state.copyWith(isJikanSyncing: true);
     // fire & forget (non-blocking)
-    unawaited(_syncWithJikan());
+    unawaited(_syncWithJikan().whenComplete(() => state = state.copyWith(isJikanSyncing: false)));
   }
 
   Future<void> _syncWithJikan() async {

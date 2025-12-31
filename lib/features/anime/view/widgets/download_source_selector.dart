@@ -1,6 +1,7 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,8 +12,10 @@ import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
 import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/downloads/view_model/downloads_notifier.dart';
+import 'package:shonenx/features/settings/view_model/download_settings_notifier.dart';
 import 'package:shonenx/storage_provider.dart';
 import 'package:shonenx/utils/extractors.dart' as extractor;
+import 'package:path/path.dart' as p;
 
 class DownloadSourceSelector extends StatefulWidget {
   final String animeTitle;
@@ -111,51 +114,74 @@ class DownloadSourceSelectorState extends State<DownloadSourceSelector> {
     }
   }
 
-  Future<void> _triggerDownload(String url, String quality,
-      Map<String, String>? headers, bool isM3U8) async {
-    final dir = await StorageProvider().getDefaultDirectory();
-    if (dir == null) return;
+  Future<void> _triggerDownload(
+    String url,
+    String quality,
+    Map<String, String>? headers,
+    bool isM3U8,
+  ) async {
+    final providerContext = ProviderScope.containerOf(context);
+    final settings = providerContext.read(downloadSettingsProvider);
+    final notifier = providerContext.read(downloadsProvider.notifier);
+    final baseDir = settings.useCustomPath
+        ? (settings.customDownloadPath != null
+            ? Directory(settings.customDownloadPath!)
+            : null)
+        : await StorageProvider().getDefaultDirectory();
 
-    // Sanitize filenames
+    if (baseDir == null) return;
+
+    // ---- sanitize names ----
     final cleanAnime =
-        widget.animeTitle.replaceAll(RegExp(r'[<>:"/\\|?*]'), '');
-    final cleanEp = (widget.episode.title ?? "Episode ${widget.episode.number}")
-        .replaceAll(RegExp(r'[<>:"/\\|?*]'), '');
+        widget.animeTitle.replaceAll(RegExp(r'[<>:"/\\|?*]'), '').trim();
 
-    // Extension logic: TS for M3U8, MP4 for others
+    final episodeNumber = widget.episode.number ?? 0;
+    final cleanEpTitle = (widget.episode.title ?? 'Episode $episodeNumber')
+        .replaceAll(RegExp(r'[<>:"/\\|?*]'), '')
+        .trim();
+
+    // ---- directories ----
+    final animeDir = Directory(p.join(baseDir.path, cleanAnime));
+    final episodeDir =
+        Directory(p.join(animeDir.path, '$episodeNumber - $cleanEpTitle'));
+
+    if (!await episodeDir.exists()) {
+      await episodeDir.create(recursive: true);
+    }
+
+    // ---- extension ----
     final ext = isM3U8 ? '.ts' : '.mp4';
-    final path =
-        "${dir.path}/$cleanAnime/${widget.episode.number} - $cleanEp/video$ext";
+    final filePath = p.join(episodeDir.path, 'video$ext');
 
-    final defaultHeaders = {
+    // ---- headers ----
+    final finalHeaders = {
       'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      ...?headers,
     };
 
     final item = DownloadItem(
       animeTitle: widget.animeTitle,
-      episodeTitle: widget.episode.title ?? "Episode ${widget.episode.number}",
-      episodeNumber: widget.episode.number ?? 0,
+      episodeTitle: widget.episode.title ?? 'Episode $episodeNumber',
+      episodeNumber: episodeNumber,
       thumbnail: widget.episode.thumbnail ?? '',
       state: DownloadStatus.queued,
       progress: 0,
       downloadUrl: url,
       quality: quality,
-      filePath: path,
-      contentType: isM3U8 ? 'application/vnd.apple.mpegurl' : 'video/mp4',
+      filePath: filePath,
       subtitles: _subtitles.map((s) => jsonEncode(s.toJson())).toList(),
-      headers: headers ?? defaultHeaders,
+      headers: finalHeaders,
     );
 
-    if (mounted) {
-      ProviderScope.containerOf(context, listen: false)
-          .read(downloadsProvider.notifier)
-          .addDownload(item);
+    if (!mounted) return;
 
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Download started')));
-    }
+    notifier.addDownload(item);
+
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Download started')),
+    );
   }
 
   @override

@@ -20,6 +20,7 @@ class UiModelAdapter extends TypeAdapter<UiModel> {
       cardStyle: fields[3] == null ? 'defaults' : fields[3] as String,
       spotlightCardStyle: fields[2] == null ? 'defaults' : fields[2] as String,
       immersiveMode: fields[5] == null ? false : fields[5] as bool,
+      episodeViewMode: fields[6] == null ? 'list' : fields[6] as String,
     );
   }
 
@@ -32,7 +33,9 @@ class UiModelAdapter extends TypeAdapter<UiModel> {
       ..writeByte(3)
       ..write(obj.cardStyle)
       ..writeByte(5)
-      ..write(obj.immersiveMode);
+      ..write(obj.immersiveMode)
+      ..writeByte(6)
+      ..write(obj.episodeViewMode);
   }
 
   @override

@@ -52,9 +52,13 @@ class HomeScreen extends ConsumerWidget {
 
           // Continue Watching Section
           ref.watch(watchProgressStreamProvider).when(
-                data: (allProgress) => allProgress.isNotEmpty
-                    ? ContinueSection(allProgress: allProgress)
-                    : const SizedBox.shrink(),
+                data: (allProgress) {
+                  if (allProgress.isEmpty) return const SizedBox.shrink();
+                  final sorted = allProgress.toList()
+                    ..sort((a, b) => (b.lastUpdated ?? DateTime(0))
+                        .compareTo(a.lastUpdated ?? DateTime(0)));
+                  return ContinueSection(allProgress: sorted.take(15).toList());
+                },
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
               ),

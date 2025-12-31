@@ -371,14 +371,41 @@ class DownloadService {
 
   Future<void> deleteDownload(DownloadItem item) async {
     pauseDownload(item);
+
     try {
-      final file = File(item.filePath);
-      if (await file.exists()) await file.delete();
-      final tempDir = Directory(p.join(p.dirname(item.filePath),
-          '.temp_${p.basename(item.filePath).hashCode}'));
-      if (await tempDir.exists()) await tempDir.delete(recursive: true);
+      final basePath = _settings.useCustomPath
+          ? _settings.customDownloadPath
+          : (await StorageProvider().getDefaultDirectory())?.path;
+
+      if (basePath == null) return;
+
+      final file = File(p.join(basePath, item.filePath));
+      if (!await file.exists()) {
+        ref.read(downloadsProvider.notifier).removeDownload(item);
+        return;
+      }
+
+      final episodeDir = file.parent;
+      final animeDir = episodeDir.parent;
+
+      await file.delete();
+
+      final episodeRemaining = episodeDir.listSync(followLinks: false);
+
+      if (episodeRemaining.isEmpty) {
+        await episodeDir.delete();
+      }
+
+      final animeRemaining = animeDir.listSync(followLinks: false);
+
+      if (animeRemaining.isEmpty) {
+        await animeDir.delete(recursive: true);
+      }
+
       ref.read(downloadsProvider.notifier).removeDownload(item);
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.e('Failed to delete download: $e');
+    }
   }
 
   Future<List<_Segment>> _parsePlaylist(

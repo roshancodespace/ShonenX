@@ -1,4 +1,6 @@
 import 'package:hive_ce/hive.dart';
+import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
+import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/data/hive/hive_type_ids.dart';
 
 part 'anime_watch_progress_model.g.dart';
@@ -60,6 +62,34 @@ class AnimeWatchProgressEntry extends HiveObject {
       lastUpdated: lastUpdated ?? this.lastUpdated,
       currentEpisode: currentEpisode ?? this.currentEpisode,
       status: status ?? this.status,
+    );
+  }
+
+  toMedia() {
+    return Media(
+      id: animeId,
+      title: Title(
+        native: animeTitle,
+        romaji: animeTitle,
+        english: animeTitle,
+      ),
+      format: animeFormat,
+      coverImage: CoverImage(
+        large: animeCover,
+        medium: animeCover,
+      ),
+      episodes: totalEpisodes,
+      status: status,
+      startDate: FuzzyDate(
+        year: DateTime.now().year,
+        month: DateTime.now().month,
+        day: DateTime.now().day,
+      ),
+      endDate: FuzzyDate(
+        year: DateTime.now().year,
+        month: DateTime.now().month,
+        day: DateTime.now().day,
+      ),
     );
   }
 }

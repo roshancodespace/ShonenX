@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
-import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
 import 'package:shonenx/utils/html_parser.dart';
 
 class DefaultSpotlight extends StatelessWidget {
@@ -23,128 +22,211 @@ class DefaultSpotlight extends StatelessWidget {
 
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     final imageUrl = anime!.bannerImage?.isNotEmpty == true
         ? anime!.bannerImage!
         : (anime!.coverImage?.large ?? anime!.coverImage?.medium ?? '');
 
     return GestureDetector(
       onTap: () => onTap?.call(anime!),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Background Image
-          Hero(
-            tag: heroTag,
-            child: CachedNetworkImage(
-              imageUrl: imageUrl,
-              fit: BoxFit.cover,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
-          ),
-
-          // Gradient Overlay
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.1),
-                  Colors.black.withOpacity(0.8),
-                ],
-                stops: const [0.4, 0.7, 1.0],
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Background Image
+              Hero(
+                tag: heroTag,
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                ),
               ),
-            ),
-          ),
 
-          // Content
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Padding(
-              padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Title
-                  Text(
-                    anime!.title?.english ??
-                        anime!.title?.romaji ??
-                        anime!.title?.native ??
-                        'Unknown Title',
-                    maxLines: isSmallScreen ? 1 : 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontSize: isSmallScreen ? 18 : 22,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      height: 1.2,
-                      letterSpacing: -0.5,
-                    ),
+              // Gradient Overlay
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.0),
+                      Colors.black.withOpacity(0.5),
+                      Colors.black.withOpacity(0.9),
+                    ],
+                    stops: const [0.0, 0.4, 0.7, 1.0],
                   ),
+                ),
+              ),
 
-                  const SizedBox(height: 8),
-
-                  // Description (only on larger screens)
-                  if (!isSmallScreen && anime!.description != null) ...[
-                    Text(
-                      parseHtmlToString(anime!.description!),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontSize: 13,
-                        color: Colors.white.withOpacity(0.85),
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ] else
-                    const SizedBox(height: 12),
-
-                  // Info Tags
-                  Row(
+              // Content
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Padding(
+                  padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (anime!.episodes != null)
-                        Tag(
-                          text: '${anime!.episodes} EP',
-                          icon: Iconsax.video_play,
-                          color: Colors.white.withOpacity(0.15),
-                          textColor: Colors.white,
+                      // Score Tag
+                      if (anime?.averageScore != null)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Iconsax.star1,
+                                size: 16,
+                                color: colorScheme.onPrimaryContainer,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${anime!.averageScore}% Match',
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      if (anime!.episodes != null && anime!.duration != null)
-                        const SizedBox(width: 8),
-                      if (anime!.duration != null)
-                        Tag(
-                          text: '${anime!.duration}MIN',
-                          icon: Iconsax.timer_1,
-                          color: Colors.white.withOpacity(0.15),
-                          textColor: Colors.white,
+
+                      // Title
+                      Text(
+                        anime!.title?.english ??
+                            anime!.title?.romaji ??
+                            anime!.title?.native ??
+                            'Unknown Title',
+                        maxLines: isSmallScreen ? 1 : 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          height: 1.1,
                         ),
-                      const Spacer(),
-                      if (anime!.averageScore != null)
-                        Tag(
-                          text: '${anime!.averageScore}',
-                          icon: Iconsax.star1,
-                          color: _getScoreColor(anime!.averageScore!)
-                              .withOpacity(0.9),
-                          textColor: Colors.white,
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Description
+                      if (!isSmallScreen && anime!.description != null) ...[
+                        Text(
+                          parseHtmlToString(anime!.description!),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(0.8),
+                            height: 1.5,
+                          ),
                         ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // Meta Tags Row
+                      Row(
+                        children: [
+                          _SpotlightTag(
+                            icon: Iconsax.video_play,
+                            label: '${anime?.episodes ?? "?"} Episodes',
+                            colorScheme: colorScheme,
+                          ),
+                          if (anime?.duration != null) ...[
+                            const SizedBox(width: 8),
+                            _SpotlightTag(
+                              icon: Iconsax.timer_1,
+                              label: '${anime!.duration} min',
+                              colorScheme: colorScheme,
+                            ),
+                          ],
+                          const SizedBox(width: 8),
+                          _SpotlightTag(
+                            icon: Iconsax.calendar_1,
+                            label: anime?.seasonYear?.toString() ??
+                                anime?.startDate?.year?.toString() ??
+                                'Unknown',
+                            colorScheme: colorScheme,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 8),
                     ],
                   ),
-                ],
+                ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SpotlightTag extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final ColorScheme colorScheme;
+
+  const _SpotlightTag({
+    required this.icon,
+    required this.label,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: Colors.white,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
             ),
           ),
         ],
       ),
     );
-  }
-
-  Color _getScoreColor(double score) {
-    if (score >= 80) return const Color(0xFF4CAF50);
-    if (score >= 60) return const Color(0xFFFF9800);
-    return const Color(0xFFF44336);
   }
 }

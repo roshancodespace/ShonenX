@@ -7,8 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
+import 'package:shonenx/core/models/anilist/media.dart' as media;
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
+import 'package:shonenx/helpers/anime_match_popup.dart';
 
 class WatchHistoryScreen extends ConsumerWidget {
   const WatchHistoryScreen({super.key});
@@ -89,9 +91,6 @@ class WatchHistoryScreen extends ConsumerWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// 1. ANIME GRID CARD (Main Screen)
-// -----------------------------------------------------------------------------
 class _AnimeHistoryCard extends StatelessWidget {
   final AnimeWatchProgressEntry entry;
   final VoidCallback onTap;
@@ -193,20 +192,17 @@ class _AnimeHistoryCard extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// 2. DETAIL SHEET (Bottom Sheet)
-// -----------------------------------------------------------------------------
-class _DetailSheet extends StatefulWidget {
+class _DetailSheet extends ConsumerStatefulWidget {
   final AnimeWatchProgressEntry entry;
   final WatchProgressRepository repository;
 
   const _DetailSheet({required this.entry, required this.repository});
 
   @override
-  State<_DetailSheet> createState() => _DetailSheetState();
+  ConsumerState<_DetailSheet> createState() => _DetailSheetState();
 }
 
-class _DetailSheetState extends State<_DetailSheet> {
+class _DetailSheetState extends ConsumerState<_DetailSheet> {
   late AnimeWatchProgressEntry _entry;
 
   @override
@@ -227,6 +223,19 @@ class _DetailSheetState extends State<_DetailSheet> {
       }
       _entry = _entry.copyWith(episodesProgress: newMap);
     });
+  }
+
+  void _openEpisode(int epNum) {
+    providerAnimeMatchSearch(
+        context: context,
+        ref: ref,
+        animeMedia: media.Media(
+          id: _entry.animeId,
+          title: media.Title(english: _entry.animeTitle),
+          coverImage: media.CoverImage(
+              large: _entry.animeCover, medium: _entry.animeCover),
+        ),
+        startAt: epNum);
   }
 
   @override
@@ -332,6 +341,7 @@ class _DetailSheetState extends State<_DetailSheet> {
                     episode: episodes[index],
                     onDelete: () =>
                         _deleteEpisode(episodes[index].episodeNumber),
+                    onTap: () => _openEpisode(episodes[index].episodeNumber),
                   );
                 },
               ),
@@ -362,14 +372,13 @@ class _Badge extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// 3. EPISODE GRID ITEM (Detail Sheet)
-// -----------------------------------------------------------------------------
 class _EpisodeGridItem extends StatelessWidget {
   final EpisodeProgress episode;
   final VoidCallback onDelete;
+  final VoidCallback onTap;
 
-  const _EpisodeGridItem({required this.episode, required this.onDelete});
+  const _EpisodeGridItem(
+      {required this.episode, required this.onDelete, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -385,6 +394,7 @@ class _EpisodeGridItem extends StatelessWidget {
     progress = progress.clamp(0.0, 1.0);
 
     return GestureDetector(
+      onTap: onTap,
       onLongPress: onDelete, // Long press to delete individual episode
       child: Container(
         decoration: BoxDecoration(
@@ -469,9 +479,6 @@ class _EpisodeGridItem extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// 4. SMART THUMBNAIL WIDGET (HTTP vs Base64)
-// -----------------------------------------------------------------------------
 class _ThumbnailImage extends StatelessWidget {
   final String? imageUrl;
   final IconData fallbackIcon;

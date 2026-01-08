@@ -58,6 +58,7 @@ class AccountAuthenticationSection extends ConsumerWidget {
                 primaryColor: const Color(0xFF2E51A2),
                 isLast: true,
               ),
+              
             ],
           ),
         ),

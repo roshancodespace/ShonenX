@@ -1,32 +1,188 @@
 class AnilistQueries {
-  // Common media fields to reduce redundancy
+  // Common media fields to reduce redundancy (Lightweight for lists)
   static const String mediaFields = '''
     id
+    idMal
+    type
+    format
+    status
+    episodes
+    duration
+    isAdult
+    countryOfOrigin
     title {
       romaji
       english
       native
+      userPreferred
     }
     coverImage {
+      extraLarge
       large
       medium
+      color
+    }
+    genres
+    averageScore
+    popularity
+    favourites
+  ''';
+
+  // Detailed media fields (Heavy, for details screen only)
+  static const String detailedMediaFields = '''
+    id
+    idMal
+    type
+    format
+    status
+    source
+    episodes
+    duration
+    isAdult
+    countryOfOrigin
+    title {
+      romaji
+      english
+      native
+      userPreferred
+    }
+    coverImage {
+      extraLarge
+      large
+      medium
+      color
     }
     bannerImage
     description
-    episodes
-    duration
-    status
-    format
+    synonyms
+    season
+    seasonYear
+    startDate {
+      year
+      month
+      day
+    }
+    endDate {
+      year
+      month
+      day
+    }
+    nextAiringEpisode {
+      episode
+      airingAt
+      timeUntilAiring
+    }
+    genres
+    tags {
+      id
+      name
+      description
+      rank
+      isGeneralSpoiler
+      isMediaSpoiler
+      isAdult
+    }
     averageScore
+    meanScore
     popularity
-    isAdult
+    favourites
     rankings {
+      id
       rank
       type
-      context
-      season
+      format
       year
+      season
       allTime
+      context
+    }
+    studios(isMain: true) {
+      edges {
+        isMain
+        node {
+          id
+          name
+          siteUrl
+        }
+      }
+    }
+    relations {
+      edges {
+        relationType
+        node {
+          id
+          title {
+            romaji
+            english
+            userPreferred
+          }
+          coverImage {
+            large
+            medium
+          }
+           type
+           format
+           status
+        }
+      }
+    }
+    recommendations(sort: RATING_DESC, perPage: 10) {
+      nodes {
+        rating
+        mediaRecommendation {
+          id
+          title { romaji english userPreferred }
+          coverImage { large medium }
+          type
+          format
+          status
+          averageScore
+        }
+      }
+    }
+    staff(sort: RELEVANCE) {
+      edges {
+        role
+        node {
+          id
+          name { full native }
+          image { large medium }
+        }
+      }
+    }
+    characters(sort: ROLE, perPage: 10) {
+      edges {
+        role
+        node {
+          id
+          name {
+            full
+            native
+          }
+          image {
+            large
+          }
+        }
+      }
+    }
+    trailer {
+      id
+      site
+      thumbnail
+    }
+    siteUrl
+    isFavourite
+  ''';
+
+  // Intermediate media fields (For Spotlights/Trending that need banner/description)
+  static const String spotlightMediaFields = '''
+    $mediaFields
+    bannerImage
+    description
+    nextAiringEpisode {
+      episode
+      airingAt
+      timeUntilAiring
     }
   ''';
 
@@ -38,7 +194,7 @@ class AnilistQueries {
           $mediaFields
         }
       }
-    }
+    } 
   ''';
 
   // Query: Get the logged-in user's profile (Viewer)
@@ -47,9 +203,40 @@ class AnilistQueries {
       Viewer {
         id
         name
+        about
+        bannerImage
         avatar {
           large
-          medium
+        }
+        statistics {
+          anime {
+            count
+            minutesWatched
+            episodesWatched
+            meanScore
+          }
+        }
+        isFollower
+        isFollowing
+      }
+    }
+  ''';
+
+  // Mutation: Update user profile
+  static const String updateUserMutation = '''
+    mutation UpdateUser(\$about: String, \$titleLanguage: UserTitleLanguage, \$displayAdultContent: Boolean, \$airingNotifications: Boolean, \$profileColor: String) {
+      UpdateUser(about: \$about, titleLanguage: \$titleLanguage, displayAdultContent: \$displayAdultContent, airingNotifications: \$airingNotifications, profileColor: \$profileColor) {
+        id
+        name
+        about
+        avatar {
+          large
+        }
+        options {
+          titleLanguage
+          displayAdultContent
+          airingNotifications
+          profileColor
         }
       }
     }
@@ -112,7 +299,6 @@ class AnilistQueries {
         }
       }
     }
-
   ''';
 
   // Query: Fetch a user's favorite anime
@@ -208,80 +394,48 @@ class AnilistQueries {
   static const String animeDetailsQuery = '''
     query (\$id: Int) {
       Media(id: \$id, type: ANIME) {
-        $mediaFields
-        season
-        seasonYear
-        genres
-        relations {
-          edges {
-            relationType
-            node {
-              $mediaFields
-            }
-          }
-        }
-        recommendations(sort: RATING_DESC, perPage: 10) {
-          nodes {
-            mediaRecommendation {
-              $mediaFields
-            }
-          }
-        }
-        characters(sort: ROLE, perPage: 10) {
-          edges {
-            role
-            node {
-              id
-              name {
-                full
-              }
-              image {
-                large
-              }
-            }
-          }
-        }
+        $detailedMediaFields
       }
     }
   ''';
 
   // Query: Fetch trending anime
   static const String trendingAnimeQuery = '''
-    query {
-      Page(page: 1, perPage: 15) {
+    query (\$page: Int, \$perPage: Int) {
+      Page(page: \$page, perPage: \$perPage) {
         media(sort: TRENDING_DESC, type: ANIME) {
+          $spotlightMediaFields
+        }
+      }
+    }
+  ''';
+
+  // Query: Fetch most watched anime (Popular)
+  static const String mostWatchedAnimeQuery = '''
+    query (\$page: Int, \$perPage: Int) {
+      Page(page: \$page, perPage: \$perPage) {
+        media(sort: WATCHERS_DESC, type: ANIME) {
           $mediaFields
         }
       }
     }
   ''';
 
-  // Query: Fetch most watched anime
-  static const String mostWatchedAnimeQuery = '''
-  query {
-    Page(page: 1, perPage: 15) {
-      media(sort: WATCHERS_DESC, type: ANIME) {
-        $mediaFields
-      }
-    }
-  }
-''';
-
   // Query: Fetch anime with most favorites
   static const String mostFavoritedAnimeQuery = '''
-  query {
-    Page(page: 1, perPage: 15) {
-      media(sort: FAVOURITES_DESC, type: ANIME) {
-        $mediaFields
+    query (\$page: Int, \$perPage: Int) {
+      Page(page: \$page, perPage: \$perPage) {
+        media(sort: FAVOURITES_DESC, type: ANIME) {
+          $mediaFields
+        }
       }
     }
-  }
-''';
+  ''';
 
   // Query: Fetch popular anime
   static const String popularAnimeQuery = '''
-    query {
-      Page(page: 1, perPage: 15) {
+    query (\$page: Int, \$perPage: Int) {
+      Page(page: \$page, perPage: \$perPage) {
         media(sort: POPULARITY_DESC, type: ANIME) {
           $mediaFields
         }
@@ -291,8 +445,8 @@ class AnilistQueries {
 
   // Query: Fetch recently released episodes (Ongoing Anime)
   static const String recentEpisodesQuery = '''
-    query {
-      Page(page: 1, perPage: 15) {
+    query (\$page: Int, \$perPage: Int) {
+      Page(page: \$page, perPage: \$perPage) {
         media(type: ANIME, status: RELEASING, sort: UPDATED_AT_DESC) {
           $mediaFields
         }
@@ -302,8 +456,8 @@ class AnilistQueries {
 
   // Query: Fetch seasonal anime
   static const String seasonalAnimeQuery = '''
-    query (\$season: MediaSeason, \$year: Int) {
-      Page(page: 1, perPage: 15) {
+    query (\$season: MediaSeason, \$year: Int, \$page: Int, \$perPage: Int) {
+      Page(page: \$page, perPage: \$perPage) {
         media(season: \$season, seasonYear: \$year, type: ANIME, sort: POPULARITY_DESC) {
           $mediaFields
         }
@@ -313,8 +467,8 @@ class AnilistQueries {
 
   // Query: Fetch top-rated anime
   static const String topRatedAnimeQuery = '''
-    query {
-      Page(page: 1, perPage: 15) {
+    query (\$page: Int, \$perPage: Int) {
+      Page(page: \$page, perPage: \$perPage) {
         media(sort: SCORE_DESC, type: ANIME) {
           $mediaFields
         }
@@ -337,8 +491,8 @@ class AnilistQueries {
 
   // Fetch Recently Updated Anime
   static const String recentlyUpdatedAnimeQuery = '''
-    query {
-      Page(page: 1, perPage: 10) {
+    query (\$page: Int, \$perPage: Int) {
+      Page(page: \$page, perPage: \$perPage) {
         media(sort: UPDATED_AT_DESC, type: ANIME) {
           $mediaFields
         }
@@ -348,27 +502,10 @@ class AnilistQueries {
 
   // Fetch Upcoming Anime
   static const String upcomingAnimeQuery = '''
-    query {
-      Page(page: 1, perPage: 10) {
+    query (\$page: Int, \$perPage: Int) {
+      Page(page: \$page, perPage: \$perPage) {
         media(sort: START_DATE_DESC, type: ANIME, status: NOT_YET_RELEASED) {
-          id
-          title {
-            romaji
-            english
-            native
-          }
-          coverImage {
-            large
-          }
-          description
-          episodes
-          averageScore
-          status
-          startDate {
-            year
-            month
-            day
-          }
+          $mediaFields
         }
       }
     }

@@ -23,9 +23,9 @@ class WatchListState {
     this.errors = const {},
   });
 
-  List<MediaListEntry> listFor(String status) => lists[status] ?? [];
+  List<MediaListEntry> listFor(String status) => lists[status] ?? const [];
 
-  bool isFavorite(int id) => favorites.any((media) => media.id == id);
+  bool isFavorite(int id) => favorites.any((m) => m.id == id);
 
   WatchListState copyWith({
     Map<String, List<MediaListEntry>>? lists,
@@ -45,36 +45,42 @@ class WatchListState {
 }
 
 class WatchlistNotifier extends Notifier<WatchListState> {
-  AnimeRepository get repo => ref.watch(animeRepositoryProvider);
+  AnimeRepository get _repo => ref.read(animeRepositoryProvider);
 
   @override
   WatchListState build() => const WatchListState();
 
+  void reset() {
+    state = const WatchListState();
+  }
+
   Future<bool> ensureFavorite(int id) async {
     if (state.isFavorite(id)) return true;
-
     if (state.loadingStatuses.contains('favorites')) {
-      return state.favorites.any((media) => media.id == id);
+      return state.isFavorite(id);
     }
-
     await fetchListForStatus('favorites', force: true);
-    return state.favorites.any((media) => media.id == id);
+    return state.isFavorite(id);
   }
 
   Future<void> toggleFavorite(Media anime) async {
-    final isFav = state.isFavorite(anime.id!);
+    final id = anime.id;
+    if (id == null) return;
+
+    final wasFav = state.isFavorite(id);
 
     try {
-      await repo.toggleFavorite(anime.id!);
+      await _repo.toggleFavorite(id);
 
-      final updatedFavorites = isFav
-          ? state.favorites.where((m) => m.id != anime.id).toList()
+      final updated = wasFav
+          ? state.favorites.where((m) => m.id != id).toList()
           : [...state.favorites, anime];
 
-      state = state.copyWith(favorites: updatedFavorites);
+      state = state.copyWith(favorites: updated);
     } catch (e) {
-      state =
-          state.copyWith(errors: {...state.errors, 'favorites': e.toString()});
+      state = state.copyWith(
+        errors: {...state.errors, 'favorites': e.toString()},
+      );
     }
   }
 
@@ -84,11 +90,8 @@ class WatchlistNotifier extends Notifier<WatchListState> {
     int page = 1,
     int perPage = 10,
   }) async {
-    final alreadyHasData = _hasDataForStatus(status);
-    if (alreadyHasData && !force && page == 1) return;
-    if (state.loadingStatuses.contains(status)) return;
+    if (_shouldSkip(status, force, page)) return;
 
-    // Mark as loading
     state = state.copyWith(
       loadingStatuses: {...state.loadingStatuses, status},
       errors: {...state.errors}..remove(status),
@@ -96,34 +99,37 @@ class WatchlistNotifier extends Notifier<WatchListState> {
 
     try {
       if (status == 'favorites') {
-        final favoritesData = await repo.getFavorites();
-        state = state.copyWith(
-          favorites: favoritesData,
-          loadingStatuses: {...state.loadingStatuses}..remove(status),
-        );
-      } else {
-        final pageResponse = await repo.getUserAnimeList(
-          type: 'ANIME',
-          status: status,
-          page: page,
-          perPage: perPage,
-        );
-
-        final oldList =
-            page == 1 ? <MediaListEntry>[] : (state.lists[status] ?? []);
-        final newList = [...oldList, ...pageResponse.mediaList];
-
-        state = state.copyWith(
-          lists: {...state.lists, status: newList},
-          pageInfo: {...state.pageInfo, status: pageResponse.pageInfo},
-          loadingStatuses: {...state.loadingStatuses}..remove(status),
-        );
+        final data = await _repo.getFavorites();
+        state = state.copyWith(favorites: data);
+        return;
       }
+
+      final res = await _repo.getUserAnimeList(
+        type: 'ANIME',
+        status: status,
+        page: page,
+        perPage: perPage,
+      );
+
+      final existing = page == 1 ? <MediaListEntry>[] : state.listFor(status);
+
+      state = state.copyWith(
+        lists: {
+          ...state.lists,
+          status: [...existing, ...res.mediaList],
+        },
+        pageInfo: {
+          ...state.pageInfo,
+          status: res.pageInfo,
+        },
+      );
     } catch (e) {
       state = state.copyWith(
         errors: {...state.errors, status: e.toString()},
-        loadingStatuses: {...state.loadingStatuses}..remove(status),
       );
+    } finally {
+      final updated = {...state.loadingStatuses}..remove(status);
+      state = state.copyWith(loadingStatuses: updated);
     }
   }
 
@@ -131,40 +137,46 @@ class WatchlistNotifier extends Notifier<WatchListState> {
     final auth = ref.read(authProvider);
     if (!auth.isAniListAuthenticated) {
       return showAppSnackBar(
-          'Locked', 'This operation requires authentication');
+        'Locked',
+        'This operation requires authentication',
+      );
     }
 
     final status = entry.status;
-    final existingList = [...?state.lists[status]];
+    final list = [...state.listFor(status)];
 
-    final index = existingList.indexWhere((e) => e.id == entry.id);
+    final index = list.indexWhere((e) => e.id == entry.id);
     if (index >= 0) {
-      existingList[index] = entry;
+      list[index] = entry;
     } else {
-      existingList.add(entry);
+      list.add(entry);
     }
 
     state = state.copyWith(
-      lists: {...state.lists, status: existingList},
+      lists: {...state.lists, status: list},
     );
   }
 
   Future<void> fetchAll({bool force = false}) async {
-    final statuses = await repo.getSupportedStatuses();
-    await Future.wait(
-      [...statuses, 'favorites'].map(
-        (status) => fetchListForStatus(status, force: force),
+    final statuses = await _repo.getSupportedStatuses();
+    await Future.wait([
+      ...statuses.map(
+        (s) => fetchListForStatus(s, force: force),
       ),
-    );
+      fetchListForStatus('favorites', force: force),
+    ]);
   }
 
-  bool _hasDataForStatus(String status) {
-    if (status == 'favorites') {
-      return state.favorites.isNotEmpty;
-    }
-    return (state.lists[status] ?? []).isNotEmpty;
+  bool _shouldSkip(String status, bool force, int page) {
+    if (state.loadingStatuses.contains(status)) return true;
+    if (force || page > 1) return false;
+
+    return status == 'favorites'
+        ? state.favorites.isNotEmpty
+        : state.listFor(status).isNotEmpty;
   }
 }
 
-final watchlistProvider =
-    NotifierProvider<WatchlistNotifier, WatchListState>(WatchlistNotifier.new);
+final watchlistProvider = NotifierProvider<WatchlistNotifier, WatchListState>(
+  WatchlistNotifier.new,
+);

@@ -1,3 +1,4 @@
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -116,7 +117,8 @@ class ThemeSettingsScreen extends ConsumerWidget {
                     title: 'System Colors',
                     description: 'Use colors from your wallpaper',
                     value: theme.useDynamicColors,
-                    onChanged: (value) {
+                    onChanged: (value) async {
+                      print(await DeviceInfoPlugin().androidInfo);
                       themeNotifier.updateSettings(
                           (prev) => prev.copyWith(useDynamicColors: value));
                     },

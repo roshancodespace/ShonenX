@@ -28,10 +28,10 @@ abstract class AnimeRepository {
   Future<List<Media>> searchAnime(String title,
       {int page = 1, int perPage = 10});
   Future<Media?> getAnimeDetails(int animeId);
-  Future<List<Media>> getTrendingAnime();
-  Future<List<Media>> getPopularAnime();
-  Future<List<Media>> getTopRatedAnime();
-  Future<List<Media>> getRecentlyUpdatedAnime();
-  Future<List<Media>> getUpcomingAnime();
+  Future<List<Media>> getTrendingAnime({int page = 1, int perPage = 15});
+  Future<List<Media>> getPopularAnime({int page = 1, int perPage = 15});
+  Future<List<Media>> getTopRatedAnime({int page = 1, int perPage = 15});
+  Future<List<Media>> getRecentlyUpdatedAnime({int page = 1, int perPage = 15});
+  Future<List<Media>> getUpcomingAnime({int page = 1, int perPage = 15});
   Future<List<String>> getSupportedStatuses();
 }

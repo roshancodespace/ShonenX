@@ -44,7 +44,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                     )),
             const SizedBox(height: 16),
             const AccountAuthenticationSection(),
-            // ... Future settings can be added here
           ],
         ),
       ),

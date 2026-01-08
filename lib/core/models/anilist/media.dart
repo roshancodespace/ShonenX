@@ -3,110 +3,135 @@ import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 
 class Media {
   final dynamic id;
+  final int? idMal;
+  final String? type;
+  final String? format;
+  final String? status;
+  final String? source;
+  final bool isAdult;
+  final String? countryOfOrigin;
+
   final Title? title;
   final CoverImage? coverImage;
   final String? bannerImage;
+  final String? description;
+  final List<String> synonyms;
+
   final int? episodes;
   final int? duration;
-  final String? format;
-  final String? status;
-  final String? description;
-  final List<String> genres;
-  final double? averageScore;
-  final double? popularity;
-  final Trailer? trailer;
-  final List<Studio> studios;
-  final List<StreamingEpisode> streamingEpisodes;
-  final bool isAdult;
-  final FuzzyDate? startDate;
-  final FuzzyDate? endDate;
+
   final String? season;
   final int? seasonYear;
-  final bool isFavourite;
+  final FuzzyDate? startDate;
+  final FuzzyDate? endDate;
+  final NextAiringEpisode? nextAiringEpisode;
+
+  final List<String> genres;
+  final List<Tag> tags;
+
+  final double? averageScore;
+  final double? meanScore;
+  final int? popularity;
+  final int? favourites;
 
   final List<MediaRanking> rankings;
+  final List<Studio> studios;
+
   final List<MediaRelation> relations;
   final List<Media> recommendations;
   final List<Character> characters;
+  final List<Staff> staff;
 
-  // MAL specific fields
-  final String? source;
-  final int? rank;
-  final int? favorites;
-  final double? meanScore;
+  final Trailer? trailer;
+  final String? siteUrl;
+
+  final bool isFavourite;
 
   const Media({
     this.id,
+    this.idMal,
+    this.type,
+    this.format,
+    this.status,
+    this.source,
+    this.isAdult = false,
+    this.countryOfOrigin,
     this.title,
     this.coverImage,
     this.bannerImage,
+    this.description,
+    this.synonyms = const [],
     this.episodes,
     this.duration,
-    this.format,
-    this.status,
-    this.description,
-    this.genres = const [],
-    this.averageScore,
-    this.popularity,
-    this.trailer,
-    this.studios = const [],
-    this.streamingEpisodes = const [],
-    this.isAdult = false,
-    this.startDate,
-    this.endDate,
     this.season,
     this.seasonYear,
-    this.isFavourite = false,
+    this.startDate,
+    this.endDate,
+    this.nextAiringEpisode,
+    this.genres = const [],
+    this.tags = const [],
+    this.averageScore,
+    this.meanScore,
+    this.popularity,
+    this.favourites,
     this.rankings = const [],
+    this.studios = const [],
     this.relations = const [],
     this.recommendations = const [],
     this.characters = const [],
-    this.source,
-    this.rank,
-    this.favorites,
-    this.meanScore,
+    this.staff = const [],
+    this.trailer,
+    this.siteUrl,
+    this.isFavourite = false,
   });
 
   factory Media.fromJson(Map<String, dynamic> json) {
     return Media(
-      id: json['id'] as int? ?? 0,
-      title: Title.fromJson(json['title'] ?? {}),
-      coverImage: CoverImage.fromJson(json['coverImage'] ?? {}),
-      bannerImage: json['bannerImage'] as String? ?? '',
-      episodes: json['episodes'] as int?,
-      duration: json['duration'] as int?,
-      format: json['format'] as String? ?? 'UNKNOWN',
-      status: json['status'] as String? ?? 'UNKNOWN',
-      description: json['description'] as String? ?? '',
-      genres: (json['genres'] as List<dynamic>? ?? [])
-          .map((e) => e as String)
+      id: json['id'],
+      idMal: json['idMal'],
+      type: json['type'],
+      format: json['format'],
+      status: json['status'],
+      source: json['source'],
+      isAdult: json['isAdult'] ?? false,
+      countryOfOrigin: json['countryOfOrigin'],
+      title: json['title'] != null ? Title.fromJson(json['title']) : null,
+      coverImage: json['coverImage'] != null
+          ? CoverImage.fromJson(json['coverImage'])
+          : null,
+      bannerImage: json['bannerImage'],
+      description: json['description'],
+      synonyms: (json['synonyms'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
           .toList(),
-      averageScore: (json['averageScore'] as num?)?.toDouble(),
-      popularity: (json['popularity'] as num?)?.toDouble(),
-      trailer:
-          json['trailer'] != null ? Trailer.fromJson(json['trailer']) : null,
-      studios: (json['studios']?['nodes'] as List<dynamic>? ?? [])
-          .map((s) => Studio.fromJson(s))
-          .toList(),
-      streamingEpisodes: (json['streamingEpisodes'] as List<dynamic>? ?? [])
-          .map((s) => StreamingEpisode.fromJson(s))
-          .toList(),
-      isAdult: json['isAdult'] as bool? ?? false,
+      episodes: json['episodes'],
+      duration: json['duration'],
+      season: json['season'],
+      seasonYear: json['seasonYear'],
       startDate: json['startDate'] != null
           ? FuzzyDate.fromJson(json['startDate'])
           : null,
       endDate:
           json['endDate'] != null ? FuzzyDate.fromJson(json['endDate']) : null,
-      season: json['season'] as String?,
-      seasonYear: json['seasonYear'] as int?,
-      isFavourite: json['isFavourite'] as bool? ?? false,
-      rankings: (json['rankings'] as List<dynamic>? ?? [])
-          .map((r) => MediaRanking.fromJson(r))
+      nextAiringEpisode: json['nextAiringEpisode'] != null
+          ? NextAiringEpisode.fromJson(json['nextAiringEpisode'])
+          : null,
+      genres: (json['genres'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
           .toList(),
-      source: json['source'] as String?,
-      rank: json['rank'] as int?,
-      favorites: json['favorites'] as int?,
+      tags: (json['tags'] as List<dynamic>? ?? [])
+          .map((e) => Tag.fromJson(e))
+          .toList(),
+      averageScore: (json['averageScore'] as num?)?.toDouble(),
       meanScore: (json['meanScore'] as num?)?.toDouble(),
+      popularity: json['popularity'],
+      favourites: json['favourites'],
+      rankings: (json['rankings'] as List<dynamic>? ?? [])
+          .map((e) => MediaRanking.fromJson(e))
+          .toList(),
+      studios: (json['studios']?['edges'] as List<dynamic>? ?? [])
+          .map((e) => Studio.fromJson(e['node']))
+          .toList(),
       relations: (json['relations']?['edges'] as List<dynamic>? ?? [])
           .map((e) => MediaRelation.fromJson(e))
           .toList(),
@@ -117,195 +142,210 @@ class Media {
       characters: (json['characters']?['edges'] as List<dynamic>? ?? [])
           .map((e) => Character.fromJson(e))
           .toList(),
+      staff: (json['staff']?['edges'] as List<dynamic>? ?? [])
+          .map((e) => Staff.fromJson(e))
+          .toList(),
+      trailer:
+          json['trailer'] != null ? Trailer.fromJson(json['trailer']) : null,
+      siteUrl: json['siteUrl'],
+      isFavourite: json['isFavourite'] ?? false,
     );
   }
 
   factory Media.fromMal(Map<String, dynamic> node) {
     return Media(
       id: node['id'],
+      idMal: node['id'],
+      type: 'ANIME',
+      format: node['media_type'],
+      status: node['status'],
+      source: node['source'],
+      isAdult: node['nsfw'] ?? false,
       title: Title(
         romaji: node['title'],
         english: node['title'],
         native: node['title_japanese'],
       ),
       coverImage: CoverImage(
-        large: node['main_picture']?['large'] ?? '',
-        medium: node['main_picture']?['medium'] ?? '',
+        large: node['main_picture']?['large'],
+        medium: node['main_picture']?['medium'],
       ),
-      bannerImage: node['background'] ?? '',
+      bannerImage: node['background'],
+      description: node['synopsis'],
       episodes: node['num_episodes'],
       duration: node['duration'],
-      format: node['media_type'],
-      status: node['status'],
-      description: node['synopsis'],
       genres: (node['genres'] as List<dynamic>? ?? [])
           .map((e) => e['name'] as String)
           .toList(),
       averageScore: (node['mean'] as num?)?.toDouble(),
-      popularity: (node['popularity'] as num?)?.toDouble(),
-      source: node['source'],
-      rank: node['rank'],
-      favorites: node['favorites'],
-      startDate: node['start_date'] != null
-          ? FuzzyDate.fromJson({
-              'year': int.tryParse(node['start_date'].substring(0, 4)),
-              'month': node['start_date'].length > 5
-                  ? int.tryParse(node['start_date'].substring(5, 7))
-                  : null,
-              'day': node['start_date'].length > 8
-                  ? int.tryParse(node['start_date'].substring(8, 10))
-                  : null,
-            })
-          : null,
-      endDate: node['end_date'] != null
-          ? FuzzyDate.fromJson({
-              'year': int.tryParse(node['end_date'].substring(0, 4)),
-              'month': node['end_date'].length > 5
-                  ? int.tryParse(node['end_date'].substring(5, 7))
-                  : null,
-              'day': node['end_date'].length > 8
-                  ? int.tryParse(node['end_date'].substring(8, 10))
-                  : null,
-            })
-          : null,
-      isAdult: node['nsfw'] ?? false,
-      studios: [],
-      streamingEpisodes: [],
-      trailer: null,
-      season: null,
-      seasonYear: null,
-      isFavourite: false,
-      rankings: [],
-      relations: [],
-      recommendations: [],
-      characters: [],
       meanScore: (node['mean'] as num?)?.toDouble(),
+      popularity: node['popularity'],
+      favourites: node['favorites'],
+      startDate: node['start_date'] != null
+          ? FuzzyDate.fromIso(node['start_date'])
+          : null,
+      endDate:
+          node['end_date'] != null ? FuzzyDate.fromIso(node['end_date']) : null,
     );
   }
 
   BaseAnimeModel toBaseAnimeModel(Media media) {
     return BaseAnimeModel(
-      id: media.id.toString(),
+      id: media.id?.toString(),
+      anilistId: media.id is int ? media.id as int : null,
       name: media.title?.english ?? media.title?.romaji ?? media.title?.native,
+      jname: media.title?.native,
       poster: media.coverImage?.large ?? media.coverImage?.medium,
       banner: media.bannerImage,
       type: media.format,
       description: media.description,
-      genres: media.genres,
-      rank: media.rank,
-      duration: media.duration.toString(),
+      genres: media.genres.isNotEmpty ? media.genres : null,
+      url: media.siteUrl,
+      rank: _extractTopRank(media.rankings),
       episodes: EpisodesModel(
         sub: media.episodes,
         dub: media.episodes,
         total: media.episodes,
       ),
+      duration: media.duration != null ? '${media.duration} min' : null,
       releaseDate: media.startDate?.toDateTime?.toIso8601String(),
     );
+  }
+
+  int? _extractTopRank(List<MediaRanking> rankings) {
+    if (rankings.isEmpty) return null;
+
+    final ranked = rankings.where((r) => r.rank != null).toList()
+      ..sort((a, b) => a.rank!.compareTo(b.rank!));
+
+    return ranked.isNotEmpty ? ranked.first.rank : null;
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'idMal': idMal,
+      'type': type,
+      'format': format,
+      'status': status,
+      'source': source,
+      'isAdult': isAdult,
+      'countryOfOrigin': countryOfOrigin,
       'title': title?.toJson(),
       'coverImage': coverImage?.toJson(),
       'bannerImage': bannerImage,
+      'description': description,
+      'synonyms': synonyms,
       'episodes': episodes,
       'duration': duration,
-      'format': format,
-      'status': status,
-      'description': description,
-      'genres': genres,
-      'averageScore': averageScore,
-      'popularity': popularity,
-      'trailer': trailer?.toJson(),
-      'studios': {'nodes': studios.map((s) => s.toJson()).toList()},
-      'streamingEpisodes': streamingEpisodes.map((s) => s.toJson()).toList(),
-      'isAdult': isAdult,
-      'startDate': startDate?.toJson(),
-      'endDate': endDate?.toJson(),
       'season': season,
       'seasonYear': seasonYear,
-      'isFavourite': isFavourite,
-      'rankings': rankings.map((r) => r.toJson()).toList(),
-      'source': source,
-      'rank': rank,
-      'favorites': favorites,
+      'startDate': startDate?.toJson(),
+      'endDate': endDate?.toJson(),
+      'nextAiringEpisode': nextAiringEpisode?.toJson(),
+      'genres': genres,
+      'tags': tags.map((t) => t.toJson()).toList(),
+      'averageScore': averageScore,
       'meanScore': meanScore,
+      'popularity': popularity,
+      'favourites': favourites,
+      'rankings': rankings.map((r) => r.toJson()).toList(),
+      'studios': {
+        'edges': studios.map((s) => {'node': s.toJson()}).toList(),
+      },
       'relations': {
         'edges': relations.map((r) => r.toJson()).toList(),
       },
       'recommendations': {
         'nodes': recommendations
-            .map((r) => {'mediaRecommendation': r.toJson()})
+            .map((m) => {'mediaRecommendation': m.toJson()})
             .toList(),
       },
       'characters': {
         'edges': characters.map((c) => c.toJson()).toList(),
       },
+      'staff': {
+        'edges': staff.map((s) => s.toJson()).toList(),
+      },
+      'trailer': trailer?.toJson(),
+      'siteUrl': siteUrl,
+      'isFavourite': isFavourite,
     };
   }
 
-  copyWith({
+  Media copyWith({
     dynamic id,
+    int? idMal,
+    String? type,
+    String? format,
+    String? status,
+    String? source,
+    bool? isAdult,
+    String? countryOfOrigin,
     Title? title,
     CoverImage? coverImage,
     String? bannerImage,
+    String? description,
+    List<String>? synonyms,
     int? episodes,
     int? duration,
-    String? format,
-    String? status,
-    String? description,
-    List<String>? genres,
-    double? averageScore,
-    double? popularity,
-    Trailer? trailer,
-    List<Studio>? studios,
-    List<StreamingEpisode>? streamingEpisodes,
-    bool? isAdult,
-    FuzzyDate? startDate,
-    FuzzyDate? endDate,
     String? season,
     int? seasonYear,
-    bool? isFavourite,
+    FuzzyDate? startDate,
+    FuzzyDate? endDate,
+    NextAiringEpisode? nextAiringEpisode,
+    List<String>? genres,
+    List<Tag>? tags,
+    double? averageScore,
+    double? meanScore,
+    int? popularity,
+    int? favourites,
     List<MediaRanking>? rankings,
+    List<Studio>? studios,
     List<MediaRelation>? relations,
     List<Media>? recommendations,
     List<Character>? characters,
-    String? source,
-    int? rank,
-    int? favorites,
-    double? meanScore,
+    List<Staff>? staff,
+    Trailer? trailer,
+    String? siteUrl,
+    bool? isFavourite,
   }) {
     return Media(
       id: id ?? this.id,
+      idMal: idMal ?? this.idMal,
+      type: type ?? this.type,
+      format: format ?? this.format,
+      status: status ?? this.status,
+      source: source ?? this.source,
+      isAdult: isAdult ?? this.isAdult,
+      countryOfOrigin: countryOfOrigin ?? this.countryOfOrigin,
       title: title ?? this.title,
       coverImage: coverImage ?? this.coverImage,
       bannerImage: bannerImage ?? this.bannerImage,
+      description: description ?? this.description,
+      synonyms: synonyms ?? this.synonyms,
       episodes: episodes ?? this.episodes,
       duration: duration ?? this.duration,
-      format: format ?? this.format,
-      status: status ?? this.status,
-      description: description ?? this.description,
-      genres: genres ?? this.genres,
-      averageScore: averageScore ?? this.averageScore,
-      popularity: popularity ?? this.popularity,
-      trailer: trailer ?? this.trailer,
-      studios: studios ?? this.studios,
-      streamingEpisodes: streamingEpisodes ?? this.streamingEpisodes,
-      isAdult: isAdult ?? this.isAdult,
-      startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
       season: season ?? this.season,
       seasonYear: seasonYear ?? this.seasonYear,
-      isFavourite: isFavourite ?? this.isFavourite,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      nextAiringEpisode: nextAiringEpisode ?? this.nextAiringEpisode,
+      genres: genres ?? this.genres,
+      tags: tags ?? this.tags,
+      averageScore: averageScore ?? this.averageScore,
+      meanScore: meanScore ?? this.meanScore,
+      popularity: popularity ?? this.popularity,
+      favourites: favourites ?? this.favourites,
       rankings: rankings ?? this.rankings,
+      studios: studios ?? this.studios,
       relations: relations ?? this.relations,
       recommendations: recommendations ?? this.recommendations,
       characters: characters ?? this.characters,
-      source: source ?? this.source,
-      rank: rank ?? this.rank,
-      favorites: favorites ?? this.favorites,
-      meanScore: meanScore ?? this.meanScore,
+      staff: staff ?? this.staff,
+      trailer: trailer ?? this.trailer,
+      siteUrl: siteUrl ?? this.siteUrl,
+      isFavourite: isFavourite ?? this.isFavourite,
     );
   }
 }
@@ -414,7 +454,7 @@ class Studio {
 }
 
 class MediaRanking {
-  final int rank;
+  final int? rank;
   final String type;
   final String context;
   final String? season;
@@ -431,7 +471,7 @@ class MediaRanking {
 
   factory MediaRanking.fromJson(Map<String, dynamic> json) {
     return MediaRanking(
-      rank: json['rank'] as int,
+      rank: json['rank'] as int?,
       type: json['type'] as String,
       context: json['context'] as String,
       season: json['season'] as String?,
@@ -514,4 +554,156 @@ class Character {
           'image': {'large': image},
         },
       };
+}
+
+class NextAiringEpisode {
+  final int? id;
+  final int? airingAt;
+  final int? timeUntilAiring;
+  final int? episode;
+
+  const NextAiringEpisode({
+    this.id,
+    this.airingAt,
+    this.timeUntilAiring,
+    this.episode,
+  });
+
+  factory NextAiringEpisode.fromJson(Map<String, dynamic> json) {
+    return NextAiringEpisode(
+      id: json['id'],
+      airingAt: json['airingAt'],
+      timeUntilAiring: json['timeUntilAiring'],
+      episode: json['episode'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'airingAt': airingAt,
+      'timeUntilAiring': timeUntilAiring,
+      'episode': episode,
+    };
+  }
+}
+
+class Tag {
+  final int? id;
+  final String? name;
+  final String? description;
+  final int? rank;
+  final bool isAdult;
+
+  const Tag({
+    this.id,
+    this.name,
+    this.description,
+    this.rank,
+    this.isAdult = false,
+  });
+
+  factory Tag.fromJson(Map<String, dynamic> json) {
+    return Tag(
+      id: json['id'],
+      name: json['name'],
+      description: json['description'],
+      rank: json['rank'],
+      isAdult: json['isAdult'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'rank': rank,
+      'isAdult': isAdult,
+    };
+  }
+}
+
+class Staff {
+  final int? id;
+  final StaffName? name;
+  final StaffImage? image;
+  final String? role;
+
+  const Staff({
+    this.id,
+    this.name,
+    this.image,
+    this.role,
+  });
+
+  factory Staff.fromJson(Map<String, dynamic> json) {
+    final node = json['node'] ?? json;
+
+    return Staff(
+      id: node['id'],
+      name: node['name'] != null ? StaffName.fromJson(node['name']) : null,
+      image: node['image'] != null ? StaffImage.fromJson(node['image']) : null,
+      role: json['role'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'role': role,
+      'node': {
+        'id': id,
+        'name': name?.toJson(),
+        'image': image?.toJson(),
+      },
+    };
+  }
+}
+
+class StaffName {
+  final String? full;
+  final String? native;
+
+  const StaffName({
+    this.full,
+    this.native,
+  });
+
+  factory StaffName.fromJson(Map<String, dynamic> json) {
+    return StaffName(
+      full: json['full'],
+      native: json['native'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'full': full,
+      'native': native,
+    };
+  }
+}
+
+class StaffImage {
+  final String? large;
+  final String? medium;
+
+  const StaffImage({
+    this.large,
+    this.medium,
+  });
+
+  factory StaffImage.fromJson(Map<String, dynamic> json) {
+    return StaffImage(
+      large: json['large'],
+      medium: json['medium'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'large': large,
+      'medium': medium,
+    };
+  }
 }

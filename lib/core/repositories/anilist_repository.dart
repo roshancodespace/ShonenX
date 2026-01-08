@@ -32,28 +32,28 @@ class AniListRepository implements AnimeRepository {
   }
 
   @override
-  Future<List<Media>> getPopularAnime() {
-    return service.getPopularAnime();
+  Future<List<Media>> getPopularAnime({int page = 1, int perPage = 10}) {
+    return service.getPopularAnime(page: page, perPage: perPage);
   }
 
   @override
-  Future<List<Media>> getRecentlyUpdatedAnime() {
-    return service.getRecentlyUpdatedAnime();
+  Future<List<Media>> getRecentlyUpdatedAnime({int page = 1, int perPage = 10}) {
+    return service.getRecentlyUpdatedAnime(page: page, perPage: perPage);
   }
 
   @override
-  Future<List<Media>> getTopRatedAnime() {
-    return service.getTopRatedAnime();
+  Future<List<Media>> getTopRatedAnime({int page = 1, int perPage = 10}) {
+    return service.getTopRatedAnime(page: page, perPage: perPage);
   }
 
   @override
-  Future<List<Media>> getTrendingAnime() {
-    return service.getTrendingAnime();
+  Future<List<Media>> getTrendingAnime({int page = 1, int perPage = 10}) {
+    return service.getTrendingAnime(page: page, perPage: perPage);
   }
 
   @override
-  Future<List<Media>> getUpcomingAnime() {
-    return service.getUpcomingAnime();
+  Future<List<Media>> getUpcomingAnime({int page = 1, int perPage = 10}) {
+    return service.getUpcomingAnime(page: page, perPage: perPage);
   }
 
   @override

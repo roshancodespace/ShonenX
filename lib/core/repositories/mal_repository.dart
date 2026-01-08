@@ -28,31 +28,31 @@ class MalRepository implements AnimeRepository {
   }
 
   @override
-  Future<List<Media>> getPopularAnime() {
+  Future<List<Media>> getPopularAnime({int page = 1, int perPage = 10}) {
     // TODO: implement getPopularAnime
     throw UnimplementedError();
   }
 
   @override
-  Future<List<Media>> getRecentlyUpdatedAnime() {
+  Future<List<Media>> getRecentlyUpdatedAnime({int page = 1, int perPage = 10}) {
     // TODO: implement getRecentlyUpdatedAnime
     throw UnimplementedError();
   }
 
   @override
-  Future<List<Media>> getTopRatedAnime() {
+  Future<List<Media>> getTopRatedAnime({int page = 1, int perPage = 10}) {
     // TODO: implement getTopRatedAnime
     throw UnimplementedError();
   }
 
   @override
-  Future<List<Media>> getTrendingAnime() {
+  Future<List<Media>> getTrendingAnime({int page = 1, int perPage = 10}) {
     // TODO: implement getTrendingAnime
     throw UnimplementedError();
   }
 
   @override
-  Future<List<Media>> getUpcomingAnime() {
+  Future<List<Media>> getUpcomingAnime({int page = 1, int perPage = 10}) {
     // TODO: implement getUpcomingAnime
     throw UnimplementedError();
   }

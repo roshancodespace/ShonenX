@@ -3,8 +3,8 @@ import 'package:shonenx/core/models/anilist/media.dart';
 import 'info_card_widget.dart';
 import 'synopsis_widget.dart';
 import 'rankings_widget.dart';
-import 'related_entries_widget.dart';
-import 'similar_anime_widget.dart';
+import 'horizontal_media_list.dart';
+import 'additional_info_widget.dart';
 
 /// Content widget that composes all the detail sections
 class DetailsContent extends StatelessWidget {
@@ -26,10 +26,7 @@ class DetailsContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AnimeInfoCard(
-            anime: anime,
-            onShare: () {},
-          ),
+          NextEpisodeWidget(anime: anime),
           const SizedBox(height: 24),
           AnimeSynopsis(
             description: anime.description ?? '',
@@ -40,20 +37,57 @@ class DetailsContent extends StatelessWidget {
             AnimeRankings(rankings: anime.rankings),
           ],
           const SizedBox(height: 24),
-          RelatedEntriesWidget(
-            relations: anime.relations,
+          AdditionalInfoWidget(anime: anime),
+          if (anime.staff.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            HorizontalMediaSection<Staff>(
+              title: 'Staff',
+              items: anime.staff,
+              isLoading: isLoading,
+              itemBuilder: (context, staff) {
+                return StaffCard(
+                  staff: staff,
+                  onTap: () {
+                    // Handle staff tap if needed
+                  },
+                );
+              },
+            ),
+          ],
+          const SizedBox(height: 24),
+          HorizontalMediaSection<MediaRelation>(
+            title: 'Related',
+            items: anime.relations,
             isLoading: isLoading,
-            onMediaTap: onMediaTap,
+            itemBuilder: (context, relation) {
+              return MediaCard(
+                media: relation.media,
+                badgeText: _formatRelationType(relation.relationType),
+                onTap: () => onMediaTap?.call(relation.media),
+              );
+            },
           ),
           const SizedBox(height: 24),
-          SimilarAnimeWidget(
-            recommendations: anime.recommendations,
+          HorizontalMediaSection<Media>(
+            title: 'More Like This',
+            items: anime.recommendations,
             isLoading: isLoading,
-            onMediaTap: onMediaTap,
+            itemBuilder: (context, media) {
+              return MediaCard(
+                media: media,
+                onTap: () => onMediaTap?.call(media),
+              );
+            },
           ),
           const SizedBox(height: 80),
         ],
       ),
     );
+  }
+
+  String _formatRelationType(String type) {
+    if (type.isEmpty) return type;
+    final formatted = type.replaceAll('_', ' ');
+    return formatted[0].toUpperCase() + formatted.substring(1).toLowerCase();
   }
 }

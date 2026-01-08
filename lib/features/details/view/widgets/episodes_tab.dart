@@ -456,6 +456,16 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
           ),
         ),
       );
+    } else if (viewMode == EpisodeViewMode.list) {
+      return SliverPadding(
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 100),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => buildItem(context, index),
+            childCount: visibleEpisodes.length,
+          ),
+        ),
+      );
     } else {
       return SliverPadding(
         padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),

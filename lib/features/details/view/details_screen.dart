@@ -108,33 +108,36 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
             ),
           ];
         },
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            // About Tab
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(0, 16, 0, 100),
-              child: DetailsContent(
-                anime: displayedAnime,
-                isLoading: isLoading,
-                onMediaTap: _onMediaTap,
+        body: ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              // About Tab
+              SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(0, 16, 0, 100),
+                child: DetailsContent(
+                  anime: displayedAnime,
+                  isLoading: isLoading,
+                  onMediaTap: _onMediaTap,
+                ),
               ),
-            ),
-            // Episodes Tab
-            EpisodesTab(
-              mediaId: displayedAnime.id.toString(),
-              mediaTitle: displayedAnime.title!,
-              mediaFormat: displayedAnime.format!,
-              mediaCover: displayedAnime.coverImage?.large ??
-                  displayedAnime.coverImage?.medium ??
-                  '',
-            ),
-            // Characters Tab
-            CharactersTab(
-              characters: displayedAnime.characters,
-              isLoading: isLoading,
-            ),
-          ],
+              // Episodes Tab
+              EpisodesTab(
+                mediaId: displayedAnime.id.toString(),
+                mediaTitle: displayedAnime.title!,
+                mediaFormat: displayedAnime.format ?? '',
+                mediaCover: displayedAnime.coverImage?.large ??
+                    displayedAnime.coverImage?.medium ??
+                    '',
+              ),
+              // Characters Tab
+              CharactersTab(
+                characters: displayedAnime.characters,
+                isLoading: isLoading,
+              ),
+            ],
+          ),
         ),
       ),
       // Bottom Tab Bar - cleaner design

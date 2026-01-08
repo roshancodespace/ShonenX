@@ -1,3 +1,5 @@
+import 'package:shonenx/features/settings/view/profile_settings_screen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
@@ -109,7 +111,12 @@ GoRoute _buildSettingsRoute() {
       GoRoute(
         path: 'account',
         builder: (context, state) => const AccountSettingsScreen(),
-        routes: [],
+        routes: [
+          GoRoute(
+            path: 'profile',
+            builder: (context, state) => const ProfileSettingsScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: 'anime-sources',

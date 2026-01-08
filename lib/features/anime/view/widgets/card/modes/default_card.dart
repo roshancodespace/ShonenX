@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/anilist/media.dart' as m;
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
 class DefaultCard extends StatelessWidget {
-  final Media? anime;
+  final m.Media? anime;
   final String tag;
   final bool isHovered;
   

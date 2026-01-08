@@ -96,17 +96,32 @@ class AuthViewModel extends StateNotifier<AuthState> {
   }
 
   /// ------------------- Helpers -------------------
-  AuthUser _buildAnilistUser(Map<String, dynamic> data) => AuthUser(
-        id: data['id'].toString(),
-        name: data['name'],
-        avatarUrl: data['avatar']['large'],
-      );
+  AuthUser _buildAnilistUser(Map<String, dynamic> data) =>
+      AuthUser.fromJson(data);
 
   AuthUser _buildMalUser(Map<String, dynamic> data) => AuthUser(
         id: data['id'].toString(),
         name: data['name'],
         avatarUrl: data['picture'],
       );
+
+  /// ------------------- Actions -------------------
+  Future<void> updateAnilistProfile({required String about}) async {
+    try {
+      await _ref.read(anilistServiceProvider).updateUser(about: about);
+
+      if (state.anilistUser != null) {
+        final token = state.anilistAccessToken;
+        if (token != null) {
+          final userData =
+              await _ref.read(anilistServiceProvider).getUserProfile(token);
+          state = state.copyWith(anilistUser: _buildAnilistUser(userData));
+        }
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 
   /// ------------------- AniList -------------------
   Future<void> _loadAnilistToken() async {
@@ -218,7 +233,10 @@ class AuthViewModel extends StateNotifier<AuthState> {
       case AuthPlatform.mal:
         await _secureStorage.delete(key: 'mal-token');
         await _secureStorage.delete(key: 'mal-refresh-token');
-        state = state.copyWith(malAccessToken: null, malUser: null,);
+        state = state.copyWith(
+          malAccessToken: null,
+          malUser: null,
+        );
         break;
     }
 

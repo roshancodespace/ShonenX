@@ -35,7 +35,7 @@ class EpisodeListItem extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 0.0),
       child: Column(
         children: [
           ListTile(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/utils/app_utils.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
@@ -19,104 +18,92 @@ class WatchlistScreen extends ConsumerStatefulWidget {
 }
 
 class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
-    with SingleTickerProviderStateMixin {
-  TabController? _tabController;
+    with TickerProviderStateMixin {
+  TabController? _controller;
   List<String> _statuses = [];
-  int _currentIndex = 0;
+  int _index = 0;
 
   @override
   void initState() {
     super.initState();
-    _initStatuses();
+    _init();
   }
 
-  Future<void> _initStatuses() async {
+  Future<void> _init() async {
     final repo = ref.read(animeRepositoryProvider);
-    final supportedStatuses = await repo.getSupportedStatuses();
+    final statuses = await repo.getSupportedStatuses();
+    _statuses = [...statuses, 'favorites'];
 
-    // Always include "favorites"
-    _statuses = [...supportedStatuses, 'favorites'];
-
-    setState(() {
-      _tabController = TabController(length: _statuses.length, vsync: this);
-
-      // Initial fetch for first tab
-      _fetchDataForIndex(0);
-
-      _tabController!.addListener(() {
-        if (_tabController!.index != _currentIndex) {
-          setState(() {
-            _currentIndex = _tabController!.index;
-          });
-          _fetchDataForIndex(_currentIndex);
+    _controller = TabController(length: _statuses.length, vsync: this)
+      ..addListener(() {
+        if (_controller!.index != _index) {
+          _index = _controller!.index;
+          _fetch(_index);
         }
       });
-    });
+
+    setState(() {});
+    _fetch(0);
   }
 
-  void _fetchDataForIndex(int index, {bool force = false}) {
+  void _fetch(int i, {bool force = false}) {
     if (_statuses.isEmpty) return;
-    final status = _statuses[index];
     ref
         .read(watchlistProvider.notifier)
-        .fetchListForStatus(status, force: force);
+        .fetchListForStatus(_statuses[i], force: force);
   }
 
   @override
   void dispose() {
-    _tabController?.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_tabController == null) {
+    if (_controller == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: Text(
           'Your Library',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: theme.textTheme.headlineMedium
+              ?.copyWith(fontWeight: FontWeight.bold),
         ),
-        centerTitle: false,
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         bottom: TabBar(
-          controller: _tabController,
+          controller: _controller,
           isScrollable: true,
-          labelColor: Theme.of(context).colorScheme.primary,
-          unselectedLabelColor:
-              Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-          indicatorColor: Theme.of(context).colorScheme.primary,
           indicatorWeight: 3,
-          labelStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-          onTap: (i) => _fetchDataForIndex(i),
-          tabs: _statuses.map((s) => Tab(text: _capitalize(s))).toList(),
+          onTap: (i) => _fetch(i),
+          tabs: _statuses.map((s) => Tab(text: _label(s))).toList(),
         ),
       ),
       body: TabBarView(
-        controller: _tabController,
-        children: _statuses
-            .map((status) => _WatchlistTabView(status: status))
-            .toList(),
+        controller: _controller,
+        children:
+            _statuses.map((s) => _WatchlistTabView(status: s)).toList(),
       ),
     );
   }
 
-  String _capitalize(String s) {
-    if (s.isEmpty) return s;
-    if (s.toLowerCase() == 'current') return 'Watching';
-    if (s.toLowerCase() == 'planning') return 'Plan to Watch';
-    return s[0].toUpperCase() + s.substring(1).toLowerCase();
+  String _label(String s) {
+    switch (s.toLowerCase()) {
+      case 'current':
+        return 'Watching';
+      case 'planning':
+        return 'Plan to Watch';
+      default:
+        return s[0].toUpperCase() + s.substring(1).toLowerCase();
+    }
   }
 }
 
@@ -124,17 +111,13 @@ class _WatchlistTabView extends ConsumerWidget {
   final String status;
   const _WatchlistTabView({required this.status});
 
-  int _getColumnCount(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    return width >= 1400
-        ? 6
-        : width >= 1100
-            ? 5
-            : width >= 800
-                ? 4
-                : width >= 450
-                    ? 3
-                    : 2; // Keep at least 2 columns like BrowseScreen
+  int _columns(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    if (w >= 1400) return 6;
+    if (w >= 1100) return 5;
+    if (w >= 800) return 4;
+    if (w >= 450) return 3;
+    return 2;
   }
 
   @override
@@ -142,66 +125,64 @@ class _WatchlistTabView extends ConsumerWidget {
     final state = ref.watch(watchlistProvider);
     final notifier = ref.read(watchlistProvider.notifier);
     final cardStyle = ref.watch(uiSettingsProvider).cardStyle;
-    final mode = AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
+    final mode =
+        AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
 
-    // Loading
     if (state.loadingStatuses.contains(status)) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // Error
     if (state.errors.containsKey(status)) {
       return _ErrorView(
         message: state.errors[status]!,
-        onRetry: () => notifier.fetchListForStatus(status, force: true),
+        onRetry: () =>
+            notifier.fetchListForStatus(status, force: true),
       );
     }
 
-    // Data
-    final mediaList = _extractMedia(state, status);
-    if (mediaList.isEmpty) {
-      return const _EmptyState();
-    }
+    final media = status == 'favorites'
+        ? state.favorites
+        : state.listFor(status).map((e) => e.media).toList();
+
+    if (media.isEmpty) return const _EmptyState();
 
     return NotificationListener<ScrollNotification>(
-      onNotification: (scrollInfo) {
-        final pageInfo = state.pageInfo[status];
-        if (scrollInfo.metrics.pixels >=
-                scrollInfo.metrics.maxScrollExtent * 0.9 &&
-            pageInfo != null &&
-            pageInfo.hasNextPage &&
-            !state.loadingStatuses.contains(status)) {
-          notifier.fetchListForStatus(status, page: pageInfo.currentPage + 1);
+      onNotification: (n) {
+        final info = state.pageInfo[status];
+        if (info != null &&
+            info.hasNextPage &&
+            !state.loadingStatuses.contains(status) &&
+            n.metrics.pixels >=
+                n.metrics.maxScrollExtent * 0.9) {
+          notifier.fetchListForStatus(
+            status,
+            page: info.currentPage + 1,
+          );
         }
         return false;
       },
       child: RefreshIndicator(
         onRefresh: () =>
-            notifier.fetchListForStatus(status, force: true, page: 1),
+            notifier.fetchListForStatus(status, force: true),
         child: ShonenXGridView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-          crossAxisCount: _getColumnCount(context),
+          crossAxisCount: _columns(context),
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
-          childAspectRatio: 0.70, // Slightly taller for better card look
-          items: mediaList.map((anime) {
-            final tag = generateId().toString();
+          childAspectRatio: 0.7,
+          items: media.map((anime) {
+            final tag = '${generateId()}${anime.id}';
             return AnimatedAnimeCard(
               anime: anime,
-              tag: "$tag${anime.id}",
+              tag: tag,
               mode: mode,
-              onTap: () => navigateToDetail(context, anime, "$tag${anime.id}"),
+              onTap: () => navigateToDetail(context, anime, tag),
             );
           }).toList(),
         ),
       ),
     );
-  }
-
-  List<Media> _extractMedia(WatchListState state, String status) {
-    if (status == 'favorites') return state.favorites;
-    return (state.lists[status] ?? []).map((e) => e.media).toList();
   }
 }
 
@@ -212,6 +193,7 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -219,31 +201,27 @@ class _ErrorView extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Iconsax.warning_2,
-                size: 64, color: Theme.of(context).colorScheme.error),
+                size: 64, color: theme.colorScheme.error),
             const SizedBox(height: 16),
             Text(
-              "Failed to load list",
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              'Failed to load list',
+              style: theme.textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color:
+                    theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Iconsax.refresh),
               label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
             ),
           ],
         ),
@@ -257,6 +235,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -264,29 +243,28 @@ class _EmptyState extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              color: theme.colorScheme.primary.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Iconsax.archive_add,
               size: 48,
-              color: Theme.of(context).colorScheme.primary,
+              color: theme.colorScheme.primary,
             ),
           ),
           const SizedBox(height: 24),
           Text(
             'List is Empty',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: theme.textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             'Add some anime to track your progress!',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                ),
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color:
+                  theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
           ),
         ],
       ),

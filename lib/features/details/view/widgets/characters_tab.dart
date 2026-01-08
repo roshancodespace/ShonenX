@@ -40,18 +40,24 @@ class CharactersTab extends StatelessWidget {
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 0.7,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: characters.length,
-      itemBuilder: (context, index) {
-        final char = characters[index];
-        return _CharacterCard(character: char);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount =
+            (constraints.maxWidth / 140).floor().clamp(1, 10);
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: 0.7,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: characters.length,
+          itemBuilder: (context, index) {
+            final char = characters[index];
+            return _CharacterCard(character: char);
+          },
+        );
       },
     );
   }

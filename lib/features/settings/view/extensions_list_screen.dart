@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
 import 'package:isar/isar.dart';
@@ -273,11 +274,13 @@ class ExtensionsListScreen extends ConsumerWidget {
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => context.push('/settings/extensions/demo'),
-          icon: const Icon(Iconsax.play),
-          label: const Text('Demo'),
-        ),
+        floatingActionButton: kDebugMode
+            ? FloatingActionButton.extended(
+                onPressed: () => context.push('/settings/extensions/demo'),
+                icon: const Icon(Iconsax.play),
+                label: const Text('Demo'),
+              )
+            : null,
       ),
     );
   }

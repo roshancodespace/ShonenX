@@ -60,7 +60,6 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
       expandedHeight: 420,
       pinned: false,
       floating: true,
-      snap: true,
       elevation: 0,
       backgroundColor: colorScheme.surfaceContainerLowest,
       flexibleSpace: FlexibleSpaceBar(
@@ -68,9 +67,12 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
           fit: StackFit.expand,
           children: [
             CachedNetworkImage(
-              imageUrl: widget.anime.bannerImage ??
-                  widget.anime.coverImage?.large ??
-                  '',
+              imageUrl: widget.anime.bannerImage != null &&
+                      widget.anime.bannerImage!.isNotEmpty
+                  ? widget.anime.bannerImage!
+                  : widget.anime.coverImage?.large ??
+                      widget.anime.coverImage?.medium ??
+                      '',
               fit: BoxFit.cover,
               placeholder: (_, __) =>
                   Container(color: colorScheme.surfaceContainer),
@@ -135,9 +137,44 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                             ),
                           ),
                         const SizedBox(height: 12),
+                        // Metadata Row
+                        Row(
+                          children: [
+                            if (widget.anime.averageScore != null) ...[
+                              Icon(Iconsax.star1,
+                                  color: theme.colorScheme.primary, size: 16),
+                              const SizedBox(width: 4),
+                              Text(
+                                (widget.anime.averageScore! / 10).toStringAsFixed(1),
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: theme.colorScheme.onSurface,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+                            Text(
+                              [
+                                widget.anime.seasonYear?.toString(),
+                                widget.anime.format,
+                                widget.anime.episodes != null
+                                    ? '${widget.anime.episodes} eps'
+                                    : null,
+                                widget.anime.status,
+                              ].whereType<String>().join(' • '),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurface
+                                    .withOpacity(0.8),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
                         GenreTags(
                           genres: widget.anime.genres,
-                          status: widget.anime.status ?? 'Unknown',
                         ),
                       ],
                     ),
@@ -190,32 +227,23 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
 /// Widget for displaying genre tags and status
 class GenreTags extends StatelessWidget {
   final List<String> genres;
-  final String status;
 
   const GenreTags({
     super.key,
     required this.genres,
-    required this.status,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: [
-          GenreTag(
-            text: status,
-            color: theme.colorScheme.primaryContainer,
-            isStatus: true,
-          ),
-          const SizedBox(width: 8),
-          ...genres.map((genre) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: GenreTag(text: genre),
-              )),
-        ],
+        children: genres
+            .map((genre) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GenreTag(text: genre),
+                ))
+            .toList(),
       ),
     );
   }

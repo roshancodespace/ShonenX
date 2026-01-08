@@ -94,7 +94,7 @@ class AnilistService {
       return result.data as T?;
     } catch (e, stackTrace) {
       AppLogger.e('Operation $operationName failed', e, stackTrace);
-      throw AnilistServiceException('Failed to execute $operationName', e);
+      rethrow;
     }
   }
 
@@ -110,6 +110,27 @@ class AnilistService {
     );
 
     return data?['Viewer'] ?? {};
+  }
+
+  /// Update the logged-in user's profile
+  Future<Map<String, dynamic>> updateUser({
+    required String about,
+    // Add other fields here if needed e.g. titleLanguage etc.
+  }) async {
+    final auth = _getAuthContext();
+    if (auth == null) return {};
+
+    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+      accessToken: auth.accessToken,
+      query: AnilistQueries.updateUserMutation,
+      variables: {
+        'about': about,
+      },
+      isMutation: true,
+      operationName: 'UpdateUser',
+    );
+
+    return data?['UpdateUser'] ?? {};
   }
 
   // ---------------- OVERRIDES ----------------
@@ -263,46 +284,52 @@ class AnilistService {
     return Media.fromJson(data!['Media']);
   }
 
-  Future<List<Media>> getTrendingAnime() async {
+  Future<List<Media>> getTrendingAnime({int page = 1, int perPage = 15}) async {
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: null,
       query: AnilistQueries.trendingAnimeQuery,
+      variables: {'page': page, 'perPage': perPage},
       operationName: 'GetTrendingAnime',
     );
     return _parseMediaList(data?['Page']?['media']);
   }
 
-  Future<List<Media>> getPopularAnime() async {
+  Future<List<Media>> getPopularAnime({int page = 1, int perPage = 15}) async {
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: null,
       query: AnilistQueries.popularAnimeQuery,
+      variables: {'page': page, 'perPage': perPage},
       operationName: 'GetPopularAnime',
     );
     return _parseMediaList(data?['Page']?['media']);
   }
 
-  Future<List<Media>> getTopRatedAnime() async {
+  Future<List<Media>> getTopRatedAnime({int page = 1, int perPage = 15}) async {
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: null,
       query: AnilistQueries.topRatedAnimeQuery,
+      variables: {'page': page, 'perPage': perPage},
       operationName: 'GetTopRatedAnime',
     );
     return _parseMediaList(data?['Page']?['media']);
   }
 
-  Future<List<Media>> getRecentlyUpdatedAnime() async {
+  Future<List<Media>> getRecentlyUpdatedAnime(
+      {int page = 1, int perPage = 15}) async {
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: null,
       query: AnilistQueries.recentlyUpdatedAnimeQuery,
+      variables: {'page': page, 'perPage': perPage},
       operationName: 'GetRecentlyUpdatedAnime',
     );
     return _parseMediaList(data?['Page']?['media']);
   }
 
-  Future<List<Media>> getUpcomingAnime() async {
+  Future<List<Media>> getUpcomingAnime({int page = 1, int perPage = 15}) async {
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: null,
       query: AnilistQueries.upcomingAnimeQuery,
+      variables: {'page': page, 'perPage': perPage},
       operationName: 'GetUpcomingAnime',
     );
     return _parseMediaList(data?['Page']?['media']);

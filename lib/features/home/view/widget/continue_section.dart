@@ -192,8 +192,16 @@ class ContinueSection extends ConsumerWidget {
                             const SizedBox(height: 8),
                             // Simple Progress Bar Visual
                             LinearProgressIndicator(
-                              value:
-                                  1.0, // entry.progress / entry.totalDuration if we had it
+                              value: (entry
+                                              .episodesProgress[
+                                                  entry.currentEpisode]!
+                                              .progressInSeconds ??
+                                          0)
+                                      .toDouble() /
+                                  (entry.episodesProgress[entry.currentEpisode]!
+                                              .durationInSeconds ??
+                                          0)
+                                      .toDouble(),
                               valueColor: AlwaysStoppedAnimation<Color>(
                                   colorScheme.primary),
                               backgroundColor:

@@ -1,11 +1,13 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:shonenx/core/models/aniskip/aniskip_result.dart';
+import 'package:shonenx/features/anime/view_model/aniskip_notifier.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
+import 'package:shonenx/features/settings/view_model/player_notifier.dart';
 import 'package:shonenx/utils/formatter.dart';
 
 class BottomControls extends ConsumerWidget {
@@ -74,7 +76,45 @@ class BottomControls extends ConsumerWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
-            children: [_buildSkipButton(scheme)],
+            children: [
+              Consumer(
+                builder: (context, ref, _) {
+                  final skips = ref.watch(aniSkipProvider);
+                  if (skips.isEmpty) return const SizedBox.shrink();
+
+                  final settings = ref.watch(playerSettingsProvider);
+                  if (!settings.enableAniSkip) return const SizedBox.shrink();
+
+                  final pos =
+                      ref.watch(playerStateProvider.select((p) => p.position));
+
+                  final currentSkip = skips.firstWhere(
+                    (s) {
+                      if (s.interval == null) return false;
+                      final start =
+                          Duration(seconds: s.interval!.startTime.toInt());
+                      final end =
+                          Duration(seconds: s.interval!.endTime.toInt());
+                      return pos >= start && pos < end;
+                    },
+                    orElse: () => const AniSkipResultItem(
+                        skipType: SkipType.unknown,
+                        action: '',
+                        episodeLength: 0),
+                  );
+
+                  if (currentSkip.interval == null) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: _buildAniSkipButton(scheme, currentSkip, ref),
+                  );
+                },
+              ),
+              _buildSkipButton(scheme),
+            ],
           ),
           _buildProgressBar(context, ref, scheme),
           const SizedBox(height: 4),
@@ -186,6 +226,63 @@ class BottomControls extends ConsumerWidget {
                   value: buffer.toDouble(),
                   max: max,
                   onChanged: null,
+                ),
+              ),
+
+              // highlights
+              Positioned.fill(
+                child: LayoutBuilder(
+                  builder: (_, constraints) {
+                    final skips = ref.watch(aniSkipProvider);
+                    final settings = ref.watch(playerSettingsProvider);
+
+                    if (!settings.enableAniSkip || skips.isEmpty || max <= 0) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final total = max;
+                    final maxWidth = constraints.maxWidth;
+
+                    return Stack(
+                      children: [
+                        for (final skip in skips)
+                          if (skip.interval != null)
+                            (() {
+                              final start = (skip.interval!.startTime * 1000)
+                                  .clamp(0, total);
+                              final end = (skip.interval!.endTime * 1000)
+                                  .clamp(0, total);
+
+                              if (end <= start) return const SizedBox.shrink();
+
+                              final left = (start / total) * maxWidth;
+                              final width = ((end - start) / total) * maxWidth;
+
+                              Color color;
+                              if (skip.skipType == SkipType.op) {
+                                color = Colors.green.withOpacity(0.6);
+                              } else if (skip.skipType == SkipType.ed) {
+                                color = Colors.blue.withOpacity(0.6);
+                              } else {
+                                color = scheme.primary.withOpacity(0.5);
+                              }
+
+                              return Positioned(
+                                left: left,
+                                top: 13,
+                                child: Container(
+                                  width: width,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              );
+                            })(),
+                      ],
+                    );
+                  },
                 ),
               ),
 
@@ -344,6 +441,53 @@ class BottomControls extends ConsumerWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAniSkipButton(
+      ColorScheme scheme, AniSkipResultItem skip, WidgetRef ref) {
+    String label = 'Skip';
+    switch (skip.skipType) {
+      case SkipType.op:
+      case SkipType.ed:
+        label = 'Skip ${skip.skipType.name.toUpperCase()}';
+        break;
+      case SkipType.recap:
+        label = 'Skip Recap';
+        break;
+      default:
+        label = 'Skip';
+    }
+
+    return InkWell(
+      onTap: () {
+        ref.read(playerStateProvider.notifier).seek(
+              Duration(seconds: skip.interval!.endTime.toInt() + 1),
+            );
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.skip_next, color: Colors.black, size: 16),
           ],
         ),
       ),

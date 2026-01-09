@@ -18,15 +18,21 @@ class PlayerModelAdapter extends TypeAdapter<PlayerModel> {
     };
     return PlayerModel(
       defaultQuality: fields[0] == null ? 'Auto' : fields[0] as String,
+      enableAniSkip: fields[1] == null ? true : fields[1] as bool,
+      enableAutoSkip: fields[2] == null ? false : fields[2] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, PlayerModel obj) {
     writer
-      ..writeByte(1)
+      ..writeByte(3)
       ..writeByte(0)
-      ..write(obj.defaultQuality);
+      ..write(obj.defaultQuality)
+      ..writeByte(1)
+      ..write(obj.enableAniSkip)
+      ..writeByte(2)
+      ..write(obj.enableAutoSkip);
   }
 
   @override

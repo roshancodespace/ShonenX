@@ -8,15 +8,27 @@ class PlayerModel {
   @HiveField(0, defaultValue: 'Auto')
   final String defaultQuality;
 
+  @HiveField(1, defaultValue: true)
+  final bool enableAniSkip;
+
+  @HiveField(2, defaultValue: false)
+  final bool enableAutoSkip;
+
   PlayerModel({
     this.defaultQuality = 'Auto',
+    this.enableAniSkip = true,
+    this.enableAutoSkip = false,
   });
 
   PlayerModel copyWith({
     String? defaultQuality,
+    bool? enableAniSkip,
+    bool? enableAutoSkip,
   }) {
     return PlayerModel(
       defaultQuality: defaultQuality ?? this.defaultQuality,
+      enableAniSkip: enableAniSkip ?? this.enableAniSkip,
+      enableAutoSkip: enableAutoSkip ?? this.enableAutoSkip,
     );
   }
 }

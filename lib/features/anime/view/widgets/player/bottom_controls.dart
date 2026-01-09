@@ -123,7 +123,9 @@ class BottomControls extends ConsumerWidget {
             children: [
               Row(
                 children: [
+                  _buildBack(ref),
                   _buildPlayPause(ref),
+                  _buildForward(ref),
                   const SizedBox(width: 12),
                   _buildTime(ref, scheme),
                 ],
@@ -182,6 +184,22 @@ class BottomControls extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBack(WidgetRef ref) {
+    return IconButton(
+      icon: const Icon(Iconsax.previous),
+      onPressed: () =>
+          ref.read(episodeDataProvider.notifier).changeEpisode(null, by: -1),
+    );
+  }
+
+  Widget _buildForward(WidgetRef ref) {
+    return IconButton(
+      icon: const Icon(Iconsax.next),
+      onPressed: () =>
+          ref.read(episodeDataProvider.notifier).changeEpisode(null, by: 1),
     );
   }
 

@@ -11,6 +11,7 @@ import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/core/myanimelist/services/auth_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/shared/providers/auth_provider.dart';
+import 'package:shonenx/features/settings/view_model/content_settings_notifier.dart';
 
 class MyAnimeListServiceException implements Exception {
   final String message;
@@ -30,8 +31,6 @@ class MyAnimeListService implements AnimeRepository {
   @override
   String get name => 'MyAnimeList';
 
-  // ... (Existing methods: _getAccessToken, _get, _post)
-
   String? _getAccessToken() {
     final authState = _ref.read(authProvider);
     if (!authState.isMalAuthenticated ||
@@ -45,6 +44,11 @@ class MyAnimeListService implements AnimeRepository {
       return null;
     }
     return token;
+  }
+
+  bool _getShowAdult() {
+    final settings = _ref.read(contentSettingsProvider);
+    return settings.showMalAdult;
   }
 
   Future<Map<String, dynamic>> _get(
@@ -157,11 +161,6 @@ class MyAnimeListService implements AnimeRepository {
   // ---------------------- FAVORITES ----------------------
   @override
   Future<List<Media>> getFavorites() async {
-    // MAL API doesn't have a direct 'favorites' status endpoint in the same way, but we can filter or use user details if available.
-    // Usually favorites are part of user profile, but this endpoint mimics generic list for now.
-    // Falls back to fetching planning or similar if favorites logic isn't straightforward without a specific endpoint.
-    // However, for compatibility, returning empty or user specific favorites if simpler.
-    // Using standard list call with some assumption or returning empty if not supported well.
     return [];
   }
 
@@ -176,8 +175,9 @@ class MyAnimeListService implements AnimeRepository {
   Future<List<Media>> searchAnime(String title,
       {int page = 1, int perPage = 10}) async {
     final offset = (page - 1) * perPage;
+    final nsfwStub = _getShowAdult() ? '&nsfw=true' : '';
     final url =
-        'https://api.myanimelist.net/v2/anime?q=$title&limit=$perPage&offset=$offset&fields=num_episodes,status,mean,media_type';
+        'https://api.myanimelist.net/v2/anime?q=$title&limit=$perPage&offset=$offset&fields=num_episodes,status,mean,media_type$nsfwStub';
     final data = await _get(url);
 
     return (data['data'] as List<dynamic>? ?? [])
@@ -208,8 +208,9 @@ class MyAnimeListService implements AnimeRepository {
   Future<List<Media>> _getRankedAnime(
       String rankingType, int page, int perPage) async {
     final offset = (page - 1) * perPage;
+    final nsfwStub = _getShowAdult() ? '&nsfw=true' : '';
     final url =
-        'https://api.myanimelist.net/v2/anime/ranking?ranking_type=$rankingType&limit=$perPage&offset=$offset&fields=num_episodes,status,mean,media_type';
+        'https://api.myanimelist.net/v2/anime/ranking?ranking_type=$rankingType&limit=$perPage&offset=$offset&fields=num_episodes,status,mean,media_type$nsfwStub';
     final data = await _get(url);
     return (data['data'] as List<dynamic>? ?? [])
         .map((e) => Media.fromMal(e['node'] as Map<String, dynamic>))
@@ -224,8 +225,6 @@ class MyAnimeListService implements AnimeRepository {
   @override
   Future<List<Media>> getRecentlyUpdatedAnime(
       {int page = 1, int perPage = 15}) async {
-    // MAL doesn't have a direct 'recently updated' ranking that maps 1:1 to Anlist.
-    // We can use 'airing' as a proxy for ongoing shows.
     return _getRankedAnime('airing', page, perPage);
   }
 
@@ -236,7 +235,6 @@ class MyAnimeListService implements AnimeRepository {
 
   @override
   Future<List<Media>> getTrendingAnime({int page = 1, int perPage = 15}) async {
-    // MAL doesn't have 'trending' exactly, 'airing' or 'bypopularity' are closest.
     return _getRankedAnime('airing', page, perPage);
   }
 
@@ -268,14 +266,10 @@ class MyAnimeListService implements AnimeRepository {
     if (status != null) body['status'] = _mapStatusToMal(status);
     if (score != null) body['score'] = score.toInt().toString();
     if (progress != null) body['num_watched_episodes'] = progress.toString();
-    // MAL API doesn't easily support granular date updates via this endpoint in the same way, or requires specific formatting.
-    // Ignoring partial date updates for brevity unless fully implemented.
+    await _put(url, body);
 
-    final data = await _put(url, body);
-
-    // Construct a MediaListEntry from the response + mediaId
     return MediaListEntry(
-      id: mediaId, // MAL list entries don't have unique IDs separate from the anime usually, or it's not returned here
+      id: mediaId,
       status: status ?? 'UNKNOWN',
       score: score ?? 0,
       progress: progress ?? 0,

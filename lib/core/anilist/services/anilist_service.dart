@@ -9,6 +9,7 @@ import 'package:shonenx/core/models/anilist/page_response.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
+import 'package:shonenx/features/settings/view_model/content_settings_notifier.dart';
 
 class AnilistServiceException implements Exception {
   final String message;
@@ -59,8 +60,13 @@ class AnilistService {
     return (userId: userId.toString(), accessToken: accessToken);
   }
 
+  bool? _getAdultParam() {
+    final settings = _ref?.read(contentSettingsProvider);
+    return (settings?.showAnilistAdult == true) ? null : false;
+  }
+
   Future<T?> _executeGraphQLOperation<T>({
-    required String? accessToken,
+    String? accessToken,
     required String query,
     Map<String, dynamic>? variables,
     bool isMutation = false,
@@ -68,28 +74,37 @@ class AnilistService {
   }) async {
     try {
       AppLogger.d('Executing $operationName with variables: $variables');
-      _client ??= await AnilistClient.getClient(accessToken: accessToken);
-      final options = isMutation
-          ? MutationOptions(
-              document: gql(query),
-              variables: variables ?? {},
-              fetchPolicy: FetchPolicy.networkOnly,
-            )
-          : QueryOptions(
-              document: gql(query),
-              variables: variables ?? {},
-              fetchPolicy: FetchPolicy.cacheAndNetwork,
-            );
+
+      _client = await AnilistClient.getClient(accessToken: accessToken);
+
+      final document = gql(query);
 
       final result = isMutation
-          ? await _client!.mutate(options as MutationOptions)
-          : await _client!.query(options as QueryOptions);
+          ? await _client!.mutate(
+              MutationOptions(
+                document: document,
+                variables: variables ?? const {},
+                fetchPolicy: FetchPolicy.networkOnly,
+              ),
+            )
+          : await _client!.query(
+              QueryOptions(
+                document: document,
+                variables: variables ?? const {},
+                fetchPolicy: FetchPolicy.cacheFirst,
+              ),
+            );
 
       if (result.hasException) {
-        AppLogger.e('GraphQL Error in $operationName', result.exception,
-            StackTrace.current);
+        AppLogger.e(
+          'GraphQL Error in $operationName',
+          result.exception?.graphqlErrors,
+          StackTrace.current,
+        );
         throw AnilistServiceException(
-            'GraphQL operation failed', result.exception);
+          'GraphQL operation failed',
+          result.exception,
+        );
       }
 
       AppLogger.i('$operationName completed successfully');
@@ -267,10 +282,20 @@ class AnilistService {
 
   Future<List<Media>> searchAnime(String title,
       {int page = 1, int perPage = 10}) async {
+    final adultParam = _getAdultParam();
+    final useAdult = adultParam != null;
+
+    final variables = <String, dynamic>{
+      'search': title,
+      'page': page,
+      'perPage': perPage,
+    };
+    if (useAdult) variables['isAdult'] = adultParam;
+
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: null,
-      query: AnilistQueries.searchAnimeQuery,
-      variables: {'search': title, 'page': page, 'perPage': perPage},
+      query: AnilistQueries.searchAnimeQuery(useAdult),
+      variables: variables,
       operationName: 'SearchAnime',
     );
     return _parseMediaList(data?['Page']?['media']);
@@ -287,30 +312,49 @@ class AnilistService {
   }
 
   Future<List<Media>> getTrendingAnime({int page = 1, int perPage = 15}) async {
+    final adultParam = _getAdultParam();
+    final useAdult = adultParam != null;
+
+    final variables = <String, dynamic>{'page': page, 'perPage': perPage};
+    if (useAdult) variables['isAdult'] = adultParam;
+
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: null,
-      query: AnilistQueries.trendingAnimeQuery,
-      variables: {'page': page, 'perPage': perPage},
+      query: AnilistQueries.trendingAnimeQuery(useAdult),
+      variables: variables,
       operationName: 'GetTrendingAnime',
     );
+    AppLogger.d(data);
     return _parseMediaList(data?['Page']?['media']);
   }
 
   Future<List<Media>> getPopularAnime({int page = 1, int perPage = 15}) async {
+    final adultParam = _getAdultParam();
+    final useAdult = adultParam != null;
+
+    final variables = <String, dynamic>{'page': page, 'perPage': perPage};
+    if (useAdult) variables['isAdult'] = adultParam;
+
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: null,
-      query: AnilistQueries.popularAnimeQuery,
-      variables: {'page': page, 'perPage': perPage},
+      query: AnilistQueries.popularAnimeQuery(useAdult),
+      variables: variables,
       operationName: 'GetPopularAnime',
     );
     return _parseMediaList(data?['Page']?['media']);
   }
 
   Future<List<Media>> getTopRatedAnime({int page = 1, int perPage = 15}) async {
+    final adultParam = _getAdultParam();
+    final useAdult = adultParam != null;
+
+    final variables = <String, dynamic>{'page': page, 'perPage': perPage};
+    if (useAdult) variables['isAdult'] = adultParam;
+
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: null,
-      query: AnilistQueries.topRatedAnimeQuery,
-      variables: {'page': page, 'perPage': perPage},
+      query: AnilistQueries.topRatedAnimeQuery(useAdult),
+      variables: variables,
       operationName: 'GetTopRatedAnime',
     );
     return _parseMediaList(data?['Page']?['media']);
@@ -318,20 +362,32 @@ class AnilistService {
 
   Future<List<Media>> getRecentlyUpdatedAnime(
       {int page = 1, int perPage = 15}) async {
+    final adultParam = _getAdultParam();
+    final useAdult = adultParam != null;
+
+    final variables = <String, dynamic>{'page': page, 'perPage': perPage};
+    if (useAdult) variables['isAdult'] = adultParam;
+
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: null,
-      query: AnilistQueries.recentlyUpdatedAnimeQuery,
-      variables: {'page': page, 'perPage': perPage},
+      query: AnilistQueries.recentlyUpdatedAnimeQuery(useAdult),
+      variables: variables,
       operationName: 'GetRecentlyUpdatedAnime',
     );
     return _parseMediaList(data?['Page']?['media']);
   }
 
   Future<List<Media>> getUpcomingAnime({int page = 1, int perPage = 15}) async {
+    final adultParam = _getAdultParam();
+    final useAdult = adultParam != null;
+
+    final variables = <String, dynamic>{'page': page, 'perPage': perPage};
+    if (useAdult) variables['isAdult'] = adultParam;
+
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: null,
-      query: AnilistQueries.upcomingAnimeQuery,
-      variables: {'page': page, 'perPage': perPage},
+      query: AnilistQueries.upcomingAnimeQuery(useAdult),
+      variables: variables,
       operationName: 'GetUpcomingAnime',
     );
     return _parseMediaList(data?['Page']?['media']);

@@ -44,4 +44,8 @@ class AnilistClient {
 
     return _client!;
   }
+
+  static void clearCache() {
+    _client?.cache.store.reset();
+  }
 }

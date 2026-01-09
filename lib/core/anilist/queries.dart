@@ -187,10 +187,10 @@ class AnilistQueries {
   ''';
 
   // Query: Search anime by title
-  static const String searchAnimeQuery = '''
-    query (\$search: String, \$page: Int, \$perPage: Int) {
+  static String searchAnimeQuery(bool includeAdult) => '''
+    query (\$search: String, \$page: Int, \$perPage: Int${includeAdult ? ', \$isAdult: Boolean' : ''}) {
       Page(page: \$page, perPage: \$perPage) {
-        media(search: \$search, type: ANIME, sort: POPULARITY_DESC) {
+        media(search: \$search, type: ANIME, sort: POPULARITY_DESC${includeAdult ? ', isAdult: \$isAdult' : ''}) {
           $mediaFields
         }
       }
@@ -400,10 +400,10 @@ class AnilistQueries {
   ''';
 
   // Query: Fetch trending anime
-  static const String trendingAnimeQuery = '''
-    query (\$page: Int, \$perPage: Int) {
+  static String trendingAnimeQuery(bool includeAdult) => '''
+    query (\$page: Int, \$perPage: Int${includeAdult ? ', \$isAdult: Boolean' : ''}) {
       Page(page: \$page, perPage: \$perPage) {
-        media(sort: TRENDING_DESC, type: ANIME) {
+        media(sort: TRENDING_DESC, type: ANIME${includeAdult ? ', isAdult: \$isAdult' : ''}) {
           $spotlightMediaFields
         }
       }
@@ -433,10 +433,10 @@ class AnilistQueries {
   ''';
 
   // Query: Fetch popular anime
-  static const String popularAnimeQuery = '''
-    query (\$page: Int, \$perPage: Int) {
+  static String popularAnimeQuery(bool includeAdult) => '''
+    query (\$page: Int, \$perPage: Int${includeAdult ? ', \$isAdult: Boolean' : ''}) {
       Page(page: \$page, perPage: \$perPage) {
-        media(sort: POPULARITY_DESC, type: ANIME) {
+        media(sort: POPULARITY_DESC, type: ANIME${includeAdult ? ', isAdult: \$isAdult' : ''}) {
           $mediaFields
         }
       }
@@ -444,10 +444,10 @@ class AnilistQueries {
   ''';
 
   // Query: Fetch recently released episodes (Ongoing Anime)
-  static const String recentEpisodesQuery = '''
-    query (\$page: Int, \$perPage: Int) {
+  static String recentEpisodesQuery(bool includeAdult) => '''
+    query (\$page: Int, \$perPage: Int${includeAdult ? ', \$isAdult: Boolean' : ''}) {
       Page(page: \$page, perPage: \$perPage) {
-        media(type: ANIME, status: RELEASING, sort: UPDATED_AT_DESC) {
+        media(type: ANIME, status: RELEASING, sort: UPDATED_AT_DESC${includeAdult ? ', isAdult: \$isAdult' : ''}) {
           $mediaFields
         }
       }
@@ -455,10 +455,10 @@ class AnilistQueries {
   ''';
 
   // Query: Fetch seasonal anime
-  static const String seasonalAnimeQuery = '''
-    query (\$season: MediaSeason, \$year: Int, \$page: Int, \$perPage: Int) {
+  static String seasonalAnimeQuery(bool includeAdult) => '''
+    query (\$season: MediaSeason, \$year: Int, \$page: Int, \$perPage: Int${includeAdult ? ', \$isAdult: Boolean' : ''}) {
       Page(page: \$page, perPage: \$perPage) {
-        media(season: \$season, seasonYear: \$year, type: ANIME, sort: POPULARITY_DESC) {
+        media(season: \$season, seasonYear: \$year, type: ANIME, sort: POPULARITY_DESC${includeAdult ? ', isAdult: \$isAdult' : ''}) {
           $mediaFields
         }
       }
@@ -466,10 +466,10 @@ class AnilistQueries {
   ''';
 
   // Query: Fetch top-rated anime
-  static const String topRatedAnimeQuery = '''
-    query (\$page: Int, \$perPage: Int) {
+  static String topRatedAnimeQuery(bool includeAdult) => '''
+    query (\$page: Int, \$perPage: Int${includeAdult ? ', \$isAdult: Boolean' : ''}) {
       Page(page: \$page, perPage: \$perPage) {
-        media(sort: SCORE_DESC, type: ANIME) {
+        media(sort: SCORE_DESC, type: ANIME${includeAdult ? ', isAdult: \$isAdult' : ''}) {
           $mediaFields
         }
       }
@@ -490,21 +490,21 @@ class AnilistQueries {
   ''';
 
   // Fetch Recently Updated Anime
-  static const String recentlyUpdatedAnimeQuery = '''
-    query (\$page: Int, \$perPage: Int) {
+  static String recentlyUpdatedAnimeQuery(bool includeAdult) => '''
+    query (\$page: Int, \$perPage: Int${includeAdult ? ', \$isAdult: Boolean' : ''}) {
       Page(page: \$page, perPage: \$perPage) {
-        media(sort: UPDATED_AT_DESC, type: ANIME) {
+        media(sort: UPDATED_AT_DESC, type: ANIME${includeAdult ? ', isAdult: \$isAdult' : ''}) {
           $mediaFields
         }
       }
     }
   ''';
-
+  
   // Fetch Upcoming Anime
-  static const String upcomingAnimeQuery = '''
-    query (\$page: Int, \$perPage: Int) {
+  static String upcomingAnimeQuery(bool includeAdult) => '''
+    query (\$page: Int, \$perPage: Int${includeAdult ? ', \$isAdult: Boolean' : ''}) {
       Page(page: \$page, perPage: \$perPage) {
-        media(sort: START_DATE_DESC, type: ANIME, status: NOT_YET_RELEASED) {
+        media(sort: START_DATE_DESC, type: ANIME, status: NOT_YET_RELEASED${includeAdult ? ', isAdult: \$isAdult' : ''}) {
           $mediaFields
         }
       }

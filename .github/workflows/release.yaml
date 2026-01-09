@@ -127,8 +127,42 @@ jobs:
           name: linux-bundle
           path: ShonenX-Linux.zip
 
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.5"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Create .env file
+        run: |
+          echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" > .env
+          echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
+          echo "API_URL=${{ secrets.API_URL }}" >> .env
+        shell: bash
+
+      - name: Build Windows
+        run: flutter build windows --release
+
+      - name: Compress Windows Bundle
+        run: Compress-Archive -Path build\windows\x64\runner\release\* -DestinationPath ShonenX-Windows.zip
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-bundle
+          path: ShonenX-Windows.zip
+
   publish-release:
-    needs: [build-android, build-linux]
+    needs: [build-android, build-linux, build-windows]
     runs-on: ubuntu-latest
 
     steps:
@@ -148,6 +182,12 @@ jobs:
         with:
           name: linux-bundle
           path: linux-bundle
+
+      - name: Download Windows Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-bundle
+          path: windows-bundle
 
       - name: Generate Changelog
         id: changelog
@@ -191,5 +231,6 @@ jobs:
           files: |
             android-apks/*.apk
             linux-bundle/*.zip
+            windows-bundle/*.zip
           body: ${{ steps.changelog.outputs.notes }}
           token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,23 +1,47 @@
+import 'dart:io';
+
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 
 class AnilistClient {
-  static final String _baseUrl = 'https://graphql.anilist.co';
+  static GraphQLClient? _client;
+  static String? _lastToken;
 
-  static GraphQLClient getClient({String? accessToken}) {
-    final HttpLink httpLink = HttpLink(_baseUrl);
-    final AuthLink authLink = AuthLink(getToken: () async {
-      if (accessToken == null || accessToken.isEmpty) return null;
-      return 'Bearer $accessToken';
-    });
-    final Link link = authLink.concat(httpLink);
-    return GraphQLClient(
+  static const _baseUrl = 'https://graphql.anilist.co';
+
+  static Future<GraphQLClient> getClient({String? accessToken}) async {
+    if (_client != null && _lastToken == accessToken) {
+      return _client!;
+    }
+
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final hivePath =
+        '${appDocDir.path}${Platform.pathSeparator}ShonenX${Platform.pathSeparator}appdata';
+
+    final httpLink = HttpLink(_baseUrl);
+
+    final authLink = AuthLink(
+      getToken: () async =>
+          (accessToken == null || accessToken.isEmpty)
+              ? null
+              : 'Bearer $accessToken',
+    );
+
+    final link = authLink.concat(httpLink);
+
+    final store = await HiveStore.open(path: hivePath);
+
+    _lastToken = accessToken;
+    _client = GraphQLClient(
       link: link,
-      cache: GraphQLCache(store: HiveStore()),
-      queryRequestTimeout: Duration(seconds: 15),
+      cache: GraphQLCache(store: store),
+      queryRequestTimeout: const Duration(seconds: 15),
       defaultPolicies: DefaultPolicies(
         query: Policies(fetch: FetchPolicy.cacheFirst),
         mutate: Policies(fetch: FetchPolicy.networkOnly),
       ),
     );
+
+    return _client!;
   }
 }

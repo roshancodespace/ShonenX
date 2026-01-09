@@ -1,0 +1,58 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/anilist/services/anilist_service.dart';
+import 'package:shonenx/core/jikan/jikan_service.dart';
+import 'package:shonenx/core/models/aniskip/aniskip_result.dart';
+import 'package:shonenx/core/services/aniskip_service.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
+
+final aniSkipProvider =
+    StateNotifierProvider<AniSkipNotifier, List<AniSkipResultItem>>((ref) {
+  return AniSkipNotifier(ref);
+});
+
+class AniSkipNotifier extends StateNotifier<List<AniSkipResultItem>> {
+  final Ref _ref;
+  final JikanService _jikan = JikanService();
+
+  AniSkipNotifier(this._ref) : super([]);
+
+  Future<void> fetchSkipTimes({
+    required String mediaId,
+    required String animeTitle,
+    required int episodeNumber,
+  }) async {
+    state = [];
+    int? malId;
+
+    try {
+      // Try to get MAL ID from Anilist ID
+      final anilistId = int.tryParse(mediaId);
+      if (anilistId != null) {
+        final media =
+            await _ref.read(anilistServiceProvider).getAnimeDetails(anilistId);
+        malId = media?.idMal;
+      }
+
+      // If not found, search via Jikan
+      if (malId == null) {
+        final results = await _jikan.getSearch(title: animeTitle, limit: 1);
+        if (results.isNotEmpty) {
+          malId = results.first.malId;
+        }
+      }
+
+      if (malId != null) {
+        final results = await aniSkipService.getSkipTimes(malId, episodeNumber);
+        state = results;
+      } else {
+        AppLogger.w('Could not resolve MAL ID for $animeTitle ($mediaId)');
+      }
+    } catch (e) {
+      AppLogger.e('Failed to fetch skip times: $e');
+    }
+  }
+
+  void clear() {
+    state = [];
+  }
+}

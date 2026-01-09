@@ -12,9 +12,11 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/features/anime/view/widgets/episodes_panel.dart';
 import 'package:shonenx/features/anime/view/widgets/player/controls_overlay.dart';
+import 'package:shonenx/features/anime/view_model/aniskip_notifier.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
+import 'package:shonenx/features/settings/view_model/player_notifier.dart';
 import 'package:shonenx/helpers/ui.dart';
 import 'package:shonenx/utils/formatter.dart';
 
@@ -95,7 +97,51 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
     ref.listen<int?>(
       episodeDataProvider.select((d) => d.selectedEpisodeIdx),
-      (_, __) => _resumeChecked = false,
+      (_, next) {
+        _resumeChecked = false;
+        if (next != null) {
+          final settings = ref.read(playerSettingsProvider);
+          if (settings.enableAniSkip) {
+            final episodes = ref.read(episodeListProvider).episodes;
+            if (next < episodes.length) {
+              final ep = episodes[next];
+              if (ep.number != null) {
+                ref.read(aniSkipProvider.notifier).fetchSkipTimes(
+                      mediaId: widget.mediaId,
+                      animeTitle: widget.animeName,
+                      episodeNumber: ep.number!.toInt(),
+                    );
+              }
+            }
+          } else {
+            ref.read(aniSkipProvider.notifier).clear();
+          }
+        }
+      },
+    );
+
+    // Auto-Skip Listener
+    ref.listen<Duration>(
+      playerStateProvider.select((p) => p.position),
+      (_, pos) {
+        final skips = ref.read(aniSkipProvider);
+        if (skips.isEmpty) return;
+
+        final settings = ref.read(playerSettingsProvider);
+        if (!settings.enableAutoSkip) return;
+
+        for (final skip in skips) {
+          if (skip.interval == null) continue;
+          final start = Duration(seconds: skip.interval!.startTime.toInt());
+          final end = Duration(seconds: skip.interval!.endTime.toInt());
+
+          if (pos >= start && pos < end) {
+            ref.read(playerStateProvider.notifier).seek(end);
+            // Break to avoid multiple matches or conflicts
+            break;
+          }
+        }
+      },
     );
 
     ref.listen<PlayerState>(

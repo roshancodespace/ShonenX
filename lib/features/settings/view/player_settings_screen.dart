@@ -67,6 +67,41 @@ class PlayerSettingsScreen extends ConsumerWidget {
               ],
             ),
             SettingsSection(
+              title: 'AniSkip',
+              titleColor: colorScheme.primary,
+              children: [
+                ToggleableSettingsItem(
+                  icon: Icon(Iconsax.timer_1, color: colorScheme.primary),
+                  accent: colorScheme.primary,
+                  title: 'Enable AniSkip',
+                  description: 'Skip intro and outro automatically or manually',
+                  value: playerSettings.enableAniSkip,
+                  onChanged: (value) => ref
+                      .read(playerSettingsProvider.notifier)
+                      .updateSettings((prev) => prev.copyWith(
+                            enableAniSkip: value,
+                          )),
+                ),
+                ToggleableSettingsItem(
+                  icon:
+                      Icon(Iconsax.autobrightness, color: colorScheme.primary),
+                  accent: colorScheme.primary,
+                  title: 'Auto Skip',
+                  description: 'Automatically skip intro/outro without asking',
+                  value: playerSettings.enableAutoSkip,
+                  onChanged: (value) {
+                    if (playerSettings.enableAniSkip) {
+                      ref
+                          .read(playerSettingsProvider.notifier)
+                          .updateSettings((prev) => prev.copyWith(
+                                enableAutoSkip: value,
+                              ));
+                    }
+                  },
+                ),
+              ],
+            ),
+            SettingsSection(
               title: 'Subtitle',
               titleColor: colorScheme.primary,
               children: [
@@ -82,62 +117,6 @@ class PlayerSettingsScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-
-  void _showQualitySettingsDialog(BuildContext context, WidgetRef ref) async {
-    final qualities = ['Auto', '1080p', '720p', '480p', '360p'];
-    final colorScheme = Theme.of(context).colorScheme;
-    final playerSettings = ref.read(playerSettingsProvider);
-    String tempQuality = playerSettings.defaultQuality;
-
-    await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Video Quality'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: qualities
-                    .map((quality) => RadioListTile<String>(
-                          title: Text(quality),
-                          value: quality,
-                          groupValue: tempQuality,
-                          onChanged: (value) {
-                            if (value != null) {
-                              setDialogState(() => tempQuality = value);
-                            }
-                          },
-                        ))
-                    .toList(),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel',
-                      style: TextStyle(color: colorScheme.onSurface)),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    ref.read(playerSettingsProvider.notifier).updateSettings(
-                          (prev) => prev.copyWith(defaultQuality: tempQuality),
-                        );
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.primaryContainer,
-                    foregroundColor: colorScheme.onPrimaryContainer,
-                  ),
-                  child: Text('Save',
-                      style: TextStyle(color: colorScheme.onPrimaryContainer)),
-                ),
-              ],
-            );
-          },
-        );
-      },
     );
   }
 }

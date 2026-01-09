@@ -74,21 +74,22 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
   }
 
   void _updateEntryFields(dynamic entry) {
-    _selectedStatus = entry.status;
-    _progressController.text = entry.progress.toString();
-    _scoreController.text = entry.score.toString();
-    _repeatsController.text = entry.repeat.toString();
-    _notesController.text = entry.notes;
-    _startDate = entry.startedAt?.toDateTime;
-    _completedDate = entry.completedAt?.toDateTime;
-    _isPrivate = entry.isPrivate;
+    setState(() {
+      _selectedStatus = entry.status;
+      _progressController.text = entry.progress.toString();
+      _scoreController.text = entry.score.toString();
+      _repeatsController.text = entry.repeat.toString();
+      _notesController.text = entry.notes;
+      _startDate = entry.startedAt?.toDateTime;
+      _completedDate = entry.completedAt?.toDateTime;
+      _isPrivate = entry.isPrivate;
+    });
   }
 
   Future<void> _loadEntry() async {
     _isFetching.value = true;
     try {
       final auth = ref.read(authProvider);
-
       final watchlistNotifier = ref.read(watchlistProvider.notifier);
       final animeRepo = ref.read(animeRepositoryProvider);
       final watchlist = ref.read(watchlistProvider);
@@ -188,6 +189,7 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
       setState(() {
         if (isStartDate) {
           _startDate = newDate;
+          // Ensure completed date is not before start date
           if (_completedDate != null && _completedDate!.isBefore(_startDate!)) {
             _completedDate = null;
           }
@@ -198,10 +200,72 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
     }
   }
 
+  void _handleStatusChange(String? newStatus) {
+    if (newStatus == null) return;
+    setState(() {
+      _selectedStatus = newStatus;
+      if (newStatus == 'COMPLETED') {
+        if (_progressController.text != widget.anime.episodes.toString() &&
+            widget.anime.episodes != null) {
+          _progressController.text = widget.anime.episodes.toString();
+        }
+        _completedDate ??= DateTime.now();
+        _startDate ??= DateTime.now();
+      } else if (newStatus == 'CURRENT') {
+        _startDate ??= DateTime.now();
+        _completedDate = null;
+      }
+    });
+  }
+
+  void _incrementProgress() {
+    int current = int.tryParse(_progressController.text) ?? 0;
+    int? total = widget.anime.episodes;
+    if (total == null || current < total) {
+      setState(() {
+        current++;
+        _progressController.text = current.toString();
+        if (total != null && current == total) {
+          _selectedStatus = 'COMPLETED';
+          _completedDate ??= DateTime.now();
+        } else if (_selectedStatus == 'PLANNING') {
+          _selectedStatus = 'CURRENT';
+          _startDate ??= DateTime.now();
+        }
+      });
+    }
+  }
+
+  void _decrementProgress() {
+    int current = int.tryParse(_progressController.text) ?? 0;
+    if (current > 0) {
+      setState(() {
+        current--;
+        _progressController.text = current.toString();
+        if (_selectedStatus == 'COMPLETED' &&
+            (widget.anime.episodes == null ||
+                current < widget.anime.episodes!)) {
+          _selectedStatus = 'CURRENT';
+          _completedDate = null;
+        }
+      });
+    }
+  }
+
+  void _setMaxProgress() {
+    if (widget.anime.episodes != null) {
+      setState(() {
+        _progressController.text = widget.anime.episodes.toString();
+        _selectedStatus = 'COMPLETED';
+        _startDate ??= DateTime.now();
+        _completedDate ??= DateTime.now();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final totalEpisodes = widget.anime.episodes;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -211,60 +275,38 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                ValueListenableBuilder(
-                  valueListenable: _isFetching,
-                  builder: (context, value, child) => value
-                      ? Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 5),
-                          child: Text('Syncing Entry...',
-                              style: theme.textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.bold)),
-                        )
-                      : Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 5),
-                          child: Text('Edit Entry',
-                              style: theme.textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.bold)),
-                        ),
-                )
-              ],
-            ),
+            _buildHeader(theme),
             const SizedBox(height: 24),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: _buildStatusDropdown()),
                 const SizedBox(width: 16),
-                Expanded(
-                    child: _buildTextField('Score', _scoreController,
-                        suffixText: '/ 10')),
+                Expanded(child: _buildScoreSection()),
               ],
             ),
-            const SizedBox(height: 16),
-            _buildTextField('Progress', _progressController,
-                suffixText: totalEpisodes != null ? '/ $totalEpisodes' : 'eps',
-                suffixIcon: IconButton(
-                  icon: const Icon(Iconsax.add_circle),
-                  onPressed: () {
-                    int current = int.tryParse(_progressController.text) ?? 0;
-                    if (totalEpisodes == null || current < totalEpisodes) {
-                      _progressController.text = '${current + 1}';
-                    }
-                  },
-                )),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
+            _buildProgressSection(theme),
+            const SizedBox(height: 24),
             Row(
               children: [
                 Expanded(
-                    child: _buildDateField(
-                        'Started At', _startDate, () => _pickDate(true))),
+                  child: _buildDateField(
+                    'Started At',
+                    _startDate,
+                    () => _pickDate(true),
+                    () => setState(() => _startDate = DateTime.now()),
+                  ),
+                ),
                 const SizedBox(width: 16),
                 Expanded(
-                    child: _buildDateField('Completed At', _completedDate,
-                        () => _pickDate(false))),
+                  child: _buildDateField(
+                    'Completed At',
+                    _completedDate,
+                    () => _pickDate(false),
+                    () => setState(() => _completedDate = DateTime.now()),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -286,84 +328,256 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
               ],
             ),
             const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _isSaving.value ? null : () => _saveChanges(),
-              icon: _isSaving.value
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Iconsax.save_2),
-              label: Text(_isSaving.value ? 'Saving...' : 'Save Changes'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                textStyle: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
+            _buildSaveButton(theme),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildHeader(ThemeData theme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        ValueListenableBuilder(
+            valueListenable: _isFetching,
+            builder: (context, value, child) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      value ? 'Syncing Entry...' : 'Edit Entry',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (value)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: SizedBox(
+                          height: 2,
+                          width: 80,
+                          child: LinearProgressIndicator(
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                  ],
+                )),
+        IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Iconsax.close_circle),
+        ),
+      ],
+    );
+  }
+
   Widget _buildStatusDropdown() {
     return DropdownButtonFormField<String>(
       value: _selectedStatus,
-      onChanged: (value) {
-        if (value != null) setState(() => _selectedStatus = value);
-      },
+      onChanged: _handleStatusChange,
       items: _statusOptions
           .map((item) => DropdownMenuItem(
                 value: item,
-                child: Text(item
-                    .toLowerCase()
-                    .replaceFirst(item[0].toLowerCase(), item[0])),
+                child: Text(
+                  item
+                      .toLowerCase()
+                      .replaceFirst(item[0].toLowerCase(), item[0]),
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
               ))
           .toList(),
       decoration: const InputDecoration(
         labelText: 'Status',
         border: OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(12))),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      ),
+      isExpanded: true,
+    );
+  }
+
+  Widget _buildScoreSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTextField(
+          'Score',
+          _scoreController,
+          suffixText: '/ 10',
+          onChanged: (val) => setState(() {}), // rebuild slider
+        ),
+        if (_scoreController.text.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                trackHeight: 2,
+              ),
+              child: Slider(
+                value:
+                    double.tryParse(_scoreController.text)?.clamp(0.0, 10.0) ??
+                        0,
+                min: 0,
+                max: 10,
+                divisions: 100, // Allow .1 increments effectively
+                label: _scoreController.text,
+                onChanged: (val) {
+                  setState(() {
+                    // Round to 1 decimal place
+                    _scoreController.text =
+                        ((val * 10).round() / 10).toString();
+                  });
+                },
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildProgressSection(ThemeData theme) {
+    final total = widget.anime.episodes;
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildTextField(
+                'Progress',
+                _progressController,
+                suffixText: total != null ? '/ $total' : null,
+              ),
+            ),
+            const SizedBox(width: 12),
+            _buildIncrementButton(Iconsax.minus, _decrementProgress),
+            const SizedBox(width: 8),
+            _buildIncrementButton(Iconsax.add, _incrementProgress),
+          ],
+        ),
+        if (total != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: _setMaxProgress,
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+              ),
+              child: const Text('Set to Max'),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildIncrementButton(IconData icon, VoidCallback onTap) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: IconButton(
+        onPressed: onTap,
+        icon:
+            Icon(icon, color: Theme.of(context).colorScheme.onPrimaryContainer),
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
       ),
     );
   }
 
+  Widget _buildSaveButton(ThemeData theme) {
+    return ValueListenableBuilder(
+        valueListenable: _isSaving,
+        builder: (context, saving, child) {
+          return FilledButton.icon(
+            onPressed: saving ? null : _saveChanges,
+            icon: saving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Iconsax.save_2),
+            label: Text(saving ? 'Saving...' : 'Save Changes'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              textStyle: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+            ),
+          );
+        });
+  }
+
   Widget _buildTextField(String label, TextEditingController controller,
-      {String? suffixText, int maxLines = 1, Widget? suffixIcon}) {
+      {String? suffixText,
+      int maxLines = 1,
+      Widget? suffixIcon,
+      Function(String)? onChanged}) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
-      keyboardType:
-          maxLines == 1 ? TextInputType.number : TextInputType.multiline,
+      onChanged: onChanged,
+      keyboardType: maxLines == 1
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.multiline,
       inputFormatters:
-          maxLines == 1 ? [FilteringTextInputFormatter.digitsOnly] : [],
+          maxLines == 1 && label != 'Score' // Allow decimals for score
+              ? [FilteringTextInputFormatter.digitsOnly]
+              : [],
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(12))),
         suffixText: suffixText,
         suffixIcon: suffixIcon,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       ),
     );
   }
 
-  Widget _buildDateField(String label, DateTime? date, VoidCallback onTap) {
+  Widget _buildDateField(
+      String label, DateTime? date, VoidCallback onTap, VoidCallback onToday) {
     final formatted =
         date != null ? DateFormat.yMMMd().format(date) : 'Select Date';
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12))),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: InputDecorator(
+            decoration: InputDecoration(
+              labelText: label,
+              border: const OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12))),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(formatted),
+                const Icon(Iconsax.calendar_1, size: 18),
+              ],
+            ),
+          ),
         ),
-        child: Text(formatted),
-      ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: onToday,
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+            ),
+            child: const Text('Today'),
+          ),
+        ),
+      ],
     );
   }
 }

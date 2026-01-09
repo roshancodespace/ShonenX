@@ -117,11 +117,16 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     }
   }
 
-  Future<void> changeEpisode(int epIdx,
-      {Duration startAt = Duration.zero}) async {
-    if (!_isValidEp(epIdx)) return;
+  Future<void> changeEpisode(
+    int? epIdx, {
+    Duration startAt = Duration.zero,
+    int by = 0,
+  }) async {
+    final nextIdx = by != 0 ? (state.selectedEpisodeIdx ?? 0) + by : epIdx;
 
-    state = state.copyWith(selectedEpisodeIdx: epIdx);
+    if (nextIdx != null && !_isValidEp(nextIdx)) return;
+
+    state = state.copyWith(selectedEpisodeIdx: nextIdx);
     await _playCurrentEpisode(startAt);
   }
 

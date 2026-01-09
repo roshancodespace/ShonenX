@@ -9,6 +9,7 @@ import 'package:shonenx/core/models/anilist/page_response.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
+import 'package:shonenx/features/browse/model/search_filter.dart';
 import 'package:shonenx/features/settings/view_model/content_settings_notifier.dart';
 
 class AnilistServiceException implements Exception {
@@ -280,8 +281,12 @@ class AnilistService {
         data?['data']?['ToggleFavourite']?['anime']?['nodes']);
   }
 
-  Future<List<Media>> searchAnime(String title,
-      {int page = 1, int perPage = 10}) async {
+  Future<List<Media>> searchAnime(
+    String title, {
+    int page = 1,
+    int perPage = 10,
+    SearchFilter? filter,
+  }) async {
     final adultParam = _getAdultParam();
     final useAdult = adultParam != null;
 
@@ -290,15 +295,58 @@ class AnilistService {
       'page': page,
       'perPage': perPage,
     };
+
     if (useAdult) variables['isAdult'] = adultParam;
+    if (filter != null) {
+      if (filter.genres.isNotEmpty) variables['genre'] = filter.genres;
+      if (filter.season != null) variables['season'] = filter.season;
+      if (filter.year != null) variables['year'] = filter.year;
+      if (filter.format != null) variables['format'] = filter.format;
+      if (filter.status != null) variables['status'] = filter.status;
+      if (filter.sort != null) variables['sort'] = filter.sort!.toUpperCase();
+      if (filter.tags.isNotEmpty) variables['tag'] = filter.tags;
+    }
 
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: null,
-      query: AnilistQueries.searchAnimeQuery(useAdult),
+      query: AnilistQueries.searchAnimeQuery(
+        includeAdult: useAdult,
+        hasGenre: filter?.genres.isNotEmpty ?? false,
+        hasSeason: filter?.season != null,
+        hasYear: filter?.year != null,
+        hasFormat: filter?.format != null,
+        hasStatus: filter?.status != null,
+        hasSort: filter?.sort != null,
+        hasTag: filter?.tags.isNotEmpty ?? false,
+      ),
       variables: variables,
       operationName: 'SearchAnime',
     );
     return _parseMediaList(data?['Page']?['media']);
+  }
+
+  Future<List<String>> getGenres() async {
+    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+      accessToken: null,
+      query: AnilistQueries.getGenresQuery,
+      operationName: 'GetGenres',
+    );
+    return (data?['GenreCollection'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+  }
+
+  Future<List<String>> getTags() async {
+    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+      accessToken: null,
+      query: AnilistQueries.getTagsQuery,
+      operationName: 'GetTags',
+    );
+    return (data?['MediaTagCollection'] as List<dynamic>?)
+            ?.map((e) => e['name'].toString())
+            .toList() ??
+        [];
   }
 
   Future<Media?> getAnimeDetails(int animeId) async {
@@ -389,6 +437,23 @@ class AnilistService {
       query: AnilistQueries.upcomingAnimeQuery(useAdult),
       variables: variables,
       operationName: 'GetUpcomingAnime',
+    );
+    return _parseMediaList(data?['Page']?['media']);
+  }
+
+  Future<List<Media>> getMostFavoriteAnime(
+      {int page = 1, int perPage = 15}) async {
+    final adultParam = _getAdultParam();
+    final useAdult = adultParam != null;
+
+    final variables = <String, dynamic>{'page': page, 'perPage': perPage};
+    if (useAdult) variables['isAdult'] = adultParam;
+
+    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+      accessToken: null,
+      query: AnilistQueries.mostFavoriteAnimeQuery(useAdult),
+      variables: variables,
+      operationName: 'GetMostFavoriteAnime',
     );
     return _parseMediaList(data?['Page']?['media']);
   }

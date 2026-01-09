@@ -10,6 +10,9 @@ import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/features/watchlist/view/widget/shonenx_gridview.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/shared/providers/anime_repo_provider.dart';
+import 'package:shonenx/features/browse/model/search_filter.dart';
+import 'package:shonenx/features/browse/view/widgets/filter_bottom_sheet.dart';
+import 'package:shonenx/features/browse/view/section_screen.dart';
 
 class BrowseScreen extends ConsumerStatefulWidget {
   final String? keyword;
@@ -36,6 +39,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
   List<Media> _trending = [];
   List<Media> _popular = [];
   List<Media> _upcoming = [];
+  SearchFilter _currentFilter = const SearchFilter();
 
   var _currentPage = 1;
   var _isLoading = false;
@@ -101,7 +105,12 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
     setState(() => _isLoading = true);
 
     try {
-      final results = await _repo.searchAnime(keyword, page: page, perPage: 20);
+      final results = await _repo.searchAnime(
+        keyword,
+        page: page,
+        perPage: 20,
+        filter: _currentFilter,
+      );
 
       if (mounted) {
         setState(() {
@@ -136,7 +145,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
   }
 
   Future<void> _search() async {
-    if (_searchController.text.isEmpty) {
+    if (_searchController.text.isEmpty && _currentFilter.isEmpty) {
       setState(() {
         _results.clear();
         _isExploreLoading = false; // Show explore content
@@ -151,6 +160,28 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
     });
 
     await _fetchResults(_searchController.text, _currentPage);
+  }
+
+  void _openFilter() async {
+    final result = await showModalBottomSheet<SearchFilter>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => FilterBottomSheet(initialFilter: _currentFilter),
+    );
+
+    if (result != null) {
+      setState(() {
+        _currentFilter = result;
+      });
+
+      if (_searchController.text.isEmpty && !_currentFilter.isEmpty) {
+        _searchController.text = _searchController.text; // no-op
+        _search();
+      } else if (_searchController.text.isNotEmpty) {
+        _search();
+      }
+    }
   }
 
   int _getColumnCount() {
@@ -180,6 +211,8 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
                 setState(() => _isSearchFocused = focused),
             isSearchFocused: _isSearchFocused,
             onSearchChanged: _onSearchChanged,
+            onFilter: _openFilter,
+            hasFilter: !_currentFilter.isEmpty,
           ),
           Expanded(
             child: _searchController.text.isEmpty
@@ -212,6 +245,8 @@ class _Header extends StatelessWidget {
   final ValueChanged<bool> onFocusChange;
   final bool isSearchFocused;
   final Function(String) onSearchChanged;
+  final VoidCallback onFilter;
+  final bool hasFilter;
 
   const _Header({
     required this.controller,
@@ -220,6 +255,8 @@ class _Header extends StatelessWidget {
     required this.onFocusChange,
     required this.isSearchFocused,
     required this.onSearchChanged,
+    required this.onFilter,
+    required this.hasFilter,
   });
 
   @override
@@ -259,6 +296,8 @@ class _Header extends StatelessWidget {
                     onFocusChange: onFocusChange,
                     isSearchFocused: isSearchFocused,
                     onSearchChanged: onSearchChanged,
+                    onFilter: onFilter,
+                    hasFilter: hasFilter,
                   ),
                 ],
               ),
@@ -276,6 +315,8 @@ class _SearchBar extends StatelessWidget {
   final ValueChanged<bool> onFocusChange;
   final bool isSearchFocused;
   final Function(String) onSearchChanged;
+  final VoidCallback onFilter;
+  final bool hasFilter;
 
   const _SearchBar({
     required this.controller,
@@ -283,6 +324,8 @@ class _SearchBar extends StatelessWidget {
     required this.onFocusChange,
     required this.isSearchFocused,
     required this.onSearchChanged,
+    required this.onFilter,
+    required this.hasFilter,
   });
 
   @override
@@ -316,15 +359,32 @@ class _SearchBar extends StatelessWidget {
                   ? Theme.of(context).colorScheme.primary
                   : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
             ),
-            suffixIcon: controller.text.isNotEmpty
-                ? IconButton(
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (controller.text.isNotEmpty)
+                  IconButton(
                     icon: const Icon(Icons.clear),
                     onPressed: () {
                       controller.clear();
                       onSearchChanged('');
                     },
-                  )
-                : null,
+                  ),
+                IconButton(
+                  icon: Icon(
+                    Iconsax.setting_4,
+                    color: hasFilter
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.5),
+                  ),
+                  onPressed: onFilter,
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 20,
@@ -555,8 +615,33 @@ class _HorizontalSection extends ConsumerWidget {
                       fontWeight: FontWeight.bold,
                     ),
               ),
-              Icon(Iconsax.arrow_right_1,
-                  size: 20, color: Theme.of(context).colorScheme.primary),
+              IconButton(
+                icon: Icon(Iconsax.arrow_right_3,
+                    size: 20, color: Theme.of(context).colorScheme.primary),
+                onPressed: () {
+                  final repo = ref.read(animeRepositoryProvider);
+                  Future<List<Media>> Function({int page, int perPage})?
+                      fetcher;
+
+                  if (title == 'Trending Now') {
+                    fetcher = repo.getTrendingAnime;
+                  } else if (title == 'All Time Popular') {
+                    fetcher = repo.getPopularAnime;
+                  } else if (title == 'Upcoming Seasons') {
+                    fetcher = repo.getUpcomingAnime;
+                  }
+
+                  if (fetcher != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            SectionScreen(title: title, fetchItems: fetcher!),
+                      ),
+                    );
+                  }
+                },
+              ),
             ],
           ),
         ),

@@ -4,6 +4,7 @@ import 'package:shonenx/core/models/anilist/media_list_entry.dart';
 import 'package:shonenx/core/models/anilist/page_response.dart';
 import 'package:shonenx/core/myanimelist/services/mal_service.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
+import 'package:shonenx/features/browse/model/search_filter.dart';
 
 class MalRepository implements AnimeRepository {
   final MyAnimeListService service;
@@ -11,9 +12,24 @@ class MalRepository implements AnimeRepository {
   MalRepository(this.service);
 
   @override
-  Future<List<Media>> searchAnime(String title,
-      {int page = 1, int perPage = 10}) {
-    return service.searchAnime(title, page: page, perPage: perPage);
+  Future<List<Media>> searchAnime(
+    String title, {
+    int page = 1,
+    int perPage = 10,
+    SearchFilter? filter,
+  }) {
+    return service.searchAnime(title,
+        page: page, perPage: perPage, filter: filter);
+  }
+
+  @override
+  Future<List<String>> getGenres() {
+    return service.getGenres();
+  }
+
+  @override
+  Future<List<String>> getTags() {
+    return service.getTags();
   }
 
   @override
@@ -34,7 +50,8 @@ class MalRepository implements AnimeRepository {
   }
 
   @override
-  Future<List<Media>> getRecentlyUpdatedAnime({int page = 1, int perPage = 10}) {
+  Future<List<Media>> getRecentlyUpdatedAnime(
+      {int page = 1, int perPage = 10}) {
     // TODO: implement getRecentlyUpdatedAnime
     throw UnimplementedError();
   }
@@ -58,8 +75,13 @@ class MalRepository implements AnimeRepository {
   }
 
   @override
-  // TODO: implement name
-  String get name => throw UnimplementedError();
+  Future<List<Media>> getMostFavoriteAnime({int page = 1, int perPage = 10}) {
+    // TODO: implement getMostFavoriteAnime
+    throw UnimplementedError();
+  }
+
+  @override
+  String get name => 'myanimelist';
 
   @override
   Future<MediaListEntry?> updateUserAnimeList({

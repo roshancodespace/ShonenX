@@ -186,16 +186,55 @@ class AnilistQueries {
     }
   ''';
 
-  // Query: Search anime by title
-  static String searchAnimeQuery(bool includeAdult) => '''
-    query (\$search: String, \$page: Int, \$perPage: Int${includeAdult ? ', \$isAdult: Boolean' : ''}) {
-      Page(page: \$page, perPage: \$perPage) {
-        media(search: \$search, type: ANIME, sort: POPULARITY_DESC${includeAdult ? ', isAdult: \$isAdult' : ''}) {
-          $mediaFields
+  // Query: Search anime by title with advanced filters
+  static String searchAnimeQuery({
+    required bool includeAdult,
+    required bool hasGenre,
+    required bool hasSeason,
+    required bool hasYear,
+    required bool hasFormat,
+    required bool hasStatus,
+    required bool hasSort,
+    required bool hasTag,
+  }) {
+    final args = <String>[
+      '\$page: Int',
+      '\$perPage: Int',
+      if (includeAdult) '\$isAdult: Boolean',
+      '\$search: String',
+      if (hasGenre) '\$genre: [String]',
+      if (hasSeason) '\$season: MediaSeason',
+      if (hasYear) '\$year: Int',
+      if (hasFormat) '\$format: MediaFormat',
+      if (hasStatus) '\$status: MediaStatus',
+      if (hasTag) '\$tag: [String]',
+    ];
+
+    final mediaArgs = <String>[
+      'type: ANIME',
+      if (includeAdult) 'isAdult: \$isAdult',
+      'search: \$search',
+      if (hasSort) 'sort: \$sort' else 'sort: POPULARITY_DESC',
+      if (hasGenre) 'genre_in: \$genre',
+      if (hasSeason) 'season: \$season',
+      if (hasYear) 'seasonYear: \$year',
+      if (hasFormat) 'format: \$format',
+      if (hasStatus) 'status: \$status',
+      if (hasTag) 'tag_in: \$tag',
+    ];
+
+    if (hasSort) args.add('\$sort: [MediaSort]');
+
+    return '''
+      query (${args.join(', ')}) {
+        Page(page: \$page, perPage: \$perPage) {
+          media(${mediaArgs.join(', ')}) {
+            $mediaFields
+          }
         }
       }
-    } 
-  ''';
+    ''';
+  }
 
   // Query: Get the logged-in user's profile (Viewer)
   static const String userProfileQuery = '''
@@ -422,10 +461,10 @@ class AnilistQueries {
   ''';
 
   // Query: Fetch anime with most favorites
-  static const String mostFavoritedAnimeQuery = '''
-    query (\$page: Int, \$perPage: Int) {
+  static String mostFavoriteAnimeQuery(bool includeAdult) => '''
+    query (\$page: Int, \$perPage: Int${includeAdult ? ', \$isAdult: Boolean' : ''}) {
       Page(page: \$page, perPage: \$perPage) {
-        media(sort: FAVOURITES_DESC, type: ANIME) {
+        media(sort: FAVOURITES_DESC, type: ANIME${includeAdult ? ', isAdult: \$isAdult' : ''}) {
           $mediaFields
         }
       }
@@ -499,7 +538,7 @@ class AnilistQueries {
       }
     }
   ''';
-  
+
   // Fetch Upcoming Anime
   static String upcomingAnimeQuery(bool includeAdult) => '''
     query (\$page: Int, \$perPage: Int${includeAdult ? ', \$isAdult: Boolean' : ''}) {
@@ -518,6 +557,22 @@ class AnilistQueries {
         id
         status
         progress
+      }
+  ''';
+
+  // Fetch Genres
+  static const String getGenresQuery = '''
+    query {
+      GenreCollection
+    }
+  ''';
+
+  // Fetch Tags
+  static const String getTagsQuery = '''
+    query {
+      MediaTagCollection {
+        name
+        isAdult
       }
     }
   ''';

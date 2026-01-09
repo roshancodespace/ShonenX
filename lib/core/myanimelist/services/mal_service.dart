@@ -12,6 +12,7 @@ import 'package:shonenx/core/myanimelist/services/auth_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/shared/providers/auth_provider.dart';
 import 'package:shonenx/features/settings/view_model/content_settings_notifier.dart';
+import 'package:shonenx/features/browse/model/search_filter.dart';
 
 class MyAnimeListServiceException implements Exception {
   final String message;
@@ -172,10 +173,17 @@ class MyAnimeListService implements AnimeRepository {
 
   // ---------------------- SEARCH ----------------------
   @override
-  Future<List<Media>> searchAnime(String title,
-      {int page = 1, int perPage = 10}) async {
+  Future<List<Media>> searchAnime(
+    String title, {
+    int page = 1,
+    int perPage = 10,
+    SearchFilter? filter,
+  }) async {
     final offset = (page - 1) * perPage;
     final nsfwStub = _getShowAdult() ? '&nsfw=true' : '';
+    // MAL doesn't support advanced filters easily in basic search endpoint
+
+    // Construct simplified query
     final url =
         'https://api.myanimelist.net/v2/anime?q=$title&limit=$perPage&offset=$offset&fields=num_episodes,status,mean,media_type$nsfwStub';
     final data = await _get(url);
@@ -183,6 +191,31 @@ class MyAnimeListService implements AnimeRepository {
     return (data['data'] as List<dynamic>? ?? [])
         .map((e) => Media.fromMal(e['node'] as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<List<String>> getGenres() async {
+    // MAL API v2 doesn't have a direct genre list endpoint easily accessible without auth/wrapper
+    // Returning empty or basic list for now
+    return const [
+      'Action',
+      'Adventure',
+      'Comedy',
+      'Drama',
+      'Fantasy',
+      'Horror',
+      'Mystery',
+      'Romance',
+      'Sci-Fi',
+      'Slice of Life',
+      'Sports',
+      'Supernatural'
+    ];
+  }
+
+  @override
+  Future<List<String>> getTags() async {
+    return const []; // MAL doesn't really have tags like AniList
   }
 
 // ---------------------- SINGLE ENTRY ----------------------
@@ -241,6 +274,12 @@ class MyAnimeListService implements AnimeRepository {
   @override
   Future<List<Media>> getUpcomingAnime({int page = 1, int perPage = 15}) async {
     return _getRankedAnime('upcoming', page, perPage);
+  }
+
+  @override
+  Future<List<Media>> getMostFavoriteAnime(
+      {int page = 1, int perPage = 15}) async {
+    return getPopularAnime(page: page, perPage: perPage);
   }
 
   @override

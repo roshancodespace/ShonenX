@@ -4,6 +4,7 @@ import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/models/anilist/media_list_entry.dart';
 import 'package:shonenx/core/models/anilist/page_response.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
+import 'package:shonenx/features/browse/model/search_filter.dart';
 
 class AniListRepository implements AnimeRepository {
   final AnilistService service;
@@ -11,9 +12,24 @@ class AniListRepository implements AnimeRepository {
   AniListRepository(this.service);
 
   @override
-  Future<List<Media>> searchAnime(String title,
-      {int page = 1, int perPage = 10}) {
-    return service.searchAnime(title, page: page, perPage: perPage);
+  Future<List<Media>> searchAnime(
+    String title, {
+    int page = 1,
+    int perPage = 10,
+    SearchFilter? filter,
+  }) {
+    return service.searchAnime(title,
+        page: page, perPage: perPage, filter: filter);
+  }
+
+  @override
+  Future<List<String>> getGenres() {
+    return service.getGenres();
+  }
+
+  @override
+  Future<List<String>> getTags() {
+    return service.getTags();
   }
 
   @override
@@ -37,7 +53,8 @@ class AniListRepository implements AnimeRepository {
   }
 
   @override
-  Future<List<Media>> getRecentlyUpdatedAnime({int page = 1, int perPage = 10}) {
+  Future<List<Media>> getRecentlyUpdatedAnime(
+      {int page = 1, int perPage = 10}) {
     return service.getRecentlyUpdatedAnime(page: page, perPage: perPage);
   }
 
@@ -54,6 +71,11 @@ class AniListRepository implements AnimeRepository {
   @override
   Future<List<Media>> getUpcomingAnime({int page = 1, int perPage = 10}) {
     return service.getUpcomingAnime(page: page, perPage: perPage);
+  }
+
+  @override
+  Future<List<Media>> getMostFavoriteAnime({int page = 1, int perPage = 10}) {
+    return service.getMostFavoriteAnime(page: page, perPage: perPage);
   }
 
   @override

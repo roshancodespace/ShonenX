@@ -36,6 +36,8 @@ class AnilistService {
     'REPEATING',
   };
 
+  static GraphQLClient? _client;
+
   ({String userId, String accessToken})? _getAuthContext() {
     if (_ref == null) return null;
     final authState = _ref.read(authProvider);
@@ -66,7 +68,7 @@ class AnilistService {
   }) async {
     try {
       AppLogger.d('Executing $operationName with variables: $variables');
-      final client = AnilistClient.getClient(accessToken: accessToken);
+      _client ??= await AnilistClient.getClient(accessToken: accessToken);
       final options = isMutation
           ? MutationOptions(
               document: gql(query),
@@ -80,8 +82,8 @@ class AnilistService {
             );
 
       final result = isMutation
-          ? await client.mutate(options as MutationOptions)
-          : await client.query(options as QueryOptions);
+          ? await _client!.mutate(options as MutationOptions)
+          : await _client!.query(options as QueryOptions);
 
       if (result.hasException) {
         AppLogger.e('GraphQL Error in $operationName', result.exception,

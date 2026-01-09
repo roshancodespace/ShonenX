@@ -73,6 +73,7 @@ class HomepageNotifier extends Notifier<HomepageState> {
   }
 
   Future<HomepageState> fetchHomePage() async {
+    state = state.copyWith(isLoading: true, error: null);
     try {
       final trending = await _repo.getTrendingAnime();
       final popular = await _repo.getPopularAnime();

@@ -26,7 +26,7 @@ class DownloadSettingsModel {
   DownloadSettingsModel({
     this.customDownloadPath,
     this.useCustomPath = false,
-    this.folderStructure = 'Anime/Season/Episode',
+    this.folderStructure = 'Anime/Episode',
     this.parallelDownloads = 5,
     this.speedLimitKBps = 0,
     this.wifiOnly = false,

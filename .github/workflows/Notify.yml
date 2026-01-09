@@ -27,7 +27,7 @@ jobs:
             ALL_SUCCESS=true
           fi
 
-          REQUIRED_JOBS=("build-android" "build-linux")
+          REQUIRED_JOBS=("build-android" "build-linux" "build-windows")
 
           if [ -n "$JOBS" ] && [ "$JOBS" != "null" ]; then
             for JOB in "${REQUIRED_JOBS[@]}"; do
@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Fetch Repository Tags by Date and Time
         id: fetch_tags
         if: ${{ steps.check_jobs.outputs.all_jobs_success == 'true' || github.event_name == 'workflow_dispatch' }}
@@ -81,7 +81,7 @@ jobs:
           done
           echo "$LATEST_TAG"
           echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
-          
+
       - name: Get Latest Release Notes
         id: get_release_notes
         if: ${{ steps.check_jobs.outputs.all_jobs_success == 'true' || github.event_name == 'workflow_dispatch' }}
@@ -101,12 +101,12 @@ jobs:
         run: |
           # Just clean the || markers and set as environment variable
           sed 's/||//g' release_notes.txt > clean_release_notes.txt
-          
+
           # Set the entire content as environment variable
           echo "FORMATTED_NOTES<<EOF" >> $GITHUB_ENV
           cat clean_release_notes.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-          
+
           echo "Preview of release notes:"
           cat clean_release_notes.txt
 
@@ -118,11 +118,11 @@ jobs:
           curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
            -H "Accept: application/vnd.github.v3+json" \
            "https://api.github.com/repos/${{github.repository}}/releases/tags/${{ env.LATEST_TAG }}" -o release.json
-          
+
           # Initialize environment variables
           echo "apk_universal_message=" >> $GITHUB_ENV
           echo "setup_message=" >> $GITHUB_ENV
-          
+
           # Process each asset
           jq -r '.assets[] | "\(.browser_download_url) \(.size)"' release.json | while read -r LINE; do
             ASSET_URL=$(echo "$LINE" | awk '{print $1}')
@@ -133,7 +133,7 @@ jobs:
               printf "%.2f %s", size, unit[i]
             }')
             FILE_NAME=$(basename "$ASSET_URL")
-  
+
             # Categorize and set variables
             if [[ "$FILE_NAME" == "app-arm64-v8a-release.apk" ]]; then
               echo "apk_arm64_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
@@ -145,6 +145,8 @@ jobs:
               echo "setup_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
             elif [[ "$FILE_NAME" == *"Linux.zip" ]]; then
               echo "linux_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
+            elif [[ "$FILE_NAME" == *"Windows.zip" ]]; then
+              echo "windows_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
             fi
           done
 
@@ -155,7 +157,7 @@ jobs:
         run: |
           # Clean the formatted notes for Discord
           FORMATTED_NOTES_CLEAN=$(echo "$FORMATTED_NOTES" | sed -E 's/\): [^:]+:/) :/g')
-          
+
           # Mention the role based on the release name
           if [[ "${{ env.LATEST_TAG }}" == *alpha* ]]; then
             role_mention="@everyone"  # Role ID for alpha channel
@@ -164,14 +166,14 @@ jobs:
           else
             role_mention="@everyone"  # Default role ID
           fi
-        
+
           default_color="#1ac4c5"
           hex_to_decimal() { printf '%d' "0x${1#"#"}"; }
           embed_color=$(hex_to_decimal "$default_color")
 
           # Ensure VERSION is not empty
           VERSION=${VERSION:-"${{env.LATEST_TAG}}"}
-      
+
           discord_data=$(jq -nc \
                         --arg role_mention "$role_mention" \
                         --arg field_value "$FORMATTED_NOTES_CLEAN" \
@@ -233,8 +235,13 @@ jobs:
             MESSAGE="${MESSAGE}🔹 $linux_message | **Linux (Zip)**"$'\n'
           fi
 
+          # Add Windows bundle if available
+          if [ -n "$windows_message" ]; then
+            MESSAGE="${MESSAGE}🔹 $windows_message | **Windows (Zip)**"$'\n'
+          fi
+
           # Only send if we have at least one asset
-          if [ -n "$apk_arm64_message" ] || [ -n "$apk_armeabi_message" ] || [ -n "$apk_x86_64_message" ] || [ -n "$setup_message" ] || [ -n "$linux_message" ]; then
+          if [ -n "$apk_arm64_message" ] || [ -n "$apk_armeabi_message" ] || [ -n "$apk_x86_64_message" ] || [ -n "$setup_message" ] || [ -n "$linux_message" ] || [ -n "$windows_message" ]; then
             PAYLOAD=$(jq -n --arg content "$MESSAGE" '{ content: $content }')
             curl -X POST "$DISCORD_WEBHOOK_URL" \
               -H "Content-Type: application/json" \

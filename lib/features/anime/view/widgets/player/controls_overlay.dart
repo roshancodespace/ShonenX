@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,19 +15,22 @@ import 'package:shonenx/features/anime/view/widgets/player/sheets/settings_sheet
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 
-class CloudstreamControls extends ConsumerStatefulWidget {
+class ControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback? onEpisodesPressed;
-  const CloudstreamControls({super.key, this.onEpisodesPressed});
+  const ControlsOverlay({super.key, this.onEpisodesPressed});
 
   @override
-  ConsumerState<CloudstreamControls> createState() =>
-      _CloudstreamControlsState();
+  ConsumerState<ControlsOverlay> createState() =>
+      ControlsOverlayState();
 }
 
-class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
+class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
   bool _visible = true;
   bool _locked = false;
   int _seekAccum = 0;
+  bool _isSpeeding = false;
+  double _lastSpeed = 1.0;
+  double _dragStartY = 0.0;
 
   Timer? _hideTimer;
   Timer? _seekResetTimer;
@@ -88,6 +92,39 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
     });
   }
 
+  void _onLongPressStart(LongPressStartDetails d) {
+    if (_locked) return;
+    if (d.globalPosition.dx > MediaQuery.of(context).size.width / 2) {
+      setState(() {
+        _isSpeeding = true;
+        _lastSpeed = 2.0;
+        _dragStartY = d.globalPosition.dy;
+      });
+      ref.read(playerStateProvider.notifier).setSpeed(2.0);
+    }
+  }
+
+  void _onLongPressUpdate(LongPressMoveUpdateDetails d) {
+    if (_isSpeeding) {
+      final diff = _dragStartY - d.globalPosition.dy;
+      double newRate = 2.0 + (diff / 50.0);
+      newRate = (newRate * 4).round() / 4;
+      newRate = newRate.clamp(0.25, 4.0);
+
+      if (newRate != _lastSpeed) {
+        setState(() => _lastSpeed = newRate);
+        ref.read(playerStateProvider.notifier).setSpeed(newRate);
+      }
+    }
+  }
+
+  void _onLongPressEnd(LongPressEndDetails d) {
+    if (_isSpeeding) {
+      setState(() => _isSpeeding = false);
+      ref.read(playerStateProvider.notifier).setSpeed(1.0);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final notifier = ref.read(playerStateProvider.notifier);
@@ -112,6 +149,12 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
         child: GestureDetector(
           onTap: _toggle,
           onDoubleTapDown: _onDoubleTap,
+          onLongPressStart: _onLongPressStart,
+          onLongPressMoveUpdate: _onLongPressUpdate,
+          onLongPressEnd: _onLongPressEnd,
+          onLongPressUp: () {
+            if (_isSpeeding) _onLongPressEnd(const LongPressEndDetails());
+          },
           behavior: HitTestBehavior.translucent,
           child: Stack(
             fit: StackFit.expand,
@@ -136,6 +179,7 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
                     ),
                   ),
                 ),
+              if (_isSpeeding) _buildSpeedScale(),
               Positioned(
                 left: 8,
                 right: 8,
@@ -284,6 +328,94 @@ class _CloudstreamControlsState extends ConsumerState<CloudstreamControls> {
           ref.read(episodeDataProvider.notifier).changeSubtitle(i);
           Navigator.pop(context);
         },
+      ),
+    );
+  }
+
+  Widget _buildSpeedScale() {
+    final speeds = [4.0, 3.0, 2.0, 1.5, 1.0, 0.5];
+    final closest = speeds.reduce(
+        (a, b) => (_lastSpeed - a).abs() < (_lastSpeed - b).abs() ? a : b);
+
+    return Positioned(
+      right: 40,
+      top: 0,
+      bottom: 0,
+      child: Center(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Precise Indicator
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: Text(
+                '${_lastSpeed.toStringAsFixed(2)}x',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+            const SizedBox(width: 20),
+            // Scale
+            Container(
+              width: 50,
+              height: 300,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(50),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: speeds.map((speed) {
+                  final isSelected = speed == closest;
+                  return AnimatedScale(
+                    scale: isSelected ? 1.2 : 1.0,
+                    duration: const Duration(milliseconds: 100),
+                    child: AnimatedOpacity(
+                      opacity: isSelected ? 1.0 : 0.4,
+                      duration: const Duration(milliseconds: 100),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${speed}x',
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (isSelected)
+                            Container(
+                              width: 4,
+                              height: 4,
+                              margin: const EdgeInsets.only(top: 2),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                            )
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

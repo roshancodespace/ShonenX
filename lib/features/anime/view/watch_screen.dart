@@ -313,7 +313,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                       SubtitleViewConfiguration(visible: false),
                 ),
               ),
-              CloudstreamControls(onEpisodesPressed: _togglePanel),
+              ControlsOverlay(onEpisodesPressed: _togglePanel),
             ],
           );
 

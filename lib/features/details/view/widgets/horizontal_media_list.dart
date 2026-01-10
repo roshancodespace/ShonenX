@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 
 class HorizontalMediaSection<T> extends StatelessWidget {
   final String title;
@@ -73,7 +73,7 @@ class HorizontalMediaSection<T> extends StatelessWidget {
 }
 
 class MediaCard extends StatelessWidget {
-  final Media media;
+  final UniversalMedia media;
   final String? badgeText;
   final VoidCallback? onTap;
 
@@ -89,7 +89,7 @@ class MediaCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     // Get the best available title
-    final title = media.title?.english ?? media.title?.romaji ?? 'Unknown';
+    final title = media.title.english ?? media.title.romaji ?? 'Unknown';
 
     return GestureDetector(
       onTap: onTap,
@@ -107,7 +107,7 @@ class MediaCard extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: CachedNetworkImage(
-                      imageUrl: media.coverImage?.large ?? '',
+                      imageUrl: media.coverImage.large ?? '',
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
@@ -237,7 +237,7 @@ class _ShimmerItem extends StatelessWidget {
 }
 
 class StaffCard extends StatelessWidget {
-  final Staff staff;
+  final UniversalStaff staff;
   final VoidCallback? onTap;
 
   const StaffCard({

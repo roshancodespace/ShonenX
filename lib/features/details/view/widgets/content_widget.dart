@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'info_card_widget.dart';
 import 'synopsis_widget.dart';
 import 'rankings_widget.dart';
@@ -8,9 +8,9 @@ import 'additional_info_widget.dart';
 
 /// Content widget that composes all the detail sections
 class DetailsContent extends StatelessWidget {
-  final Media anime;
+  final UniversalMedia anime;
   final bool isLoading;
-  final Function(Media)? onMediaTap;
+  final Function(UniversalMedia)? onMediaTap;
 
   const DetailsContent({
     super.key,
@@ -40,7 +40,7 @@ class DetailsContent extends StatelessWidget {
           AdditionalInfoWidget(anime: anime),
           if (anime.staff.isNotEmpty) ...[
             const SizedBox(height: 24),
-            HorizontalMediaSection<Staff>(
+            HorizontalMediaSection<UniversalStaff>(
               title: 'Staff',
               items: anime.staff,
               isLoading: isLoading,
@@ -55,7 +55,7 @@ class DetailsContent extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 24),
-          HorizontalMediaSection<MediaRelation>(
+          HorizontalMediaSection<UniversalMediaRelation>(
             title: 'Related',
             items: anime.relations,
             isLoading: isLoading,
@@ -68,7 +68,7 @@ class DetailsContent extends StatelessWidget {
             },
           ),
           const SizedBox(height: 24),
-          HorizontalMediaSection<Media>(
+          HorizontalMediaSection<UniversalMedia>(
             title: 'More Like This',
             items: anime.recommendations,
             isLoading: isLoading,

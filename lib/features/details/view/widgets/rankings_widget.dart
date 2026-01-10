@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 
 /// Rankings widget for displaying anime rankings horizontally
 class AnimeRankings extends StatelessWidget {
-  final List<MediaRanking> rankings;
+  final List<UniversalMediaRanking> rankings;
 
   const AnimeRankings({
     super.key,
@@ -45,7 +45,7 @@ class AnimeRankings extends StatelessWidget {
 }
 
 class RankingPill extends StatelessWidget {
-  final MediaRanking ranking;
+  final UniversalMediaRanking ranking;
 
   const RankingPill({super.key, required this.ranking});
 

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
@@ -35,10 +35,10 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
   Timer? _debounce;
 
   // State variables
-  List<Media> _results = [];
-  List<Media> _trending = [];
-  List<Media> _popular = [];
-  List<Media> _upcoming = [];
+  List<UniversalMedia> _results = [];
+  List<UniversalMedia> _trending = [];
+  List<UniversalMedia> _popular = [];
+  List<UniversalMedia> _upcoming = [];
   SearchFilter _currentFilter = const SearchFilter();
 
   var _currentPage = 1;
@@ -398,7 +398,7 @@ class _SearchBar extends StatelessWidget {
 }
 
 class _ResultsGrid extends ConsumerWidget {
-  final List<Media> results;
+  final List<UniversalMedia> results;
   final ScrollController scrollController;
   final int columnCount;
   final bool isLoading;
@@ -556,9 +556,9 @@ class _LoadingIndicator extends StatelessWidget {
 }
 
 class _ExploreView extends StatelessWidget {
-  final List<Media> trending;
-  final List<Media> popular;
-  final List<Media> upcoming;
+  final List<UniversalMedia> trending;
+  final List<UniversalMedia> popular;
+  final List<UniversalMedia> upcoming;
   final bool isLoading;
 
   const _ExploreView({
@@ -590,7 +590,7 @@ class _ExploreView extends StatelessWidget {
 
 class _HorizontalSection extends ConsumerWidget {
   final String title;
-  final List<Media> items;
+  final List<UniversalMedia> items;
 
   const _HorizontalSection({required this.title, required this.items});
 
@@ -620,8 +620,8 @@ class _HorizontalSection extends ConsumerWidget {
                     size: 20, color: Theme.of(context).colorScheme.primary),
                 onPressed: () {
                   final repo = ref.read(animeRepositoryProvider);
-                  Future<List<Media>> Function({int page, int perPage})?
-                      fetcher;
+                  Future<List<UniversalMedia>> Function(
+                      {int page, int perPage})? fetcher;
 
                   if (title == 'Trending Now') {
                     fetcher = repo.getTrendingAnime;

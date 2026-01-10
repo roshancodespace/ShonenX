@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
-import 'package:shonenx/core/models/anilist/media.dart' as media;
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
@@ -197,10 +197,10 @@ class _AnimeHistoryDetailScreenState
     providerAnimeMatchSearch(
       context: context,
       ref: ref,
-      animeMedia: media.Media(
+      animeMedia: UniversalMedia(
         id: entry.animeId,
-        title: media.Title(english: entry.animeTitle),
-        coverImage: media.CoverImage(
+        title: UniversalTitle(english: entry.animeTitle),
+        coverImage: UniversalCoverImage(
           large: entry.animeCover,
           medium: entry.animeCover,
         ),

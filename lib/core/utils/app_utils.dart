@@ -1,6 +1,6 @@
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 
-List<Media> safeParse(String label, List list) {
+List<UniversalMedia> safeParse(String label, List list) {
   try {
     Map<String, dynamic> convertToStringKeys(Map<dynamic, dynamic> input) {
       return input.map((key, value) {
@@ -16,7 +16,7 @@ List<Media> safeParse(String label, List list) {
 
     return list
         .whereType<Map>()
-        .map((item) => Media.fromJson(convertToStringKeys(item)))
+        .map((item) => UniversalMedia.fromJson(convertToStringKeys(item)))
         .toList();
   } catch (e, st) {
     print("⚠️ Failed to parse $label: $e\n$st");

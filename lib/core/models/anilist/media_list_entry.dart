@@ -26,8 +26,39 @@ class MediaListEntry {
     this.completedAt,
   });
 
+  factory MediaListEntry.fromMedia(Media media) {
+    return MediaListEntry(
+      id: media.id,
+      media: media,
+      status: 'CURRENT',
+      score: 0,
+      progress: 0,
+      repeat: 0,
+      isPrivate: false,
+      notes: '',
+    );
+  }
+
   /// AniList JSON
   factory MediaListEntry.fromJson(Map<String, dynamic> json) {
+    if (json['media'] == null) {
+      return MediaListEntry(
+        id: json['id'] as int? ?? 0,
+        media: Media.fromJson(json),
+        status: json['status'] as String? ?? 'UNKNOWN',
+        score: (json['score'] as num?)?.toDouble() ?? 0.0,
+        progress: json['progress'] as int? ?? 0,
+        repeat: json['repeat'] as int? ?? 0,
+        isPrivate: json['private'] as bool? ?? false,
+        notes: json['notes'] as String? ?? '',
+        startedAt: json['startedAt'] != null
+            ? FuzzyDate.fromJson(json['startedAt'])
+            : null,
+        completedAt: json['completedAt'] != null
+            ? FuzzyDate.fromJson(json['completedAt'])
+            : null,
+      );
+    }
     return MediaListEntry(
       id: json['id'] as int? ?? 0,
       media: Media.fromJson(json['media'] ?? {}),
@@ -51,7 +82,8 @@ class MediaListEntry {
     final node = json['node'] ?? {};
     return MediaListEntry(
       id: node['id'] as int? ?? 0,
-      media: Media.fromMal(node), // <- we assume you added Media.fromMal factory
+      media:
+          Media.fromMal(node), // <- we assume you added Media.fromMal factory
       status: node['list_status']?['status'] ?? 'UNKNOWN',
       score: (node['list_status']?['score'] as num?)?.toDouble() ?? 0.0,
       progress: node['list_status']?['num_episodes_watched'] as int? ?? 0,

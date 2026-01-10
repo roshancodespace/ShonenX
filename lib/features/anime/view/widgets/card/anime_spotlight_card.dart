@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/home/view/widgets/spotlight/spotlight_card_config.dart';
 
 class AnimeSpotlightCard extends ConsumerWidget {
-  final Media? anime;
-  final Function(Media)? onTap;
+  final UniversalMedia? anime;
+  final Function(UniversalMedia)? onTap;
   final String heroTag;
   final SpotlightCardMode mode;
 

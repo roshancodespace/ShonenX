@@ -1,13 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/utils/html_parser.dart';
 
 class DefaultSpotlight extends StatelessWidget {
-  final Media? anime;
+  final UniversalMedia? anime;
   final String heroTag;
-  final Function(Media)? onTap;
+  final Function(UniversalMedia)? onTap;
 
   const DefaultSpotlight({
     super.key,
@@ -26,7 +26,7 @@ class DefaultSpotlight extends StatelessWidget {
 
     final imageUrl = anime!.bannerImage?.isNotEmpty == true
         ? anime!.bannerImage!
-        : (anime!.coverImage?.large ?? anime!.coverImage?.medium ?? '');
+        : (anime!.coverImage.large ?? anime!.coverImage.medium ?? '');
 
     return GestureDetector(
       onTap: () => onTap?.call(anime!),
@@ -117,9 +117,9 @@ class DefaultSpotlight extends StatelessWidget {
 
                       // Title
                       Text(
-                        anime!.title?.english ??
-                            anime!.title?.romaji ??
-                            anime!.title?.native ??
+                        anime!.title.english ??
+                            anime!.title.romaji ??
+                            anime!.title.native ??
                             'Unknown Title',
                         maxLines: isSmallScreen ? 1 : 2,
                         overflow: TextOverflow.ellipsis,

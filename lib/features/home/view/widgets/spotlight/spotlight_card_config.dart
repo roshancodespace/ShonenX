@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/home/view/widgets/spotlight/modes/classic_spotlight.dart';
 import 'package:shonenx/features/home/view/widgets/spotlight/modes/compact_spotlight.dart';
 import 'package:shonenx/features/home/view/widgets/spotlight/modes/cover_only_spotlight.dart';
@@ -24,9 +24,9 @@ enum SpotlightCardMode {
 
 // The definition of the expected function signature
 typedef SpotlightCardBuilder = Widget Function({
-  required Media? anime,
+  required UniversalMedia? anime,
   required String heroTag,
-  required Function(Media)? onTap,
+  required Function(UniversalMedia)? onTap,
 });
 
 class SpotlightCardConfig {

@@ -342,10 +342,15 @@ class AnilistQueries {
 
   // Query: Fetch a user's favorite anime
   static const String userFavoritesQuery = '''
-    query (\$userId: Int) {
+    query (\$userId: Int!, \$page: Int = 1, \$perPage: Int = 25) {
       User(id: \$userId) {
         favourites {
-          anime {
+          anime (page: \$page, perPage: \$perPage) {
+            pageInfo {
+              currentPage
+              hasNextPage
+              total
+            }
             nodes {
               $mediaFields
             }

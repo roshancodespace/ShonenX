@@ -6,7 +6,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:shonenx/core/anilist/services/anilist_service.dart';
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
@@ -16,7 +16,7 @@ import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 
 /// Bottom sheet for editing anime list entry
 class EditListBottomSheet extends ConsumerStatefulWidget {
-  final Media anime;
+  final UniversalMedia anime;
 
   const EditListBottomSheet({
     super.key,
@@ -99,7 +99,7 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
           .firstWhereOrNull((media) => media.id == widget.anime.id);
 
       if (entry == null && auth.activePlatform == AuthPlatform.anilist) {
-        entry = await animeRepo.getAnimeEntry(widget.anime.id!);
+        entry = await animeRepo.getAnimeEntry(int.parse(widget.anime.id));
         if (entry != null) watchlistNotifier.addEntry(entry);
       }
 
@@ -122,7 +122,7 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
 
       if (auth.activePlatform == AuthPlatform.anilist) {
         await ref.read(anilistServiceProvider).updateUserAnimeList(
-              mediaId: widget.anime.id!,
+              mediaId: int.parse(widget.anime.id),
               status: _selectedStatus,
               score: score,
               private: _isPrivate,

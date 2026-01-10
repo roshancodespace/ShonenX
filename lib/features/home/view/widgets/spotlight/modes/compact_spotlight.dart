@@ -1,13 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart' as m;
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
 
 class CompactSpotlight extends StatelessWidget {
-  final m.Media? anime;
+  final UniversalMedia? anime;
   final String heroTag;
-  final Function(m.Media)? onTap;
+  final Function(UniversalMedia)? onTap;
 
   const CompactSpotlight({
     super.key,
@@ -23,7 +23,7 @@ class CompactSpotlight extends StatelessWidget {
     final theme = Theme.of(context);
     final imageUrl = anime!.bannerImage?.isNotEmpty == true
         ? anime!.bannerImage!
-        : (anime!.coverImage?.large ?? anime!.coverImage?.medium ?? '');
+        : (anime!.coverImage.large ?? anime!.coverImage.medium ?? '');
 
     return GestureDetector(
       onTap: () => onTap?.call(anime!),
@@ -60,8 +60,8 @@ class CompactSpotlight extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        anime!.title?.english ??
-                            anime!.title?.romaji ??
+                        anime!.title.english ??
+                            anime!.title.romaji ??
                             'Unknown Title',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

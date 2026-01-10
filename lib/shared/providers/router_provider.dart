@@ -2,7 +2,7 @@ import 'package:shonenx/features/settings/view/profile_settings_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core_new/models/source.dart';
 import 'package:shonenx/features/anime/view/watch_screen.dart';
@@ -60,7 +60,7 @@ final routerConfig = GoRouter(
     GoRoute(
       path: '/details',
       builder: (context, state) => AnimeDetailsScreen(
-        anime: state.extra as Media,
+        anime: state.extra as UniversalMedia,
         tag: state.uri.queryParameters['tag'] ?? '',
         forceFetch: state.uri.queryParameters['forceFetch'] == 'true',
       ),

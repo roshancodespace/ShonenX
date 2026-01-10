@@ -1,19 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:shonenx/core/models/anilist/media.dart';
-import 'package:shonenx/core/models/anilist/media_list_entry.dart';
-import 'package:shonenx/core/models/anilist/page_response.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
+import 'package:shonenx/core/models/universal/universal_page_response.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/main.dart';
 import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 
 class WatchListState {
-  final Map<String, List<MediaListEntry>> lists;
-  final Map<String, PageInfo> pageInfo;
-  final List<Media> favorites;
+  final Map<String, List<UniversalMediaListEntry>> lists;
+  final Map<String, UniversalPageInfo> pageInfo;
+  final List<UniversalMediaListEntry> favorites;
   final Set<String> loadingStatuses;
   final Map<String, String> errors;
+  // Generic list for unified access if needed, mostly for 'favorites' which is special-cased in old code
+  // but let's keep it separate for now as per existing logic.
 
   const WatchListState({
     this.lists = const {},
@@ -23,14 +24,15 @@ class WatchListState {
     this.errors = const {},
   });
 
-  List<MediaListEntry> listFor(String status) => lists[status] ?? const [];
+  List<UniversalMediaListEntry> listFor(String status) =>
+      lists[status] ?? const [];
 
-  bool isFavorite(int id) => favorites.any((m) => m.id == id);
+  bool isFavorite(String id) => favorites.any((m) => m.media.id == id);
 
   WatchListState copyWith({
-    Map<String, List<MediaListEntry>>? lists,
-    Map<String, PageInfo>? pageInfo,
-    List<Media>? favorites,
+    Map<String, List<UniversalMediaListEntry>>? lists,
+    Map<String, UniversalPageInfo>? pageInfo,
+    List<UniversalMediaListEntry>? favorites,
     Set<String>? loadingStatuses,
     Map<String, String>? errors,
   }) {
@@ -54,7 +56,7 @@ class WatchlistNotifier extends Notifier<WatchListState> {
     state = const WatchListState();
   }
 
-  Future<bool> ensureFavorite(int id) async {
+  Future<bool> ensureFavorite(String id) async {
     if (state.isFavorite(id)) return true;
     if (state.loadingStatuses.contains('favorites')) {
       return state.isFavorite(id);
@@ -63,18 +65,29 @@ class WatchlistNotifier extends Notifier<WatchListState> {
     return state.isFavorite(id);
   }
 
-  Future<void> toggleFavorite(Media anime) async {
-    final id = anime.id;
-    if (id == null) return;
+  Future<void> toggleFavorite(UniversalMedia anime) async {
+    final id = int.tryParse(anime.id);
+    if (id == null) return; // TODO: handle string IDs for non-anilist
 
-    final wasFav = state.isFavorite(id);
+    final wasFav = state.isFavorite(anime.id);
 
     try {
       await _repo.toggleFavorite(id);
 
       final updated = wasFav
-          ? state.favorites.where((m) => m.id != id).toList()
-          : [...state.favorites, anime];
+          ? state.favorites.where((m) => m.media.id != anime.id).toList()
+          : [
+              ...state.favorites,
+              UniversalMediaListEntry(
+                  id: 'fav_${anime.id}', // dummy ID
+                  media: anime,
+                  status: 'CURRENT',
+                  score: 0,
+                  progress: 0,
+                  repeat: 0,
+                  isPrivate: false,
+                  notes: '')
+            ];
 
       state = state.copyWith(favorites: updated);
     } catch (e) {
@@ -84,13 +97,13 @@ class WatchlistNotifier extends Notifier<WatchListState> {
     }
   }
 
-  Future<void> fetchListForStatus(
+  Future<WatchListState> fetchListForStatus(
     String status, {
     bool force = false,
     int page = 1,
-    int perPage = 10,
+    int perPage = 20, // Increased default per page
   }) async {
-    if (_shouldSkip(status, force, page)) return;
+    if (_shouldSkip(status, force, page)) return state;
 
     state = state.copyWith(
       loadingStatuses: {...state.loadingStatuses, status},
@@ -99,9 +112,31 @@ class WatchlistNotifier extends Notifier<WatchListState> {
 
     try {
       if (status == 'favorites') {
-        final data = await _repo.getFavorites();
-        state = state.copyWith(favorites: data);
-        return;
+        // FIX: Passing page to getFavorites
+        final data = await _repo.getFavorites(page: page, perPage: perPage);
+
+        // Map UniversalMedia to UniversalMediaListEntry for favorites list
+        // Since favorites are just Media, we wrap them.
+        final entries = data.data
+            .map((m) => UniversalMediaListEntry(
+                id: 'fav_${m.id}',
+                media: m,
+                status: 'CURRENT',
+                score: 0,
+                progress: 0,
+                repeat: 0,
+                isPrivate: false,
+                notes: ''))
+            .toList();
+
+        final existing =
+            page == 1 ? <UniversalMediaListEntry>[] : state.favorites;
+
+        state = state.copyWith(
+          favorites: [...existing, ...entries],
+          pageInfo: {...state.pageInfo, 'favorites': data.pageInfo},
+        );
+        return state;
       }
 
       final res = await _repo.getUserAnimeList(
@@ -111,29 +146,33 @@ class WatchlistNotifier extends Notifier<WatchListState> {
         perPage: perPage,
       );
 
-      final existing = page == 1 ? <MediaListEntry>[] : state.listFor(status);
+      final existing =
+          page == 1 ? <UniversalMediaListEntry>[] : state.listFor(status);
 
       state = state.copyWith(
         lists: {
           ...state.lists,
-          status: [...existing, ...res.mediaList],
+          status: [...existing, ...res.data],
         },
         pageInfo: {
           ...state.pageInfo,
           status: res.pageInfo,
         },
       );
-    } catch (e) {
+      return state;
+    } catch (e, stack) {
+      print(stack); // Debug
       state = state.copyWith(
         errors: {...state.errors, status: e.toString()},
       );
+      return state;
     } finally {
       final updated = {...state.loadingStatuses}..remove(status);
       state = state.copyWith(loadingStatuses: updated);
     }
   }
 
-  void addEntry(MediaListEntry entry) {
+  void addEntry(UniversalMediaListEntry entry) {
     final auth = ref.read(authProvider);
     if (!auth.isAniListAuthenticated) {
       return showAppSnackBar(

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart' as anime_media;
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
@@ -467,15 +467,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _buildLivePreview(String cardStyle) {
     final mode = AnimeCardMode.values.firstWhere((e) => e.name == cardStyle,
         orElse: () => AnimeCardMode.defaults);
-    final anime = anime_media.Media(
-      id: 1,
-      coverImage: anime_media.CoverImage(
-        large:
-            'https://cdn.noitatnemucod.net/thumbnail/300x400/100/bcd84731a3eda4f4a306250769675065.jpg',
-        medium:
-            'https://cdn.noitatnemucod.net/thumbnail/300x400/100/bcd84731a3eda4f4a306250769675065.jpg',
-      ),
-      title: anime_media.Title(
+    final anime = UniversalMedia(
+      id: '21',
+      title: UniversalTitle(
         english: "One Piece",
         romaji: "One Piece",
         native: "One Piece",
@@ -486,6 +480,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       genres: ['Action', 'Adventure', 'Comedy'],
       episodes: 1000,
       season: 'Fall',
+      coverImage: UniversalCoverImage(
+        large:
+            'https://cdn.noitatnemucod.net/thumbnail/300x400/100/bcd84731a3eda4f4a306250769675065.jpg',
+        medium:
+            'https://cdn.noitatnemucod.net/thumbnail/300x400/100/bcd84731a3eda4f4a306250769675065.jpg',
+      ),
     );
     return AnimatedAnimeCard(anime: anime, tag: 'preview', mode: mode);
   }

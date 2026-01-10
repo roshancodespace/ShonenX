@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
 
 class PolaroidCard extends StatelessWidget {
-  final Media? anime;
+  final UniversalMedia? anime;
   final String tag;
   final bool isHovered;
 
@@ -97,7 +97,7 @@ class PolaroidCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            anime?.title?.english ?? anime?.title?.romaji ?? 'Unknown Title',
+            anime?.title.english ?? anime?.title.romaji ?? 'Unknown Title',
             style: const TextStyle(
               color: Colors.black87,
               fontFamily: 'Caveat', // Assuming a handwriting font or fallback

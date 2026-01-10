@@ -1,7 +1,7 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/features/home/view/widget/continue_section.dart';
 import 'package:shonenx/features/home/view_model/homepage_notifier.dart';
@@ -72,6 +72,6 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHomeSection(String title, List<Media> mediaList) =>
+  Widget _buildHomeSection(String title, List<UniversalMedia> mediaList) =>
       HomeSectionWidget(title: title, mediaList: mediaList);
 }

@@ -1,15 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 
-class DetailsNotifier extends StateNotifier<AsyncValue<Media>> {
+class DetailsNotifier extends StateNotifier<AsyncValue<UniversalMedia>> {
   final Ref ref;
   final int animeId;
 
   DetailsNotifier(this.ref, this.animeId) : super(const AsyncLoading());
 
-  void init(Media initialMedia) {
+  void init(UniversalMedia initialMedia) {
     if (!state.hasValue) {
       state = AsyncData(initialMedia);
       fetchDetails();
@@ -20,7 +20,8 @@ class DetailsNotifier extends StateNotifier<AsyncValue<Media>> {
     final currentData = state.value;
     // Set loading state while preserving previous data
     if (currentData != null) {
-      state = AsyncLoading<Media>().copyWithPrevious(AsyncData(currentData));
+      state = AsyncLoading<UniversalMedia>()
+          .copyWithPrevious(AsyncData(currentData));
     }
 
     try {
@@ -45,8 +46,7 @@ class DetailsNotifier extends StateNotifier<AsyncValue<Media>> {
   }
 }
 
-final detailsProvider =
-    StateNotifierProvider.family<DetailsNotifier, AsyncValue<Media>, int>(
-        (ref, id) {
+final detailsProvider = StateNotifierProvider.family<DetailsNotifier,
+    AsyncValue<UniversalMedia>, int>((ref, id) {
   return DetailsNotifier(ref, id);
 });

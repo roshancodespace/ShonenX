@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 
 class NeonSpotlight extends StatelessWidget {
-  final Media? anime;
+  final UniversalMedia? anime;
   final String heroTag;
-  final Function(Media)? onTap;
+  final Function(UniversalMedia)? onTap;
   final bool isHovered;
 
   const NeonSpotlight({
@@ -28,7 +28,7 @@ class NeonSpotlight extends StatelessWidget {
     final isMobile = Platform.isAndroid || Platform.isIOS;
     final imageUrl = anime!.bannerImage?.isNotEmpty == true
         ? anime!.bannerImage!
-        : (anime!.coverImage?.large ?? anime!.coverImage?.medium ?? '');
+        : (anime!.coverImage.large ?? anime!.coverImage.medium ?? '');
 
     return GestureDetector(
       onTap: () => onTap?.call(anime!),
@@ -87,8 +87,8 @@ class NeonSpotlight extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        anime!.title?.english ??
-                            anime!.title?.romaji ??
+                        anime!.title.english ??
+                            anime!.title.romaji ??
                             'Unknown Title',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

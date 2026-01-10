@@ -1,10 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 
 class EpisodesInfo extends StatelessWidget {
-  final Media? anime;
+  final UniversalMedia? anime;
   final bool compact;
 
   const EpisodesInfo({
@@ -103,7 +103,7 @@ class Tag extends StatelessWidget {
 }
 
 class AnimeTitle extends StatelessWidget {
-  final Media? anime;
+  final UniversalMedia? anime;
   final int maxLines;
   final bool minimal;
   final bool enhanced;
@@ -121,9 +121,9 @@ class AnimeTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final title = anime?.title?.english ??
-        anime?.title?.romaji ??
-        anime?.title?.native ??
+    final title = anime?.title.english ??
+        anime?.title.romaji ??
+        anime?.title.native ??
         'Unknown Title';
 
     if (minimal) {
@@ -181,7 +181,7 @@ class AnimeTitle extends StatelessWidget {
 }
 
 class AnimeImage extends StatelessWidget {
-  final Media? anime;
+  final UniversalMedia? anime;
   final String tag;
   final double height;
 
@@ -206,7 +206,7 @@ class AnimeImage extends StatelessWidget {
           width: double.infinity,
           child: CachedNetworkImage(
             imageUrl:
-                anime?.coverImage?.large ?? anime?.coverImage?.medium ?? '',
+                anime?.coverImage.large ?? anime?.coverImage.medium ?? '',
             fit: BoxFit.cover,
             fadeInDuration: const Duration(milliseconds: 300),
             placeholder: (_, __) => AnimeCardShimmer(height: height),

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:intl/intl.dart';
 
 class AdditionalInfoWidget extends StatelessWidget {
-  final Media anime;
+  final UniversalMedia anime;
 
   const AdditionalInfoWidget({super.key, required this.anime});
 
@@ -60,7 +60,7 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class AnimeTagsWidget extends StatelessWidget {
-  final List<Tag> tags;
+  final List<String> tags;
 
   const AnimeTagsWidget({super.key, required this.tags});
 
@@ -84,7 +84,7 @@ class AnimeTagsWidget extends StatelessWidget {
             ),
           ),
           child: Text(
-            tag.name ?? '',
+            tag,
             style: theme.textTheme.labelMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
@@ -97,17 +97,17 @@ class AnimeTagsWidget extends StatelessWidget {
 }
 
 class AnimeInformationGrid extends StatelessWidget {
-  final Media anime;
+  final UniversalMedia anime;
 
   const AnimeInformationGrid({super.key, required this.anime});
 
   @override
   Widget build(BuildContext context) {
     final items = [
-      if (anime.title?.english != null)
-        _InfoItemData('English Title', anime.title!.english!),
-      if (anime.title?.native != null)
-        _InfoItemData('Native Title', anime.title!.native!),
+      if (anime.title.english != null)
+        _InfoItemData('English Title', anime.title.english!),
+      if (anime.title.native != null)
+        _InfoItemData('Native Title', anime.title.native!),
       if (anime.synonyms.isNotEmpty)
         _InfoItemData('Synonyms', anime.synonyms.take(2).join(', ')),
       if (anime.source != null)
@@ -121,20 +121,12 @@ class AnimeInformationGrid extends StatelessWidget {
 
     if (items.isEmpty) return const SizedBox.shrink();
 
-    // Use a Wrap or Grid for 2-column layout
     return Wrap(
       spacing: 16,
       runSpacing: 16,
       children: items.map((item) {
-        // Calculate width for 2 columns with spacing
         return LayoutBuilder(builder: (context, constraints) {
-          // We can't use LayoutBuilder inside Wrap children easily for width.
-          // Instead, use FractionallySizedBox or simplified assumption.
-          // For simplicity, let's use a custom grid row approach or just full width rows where needed.
-          // Actually, simplest clean UI is 50% width items.
-
           final screenWidth = MediaQuery.of(context).size.width;
-          // approx width minus padding
           final itemWidth = (screenWidth - 32 - 16) / 2;
 
           return SizedBox(
@@ -195,7 +187,7 @@ class _InfoItemData {
 }
 
 class ExternalLinksWidget extends StatelessWidget {
-  final Media anime;
+  final UniversalMedia anime;
 
   const ExternalLinksWidget({super.key, required this.anime});
 

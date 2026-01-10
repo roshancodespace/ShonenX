@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/models/anilist/media.dart' as anilist;
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core_new/eval/model/m_manga.dart';
@@ -90,11 +90,12 @@ class _DemoScreenState extends ConsumerState<DemoScreen> {
                                 );
                               },
                               child: AnimatedAnimeCard(
-                                anime: anilist.Media(
-                                  title: anilist.Title(
+                                anime: UniversalMedia(
+                                  id: 'demo',
+                                  title: UniversalTitle(
                                       english: anime.name ?? '',
                                       romaji: anime.name ?? ''),
-                                  coverImage: anilist.CoverImage(
+                                  coverImage: UniversalCoverImage(
                                       large: anime.imageUrl ?? '',
                                       medium: anime.imageUrl ?? ''),
                                   format: anime.author,

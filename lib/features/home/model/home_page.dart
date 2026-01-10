@@ -1,5 +1,5 @@
 import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/utils/app_utils.dart';
 import 'package:shonenx/data/hive/hive_type_ids.dart';
@@ -29,7 +29,7 @@ class HomePageModel {
         upcomingAnime: _parseMediaList('upcomingAnime'),
       );
 
-  List<Media> _parseMediaList(String key) =>
+  List<UniversalMedia> _parseMediaList(String key) =>
       safeParse(key, sections[key] ?? []);
 
   factory HomePageModel.fromHomePage(HomePage page) => HomePageModel(

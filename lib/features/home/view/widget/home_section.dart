@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 
 import 'package:shonenx/core/utils/app_utils.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
@@ -10,7 +10,7 @@ import 'package:shonenx/helpers/navigation.dart';
 
 class HomeSectionWidget extends ConsumerWidget {
   final String title;
-  final List<Media> mediaList;
+  final List<UniversalMedia> mediaList;
 
   const HomeSectionWidget({
     super.key,

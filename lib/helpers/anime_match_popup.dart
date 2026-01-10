@@ -5,7 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart' as media;
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
@@ -21,7 +21,7 @@ Future<BaseAnimeModel?> providerAnimeMatchSearch({
   Function? afterSearchCallback,
   required BuildContext context,
   required WidgetRef ref,
-  required media.Media animeMedia,
+  required UniversalMedia animeMedia,
   bool withAnimeMatch = true,
   int? startAt,
 }) async {
@@ -29,7 +29,7 @@ Future<BaseAnimeModel?> providerAnimeMatchSearch({
 
   final title = animeMedia.title;
   AppLogger.d(
-      'Starting anime match search for anime: ${title?.english ?? title?.romaji ?? title?.native}');
+      'Starting anime match search for anime: ${title.english ?? title.romaji ?? title.native}');
 
   try {
     final animeProvider = ref.read(selectedAnimeProvider);
@@ -65,7 +65,7 @@ Future<BaseAnimeModel?> providerAnimeMatchSearch({
 
 class _AnimeSearchDialog extends ConsumerStatefulWidget {
   final AnimeProvider animeProvider;
-  final media.Media animeMedia;
+  final UniversalMedia animeMedia;
   final bool withAnimeMatch;
   final int? startAt;
 
@@ -106,9 +106,9 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
   Future<void> _initSearch() async {
     final title = widget.animeMedia.title;
     final titles = [
-      title?.english,
-      title?.romaji,
-      title?.native,
+      title.english,
+      title.romaji,
+      title.native,
     ].where((t) => t != null && t.trim().isNotEmpty).cast<String>().toList();
 
     if (titles.isEmpty) {
@@ -159,7 +159,7 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
                   poster: e.imageUrl ?? '',
                 ))
             .toList();
-      } 
+      }
       // Legacy Source
       else {
         AppLogger.d('Using Legacy source for search with query: $query');
@@ -168,9 +168,8 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
           null,
           1,
         );
-        fetchedCandidates = res.results
-            .where((e) => e.name != null && e.id != null)
-            .toList();
+        fetchedCandidates =
+            res.results.where((e) => e.name != null && e.id != null).toList();
       }
 
       if (!mounted) return false;
@@ -207,8 +206,8 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
               animeName: bestMatch.name!,
               animeFormat: widget.animeMedia.format ?? '',
               animeCover: bestMatch.poster ??
-                  widget.animeMedia.coverImage?.large ??
-                  widget.animeMedia.coverImage?.medium ??
+                  widget.animeMedia.coverImage.large ??
+                  widget.animeMedia.coverImage.medium ??
                   '',
               episodes: const [],
               currentEpisode: widget.startAt ?? 1,
@@ -258,8 +257,8 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
       mediaId: widget.animeMedia.id.toString(),
       animeId: anime.id!,
       animeFormat: widget.animeMedia.format ?? '',
-      animeCover: widget.animeMedia.coverImage?.large ??
-          widget.animeMedia.coverImage?.medium ??
+      animeCover: widget.animeMedia.coverImage.large ??
+          widget.animeMedia.coverImage.medium ??
           '',
       animeName: anime.name ?? 'Unknown',
       episodes: const [],

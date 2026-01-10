@@ -4,6 +4,8 @@ import 'package:shonenx/core/jikan/jikan_service.dart';
 import 'package:shonenx/core/models/aniskip/aniskip_result.dart';
 import 'package:shonenx/core/services/aniskip_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/main.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 final aniSkipProvider =
     StateNotifierProvider<AniSkipNotifier, List<AniSkipResultItem>>((ref) {
@@ -20,6 +22,7 @@ class AniSkipNotifier extends StateNotifier<List<AniSkipResultItem>> {
     required String mediaId,
     required String animeTitle,
     required int episodeNumber,
+    required int episodeLength,
   }) async {
     state = [];
     int? malId;
@@ -42,13 +45,16 @@ class AniSkipNotifier extends StateNotifier<List<AniSkipResultItem>> {
       }
 
       if (malId != null) {
-        final results = await aniSkipService.getSkipTimes(malId, episodeNumber);
+        final results = await aniSkipService.getSkipTimes(
+            malId, episodeNumber, episodeLength);
         state = results;
       } else {
         AppLogger.w('Could not resolve MAL ID for $animeTitle ($mediaId)');
       }
     } catch (e) {
       AppLogger.e('Failed to fetch skip times: $e');
+      showAppSnackBar('Aniskip', 'Failed to fetch skip times: $e',
+          type: ContentType.failure);
     }
   }
 

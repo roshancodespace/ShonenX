@@ -95,28 +95,37 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       },
     );
 
-    ref.listen<int?>(
-      episodeDataProvider.select((d) => d.selectedEpisodeIdx),
-      (_, next) {
+    ref.listen<Duration?>(
+      playerStateProvider.select((p) => p.duration),
+      (_, duration) {
         _resumeChecked = false;
-        if (next != null) {
-          final settings = ref.read(playerSettingsProvider);
-          if (settings.enableAniSkip) {
-            final episodes = ref.read(episodeListProvider).episodes;
-            if (next < episodes.length) {
-              final ep = episodes[next];
-              if (ep.number != null) {
-                ref.read(aniSkipProvider.notifier).fetchSkipTimes(
-                      mediaId: widget.mediaId,
-                      animeTitle: widget.animeName,
-                      episodeNumber: ep.number!.toInt(),
-                    );
-              }
-            }
-          } else {
-            ref.read(aniSkipProvider.notifier).clear();
-          }
+
+        if (duration == null || duration.inSeconds <= 0) return;
+
+        final episodes = ref.read(episodeListProvider).episodes;
+        final currentIndex = ref.read(episodeDataProvider).selectedEpisodeIdx;
+
+        if (currentIndex == null ||
+            currentIndex < 0 ||
+            currentIndex >= episodes.length) return;
+
+        final settings = ref.read(playerSettingsProvider);
+
+        if (!settings.enableAniSkip) {
+          ref.read(aniSkipProvider.notifier).clear();
+          return;
         }
+
+        final ep = episodes[currentIndex];
+
+        if (ep.number == null) return;
+
+        ref.read(aniSkipProvider.notifier).fetchSkipTimes(
+              mediaId: widget.mediaId,
+              animeTitle: widget.animeName,
+              episodeNumber: ep.number!.toInt(),
+              episodeLength: duration.inSeconds,
+            );
       },
     );
 

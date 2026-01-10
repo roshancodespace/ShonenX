@@ -7,12 +7,14 @@ class AniSkipService {
   static const String _baseUrl = 'https://api.aniskip.com/v2';
 
   Future<List<AniSkipResultItem>> getSkipTimes(
-      int malId, int episodeNumber) async {
+      int malId, int episodeNumber, int episodeLength) async {
     try {
       final uri = Uri.parse(
-          '$_baseUrl/skip-times/$malId/$episodeNumber?types[]=op&types[]=ed&types[]=mixed-op&types[]=mixed-ed&types[]=recap&episodeLength=0');
+          '$_baseUrl/skip-times/$malId/$episodeNumber?types[]=op&types[]=ed&types[]=mixed-op&types[]=mixed-ed&types[]=recap&episodeLength=$episodeLength');
 
       final response = await http.get(uri);
+
+      AppLogger.d('AniSkip API response: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

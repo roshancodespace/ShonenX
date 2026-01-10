@@ -25,7 +25,7 @@ class ContinueSection extends ConsumerWidget {
             Text('Continue Watching', style: theme.textTheme.titleLarge),
             IconButton(
               onPressed: () => context.push('/settings/watch-history'),
-              icon: const Icon(Iconsax.arrow_right_1),
+              icon: const Icon(Iconsax.arrow_right_3),
               tooltip: 'View All History',
             ),
           ],

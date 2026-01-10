@@ -38,7 +38,6 @@ class TopControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
     final selectedEpisodeIdx = watchEpisode(ref, (e) => e.selectedEpisodeIdx);
     final episodeTitle = ref.watch(
       episodeListProvider.select((s) {
@@ -56,8 +55,8 @@ class TopControls extends ConsumerWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            scheme.surface.withOpacity(0.85),
-            scheme.surface.withOpacity(0.35),
+            Colors.black.withOpacity(0.85),
+            Colors.black.withOpacity(0.35),
             Colors.transparent,
           ],
           stops: const [0.0, 0.7, 1.0],
@@ -76,7 +75,7 @@ class TopControls extends ConsumerWidget {
                 _buildControlButton(
                   icon: Icons.arrow_back_ios_new_rounded,
                   onPressed: _wrap(() => context.pop()),
-                  color: scheme.onSurface,
+                  color: Colors.white,
                 ),
 
                 const SizedBox(width: 16),
@@ -91,7 +90,7 @@ class TopControls extends ConsumerWidget {
                       Text(
                         _getSourceName(ref),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: scheme.onSurface.withOpacity(0.7),
+                              color: Colors.white.withOpacity(0.7),
                               fontWeight: FontWeight.w500,
                             ),
                       ),
@@ -104,7 +103,7 @@ class TopControls extends ConsumerWidget {
                           episodeTitle ?? 'Episode: ${selectedEpisodeIdx + 1}',
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: scheme.onSurface,
+                                    color: Colors.white,
                                     fontWeight: FontWeight.w600,
                                   ),
                           maxLines: 1,
@@ -124,7 +123,7 @@ class TopControls extends ConsumerWidget {
                       _buildControlButton(
                         icon: Icons.hd_outlined,
                         onPressed: _wrap(onQualityPressed),
-                        color: scheme.onSurface,
+                        color: Colors.white,
                       ),
                       const SizedBox(width: 8),
                     ],
@@ -139,7 +138,7 @@ class TopControls extends ConsumerWidget {
                     _buildControlButton(
                       icon: Icons.more_vert_rounded,
                       onPressed: _wrap(onSettingsPressed),
-                      color: scheme.onSurface,
+                      color: Colors.white,
                     ),
                   ],
                 ),

@@ -101,7 +101,7 @@ class WatchlistNotifier extends Notifier<WatchListState> {
     String status, {
     bool force = false,
     int page = 1,
-    int perPage = 20, // Increased default per page
+    int perPage = 5,
   }) async {
     if (_shouldSkip(status, force, page)) return state;
 
@@ -112,11 +112,7 @@ class WatchlistNotifier extends Notifier<WatchListState> {
 
     try {
       if (status == 'favorites') {
-        // FIX: Passing page to getFavorites
         final data = await _repo.getFavorites(page: page, perPage: perPage);
-
-        // Map UniversalMedia to UniversalMediaListEntry for favorites list
-        // Since favorites are just Media, we wrap them.
         final entries = data.data
             .map((m) => UniversalMediaListEntry(
                 id: 'fav_${m.id}',
@@ -160,8 +156,7 @@ class WatchlistNotifier extends Notifier<WatchListState> {
         },
       );
       return state;
-    } catch (e, stack) {
-      print(stack); // Debug
+    } catch (e) {
       state = state.copyWith(
         errors: {...state.errors, status: e.toString()},
       );

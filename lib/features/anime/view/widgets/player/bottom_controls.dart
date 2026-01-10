@@ -189,7 +189,7 @@ class BottomControls extends ConsumerWidget {
 
   Widget _buildBack(WidgetRef ref) {
     return IconButton(
-      icon: const Icon(Iconsax.previous),
+      icon: const Icon(Iconsax.previous, color: Colors.white),
       onPressed: () =>
           ref.read(episodeDataProvider.notifier).changeEpisode(null, by: -1),
     );
@@ -197,7 +197,7 @@ class BottomControls extends ConsumerWidget {
 
   Widget _buildForward(WidgetRef ref) {
     return IconButton(
-      icon: const Icon(Iconsax.next),
+      icon: const Icon(Iconsax.next, color: Colors.white),
       onPressed: () =>
           ref.read(episodeDataProvider.notifier).changeEpisode(null, by: 1),
     );
@@ -363,7 +363,7 @@ class BottomControls extends ConsumerWidget {
     return Text(
       '${formatDuration(pos)} / ${formatDuration(dur)}',
       style: TextStyle(
-        color: scheme.onSurface,
+        color: Colors.white,
         fontSize: 13,
         fontWeight: FontWeight.w500,
         fontFeatures: const [FontFeature.tabularFigures()],

@@ -6,19 +6,21 @@ import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:shonenx/features/anime/view_model/player_provider.dart';
 
 class TopControls extends ConsumerWidget {
   final VoidCallback onInteraction;
   final VoidCallback? onEpisodesPressed;
-  final VoidCallback? onSettingsPressed;
   final VoidCallback? onQualityPressed;
+  final VoidCallback? onSettingsPressed;
 
   const TopControls({
     super.key,
     required this.onInteraction,
     this.onEpisodesPressed,
-    this.onSettingsPressed,
     this.onQualityPressed,
+    this.onSettingsPressed,
   });
 
   VoidCallback? _wrap(VoidCallback? action) {
@@ -135,10 +137,33 @@ class TopControls extends ConsumerWidget {
                     //   ),
                     //   const SizedBox(width: 8),
                     // ],
+                    (() {
+                      const fitModes = [
+                        BoxFit.contain,
+                        BoxFit.cover,
+                        BoxFit.fill,
+                      ];
+
+                      return _buildControlButton(
+                        icon: Iconsax.crop,
+                        color: Colors.white,
+                        onPressed: () {
+                          final notifier =
+                              ref.read(playerStateProvider.notifier);
+                          final currentFit = ref.read(playerStateProvider).fit;
+
+                          final index = fitModes.indexOf(currentFit);
+                          final nextFit =
+                              fitModes[(index + 1) % fitModes.length];
+
+                          notifier.setFit(nextFit);
+                        },
+                      );
+                    })(),
                     _buildControlButton(
-                      icon: Icons.more_vert_rounded,
-                      onPressed: _wrap(onSettingsPressed),
+                      icon: Iconsax.menu_1,
                       color: Colors.white,
+                      onPressed: _wrap(onSettingsPressed),
                     ),
                   ],
                 ),

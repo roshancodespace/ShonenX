@@ -1,9 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 
 class CharactersTab extends StatelessWidget {
-  final List<Character> characters;
+  final List<UniversalCharacter> characters;
   final bool isLoading;
 
   const CharactersTab({
@@ -64,7 +64,7 @@ class CharactersTab extends StatelessWidget {
 }
 
 class _CharacterCard extends StatelessWidget {
-  final Character character;
+  final UniversalCharacter character;
 
   const _CharacterCard({required this.character});
 

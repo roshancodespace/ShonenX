@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/modes/classic_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/modes/compact_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/modes/cover_only_card.dart';
@@ -26,7 +26,7 @@ typedef ResponsiveSize = ({double small, double large});
 
 // The definition of the expected function signature
 typedef AnimeCardBuilder = Widget Function({
-  required Media? anime,
+  required UniversalMedia? anime,
   required String tag,
   required bool isHovered,
 });

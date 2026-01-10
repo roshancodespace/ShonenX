@@ -46,11 +46,14 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
     _fetch(0);
   }
 
-  void _fetch(int i, {bool force = false}) {
+  Future<void> _fetch(int i, {bool force = false, int page = 1}) async {
     if (_statuses.isEmpty) return;
-    ref
-        .read(watchlistProvider.notifier)
-        .fetchListForStatus(_statuses[i], force: force);
+
+    await ref.read(watchlistProvider.notifier).fetchListForStatus(
+          _statuses[i],
+          force: force,
+          page: page,
+        );
   }
 
   @override
@@ -89,8 +92,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
       ),
       body: TabBarView(
         controller: _controller,
-        children:
-            _statuses.map((s) => _WatchlistTabView(status: s)).toList(),
+        children: _statuses.map((s) => _WatchlistTabView(status: s)).toList(),
       ),
     );
   }
@@ -125,8 +127,7 @@ class _WatchlistTabView extends ConsumerWidget {
     final state = ref.watch(watchlistProvider);
     final notifier = ref.read(watchlistProvider.notifier);
     final cardStyle = ref.watch(uiSettingsProvider).cardStyle;
-    final mode =
-        AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
+    final mode = AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
 
     if (state.loadingStatuses.contains(status)) {
       return const Center(child: CircularProgressIndicator());
@@ -135,13 +136,12 @@ class _WatchlistTabView extends ConsumerWidget {
     if (state.errors.containsKey(status)) {
       return _ErrorView(
         message: state.errors[status]!,
-        onRetry: () =>
-            notifier.fetchListForStatus(status, force: true),
+        onRetry: () => notifier.fetchListForStatus(status, force: true),
       );
     }
 
     final media = status == 'favorites'
-        ? state.favorites
+        ? state.favorites.map((e) => e.media).toList()
         : state.listFor(status).map((e) => e.media).toList();
 
     if (media.isEmpty) return const _EmptyState();
@@ -152,18 +152,17 @@ class _WatchlistTabView extends ConsumerWidget {
         if (info != null &&
             info.hasNextPage &&
             !state.loadingStatuses.contains(status) &&
-            n.metrics.pixels >=
-                n.metrics.maxScrollExtent * 0.9) {
+            n.metrics.pixels >= n.metrics.maxScrollExtent * 0.9) {
           notifier.fetchListForStatus(
             status,
             page: info.currentPage + 1,
           );
+          print('Fetching page ${info.currentPage + 1} for $status');
         }
         return false;
       },
       child: RefreshIndicator(
-        onRefresh: () =>
-            notifier.fetchListForStatus(status, force: true),
+        onRefresh: () => notifier.fetchListForStatus(status, force: true),
         child: ShonenXGridView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
@@ -200,8 +199,7 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Iconsax.warning_2,
-                size: 64, color: theme.colorScheme.error),
+            Icon(Iconsax.warning_2, size: 64, color: theme.colorScheme.error),
             const SizedBox(height: 16),
             Text(
               'Failed to load list',
@@ -213,8 +211,7 @@ class _ErrorView extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color:
-                    theme.colorScheme.onSurface.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
               ),
             ),
             const SizedBox(height: 24),
@@ -262,8 +259,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             'Add some anime to track your progress!',
             style: theme.textTheme.bodyLarge?.copyWith(
-              color:
-                  theme.colorScheme.onSurface.withOpacity(0.7),
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
         ],

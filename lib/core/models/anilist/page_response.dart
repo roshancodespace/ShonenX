@@ -6,13 +6,23 @@ class PageResponse {
   final List<MediaListEntry> mediaList;
 
   PageResponse({
-    required this.pageInfo,
-    required this.mediaList,
+    this.pageInfo = const PageInfo.empty(),
+    this.mediaList = const [],
   });
 
   /// AniList JSON
   factory PageResponse.fromJson(Map<String, dynamic> json) {
     final page = json['Page'];
+    if (page == null || page.isEmpty) {
+      final pageInfo = json['pageInfo'];
+      final items = json['items'] ?? json['nodes'];
+      return PageResponse(
+        pageInfo: PageInfo.fromJson(pageInfo),
+        mediaList: (items as List<dynamic>)
+            .map((e) => MediaListEntry.fromJson(e))
+            .toList(),
+      );
+    }
     return PageResponse(
       pageInfo: PageInfo.fromJson(page['pageInfo']),
       mediaList: (page['mediaList'] as List<dynamic>)
@@ -34,9 +44,7 @@ class PageResponse {
         hasNextPage: paging['next'] != null,
         perPage: json['limit'] ?? data.length,
       ),
-      mediaList: data
-          .map((e) => MediaListEntry.fromMal(e)) // <- you'll need to add a `fromMal` factory in MediaListEntry
-          .toList(),
+      mediaList: data.map((e) => MediaListEntry.fromMal(e)).toList(),
     );
   }
 }
@@ -48,13 +56,20 @@ class PageInfo {
   final bool hasNextPage;
   final int perPage;
 
-  PageInfo({
-    required this.total,
-    required this.currentPage,
-    required this.lastPage,
-    required this.hasNextPage,
-    required this.perPage,
+  const PageInfo({
+    this.total = 0,
+    this.currentPage = 1,
+    this.lastPage = 1,
+    this.hasNextPage = false,
+    this.perPage = 25,
   });
+
+  const PageInfo.empty()
+      : total = 0,
+        currentPage = 1,
+        lastPage = 1,
+        hasNextPage = false,
+        perPage = 25;
 
   factory PageInfo.fromJson(Map<String, dynamic> json) => PageInfo(
         total: json['total'] ?? 0,

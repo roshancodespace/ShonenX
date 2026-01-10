@@ -1,3 +1,5 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:shonenx/core/anilist/graphql_client.dart';
@@ -254,17 +256,32 @@ class AnilistService {
     return MediaListEntry.fromJson(rawEntry as Map<String, dynamic>);
   }
 
-  Future<List<Media>> getFavorites() async {
+  Future<PageResponse> getFavorites({int page = 1, int perPage = 10}) async {
     final auth = _getAuthContext();
-    if (auth == null) return [];
+    if (auth == null) {
+      return PageResponse();
+    }
 
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: auth.accessToken,
       query: AnilistQueries.userFavoritesQuery,
-      variables: {'userId': auth.userId},
+      variables: {
+        'userId': auth.userId,
+        'page': page,
+        'perPage': perPage,
+      },
       operationName: 'GetFavorites',
     );
-    return _parseMediaList(data?['User']?['favourites']?['anime']?['nodes']);
+
+    final anime = data?['User']?['favourites']?['anime'];
+    if (anime == null) {
+      return PageResponse();
+    }
+
+    return PageResponse.fromJson({
+      'pageInfo': anime['pageInfo'],
+      'items': anime['nodes'],
+    });
   }
 
   Future<List<Media>> toggleFavorite(int animeId) async {

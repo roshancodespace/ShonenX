@@ -9,7 +9,7 @@ import 'package:shonenx/features/home/view/widgets/spotlight/spotlight_card_conf
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
-import 'package:shonenx/core/models/anilist/media.dart' as anime_media;
+import 'package:shonenx/core/models/universal/universal_media.dart';
 
 class UiSettingsScreen extends ConsumerWidget {
   const UiSettingsScreen({super.key});
@@ -198,15 +198,15 @@ class UiSettingsScreen extends ConsumerWidget {
     final mode = isSpotlightCard
         ? SpotlightCardMode.values.firstWhere((e) => e.name == cardStyle)
         : AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
-    final anime = anime_media.Media(
-      id: 1,
-      coverImage: anime_media.CoverImage(
+    final anime = UniversalMedia(
+      id: '1',
+      coverImage: UniversalCoverImage(
         large:
             'https://cdn.noitatnemucod.net/thumbnail/300x400/100/bcd84731a3eda4f4a306250769675065.jpg',
         medium:
             'https://cdn.noitatnemucod.net/thumbnail/300x400/100/bcd84731a3eda4f4a306250769675065.jpg',
       ),
-      title: anime_media.Title(
+      title: UniversalTitle(
         english: "One Piece",
         romaji: "One Piece",
         native: "One Piece",

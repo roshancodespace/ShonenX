@@ -1,7 +1,7 @@
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
@@ -55,7 +55,7 @@ class EpisodesTabState {
 
 class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
   final Ref ref;
-  final Title mediaTitle;
+  final UniversalTitle mediaTitle;
 
   EpisodesTabNotifier(this.ref, this.mediaTitle)
       : super(const EpisodesTabState()) {
@@ -233,6 +233,7 @@ class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
 }
 
 final episodesTabNotifierProvider = StateNotifierProvider.autoDispose
-    .family<EpisodesTabNotifier, EpisodesTabState, Title>((ref, title) {
+    .family<EpisodesTabNotifier, EpisodesTabState, UniversalTitle>(
+        (ref, title) {
   return EpisodesTabNotifier(ref, title);
 });

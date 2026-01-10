@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
@@ -9,7 +9,8 @@ import 'package:shonenx/helpers/navigation.dart';
 
 class SectionScreen extends ConsumerStatefulWidget {
   final String title;
-  final Future<List<Media>> Function({int page, int perPage}) fetchItems;
+  final Future<List<UniversalMedia>> Function({int page, int perPage})
+      fetchItems;
 
   const SectionScreen({
     super.key,
@@ -23,7 +24,7 @@ class SectionScreen extends ConsumerStatefulWidget {
 
 class _SectionScreenState extends ConsumerState<SectionScreen> {
   final ScrollController _scrollController = ScrollController();
-  final List<Media> _items = [];
+  final List<UniversalMedia> _items = [];
   bool _isLoading = true;
   bool _hasMore = true;
   int _currentPage = 1;

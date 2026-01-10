@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/features/details/view_model/details_provider.dart';
 import 'package:shonenx/features/details/view/widgets/episodes_tab.dart';
@@ -13,7 +13,7 @@ import 'package:shonenx/helpers/anime_match_popup.dart';
 import 'widgets/widgets.dart';
 
 class AnimeDetailsScreen extends ConsumerStatefulWidget {
-  final Media anime;
+  final UniversalMedia anime;
   final String tag;
   final bool forceFetch;
 
@@ -46,9 +46,11 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     });
   }
 
-  int _getAnimeId(Media media) {
-    if (media.id is int) return media.id as int;
-    return int.tryParse(media.id.toString()) ?? 0;
+  int _getAnimeId(UniversalMedia media) {
+    if (int.tryParse(media.id) != null) {
+      return int.parse(media.id);
+    }
+    return 0; // Or handle error
   }
 
   @override
@@ -57,7 +59,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     super.dispose();
   }
 
-  void _showEditListBottomSheet(Media anime) {
+  void _showEditListBottomSheet(UniversalMedia anime) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -70,7 +72,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     );
   }
 
-  void _onMediaTap(Media media) {
+  void _onMediaTap(UniversalMedia media) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -125,10 +127,10 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
               // Episodes Tab
               EpisodesTab(
                 mediaId: displayedAnime.id.toString(),
-                mediaTitle: displayedAnime.title!,
+                mediaTitle: displayedAnime.title,
                 mediaFormat: displayedAnime.format ?? '',
-                mediaCover: displayedAnime.coverImage?.large ??
-                    displayedAnime.coverImage?.medium ??
+                mediaCover: displayedAnime.coverImage.large ??
+                    displayedAnime.coverImage.medium ??
                     '',
               ),
               // Characters Tab

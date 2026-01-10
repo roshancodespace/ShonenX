@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 
 /// Info widget displaying anime statistics in a sleek horizontal row
 class AnimeInfoCard extends StatelessWidget {
-  final Media anime;
+  final UniversalMedia anime;
   final VoidCallback onShare;
 
   const AnimeInfoCard({
@@ -19,7 +19,7 @@ class AnimeInfoCard extends StatelessWidget {
       (s) => s.isMain,
       orElse: () => anime.studios.isNotEmpty
           ? anime.studios.first
-          : Studio(name: 'Unknown', isMain: true),
+          : UniversalStudio(name: 'Unknown', isMain: true),
     );
 
     final stats = [
@@ -150,7 +150,7 @@ class _StatItem extends StatelessWidget {
 
 /// Widget to display next episode countdown
 class NextEpisodeWidget extends StatelessWidget {
-  final Media anime;
+  final UniversalMedia anime;
 
   const NextEpisodeWidget({super.key, required this.anime});
 

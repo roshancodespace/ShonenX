@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart' as m;
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
 
@@ -40,14 +40,14 @@ class ContinueSection extends ConsumerWidget {
             itemBuilder: (context, index) {
               final entry = allProgress[index];
               final currentEp = entry.episodesProgress[entry.currentEpisode];
-              final media = m.Media(
-                id: int.tryParse(entry.animeId),
-                title: m.Title(
+              final media = UniversalMedia(
+                id: entry.animeId,
+                title: UniversalTitle(
                   romaji: entry.animeTitle,
                   english: entry.animeTitle,
                   native: entry.animeTitle,
                 ),
-                coverImage: m.CoverImage(
+                coverImage: UniversalCoverImage(
                     large: entry.animeCover, medium: entry.animeCover),
               );
 

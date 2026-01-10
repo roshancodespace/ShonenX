@@ -2,13 +2,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
 
 class LiquidGlassSpotlight extends StatelessWidget {
-  final Media? anime;
+  final UniversalMedia? anime;
   final String heroTag;
-  final Function(Media)? onTap;
+  final Function(UniversalMedia)? onTap;
 
   const LiquidGlassSpotlight({
     super.key,
@@ -24,7 +24,7 @@ class LiquidGlassSpotlight extends StatelessWidget {
     final theme = Theme.of(context);
     final imageUrl = anime!.bannerImage?.isNotEmpty == true
         ? anime!.bannerImage!
-        : (anime!.coverImage?.large ?? anime!.coverImage?.medium ?? '');
+        : (anime!.coverImage.large ?? anime!.coverImage.medium ?? '');
 
     return GestureDetector(
       onTap: () => onTap?.call(anime!),
@@ -78,8 +78,8 @@ class LiquidGlassSpotlight extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              anime!.title?.english ??
-                                  anime!.title?.romaji ??
+                              anime!.title.english ??
+                                  anime!.title.romaji ??
                                   'Unknown Title',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

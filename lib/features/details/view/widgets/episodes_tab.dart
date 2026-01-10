@@ -10,7 +10,7 @@ import 'package:shonenx/features/settings/view_model/experimental_notifier.dart'
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
 import 'package:shonenx/helpers/navigation.dart';
-import 'package:shonenx/core/models/anilist/media.dart' as media;
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/features/details/view_model/episodes_tab_notifier.dart';
 import 'package:collection/collection.dart';
@@ -25,7 +25,7 @@ enum EpisodeViewMode { list, compact, grid, block }
 
 class EpisodesTab extends ConsumerStatefulWidget {
   final String mediaId;
-  final media.Title mediaTitle;
+  final UniversalTitle mediaTitle;
   final String mediaFormat;
   final String mediaCover;
 
@@ -650,11 +650,11 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
       afterSearchCallback: () => null,
       context: context,
       ref: ref,
-      animeMedia: media.Media(
+      animeMedia: UniversalMedia(
         title: widget.mediaTitle,
         id: widget.mediaId,
-        format: widget.mediaCover,
-        coverImage: media.CoverImage(
+        format: widget.mediaFormat,
+        coverImage: UniversalCoverImage(
           large: widget.mediaCover,
           medium: widget.mediaCover,
         ),

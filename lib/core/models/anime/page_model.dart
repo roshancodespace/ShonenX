@@ -1,4 +1,4 @@
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 
 class Featured {
@@ -10,13 +10,13 @@ class Featured {
 }
 
 class HomePage {
-  final List<Media> trendingAnime;
-  final List<Media> popularAnime;
-  final List<Media> recentlyUpdated;
-  final List<Media> topRatedAnime;
-  final List<Media> mostFavoriteAnime;
-  final List<Media> mostWatchedAnime;
-  final List<Media> upcomingAnime;
+  final List<UniversalMedia> trendingAnime;
+  final List<UniversalMedia> popularAnime;
+  final List<UniversalMedia> recentlyUpdated;
+  final List<UniversalMedia> topRatedAnime;
+  final List<UniversalMedia> mostFavoriteAnime;
+  final List<UniversalMedia> mostWatchedAnime;
+  final List<UniversalMedia> upcomingAnime;
 
   HomePage({
     this.trendingAnime = const [],
@@ -48,10 +48,9 @@ class SearchPage {
   final bool? hasNextPage;
   final List<BaseAnimeModel> results;
 
-  SearchPage({
-    this.totalPages = 0,
-    this.currentPage = 0,
-    this.results = const [],
-    this.hasNextPage = false
-  });
+  SearchPage(
+      {this.totalPages = 0,
+      this.currentPage = 0,
+      this.results = const [],
+      this.hasNextPage = false});
 }

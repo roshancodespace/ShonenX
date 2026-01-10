@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
 
 class MinimalCard extends StatelessWidget {
-  final Media? anime;
+  final UniversalMedia? anime;
   final String tag;
   final bool isHovered;
 

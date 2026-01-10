@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart' as m;
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
+
 class DefaultCard extends StatelessWidget {
-  final m.Media? anime;
+  final UniversalMedia? anime;
   final String tag;
   final bool isHovered;
-  
 
   const DefaultCard({
     super.key,
@@ -18,10 +18,10 @@ class DefaultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final borderRadius = BorderRadius.circular(15); // Use a fixed radius for consistency
+    final borderRadius =
+        BorderRadius.circular(15); // Use a fixed radius for consistency
 
     return SizedBox(
-
       child: ClipRRect(
         borderRadius: borderRadius,
         child: Stack(

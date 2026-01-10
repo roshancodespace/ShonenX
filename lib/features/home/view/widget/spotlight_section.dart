@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_carousel_widget/flutter_carousel_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_spotlight_card.dart';
 import 'package:shonenx/features/home/view/widget/slider_indicator.dart';
 import 'package:shonenx/features/home/view/widgets/spotlight/spotlight_card_config.dart';
@@ -12,7 +12,7 @@ import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';
 
 class SpotlightSection extends ConsumerStatefulWidget {
-  final List<Media>? spotlightAnime;
+  final List<UniversalMedia>? spotlightAnime;
 
   const SpotlightSection({super.key, required this.spotlightAnime});
 
@@ -26,7 +26,7 @@ class _SpotlightSectionState extends ConsumerState<SpotlightSection> {
   @override
   Widget build(BuildContext context) {
     final trendingAnimes =
-        widget.spotlightAnime ?? List<Media?>.filled(9, null);
+        widget.spotlightAnime ?? List<UniversalMedia?>.filled(9, null);
     final carouselHeight =
         MediaQuery.of(context).size.width > 900 ? 500.0 : 240.0;
     final cardMode =
@@ -112,7 +112,7 @@ class _SpotlightSectionState extends ConsumerState<SpotlightSection> {
 }
 
 class _SpotlightHeader extends StatelessWidget {
-  final List<Media>? spotlightAnime;
+  final List<UniversalMedia>? spotlightAnime;
 
   const _SpotlightHeader({required this.spotlightAnime});
 

@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
 
 class DetailsHeader extends ConsumerStatefulWidget {
-  final Media anime;
+  final UniversalMedia anime;
   final String tag;
   final VoidCallback onEditPressed;
 
@@ -32,7 +32,7 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
     // initialize from current state
     final watchlist = ref.read(watchlistProvider.notifier);
     Future.microtask(() async {
-      isFavorite = await watchlist.ensureFavorite(widget.anime.id!);
+      isFavorite = await watchlist.ensureFavorite(widget.anime.id);
       setState(() {});
     });
   }
@@ -70,8 +70,8 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
               imageUrl: widget.anime.bannerImage != null &&
                       widget.anime.bannerImage!.isNotEmpty
                   ? widget.anime.bannerImage!
-                  : widget.anime.coverImage?.large ??
-                      widget.anime.coverImage?.medium ??
+                  : widget.anime.coverImage.large ??
+                      widget.anime.coverImage.medium ??
                       '',
               fit: BoxFit.cover,
               placeholder: (_, __) =>
@@ -102,8 +102,8 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: CachedNetworkImage(
-                        imageUrl: widget.anime.coverImage?.large ??
-                            widget.anime.coverImage?.medium ??
+                        imageUrl: widget.anime.coverImage.large ??
+                            widget.anime.coverImage.medium ??
                             '',
                         width: 105,
                         height: 160,
@@ -118,8 +118,8 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
-                          widget.anime.title?.english ??
-                              widget.anime.title?.romaji ??
+                          widget.anime.title.english ??
+                              widget.anime.title.romaji ??
                               '',
                           style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
@@ -127,11 +127,11 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (widget.anime.title?.native != null)
+                        if (widget.anime.title.native != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
-                              widget.anime.title!.native!,
+                              widget.anime.title.native!,
                               style: theme.textTheme.titleMedium?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant),
                             ),
@@ -145,7 +145,8 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                                   color: theme.colorScheme.primary, size: 16),
                               const SizedBox(width: 4),
                               Text(
-                                (widget.anime.averageScore! / 10).toStringAsFixed(1),
+                                (widget.anime.averageScore! / 10)
+                                    .toStringAsFixed(1),
                                 style: theme.textTheme.labelLarge?.copyWith(
                                   color: theme.colorScheme.onSurface,
                                   fontWeight: FontWeight.bold,

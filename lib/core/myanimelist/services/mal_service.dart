@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
-import 'package:shonenx/core/models/anilist/media_list_entry.dart';
-import 'package:shonenx/core/models/anilist/page_response.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
+import 'package:shonenx/core/models/universal/universal_page_response.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
@@ -120,7 +120,7 @@ class MyAnimeListService implements AnimeRepository {
 
   // ---------------------- USER ANIME LIST ----------------------
   @override
-  Future<PageResponse> getUserAnimeList({
+  Future<UniversalPageResponse<UniversalMediaListEntry>> getUserAnimeList({
     required String type,
     required String status,
     required int page,
@@ -132,48 +132,71 @@ class MyAnimeListService implements AnimeRepository {
     final data = await _get(url);
 
     final list = (data['data'] as List<dynamic>? ?? [])
-        .map((e) => MediaListEntry.fromMal(e as Map<String, dynamic>))
+        .map((e) => UniversalMediaListEntry.fromMal(e as Map<String, dynamic>))
         .toList();
 
     final hasNextPage = data['paging']?['next'] != null;
 
-    return PageResponse(
-      pageInfo: PageInfo(
+    return UniversalPageResponse(
+      pageInfo: UniversalPageInfo(
         total: -1,
         currentPage: page,
         lastPage: hasNextPage ? page + 1 : page,
         hasNextPage: hasNextPage,
         perPage: perPage,
       ),
-      mediaList: list,
+      data: list,
     );
   }
 
   // ---------------------- ANIME DETAILS ----------------------
   @override
-  Future<Media?> getAnimeDetails(int animeId) async {
+  Future<UniversalMedia?> getAnimeDetails(int animeId) async {
     const fields =
         'id,title,main_picture,alternative_titles,start_date,end_date,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,nsfw,created_at,updated_at,media_type,status,genres,my_list_status,num_episodes,start_season,broadcast,source,average_episode_duration,rating,pictures,background,related_anime,related_manga,recommendations,studios,statistics';
     final url = 'https://api.myanimelist.net/v2/anime/$animeId?fields=$fields';
     final data = await _get(url);
-    return Media.fromMal(data);
+    return UniversalMedia.fromMal(data);
   }
 
   // ---------------------- FAVORITES ----------------------
   @override
-  Future<List<Media>> getFavorites() async {
-    return [];
+  Future<UniversalPageResponse<UniversalMedia>> getFavorites(
+      {int page = 1, int perPage = 10}) async {
+    final url = 'https://api.myanimelist.net/v2/users/@me/favorites'
+        '?limit=$perPage'
+        '&offset=${(page - 1) * perPage}'
+        '&fields=list_status,num_episodes,start_season,average_mean_score';
+
+    final data = await _get(url);
+
+    final list = (data['data'] as List<dynamic>? ?? [])
+        .map((e) => UniversalMedia.fromMal(e['node'] as Map<String, dynamic>))
+        .toList();
+
+    final paging = data['paging'] as Map<String, dynamic>?;
+    final hasNextPage = paging?['next'] != null;
+
+    return UniversalPageResponse(
+      pageInfo: UniversalPageInfo(
+        total: -1,
+        currentPage: page,
+        lastPage: hasNextPage ? page + 1 : page,
+        hasNextPage: hasNextPage,
+        perPage: perPage,
+      ),
+      data: list,
+    );
   }
 
   @override
-  Future<List<Media>> toggleFavorite(int animeId) async {
-    // MAL API does not have toggle endpoint; would need POST to add/remove from favorites
-    return [] as List<Media>;
+  Future<List<UniversalMedia>> toggleFavorite(int animeId) async {
+    throw UnimplementedError();
   }
 
   // ---------------------- SEARCH ----------------------
   @override
-  Future<List<Media>> searchAnime(
+  Future<List<UniversalMedia>> searchAnime(
     String title, {
     int page = 1,
     int perPage = 10,
@@ -181,22 +204,18 @@ class MyAnimeListService implements AnimeRepository {
   }) async {
     final offset = (page - 1) * perPage;
     final nsfwStub = _getShowAdult() ? '&nsfw=true' : '';
-    // MAL doesn't support advanced filters easily in basic search endpoint
 
-    // Construct simplified query
     final url =
         'https://api.myanimelist.net/v2/anime?q=$title&limit=$perPage&offset=$offset&fields=num_episodes,status,mean,media_type$nsfwStub';
     final data = await _get(url);
 
     return (data['data'] as List<dynamic>? ?? [])
-        .map((e) => Media.fromMal(e['node'] as Map<String, dynamic>))
+        .map((e) => UniversalMedia.fromMal(e['node'] as Map<String, dynamic>))
         .toList();
   }
 
   @override
   Future<List<String>> getGenres() async {
-    // MAL API v2 doesn't have a direct genre list endpoint easily accessible without auth/wrapper
-    // Returning empty or basic list for now
     return const [
       'Action',
       'Adventure',
@@ -215,18 +234,18 @@ class MyAnimeListService implements AnimeRepository {
 
   @override
   Future<List<String>> getTags() async {
-    return const []; // MAL doesn't really have tags like AniList
+    return const [];
   }
 
 // ---------------------- SINGLE ENTRY ----------------------
   @override
-  Future<MediaListEntry?> getAnimeEntry(int animeId) async {
+  Future<UniversalMediaListEntry?> getAnimeEntry(int animeId) async {
     // Only works if the anime is in the user's list
     final url =
         'https://api.myanimelist.net/v2/users/@me/animelist/$animeId?fields=list_status';
     try {
       final data = await _get(url);
-      return MediaListEntry.fromMal(data);
+      return UniversalMediaListEntry.fromMal({'node': data});
     } catch (e) {
       if (e is MyAnimeListServiceException && e.message.contains('404')) {
         return null;
@@ -238,7 +257,7 @@ class MyAnimeListService implements AnimeRepository {
 
   // ---------------------- RANKING & LISTS ----------------------
 
-  Future<List<Media>> _getRankedAnime(
+  Future<List<UniversalMedia>> _getRankedAnime(
       String rankingType, int page, int perPage) async {
     final offset = (page - 1) * perPage;
     final nsfwStub = _getShowAdult() ? '&nsfw=true' : '';
@@ -246,38 +265,42 @@ class MyAnimeListService implements AnimeRepository {
         'https://api.myanimelist.net/v2/anime/ranking?ranking_type=$rankingType&limit=$perPage&offset=$offset&fields=num_episodes,status,mean,media_type$nsfwStub';
     final data = await _get(url);
     return (data['data'] as List<dynamic>? ?? [])
-        .map((e) => Media.fromMal(e['node'] as Map<String, dynamic>))
+        .map((e) => UniversalMedia.fromMal(e['node'] as Map<String, dynamic>))
         .toList();
   }
 
   @override
-  Future<List<Media>> getPopularAnime({int page = 1, int perPage = 15}) async {
+  Future<List<UniversalMedia>> getPopularAnime(
+      {int page = 1, int perPage = 15}) async {
     return _getRankedAnime('bypopularity', page, perPage);
   }
 
   @override
-  Future<List<Media>> getRecentlyUpdatedAnime(
+  Future<List<UniversalMedia>> getRecentlyUpdatedAnime(
       {int page = 1, int perPage = 15}) async {
     return _getRankedAnime('airing', page, perPage);
   }
 
   @override
-  Future<List<Media>> getTopRatedAnime({int page = 1, int perPage = 15}) async {
+  Future<List<UniversalMedia>> getTopRatedAnime(
+      {int page = 1, int perPage = 15}) async {
     return _getRankedAnime('all', page, perPage);
   }
 
   @override
-  Future<List<Media>> getTrendingAnime({int page = 1, int perPage = 15}) async {
+  Future<List<UniversalMedia>> getTrendingAnime(
+      {int page = 1, int perPage = 15}) async {
     return _getRankedAnime('airing', page, perPage);
   }
 
   @override
-  Future<List<Media>> getUpcomingAnime({int page = 1, int perPage = 15}) async {
+  Future<List<UniversalMedia>> getUpcomingAnime(
+      {int page = 1, int perPage = 15}) async {
     return _getRankedAnime('upcoming', page, perPage);
   }
 
   @override
-  Future<List<Media>> getMostFavoriteAnime(
+  Future<List<UniversalMedia>> getMostFavoriteAnime(
       {int page = 1, int perPage = 15}) async {
     return getPopularAnime(page: page, perPage: perPage);
   }
@@ -288,7 +311,7 @@ class MyAnimeListService implements AnimeRepository {
   }
 
   @override
-  Future<MediaListEntry?> updateUserAnimeList({
+  Future<UniversalMediaListEntry?> updateUserAnimeList({
     required int mediaId,
     String? status,
     double? score,
@@ -307,12 +330,15 @@ class MyAnimeListService implements AnimeRepository {
     if (progress != null) body['num_watched_episodes'] = progress.toString();
     await _put(url, body);
 
-    return MediaListEntry(
-      id: mediaId,
+    return UniversalMediaListEntry(
+      id: mediaId.toString(),
       status: status ?? 'UNKNOWN',
       score: score ?? 0,
       progress: progress ?? 0,
-      media: Media(id: mediaId),
+      media: UniversalMedia(
+          id: mediaId.toString(),
+          title: const UniversalTitle(),
+          coverImage: const UniversalCoverImage()),
       repeat: repeat ?? 0,
       isPrivate: private ?? false,
       notes: notes ?? '',

@@ -37,6 +37,7 @@ class SettingsScreen extends ConsumerWidget {
                       accent: colorScheme.primary,
                       title: 'Profile Settings',
                       description: 'AniList integration, account preferences',
+                      autofocus: true,
                       onTap: () => context.push('/settings/account'),
                     ),
                   ]),

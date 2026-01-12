@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
 
 class LiquidGlassSpotlight extends StatelessWidget {
   final UniversalMedia? anime;
@@ -30,10 +31,13 @@ class LiquidGlassSpotlight extends StatelessWidget {
         ? anime!.bannerImage!
         : (anime!.coverImage.large ?? anime!.coverImage.medium ?? '');
 
-    return GestureDetector(
+    final radius = BorderRadius.circular(isMobile ? 24 : 32);
+
+    return FocusableTap(
       onTap: () => onTap?.call(anime!),
+      borderRadius: radius,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(isMobile ? 24 : 32),
+        borderRadius: radius,
         child: Stack(
           fit: StackFit.expand,
           children: [

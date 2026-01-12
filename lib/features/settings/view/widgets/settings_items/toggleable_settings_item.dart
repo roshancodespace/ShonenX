@@ -17,9 +17,16 @@ class ToggleableSettingsItem extends BaseSettingsItem {
     super.isCompact,
     super.trailingWidgets,
     super.layoutType,
+    super.focusNode,
+    super.autofocus,
     required this.value,
     required this.onChanged,
-  }) : super(onTap: null); // Disable onTap
+  }) : super(onTap: null); // Tap handled in build for focus + toggle.
+
+  @override
+  Widget build(BuildContext context) {
+    return buildWithTap(context, () => onChanged(!value));
+  }
 
   @override
   bool needsVerticalLayoutByContent() => false;

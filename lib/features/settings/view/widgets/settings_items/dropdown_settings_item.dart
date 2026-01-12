@@ -17,6 +17,8 @@ class DropdownSettingsItem extends BaseSettingsItem {
     super.roundness,
     super.isCompact,
     super.layoutType,
+    super.focusNode,
+    super.autofocus,
     required this.value,
     required this.items,
     required this.onChanged,

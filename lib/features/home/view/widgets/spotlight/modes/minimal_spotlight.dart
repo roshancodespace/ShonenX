@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
 
 class MinimalSpotlight extends StatelessWidget {
   final UniversalMedia? anime;
@@ -24,7 +25,7 @@ class MinimalSpotlight extends StatelessWidget {
         ? anime!.bannerImage!
         : (anime!.coverImage.large ?? anime!.coverImage.medium ?? '');
 
-    return GestureDetector(
+    return FocusableTap(
       onTap: () => onTap?.call(anime!),
       child: Stack(
         fit: StackFit.expand,

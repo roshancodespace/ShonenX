@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
 
 enum SettingsItemLayout {
   auto,
@@ -18,6 +19,8 @@ abstract class BaseSettingsItem extends StatelessWidget {
   final bool isCompact;
   final List<Widget>? trailingWidgets;
   final SettingsItemLayout layoutType;
+  final FocusNode? focusNode;
+  final bool autofocus;
 
   const BaseSettingsItem({
     super.key,
@@ -32,10 +35,20 @@ abstract class BaseSettingsItem extends StatelessWidget {
     this.isCompact = false,
     this.trailingWidgets,
     this.layoutType = SettingsItemLayout.auto,
+    this.focusNode,
+    this.autofocus = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    return buildWithTap(context, onTap);
+  }
+
+  @protected
+  Widget buildWithTap(
+    BuildContext context,
+    VoidCallback? onTapOverride,
+  ) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 600;
     final effectiveCompact = isCompact || isSmallScreen;
@@ -43,26 +56,35 @@ abstract class BaseSettingsItem extends StatelessWidget {
     final dimensions =
         _getResponsiveDimensions(effectiveCompact, isSmallScreen);
 
+    final borderRadius = BorderRadius.circular(roundness);
+    final content = Padding(
+      padding: dimensions.padding,
+      child: _buildLayout(
+        context,
+        effectiveCompact,
+        isSmallScreen,
+        dimensions,
+      ),
+    );
+
+    final Widget child = onTapOverride != null
+        ? FocusableTap(
+            onTap: onTapOverride,
+            borderRadius: borderRadius,
+            focusNode: focusNode,
+            autofocus: autofocus,
+            child: content,
+          )
+        : content;
+
     return Card(
       elevation: effectiveCompact ? 1 : 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(roundness),
+        borderRadius: borderRadius,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(roundness),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(roundness),
-          child: Padding(
-            padding: dimensions.padding,
-            child: _buildLayout(
-              context,
-              effectiveCompact,
-              isSmallScreen,
-              dimensions,
-            ),
-          ),
-        ),
+        borderRadius: borderRadius,
+        child: child,
       ),
     );
   }

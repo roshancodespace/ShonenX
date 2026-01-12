@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
 import 'base_settings_item.dart';
 
 class SegmentedToggleSettingsItem<T> extends BaseSettingsItem {
@@ -6,6 +7,7 @@ class SegmentedToggleSettingsItem<T> extends BaseSettingsItem {
   final Map<T, Widget> children;
   final ValueChanged<int> onValueChanged;
   final Map<T, String>? labels;
+  final bool autofocusSegments;
 
   const SegmentedToggleSettingsItem({
     super.key,
@@ -18,10 +20,13 @@ class SegmentedToggleSettingsItem<T> extends BaseSettingsItem {
     super.roundness,
     super.isCompact,
     super.layoutType,
+    super.focusNode,
+    super.autofocus,
     required this.selectedValue,
     required this.children,
     required this.onValueChanged,
     this.labels,
+    this.autofocusSegments = false,
   })  : assert(children.length > 1, "There must be at least 2 children."),
         super(onTap: null);
 
@@ -80,9 +85,22 @@ class SegmentedToggleSettingsItem<T> extends BaseSettingsItem {
       child: Row(
         children: children.keys.map((key) {
           final isSelected = selectedValue == key;
+          final radius = BorderRadius.circular(effectiveCompact ? 8 : 10);
+          final isActive = selectedValue == key;
+          final shouldAutofocus = autofocusSegments && isActive;
           return Expanded(
-            child: GestureDetector(
+            child: FocusableTap(
               onTap: () => onValueChanged(key as int),
+              onFocusChange: (focused) {
+                if (focused && !isSelected) {
+                  onValueChanged(key as int);
+                }
+              },
+              borderRadius: radius,
+              autofocus: shouldAutofocus,
+              focusNode: isActive ? focusNode : null,
+              focusBorderWidth: 2,
+              focusBorderColor: iconColor ?? accent,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeInOut,
@@ -94,8 +112,7 @@ class SegmentedToggleSettingsItem<T> extends BaseSettingsItem {
                 decoration: BoxDecoration(
                   color:
                       isSelected ? (iconColor ?? accent) : Colors.transparent,
-                  borderRadius:
-                      BorderRadius.circular(effectiveCompact ? 8 : 10),
+                  borderRadius: radius,
                   boxShadow: isSelected
                       ? [
                           BoxShadow(

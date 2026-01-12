@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'base_settings_item.dart';
 
 class SliderSettingsItem extends BaseSettingsItem {
@@ -20,6 +21,8 @@ class SliderSettingsItem extends BaseSettingsItem {
     super.roundness,
     super.isCompact,
     super.layoutType,
+    super.focusNode,
+    super.autofocus,
     required this.value,
     required this.onChanged,
     this.min = 0.0,
@@ -30,6 +33,30 @@ class SliderSettingsItem extends BaseSettingsItem {
 
   @override
   bool needsVerticalLayoutByContent() => true;
+
+  @override
+  Widget build(BuildContext context) {
+    return CallbackShortcuts(
+      bindings: {
+        LogicalKeySet(LogicalKeyboardKey.arrowLeft): () => _nudgeValue(-1),
+        LogicalKeySet(LogicalKeyboardKey.arrowRight): () => _nudgeValue(1),
+      },
+      child: buildWithTap(
+        context,
+        () {},
+      ),
+    );
+  }
+
+  void _nudgeValue(int direction) {
+    if (direction == 0) return;
+    final step = divisions != null && divisions! > 0
+        ? (max - min) / divisions!
+        : (max - min) / 20;
+    final next = (value + (step * direction)).clamp(min, max);
+    if ((next - value).abs() < 0.000001) return;
+    onChanged(next);
+  }
 
   @override
   Widget buildHorizontalLayout(
@@ -93,12 +120,14 @@ class SliderSettingsItem extends BaseSettingsItem {
                 overlayRadius: effectiveCompact ? 12 : 16,
               ),
             ),
-            child: Slider(
-              value: value,
-              min: min,
-              max: max,
-              divisions: divisions,
-              onChanged: onChanged,
+            child: ExcludeFocus(
+              child: Slider(
+                value: value,
+                min: min,
+                max: max,
+                divisions: divisions,
+                onChanged: onChanged,
+              ),
             ),
           ),
         ),

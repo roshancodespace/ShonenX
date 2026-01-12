@@ -18,8 +18,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/app_initializer.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
+import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
+import 'package:shonenx/shared/widgets/app_scale.dart';
 import 'package:shonenx/shared/providers/router_provider.dart';
 import 'package:shonenx/storage_provider.dart';
+import 'package:shonenx/shared/widgets/tv_focus_traversal.dart';
 
 late Isar isar;
 WebViewEnvironment? webViewEnvironment;
@@ -75,6 +78,7 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeSettingsProvider);
+    final uiSettings = ref.watch(uiSettingsProvider);
 
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
@@ -119,6 +123,16 @@ class MyApp extends ConsumerWidget {
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: themeMode,
+          builder: (context, child) {
+            if (child == null) return const SizedBox.shrink();
+            return AppScale(
+              scale: uiSettings.uiScale,
+              child: FocusTraversalGroup(
+                policy: TvFocusTraversalPolicy(),
+                child: child,
+              ),
+            );
+          },
         );
       },
     );

@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
 
 class NeonSpotlight extends StatelessWidget {
   final UniversalMedia? anime;
@@ -30,8 +31,9 @@ class NeonSpotlight extends StatelessWidget {
         ? anime!.bannerImage!
         : (anime!.coverImage.large ?? anime!.coverImage.medium ?? '');
 
-    return GestureDetector(
+    return FocusableTap(
       onTap: () => onTap?.call(anime!),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),

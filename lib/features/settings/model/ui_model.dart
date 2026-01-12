@@ -19,11 +19,15 @@ class UiModel {
   @HiveField(6, defaultValue: 'list')
   final String episodeViewMode;
 
+  @HiveField(7, defaultValue: 1.0)
+  final double uiScale;
+
   UiModel({
     this.cardStyle = 'defaults',
     this.immersiveMode = false,
     this.spotlightCardStyle = 'defaults',
     this.episodeViewMode = 'list',
+    this.uiScale = 1.0,
   });
 
   UiModel copyWith({
@@ -31,12 +35,14 @@ class UiModel {
     bool? immersiveMode,
     String? spotlightCardStyle,
     String? episodeViewMode,
+    double? uiScale,
   }) {
     return UiModel(
       cardStyle: cardStyle ?? this.cardStyle,
       immersiveMode: immersiveMode ?? this.immersiveMode,
       spotlightCardStyle: spotlightCardStyle ?? this.spotlightCardStyle,
       episodeViewMode: episodeViewMode ?? this.episodeViewMode,
+      uiScale: uiScale ?? this.uiScale,
     );
   }
 }

@@ -18,6 +18,8 @@ class SelectableSettingsItem extends BaseSettingsItem {
     super.isCompact,
     super.trailingWidgets,
     super.layoutType,
+    super.focusNode,
+    super.autofocus,
     this.isSelected = false,
     this.isInSelectionMode = false,
   });

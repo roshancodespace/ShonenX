@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
 
 class ThemeSettingsScreen extends ConsumerWidget {
   const ThemeSettingsScreen({super.key});
@@ -44,6 +45,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                     iconColor: colorScheme.primary,
                     title: 'Theme Mode',
                     description: 'Choose your preferred theme',
+                    autofocusSegments: true,
                     selectedValue: theme.themeMode == 'light'
                         ? 1
                         : theme.themeMode == 'dark'
@@ -211,23 +213,29 @@ class ThemeSettingsScreen extends ConsumerWidget {
                         final scheme = FlexScheme.values[index];
                         final isSelected = theme.flexScheme == scheme.name;
 
-                        return ListTile(
+                        final radius = BorderRadius.circular(12);
+                        return FocusableTap(
                           onTap: () {
                             themeNotifier.updateSettings(
                               (prev) => prev.copyWith(flexScheme: scheme.name),
                             );
                           },
-                          leading: _buildMinimalPreview(scheme),
-                          title: Text(_formatSchemeName(scheme.name)),
-                          trailing: isSelected
-                              ? Icon(Iconsax.tick_circle,
-                                  color: Theme.of(context).colorScheme.primary)
-                              : null,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          autofocus: isSelected,
+                          borderRadius: radius,
+                          child: ListTile(
+                            leading: _buildMinimalPreview(scheme),
+                            title: Text(_formatSchemeName(scheme.name)),
+                            trailing: isSelected
+                                ? Icon(Iconsax.tick_circle,
+                                    color:
+                                        Theme.of(context).colorScheme.primary)
+                                : null,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: radius,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
                         );
                       },
                     ),

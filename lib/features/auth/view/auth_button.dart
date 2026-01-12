@@ -2,9 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
 import '../view_model/auth_notifier.dart';
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
 
 class AccountAuthenticationSection extends ConsumerWidget {
-  const AccountAuthenticationSection({super.key});
+  final bool autofocusFirst;
+  final FocusNode? initialFocusNode;
+
+  const AccountAuthenticationSection({
+    super.key,
+    this.autofocusFirst = false,
+    this.initialFocusNode,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,6 +47,8 @@ class AccountAuthenticationSection extends ConsumerWidget {
                     'https://anilist.co/img/icons/android-chrome-512x512.png',
                 primaryColor: const Color(0xFF02A9FF),
                 isFirst: true,
+                autofocus: autofocusFirst,
+                focusNode: initialFocusNode,
               ),
               Divider(
                 height: 1,
@@ -81,6 +91,8 @@ class AccountAuthenticationSection extends ConsumerWidget {
     required Color primaryColor,
     bool isFirst = false,
     bool isLast = false,
+    bool autofocus = false,
+    FocusNode? focusNode,
   }) {
     final theme = Theme.of(context);
     final notifier = ref.read(authProvider.notifier);
@@ -91,22 +103,30 @@ class AccountAuthenticationSection extends ConsumerWidget {
     final user = state.userFor(platform);
     final isActive = state.activePlatform == platform;
 
+    final tileRadius = BorderRadius.vertical(
+      top: isFirst ? const Radius.circular(24.0) : Radius.zero,
+      bottom: isLast ? const Radius.circular(24.0) : Radius.zero,
+    );
+
     return Container(
       decoration: BoxDecoration(
         color: theme.cardColor,
-        borderRadius: BorderRadius.vertical(
-          top: isFirst ? const Radius.circular(24.0) : Radius.zero,
-          bottom: isLast ? const Radius.circular(24.0) : Radius.zero,
-        ),
+        borderRadius: tileRadius,
       ),
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          onTap: () => notifier.changePlatform(platform),
-          borderRadius: BorderRadius.vertical(
-            top: isFirst ? const Radius.circular(24.0) : Radius.zero,
-            bottom: isLast ? const Radius.circular(24.0) : Radius.zero,
-          ),
+        child: FocusableTap(
+          onTap: () {
+            if (isLoading) return;
+            if (!isAuthenticated) {
+              notifier.login(platform);
+            } else {
+              notifier.changePlatform(platform);
+            }
+          },
+          borderRadius: tileRadius,
+          autofocus: autofocus && isFirst,
+          focusNode: isFirst ? focusNode : null,
           child: Padding(
             padding: EdgeInsets.all(isSmallScreen ? 16.0 : 24.0),
             child: Row(

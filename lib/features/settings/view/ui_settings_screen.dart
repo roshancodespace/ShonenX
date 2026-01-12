@@ -32,6 +32,44 @@ class UiSettingsScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SettingsSection(
+                title: 'UI Scale',
+                titleColor: colorScheme.primary,
+                children: [
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final scale = ref.watch(
+                          uiSettingsProvider.select((ui) => ui.uiScale));
+                      return _buildUiScalePreview(context, scale);
+                    },
+                  ),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final scale = ref.watch(
+                          uiSettingsProvider.select((ui) => ui.uiScale));
+                      return SliderSettingsItem(
+                        icon: Icon(Iconsax.maximize_1,
+                            color: colorScheme.primary),
+                        accent: colorScheme.primary,
+                        title: 'UI Scale',
+                        description:
+                            'Adjust overall UI size (auto scales on 4K displays)',
+                        value: scale,
+                        min: 0.5,
+                        max: 1.0,
+                        suffix: 'x',
+                        onChanged: (value) {
+                          final snapped = (value * 10).round() / 10;
+                          ref.read(uiSettingsProvider.notifier).updateSettings(
+                                (s) => s.copyWith(uiScale: snapped),
+                              );
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              SettingsSection(
                   title: 'Content Display',
                   titleColor: colorScheme.primary,
                   children: [
@@ -224,5 +262,154 @@ class UiSettingsScreen extends ConsumerWidget {
     }
     return AnimatedAnimeCard(
         anime: anime, tag: 'abcd', mode: mode as AnimeCardMode);
+  }
+
+  Widget _buildUiScalePreview(BuildContext context, double scale) {
+    final theme = Theme.of(context);
+    final radius = BorderRadius.circular(16);
+    final previewScale = scale.clamp(0.5, 1.0);
+
+    return Container(
+      height: 160,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primaryContainer.withOpacity(0.6),
+            theme.colorScheme.surfaceContainerHighest.withOpacity(0.6),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: radius,
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.4),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Center(
+          child: Transform.scale(
+            scale: previewScale,
+            alignment: Alignment.center,
+            child: _buildUiScalePreviewContent(theme),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUiScalePreviewContent(ThemeData theme) {
+    return Container(
+      width: 240,
+      height: 110,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: theme.shadowColor.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 56,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: theme.colorScheme.primaryContainer,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 12,
+                      width: 120,
+                      decoration: BoxDecoration(
+                        color:
+                            theme.colorScheme.onSurface.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 10,
+                      width: 160,
+                      decoration: BoxDecoration(
+                        color:
+                            theme.colorScheme.onSurface.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 10,
+                      width: 110,
+                      decoration: BoxDecoration(
+                        color:
+                            theme.colorScheme.onSurface.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Row(
+            children: [
+              Container(
+                height: 22,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(
+                    'Play',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                height: 22,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(
+                    'Info',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

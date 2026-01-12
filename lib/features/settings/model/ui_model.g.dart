@@ -21,13 +21,14 @@ class UiModelAdapter extends TypeAdapter<UiModel> {
       spotlightCardStyle: fields[2] == null ? 'defaults' : fields[2] as String,
       immersiveMode: fields[5] == null ? false : fields[5] as bool,
       episodeViewMode: fields[6] == null ? 'list' : fields[6] as String,
+      uiScale: fields[7] == null ? 1.0 : fields[7] as double,
     );
   }
 
   @override
   void write(BinaryWriter writer, UiModel obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(5)
       ..writeByte(2)
       ..write(obj.spotlightCardStyle)
       ..writeByte(3)
@@ -35,7 +36,9 @@ class UiModelAdapter extends TypeAdapter<UiModel> {
       ..writeByte(5)
       ..write(obj.immersiveMode)
       ..writeByte(6)
-      ..write(obj.episodeViewMode);
+      ..write(obj.episodeViewMode)
+      ..writeByte(7)
+      ..write(obj.uiScale);
   }
 
   @override

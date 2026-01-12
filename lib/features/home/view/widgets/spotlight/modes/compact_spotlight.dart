@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
 
 class CompactSpotlight extends StatelessWidget {
   final UniversalMedia? anime;
@@ -25,7 +26,7 @@ class CompactSpotlight extends StatelessWidget {
         ? anime!.bannerImage!
         : (anime!.coverImage.large ?? anime!.coverImage.medium ?? '');
 
-    return GestureDetector(
+    return FocusableTap(
       onTap: () => onTap?.call(anime!),
       child: Stack(
         fit: StackFit.expand,

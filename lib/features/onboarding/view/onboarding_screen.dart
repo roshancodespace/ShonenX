@@ -15,6 +15,7 @@ import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/shared/providers/update_provider.dart';
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -27,10 +28,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   final int _totalPages = 5;
+  final ScrollController _themeScrollController = ScrollController();
+  final ScrollController _sourceScrollController = ScrollController();
+  final FocusNode _authFocusNode = FocusNode();
+  final FocusNode _themeFocusNode = FocusNode();
+  final FocusNode _sourceFocusNode = FocusNode();
+  final FocusNode _cardStyleFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _resetPageFocus());
+  }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _themeScrollController.dispose();
+    _sourceScrollController.dispose();
+    _authFocusNode.dispose();
+    _themeFocusNode.dispose();
+    _sourceFocusNode.dispose();
+    _cardStyleFocusNode.dispose();
     super.dispose();
   }
 
@@ -100,6 +119,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   setState(() {
                     _currentPage = index;
                   });
+                  WidgetsBinding.instance
+                      .addPostFrameCallback((_) => _resetPageFocus());
                 },
                 children: [
                   _buildAuthStep(context),
@@ -118,17 +139,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   if (_currentPage > 0)
-                    TextButton(
-                      onPressed: _previousPage,
-                      child: const Text('Back'),
+                    _buildNavButton(
+                      context,
+                      label: 'Back',
+                      onTap: _previousPage,
+                      filled: false,
                     )
                   else
                     const SizedBox(width: 64), // Spacer
 
-                  FilledButton(
-                    onPressed: _nextPage,
-                    child: Text(
-                        _currentPage == _totalPages - 1 ? 'Finish' : 'Next'),
+                  _buildNavButton(
+                    context,
+                    label: _currentPage == _totalPages - 1 ? 'Finish' : 'Next',
+                    onTap: _nextPage,
+                    filled: true,
                   ),
                 ],
               ),
@@ -137,6 +161,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
       ),
     );
+  }
+
+  void _resetPageFocus() {
+    if (!mounted) return;
+    switch (_currentPage) {
+      case 0:
+        FocusScope.of(context).requestFocus(_authFocusNode);
+        break;
+      case 1:
+        if (_themeScrollController.hasClients) {
+          _themeScrollController.jumpTo(0);
+        }
+        FocusScope.of(context).requestFocus(_themeFocusNode);
+        break;
+      case 2:
+        if (_sourceScrollController.hasClients) {
+          _sourceScrollController.jumpTo(0);
+        }
+        FocusScope.of(context).requestFocus(_sourceFocusNode);
+        break;
+      case 3:
+        FocusScope.of(context).requestFocus(_cardStyleFocusNode);
+        break;
+    }
   }
 
   Widget _buildStepHeader(BuildContext context, String title, String subtitle) {
@@ -163,20 +211,63 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
+  Widget _buildNavButton(
+    BuildContext context, {
+    required String label,
+    required VoidCallback onTap,
+    required bool filled,
+  }) {
+    final theme = Theme.of(context);
+    final radius = BorderRadius.circular(12);
+    final background = filled
+        ? theme.colorScheme.primary
+        : theme.colorScheme.surface;
+    final foreground = filled
+        ? theme.colorScheme.onPrimary
+        : theme.colorScheme.onSurface;
+
+    return FocusableTap(
+      onTap: onTap,
+      borderRadius: radius,
+      focusBorderColor: theme.colorScheme.primary,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: radius,
+          border: filled
+              ? null
+              : Border.all(color: theme.colorScheme.outline.withOpacity(0.4)),
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: foreground,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
   // Step 1: Authentication
   Widget _buildAuthStep(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
+          const SizedBox(height: 20),
           _buildStepHeader(
             context,
             'Welcome to ShonenX',
             'Sign in to sync your progress or continue as a guest.',
           ),
           const SizedBox(height: 32),
-          const AccountAuthenticationSection(),
+          AccountAuthenticationSection(
+            autofocusFirst: true,
+            initialFocusNode: _authFocusNode,
+          ),
         ],
       ),
     );
@@ -190,9 +281,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isCurrentlyDark = Theme.of(context).brightness == Brightness.dark;
 
     return SingleChildScrollView(
+      controller: _themeScrollController,
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
           _buildStepHeader(
@@ -210,6 +302,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 iconColor: colorScheme.primary,
                 title: 'Theme Mode',
                 description: 'Choose your preferred theme',
+                focusNode: _themeFocusNode,
+                autofocusSegments: true,
                 selectedValue: theme.themeMode == 'light'
                     ? 1
                     : theme.themeMode == 'dark'
@@ -289,6 +383,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Expanded(
             child: providerStatus.when(
               data: (statusData) => ListView.builder(
+                controller: _sourceScrollController,
                 itemCount: animeSources.length,
                 itemBuilder: (context, index) {
                   final provider = animeSources[index];
@@ -296,6 +391,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   final status = statusInfo?['status'] as String?;
                   final isSelected = selectedAnimeSource?.providerName ==
                       provider.toLowerCase();
+                  final isFirst = index == 0;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: SelectableSettingsItem(
@@ -307,6 +403,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           'Status: ${status?.toUpperCase() ?? 'UNKNOWN'}',
                       isInSelectionMode: true,
                       isSelected: isSelected,
+                      autofocus: isFirst,
+                      focusNode: isFirst ? _sourceFocusNode : null,
                       onTap: () {
                         ref
                             .read(selectedProviderKeyProvider.notifier)
@@ -401,27 +499,40 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             alignment: WrapAlignment.center,
             children: cardStyles.map((style) {
               final isSelected = currentStyle == style;
-              return ChoiceChip(
-                label: Text(style.toUpperCase()),
-                selected: isSelected,
-                onSelected: (selected) {
-                  if (selected) {
-                    ref.read(uiSettingsProvider.notifier).updateSettings(
-                          (prev) => prev.copyWith(cardStyle: style),
-                        );
-                  }
+              final radius = BorderRadius.circular(20);
+              return FocusableTap(
+                onTap: () {
+                  ref.read(uiSettingsProvider.notifier).updateSettings(
+                        (prev) => prev.copyWith(cardStyle: style),
+                      );
                 },
-                labelStyle: TextStyle(
-                  color: isSelected
-                      ? colorScheme.onPrimary
-                      : colorScheme.onSurface,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-                selectedColor: colorScheme.primary,
-                backgroundColor: colorScheme.surfaceContainerHighest,
-                side: BorderSide.none,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                autofocus: isSelected,
+                focusNode: isSelected ? _cardStyleFocusNode : null,
+                borderRadius: radius,
+                focusBorderColor: colorScheme.primary,
+                child: ChoiceChip(
+                  label: Text(style.toUpperCase()),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) {
+                      ref.read(uiSettingsProvider.notifier).updateSettings(
+                            (prev) => prev.copyWith(cardStyle: style),
+                          );
+                    }
+                  },
+                  labelStyle: TextStyle(
+                    color: isSelected
+                        ? colorScheme.onPrimary
+                        : colorScheme.onSurface,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                  selectedColor: colorScheme.primary,
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  side: BorderSide.none,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: radius,
+                  ),
                 ),
               );
             }).toList(),
@@ -442,8 +553,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
+          const SizedBox(height: 20),
           _buildStepHeader(
             context,
             'Stay Updated',
@@ -542,23 +654,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         final scheme = FlexScheme.values[index];
                         final isSelected = theme.flexScheme == scheme.name;
 
-                        return ListTile(
+                        final radius = BorderRadius.circular(12);
+                        return FocusableTap(
                           onTap: () {
                             themeNotifier.updateSettings(
                               (prev) => prev.copyWith(flexScheme: scheme.name),
                             );
                           },
-                          leading: _buildMinimalPreview(scheme),
-                          title: Text(_formatSchemeName(scheme.name)),
-                          trailing: isSelected
-                              ? Icon(Iconsax.tick_circle,
-                                  color: Theme.of(context).colorScheme.primary)
-                              : null,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          autofocus: isSelected,
+                          borderRadius: radius,
+                          child: ListTile(
+                            leading: _buildMinimalPreview(scheme),
+                            title: Text(_formatSchemeName(scheme.name)),
+                            trailing: isSelected
+                                ? Icon(Iconsax.tick_circle,
+                                    color:
+                                        Theme.of(context).colorScheme.primary)
+                                : null,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: radius,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
                         );
                       },
                     ),

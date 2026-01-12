@@ -9,6 +9,7 @@ import 'package:shonenx/features/watchlist/view/widget/shonenx_gridview.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/shared/providers/anime_repo_provider.dart';
+import 'package:shonenx/shared/widgets/app_scale.dart';
 
 class WatchlistScreen extends ConsumerStatefulWidget {
   const WatchlistScreen({super.key});
@@ -128,6 +129,7 @@ class _WatchlistTabView extends ConsumerWidget {
     final notifier = ref.read(watchlistProvider.notifier);
     final cardStyle = ref.watch(uiSettingsProvider).cardStyle;
     final mode = AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
+    final scale = AppScaleScope.of(context);
 
     if (state.loadingStatuses.contains(status)) {
       return const Center(child: CircularProgressIndicator());
@@ -165,10 +167,15 @@ class _WatchlistTabView extends ConsumerWidget {
         onRefresh: () => notifier.fetchListForStatus(status, force: true),
         child: ShonenXGridView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+          padding: EdgeInsets.fromLTRB(
+            16 * scale,
+            16 * scale,
+            16 * scale,
+            120 * scale,
+          ),
           crossAxisCount: _columns(context),
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
+          mainAxisSpacing: 16 * scale,
+          crossAxisSpacing: 16 * scale,
           childAspectRatio: 0.7,
           items: media.map((anime) {
             final tag = '${generateId()}${anime.id}';

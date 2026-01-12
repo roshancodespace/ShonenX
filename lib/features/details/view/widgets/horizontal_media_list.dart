@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
+import 'package:shonenx/shared/widgets/app_scale.dart';
 
 class HorizontalMediaSection<T> extends StatelessWidget {
   final String title;
@@ -21,12 +23,13 @@ class HorizontalMediaSection<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!isLoading && items.isEmpty) return const SizedBox.shrink();
+    final scale = AppScaleScope.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: 16 * scale),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -34,7 +37,6 @@ class HorizontalMediaSection<T> extends StatelessWidget {
                 title,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w600,
-                      fontSize: 20,
                     ),
               ),
               if (onMoreTap != null)
@@ -45,22 +47,24 @@ class HorizontalMediaSection<T> extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16 * scale),
         SizedBox(
-          height: 200,
+          height: 200 * scale,
           child: isLoading && items.isEmpty
               ? ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  cacheExtent: 10000 * scale,
+                  padding: EdgeInsets.symmetric(horizontal: 16 * scale),
                   itemCount: 4,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  separatorBuilder: (_, __) => SizedBox(width: 12 * scale),
                   itemBuilder: (_, __) => const _ShimmerItem(),
                 )
               : ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  cacheExtent: 10000 * scale,
+                  padding: EdgeInsets.symmetric(horizontal: 16 * scale),
                   itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  separatorBuilder: (_, __) => SizedBox(width: 12 * scale),
                   itemBuilder: (context, index) {
                     final item = items[index];
                     return itemBuilder(context, item);
@@ -87,16 +91,19 @@ class MediaCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scale = AppScaleScope.of(context);
+    final radius = BorderRadius.circular(12 * scale);
 
     // Get the best available title
     final title = media.title.english ?? media.title.romaji ?? 'Unknown';
 
-    return GestureDetector(
+    return FocusableTap(
       onTap: onTap,
+      borderRadius: radius,
       child: Container(
-        width: 130,
+        width: 130 * scale,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: radius,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,7 +112,7 @@ class MediaCard extends StatelessWidget {
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: radius,
                     child: CachedNetworkImage(
                       imageUrl: media.coverImage.large ?? '',
                       fit: BoxFit.cover,
@@ -136,8 +143,8 @@ class MediaCard extends StatelessWidget {
                   ),
                   if (badgeText != null)
                     Positioned(
-                      top: 8,
-                      left: 8,
+                      top: 8 * scale,
+                      left: 8 * scale,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -145,7 +152,7 @@ class MediaCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(6 * scale),
                         ),
                         child: Text(
                           badgeText!,
@@ -160,14 +167,13 @@ class MediaCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8 * scale),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: EdgeInsets.symmetric(horizontal: 4 * scale),
               child: Text(
                 title,
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w500,
-                  fontSize: 13,
                   height: 1.3,
                 ),
                 maxLines: 2,
@@ -187,11 +193,13 @@ class _ShimmerItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final scale = AppScaleScope.of(context);
+    final radius = BorderRadius.circular(12 * scale);
 
     return Container(
-      width: 130,
+      width: 130 * scale,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: radius,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,31 +208,31 @@ class _ShimmerItem extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest.withOpacity(0.6),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: radius,
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8 * scale),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: EdgeInsets.symmetric(horizontal: 4 * scale),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  height: 12,
+                  height: 12 * scale,
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainerHighest.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(4 * scale),
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4 * scale),
                 Container(
-                  height: 12,
-                  width: 80,
+                  height: 12 * scale,
+                  width: 80 * scale,
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainerHighest.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(4 * scale),
                   ),
                 ),
               ],
@@ -249,22 +257,25 @@ class StaffCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scale = AppScaleScope.of(context);
+    final radius = BorderRadius.circular(12 * scale);
     final name = staff.name?.full ?? staff.name?.native ?? 'Unknown';
     final role = staff.role ?? 'Staff';
 
-    return GestureDetector(
+    return FocusableTap(
       onTap: onTap,
+      borderRadius: radius,
       child: Container(
-        width: 130,
+        width: 130 * scale,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: radius,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: radius,
                 child: CachedNetworkImage(
                   imageUrl: staff.image?.large ?? staff.image?.medium ?? '',
                   fit: BoxFit.cover,
@@ -284,9 +295,9 @@ class StaffCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8 * scale),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: EdgeInsets.symmetric(horizontal: 4 * scale),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -294,7 +305,6 @@ class StaffCard extends StatelessWidget {
                     name,
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.w600,
-                      fontSize: 13,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -303,7 +313,6 @@ class StaffCard extends StatelessWidget {
                     role,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: 11,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

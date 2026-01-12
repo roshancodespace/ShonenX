@@ -8,6 +8,7 @@ import 'package:shonenx/features/home/view_model/homepage_notifier.dart';
 import 'package:shonenx/features/home/view/widget/header_section.dart';
 import 'package:shonenx/features/home/view/widget/home_section.dart';
 import 'package:shonenx/features/home/view/widget/spotlight_section.dart';
+import 'package:shonenx/shared/widgets/app_scale.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -23,6 +24,7 @@ class HomeScreen extends ConsumerWidget {
 
     final home = state.homePage;
     if (home == null) return const SizedBox.shrink();
+    final scale = AppScaleScope.of(context);
 
     final sections = [
       if (home.trendingAnime.isNotEmpty)
@@ -44,12 +46,12 @@ class HomeScreen extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () => ref.read(homepageProvider.notifier).fetchHomePage(),
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16 * scale),
         children: [
           const HeaderSection(isDesktop: false),
           if (home.trendingAnime.isNotEmpty)
             SpotlightSection(spotlightAnime: home.trendingAnime),
-          const SizedBox(height: 16),
+          SizedBox(height: 16 * scale),
 
           // Continue Watching Section
           ref.watch(watchProgressStreamProvider).when(
@@ -66,7 +68,7 @@ class HomeScreen extends ConsumerWidget {
 
           // All home sections
           ...sections,
-          const SizedBox(height: 80),
+          SizedBox(height: 80 * scale),
         ],
       ),
     );

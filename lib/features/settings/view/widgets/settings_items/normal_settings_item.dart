@@ -16,6 +16,8 @@ class NormalSettingsItem extends BaseSettingsItem {
     super.isCompact,
     super.trailingWidgets,
     super.layoutType,
+    super.focusNode,
+    super.autofocus,
   });
 
   @override

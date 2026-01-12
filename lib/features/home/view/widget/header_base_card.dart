@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
 
 class HeaderBaseCard extends StatelessWidget {
   final Widget child;
@@ -6,6 +7,8 @@ class HeaderBaseCard extends StatelessWidget {
   final Color? color;
   final Gradient? gradient;
   final EdgeInsetsGeometry padding;
+  final bool focusable;
+  final bool autofocus;
 
   const HeaderBaseCard({
     super.key,
@@ -14,13 +17,47 @@ class HeaderBaseCard extends StatelessWidget {
     this.color,
     this.gradient,
     this.padding = const EdgeInsets.all(16.0),
+    this.focusable = true,
+    this.autofocus = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final borderRadius = (theme.cardTheme.shape as RoundedRectangleBorder?)?.borderRadius ??
-        BorderRadius.circular(20.0); // Use a slightly larger, bolder radius for home
+    final borderRadius =
+        (theme.cardTheme.shape as RoundedRectangleBorder?)?.borderRadius ??
+            const BorderRadius.all(Radius.circular(20.0)); // Use a slightly larger, bolder radius for home
+    final resolvedRadius =
+        borderRadius.resolve(Directionality.of(context));
+
+    final inkChild = Ink(
+      decoration: BoxDecoration(
+        color: color,
+        gradient: gradient,
+      ),
+      child: Padding(
+        padding: padding,
+        child: child,
+      ),
+    );
+
+    Widget content;
+    if (onTap != null && focusable) {
+      content = FocusableTap(
+        onTap: onTap,
+        autofocus: autofocus,
+        borderRadius: resolvedRadius,
+        child: inkChild,
+      );
+    } else if (onTap != null) {
+      content = InkWell(
+        onTap: onTap,
+        canRequestFocus: false,
+        child: inkChild,
+      );
+    } else {
+      content = inkChild;
+    }
 
     return Card(
       margin: EdgeInsets.zero,
@@ -30,19 +67,7 @@ class HeaderBaseCard extends StatelessWidget {
         side: BorderSide(color: theme.colorScheme.outline.withOpacity(0.1)),
       ),
       clipBehavior: Clip.antiAlias, // Ensures the InkWell ripple respects the border radius
-      child: InkWell(
-        onTap: onTap,
-        child: Ink(
-          decoration: BoxDecoration(
-            color: color,
-            gradient: gradient,
-          ),
-          child: Padding(
-            padding: padding,
-            child: child,
-          ),
-        ),
-      ),
+      child: content,
     );
   }
 }

@@ -8,6 +8,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
 
 class ContinueSection extends ConsumerWidget {
   final List<AnimeWatchProgressEntry> allProgress;
@@ -53,14 +54,15 @@ class ContinueSection extends ConsumerWidget {
 
               final colorScheme = theme.colorScheme;
 
-              return InkWell(
+              return FocusableTap(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () {
                   providerAnimeMatchSearch(
-                      context: context,
-                      ref: ref,
-                      animeMedia: media,
-                      startAt: entry.currentEpisode);
+                    context: context,
+                    ref: ref,
+                    animeMedia: media,
+                    startAt: entry.currentEpisode,
+                  );
                 },
                 child: SizedBox(
                   width: 280,

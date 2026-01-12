@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
+import 'package:shonenx/shared/widgets/app_scale.dart';
 
 class AnimatedAnimeCard extends StatefulWidget {
   final UniversalMedia anime;
@@ -22,11 +24,13 @@ class AnimatedAnimeCard extends StatefulWidget {
 
 class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
   bool _isHovered = false;
+  bool _isFocused = false;
 
   @override
   Widget build(BuildContext context) {
     // 1. Get the configuration for the current mode
     final config = cardConfigs[widget.mode]!;
+    final scale = AppScaleScope.of(context);
 
     // 2. Get screen width once for responsive calculations
     final screenWidth = MediaQuery.of(context).size.width;
@@ -39,30 +43,35 @@ class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
     final height = isSmallScreen
         ? config.responsiveHeight.small
         : config.responsiveHeight.large;
+    final scaledRadius = config.radius * scale;
+
+    final isActive = _isHovered || _isFocused;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
+      child: FocusableTap(
         onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(scaledRadius),
+        onFocusChange: (focused) => setState(() => _isFocused = focused),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
-          width: width,
-          height: height,
+          width: width * scale,
+          height: height * scale,
           margin: EdgeInsets.only(
-            top: _isHovered ? 0 : 4,
-            bottom: _isHovered ? 4 : 0,
+            top: isActive ? 0 : 4 * scale,
+            bottom: isActive ? 4 * scale : 0,
           ),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(config.radius),
+            borderRadius: BorderRadius.circular(scaledRadius),
             // boxShadow: [
             //   BoxShadow(
             //     color: Theme.of(context)
             //         .colorScheme
             //         .shadow
-            //         .withOpacity(_isHovered ? 0.25 : 0.1),
+            //         .withOpacity(isActive ? 0.25 : 0.1),
             //     blurRadius: 8,
             //     offset: const Offset(0, 2),
             //   ),
@@ -74,7 +83,7 @@ class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
                     ? null
                     : widget.anime.averageScore! / 10),
             tag: widget.tag,
-            isHovered: _isHovered,
+            isHovered: isActive,
           ),
         ),
       ),

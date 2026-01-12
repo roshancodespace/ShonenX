@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
 
 class PolaroidSpotlight extends StatelessWidget {
   final UniversalMedia? anime;
@@ -24,8 +25,9 @@ class PolaroidSpotlight extends StatelessWidget {
         ? anime!.bannerImage!
         : (anime!.coverImage.large ?? anime!.coverImage.medium ?? '');
 
-    return GestureDetector(
+    return FocusableTap(
       onTap: () => onTap?.call(anime!),
+      borderRadius: BorderRadius.circular(2),
       child: Container(
         transform: Matrix4.identity()..rotateZ(-0.01),
         decoration: BoxDecoration(

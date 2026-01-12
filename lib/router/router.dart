@@ -10,6 +10,7 @@ import 'package:shonenx/features/loading/view/loading_screen.dart';
 import 'package:shonenx/features/watchlist/view/watchlist_screen.dart';
 import 'package:shonenx/features/loading/view_model/initialization_notifier.dart';
 import 'package:shonenx/features/home/view/home_screen.dart' as h_screen;
+import 'package:shonenx/shared/widgets/focusable_tap.dart';
 
 // Navigation item configuration
 class NavItem {
@@ -127,8 +128,10 @@ class AppRouterScreen extends ConsumerWidget {
               ),
               padding: const EdgeInsets.symmetric(vertical: 15),
               margin: const EdgeInsets.all(5),
-              child: InkWell(
+              child: FocusableTap(
                 onTap: () => navigationShell.goBranch(index),
+                autofocus: isSelected,
+                borderRadius: BorderRadius.circular(24),
                 child: Center(
                   child: Icon(
                     item.icon,
@@ -169,8 +172,10 @@ class AppRouterScreen extends ConsumerWidget {
                 final item = entry.value;
                 final isSelected = navigationShell.currentIndex == index;
                 return Expanded(
-                  child: InkWell(
+                  child: FocusableTap(
                     onTap: () => navigationShell.goBranch(index),
+                    autofocus: isSelected,
+                    borderRadius: BorderRadius.circular(100),
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(100),

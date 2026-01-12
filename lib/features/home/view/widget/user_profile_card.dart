@@ -18,6 +18,7 @@ class UserProfileCard extends StatelessWidget {
     // Use the base card as the foundation
     return HeaderBaseCard(
       color: theme.colorScheme.surface, // A solid, clean background
+      focusable: false,
       onTap: user != null
           ? () => context.push('/settings/account/profile')
           : () => context.push('/settings/account'),

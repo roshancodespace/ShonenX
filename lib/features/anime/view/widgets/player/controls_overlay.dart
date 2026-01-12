@@ -1,8 +1,13 @@
 import 'dart:async';
-import 'dart:ui';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
+
+import 'package:shonenx/features/anime/view/widgets/player/sheets/subtitle_selection_sheet.dart';
 
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/features/anime/view/widgets/player/bottom_controls.dart';
@@ -20,8 +25,7 @@ class ControlsOverlay extends ConsumerStatefulWidget {
   const ControlsOverlay({super.key, this.onEpisodesPressed});
 
   @override
-  ConsumerState<ControlsOverlay> createState() =>
-      ControlsOverlayState();
+  ConsumerState<ControlsOverlay> createState() => ControlsOverlayState();
 }
 
 class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
@@ -316,20 +320,36 @@ class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
   }
 
   void _openSubtitle() {
-    final data = ref.read(episodeDataProvider);
-
     _sheet(
-      GenericSelectionSheet<Subtitle>(
-        title: 'Subtitle',
-        items: data.subtitles,
-        selectedIndex: data.selectedSubtitleIdx,
-        displayBuilder: (e) => e.lang ?? '',
-        onItemSelected: (i) {
-          ref.read(episodeDataProvider.notifier).changeSubtitle(i);
-          Navigator.pop(context);
-        },
+      SubtitleSelectionSheet(
+        onLocalFilePressed: _pickLocalSubtitle,
       ),
     );
+  }
+
+  Future<void> _pickLocalSubtitle() async {
+    final notifier = ref.read(episodeDataProvider.notifier);
+
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['srt', 'vtt', 'ass', 'ssa'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+
+        await notifier.addLocalSubtitle(file);
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Loaded: ${result.files.single.name}')),
+        );
+      }
+    } catch (e) {
+      AppLogger.e('Error picking file: $e');
+    }
   }
 
   Widget _buildSpeedScale() {

@@ -10,14 +10,8 @@ import 'package:shonenx/features/anime/view_model/player_provider.dart';
 import 'package:shonenx/features/settings/view_model/player_notifier.dart';
 import 'package:shonenx/utils/formatter.dart';
 
-class BottomControls extends ConsumerWidget {
+class BottomControls extends ConsumerStatefulWidget {
   final VoidCallback onInteraction;
-
-  final double? sliderValue;
-  final ValueChanged<double>? onSliderChanged;
-  final ValueChanged<double>? onSliderChangeStart;
-  final ValueChanged<double>? onSliderChangeEnd;
-
   final VoidCallback onLockPressed;
   final VoidCallback onSourcePressed;
   final VoidCallback onSubtitlePressed;
@@ -28,10 +22,6 @@ class BottomControls extends ConsumerWidget {
   const BottomControls({
     super.key,
     required this.onInteraction,
-    this.sliderValue,
-    this.onSliderChanged,
-    this.onSliderChangeStart,
-    this.onSliderChangeEnd,
     required this.onLockPressed,
     required this.onSourcePressed,
     required this.onSubtitlePressed,
@@ -40,10 +30,17 @@ class BottomControls extends ConsumerWidget {
     this.onEpisodePressed,
   });
 
+  @override
+  ConsumerState<BottomControls> createState() => _BottomControlsState();
+}
+
+class _BottomControlsState extends ConsumerState<BottomControls> {
+  double? _draggedValue;
+
   VoidCallback _wrap(VoidCallback? cb) {
     return () {
       cb?.call();
-      onInteraction();
+      widget.onInteraction();
     };
   }
 
@@ -52,9 +49,10 @@ class BottomControls extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final episodeNotifier = ref.read(episodeDataProvider.notifier);
+    final playerNotifier = ref.read(playerStateProvider.notifier);
 
     return Container(
       padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 10),
@@ -116,7 +114,7 @@ class BottomControls extends ConsumerWidget {
               _buildSkipButton(scheme),
             ],
           ),
-          _buildProgressBar(context, ref, scheme),
+          _buildProgressBar(context, ref, scheme, playerNotifier),
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -153,7 +151,7 @@ class BottomControls extends ConsumerWidget {
                       }
                       return _pill(
                         text: list[idx].quality ?? 'Auto',
-                        onTap: onSourcePressed,
+                        onTap: widget.onSourcePressed,
                       );
                     }),
                   ],
@@ -163,20 +161,20 @@ class BottomControls extends ConsumerWidget {
                         ? Iconsax.subtitle5
                         : Iconsax.subtitle,
                     tooltip: 'Subtitles',
-                    onTap: onSubtitlePressed,
+                    onTap: widget.onSubtitlePressed,
                     onLong: () => context.push('/settings/player/subtitles'),
                   ),
                   const SizedBox(width: 8),
                   _icon(
                     icon: Iconsax.lock,
                     tooltip: 'Lock',
-                    onTap: onLockPressed,
+                    onTap: widget.onLockPressed,
                   ),
                   const SizedBox(width: 8),
                   _icon(
                     icon: Icons.playlist_play_rounded,
                     tooltip: 'Episodes',
-                    onTap: onEpisodePressed,
+                    onTap: widget.onEpisodePressed,
                   ),
                 ],
               ),
@@ -207,6 +205,7 @@ class BottomControls extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     ColorScheme scheme,
+    PlayerController playerNotifier,
   ) {
     return SizedBox(
       height: 30,
@@ -223,7 +222,7 @@ class BottomControls extends ConsumerWidget {
 
           final position = pos.inMilliseconds.toDouble().clamp(0, max);
           final buffer = buf.inMilliseconds.toDouble().clamp(0, max);
-          final value = (sliderValue ?? position).clamp(0, max);
+          final value = (_draggedValue ?? position).clamp(0, max);
 
           final baseTheme = SliderTheme.of(context);
 
@@ -317,9 +316,17 @@ class BottomControls extends ConsumerWidget {
                 child: Slider(
                   value: value.toDouble(),
                   max: max,
-                  onChanged: onSliderChanged,
-                  onChangeStart: onSliderChangeStart,
-                  onChangeEnd: onSliderChangeEnd,
+                  onChanged: (val) {
+                    setState(() => _draggedValue = val);
+                  },
+                  onChangeStart: (val) {
+                    setState(() => _draggedValue = val);
+                  },
+                  onChangeEnd: (val) {
+                    playerNotifier.seek(Duration(milliseconds: val.round()));
+                    setState(() => _draggedValue = null);
+                    widget.onInteraction();
+                  },
                 ),
               ),
 
@@ -438,7 +445,7 @@ class BottomControls extends ConsumerWidget {
 
   Widget _buildSkipButton(ColorScheme scheme) {
     return InkWell(
-      onTap: _wrap(onForwardPressed),
+      onTap: _wrap(widget.onForwardPressed),
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

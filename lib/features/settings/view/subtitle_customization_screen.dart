@@ -63,15 +63,15 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
       _SubtitlePreset(
         name: 'Classic Yellow',
         previewText: 'Aa',
-        textColor: const Color(0xFFFFD700),
+        textColor: Color(0xFFFFD700),
         backgroundColor: Colors.transparent,
         borderColor: Colors.black,
         borderWidth: 2.0,
         model: SubtitleAppearanceModel(
-          fontSize: 22,
+          fontSize: 20,
           textColor: 0xFFFFD700,
           outlineColor: 0xFF000000,
-          outlineWidth: 2.5,
+          outlineWidth: 2.0,
           backgroundOpacity: 0.0,
           backgroundColor: 0xFF000000,
           hasShadow: true,
@@ -85,7 +85,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
         borderColor: Colors.transparent,
         borderWidth: 0,
         model: SubtitleAppearanceModel(
-          fontSize: 24,
+          fontSize: 22,
           textColor: 0xFFFFFF00,
           outlineWidth: 0.0,
           outlineColor: 0xFF000000,
@@ -155,7 +155,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
         name: 'Paper',
         previewText: 'Aa',
         textColor: Colors.black,
-        backgroundColor: Colors.white.withOpacity(0.8), // <--- Prevents const
+        backgroundColor: Colors.white.withOpacity(0.8),
         borderColor: Colors.transparent,
         borderWidth: 0,
         model: SubtitleAppearanceModel(
@@ -172,19 +172,19 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
       _SubtitlePreset(
         name: 'Sakura',
         previewText: '✿',
-        textColor: const Color(0xFFFFB7C5),
+        textColor: Color(0xFFFFB7C5),
         backgroundColor: Colors.transparent,
         borderColor: Colors.white,
         borderWidth: 1.5,
         model: SubtitleAppearanceModel(
-          fontSize: 22,
+          fontSize: 20,
           textColor: 0xFFFFB7C5,
           outlineColor: 0xFFFFFFFF,
           outlineWidth: 1.5,
           backgroundOpacity: 0.0,
           backgroundColor: 0xFF000000,
           hasShadow: true,
-          shadowOpacity: 1.0,
+          shadowOpacity: 0.8,
           shadowBlur: 2.0,
           boldText: true,
         ),
@@ -192,8 +192,8 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
       _SubtitlePreset(
         name: 'Terminal',
         previewText: '>_',
-        textColor: const Color(0xFF00FF00),
-        backgroundColor: Colors.black.withOpacity(0.8), // <--- Prevents const
+        textColor: Color(0xFF00FF00),
+        backgroundColor: Colors.black.withOpacity(0.8),
         borderColor: Colors.transparent,
         borderWidth: 0,
         model: SubtitleAppearanceModel(
@@ -213,12 +213,12 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
         textColor: Colors.white,
         backgroundColor: Colors.transparent,
         borderColor: Colors.black,
-        borderWidth: 4.0,
+        borderWidth: 3.0,
         model: SubtitleAppearanceModel(
-          fontSize: 32,
+          fontSize: 28,
           textColor: 0xFFFFFFFF,
           outlineColor: 0xFF000000,
-          outlineWidth: 4.0,
+          outlineWidth: 3.0,
           backgroundOpacity: 0.0,
           backgroundColor: 0xFF000000,
           hasShadow: false,
@@ -228,9 +228,9 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
       _SubtitlePreset(
         name: 'Minimal',
         previewText: 'Aa',
-        textColor: const Color(0xFFE0E0E0),
+        textColor: Color(0xFFE0E0E0),
         backgroundColor: Colors.transparent,
-        borderColor: Colors.black.withOpacity(0.5), // <--- Prevents const
+        borderColor: Colors.black.withOpacity(0.5),
         borderWidth: 1.0,
         model: SubtitleAppearanceModel(
           fontSize: 16,
@@ -246,12 +246,12 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
       _SubtitlePreset(
         name: 'Warning',
         previewText: '!!',
-        textColor: const Color(0xFFFF3333),
-        backgroundColor: Colors.black.withOpacity(0.7), // <--- Prevents const
+        textColor: Color(0xFFFF3333),
+        backgroundColor: Colors.black.withOpacity(0.7),
         borderColor: Colors.white,
         borderWidth: 1.0,
         model: SubtitleAppearanceModel(
-          fontSize: 22,
+          fontSize: 20,
           textColor: 0xFFFF3333,
           outlineColor: 0xFFFFFFFF,
           outlineWidth: 1.0,
@@ -264,394 +264,453 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
       _SubtitlePreset(
         name: 'Ghost',
         previewText: 'Oo',
-        textColor: Colors.white.withOpacity(0.9), // <--- Prevents const
+        textColor: Colors.white.withOpacity(0.9),
         backgroundColor: Colors.transparent,
         borderColor: Colors.transparent,
         borderWidth: 0,
         model: SubtitleAppearanceModel(
-          fontSize: 22,
+          fontSize: 20,
           textColor: 0xE6FFFFFF,
           outlineWidth: 0.0,
           outlineColor: 0xFF000000,
           backgroundOpacity: 0.0,
           backgroundColor: 0xFF000000,
           hasShadow: true,
-          shadowBlur: 8.0,
-          shadowOpacity: 1.0,
+          shadowBlur: 6.0,
+          shadowOpacity: 0.8,
         ),
       ),
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton.filledTonal(
-            onPressed: () => context.pop(),
-            icon: const Icon(Iconsax.arrow_left_2)),
-        title: const Text('Subtitle Customization'),
-        forceMaterialTransparency: true,
-      ),
-      body: Column(
-        children: [
-          // Live Preview Area
-          Expanded(
-            flex: 1,
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.black,
-                image: const DecorationImage(
-                  image: NetworkImage(
-                      'https://s4.anilist.co/file/anilistcdn/media/anime/banner/16498-8jpFCOcDmneX.jpg'),
-                  fit: BoxFit.cover,
-                  opacity: 0.4,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
+    return DefaultTabController(
+      length: 5,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton.filledTonal(
+              onPressed: () => context.pop(),
+              icon: const Icon(Iconsax.arrow_left_2)),
+          title: const Text('Subtitle Customization'),
+          forceMaterialTransparency: true,
+          bottom: TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            dividerColor: Colors.transparent,
+            tabs: const [
+              Tab(text: 'Presets'),
+              Tab(text: 'Text'),
+              Tab(text: 'Background'),
+              Tab(text: 'Effects'),
+              Tab(text: 'Position'),
+            ],
+          ),
+        ),
+        body: Column(
+          children: [
+            // Live Preview Area
+            Expanded(
+              flex: 1,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  image: const DecorationImage(
+                    image: NetworkImage(
+                        'https://s4.anilist.co/file/anilistcdn/media/anime/banner/16498-8jpFCOcDmneX.jpg'),
+                    fit: BoxFit.cover,
+                    opacity: 0.4,
                   ),
-                ],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.6),
+                          ],
+                        ),
+                      ),
+                    ),
+                    _buildSubtitlePreview(ref),
+                  ],
+                ),
               ),
-              child: Stack(
+            ),
+            // Settings Controls
+            Expanded(
+              flex: 2,
+              child: TabBarView(
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.6),
+                  // --- PRESETS TAB ---
+                  ListView(
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
+                      SettingsSection(
+                        title: 'Quick Styles',
+                        titleColor: colorScheme.primary,
+                        children: [
+                          (() {
+                            final screenWidth =
+                                MediaQuery.of(context).size.width;
+                            final crossAxisCount = screenWidth ~/ 180;
+                            final spacing = screenWidth * 0.01;
+
+                            return GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount:
+                                    crossAxisCount > 0 ? crossAxisCount : 1,
+                                childAspectRatio: 1,
+                                crossAxisSpacing: spacing,
+                                mainAxisSpacing: spacing,
+                              ),
+                              itemCount: presets.length,
+                              itemBuilder: (context, index) {
+                                return _PresetCard(
+                                  preset: presets[index],
+                                  onTap: () {
+                                    subtitleNotifier.updateSettings((prev) {
+                                      final m = presets[index].model;
+                                      return prev.copyWith(
+                                        fontSize: m.fontSize *
+                                            MediaQuery.of(context)
+                                                .textScaleFactor,
+                                        textColor: m.textColor,
+                                        outlineColor: m.outlineColor,
+                                        outlineWidth: m.outlineWidth *
+                                            (screenWidth /
+                                                400), // scale outline
+                                        backgroundColor: m.backgroundColor,
+                                        backgroundOpacity: m.backgroundOpacity,
+                                        hasShadow: m.hasShadow,
+                                        boldText: m.boldText,
+                                        forceUppercase: m.forceUppercase,
+                                        fontFamily: m.fontFamily,
+                                      );
+                                    });
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          '${presets[index].name} Applied',
+                                          style: TextStyle(
+                                            fontSize: 14 *
+                                                MediaQuery.of(context)
+                                                    .textScaleFactor,
+                                          ),
+                                        ),
+                                        duration:
+                                            const Duration(milliseconds: 800),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                          })()
                         ],
                       ),
-                    ),
+                    ],
                   ),
-                  _buildSubtitlePreview(ref),
+
+                  // --- TEXT TAB ---
+                  ListView(
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
+                      SettingsSection(
+                        title: 'Typography',
+                        titleColor: colorScheme.primary,
+                        children: [
+                          DropdownSettingsItem(
+                            icon: Icon(Iconsax.text_block,
+                                color: colorScheme.primary),
+                            accent: colorScheme.primary,
+                            title: 'Font Family',
+                            description: watchTheme(ref, (s) => s.fontFamily) ??
+                                'Default',
+                            layoutType: SettingsItemLayout.horizontal,
+                            value: SubtitleUtils.availableFonts.contains(
+                                    watchTheme(ref, (s) => s.fontFamily))
+                                ? watchTheme(ref, (s) => s.fontFamily)!
+                                : 'Default',
+                            items: SubtitleUtils.availableFonts
+                                .map<DropdownMenuItem<String>>((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                            onChanged: (value) =>
+                                subtitleNotifier.updateSettings(
+                              (prev) => prev.copyWith(fontFamily: value),
+                            ),
+                          ),
+                          SliderSettingsItem(
+                            icon:
+                                Icon(Iconsax.text, color: colorScheme.primary),
+                            accent: colorScheme.primary,
+                            title: 'Font Size',
+                            description:
+                                '${watchTheme(ref, (s) => s.fontSize).round()}px',
+                            value: watchTheme(ref, (s) => s.fontSize),
+                            min: 12,
+                            max: 50,
+                            divisions: 38,
+                            suffix: 'px',
+                            onChanged: (value) =>
+                                subtitleNotifier.updateSettings(
+                              (prev) => prev.copyWith(fontSize: value),
+                            ),
+                          ),
+                          ColorPickerSettingsItem(
+                            accent: colorScheme.primary,
+                            title: 'Text Color',
+                            description: 'Choose subtitle text color',
+                            icon: Icon(Iconsax.color_swatch,
+                                color: colorScheme.primary),
+                            selectedColor: watchTheme(ref, (s) => s.textColor),
+                            onColorChanged: (value) =>
+                                subtitleNotifier.updateSettings(
+                              (prev) => prev.copyWith(textColor: value),
+                            ),
+                          ),
+                          ToggleableSettingsItem(
+                            icon: Icon(Iconsax.text_bold,
+                                color: colorScheme.primary),
+                            accent: colorScheme.primary,
+                            title: 'Bold Text',
+                            description: 'Make subtitle text bold',
+                            value: watchTheme(ref, (s) => s.boldText),
+                            onChanged: (value) =>
+                                subtitleNotifier.updateSettings(
+                              (prev) => prev.copyWith(boldText: value),
+                            ),
+                          ),
+                          ToggleableSettingsItem(
+                            icon: Icon(Iconsax.arrow_up_3,
+                                color: colorScheme.primary),
+                            accent: colorScheme.primary,
+                            title: 'Force Uppercase',
+                            description: 'Render all text in capital letters',
+                            value: watchTheme(ref, (s) => s.forceUppercase),
+                            onChanged: (value) =>
+                                subtitleNotifier.updateSettings(
+                              (prev) => prev.copyWith(forceUppercase: value),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  // --- BACKGROUND TAB ---
+                  ListView(
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
+                      SettingsSection(
+                        title: 'Background',
+                        titleColor: colorScheme.primary,
+                        children: [
+                          ColorPickerSettingsItem(
+                            accent: colorScheme.primary,
+                            title: 'Background Color',
+                            description: 'Choose background color',
+                            icon: Icon(Iconsax.bucket_square,
+                                color: colorScheme.primary),
+                            selectedColor:
+                                watchTheme(ref, (s) => s.backgroundColor),
+                            onColorChanged: (value) =>
+                                subtitleNotifier.updateSettings(
+                              (prev) => prev.copyWith(backgroundColor: value),
+                            ),
+                          ),
+                          SliderSettingsItem(
+                            icon: Icon(Iconsax.square,
+                                color: colorScheme.primary),
+                            accent: colorScheme.primary,
+                            title: 'Background Opacity',
+                            description:
+                                '${(watchTheme(ref, (s) => s.backgroundOpacity) * 100).round()}%',
+                            value: watchTheme(ref, (s) => s.backgroundOpacity),
+                            min: 0,
+                            max: 1,
+                            onChanged: (value) =>
+                                subtitleNotifier.updateSettings(
+                              (prev) => prev.copyWith(backgroundOpacity: value),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  // --- EFFECTS TAB ---
+                  ListView(
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
+                      SettingsSection(
+                        title: 'Outline',
+                        titleColor: colorScheme.primary,
+                        children: [
+                          SliderSettingsItem(
+                            icon: Icon(Iconsax.edit_2,
+                                color: colorScheme.primary),
+                            accent: colorScheme.primary,
+                            title: 'Outline Width',
+                            description:
+                                '${watchTheme(ref, (s) => s.outlineWidth).toStringAsFixed(1)}px',
+                            value: watchTheme(ref, (s) => s.outlineWidth),
+                            min: 0,
+                            max: 5,
+                            divisions: 10,
+                            suffix: 'px',
+                            onChanged: (value) =>
+                                subtitleNotifier.updateSettings(
+                              (prev) => prev.copyWith(outlineWidth: value),
+                            ),
+                          ),
+                          ColorPickerSettingsItem(
+                            accent: colorScheme.primary,
+                            title: 'Outline Color',
+                            description: 'Choose outline color',
+                            icon: Icon(Iconsax.colorfilter,
+                                color: colorScheme.primary),
+                            selectedColor:
+                                watchTheme(ref, (s) => s.outlineColor),
+                            onColorChanged: (value) =>
+                                subtitleNotifier.updateSettings(
+                              (prev) => prev.copyWith(outlineColor: value),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      SettingsSection(
+                        title: 'Shadow',
+                        titleColor: colorScheme.primary,
+                        children: [
+                          ToggleableSettingsItem(
+                            icon:
+                                Icon(Iconsax.ghost, color: colorScheme.primary),
+                            accent: colorScheme.primary,
+                            title: 'Enable Shadow',
+                            description:
+                                'Add a drop shadow for better visibility',
+                            value: hasShadow,
+                            onChanged: (value) =>
+                                subtitleNotifier.updateSettings(
+                              (prev) => prev.copyWith(hasShadow: value),
+                            ),
+                          ),
+                          if (hasShadow) ...[
+                            SliderSettingsItem(
+                              icon:
+                                  Icon(Iconsax.eye, color: colorScheme.primary),
+                              accent: colorScheme.primary,
+                              title: 'Shadow Opacity',
+                              description:
+                                  '${(watchTheme(ref, (s) => s.shadowOpacity) * 100).round()}%',
+                              value: watchTheme(ref, (s) => s.shadowOpacity),
+                              min: 0,
+                              max: 1,
+                              onChanged: (value) =>
+                                  subtitleNotifier.updateSettings(
+                                (prev) => prev.copyWith(shadowOpacity: value),
+                              ),
+                            ),
+                            SliderSettingsItem(
+                              icon: Icon(Iconsax.blur,
+                                  color: colorScheme.primary),
+                              accent: colorScheme.primary,
+                              title: 'Shadow Blur',
+                              description:
+                                  '${watchTheme(ref, (s) => s.shadowBlur).toStringAsFixed(1)}px',
+                              value: watchTheme(ref, (s) => s.shadowBlur),
+                              min: 1,
+                              max: 10,
+                              divisions: 9,
+                              suffix: 'px',
+                              onChanged: (value) =>
+                                  subtitleNotifier.updateSettings(
+                                (prev) => prev.copyWith(shadowBlur: value),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  // --- POSITION TAB ---
+                  ListView(
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
+                      SettingsSection(
+                        title: 'Position',
+                        titleColor: colorScheme.primary,
+                        children: [
+                          SegmentedToggleSettingsItem<int>(
+                            accent: colorScheme.primary,
+                            iconColor: colorScheme.primary,
+                            title: 'Vertical Position',
+                            description:
+                                'Align subtitles to the top, center, or bottom',
+                            selectedValue: watchTheme(ref, (s) => s.position),
+                            onValueChanged: (value) {
+                              subtitleNotifier.updateSettings(
+                                (prev) => prev.copyWith(position: value),
+                              );
+                            },
+                            children: const {
+                              3: Icon(Iconsax.arrow_up_2),
+                              2: Icon(Iconsax.minus),
+                              1: Icon(Iconsax.arrow_down_1),
+                            },
+                            labels: const {
+                              3: 'Top',
+                              2: 'Center',
+                              1: 'Bottom',
+                            },
+                          ),
+                          SliderSettingsItem(
+                            icon: Icon(Iconsax.arrow_bottom,
+                                color: colorScheme.primary),
+                            accent: colorScheme.primary,
+                            title: 'Bottom Margin',
+                            description:
+                                '${watchTheme(ref, (s) => s.bottomMargin).round()}px',
+                            value: watchTheme(ref, (s) => s.bottomMargin),
+                            min: 0,
+                            max: 100,
+                            divisions: 100,
+                            suffix: 'px',
+                            onChanged: (value) =>
+                                subtitleNotifier.updateSettings(
+                              (prev) => prev.copyWith(bottomMargin: value),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-          ),
-          // Settings Controls
-          Expanded(
-            flex: 2,
-            child: ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                // --- QUICK STYLES SECTION ---
-                SettingsSection(
-                  title: 'Quick Styles',
-                  titleColor: colorScheme.primary,
-                  children: [
-                    SizedBox(
-                      height: 100,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: presets.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(width: 12),
-                        itemBuilder: (context, index) {
-                          return _PresetCard(
-                            preset: presets[index],
-                            onTap: () {
-                              subtitleNotifier.updateSettings((prev) {
-                                final m = presets[index].model;
-                                return prev.copyWith(
-                                  fontSize: m.fontSize,
-                                  textColor: m.textColor,
-                                  outlineColor: m.outlineColor,
-                                  outlineWidth: m.outlineWidth,
-                                  backgroundColor: m.backgroundColor,
-                                  backgroundOpacity: m.backgroundOpacity,
-                                  hasShadow: m.hasShadow,
-                                  boldText: m.boldText,
-                                  forceUppercase: m.forceUppercase,
-                                  fontFamily: m.fontFamily,
-                                );
-                              });
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content:
-                                      Text('${presets[index].name} Applied'),
-                                  duration: const Duration(milliseconds: 800),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                SettingsSection(
-                  title: 'Text',
-                  titleColor: colorScheme.primary,
-                  children: [
-                    SliderSettingsItem(
-                      icon: Icon(Iconsax.text, color: colorScheme.primary),
-                      accent: colorScheme.primary,
-                      title: 'Font Size',
-                      description:
-                          '${watchTheme(ref, (s) => s.fontSize).round()}px',
-                      value: watchTheme(ref, (s) => s.fontSize),
-                      min: 12,
-                      max: 50,
-                      divisions: 38,
-                      suffix: 'px',
-                      onChanged: (value) => subtitleNotifier.updateSettings(
-                        (prev) => prev.copyWith(fontSize: value),
-                      ),
-                    ),
-                    ColorPickerSettingsItem(
-                      accent: colorScheme.primary,
-                      title: 'Text Color',
-                      description: 'Choose subtitle text color',
-                      icon: Icon(Iconsax.color_swatch,
-                          color: colorScheme.primary),
-                      selectedColor: watchTheme(ref, (s) => s.textColor),
-                      onColorChanged: (value) =>
-                          subtitleNotifier.updateSettings(
-                        (prev) => prev.copyWith(textColor: value),
-                      ),
-                    ),
-                    DropdownSettingsItem(
-                      icon:
-                          Icon(Iconsax.text_block, color: colorScheme.primary),
-                      accent: colorScheme.primary,
-                      title: 'Font Family',
-                      description:
-                          watchTheme(ref, (s) => s.fontFamily) ?? 'Default',
-                      layoutType: SettingsItemLayout.horizontal,
-                      value: SubtitleUtils.availableFonts
-                              .contains(watchTheme(ref, (s) => s.fontFamily))
-                          ? watchTheme(ref, (s) => s.fontFamily)!
-                          : 'Default',
-                      items: SubtitleUtils.availableFonts
-                          .map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (value) => subtitleNotifier.updateSettings(
-                        (prev) => prev.copyWith(fontFamily: value),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                SettingsSection(
-                  title: 'Style',
-                  titleColor: colorScheme.primary,
-                  children: [
-                    ToggleableSettingsItem(
-                      icon: Icon(Iconsax.text_bold, color: colorScheme.primary),
-                      accent: colorScheme.primary,
-                      title: 'Bold Text',
-                      description: 'Make subtitle text bold',
-                      value: watchTheme(ref, (s) => s.boldText),
-                      onChanged: (value) => subtitleNotifier.updateSettings(
-                        (prev) => prev.copyWith(boldText: value),
-                      ),
-                    ),
-                    ToggleableSettingsItem(
-                      icon:
-                          Icon(Iconsax.arrow_up_3, color: colorScheme.primary),
-                      accent: colorScheme.primary,
-                      title: 'Force Uppercase',
-                      description: 'Render all text in capital letters',
-                      value: watchTheme(ref, (s) => s.forceUppercase),
-                      onChanged: (value) => subtitleNotifier.updateSettings(
-                        (prev) => prev.copyWith(forceUppercase: value),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                SettingsSection(
-                  title: 'Outline',
-                  titleColor: colorScheme.primary,
-                  children: [
-                    SliderSettingsItem(
-                      icon: Icon(Iconsax.edit_2, color: colorScheme.primary),
-                      accent: colorScheme.primary,
-                      title: 'Outline Width',
-                      description:
-                          '${watchTheme(ref, (s) => s.outlineWidth).toStringAsFixed(1)}px',
-                      value: watchTheme(ref, (s) => s.outlineWidth),
-                      min: 0,
-                      max: 5,
-                      divisions: 10,
-                      suffix: 'px',
-                      onChanged: (value) => subtitleNotifier.updateSettings(
-                        (prev) => prev.copyWith(outlineWidth: value),
-                      ),
-                    ),
-                    ColorPickerSettingsItem(
-                      accent: colorScheme.primary,
-                      title: 'Outline Color',
-                      description: 'Choose outline color',
-                      icon:
-                          Icon(Iconsax.colorfilter, color: colorScheme.primary),
-                      selectedColor: watchTheme(ref, (s) => s.outlineColor),
-                      onColorChanged: (value) =>
-                          subtitleNotifier.updateSettings(
-                        (prev) => prev.copyWith(outlineColor: value),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                SettingsSection(
-                  title: 'Appearance',
-                  titleColor: colorScheme.primary,
-                  children: [
-                    ColorPickerSettingsItem(
-                      accent: colorScheme.primary,
-                      title: 'Background Color',
-                      description: 'Choose background color',
-                      icon: Icon(Iconsax.bucket_square,
-                          color: colorScheme.primary),
-                      selectedColor: watchTheme(ref, (s) => s.backgroundColor),
-                      onColorChanged: (value) =>
-                          subtitleNotifier.updateSettings(
-                        (prev) => prev.copyWith(backgroundColor: value),
-                      ),
-                    ),
-                    SliderSettingsItem(
-                      icon: Icon(Iconsax.square, color: colorScheme.primary),
-                      accent: colorScheme.primary,
-                      title: 'Background Opacity',
-                      description:
-                          '${(watchTheme(ref, (s) => s.backgroundOpacity) * 100).round()}%',
-                      value: watchTheme(ref, (s) => s.backgroundOpacity),
-                      min: 0,
-                      max: 1,
-                      onChanged: (value) => subtitleNotifier.updateSettings(
-                        (prev) => prev.copyWith(backgroundOpacity: value),
-                      ),
-                    ),
-                    ToggleableSettingsItem(
-                      icon: Icon(Iconsax.ghost, color: colorScheme.primary),
-                      accent: colorScheme.primary,
-                      title: 'Text Shadow',
-                      description: 'Add a drop shadow for better visibility',
-                      value: hasShadow,
-                      onChanged: (value) => subtitleNotifier.updateSettings(
-                        (prev) => prev.copyWith(hasShadow: value),
-                      ),
-                    ),
-                  ],
-                ),
-                // Conditionally show shadow settings with an animation
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) {
-                    return SizeTransition(
-                      sizeFactor: animation,
-                      axisAlignment: -1.0,
-                      child: child,
-                    );
-                  },
-                  child: hasShadow
-                      ? Padding(
-                          padding: const EdgeInsets.only(top: 24.0),
-                          child: SettingsSection(
-                            title: 'Shadow Details',
-                            titleColor: colorScheme.primary,
-                            children: [
-                              SliderSettingsItem(
-                                icon: Icon(Iconsax.eye,
-                                    color: colorScheme.primary),
-                                accent: colorScheme.primary,
-                                title: 'Shadow Opacity',
-                                description:
-                                    '${(watchTheme(ref, (s) => s.shadowOpacity) * 100).round()}%',
-                                value: watchTheme(ref, (s) => s.shadowOpacity),
-                                min: 0,
-                                max: 1,
-                                onChanged: (value) =>
-                                    subtitleNotifier.updateSettings(
-                                  (prev) => prev.copyWith(shadowOpacity: value),
-                                ),
-                              ),
-                              SliderSettingsItem(
-                                icon: Icon(Iconsax.blur,
-                                    color: colorScheme.primary),
-                                accent: colorScheme.primary,
-                                title: 'Shadow Blur',
-                                description:
-                                    '${watchTheme(ref, (s) => s.shadowBlur).toStringAsFixed(1)}px',
-                                value: watchTheme(ref, (s) => s.shadowBlur),
-                                min: 1,
-                                max: 10,
-                                divisions: 9,
-                                suffix: 'px',
-                                onChanged: (value) =>
-                                    subtitleNotifier.updateSettings(
-                                  (prev) => prev.copyWith(shadowBlur: value),
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-                const SizedBox(height: 24),
-                SettingsSection(
-                  title: 'Position',
-                  titleColor: colorScheme.primary,
-                  children: [
-                    SegmentedToggleSettingsItem<int>(
-                      accent: colorScheme.primary,
-                      iconColor: colorScheme.primary,
-                      title: 'Vertical Position',
-                      description:
-                          'Align subtitles to the top, center, or bottom',
-                      selectedValue: watchTheme(ref, (s) => s.position),
-                      onValueChanged: (value) {
-                        subtitleNotifier.updateSettings(
-                          (prev) => prev.copyWith(position: value),
-                        );
-                      },
-                      children: const {
-                        3: Icon(Iconsax.arrow_up_2),
-                        2: Icon(Iconsax.minus),
-                        1: Icon(Iconsax.arrow_down_1),
-                      },
-                      labels: const {
-                        3: 'Top',
-                        2: 'Center',
-                        1: 'Bottom',
-                      },
-                    ),
-                    SliderSettingsItem(
-                      icon: Icon(Iconsax.arrow_bottom,
-                          color: colorScheme.primary),
-                      accent: colorScheme.primary,
-                      title: 'Bottom Margin',
-                      description:
-                          '${watchTheme(ref, (s) => s.bottomMargin).round()}px',
-                      value: watchTheme(ref, (s) => s.bottomMargin),
-                      min: 0,
-                      max: 100,
-                      divisions: 100,
-                      suffix: 'px',
-                      onChanged: (value) => subtitleNotifier.updateSettings(
-                        (prev) => prev.copyWith(bottomMargin: value),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 48), // Bottom padding
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

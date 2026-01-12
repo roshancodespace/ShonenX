@@ -462,17 +462,18 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                             icon:
                                 Icon(Iconsax.text, color: colorScheme.primary),
                             accent: colorScheme.primary,
-                            title: 'Font Size',
+                            title: 'Font Scale',
                             description:
-                                '${watchTheme(ref, (s) => s.fontSize).round()}px',
-                            value: watchTheme(ref, (s) => s.fontSize),
-                            min: 12,
-                            max: 50,
-                            divisions: 38,
-                            suffix: 'px',
+                                '${(watchTheme(ref, (s) => s.fontSize) / 20.0).toStringAsFixed(1)}x',
+                            value: (watchTheme(ref, (s) => s.fontSize) / 20.0)
+                                .clamp(0.5, 3.0),
+                            min: 0.5,
+                            max: 3.0,
+                            divisions: 25,
+                            suffix: 'x',
                             onChanged: (value) =>
                                 subtitleNotifier.updateSettings(
-                              (prev) => prev.copyWith(fontSize: value),
+                              (prev) => prev.copyWith(fontSize: value * 20.0),
                             ),
                           ),
                           ColorPickerSettingsItem(

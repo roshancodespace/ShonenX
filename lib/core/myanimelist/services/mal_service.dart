@@ -1,17 +1,12 @@
 import 'dart:convert';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
 import 'package:shonenx/core/models/universal/universal_page_response.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
-import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
-import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/core/myanimelist/services/auth_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/shared/providers/auth_provider.dart';
-import 'package:shonenx/features/settings/view_model/content_settings_notifier.dart';
 import 'package:shonenx/features/browse/model/search_filter.dart';
 
 class MyAnimeListServiceException implements Exception {
@@ -25,32 +20,26 @@ class MyAnimeListServiceException implements Exception {
 }
 
 class MyAnimeListService implements AnimeRepository {
-  final Ref _ref;
   final MyAnimeListAuthService _authService;
-  MyAnimeListService(this._ref, this._authService);
+  final String? Function() _getAccessTokenCallback;
+  final bool Function() _getShowAdultCallback;
+  final Future<void> Function() _onTokenRefreshCallback;
+
+  MyAnimeListService(
+    this._authService, {
+    required String? Function() getAccessToken,
+    required bool Function() getShowAdult,
+    required Future<void> Function() onTokenRefresh,
+  })  : _getAccessTokenCallback = getAccessToken,
+        _getShowAdultCallback = getShowAdult,
+        _onTokenRefreshCallback = onTokenRefresh;
 
   @override
   String get name => 'MyAnimeList';
 
-  String? _getAccessToken() {
-    final authState = _ref.read(authProvider);
-    if (!authState.isMalAuthenticated ||
-        authState.activePlatform != AuthPlatform.mal) {
-      AppLogger.w('MAL operation requires a logged-in MAL user.');
-      return null;
-    }
-    final token = authState.malAccessToken;
-    if (token == null || token.isEmpty) {
-      AppLogger.w('Access token is missing for MAL operation.');
-      return null;
-    }
-    return token;
-  }
+  String? _getAccessToken() => _getAccessTokenCallback();
 
-  bool _getShowAdult() {
-    final settings = _ref.read(contentSettingsProvider);
-    return settings.showMalAdult;
-  }
+  bool _getShowAdult() => _getShowAdultCallback();
 
   Future<Map<String, dynamic>> _get(
     String url, {
@@ -69,7 +58,7 @@ class MyAnimeListService implements AnimeRepository {
       final refreshed = await _authService.refreshToken();
       if (refreshed != null) {
         // update state
-        _ref.read(authProvider.notifier).refreshMalToken();
+        await _onTokenRefreshCallback();
         return _get(url, headers: headers);
       }
     }
@@ -100,7 +89,7 @@ class MyAnimeListService implements AnimeRepository {
     if (res.statusCode == 401) {
       final refreshed = await _authService.refreshToken();
       if (refreshed != null) {
-        _ref.read(authProvider.notifier).refreshMalToken();
+        await _onTokenRefreshCallback();
         return _put(url, body);
       }
     }
@@ -362,8 +351,3 @@ class MyAnimeListService implements AnimeRepository {
     }
   }
 }
-
-final malServiceProvider = Provider<MyAnimeListService>((ref) {
-  final authService = ref.read(malAuthServiceProvider);
-  return MyAnimeListService(ref, authService);
-});

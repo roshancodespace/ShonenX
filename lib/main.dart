@@ -8,7 +8,6 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -29,7 +28,7 @@ WebViewEnvironment? webViewEnvironment;
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 void main(List<String> args) async {
-  await dotenv.load(fileName: '.env');
+  await Env.init();
   WidgetsFlutterBinding.ensureInitialized();
   if (Platform.isLinux && runWebViewTitleBarWidget(args)) return;
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {

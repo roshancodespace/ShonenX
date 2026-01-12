@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:shonenx/core/utils/env_loader.dart';
 
 class AniListAuthService {
-  static String get clientId => dotenv.env['ANILIST_CLIENT_ID'] ?? '';
-  static String get clientSecret => dotenv.env['ANILIST_CLIENT_SECRET'] ?? '';
+  static String get clientId => Env.get('ANILIST_CLIENT_ID') ?? '';
+  static String get clientSecret => Env.get('ANILIST_CLIENT_SECRET') ?? '';
   static const String redirectUri = 'shonenx://callback';
   static const String authUrl = 'https://anilist.co/api/v2/oauth/authorize';
   static const String tokenUrl = 'https://anilist.co/api/v2/oauth/token';

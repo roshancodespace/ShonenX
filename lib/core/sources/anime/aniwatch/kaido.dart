@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:developer';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:html/dom.dart';
 import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/anime/episode_model.dart';
@@ -9,6 +8,7 @@ import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/aniwatch/parser.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
+import 'package:shonenx/core/utils/env_loader.dart';
 import 'package:html/parser.dart' show parse;
 
 class KaidoProvider extends AnimeProvider {
@@ -16,7 +16,7 @@ class KaidoProvider extends AnimeProvider {
       : super(
             apiUrl: customApiUrl != null
                 ? '$customApiUrl/anime/zoro'
-                : "${dotenv.env['API_URL']}/anime/zoro",
+                : "${Env.get('API_URL')}/anime/zoro",
             baseUrl: 'https://kaido.to',
             providerName: 'kaido');
 

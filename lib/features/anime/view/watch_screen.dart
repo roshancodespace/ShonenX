@@ -299,6 +299,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   @override
   Widget build(BuildContext context) {
     _attachListeners();
+
     final fit = ref.watch(playerStateProvider.select((p) => p.fit));
     final notifier = ref.read(playerStateProvider.notifier);
 

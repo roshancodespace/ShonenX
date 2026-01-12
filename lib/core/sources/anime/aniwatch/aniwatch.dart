@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:html/dom.dart';
 import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
@@ -29,7 +28,6 @@ class AniwatchProvider extends AnimeProvider {
 
   @override
   Future<HomePage> getHome() async {
-    debugPrint('Fetching home page from $baseUrl');
     return HomePage();
   }
 

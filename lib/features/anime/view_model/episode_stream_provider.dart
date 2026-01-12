@@ -1,4 +1,5 @@
 // ignore_for_file: constant_identifier_names, use_build_context_synchronously
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
@@ -198,6 +199,18 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       selectedSubtitleIdx: idx,
       removeState: EpisodeStreamState.SUBTITLE_LOADING,
     );
+  }
+
+  Future<void> addLocalSubtitle(File file) async {
+    final sub = Subtitle(
+      url: 'file://${file.path}',
+      lang: 'Local: ${file.path.split('/').last}',
+    );
+
+    final newSubtitles = [...state.subtitles, sub];
+    state = state.copyWith(subtitles: newSubtitles);
+
+    await changeSubtitle(newSubtitles.length - 1);
   }
 
   Future<void> downloadEpisode(BuildContext context, int epNumber) async {

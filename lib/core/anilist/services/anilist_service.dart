@@ -1,18 +1,14 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:graphql/client.dart';
 import 'package:shonenx/core/anilist/graphql_client.dart';
 import 'package:shonenx/core/anilist/queries.dart';
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/models/anilist/media_list_entry.dart';
 import 'package:shonenx/core/models/anilist/page_response.dart';
-import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/browse/model/search_filter.dart';
-import 'package:shonenx/features/settings/view_model/content_settings_notifier.dart';
 
 class AnilistServiceException implements Exception {
   final String message;
@@ -26,8 +22,15 @@ class AnilistServiceException implements Exception {
 }
 
 class AnilistService {
-  final Ref? _ref;
-  AnilistService(this._ref);
+  final ({String userId, String accessToken})? Function()
+      _getAuthContextCallback;
+  final bool? Function() _getAdultParamCallback;
+
+  AnilistService({
+    required ({String userId, String accessToken})? Function() getAuthContext,
+    required bool? Function() getAdultParam,
+  })  : _getAuthContextCallback = getAuthContext,
+        _getAdultParamCallback = getAdultParam;
 
   String get name => 'Anilist';
 
@@ -42,31 +45,10 @@ class AnilistService {
 
   static GraphQLClient? _client;
 
-  ({String userId, String accessToken})? _getAuthContext() {
-    if (_ref == null) return null;
-    final authState = _ref.read(authProvider);
+  ({String userId, String accessToken})? _getAuthContext() =>
+      _getAuthContextCallback();
 
-    if (!authState.isAniListAuthenticated ||
-        authState.activePlatform != AuthPlatform.anilist) {
-      AppLogger.w('Anilist operation requires a logged-in Anilist user.');
-      return null;
-    }
-
-    final userId = authState.anilistUser?.id;
-    final accessToken = authState.anilistAccessToken;
-
-    if (userId == null || accessToken == null || accessToken.isEmpty) {
-      AppLogger.w(
-          'Invalid user ID or access token for authenticated operation.');
-      return null;
-    }
-    return (userId: userId.toString(), accessToken: accessToken);
-  }
-
-  bool? _getAdultParam() {
-    final settings = _ref?.read(contentSettingsProvider);
-    return (settings?.showAnilistAdult == true) ? null : false;
-  }
+  bool? _getAdultParam() => _getAdultParamCallback();
 
   Future<T?> _executeGraphQLOperation<T>({
     String? accessToken,
@@ -475,7 +457,3 @@ class AnilistService {
     return _parseMediaList(data?['Page']?['media']);
   }
 }
-
-final anilistServiceProvider = Provider<AnilistService>((ref) {
-  return AnilistService(ref);
-});

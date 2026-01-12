@@ -1,14 +1,17 @@
 import 'dart:async';
-import 'dart:ui';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
+
+import 'package:shonenx/features/anime/view/widgets/player/sheets/subtitle_selection_sheet.dart';
 
 import 'package:shonenx/core/models/anime/source_model.dart';
-import 'package:shonenx/features/anime/view/widgets/player/bottom_controls.dart';
-import 'package:shonenx/features/anime/view/widgets/player/center_controls.dart';
 import 'package:shonenx/features/anime/view/widgets/player/subtitle_overlay.dart';
-import 'package:shonenx/features/anime/view/widgets/player/top_controls.dart';
+import 'package:shonenx/features/anime/view/widgets/player/components/player_controls.dart';
+import 'package:shonenx/features/anime/view/widgets/player/components/player_gesture_handler.dart';
 import 'package:shonenx/features/anime/view/widgets/player/components/seek_indicator.dart';
 import 'package:shonenx/features/anime/view/widgets/player/sheets/generic_selection_sheet.dart';
 import 'package:shonenx/features/anime/view/widgets/player/sheets/settings_sheet.dart';
@@ -20,8 +23,7 @@ class ControlsOverlay extends ConsumerStatefulWidget {
   const ControlsOverlay({super.key, this.onEpisodesPressed});
 
   @override
-  ConsumerState<ControlsOverlay> createState() =>
-      ControlsOverlayState();
+  ConsumerState<ControlsOverlay> createState() => ControlsOverlayState();
 }
 
 class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
@@ -30,23 +32,18 @@ class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
   int _seekAccum = 0;
   bool _isSpeeding = false;
   double _lastSpeed = 1.0;
-  double _dragStartY = 0.0;
 
   Timer? _hideTimer;
   Timer? _seekResetTimer;
-  late FocusNode _focus;
 
   @override
   void initState() {
     super.initState();
-    _focus = FocusNode();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
     _restartHide();
   }
 
   @override
   void dispose() {
-    _focus.dispose();
     _hideTimer?.cancel();
     _seekResetTimer?.cancel();
     super.dispose();
@@ -73,11 +70,9 @@ class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
     _restartHide();
   }
 
-  void _onDoubleTap(TapDownDetails d) {
+  void _onDoubleTap(bool forward) {
     if (_locked) return;
 
-    final w = MediaQuery.of(context).size.width;
-    final forward = d.globalPosition.dx > w / 2;
     final notifier = ref.read(playerStateProvider.notifier);
 
     _seekResetTimer?.cancel();
@@ -92,21 +87,17 @@ class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
     });
   }
 
-  void _onLongPressStart(LongPressStartDetails d) {
+  void _onLongPressStart() {
     if (_locked) return;
-    if (d.globalPosition.dx > MediaQuery.of(context).size.width / 2) {
-      setState(() {
-        _isSpeeding = true;
-        _lastSpeed = 2.0;
-        _dragStartY = d.globalPosition.dy;
-      });
-      ref.read(playerStateProvider.notifier).setSpeed(2.0);
-    }
+    setState(() {
+      _isSpeeding = true;
+      _lastSpeed = 2.0;
+    });
+    ref.read(playerStateProvider.notifier).setSpeed(2.0);
   }
 
-  void _onLongPressUpdate(LongPressMoveUpdateDetails d) {
+  void _onLongPressUpdate(double diff) {
     if (_isSpeeding) {
-      final diff = _dragStartY - d.globalPosition.dy;
       double newRate = 2.0 + (diff / 50.0);
       newRate = (newRate * 4).round() / 4;
       newRate = newRate.clamp(0.25, 4.0);
@@ -118,7 +109,7 @@ class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
     }
   }
 
-  void _onLongPressEnd(LongPressEndDetails d) {
+  void _onLongPressEnd() {
     if (_isSpeeding) {
       setState(() => _isSpeeding = false);
       ref.read(playerStateProvider.notifier).setSpeed(1.0);
@@ -129,66 +120,47 @@ class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
   Widget build(BuildContext context) {
     final notifier = ref.read(playerStateProvider.notifier);
 
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.space): notifier.togglePlay,
-        const SingleActivator(LogicalKeyboardKey.keyK): notifier.togglePlay,
-        const SingleActivator(LogicalKeyboardKey.keyJ): () =>
-            notifier.rewind(10),
-        const SingleActivator(LogicalKeyboardKey.keyL): () =>
-            notifier.forward(10),
-        const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
-            notifier.rewind(10),
-        const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
-            notifier.forward(10),
-        const SingleActivator(LogicalKeyboardKey.keyM): notifier.toggleMute,
-      },
-      child: Focus(
-        focusNode: _focus,
-        autofocus: true,
-        child: GestureDetector(
-          onTap: _toggle,
-          onDoubleTapDown: _onDoubleTap,
-          onLongPressStart: _onLongPressStart,
-          onLongPressMoveUpdate: _onLongPressUpdate,
-          onLongPressEnd: _onLongPressEnd,
-          onLongPressUp: () {
-            if (_isSpeeding) _onLongPressEnd(const LongPressEndDetails());
-          },
-          behavior: HitTestBehavior.translucent,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              AnimatedOpacity(
-                opacity: _visible ? 1 : 0,
-                duration: const Duration(milliseconds: 300),
-                child: AbsorbPointer(
-                  absorbing: !_visible,
-                  child: _locked ? _lockBtn() : _controls(),
-                ),
-              ),
-              if (_seekAccum != 0)
-                Positioned.fill(
-                  child: Align(
-                    alignment: _seekAccum > 0
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: SeekIndicatorOverlay(
-                      isForward: _seekAccum > 0,
-                      seconds: _seekAccum.abs(),
-                    ),
-                  ),
-                ),
-              if (_isSpeeding) _buildSpeedScale(),
-              Positioned(
-                left: 8,
-                right: 8,
-                bottom: _visible ? 90 : 20,
-                child: const SubtitleOverlay(),
-              ),
-            ],
+    return PlayerGestureHandler(
+      onTap: _toggle,
+      onDoubleTap: _onDoubleTap,
+      onLongPressStart: _onLongPressStart,
+      onLongPressUpdate: _onLongPressUpdate,
+      onLongPressEnd: _onLongPressEnd,
+      onSpacePressed: notifier.togglePlay,
+      onLeftArrowPressed: () => notifier.rewind(10),
+      onRightArrowPressed: () => notifier.forward(10),
+      onMKeyPressed: notifier.toggleMute,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          AnimatedOpacity(
+            opacity: _visible ? 1 : 0,
+            duration: const Duration(milliseconds: 300),
+            child: AbsorbPointer(
+              absorbing: !_visible,
+              child: _locked ? _lockBtn() : _controls(),
+            ),
           ),
-        ),
+          if (_seekAccum != 0)
+            Positioned.fill(
+              child: Align(
+                alignment: _seekAccum > 0
+                    ? Alignment.centerRight
+                    : Alignment.centerLeft,
+                child: SeekIndicatorOverlay(
+                  isForward: _seekAccum > 0,
+                  seconds: _seekAccum.abs(),
+                ),
+              ),
+            ),
+          if (_isSpeeding) _buildSpeedScale(),
+          Positioned(
+            left: 8,
+            right: 8,
+            bottom: _visible ? 90 : 20,
+            child: const SubtitleOverlay(),
+          ),
+        ],
       ),
     );
   }
@@ -204,44 +176,15 @@ class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
   }
 
   Widget _controls() {
-    double? draggedSliderValue;
-    final notifier = ref.read(playerStateProvider.notifier);
-
-    return Stack(
-      children: [
-        Center(child: CenterControls(onInteraction: _restartHide)),
-        TopControls(
-          onInteraction: _restartHide,
-          onEpisodesPressed: widget.onEpisodesPressed,
-          onSettingsPressed: _openSettings,
-          onQualityPressed: _openQuality,
-        ),
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: BottomControls(
-            onInteraction: _restartHide,
-            onLockPressed: _toggleLock,
-            onEpisodePressed: widget.onEpisodesPressed,
-            onForwardPressed: () => notifier.forward(85),
-            onSourcePressed: _openSource,
-            onSubtitlePressed: _openSubtitle,
-            onServerPressed: _openServer,
-            onSliderChangeStart: (val) {
-              _hideTimer?.cancel();
-              setState(() => draggedSliderValue = val);
-            },
-            onSliderChanged: (val) => setState(() => draggedSliderValue = val),
-            onSliderChangeEnd: (val) {
-              notifier.seek(Duration(milliseconds: val.round()));
-              setState(() => draggedSliderValue = null);
-              _restartHide();
-            },
-            sliderValue: draggedSliderValue,
-          ),
-        ),
-      ],
+    return PlayerControls(
+      onInteraction: _restartHide,
+      onEpisodesPressed: widget.onEpisodesPressed,
+      onSettingsPressed: _openSettings,
+      onQualityPressed: _openQuality,
+      onLockPressed: _toggleLock,
+      onSourcePressed: _openSource,
+      onSubtitlePressed: _openSubtitle,
+      onServerPressed: _openServer,
     );
   }
 
@@ -316,20 +259,36 @@ class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
   }
 
   void _openSubtitle() {
-    final data = ref.read(episodeDataProvider);
-
     _sheet(
-      GenericSelectionSheet<Subtitle>(
-        title: 'Subtitle',
-        items: data.subtitles,
-        selectedIndex: data.selectedSubtitleIdx,
-        displayBuilder: (e) => e.lang ?? '',
-        onItemSelected: (i) {
-          ref.read(episodeDataProvider.notifier).changeSubtitle(i);
-          Navigator.pop(context);
-        },
+      SubtitleSelectionSheet(
+        onLocalFilePressed: _pickLocalSubtitle,
       ),
     );
+  }
+
+  Future<void> _pickLocalSubtitle() async {
+    final notifier = ref.read(episodeDataProvider.notifier);
+
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['srt', 'vtt', 'ass', 'ssa'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+
+        await notifier.addLocalSubtitle(file);
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Loaded: ${result.files.single.name}')),
+        );
+      }
+    } catch (e) {
+      AppLogger.e('Error picking file: $e');
+    }
   }
 
   Widget _buildSpeedScale() {

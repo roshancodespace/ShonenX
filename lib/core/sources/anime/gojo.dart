@@ -75,7 +75,10 @@ class GojoProvider implements AnimeProvider {
 
   @override
   Future<SearchPage> getSearch(String keyword, String? type, int page) async {
-    final res = await AnilistService(null).searchAnime(keyword, page: page);
+    final res = await AnilistService(
+      getAuthContext: () => null,
+      getAdultParam: () => false,
+    ).searchAnime(keyword, page: page);
     return SearchPage(results: res.map((a) => a.toBaseAnimeModel(a)).toList());
   }
 
@@ -159,7 +162,8 @@ class GojoProvider implements AnimeProvider {
   }
 
   @override
-  Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {;
+  Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {
+    ;
     if (metadata != null) {
       final res = (await http.get(
           Uri.parse(

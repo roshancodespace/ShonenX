@@ -661,7 +661,7 @@ class _HorizontalSection extends ConsumerWidget {
                       navigateToDetail(context, anime, anime.id.toString()),
                   anime: anime,
                   mode: mode,
-                  tag: 'explore_${anime.id}',
+                  tag: 'explore_${anime.id}_$title',
                 ),
               );
             },

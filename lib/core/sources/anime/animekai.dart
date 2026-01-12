@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/sources/anime/anime_provider.dart';
+import 'package:shonenx/core/utils/env_loader.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -14,7 +14,7 @@ class AnimekaiProvider extends AnimeProvider {
       : super(
             apiUrl: customApiUrl != null
                 ? '$customApiUrl/anime/animekai'
-                : "${dotenv.env['API_URL']}/anime/animekai",
+                : "${Env.get('API_URL')}/anime/animekai",
             baseUrl: 'https://animekai.to/',
             providerName: 'animekai');
 

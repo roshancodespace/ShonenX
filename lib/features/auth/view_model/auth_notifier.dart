@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shonenx/core/anilist/services/anilist_service.dart';
+import 'package:shonenx/core/anilist/services/anilist_service_provider.dart';
 import 'package:shonenx/core/anilist/services/auth_service.dart';
 import 'package:shonenx/core/myanimelist/services/auth_service.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';

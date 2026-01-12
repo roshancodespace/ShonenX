@@ -1,209 +1,328 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:http/http.dart' as http;
+
 import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/utils/extractors.dart' as extractor;
 
-// --- CONFIGURATION ---
-// ignore: prefer_const_declarations
-final String targetProvider = 'gojo';
-// ignore: prefer_const_declarations
-final String searchQuery = 'attack on titan';
-// ---------------------
+// ==========================================
+// 🔧 CONFIGURATION
+// ==========================================
+const debugConfig = DebugConfig(
+  provider: 'gojo',
+  searchQuery: 'attack on titan',
+  useCache: true,
+  resetCache: false,
+  manualServerIndex: 0,
+);
+// ==========================================
 
-void main() {
-  test('Manual Source Debugger', () async {
-    AppLogger.section('INITIALIZATION');
+/* ============================================================
+ * ENV LOADER (pure Dart, reads root .env as text)
+ * ============================================================ */
+class Env {
+  static final Map<String, String> _vars = {};
 
-    // 1. Load Environment Variables
-    try {
-      await dotenv.load(fileName: ".env");
-      AppLogger.success('Loaded .env file');
-    } catch (e) {
-      AppLogger.raw(
-          '${AppLogger.yellow}⚠ .env file not found or failed to load. (Expected if not using .env dependent providers)${AppLogger.reset}');
+  static Future<void> load([String path = '.env']) async {
+    final file = File(path);
+    if (!await file.exists()) return;
+
+    for (final line in await file.readAsLines()) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
+
+      final idx = trimmed.indexOf('=');
+      if (idx == -1) continue;
+
+      final key = trimmed.substring(0, idx).trim();
+      var value = trimmed.substring(idx + 1).trim();
+
+      if ((value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.substring(1, value.length - 1);
+      }
+
+      _vars[key] = value;
     }
+  }
 
-    // 2. Initialize Registry
-    final registry = AnimeSourceRegistry();
-    AppLogger.infoPair('Available Providers', registry.keys.join(', '));
-    AppLogger.infoPair('Target Provider', targetProvider);
+  static String? get(String key) => Platform.environment[key] ?? _vars[key];
+}
 
-    final provider = registry.get(targetProvider);
-    if (provider == null) {
-      AppLogger.fail('Provider "$targetProvider" not found in registry.');
-      return;
-    }
-    AppLogger.success('Provider loaded successfully: ${provider.providerName}');
-    AppLogger.infoPair('Base URL', provider.baseUrl);
+/* ============================================================
+ * DEBUG CONFIG / CONTEXT
+ * ============================================================ */
+class DebugConfig {
+  final String provider;
+  final String searchQuery;
+  final int manualServerIndex;
+  final bool useCache;
+  final bool resetCache;
+  final int maxResultsToPrint;
+  final bool verifyStreams;
+  final bool failFast;
+  final Duration requestTimeout;
+  final int retryAttempts;
+  final Duration retryDelay;
 
-    // 3. Search
-    AppLogger.section('STEP 1: SEARCH');
-    AppLogger.infoPair('Query', searchQuery);
-
-    try {
-      final searchResult = await provider.getSearch(searchQuery, null, 1);
-
-      if (searchResult.results.isEmpty) {
-        AppLogger.fail('No results found for query: "$searchQuery"');
-        return;
-      }
-
-      AppLogger.success('Found ${searchResult.results.length} results');
-
-      AppLogger.raw(
-          '\n${AppLogger.bold}${'INDEX'.padRight(6)} ${'ID'.padRight(20)} NAME${AppLogger.reset}');
-      AppLogger.raw('-' * 60);
-      for (var i = 0; i < searchResult.results.length.clamp(0, 5); i++) {
-        final item = searchResult.results[i];
-        AppLogger.raw(
-            '${(i + 1).toString().padRight(6)} ${item.id.toString().padRight(20)} ${item.name}');
-      }
-
-      final selectedAnime = searchResult.results.first;
-      AppLogger.raw(
-          '\n${AppLogger.green}➔ Selecting first result: ${selectedAnime.name} (ID: ${selectedAnime.id})${AppLogger.reset}');
-
-      // 4. Episodes
-      AppLogger.section('STEP 2: EPISODES');
-      final episodeResult = await provider.getEpisodes(selectedAnime.id!);
-
-      if (episodeResult.episodes == null || episodeResult.episodes!.isEmpty) {
-        AppLogger.fail('No episodes found for this anime.');
-        return;
-      }
-
-      final episodes = episodeResult.episodes!;
-      AppLogger.success('Found ${episodes.length} episodes');
-      AppLogger.infoPair('First Episode',
-          'Ep ${episodes.first.number} - ${episodes.first.title}');
-      AppLogger.infoPair('Last Episode',
-          'Ep ${episodes.last.number} - ${episodes.last.title}');
-
-      // Select first episode
-      final selectedEpisode = episodes.first;
-      AppLogger.raw(
-          '\n${AppLogger.green}➔ Selecting first episode: Ep ${selectedEpisode.number} (ID: ${selectedEpisode.id})${AppLogger.reset}');
-
-      // 5. Servers
-      AppLogger.section('STEP 3: SERVERS');
-      // Some providers might throw or return empty if they don't support explicit servers
-      BaseServerModel servers = BaseServerModel(dub: [], sub: []);
-
-      try {
-        servers = await provider.getSupportedServers(metadata: {
-          'id': selectedAnime.id,
-          'epNumber': selectedEpisode.number,
-          'epId': selectedEpisode.id,
-        });
-
-        final allServers = [...servers.dub, ...servers.sub];
-
-        AppLogger.infoPair(
-          'Supported Servers',
-          allServers.isEmpty
-              ? 'Default/None'
-              : allServers
-                  .map(
-                      (s) => '${s.id} (${s.name}) - ${s.isDub ? 'Dub' : 'Sub'}')
-                  .join(' | '),
-        );
-      } catch (e) {
-        AppLogger.raw(
-          '${AppLogger.yellow}⚠ Failed to fetch servers (might not be supported): $e${AppLogger.reset}',
-        );
-      }
-
-      String? selectedServer =
-          servers.flatten().isNotEmpty ? servers.flatten().first.id : null;
-
-      // 6. Sources
-      AppLogger.section('STEP 4: SOURCES');
-      AppLogger.infoPair('Fetching sources for',
-          '${selectedAnime.name} - Ep ${selectedEpisode.number}');
-
-      final sourcesResult = await provider.getSources(
-          selectedAnime.id!, selectedEpisode.id!, selectedServer, null);
-
-      if (sourcesResult.sources.isEmpty) {
-        AppLogger.fail('No stream sources found.');
-      } else {
-        AppLogger.success(
-            'Found ${sourcesResult.sources.length} sources and ${sourcesResult.tracks.length} subtitle tracks');
-
-        AppLogger.raw(
-            '\n${AppLogger.bold}--- VIDEO STREAMS ---${AppLogger.reset}');
-        for (var source in sourcesResult.sources) {
-          AppLogger.raw(
-              '${AppLogger.blue}[${source.quality}] ${AppLogger.reset}${source.url}');
-        }
-
-        if (sourcesResult.tracks.isNotEmpty) {
-          AppLogger.raw(
-              '\n${AppLogger.bold}--- SUBTITLES ---${AppLogger.reset}');
-          for (var track in sourcesResult.tracks) {
-            AppLogger.raw(
-                '${AppLogger.yellow}[${track.lang}] ${AppLogger.reset}${track.url}');
-          }
-        }
-
-        await extractor.extractQualities(sourcesResult.sources.first.url!,
-            sourcesResult.headers.cast<String, String>());
-
-        // 7. Verify Streams
-        AppLogger.section('STEP 5: VERIFYING STREAMS (HEALTH CHECK)');
-        AppLogger.infoPair('Testing connection to',
-            '${sourcesResult.sources.length} sources...');
-
-        for (var source in sourcesResult.sources) {
-          AppLogger.raw('\nTesting [${source.quality}]...');
-          try {
-            final uri = Uri.parse(source.url!);
-            final headers =
-                (sourcesResult.headers as Map?)?.cast<String, String>() ?? {};
-
-            // Simple GET request with range to avoid full download
-            // Some servers might not support HEAD or Range, but most video servers do.
-            final response = await http.get(uri, headers: {
-              ...headers,
-              'Range': 'bytes=0-1024', // Request first 1KB
-            }).timeout(const Duration(seconds: 20));
-
-            if (response.statusCode >= 200 && response.statusCode < 300) {
-              AppLogger.success('Connection OK (Sub-300)');
-              AppLogger.infoPair('Status Code', response.statusCode);
-              AppLogger.infoPair('Content-Type',
-                  '${response.headers['content-type'] ?? 'Unknown'}');
-              AppLogger.infoPair('Content-Length',
-                  '${response.headers['content-length'] ?? 'Unknown'}');
-
-              if (source.isM3U8) {
-                if (response.body.contains('#EXTM3U')) {
-                  AppLogger.success('Valid M3U8 Manifest header detected');
-                } else {
-                  AppLogger.raw(
-                      '${AppLogger.yellow}⚠ Warning: content-type suggests M3U8 but content does not start with #EXTM3U${AppLogger.reset}');
-                }
-              }
-            } else {
-              AppLogger.fail(
-                  'Connection Failed. Status: ${response.statusCode}');
-              AppLogger.raw(
-                  '${AppLogger.red}Response Body Preview: ${response.body.substring(0, response.body.length.clamp(0, 200))}${AppLogger.reset}');
-            }
-          } catch (e) {
-            AppLogger.fail('Connection Error: $e');
-          }
-        }
-      }
-    } catch (e, stack) {
-      AppLogger.section('EXCEPTION CAUGHT');
-      AppLogger.fail('An error occurred during execution:');
-      AppLogger.e(e, e, stack); // Use standard error logging for stack trace
-    }
-
-    AppLogger.section('FINISHED');
+  const DebugConfig({
+    required this.provider,
+    required this.searchQuery,
+    this.manualServerIndex = 0,
+    this.useCache = true,
+    this.resetCache = false,
+    this.maxResultsToPrint = 5,
+    this.verifyStreams = true,
+    this.failFast = true,
+    this.requestTimeout = const Duration(seconds: 20),
+    this.retryAttempts = 3,
+    this.retryDelay = const Duration(seconds: 2),
   });
+}
+
+class DebugContext {
+  late final dynamic provider;
+  dynamic searchResult;
+  dynamic episodeResult;
+  dynamic selectedAnime;
+  dynamic selectedEpisode;
+  BaseServerModel? servers;
+  dynamic sourcesResult;
+  dynamic selectedServer;
+}
+
+/* ============================================================
+ * CACHE
+ * ============================================================ */
+class CacheManager {
+  static final File _file = File('tool/.debug_cache');
+
+  static Future<Map<String, dynamic>?> load() async {
+    if (!debugConfig.useCache) return null;
+
+    if (debugConfig.resetCache) {
+      if (await _file.exists()) await _file.delete();
+      return null;
+    }
+
+    if (await _file.exists()) {
+      try {
+        final data = jsonDecode(await _file.readAsString());
+        if (data['provider'] == debugConfig.provider &&
+            data['query'] == debugConfig.searchQuery) {
+          return data;
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  static Future<void> save(
+    String animeId,
+    String animeName,
+    String epId,
+    String epNumber,
+  ) async {
+    if (!debugConfig.useCache) return;
+
+    await _file.writeAsString(jsonEncode({
+      'provider': debugConfig.provider,
+      'query': debugConfig.searchQuery,
+      'animeId': animeId,
+      'animeName': animeName,
+      'epId': epId,
+      'epNumber': epNumber,
+    }));
+  }
+}
+
+class CachedObj {
+  final String id;
+  final String name;
+  final dynamic number;
+  CachedObj(this.id, this.name, [this.number]);
+}
+
+/* ============================================================
+ * HELPERS
+ * ============================================================ */
+Future<void> runStep(
+  String title,
+  Future<void> Function() action, {
+  bool failFast = true,
+}) async {
+  final sw = Stopwatch()..start();
+  AppLogger.section(title);
+
+  try {
+    await action();
+    sw.stop();
+    AppLogger.success('$title ✓ (${sw.elapsedMilliseconds} ms)');
+  } catch (e, st) {
+    sw.stop();
+    AppLogger.fail('$title ✗ (${sw.elapsedMilliseconds} ms)');
+    AppLogger.e(e, e, st);
+    if (failFast) rethrow;
+  }
+}
+
+Future<T> retry<T>(
+  Future<T> Function() fn, {
+  int attempts = 3,
+  Duration delay = const Duration(seconds: 2),
+}) async {
+  for (var i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (_) {
+      if (i == attempts - 1) rethrow;
+      await Future.delayed(delay);
+    }
+  }
+  throw StateError('Unreachable');
+}
+
+/* ============================================================
+ * MAIN
+ * ============================================================ */
+Future<void> main() async {
+  HttpOverrides.global = null;
+
+  await Env.load('.env');
+
+  final ctx = DebugContext();
+  final cache = await CacheManager.load();
+
+  try {
+    await runStep('INITIALIZATION', () async {
+      final registry = AnimeSourceRegistry();
+      ctx.provider = registry.get(debugConfig.provider);
+
+      if (ctx.provider == null) {
+        throw StateError('Provider not found: ${debugConfig.provider}');
+      }
+
+      if (cache != null) {
+        AppLogger.success('⚡ CACHE LOADED');
+        AppLogger.infoPair('Anime', cache['animeName']);
+        AppLogger.infoPair('Episode', cache['epNumber']);
+      }
+    });
+
+    if (cache != null) {
+      ctx.selectedAnime = CachedObj(cache['animeId'], cache['animeName']);
+      ctx.selectedEpisode = CachedObj(cache['epId'], '', cache['epNumber']);
+    } else {
+      await runStep('SEARCH', () async {
+        ctx.searchResult = await retry(
+          () => ctx.provider.getSearch(
+            debugConfig.searchQuery,
+            null,
+            1,
+          ),
+          attempts: debugConfig.retryAttempts,
+        );
+
+        ctx.selectedAnime = ctx.searchResult.results.first;
+        AppLogger.success('Auto-selected: ${ctx.selectedAnime.name}');
+      });
+
+      await runStep('EPISODES', () async {
+        ctx.episodeResult = await retry(
+          () => ctx.provider.getEpisodes(ctx.selectedAnime.id),
+          attempts: debugConfig.retryAttempts,
+        );
+
+        ctx.selectedEpisode = ctx.episodeResult.episodes.first;
+        AppLogger.infoPair('Episode', ctx.selectedEpisode.number);
+
+        await CacheManager.save(
+          ctx.selectedAnime.id,
+          ctx.selectedAnime.name,
+          ctx.selectedEpisode.id,
+          ctx.selectedEpisode.number.toString(),
+        );
+      });
+    }
+
+    await runStep('SERVERS', () async {
+      ctx.servers = await retry(
+        () => ctx.provider.getSupportedServers(metadata: {
+          'id': ctx.selectedAnime.id,
+          'epId': ctx.selectedEpisode.id,
+          'epNumber': ctx.selectedEpisode.number,
+        }),
+      );
+
+      final servers = ctx.servers?.flatten() ?? [];
+
+      if (servers.isEmpty) {
+        AppLogger.raw('No servers found.');
+        return;
+      }
+
+      for (var i = 0; i < servers.length; i++) {
+        final s = servers[i];
+        AppLogger.raw(
+          '[$i] ${s.name} (${s.id}) ${s.isDub ? "[DUB]" : "[SUB]"}',
+        );
+      }
+
+      final index = debugConfig.manualServerIndex.clamp(0, servers.length - 1);
+      ctx.selectedServer = servers[index];
+
+      AppLogger.success('SELECTED SERVER: ${ctx.selectedServer.name}');
+    });
+
+    await runStep('SOURCES', () async {
+      ctx.sourcesResult = await retry(
+        () => ctx.provider.getSources(
+          ctx.selectedAnime.id,
+          ctx.selectedEpisode.id,
+          ctx.selectedServer?.id,
+          null,
+        ),
+      );
+
+      for (final s in ctx.sourcesResult.sources) {
+        AppLogger.raw('${s.quality.padRight(6)} | ${s.url}');
+      }
+
+      await extractor.extractQualities(
+        ctx.sourcesResult.sources.first.url,
+        ctx.sourcesResult.headers.cast<String, String>(),
+      );
+    });
+
+    if (debugConfig.verifyStreams) {
+      await runStep(
+        'STREAM HEALTH CHECK',
+        () async {
+          for (final source in ctx.sourcesResult.sources) {
+            AppLogger.raw('Testing [${source.quality}]...');
+            final res = await http.get(
+              Uri.parse(source.url),
+              headers: {
+                ...ctx.sourcesResult.headers.cast<String, String>(),
+                'Range': 'bytes=0-1024',
+              },
+            ).timeout(debugConfig.requestTimeout);
+
+            if (res.statusCode < 400) {
+              AppLogger.success('OK ${res.statusCode}');
+            } else {
+              AppLogger.fail('FAIL ${res.statusCode}');
+            }
+          }
+        },
+        failFast: false,
+      );
+    }
+  } catch (e, st) {
+    AppLogger.e('Fatal error', e, st);
+    exitCode = 1;
+  }
 }

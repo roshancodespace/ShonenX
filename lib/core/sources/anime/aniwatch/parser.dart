@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
 
-import 'package:flutter/cupertino.dart';
 import 'package:html/dom.dart' as dom;
 // Will change depecrated models to new models
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
@@ -11,13 +10,11 @@ import 'package:shonenx/core/models/anime/server_model.dart';
 
 SearchPage parseSearch(dom.Document document, String baseUrl,
     {required String keyword, required int page}) {
-  debugPrint("Searching for $keyword");
   return _parseSearchPage(document, baseUrl, page);
 }
 
 SearchPage parsePage(dom.Document document, String baseUrl,
     {required String route, required int page}) {
-  debugPrint("Searching for $route");
   return _parseSearchPage(document, baseUrl, page);
 }
 
@@ -64,7 +61,13 @@ BaseAnimeModel _parseAnime(dom.Element element, String baseUrl) {
 }
 
 String? _extractAnimeId(dom.Element element) {
-  return element.querySelector('a')?.attributes['href']?.split('/').last.split('?').first;
+  return element
+      .querySelector('a')
+      ?.attributes['href']
+      ?.split('/')
+      .last
+      .split('?')
+      .first;
 }
 
 List<BaseAnimeModel> parseTrending(dom.Document document, String baseUrl) {
@@ -174,10 +177,7 @@ BaseAnimeModel _parseFeaturedAnime(dom.Element anime, String baseUrl) {
 }
 
 void _logSectionsFound(List<String> sectionsFound) {
-  if (sectionsFound.isEmpty) {
-    debugPrint('❌ No sections found: ${sectionsFound.join(', ')}');
-  }
-  debugPrint('🔃 Sections found: ${sectionsFound.join(', ')}');
+  if (sectionsFound.isEmpty) {}
 }
 
 DetailPage parseDetail(dom.Document document, String baseUrl,

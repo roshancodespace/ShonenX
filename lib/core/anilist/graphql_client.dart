@@ -1,7 +1,6 @@
 import 'dart:io';
-
-import 'package:graphql_flutter/graphql_flutter.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:graphql/client.dart';
+import 'package:hive_ce/hive.dart';
 
 class AnilistClient {
   static GraphQLClient? _client;
@@ -9,32 +8,47 @@ class AnilistClient {
 
   static const _baseUrl = 'https://graphql.anilist.co';
 
-  static Future<GraphQLClient> getClient({String? accessToken}) async {
+  static bool get _isTestEnvironment =>
+      Platform.environment.containsKey('FLUTTER_TEST');
+
+  static Future<void> _initHive(String path) async {
+    final dir = Directory(path);
+    if (!dir.existsSync()) {
+      dir.createSync(recursive: true);
+    }
+    Hive.init(path);
+  }
+
+  static Future<GraphQLClient> getClient({
+    String? accessToken,
+    String? cachePath,
+  }) async {
     if (_client != null && _lastToken == accessToken) {
       return _client!;
     }
 
-    final appDocDir = await getApplicationDocumentsDirectory();
-    final hivePath =
-        '${appDocDir.path}${Platform.pathSeparator}ShonenX${Platform.pathSeparator}appdata';
-
-    final httpLink = HttpLink(_baseUrl);
-
-    final authLink = AuthLink(
-      getToken: () async =>
-          (accessToken == null || accessToken.isEmpty)
-              ? null
-              : 'Bearer $accessToken',
+    final httpLink = HttpLink(
+      _baseUrl,
+      defaultHeaders: {
+        if (accessToken != null && accessToken.isNotEmpty)
+          'Authorization': 'Bearer $accessToken',
+      },
     );
 
-    final link = authLink.concat(httpLink);
+    late final GraphQLCache cache;
 
-    final store = await HiveStore.open(path: hivePath);
+    if (_isTestEnvironment || cachePath == null) {
+      cache = GraphQLCache();
+    } else {
+      await _initHive(cachePath);
+      final store = await HiveStore.open(path: cachePath);
+      cache = GraphQLCache(store: store);
+    }
 
     _lastToken = accessToken;
     _client = GraphQLClient(
-      link: link,
-      cache: GraphQLCache(store: store),
+      link: httpLink,
+      cache: cache,
       queryRequestTimeout: const Duration(seconds: 15),
       defaultPolicies: DefaultPolicies(
         query: Policies(fetch: FetchPolicy.cacheFirst),
@@ -45,7 +59,7 @@ class AnilistClient {
     return _client!;
   }
 
-  static void clearCache() {
+  static Future<void> clearCache() async {
     _client?.cache.store.reset();
   }
 }

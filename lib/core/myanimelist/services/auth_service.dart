@@ -1,15 +1,15 @@
 import 'dart:convert';
 import 'dart:math';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:http/http.dart' as http;
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/core/utils/env_loader.dart';
 
 class MyAnimeListAuthService {
   // --- Configuration ---
-  static String get clientId => dotenv.env['MAL_CLIENT_ID'] ?? '';
-  static String get clientSecret => dotenv.env['MAL_CLIENT_SECRET'] ?? '';
+  static String get clientId => Env.get('MAL_CLIENT_ID') ?? '';
+  static String get clientSecret => Env.get('MAL_CLIENT_SECRET') ?? '';
 
   static const String _redirectUri = 'shonenx://callback';
   static const String _callbackScheme = 'shonenx';

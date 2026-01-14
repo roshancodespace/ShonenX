@@ -1,6 +1,7 @@
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
@@ -10,6 +11,9 @@ import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/main.dart';
 
+part 'episodes_tab_notifier.g.dart';
+
+@immutable
 class EpisodesTabState {
   final bool isSearchingMatch;
   final String? bestMatchName;
@@ -41,10 +45,12 @@ class EpisodesTabState {
   }) {
     return EpisodesTabState(
       isSearchingMatch: isSearchingMatch ?? this.isSearchingMatch,
-      bestMatchName:
-          setBestMatchNull ? null : (bestMatchName ?? this.bestMatchName),
-      animeIdForSource:
-          setBestMatchNull ? null : (animeIdForSource ?? this.animeIdForSource),
+      bestMatchName: setBestMatchNull
+          ? null
+          : (bestMatchName ?? this.bestMatchName),
+      animeIdForSource: setBestMatchNull
+          ? null
+          : (animeIdForSource ?? this.animeIdForSource),
       selectedRange: selectedRange ?? this.selectedRange,
       rangeOptions: rangeOptions ?? this.rangeOptions,
       isSortedDescending: isSortedDescending ?? this.isSortedDescending,
@@ -53,13 +59,12 @@ class EpisodesTabState {
   }
 }
 
-class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
-  final Ref ref;
-  final UniversalTitle mediaTitle;
-
-  EpisodesTabNotifier(this.ref, this.mediaTitle)
-      : super(const EpisodesTabState()) {
-    _fetchEpisodes();
+@riverpod
+class EpisodesTabNotifier extends _$EpisodesTabNotifier {
+  @override
+  EpisodesTabState build(UniversalTitle mediaTitle) {
+    Future.microtask(() => _fetchEpisodes());
+    return const EpisodesTabState();
   }
 
   Future<void> _fetchEpisodes({bool force = false}) async {
@@ -72,10 +77,12 @@ class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
     }
 
     AppLogger.d(
-        "Fetching episodes for: ${mediaTitle.english ?? mediaTitle.romaji}");
+      "Fetching episodes for: ${mediaTitle.english ?? mediaTitle.romaji}",
+    );
 
-    final useMangayomi =
-        ref.read(experimentalProvider.select((s) => s.useMangayomiExtensions));
+    final useMangayomi = ref.read(
+      experimentalProvider.select((s) => s.useMangayomiExtensions),
+    );
 
     if (force && state.animeIdForSource == null) {
       state = state.copyWith(setBestMatchNull: true);
@@ -85,10 +92,7 @@ class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
       if (state.animeIdForSource == null) {
         state = state.copyWith(isSearchingMatch: true);
 
-        final titles = [
-          mediaTitle.english,
-          mediaTitle.romaji,
-        ]
+        final titles = [mediaTitle.english, mediaTitle.romaji]
             .where((t) => t != null && t.trim().isNotEmpty)
             .cast<String>()
             .toList();
@@ -100,7 +104,6 @@ class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
         String? usedTitle;
 
         for (final title in titles) {
-          // Mangayomi Extensions
           if (useMangayomi) {
             final res = await ref
                 .read(sourceProvider.notifier)
@@ -109,11 +112,7 @@ class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
                 .where((r) => r.name != null && r.link != null)
                 .map((r) => {"id": r.link!, "name": r.name!})
                 .toList();
-          }
-          if (!mounted)
-            return;
-          // Legacy Source
-          else {
+          } else {
             final provider = ref.read(selectedAnimeProvider);
             if (provider == null) continue;
 
@@ -123,7 +122,6 @@ class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
                 .map((r) => {"id": r.id!, "name": r.name!})
                 .toList();
           }
-          if (!mounted) return;
 
           if (candidates.isEmpty) continue;
 
@@ -142,8 +140,11 @@ class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
         }
 
         if (best == null) {
-          _fail('Anime Match', 'No suitable match found for any title.',
-              ContentType.failure);
+          _fail(
+            'Anime Match',
+            'No suitable match found for any title.',
+            ContentType.failure,
+          );
           return;
         }
 
@@ -153,32 +154,35 @@ class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
         );
 
         AppLogger.d(
-            'High-confidence match found: ${best["name"]} (via "$usedTitle")');
+          'High-confidence match found: ${best["name"]} (via "$usedTitle")',
+        );
       }
 
       state = state.copyWith(isSearchingMatch: false);
 
       if (state.bestMatchName == null || state.animeIdForSource == null) {
-        _fail('Anime Match', 'No suitable match found for any title.',
-            ContentType.failure);
+        _fail(
+          'Anime Match',
+          'No suitable match found for any title.',
+          ContentType.failure,
+        );
         return;
       }
 
-      await ref.read(episodeListProvider.notifier).fetchEpisodes(
+      await ref
+          .read(episodeListProvider.notifier)
+          .fetchEpisodes(
             animeTitle: state.bestMatchName!,
             animeId: state.animeIdForSource,
             force: force,
           );
 
-      if (!mounted) return;
-
       _updateRanges();
     } catch (err, stack) {
       AppLogger.e(err, stack);
-      if (!mounted) return;
       state = state.copyWith(isSearchingMatch: false, error: err.toString());
     } finally {
-      if (mounted && state.isSearchingMatch) {
+      if (state.isSearchingMatch) {
         state = state.copyWith(isSearchingMatch: false);
       }
     }
@@ -196,15 +200,11 @@ class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
       isSortedDescending: false,
       error: null,
     );
-
     await _fetchEpisodes(force: true);
   }
 
   void setManualMatch(String id, String name) {
-    state = state.copyWith(
-      animeIdForSource: id,
-      bestMatchName: name,
-    );
+    state = state.copyWith(animeIdForSource: id, bestMatchName: name);
     _fetchEpisodes(force: true);
   }
 
@@ -231,9 +231,3 @@ class EpisodesTabNotifier extends StateNotifier<EpisodesTabState> {
     }
   }
 }
-
-final episodesTabNotifierProvider = StateNotifierProvider.autoDispose
-    .family<EpisodesTabNotifier, EpisodesTabState, UniversalTitle>(
-        (ref, title) {
-  return EpisodesTabNotifier(ref, title);
-});

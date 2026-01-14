@@ -8,7 +8,7 @@ part of 'content_settings_model.dart';
 
 class ContentSettingsModelAdapter extends TypeAdapter<ContentSettingsModel> {
   @override
-  final int typeId = 15;
+  final typeId = 15;
 
   @override
   ContentSettingsModel read(BinaryReader reader) {

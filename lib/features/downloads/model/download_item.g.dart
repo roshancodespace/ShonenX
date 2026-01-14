@@ -8,7 +8,7 @@ part of 'download_item.dart';
 
 class DownloadItemAdapter extends TypeAdapter<DownloadItem> {
   @override
-  final int typeId = 12;
+  final typeId = 12;
 
   @override
   DownloadItem read(BinaryReader reader) {
@@ -17,25 +17,25 @@ class DownloadItemAdapter extends TypeAdapter<DownloadItem> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return DownloadItem(
-      quality: fields[8] as String,
+      quality: fields[8] == null ? 'Default' : fields[8] as String,
       downloadUrl: fields[7] as String,
       animeTitle: fields[0] as String,
       episodeTitle: fields[1] as String,
-      episodeNumber: fields[2] as int,
+      episodeNumber: (fields[2] as num).toInt(),
       thumbnail: fields[3] as String,
-      size: fields[4] as int?,
+      size: (fields[4] as num?)?.toInt(),
       state: fields[5] as DownloadStatus,
-      progress: fields[6] as int,
+      progress: (fields[6] as num).toInt(),
       filePath: fields[9] as String,
       headers: fields[10] == null
           ? {
               'User-Agent':
                   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             }
-          : fields[10] as Map<dynamic, dynamic>,
+          : (fields[10] as Map).cast<dynamic, dynamic>(),
       contentType: fields[11] as String?,
-      subtitles: fields[12] as List<dynamic>?,
-      totalSegments: fields[13] as int?,
+      subtitles: (fields[12] as List?)?.cast<dynamic>(),
+      totalSegments: (fields[13] as num?)?.toInt(),
     );
   }
 

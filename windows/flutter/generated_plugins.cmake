@@ -9,7 +9,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_inappwebview_windows
   flutter_qjs
   flutter_secure_storage_windows
-  isar_flutter_libs
+  isar_community_flutter_libs
   media_kit_libs_windows_video
   media_kit_video
   permission_handler_windows

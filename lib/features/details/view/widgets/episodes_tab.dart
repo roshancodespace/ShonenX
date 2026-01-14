@@ -51,7 +51,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     super.build(context);
 
     // Watch State
-    final notifierProvider = episodesTabNotifierProvider(widget.mediaTitle);
+    final notifierProvider = episodesTabProvider(widget.mediaTitle);
     final notifier = ref.read(notifierProvider.notifier);
     final state = ref.watch(notifierProvider);
     final uiSettings = ref.watch(uiSettingsProvider);
@@ -78,8 +78,9 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
         final start = int.tryParse(parts[0]) ?? 1;
         final end = int.tryParse(parts[1]) ?? episodes.length;
         visibleEpisodes = episodes.sublist(
-            (start - 1).clamp(0, episodes.length),
-            end.clamp(0, episodes.length));
+          (start - 1).clamp(0, episodes.length),
+          end.clamp(0, episodes.length),
+        );
       }
     }
     if (state.isSortedDescending) {
@@ -127,15 +128,19 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                     ),
                   ),
                   IconButton(
-                    icon:
-                        Icon(Icons.swap_horiz_rounded, color: theme.hintColor),
+                    icon: Icon(
+                      Icons.swap_horiz_rounded,
+                      color: theme.hintColor,
+                    ),
                     tooltip: 'Change Source',
                     onPressed: () =>
                         _showSourceSelectionDialog(context, ref, notifier),
                   ),
                   IconButton(
-                    icon: Icon(Icons.help_outline_rounded,
-                        color: theme.hintColor),
+                    icon: Icon(
+                      Icons.help_outline_rounded,
+                      color: theme.hintColor,
+                    ),
                     tooltip: 'Wrong match?',
                     onPressed: () => _handleWrongMatch(context, ref, notifier),
                   ),
@@ -231,8 +236,11 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                               onSelected: (mode) {
                                 ref
                                     .read(uiSettingsProvider.notifier)
-                                    .updateSettings((s) =>
-                                        s.copyWith(episodeViewMode: mode.name));
+                                    .updateSettings(
+                                      (s) => s.copyWith(
+                                        episodeViewMode: mode.name,
+                                      ),
+                                    );
                               },
                               itemBuilder: (context) => [
                                 const PopupMenuItem(
@@ -278,9 +286,11 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                               ],
                             ),
                             IconButton(
-                              icon: Icon(state.isSortedDescending
-                                  ? Icons.arrow_downward_rounded
-                                  : Icons.arrow_upward_rounded),
+                              icon: Icon(
+                                state.isSortedDescending
+                                    ? Icons.arrow_downward_rounded
+                                    : Icons.arrow_upward_rounded,
+                              ),
                               tooltip: state.isSortedDescending
                                   ? 'Sort Ascending'
                                   : 'Sort Descending',
@@ -298,8 +308,9 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                           itemBuilder: (context, index) {
                             final range = state.rangeOptions[index];
                             return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4.0),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4.0,
+                              ),
                               child: ChoiceChip(
                                 label: Text(range),
                                 selected: state.selectedRange == range,
@@ -353,15 +364,19 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     // Shared Data Fetcher for individual items
     Widget buildItem(BuildContext context, int index) {
       final ep = visibleEpisodes[index];
-      final progress = ref.watch(watchProgressRepositoryProvider
-          .select((w) => w.getProgress(widget.mediaId)));
+      final progress = ref.watch(
+        watchProgressRepositoryProvider.select(
+          (w) => w.getProgress(widget.mediaId),
+        ),
+      );
 
       final epProgress = progress?.episodesProgress[ep.number ?? -1];
       final isWatched = epProgress?.isCompleted ?? false;
       final duration = epProgress?.durationInSeconds ?? 0;
       final progressSec = epProgress?.progressInSeconds ?? 0;
-      final watchProgress =
-          (duration > 0) ? (progressSec / duration).clamp(0.0, 1.0) : 0.0;
+      final watchProgress = (duration > 0)
+          ? (progressSec / duration).clamp(0.0, 1.0)
+          : 0.0;
 
       final downloadState = ref.watch(downloadsProvider);
       final download = downloadState.downloads.firstWhereOrNull(
@@ -408,7 +423,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
             onLongPress: () => _showEpisodeMenu(context, ep, isWatched),
           );
         case EpisodeViewMode.list:
-        return EpisodeListItem(
+          return EpisodeListItem(
             episode: ep,
             index: index,
             isWatched: isWatched,
@@ -478,12 +493,16 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     }
   }
 
-  void _navigateToWatch(EpisodeDataModel ep, List<EpisodeDataModel> episodes,
-      String animeIdForSource) {
+  void _navigateToWatch(
+    EpisodeDataModel ep,
+    List<EpisodeDataModel> episodes,
+    String animeIdForSource,
+  ) {
     navigateToWatch(
       mediaId: widget.mediaId,
       animeId: animeIdForSource,
-      animeName: (widget.mediaTitle.english ??
+      animeName:
+          (widget.mediaTitle.english ??
           widget.mediaTitle.romaji ??
           widget.mediaTitle.native)!,
       animeFormat: widget.mediaFormat,
@@ -498,7 +517,10 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
   // ... (Existing _showSourceSelectionDialog, _buildMangayomiSourceList, _buildLegacySourceList, _handleWrongMatch, _showEpisodeMenu, _buildFallbackContainer, _buildFallbackIcon methods remain unchanged)
 
   void _showSourceSelectionDialog(
-      BuildContext context, WidgetRef ref, EpisodesTabNotifier notifier) {
+    BuildContext context,
+    WidgetRef ref,
+    EpisodesTabNotifier notifier,
+  ) {
     final theme = Theme.of(context);
 
     showModalBottomSheet(
@@ -517,8 +539,9 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
           builder: (context, scrollController) {
             return Consumer(
               builder: (context, ref, _) {
-                final useMangayomi =
-                    ref.watch(experimentalProvider).useMangayomiExtensions;
+                final useMangayomi = ref
+                    .watch(experimentalProvider)
+                    .useMangayomiExtensions;
                 return Column(
                   children: [
                     Padding(
@@ -538,15 +561,18 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: Text(
                         'Select Source',
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     SwitchListTile(
                       title: const Text('Use Mangayomi Extensions'),
                       value: useMangayomi,
                       onChanged: (value) {
-                        ref.read(experimentalProvider.notifier).updateSettings(
+                        ref
+                            .read(experimentalProvider.notifier)
+                            .updateSettings(
                               (state) =>
                                   state.copyWith(useMangayomiExtensions: value),
                             );
@@ -556,9 +582,15 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                     Expanded(
                       child: useMangayomi
                           ? _buildMangayomiSourceList(
-                              ref, scrollController, notifier)
+                              ref,
+                              scrollController,
+                              notifier,
+                            )
                           : _buildLegacySourceList(
-                              ref, scrollController, notifier),
+                              ref,
+                              scrollController,
+                              notifier,
+                            ),
                     ),
                   ],
                 );
@@ -570,8 +602,11 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     );
   }
 
-  Widget _buildMangayomiSourceList(WidgetRef ref,
-      ScrollController scrollController, EpisodesTabNotifier notifier) {
+  Widget _buildMangayomiSourceList(
+    WidgetRef ref,
+    ScrollController scrollController,
+    EpisodesTabNotifier notifier,
+  ) {
     final sourceState = ref.watch(sourceProvider);
     final sources = sourceState.installedAnimeExtensions;
     final activeId = sourceState.activeAnimeSource?.id;
@@ -590,8 +625,10 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
           title: Text(source.name ?? 'Unknown'),
           subtitle: Text(source.lang ?? ''),
           trailing: isSelected
-              ? Icon(Icons.check_circle,
-                  color: Theme.of(context).colorScheme.primary)
+              ? Icon(
+                  Icons.check_circle,
+                  color: Theme.of(context).colorScheme.primary,
+                )
               : null,
           onTap: () {
             ref.read(sourceProvider.notifier).setActiveSource(source);
@@ -603,8 +640,11 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     );
   }
 
-  Widget _buildLegacySourceList(WidgetRef ref,
-      ScrollController scrollController, EpisodesTabNotifier notifier) {
+  Widget _buildLegacySourceList(
+    WidgetRef ref,
+    ScrollController scrollController,
+    EpisodesTabNotifier notifier,
+  ) {
     final registry = ref.read(animeSourceRegistryProvider);
     final selectedAnimeSource = ref.watch(selectedAnimeProvider);
     final sources = registry.keys;
@@ -623,8 +663,10 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
         return ListTile(
           title: Text(source),
           trailing: isSelected
-              ? Icon(Icons.check_circle,
-                  color: Theme.of(context).colorScheme.primary)
+              ? Icon(
+                  Icons.check_circle,
+                  color: Theme.of(context).colorScheme.primary,
+                )
               : null,
           onTap: () {
             ref.read(selectedProviderKeyProvider.notifier).select(source);
@@ -637,11 +679,14 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
   }
 
   Future<void> _handleWrongMatch(
-      BuildContext context, WidgetRef ref, EpisodesTabNotifier notifier) async {
-    final currentState =
-        ref.read(episodesTabNotifierProvider(widget.mediaTitle));
+    BuildContext context,
+    WidgetRef ref,
+    EpisodesTabNotifier notifier,
+  ) async {
+    final currentState = ref.read(episodesTabProvider(widget.mediaTitle));
     AppLogger.i(
-        'User reported a wrong match. Best match was: ${currentState.bestMatchName}');
+      'User reported a wrong match. Best match was: ${currentState.bestMatchName}',
+    );
 
     final anime = await providerAnimeMatchSearch(
       withAnimeMatch: false,
@@ -668,7 +713,10 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
   }
 
   void _showEpisodeMenu(
-      BuildContext context, EpisodeDataModel episode, bool isWatched) {
+    BuildContext context,
+    EpisodeDataModel episode,
+    bool isWatched,
+  ) {
     final repo = ref.read(watchProgressRepositoryProvider);
     showModalBottomSheet(
       context: context,
@@ -700,22 +748,28 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                   ),
                 const Divider(height: 24),
                 ListTile(
-                  leading: Icon(isWatched
-                      ? Icons.remove_red_eye_outlined
-                      : Icons.check_circle_outline_rounded),
-                  title:
-                      Text(isWatched ? 'Mark as Unwatched' : 'Mark as Watched'),
+                  leading: Icon(
+                    isWatched
+                        ? Icons.remove_red_eye_outlined
+                        : Icons.check_circle_outline_rounded,
+                  ),
+                  title: Text(
+                    isWatched ? 'Mark as Unwatched' : 'Mark as Watched',
+                  ),
                   onTap: () {
                     repo.updateEpisodeProgress(
-                        widget.mediaId,
-                        EpisodeProgress(
-                            episodeNumber: episode.number!,
-                            episodeTitle:
-                                episode.title ?? 'Episode ${episode.number}',
-                            episodeThumbnail: episode.thumbnail,
-                            isCompleted: !isWatched));
+                      widget.mediaId,
+                      EpisodeProgress(
+                        episodeNumber: episode.number!,
+                        episodeTitle:
+                            episode.title ?? 'Episode ${episode.number}',
+                        episodeThumbnail: episode.thumbnail,
+                        isCompleted: !isWatched,
+                      ),
+                    );
                     AppLogger.i(
-                        'Tapped Mark as Watched for Ep: ${episode.number}');
+                      'Tapped Mark as Watched for Ep: ${episode.number}',
+                    );
                     setState(() {});
                     Navigator.pop(sheetContext);
                   },
@@ -757,7 +811,10 @@ class _SliverToolbarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return SizedBox.expand(child: child);
   }
 

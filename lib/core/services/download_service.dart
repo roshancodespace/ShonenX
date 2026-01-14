@@ -25,7 +25,7 @@ class DownloadService {
 
   DownloadSettingsModel get _settings => ref.read(downloadSettingsProvider);
 
-  DownloadNotifier get _notifier => ref.read(downloadsProvider.notifier);
+  DownloadsNotifier get _notifier => ref.read(downloadsProvider.notifier);
 
   Future<void> startDownload(DownloadItem item) async {
     // Ensure storage permissions
@@ -54,8 +54,9 @@ class DownloadService {
       _cancelTokens.remove(item.filePath);
     } catch (e) {
       if (token.isCancelled) {
-        _notifier
-            .updateDownloadState(item.copyWith(state: DownloadStatus.paused));
+        _notifier.updateDownloadState(
+          item.copyWith(state: DownloadStatus.paused),
+        );
       } else {
         _fail(item, e.toString());
       }
@@ -64,8 +65,10 @@ class DownloadService {
 
   Future<DownloadItem> _resolveType(DownloadItem item) async {
     try {
-      final res = await http.head(Uri.parse(item.downloadUrl),
-          headers: item.headers.cast<String, String>());
+      final res = await http.head(
+        Uri.parse(item.downloadUrl),
+        headers: item.headers.cast<String, String>(),
+      );
 
       var contentType = res.headers['content-type'];
 
@@ -125,18 +128,21 @@ class DownloadService {
         isResume = false;
         total = int.tryParse(res.headers['content-length'] ?? '') ?? 0;
       } else if (total == 0) {
-        total = (int.tryParse(res.headers['content-length'] ?? '') ?? 0) +
+        total =
+            (int.tryParse(res.headers['content-length'] ?? '') ?? 0) +
             existingSize;
       }
 
       var current = isResume ? existingSize : 0;
-      final sink =
-          file.openWrite(mode: isResume ? FileMode.append : FileMode.write);
+      final sink = file.openWrite(
+        mode: isResume ? FileMode.append : FileMode.write,
+      );
 
       var downloadingItem = item.copyWith(
-          state: DownloadStatus.downloading,
-          size: total > 0 ? total : null,
-          totalSegments: null);
+        state: DownloadStatus.downloading,
+        size: total > 0 ? total : null,
+        totalSegments: null,
+      );
 
       _notifier.updateDownloadState(downloadingItem);
 
@@ -164,7 +170,8 @@ class DownloadService {
 
       if (!token.isCancelled)
         _notifier.updateDownloadState(
-            downloadingItem.copyWith(state: DownloadStatus.downloaded));
+          downloadingItem.copyWith(state: DownloadStatus.downloaded),
+        );
     } catch (e) {
       // If cancelled, likely ClientException or explicit Cancelled.
       if (!token.isCancelled) rethrow;
@@ -174,13 +181,17 @@ class DownloadService {
     }
   }
 
-  Future<http.Response> _getWithRetry(Uri uri, Map<String, String> headers,
-      {http.Client? client}) async {
+  Future<http.Response> _getWithRetry(
+    Uri uri,
+    Map<String, String> headers, {
+    http.Client? client,
+  }) async {
     int retries = 0;
     while (retries < 5) {
       try {
-        final res = await (client?.get(uri, headers: headers) ??
-            http.get(uri, headers: headers));
+        final res =
+            await (client?.get(uri, headers: headers) ??
+                http.get(uri, headers: headers));
         if (res.statusCode == 200 || res.statusCode == 206) return res;
         throw HttpException('HTTP ${res.statusCode}');
       } catch (e) {
@@ -193,8 +204,12 @@ class DownloadService {
   }
 
   Future<void> _downloadM3U8(DownloadItem item, SimpleCancelToken token) async {
-    final tempDir = Directory(p.join(p.dirname(item.filePath),
-        '.temp_${p.basename(item.filePath).hashCode}'));
+    final tempDir = Directory(
+      p.join(
+        p.dirname(item.filePath),
+        '.temp_${p.basename(item.filePath).hashCode}',
+      ),
+    );
     await tempDir.create(recursive: true);
 
     // 1. Fetch & Parse Playlist (Recursive)
@@ -202,7 +217,9 @@ class DownloadService {
     List<_Segment> segments;
     try {
       segments = await _parsePlaylist(
-          item.downloadUrl, item.headers.cast<String, String>());
+        item.downloadUrl,
+        item.headers.cast<String, String>(),
+      );
     } catch (e) {
       return _fail(item, 'Playlist processing failed: $e');
     }
@@ -211,16 +228,18 @@ class DownloadService {
 
     if (segments.length > 5000) {
       AppLogger.w(
-          'Unusually high segment count: ${segments.length} for ${item.episodeTitle}');
+        'Unusually high segment count: ${segments.length} for ${item.episodeTitle}',
+      );
     }
 
     AppLogger.infoPair('Segments', segments.length);
     // Use a local variable to track state updates to avoid capturing stale 'item'
     var downloadingItem = item.copyWith(
-        state: DownloadStatus.downloading,
-        totalSegments: segments.length,
-        size: null,
-        progress: 0);
+      state: DownloadStatus.downloading,
+      totalSegments: segments.length,
+      size: null,
+      progress: 0,
+    );
     _notifier.updateDownloadState(downloadingItem);
 
     // 3. Download Segments
@@ -242,52 +261,61 @@ class DownloadService {
       for (var i = 0; i < segments.length; i += batchSize) {
         if (token.isCancelled) return;
 
-        final end =
-            (i + batchSize < segments.length) ? i + batchSize : segments.length;
+        final end = (i + batchSize < segments.length)
+            ? i + batchSize
+            : segments.length;
         final batch = segments.sublist(i, end);
 
         try {
-          await Future.wait(batch.map((seg) async {
-            if (token.isCancelled) return;
-            final file = File(p.join(tempDir.path, '${seg.index}.ts'));
-            if (await file.exists()) return;
-
-            try {
-              final res = await _getWithRetry(
-                  Uri.parse(seg.url), item.headers.cast<String, String>(),
-                  client: client); // Use the cancellable client
-
-              var bytes = res.bodyBytes;
-              if (bytes.isEmpty) {
-                AppLogger.w('Segment ${seg.index} returned 0 bytes');
-              } else if (seg.index < 5 || seg.index % 100 == 0) {
-                // Sample log for size
-                AppLogger.d('Segment ${seg.index} size: ${bytes.length} bytes');
-              }
-
-              if (seg.key != null) {
-                bytes = _decrypt(bytes, seg.key!, seg.iv, seg.index);
-              }
-              await file.writeAsBytes(bytes);
-
+          await Future.wait(
+            batch.map((seg) async {
               if (token.isCancelled) return;
+              final file = File(p.join(tempDir.path, '${seg.index}.ts'));
+              if (await file.exists()) return;
 
-              completed++;
-              if (completed % 10 == 0) {
-                downloadingItem = downloadingItem.copyWith(progress: completed);
-                _notifier.updateDownloadState(downloadingItem);
+              try {
+                final res = await _getWithRetry(
+                  Uri.parse(seg.url),
+                  item.headers.cast<String, String>(),
+                  client: client,
+                ); // Use the cancellable client
+
+                var bytes = res.bodyBytes;
+                if (bytes.isEmpty) {
+                  AppLogger.w('Segment ${seg.index} returned 0 bytes');
+                } else if (seg.index < 5 || seg.index % 100 == 0) {
+                  // Sample log for size
+                  AppLogger.d(
+                    'Segment ${seg.index} size: ${bytes.length} bytes',
+                  );
+                }
+
+                if (seg.key != null) {
+                  bytes = _decrypt(bytes, seg.key!, seg.iv, seg.index);
+                }
+                await file.writeAsBytes(bytes);
+
+                if (token.isCancelled) return;
+
+                completed++;
+                if (completed % 10 == 0) {
+                  downloadingItem = downloadingItem.copyWith(
+                    progress: completed,
+                  );
+                  _notifier.updateDownloadState(downloadingItem);
+                }
+              } catch (e) {
+                if (token.isCancelled) {
+                  // Cancellation can cause client closed exception, which is expected
+                  return;
+                }
+                if (!token.isCancelled) {
+                  _fail(downloadingItem, 'Segment ${seg.index} failed: $e');
+                  pauseDownload(downloadingItem);
+                }
               }
-            } catch (e) {
-              if (token.isCancelled) {
-                // Cancellation can cause client closed exception, which is expected
-                return;
-              }
-              if (!token.isCancelled) {
-                _fail(downloadingItem, 'Segment ${seg.index} failed: $e');
-                pauseDownload(downloadingItem);
-              }
-            }
-          }));
+            }),
+          );
         } catch (e) {
           // Futures might throw if client closed
           if (token.isCancelled) return;
@@ -296,7 +324,8 @@ class DownloadService {
 
         if (_settings.speedLimitKBps > 0)
           await Future.delayed(
-              Duration(milliseconds: 1000 ~/ _settings.speedLimitKBps));
+            Duration(milliseconds: 1000 ~/ _settings.speedLimitKBps),
+          );
       }
     } finally {
       client.close();
@@ -321,12 +350,16 @@ class DownloadService {
     await tempDir.delete(recursive: true);
 
     AppLogger.success(
-        'Download Complete: ${item.episodeTitle} (Size: $totalSize)');
-    _notifier.updateDownloadState(downloadingItem.copyWith(
+      'Download Complete: ${item.episodeTitle} (Size: $totalSize)',
+    );
+    _notifier.updateDownloadState(
+      downloadingItem.copyWith(
         state: DownloadStatus.downloaded,
         progress: totalSize,
         size: totalSize,
-        totalSegments: null));
+        totalSegments: null,
+      ),
+    );
   }
 
   Uint8List _decrypt(Uint8List bytes, Uint8List key, Uint8List? iv, int seq) {
@@ -334,7 +367,8 @@ class DownloadService {
     final effectiveIV = iv ?? _seqToIV(seq);
     final encrypter = Encrypter(AES(Key(key), mode: AESMode.cbc));
     return Uint8List.fromList(
-        encrypter.decryptBytes(Encrypted(bytes), iv: IV(effectiveIV)));
+      encrypter.decryptBytes(Encrypted(bytes), iv: IV(effectiveIV)),
+    );
   }
 
   Uint8List _seqToIV(int seq) {
@@ -409,7 +443,9 @@ class DownloadService {
   }
 
   Future<List<_Segment>> _parsePlaylist(
-      String url, Map<String, String> headers) async {
+    String url,
+    Map<String, String> headers,
+  ) async {
     final res = await _getWithRetry(Uri.parse(url), headers);
     final lines = LineSplitter.split(res.body).toList();
     final segments = <_Segment>[];
@@ -428,8 +464,9 @@ class DownloadService {
         if (line.startsWith('#EXT-X-STREAM-INF')) {
           // Parse Bandwidth
           final bandwidthMatch = RegExp(r'BANDWIDTH=(\d+)').firstMatch(line);
-          final bandwidth =
-              bandwidthMatch != null ? int.parse(bandwidthMatch.group(1)!) : 0;
+          final bandwidth = bandwidthMatch != null
+              ? int.parse(bandwidthMatch.group(1)!)
+              : 0;
 
           // Resolution check if needed, but bandwidth is usually good proxy
 
@@ -448,7 +485,8 @@ class DownloadService {
 
       if (bestVariantUrl != null) {
         AppLogger.i(
-            'Selected Best Variant: $bestVariantUrl (Bandwidth: $maxBandwidth)');
+          'Selected Best Variant: $bestVariantUrl (Bandwidth: $maxBandwidth)',
+        );
         return _parsePlaylist(bestVariantUrl, headers);
       }
 
@@ -468,8 +506,9 @@ class DownloadService {
       if (trimmed.startsWith('#')) {
         if (trimmed.startsWith('#EXT-X-KEY')) {
           final keyUri = RegExp(r'URI="([^"]+)"').firstMatch(trimmed)?.group(1);
-          final ivHex =
-              RegExp(r'IV=0x([0-9A-Fa-f]+)').firstMatch(trimmed)?.group(1);
+          final ivHex = RegExp(
+            r'IV=0x([0-9A-Fa-f]+)',
+          ).firstMatch(trimmed)?.group(1);
 
           if (keyUri != null) {
             final absKeyUrl = baseUri.resolve(keyUri).toString();
@@ -477,8 +516,10 @@ class DownloadService {
               currentKeyUrl = absKeyUrl;
               AppLogger.d('Fetching Key: $absKeyUrl');
               try {
-                final keyRes =
-                    await _getWithRetry(Uri.parse(absKeyUrl), headers);
+                final keyRes = await _getWithRetry(
+                  Uri.parse(absKeyUrl),
+                  headers,
+                );
                 currentKey = keyRes.bodyBytes;
               } catch (e) {
                 AppLogger.d("Failed to fetch key $absKeyUrl: $e");
@@ -493,12 +534,15 @@ class DownloadService {
         final absoluteUrl = baseUri.resolve(trimmed).toString();
         if (trimmed.toLowerCase().contains('.m3u8')) {
           AppLogger.d(
-              "Found nested playlist in Media Playlist context? $absoluteUrl");
+            "Found nested playlist in Media Playlist context? $absoluteUrl",
+          );
           segments.add(
-              _Segment(absoluteUrl, currentKey, currentIV, segments.length));
+            _Segment(absoluteUrl, currentKey, currentIV, segments.length),
+          );
         } else {
           segments.add(
-              _Segment(absoluteUrl, currentKey, currentIV, segments.length));
+            _Segment(absoluteUrl, currentKey, currentIV, segments.length),
+          );
         }
       }
     }

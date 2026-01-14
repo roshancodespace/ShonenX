@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:shonenx/core_new/eval/model/source_preference.dart';
 import 'package:shonenx/core_new/models/source.dart';
 import 'package:shonenx/main.dart';
@@ -44,8 +44,9 @@ SourcePreference getSourcePreferenceEntry(String key, int sourceId) {
   if (sourcePreference == null) {
     final source = isar.sources.getSync(sourceId)!;
     sourcePreference = getSourcePreference(source: source).firstWhere(
-        (element) => element.key == key,
-        orElse: () => throw "Error when getting source preference");
+      (element) => element.key == key,
+      orElse: () => throw "Error when getting source preference",
+    );
     setPreferenceSetting(sourcePreference, source);
   }
 
@@ -53,7 +54,10 @@ SourcePreference getSourcePreferenceEntry(String key, int sourceId) {
 }
 
 String getSourcePreferenceStringValue(
-    int sourceId, String key, String defaultValue) {
+  int sourceId,
+  String key,
+  String defaultValue,
+) {
   SourcePreferenceStringValue? sourcePreferenceStringValue = isar
       .sourcePreferenceStringValues
       .filter()
@@ -78,10 +82,12 @@ void setSourcePreferenceStringValue(int sourceId, String key, String value) {
     if (sourcePref != null) {
       isar.sourcePreferenceStringValues.putSync(sourcePref..value = value);
     } else {
-      isar.sourcePreferenceStringValues.putSync(SourcePreferenceStringValue()
-        ..key = key
-        ..sourceId = sourceId
-        ..value = value);
+      isar.sourcePreferenceStringValues.putSync(
+        SourcePreferenceStringValue()
+          ..key = key
+          ..sourceId = sourceId
+          ..value = value,
+      );
     }
   });
 }

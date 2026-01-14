@@ -9,7 +9,7 @@ part of 'experimental_model.dart';
 class ExperimentalFeaturesModelAdapter
     extends TypeAdapter<ExperimentalFeaturesModel> {
   @override
-  final int typeId = 11;
+  final typeId = 11;
 
   @override
   ExperimentalFeaturesModel read(BinaryReader reader) {

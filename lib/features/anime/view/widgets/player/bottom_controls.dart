@@ -83,22 +83,26 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                   final settings = ref.watch(playerSettingsProvider);
                   if (!settings.enableAniSkip) return const SizedBox.shrink();
 
-                  final pos =
-                      ref.watch(playerStateProvider.select((p) => p.position));
+                  final pos = ref.watch(
+                    playerStateProvider.select((p) => p.position),
+                  );
 
                   final currentSkip = skips.firstWhere(
                     (s) {
                       if (s.interval == null) return false;
-                      final start =
-                          Duration(seconds: s.interval!.startTime.toInt());
-                      final end =
-                          Duration(seconds: s.interval!.endTime.toInt());
+                      final start = Duration(
+                        seconds: s.interval!.startTime.toInt(),
+                      );
+                      final end = Duration(
+                        seconds: s.interval!.endTime.toInt(),
+                      );
                       return pos >= start && pos < end;
                     },
                     orElse: () => const AniSkipResultItem(
-                        skipType: SkipType.unknown,
-                        action: '',
-                        episodeLength: 0),
+                      skipType: SkipType.unknown,
+                      action: '',
+                      episodeLength: 0,
+                    ),
                   );
 
                   if (currentSkip.interval == null) {
@@ -131,10 +135,11 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
               Row(
                 children: [
                   if (_watch(
-                      ref,
-                      (s) =>
-                          s.selectedServer?.isDub != null &&
-                          s.servers.any((e) => e.isDub)))
+                    ref,
+                    (s) =>
+                        s.selectedServer?.isDub != null &&
+                        s.servers.any((e) => e.isDub),
+                  ))
                     _pill(
                       text: _watch(ref, (s) => s.selectedServer?.isDub == true)
                           ? 'DUB'
@@ -143,17 +148,20 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                     ),
                   if (_watch(ref, (s) => s.sources.length) > 1) ...[
                     const SizedBox(width: 8),
-                    Builder(builder: (_) {
-                      final list = _watch(ref, (s) => s.sources);
-                      final idx = _watch(ref, (s) => s.selectedSourceIdx) ?? 0;
-                      if (idx < 0 || idx >= list.length) {
-                        return const SizedBox.shrink();
-                      }
-                      return _pill(
-                        text: list[idx].quality ?? 'Auto',
-                        onTap: widget.onSourcePressed,
-                      );
-                    }),
+                    Builder(
+                      builder: (_) {
+                        final list = _watch(ref, (s) => s.sources);
+                        final idx =
+                            _watch(ref, (s) => s.selectedSourceIdx) ?? 0;
+                        if (idx < 0 || idx >= list.length) {
+                          return const SizedBox.shrink();
+                        }
+                        return _pill(
+                          text: list[idx].quality ?? 'Auto',
+                          onTap: widget.onSourcePressed,
+                        );
+                      },
+                    ),
                   ],
                   const SizedBox(width: 8),
                   _icon(
@@ -205,7 +213,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     BuildContext context,
     WidgetRef ref,
     ColorScheme scheme,
-    PlayerController playerNotifier,
+    PlayerStateNotifier playerNotifier,
   ) {
     return SizedBox(
       height: 30,
@@ -217,8 +225,9 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             ),
           );
 
-          final max =
-              dur.inMilliseconds > 0 ? dur.inMilliseconds.toDouble() : 1.0;
+          final max = dur.inMilliseconds > 0
+              ? dur.inMilliseconds.toDouble()
+              : 1.0;
 
           final position = pos.inMilliseconds.toDouble().clamp(0, max);
           final buffer = buf.inMilliseconds.toDouble().clamp(0, max);
@@ -267,8 +276,10 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                             (() {
                               final start = (skip.interval!.startTime * 1000)
                                   .clamp(0, total);
-                              final end = (skip.interval!.endTime * 1000)
-                                  .clamp(0, total);
+                              final end = (skip.interval!.endTime * 1000).clamp(
+                                0,
+                                total,
+                              );
 
                               if (end <= start) return const SizedBox.shrink();
 
@@ -473,7 +484,10 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
   }
 
   Widget _buildAniSkipButton(
-      ColorScheme scheme, AniSkipResultItem skip, WidgetRef ref) {
+    ColorScheme scheme,
+    AniSkipResultItem skip,
+    WidgetRef ref,
+  ) {
     String label = 'Skip';
     switch (skip.skipType) {
       case SkipType.op:
@@ -489,9 +503,9 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
 
     return InkWell(
       onTap: () {
-        ref.read(playerStateProvider.notifier).seek(
-              Duration(seconds: skip.interval!.endTime.toInt() + 1),
-            );
+        ref
+            .read(playerStateProvider.notifier)
+            .seek(Duration(seconds: skip.interval!.endTime.toInt() + 1));
       },
       borderRadius: BorderRadius.circular(20),
       child: Container(

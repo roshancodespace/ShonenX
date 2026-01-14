@@ -1,4 +1,7 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/services/download_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
@@ -6,36 +9,38 @@ import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/downloads/repository/downloads_repository.dart';
 import 'package:shonenx/features/settings/view_model/download_settings_notifier.dart';
 import 'package:shonenx/storage_provider.dart';
-import 'package:path/path.dart' as p;
 
+part 'downloads_notifier.g.dart';
+
+@immutable
 class DownloadsState {
   final List<DownloadItem> downloads;
   final dynamic error;
 
-  DownloadsState({
-    required this.downloads,
-    required this.error,
-  });
+  const DownloadsState({required this.downloads, this.error});
 
   DownloadsState copyWith({
     List<DownloadItem>? downloads,
     dynamic error,
+    bool clearError = false,
   }) {
     return DownloadsState(
       downloads: downloads ?? this.downloads,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
     );
   }
 }
 
-class DownloadNotifier extends StateNotifier<DownloadsState> {
-  final DownloadService _service;
-  final DownloadsRepository _repository;
-  final Ref ref;
+@Riverpod(keepAlive: true)
+class DownloadsNotifier extends _$DownloadsNotifier {
+  late final DownloadService _service;
+  final DownloadsRepository _repository = DownloadsRepository();
 
-  DownloadNotifier(this._service, this._repository, this.ref)
-      : super(DownloadsState(downloads: [], error: null)) {
+  @override
+  DownloadsState build() {
+    _service = DownloadService(ref);
     _loadDownloads();
+    return const DownloadsState(downloads: []);
   }
 
   Future<void> _loadDownloads() async {
@@ -64,25 +69,25 @@ class DownloadNotifier extends StateNotifier<DownloadsState> {
       baseDir = defaultDir.path;
     }
 
-    final sanitizedAnime =
-        download.animeTitle.replaceAll(RegExp(r'[\\/:*?"<>|]'), '');
-    final sanitizedEpisode =
-        download.episodeTitle.replaceAll(RegExp(r'[\\/:*?"<>|]'), '');
+    // Sanitize folder names for filesystem safety
+    final sanitizedAnime = download.animeTitle.replaceAll(
+      RegExp(r'[\\/:*?"<>|]'),
+      '',
+    );
+    final sanitizedEpisode = download.episodeTitle.replaceAll(
+      RegExp(r'[\\/:*?"<>|]'),
+      '',
+    );
 
-    String fullFolder;
-    if (settings.folderStructure == 'Anime/Season/Episode') {
-      fullFolder = p.join(baseDir, sanitizedAnime, sanitizedEpisode);
-    } else if (settings.folderStructure == 'Anime/Episode') {
-      fullFolder = p.join(baseDir, sanitizedAnime, sanitizedEpisode);
-    } else if (settings.folderStructure == 'Anime') {
-      fullFolder = p.join(baseDir, sanitizedAnime);
-    } else {
-      fullFolder = baseDir;
-    }
+    String fullFolder = switch (settings.folderStructure) {
+      'Anime/Season/Episode' ||
+      'Anime/Episode' => p.join(baseDir, sanitizedAnime, sanitizedEpisode),
+      'Anime' => p.join(baseDir, sanitizedAnime),
+      _ => baseDir,
+    };
 
     final fileName = p.basename(download.filePath);
     final finalPath = p.join(fullFolder, fileName);
-
     final finalDownload = download.copyWith(filePath: finalPath);
 
     if (state.downloads.any((d) => d.filePath == finalDownload.filePath)) {
@@ -90,14 +95,14 @@ class DownloadNotifier extends StateNotifier<DownloadsState> {
       return;
     }
 
-    state = state.copyWith(
-      downloads: [...state.downloads, finalDownload],
-    );
-    _repository.saveDownload(finalDownload).then((_) {
+    state = state.copyWith(downloads: [...state.downloads, finalDownload]);
+
+    try {
+      await _repository.saveDownload(finalDownload);
       _service.startDownload(finalDownload);
-    }).onError((error, stackTrace) {
-      setError(error);
-    });
+    } catch (e) {
+      setError(e);
+    }
   }
 
   void pauseDownload(DownloadItem item) {
@@ -110,24 +115,31 @@ class DownloadNotifier extends StateNotifier<DownloadsState> {
   }
 
   void deleteDownload(DownloadItem item) {
-    _service.deleteDownload(item).then((_) {
-      _repository.deleteDownload(item.filePath);
-      removeDownload(item);
-    }).onError((error, stackTrace) {
-      setError(error);
-    });
+    _service
+        .deleteDownload(item)
+        .then((_) {
+          _repository.deleteDownload(item.filePath);
+          removeDownload(item);
+        })
+        .onError((error, stackTrace) {
+          setError(error);
+        });
   }
 
   void removeDownload(DownloadItem item) {
     state = state.copyWith(
-      downloads:
-          state.downloads.where((d) => d.filePath != item.filePath).toList(),
+      downloads: state.downloads
+          .where((d) => d.filePath != item.filePath)
+          .toList(),
     );
   }
 
   void updateDownloadState(DownloadItem item) {
     AppLogger.d(
-        'State update: ${item.episodeTitle} -> ${item.state} (progress: ${item.progress}/${item.totalSegments ?? item.size})');
+      'State update: ${item.episodeTitle} -> ${item.state} '
+      '(progress: ${item.progress}/${item.totalSegments ?? item.size})',
+    );
+
     state = state.copyWith(
       downloads: state.downloads
           .map((d) => d.filePath == item.filePath ? item : d)
@@ -145,8 +157,3 @@ class DownloadNotifier extends StateNotifier<DownloadsState> {
     _repository.clearAll();
   }
 }
-
-final downloadsProvider =
-    StateNotifierProvider<DownloadNotifier, DownloadsState>((ref) {
-  return DownloadNotifier(DownloadService(ref), DownloadsRepository(), ref);
-});

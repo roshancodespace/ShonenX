@@ -8,7 +8,7 @@ part of 'ui_model.dart';
 
 class UiModelAdapter extends TypeAdapter<UiModel> {
   @override
-  final int typeId = 3;
+  final typeId = 3;
 
   @override
   UiModel read(BinaryReader reader) {
@@ -17,9 +17,9 @@ class UiModelAdapter extends TypeAdapter<UiModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return UiModel(
-      cardStyle: fields[3] == null ? 'defaults' : fields[3] as String,
-      spotlightCardStyle: fields[2] == null ? 'defaults' : fields[2] as String,
+      cardStyle: fields[2] == null ? 'defaults' : fields[2] as String,
       immersiveMode: fields[5] == null ? false : fields[5] as bool,
+      spotlightCardStyle: fields[3] == null ? 'defaults' : fields[3] as String,
       episodeViewMode: fields[6] == null ? 'list' : fields[6] as String,
     );
   }
@@ -27,11 +27,11 @@ class UiModelAdapter extends TypeAdapter<UiModel> {
   @override
   void write(BinaryWriter writer, UiModel obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(2)
-      ..write(obj.spotlightCardStyle)
-      ..writeByte(3)
       ..write(obj.cardStyle)
+      ..writeByte(3)
+      ..write(obj.spotlightCardStyle)
       ..writeByte(5)
       ..write(obj.immersiveMode)
       ..writeByte(6)

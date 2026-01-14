@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/repositories/source_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core_new/eval/lib.dart';
@@ -16,11 +16,10 @@ import 'package:shonenx/core_new/models/video.dart';
 import 'package:shonenx/features/settings/model/source_model.dart';
 import 'package:collection/collection.dart';
 
-final sourceProvider = NotifierProvider<SourceNotifier, SourceState>(
-  SourceNotifier.new,
-);
+part 'source_notifier.g.dart';
 
-class SourceNotifier extends Notifier<SourceState> {
+@Riverpod(keepAlive: true)
+class SourceNotifier extends _$SourceNotifier {
   final SourceRepository _repo = SourceRepository();
 
   @override
@@ -30,7 +29,6 @@ class SourceNotifier extends Notifier<SourceState> {
 
   Future<void> initialize() async {
     try {
-      // Listen to extension streams for real-time updates
       for (final type in [ItemType.anime, ItemType.manga, ItemType.novel]) {
         ref.listen<AsyncValue<List<Source>>>(
           getExtensionsStreamProvider(type),
@@ -42,15 +40,14 @@ class SourceNotifier extends Notifier<SourceState> {
         );
       }
 
-      // Initial fetch
       fetchSources(ItemType.anime);
       fetchSources(ItemType.manga);
       fetchSources(ItemType.novel);
 
-      // Force initial update from current stream values
       for (final type in [ItemType.anime, ItemType.manga, ItemType.novel]) {
-        final extensions =
-            await ref.read(getExtensionsStreamProvider(type).future);
+        final extensions = await ref.read(
+          getExtensionsStreamProvider(type).future,
+        );
         _updateExtensions(type, extensions);
       }
 
@@ -61,7 +58,6 @@ class SourceNotifier extends Notifier<SourceState> {
         isLoading: false,
       );
 
-      // Set active sources after extensions are loaded
       _restoreActiveSources();
     } catch (e, st) {
       AppLogger.e('Error initializing extensions: $e\n$st');
@@ -83,18 +79,20 @@ class SourceNotifier extends Notifier<SourceState> {
         state = state.copyWith(installedNovelExtensions: installed);
         break;
     }
-    // Re-verify active source whenever extensions change
     _restoreActiveSources();
   }
 
   void _restoreActiveSources() {
     state = state.copyWith(
-      activeAnimeSource: state.installedAnimeExtensions
-          .firstWhereOrNull((s) => s.id == _repo.getActiveAnimeSourceId()),
-      activeMangaSource: state.installedMangaExtensions
-          .firstWhereOrNull((s) => s.id == _repo.getActiveMangaSourceId()),
-      activeNovelSource: state.installedNovelExtensions
-          .firstWhereOrNull((s) => s.id == _repo.getActiveNovelSourceId()),
+      activeAnimeSource: state.installedAnimeExtensions.firstWhereOrNull(
+        (s) => s.id == _repo.getActiveAnimeSourceId(),
+      ),
+      activeMangaSource: state.installedMangaExtensions.firstWhereOrNull(
+        (s) => s.id == _repo.getActiveMangaSourceId(),
+      ),
+      activeNovelSource: state.installedNovelExtensions.firstWhereOrNull(
+        (s) => s.id == _repo.getActiveNovelSourceId(),
+      ),
     );
   }
 
@@ -102,17 +100,23 @@ class SourceNotifier extends Notifier<SourceState> {
     switch (source.itemType) {
       case ItemType.anime:
         state = state.copyWith(
-            activeAnimeSource: source, lastUpdatedSourceType: 'ANIME');
+          activeAnimeSource: source,
+          lastUpdatedSourceType: 'ANIME',
+        );
         _repo.saveActiveAnimeSourceId(source.id!);
         break;
       case ItemType.manga:
         state = state.copyWith(
-            activeMangaSource: source, lastUpdatedSourceType: 'MANGA');
+          activeMangaSource: source,
+          lastUpdatedSourceType: 'MANGA',
+        );
         _repo.saveActiveMangaSourceId(source.id!);
         break;
       case ItemType.novel:
         state = state.copyWith(
-            activeNovelSource: source, lastUpdatedSourceType: 'NOVEL');
+          activeNovelSource: source,
+          lastUpdatedSourceType: 'NOVEL',
+        );
         _repo.saveActiveNovelSourceId(source.id!);
         break;
     }
@@ -138,27 +142,29 @@ class SourceNotifier extends Notifier<SourceState> {
   Future<void> fetchSources(ItemType mediaType) async {
     if (mediaType == ItemType.anime) {
       if (state.activeAnimeRepo.isEmpty) return;
-      await ref
-          .read(fetchAnimeSourcesListProvider(id: null, reFresh: true).future);
+      await ref.read(
+        fetchAnimeSourcesListProvider(id: null, reFresh: true).future,
+      );
     } else if (mediaType == ItemType.manga) {
       if (state.activeMangaRepo.isEmpty) return;
-      await ref
-          .read(fetchMangaSourcesListProvider(id: null, reFresh: true).future);
+      await ref.read(
+        fetchMangaSourcesListProvider(id: null, reFresh: true).future,
+      );
     } else {
       if (state.activeNovelRepo.isEmpty) return;
-      await ref
-          .read(fetchNovelSourcesListProvider(id: null, reFresh: true).future);
+      await ref.read(
+        fetchNovelSourcesListProvider(id: null, reFresh: true).future,
+      );
     }
   }
 
-  Future<MPages> search(String query,
-      {int page = 1, List filters = const []}) async {
+  Future<MPages> search(
+    String query, {
+    int page = 1,
+    List filters = const [],
+  }) async {
     try {
-      AppLogger.d('Searching');
-      if (state.activeAnimeSource == null) {
-        AppLogger.w('No active anime source selected');
-        return MPages(list: []);
-      }
+      if (state.activeAnimeSource == null) return MPages(list: []);
       final service = getExtensionService(state.activeAnimeSource!);
       return service.search(query, page, filters);
     } catch (err) {
@@ -169,11 +175,7 @@ class SourceNotifier extends Notifier<SourceState> {
 
   Future<MManga?> getDetails(String url) async {
     try {
-      AppLogger.d('Searching');
-      if (state.activeAnimeSource == null) {
-        AppLogger.w('No active anime source selected');
-        return null;
-      }
+      if (state.activeAnimeSource == null) return null;
       final service = getExtensionService(state.activeAnimeSource!);
       return service.getDetail(url);
     } catch (err) {
@@ -184,11 +186,7 @@ class SourceNotifier extends Notifier<SourceState> {
 
   Future<List<Video?>> getSources(String url) async {
     try {
-      AppLogger.d('Searching');
-      if (state.activeAnimeSource == null) {
-        AppLogger.w('No active anime source selected');
-        return [];
-      }
+      if (state.activeAnimeSource == null) return [];
       final service = getExtensionService(state.activeAnimeSource!);
       return service.getVideoList(url);
     } catch (err) {

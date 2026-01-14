@@ -1,4 +1,5 @@
 import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
 
 List<UniversalMedia> safeParse(String label, List list) {
   try {
@@ -7,8 +8,10 @@ List<UniversalMedia> safeParse(String label, List list) {
         if (value is Map) {
           return MapEntry(key.toString(), convertToStringKeys(value));
         } else if (value is List) {
-          return MapEntry(key.toString(),
-              value.map((v) => v is Map ? convertToStringKeys(v) : v).toList());
+          return MapEntry(
+            key.toString(),
+            value.map((v) => v is Map ? convertToStringKeys(v) : v).toList(),
+          );
         }
         return MapEntry(key.toString(), value);
       });
@@ -19,12 +22,7 @@ List<UniversalMedia> safeParse(String label, List list) {
         .map((item) => UniversalMedia.fromJson(convertToStringKeys(item)))
         .toList();
   } catch (e, st) {
-    print("⚠️ Failed to parse $label: $e\n$st");
+    AppLogger.e("⚠️ Failed to parse $label: $e\n$st");
     return [];
   }
-}
-
-int generateId() {
-  final id = DateTime.now().millisecondsSinceEpoch;
-  return id;
 }

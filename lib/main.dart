@@ -11,7 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/app_initializer.dart';
@@ -45,17 +45,20 @@ void main(List<String> args) async {
     await AppInitializer.initialize();
   } catch (e) {
     AppLogger.e('Error initializing app: $e');
-    runApp(const MaterialApp(
-      home: Scaffold(body: Center(child: Text('Initialization failed'))),
-    ));
+    runApp(
+      const MaterialApp(
+        home: Scaffold(body: Center(child: Text('Initialization failed'))),
+      ),
+    );
     return;
   }
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        systemNavigationBarColor: Colors.transparent,
-        systemStatusBarContrastEnforced: false),
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
+      systemStatusBarContrastEnforced: false,
+    ),
   );
 
   isar = await StorageProvider().initDB(null, inspector: kDebugMode);
@@ -80,12 +83,12 @@ class MyApp extends ConsumerWidget {
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
         final ColorScheme? lightScheme =
             (theme.useDynamicColors && lightDynamic != null)
-                ? lightDynamic
-                : null;
+            ? lightDynamic
+            : null;
         final ColorScheme? darkScheme =
             (theme.useDynamicColors && darkDynamic != null)
-                ? darkDynamic
-                : null;
+            ? darkDynamic
+            : null;
 
         final lightTheme = FlexThemeData.light(
           colorScheme: lightScheme,
@@ -109,8 +112,8 @@ class MyApp extends ConsumerWidget {
         final themeMode = theme.themeMode == 'light'
             ? ThemeMode.light
             : theme.themeMode == 'dark'
-                ? ThemeMode.dark
-                : ThemeMode.system;
+            ? ThemeMode.dark
+            : ThemeMode.system;
 
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,
@@ -125,8 +128,11 @@ class MyApp extends ConsumerWidget {
   }
 }
 
-void showAppSnackBar(String title, String message,
-    {ContentType type = ContentType.success}) {
+void showAppSnackBar(
+  String title,
+  String message, {
+  ContentType type = ContentType.success,
+}) {
   final messenger = scaffoldMessengerKey.currentState;
   if (messenger != null) {
     messenger

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:shonenx/core_new/models/manga.dart';
 import 'package:shonenx/core_new/models/source.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
@@ -13,27 +13,27 @@ import 'package:shonenx/main.dart';
 
 final _uninstalledAnimeExtensionsProvider =
     StreamProvider.autoDispose<List<Source>>((ref) {
-  return isar.sources
-      .filter()
-      .idIsNotNull()
-      .and()
-      .isAddedEqualTo(false)
-      .isActiveEqualTo(true)
-      .itemTypeEqualTo(ItemType.anime)
-      .watch(fireImmediately: true);
-});
+      return isar.sources
+          .filter()
+          .idIsNotNull()
+          .and()
+          .isAddedEqualTo(false)
+          .isActiveEqualTo(true)
+          .itemTypeEqualTo(ItemType.anime)
+          .watch(fireImmediately: true);
+    });
 
 final _installedAnimeExtensionsProvider =
     StreamProvider.autoDispose<List<Source>>((ref) {
-  return isar.sources
-      .filter()
-      .idIsNotNull()
-      .and()
-      .isAddedEqualTo(true)
-      .isActiveEqualTo(true)
-      .itemTypeEqualTo(ItemType.anime)
-      .watch(fireImmediately: true);
-});
+      return isar.sources
+          .filter()
+          .idIsNotNull()
+          .and()
+          .isAddedEqualTo(true)
+          .isActiveEqualTo(true)
+          .itemTypeEqualTo(ItemType.anime)
+          .watch(fireImmediately: true);
+    });
 
 class ExtensionsListScreen extends ConsumerWidget {
   const ExtensionsListScreen({super.key});
@@ -102,7 +102,8 @@ class ExtensionsListScreen extends ConsumerWidget {
 
   // Helper method to group extensions by language
   Map<String, List<Source>> _groupExtensionsByLanguage(
-      List<Source> extensions) {
+    List<Source> extensions,
+  ) {
     final Map<String, List<Source>> grouped = {};
 
     for (final extension in extensions) {
@@ -123,17 +124,18 @@ class ExtensionsListScreen extends ConsumerWidget {
 
   // Helper method to create settings item for extension
   Widget _createExtensionItem(
-      Source extension,
-      bool isInstalled,
-      bool isSelected,
-      SourceNotifier sourceNotifier,
-      BuildContext context,
-      WidgetRef ref) {
+    Source extension,
+    bool isInstalled,
+    bool isSelected,
+    SourceNotifier sourceNotifier,
+    BuildContext context,
+    WidgetRef ref,
+  ) {
     return ExtensionTile(
-            extension: extension,
-            isInstalled: isInstalled,
-            selected: isSelected)
-        .build(context, ref);
+      extension: extension,
+      isInstalled: isInstalled,
+      selected: isSelected,
+    ).build(context, ref);
   }
 
   @override
@@ -157,8 +159,8 @@ class ExtensionsListScreen extends ConsumerWidget {
                 showDialog(
                   context: context,
                   builder: (context) {
-                    final TextEditingController controller =
-                        TextEditingController(
+                    final TextEditingController
+                    controller = TextEditingController(
                       text: sourceState.activeAnimeRepo.isNotEmpty
                           ? sourceState.activeAnimeRepo
                           : 'https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/anime_index.json',
@@ -184,18 +186,15 @@ class ExtensionsListScreen extends ConsumerWidget {
                               children: [
                                 Text(
                                   'Current Repository:',
-                                  style:
-                                      Theme.of(context).textTheme.labelMedium,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.labelMedium,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   sourceState.activeAnimeRepo,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Colors.grey[600],
-                                      ),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(color: Colors.grey[600]),
                                 ),
                               ],
                             ),
@@ -212,14 +211,16 @@ class ExtensionsListScreen extends ConsumerWidget {
                             final url = controller.text.trim();
                             if (url.isNotEmpty) {
                               await ref
-                                  .read(_uninstalledAnimeExtensionsProvider
-                                      .future)
+                                  .read(
+                                    _uninstalledAnimeExtensionsProvider.future,
+                                  )
                                   .then((sources) {
-                                isar.writeTxn(() async {
-                                  isar.sources.deleteAll(
-                                      sources.map((s) => s.id!).toList());
-                                });
-                              });
+                                    isar.writeTxn(() async {
+                                      isar.sources.deleteAll(
+                                        sources.map((s) => s.id!).toList(),
+                                      );
+                                    });
+                                  });
                               sourceNotifier.setActiveRepo(url, ItemType.anime);
                               sourceNotifier.fetchSources(ItemType.anime);
                               Navigator.pop(context);
@@ -245,14 +246,8 @@ class ExtensionsListScreen extends ConsumerWidget {
           ],
           bottom: const TabBar(
             tabs: [
-              Tab(
-                icon: Icon(Iconsax.tick_circle),
-                text: 'Installed',
-              ),
-              Tab(
-                icon: Icon(Iconsax.add_circle),
-                text: 'Available',
-              ),
+              Tab(icon: Icon(Iconsax.tick_circle), text: 'Installed'),
+              Tab(icon: Icon(Iconsax.add_circle), text: 'Available'),
             ],
           ),
         ),
@@ -319,10 +314,7 @@ class ExtensionsListScreen extends ConsumerWidget {
                   isInstalledTab
                       ? 'Install extensions from the Available tab'
                       : 'Check your repository or refresh',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                 ),
               ],
             ),
@@ -352,19 +344,28 @@ class ExtensionsListScreen extends ConsumerWidget {
               child: Consumer(
                 builder: (context, ref, child) {
                   return SettingsSection(
-                      title:
-                          '$languageFlag $languageName (${languageExtensions.length})',
-                      titleColor: Theme.of(context).primaryColor,
-                      children: languageExtensions.map((extension) {
-                        final isSelected =
-                            sourceState.activeAnimeSource?.id == extension.id;
-                        final isInstalled = isInstalledTab ||
-                            sourceState.installedAnimeExtensions
-                                .any((source) => source.id == extension.id);
+                    title:
+                        '$languageFlag $languageName (${languageExtensions.length})',
+                    titleColor: Theme.of(context).primaryColor,
+                    children: languageExtensions.map((extension) {
+                      final isSelected =
+                          sourceState.activeAnimeSource?.id == extension.id;
+                      final isInstalled =
+                          isInstalledTab ||
+                          sourceState.installedAnimeExtensions.any(
+                            (source) => source.id == extension.id,
+                          );
 
-                        return _createExtensionItem(extension, isInstalled,
-                            isSelected, sourceNotifier, context, ref);
-                      }).toList());
+                      return _createExtensionItem(
+                        extension,
+                        isInstalled,
+                        isSelected,
+                        sourceNotifier,
+                        context,
+                        ref,
+                      );
+                    }).toList(),
+                  );
                 },
               ),
             );
@@ -385,11 +386,7 @@ class ExtensionsListScreen extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Iconsax.warning_2,
-              size: 64,
-              color: Colors.red[400],
-            ),
+            Icon(Iconsax.warning_2, size: 64, color: Colors.red[400]),
             const SizedBox(height: 16),
             Text(
               'Error loading extensions',
@@ -402,10 +399,7 @@ class ExtensionsListScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               error.toString(),
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),

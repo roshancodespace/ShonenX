@@ -92,8 +92,9 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
     final theme = Theme.of(context);
 
     final episodes = ref.watch(episodeListProvider.select((s) => s.episodes));
-    final selectedIdx =
-        ref.watch(episodeDataProvider.select((s) => s.selectedEpisodeIdx));
+    final selectedIdx = ref.watch(
+      episodeDataProvider.select((s) => s.selectedEpisodeIdx),
+    );
 
     final episodeNotifier = ref.read(episodeDataProvider.notifier);
     final episodeListNotifier = ref.read(episodeListProvider.notifier);
@@ -105,14 +106,16 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
     final endIdx = (_currentStart + _rangeSize - 1).clamp(0, total);
 
     final visibleEpisodes = episodes.sublist(startIdx, endIdx);
-    final animeTitle =
-        ref.watch(episodeListProvider.select((s) => s.animeTitle));
+    final animeTitle = ref.watch(
+      episodeListProvider.select((s) => s.animeTitle),
+    );
 
     final progressAsync = ref.watch(watchProgressStreamProvider);
-    final allProgress = progressAsync.valueOrNull ?? [];
+    final allProgress = progressAsync.value ?? [];
 
-    final animeProgress =
-        allProgress.where((e) => e.animeId == widget.mediaId).firstOrNull;
+    final animeProgress = allProgress
+        .where((e) => e.animeId == widget.mediaId)
+        .firstOrNull;
 
     return Material(
       color: Colors.transparent,
@@ -174,13 +177,14 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                     final epNum = episode.number ?? (actualIndex + 1);
                     final isCompleted =
                         animeProgress?.episodesProgress[epNum]?.isCompleted ??
-                            false;
+                        false;
 
                     final downloadState = ref.watch(downloadsProvider);
                     final download = downloadState.downloads.firstWhereOrNull(
-                        (d) =>
-                            d.animeTitle == animeTitle &&
-                            d.episodeNumber == epNum);
+                      (d) =>
+                          d.animeTitle == animeTitle &&
+                          d.episodeNumber == epNum,
+                    );
 
                     return EpisodeTile(
                       isFiller: episode.isFiller ?? false,
@@ -231,16 +235,16 @@ class EpisodeTile extends StatelessWidget {
     final textColor = isSelected
         ? theme.colorScheme.onPrimary
         : isCompleted
-            ? theme.colorScheme.outline
-            : theme.colorScheme.onSurfaceVariant;
+        ? theme.colorScheme.outline
+        : theme.colorScheme.onSurfaceVariant;
 
     final bgColor = isSelected
         ? theme.colorScheme.primary
         : isFiller
-            ? theme.colorScheme.errorContainer
-            : isCompleted
-                ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.5)
-                : theme.colorScheme.surfaceContainerHighest;
+        ? theme.colorScheme.errorContainer
+        : isCompleted
+        ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.5)
+        : theme.colorScheme.surfaceContainerHighest;
 
     return InkWell(
       onTap: onTap,
@@ -266,10 +270,7 @@ class EpisodeTile extends StatelessWidget {
               ),
               child: Text(
                 episodeNumber,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: textColor,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
               ),
             ),
             const SizedBox(width: 12),
@@ -283,17 +284,13 @@ class EpisodeTile extends StatelessWidget {
                   color: isSelected
                       ? theme.colorScheme.onSurface
                       : isCompleted
-                          ? theme.colorScheme.outline
-                          : theme.colorScheme.onSurface,
+                      ? theme.colorScheme.outline
+                      : theme.colorScheme.onSurface,
                 ),
               ),
             ),
             if (isSelected)
-              Icon(
-                Iconsax.play5,
-                size: 18,
-                color: theme.colorScheme.primary,
-              )
+              Icon(Iconsax.play5, size: 18, color: theme.colorScheme.primary)
             else if (download != null)
               _buildDownloadIndicator(theme, download!)
             else if (isCompleted)

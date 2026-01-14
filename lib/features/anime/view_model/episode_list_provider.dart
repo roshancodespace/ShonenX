@@ -2,18 +2,20 @@ import 'dart:async';
 
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/jikan/jikan_service.dart';
 import 'package:shonenx/core/jikan/models/jikan_media.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
-import 'package:shonenx/core/sources/anime/anime_provider.dart';
+import 'package:shonenx/core/registery/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/settings/model/experimental_model.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/main.dart';
+
+part 'episode_list_provider.g.dart';
 
 @immutable
 class EpisodeListState {
@@ -56,7 +58,8 @@ class EpisodeListState {
   }
 }
 
-class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
+@riverpod
+class EpisodeListNotifier extends _$EpisodeListNotifier {
   final JikanService _jikan = JikanService();
 
   ExperimentalFeaturesModel get _exp => ref.read(experimentalProvider);
@@ -67,8 +70,6 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
 
   @override
   EpisodeListState build() => const EpisodeListState();
-
-  /* ───────────────────────── PUBLIC API ───────────────────────── */
 
   Future<List<EpisodeDataModel>> fetchEpisodes({
     required String animeTitle,
@@ -89,10 +90,7 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
     );
 
     if (episodes.isNotEmpty) {
-      state = state.copyWith(
-        episodes: episodes,
-        isLoading: false,
-      );
+      state = state.copyWith(episodes: episodes, isLoading: false);
       _syncJikanIfEnabled();
       return episodes;
     }
@@ -100,17 +98,11 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
     final fetched = await _fetchEpisodesInternal(animeId);
 
     if (fetched.isEmpty) {
-      state = state.copyWith(
-        isLoading: false,
-        error: 'No episodes found',
-      );
+      state = state.copyWith(isLoading: false, error: 'No episodes found');
       return [];
     }
 
-    state = state.copyWith(
-      episodes: fetched,
-      isLoading: false,
-    );
+    state = state.copyWith(episodes: fetched, isLoading: false);
 
     _syncJikanIfEnabled();
     return fetched;
@@ -121,16 +113,10 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
     final title = state.animeTitle;
     if (id == null || title == null) return;
 
-    await fetchEpisodes(
-      animeId: id,
-      animeTitle: title,
-      force: true,
-    );
+    await fetchEpisodes(animeId: id, animeTitle: title, force: true);
   }
 
   void reset() => state = const EpisodeListState();
-
-  /* ───────────────────────── INTERNAL ───────────────────────── */
 
   Future<List<EpisodeDataModel>> _fetchEpisodesInternal(String? animeId) async {
     try {
@@ -150,7 +136,8 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
   }
 
   Future<List<EpisodeDataModel>> _fetchMangayomiEpisodes(
-      String? animeId) async {
+    String? animeId,
+  ) async {
     if (animeId == null) return [];
 
     final details = await _sourceNotifier.getDetails(animeId);
@@ -170,9 +157,7 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
         .toList();
 
     if (mapped.any((e) => (e.number ?? 0) > 0)) {
-      mapped.sort(
-        (a, b) => (a.number ?? 999999).compareTo(b.number ?? 999999),
-      );
+      mapped.sort((a, b) => (a.number ?? 999999).compareTo(b.number ?? 999999));
     }
 
     return mapped;
@@ -185,8 +170,6 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
     return (await provider.getEpisodes(animeId)).episodes ?? [];
   }
 
-  /* ───────────────────────── JIKAN SYNC ───────────────────────── */
-
   void _syncJikanIfEnabled() {
     if (!_exp.episodeTitleSync ||
         state.episodes.isEmpty ||
@@ -195,8 +178,11 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
     }
 
     state = state.copyWith(isJikanSyncing: true);
-    // fire & forget (non-blocking)
-    unawaited(_syncWithJikan().whenComplete(() => state = state.copyWith(isJikanSyncing: false)));
+    unawaited(
+      _syncWithJikan().whenComplete(
+        () => state = state.copyWith(isJikanSyncing: false),
+      ),
+    );
   }
 
   Future<void> _syncWithJikan() async {
@@ -224,16 +210,12 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
 
       if (jikanEpisodes.isEmpty) return;
 
-      final updated = List<EpisodeDataModel>.of(
-        state.episodes,
-      );
+      final updated = List<EpisodeDataModel>.of(state.episodes);
 
       final count = updated.length.clamp(0, jikanEpisodes.length);
 
       for (var i = 0; i < count; i++) {
-        updated[i] = updated[i].copyWith(
-          title: jikanEpisodes[i].title,
-        );
+        updated[i] = updated[i].copyWith(title: jikanEpisodes[i].title);
       }
 
       state = state.copyWith(episodes: updated);
@@ -242,8 +224,3 @@ class EpisodeListNotifier extends AutoDisposeNotifier<EpisodeListState> {
     }
   }
 }
-
-final episodeListProvider =
-    AutoDisposeNotifierProvider<EpisodeListNotifier, EpisodeListState>(
-  EpisodeListNotifier.new,
-);

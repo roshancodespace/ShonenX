@@ -5,17 +5,18 @@ import 'package:shonenx/core_new/eval/model/m_source.dart';
 import 'package:shonenx/core_new/services/http/m_client.dart';
 
 class HttpBridge {
-  final clientBridgedClass = BridgedClassDefinition(
+  final clientBridgedClass = BridgedClass(
     nativeType: InterceptedClient,
     name: 'Client',
     constructors: {
       '': (visitor, positionalArgs, namedArgs) {
         return MClient.init(
-          source:
-              positionalArgs.isNotEmpty ? positionalArgs[0] as MSource : null,
+          source: positionalArgs.isNotEmpty
+              ? positionalArgs[0] as MSource
+              : null,
           reqcopyWith: positionalArgs.length > 1
               ? (jsonDecode(positionalArgs[1] as String) as Map)
-                  .cast<String, dynamic>()
+                    .cast<String, dynamic>()
               : null,
         );
       },
@@ -75,7 +76,7 @@ class HttpBridge {
           (target as Client).send(positionalArgs[0] as BaseRequest),
     },
   );
-  final baseRequestBridgedClass = BridgedClassDefinition(
+  final baseRequestBridgedClass = BridgedClass(
     nativeType: BaseRequest,
     name: 'BaseRequest',
     nativeNames: ['Request'],
@@ -98,7 +99,7 @@ class HttpBridge {
       'finalized': (visitor, target) => (target as BaseRequest).finalized,
     },
   );
-  final responseBridgedClass = BridgedClassDefinition(
+  final responseBridgedClass = BridgedClass(
     nativeType: Response,
     name: 'Response',
     constructors: {
@@ -119,7 +120,7 @@ class HttpBridge {
       'request': (visitor, target) => (target as Response).request,
     },
   );
-  final streamedResponseBridgedClass = BridgedClassDefinition(
+  final streamedResponseBridgedClass = BridgedClass(
     nativeType: StreamedResponse,
     name: 'StreamedResponse',
     constructors: {
@@ -143,7 +144,7 @@ class HttpBridge {
       'request': (visitor, target) => (target as StreamedResponse).request,
     },
   );
-  final byteStreamBridgedClass = BridgedClassDefinition(
+  final byteStreamBridgedClass = BridgedClass(
     nativeType: ByteStream,
     name: 'ByteStream',
     constructors: {

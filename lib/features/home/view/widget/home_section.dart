@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-
-import 'package:shonenx/core/utils/app_utils.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
@@ -23,35 +21,46 @@ class HomeSectionWidget extends ConsumerWidget {
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final small = screenWidth < 600;
+
     final cardStyle = ref.watch(uiSettingsProvider).cardStyle;
     final mode = AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
     final height = cardConfigs[mode]!.responsiveHeight;
 
+    if (mediaList.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: theme.textTheme.titleLarge),
-        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(title, style: theme.textTheme.titleLarge),
+        ),
+        const SizedBox(height: 12),
         SizedBox(
           height: small ? height.small : height.large,
-          child: ListView.separated(
+          child: ListView.builder(
             scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: mediaList.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final media = mediaList[index];
-              final id = generateId();
-              final tag = id.toString() + (media.id.toString());
-              return AnimatedAnimeCard(
-                anime: media,
-                tag: tag,
-                onTap: () =>
-                    navigateToDetail(context, media, tag, forceFetch: true),
-                mode: mode,
+              final tag =
+                  'home_${media.id}_${media.title.available.replaceAll(' ', '_')}';
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: AnimatedAnimeCard(
+                  anime: media,
+                  tag: tag,
+                  mode: mode,
+                  onTap: () =>
+                      navigateToDetail(context, media, tag, forceFetch: true),
+                ),
               );
             },
           ),
         ),
+
         const SizedBox(height: 24),
       ],
     );

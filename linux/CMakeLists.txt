@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.13)
 project(runner LANGUAGES CXX)
 add_compile_options(-Wno-deprecated-literal-operator)
 
+add_compile_definitions(FLUTTER_ENABLE_IMPELLER=0)
+
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "shonenx")

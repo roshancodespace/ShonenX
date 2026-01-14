@@ -3,7 +3,7 @@ import 'package:shonenx/core_new/eval/model/m_manga.dart';
 import 'package:shonenx/core_new/models/manga.dart';
 
 class MMangaBridge {
-  final mMangaBridgedClass = BridgedClassDefinition(
+  final mMangaBridgedClass = BridgedClass(
     nativeType: MManga,
     name: 'MManga',
     constructors: {

@@ -1,11 +1,8 @@
-// ignore_for_file: curly_braces_in_flow_control_structures
-
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
@@ -34,17 +31,14 @@ class DownloadSourceSelector extends StatefulWidget {
   });
 
   @override
-  State<DownloadSourceSelector> createState() => DownloadSourceSelectorState();
+  State<DownloadSourceSelector> createState() => _DownloadSourceSelectorState();
 }
 
-class DownloadSourceSelectorState extends State<DownloadSourceSelector> {
+class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
   bool _loading = true;
   String? _error;
-  Map<String, dynamic>? _sourceBaseHeaders;
   List<Source> _sources = [];
   List<Subtitle> _subtitles = [];
-
-  // Expansion state
   int? _expandedIndex;
   bool _extracting = false;
   List<Map<String, dynamic>> _qualities = [];
@@ -62,7 +56,6 @@ class DownloadSourceSelectorState extends State<DownloadSourceSelector> {
         setState(() {
           _sources = data?.sources ?? [];
           _subtitles = data?.tracks ?? [];
-          _sourceBaseHeaders = data?.headers;
           _loading = false;
           if (_sources.isEmpty) _error = "No sources found";
         });
@@ -82,33 +75,34 @@ class DownloadSourceSelectorState extends State<DownloadSourceSelector> {
       setState(() => _expandedIndex = null);
       return;
     }
-
     setState(() {
       _expandedIndex = index;
       _extracting = true;
       _qualities = [];
     });
-
     try {
       List<Map<String, dynamic>> result = [];
       if (source.url != null) {
         if (source.isM3U8) {
           result = await extractor.extractQualities(
-              source.url!, source.headers ?? {});
+            source.url!,
+            source.headers ?? {},
+          );
         } else {
           result = [
-            {'quality': source.quality ?? 'Default', 'url': source.url!}
+            {'quality': source.quality ?? 'Default', 'url': source.url!},
           ];
         }
       }
-
       if (mounted) setState(() => _qualities = result);
-    } catch (e) {
-      // Graceful fail
-      if (mounted)
-        setState(() => _qualities = [
-              {'quality': 'Error', 'url': ''}
-            ]);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _qualities = [
+            {'quality': 'Error', 'url': ''},
+          ],
+        );
+      }
     } finally {
       if (mounted) setState(() => _extracting = false);
     }
@@ -125,35 +119,28 @@ class DownloadSourceSelectorState extends State<DownloadSourceSelector> {
     final notifier = providerContext.read(downloadsProvider.notifier);
     final baseDir = settings.useCustomPath
         ? (settings.customDownloadPath != null
-            ? Directory(settings.customDownloadPath!)
-            : null)
+              ? Directory(settings.customDownloadPath!)
+              : null)
         : await StorageProvider().getDefaultDirectory();
-
     if (baseDir == null) return;
 
-    // ---- sanitize names ----
-    final cleanAnime =
-        widget.animeTitle.replaceAll(RegExp(r'[<>:"/\\|?*]'), '').trim();
-
+    final cleanAnime = widget.animeTitle
+        .replaceAll(RegExp(r'[<>:"/\\|?*]'), '')
+        .trim();
     final episodeNumber = widget.episode.number ?? 0;
     final cleanEpTitle = (widget.episode.title ?? 'Episode $episodeNumber')
         .replaceAll(RegExp(r'[<>:"/\\|?*]'), '')
         .trim();
 
-    // ---- directories ----
     final animeDir = Directory(p.join(baseDir.path, cleanAnime));
-    final episodeDir =
-        Directory(p.join(animeDir.path, '$episodeNumber - $cleanEpTitle'));
+    final episodeDir = Directory(
+      p.join(animeDir.path, '$episodeNumber - $cleanEpTitle'),
+    );
+    if (!await episodeDir.exists()) await episodeDir.create(recursive: true);
 
-    if (!await episodeDir.exists()) {
-      await episodeDir.create(recursive: true);
-    }
-
-    // ---- extension ----
     final ext = isM3U8 ? '.ts' : '.mp4';
     final filePath = p.join(episodeDir.path, 'video$ext');
 
-    // ---- headers ----
     final finalHeaders = {
       'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -175,62 +162,114 @@ class DownloadSourceSelectorState extends State<DownloadSourceSelector> {
     );
 
     if (!mounted) return;
-
     notifier.addDownload(item);
-
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Download started')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Download started')));
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) return Center(child: Text("Error: $_error"));
 
-    return ListView.separated(
+    return ListView.builder(
       controller: widget.scrollController,
       padding: const EdgeInsets.all(16),
       itemCount: _sources.length,
-      separatorBuilder: (_, __) => const Divider(),
       itemBuilder: (context, index) {
         final source = _sources[index];
         final isExpanded = _expandedIndex == index;
 
-        return Column(
-          children: [
-            ListTile(
-              title: Text(source.quality ?? 'Unknown Quality'),
-              subtitle: Text(source.isDub ? 'Dub' : 'Sub'),
-              trailing:
-                  Icon(isExpanded ? Iconsax.arrow_up_2 : Iconsax.arrow_down_1),
-              onTap: () => _expandSource(index, source),
+        final hasMultipleQualities =
+            _qualities.length > 1 || (source.isM3U8 && _qualities.isEmpty);
+
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            source.quality ?? 'Unknown Quality',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            source.isDub ? 'Dub' : 'Sub',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        hasMultipleQualities
+                            ? (isExpanded
+                                  ? Icons.expand_less_rounded
+                                  : Icons.expand_more_rounded)
+                            : Icons.download_rounded,
+                      ),
+                      onPressed: hasMultipleQualities
+                          ? () => _expandSource(index, source)
+                          : () {
+                              final q = _qualities.isNotEmpty
+                                  ? _qualities.first
+                                  : {
+                                      'url': source.url!,
+                                      'quality': source.quality ?? 'Default',
+                                    };
+                              _triggerDownload(q['url'], q['quality'], {
+                                ...?source.headers,
+                              }, source.isM3U8);
+                            },
+                    ),
+                  ],
+                ),
+                if (isExpanded && _qualities.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _qualities.map((q) {
+                        return ActionChip(
+                          label: Text(q['quality']),
+                          onPressed: () => _triggerDownload(
+                            q['url'],
+                            q['quality'],
+                            {...?source.headers},
+                            source.isM3U8,
+                          ),
+                          backgroundColor: colorScheme.secondaryContainer,
+                          labelStyle: TextStyle(
+                            color: colorScheme.onSecondaryContainer,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                if (isExpanded && _extracting)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 12),
+                    child: LinearProgressIndicator(),
+                  ),
+              ],
             ),
-            if (isExpanded)
-              if (_extracting)
-                const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: LinearProgressIndicator())
-              else
-                ..._qualities.map((q) => ListTile(
-                      dense: true,
-                      contentPadding:
-                          const EdgeInsets.only(left: 32, right: 16),
-                      title: Text(q['quality']),
-                      trailing: const Icon(Iconsax.document_download,
-                          color: Colors.blue),
-                      onTap: () => _triggerDownload(
-                          q['url'],
-                          q['quality'],
-                          {
-                            ...(_sourceBaseHeaders ?? {})
-                                .cast<String, String>(),
-                            ...?source.headers
-                          },
-                          source.isM3U8),
-                    )),
-          ],
+          ),
         );
       },
     );

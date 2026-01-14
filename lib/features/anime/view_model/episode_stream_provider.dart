@@ -165,7 +165,9 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
     state = state.copyWith(selectedQualityIdx: idx);
 
-    ref.read(playerStateProvider.notifier).open(
+    ref
+        .read(playerStateProvider.notifier)
+        .open(
           url,
           ref.read(playerStateProvider).position,
           headers: state.headers,
@@ -174,15 +176,18 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   Future<void> changeSubtitle(int idx) async {
     state = state.copyWith(
-        addState: EpisodeStreamState.SUBTITLE_LOADING, error: null);
+      addState: EpisodeStreamState.SUBTITLE_LOADING,
+      error: null,
+    );
 
     if (idx == 0) {
       await ref
           .read(playerStateProvider.notifier)
           .setSubtitle(SubtitleTrack.no());
       state = state.copyWith(
-          selectedSubtitleIdx: 0,
-          removeState: EpisodeStreamState.SUBTITLE_LOADING);
+        selectedSubtitleIdx: 0,
+        removeState: EpisodeStreamState.SUBTITLE_LOADING,
+      );
       return;
     }
 
@@ -228,11 +233,9 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       _showLoading(context);
 
       try {
-        final result = await _animeProvider?.getSupportedServers(metadata: {
-          'id': ep.id,
-          'epNumber': ep.number,
-          'epId': ep.id,
-        });
+        final result = await _animeProvider?.getSupportedServers(
+          metadata: {'id': ep.id, 'epNumber': ep.number, 'epId': ep.id},
+        );
 
         Navigator.pop(context);
 
@@ -282,21 +285,18 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     if (_exp.useMangayomiExtensions) return;
 
     state = state.copyWith(
-        addState: EpisodeStreamState.SERVER_LOADING, error: null);
+      addState: EpisodeStreamState.SERVER_LOADING,
+      error: null,
+    );
 
     try {
       final ep = _episodes[epIdx];
-      final res = await _animeProvider?.getSupportedServers(metadata: {
-        'id': ep.id,
-        'epNumber': ep.number,
-        'epId': ep.id,
-      });
+      final res = await _animeProvider?.getSupportedServers(
+        metadata: {'id': ep.id, 'epNumber': ep.number, 'epId': ep.id},
+      );
 
       final flat = res?.flatten() ?? [];
-      state = state.copyWith(
-        servers: flat,
-        selectedServer: flat.firstOrNull,
-      );
+      state = state.copyWith(servers: flat, selectedServer: flat.firstOrNull);
     } catch (e) {
       AppLogger.e("Server fetch failed", e);
     } finally {
@@ -309,10 +309,14 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     if (epIdx == null) return;
 
     state = state.copyWith(
-        addState: EpisodeStreamState.SOURCE_LOADING, error: null);
+      addState: EpisodeStreamState.SOURCE_LOADING,
+      error: null,
+    );
 
-    final data =
-        await _fetchSourceData(_episodes[epIdx], server: state.selectedServer);
+    final data = await _fetchSourceData(
+      _episodes[epIdx],
+      server: state.selectedServer,
+    );
 
     if (data == null || data.sources.isEmpty) {
       state = state.copyWith(
@@ -324,7 +328,10 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
     state = state.copyWith(
       sources: data.sources,
-      subtitles: [Subtitle(lang: 'None'), ...data.tracks],
+      subtitles: [
+        Subtitle(lang: 'None'),
+        ...data.tracks,
+      ],
       headers: data.headers?.cast<String, String>(),
     );
 
@@ -335,8 +342,10 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   }
 
   /// Extracts qualities for the specific source and initializes player
-  Future<void> _loadSourceStream(int sourceIdx,
-      {required Duration startAt}) async {
+  Future<void> _loadSourceStream(
+    int sourceIdx, {
+    required Duration startAt,
+  }) async {
     final source = state.sources[sourceIdx];
 
     // Optimistic UI update
@@ -349,18 +358,17 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     int qIdx = 0; // Default to first (usually auto/best)
 
     if (pref != 'Auto') {
-      final match =
-          qualities.indexWhere((q) => (q['quality'] as String).contains(pref));
+      final match = qualities.indexWhere(
+        (q) => (q['quality'] as String).contains(pref),
+      );
       if (match != -1) qIdx = match;
     }
 
     final url = qualities[qIdx]['url'] as String;
 
-    ref.read(playerStateProvider.notifier).open(
-          url,
-          startAt,
-          headers: state.headers,
-        );
+    ref
+        .read(playerStateProvider.notifier)
+        .open(url, startAt, headers: state.headers);
 
     // Auto-select English subtitles if available
     final engSubIdx = state.subtitles.indexWhere(
@@ -377,25 +385,27 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   }
 
   /// Unified fetch logic for both Player and Downloader
-  Future<BaseSourcesModel?> _fetchSourceData(EpisodeDataModel ep,
-      {ServerData? server}) async {
+  Future<BaseSourcesModel?> _fetchSourceData(
+    EpisodeDataModel ep, {
+    ServerData? server,
+  }) async {
     // 1. Mangayomi / Extension route
     if (_exp.useMangayomiExtensions && ep.url != null) {
       final res = await _sourceNotifier.getSources(ep.url!);
       return BaseSourcesModel(
         sources: res
-            .map((s) => Source(
-                  url: s?.url,
-                  isM3U8: s?.url.contains('.m3u8') ?? false,
-                  quality: s?.quality,
-                  isDub: s?.originalUrl.toLowerCase().contains('dub') ?? false,
-                ))
+            .map(
+              (s) => Source(
+                url: s?.url,
+                isM3U8: s?.url.contains('.m3u8') ?? false,
+                quality: s?.quality,
+                isDub: s?.originalUrl.toLowerCase().contains('dub') ?? false,
+              ),
+            )
             .toList(),
-        tracks: res.firstOrNull?.subtitles
-                ?.map((e) => Subtitle(
-                      url: e.file,
-                      lang: e.label,
-                    ))
+        tracks:
+            res.firstOrNull?.subtitles
+                ?.map((e) => Subtitle(url: e.file, lang: e.label))
                 .toList() ??
             [],
       );
@@ -411,13 +421,15 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   }
 
   Future<List<Map<String, dynamic>>> _getQualitiesForSource(
-      Source source, Map<String, String>? headers) async {
+    Source source,
+    Map<String, String>? headers,
+  ) async {
     final url = source.url;
     if (url == null) return [];
 
     if (!source.isM3U8) {
       return [
-        {'quality': source.quality ?? 'Default', 'url': url}
+        {'quality': source.quality ?? 'Default', 'url': url},
       ];
     }
 
@@ -427,7 +439,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       AppLogger.e('Quality extraction failed', e);
       // Fallback to original URL if extraction fails
       return [
-        {'quality': source.quality ?? 'Default', 'url': url}
+        {'quality': source.quality ?? 'Default', 'url': url},
       ];
     }
   }
@@ -447,36 +459,100 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
   }
 
   Future<ServerData?> _showServerSelectionSheet(
-      BuildContext context, List<ServerData> servers) {
+    BuildContext context,
+    List<ServerData> servers,
+  ) {
     return showModalBottomSheet<ServerData>(
       context: context,
-      builder: (_) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Select Server",
-                style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: servers
-                  .map((s) => ActionChip(
-                        label: Text(
-                            '${s.name ?? 'Unknown'} [ ${s.isDub ? 'DUB' : 'SUB'} ]'),
-                        onPressed: () => Navigator.pop(context, s),
-                      ))
-                  .toList(),
-            ),
-          ],
-        ),
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
+      builder: (context) {
+        final theme = Theme.of(context);
+        final size = MediaQuery.of(context).size;
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: size.height * 0.55),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  size.height * 0.015,
+                  16,
+                  size.height * 0.01,
+                ),
+                child: Text(
+                  'Select Server',
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+              Divider(height: 1, color: theme.dividerColor),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: servers.length,
+                  separatorBuilder: (_, __) =>
+                      Divider(height: 1, color: theme.dividerColor),
+                  itemBuilder: (context, index) {
+                    final s = servers[index];
+                    final isDub = s.isDub;
+                    return ListTile(
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: size.width * 0.04,
+                        vertical: size.height * 0.005,
+                      ),
+                      title: Text(
+                        s.id ?? 'unknown',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: (s.name == null || s.name!.isEmpty)
+                          ? null
+                          : Text(
+                              s.name!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.hintColor,
+                              ),
+                            ),
+                      trailing: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: size.width * 0.02,
+                          vertical: size.height * 0.004,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDub
+                              ? theme.colorScheme.secondary.withOpacity(0.15)
+                              : theme.colorScheme.primary.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          isDub ? 'DUB' : 'SUB',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: isDub
+                                ? theme.colorScheme.secondary
+                                : theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      onTap: () => Navigator.pop(context, s),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
 
 final episodeDataProvider =
     AutoDisposeNotifierProvider<EpisodeDataNotifier, EpisodeDataState>(
-        EpisodeDataNotifier.new);
+      EpisodeDataNotifier.new,
+    );

@@ -51,7 +51,7 @@ class AnilistClient {
       cache: cache,
       queryRequestTimeout: const Duration(seconds: 15),
       defaultPolicies: DefaultPolicies(
-        query: Policies(fetch: FetchPolicy.cacheFirst),
+        query: Policies(fetch: FetchPolicy.cacheAndNetwork),
         mutate: Policies(fetch: FetchPolicy.networkOnly),
       ),
     );

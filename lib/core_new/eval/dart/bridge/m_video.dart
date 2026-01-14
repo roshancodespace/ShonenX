@@ -2,7 +2,7 @@ import 'package:d4rt/d4rt.dart';
 import 'package:shonenx/core_new/models/video.dart';
 
 class MVideoBridge {
-  final mVideoBridgedClass = BridgedClassDefinition(
+  final mVideoBridgedClass = BridgedClass(
     nativeType: Video,
     name: 'MVideo',
     constructors: {

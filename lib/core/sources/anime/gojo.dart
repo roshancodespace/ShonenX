@@ -16,11 +16,11 @@ class GojoProvider implements AnimeProvider {
 
   @override
   Map<String, String> get headers => {
-        'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-        'Origin': 'https://animetsu.cc',
-        'Referer': 'https://animetsu.cc/',
-      };
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+    'Origin': 'https://animetsu.cc',
+    'Referer': 'https://animetsu.cc/',
+  };
 
   @override
   Future<DetailPage> getDetails(String animeId) {
@@ -28,8 +28,11 @@ class GojoProvider implements AnimeProvider {
   }
 
   @override
-  Future<BaseEpisodeModel> getEpisodes(String animeId,
-      {String? anilistId, String? malId}) async {
+  Future<BaseEpisodeModel> getEpisodes(
+    String animeId, {
+    String? anilistId,
+    String? malId,
+  }) async {
     final url = Uri.parse("$apiUrl/eps/$animeId");
     final res = await http.get(url, headers: headers);
 
@@ -57,10 +60,7 @@ class GojoProvider implements AnimeProvider {
     // Sort by episode number just in case
     episodes.sort((a, b) => (a.number ?? 0).compareTo(b.number ?? 0));
 
-    return BaseEpisodeModel(
-      episodes: episodes,
-      totalEpisodes: episodes.length,
-    );
+    return BaseEpisodeModel(episodes: episodes, totalEpisodes: episodes.length);
   }
 
   @override
@@ -83,73 +83,66 @@ class GojoProvider implements AnimeProvider {
   }
 
   @override
-  Future<BaseSourcesModel> getSources(String animeId, String episodeId,
-      String? serverName, String? category) async {
-    final id = animeId;
-    final epNum = episodeId;
-    if (id.isEmpty || epNum.isEmpty) {
-      return BaseSourcesModel();
-    }
-    final isDub = category?.toLowerCase() == 'dub';
-    // 1. Get the list of servers
-    final serverUrl = Uri.parse("$apiUrl/servers?id=$id&num=$epNum");
-    final serverListRes = await http.get(serverUrl, headers: headers);
-
-    if (serverListRes.statusCode != 200) {
+  Future<BaseSourcesModel> getSources(
+    String animeId,
+    String episodeId,
+    String? serverName,
+    String? category,
+  ) async {
+    if (animeId.isEmpty || episodeId.isEmpty) {
       return BaseSourcesModel();
     }
 
-    final List<dynamic> serversJson = jsonDecode(serverListRes.body);
-
-    List<Source> sources = [];
+    final sources = <Source>[];
     List<Subtitle> tracks = [];
 
-    // 2. Prepare futures to fetch streams from all servers in parallel
-    final List<Future<http.Response>> futures = [];
+    final url =
+        "$apiUrl/tiddies?server=$serverName&id=$animeId&num=$episodeId&subType=$category";
 
-    for (var it in serversJson) {
-      final url =
-          "$apiUrl/tiddies?server=${it['id']}&id=$id&num=$epNum&subType=${isDub ? "dub" : "sub"}";
-      futures.add(http.get(Uri.parse(url), headers: headers));
+    final response = await http.get(Uri.parse(url), headers: headers);
+
+    if (response.statusCode != 200) {
+      return BaseSourcesModel(
+        headers: headers,
+        sources: sources,
+        tracks: tracks,
+        intro: Intro(start: 0, end: 0),
+        outro: Intro(start: 0, end: 0),
+      );
     }
 
-    // 3. Wait for all requests to finish
-    final responses = await Future.wait(futures);
+    final json = jsonDecode(response.body);
 
-    // 4. Parse results
-    for (int i = 0; i < responses.length; i++) {
-      final response = responses[i];
-      if (response.statusCode != 200) continue;
+    // Parse subtitles once
+    final subtitleList = json['subtitles'] as List<dynamic>?;
+    if (subtitleList != null) {
+      tracks = subtitleList
+          .map(
+            (sub) => Subtitle(
+              url: sub['url'] as String,
+              lang: sub['lang'] as String,
+              isSub: sub['isSub'] as bool? ?? false,
+            ),
+          )
+          .toList();
+    }
 
-      final json = jsonDecode(response.body);
-      final List<dynamic>? sourceList = json['sources'];
-      final List<dynamic>? subtitleList = json['subtitles'];
+    // Parse sources
+    final sourceList = json['sources'] as List<dynamic>?;
+    if (sourceList != null) {
+      final currentServer = serverName ?? 'Gojo';
 
-      // Extract Subtitles (Tracks) - usually only need to do this once, but logic checks every response
-      if (subtitleList != null && tracks.isEmpty) {
-        tracks = subtitleList.map<Subtitle>((sub) {
-          return Subtitle(
-            url: sub['url'],
-            lang: sub['lang'],
-            isSub: sub['isSub'] ?? false,
+      sources.addAll(
+        sourceList.map((item) {
+          var quality = (item['quality'] as String?)?.trim() ?? 'default';
+          if (quality == 'master') quality = 'Auto';
+
+          return Source(
+            url: item['url'] as String,
+            quality: "$currentServer - $quality",
           );
-        }).toList();
-      }
-
-      // Extract Sources
-      if (sourceList != null) {
-        final currentServerName = serversJson[i]['id'] ?? 'Gojo';
-
-        for (var item in sourceList) {
-          String quality = item['quality'] ?? 'default';
-          if (quality.trim() == 'master') quality = 'Auto';
-
-          sources.add(Source(
-            url: item['url'],
-            quality: "$currentServerName - $quality",
-          ));
-        }
-      }
+        }),
+      );
     }
 
     return BaseSourcesModel(
@@ -163,33 +156,32 @@ class GojoProvider implements AnimeProvider {
 
   @override
   Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {
-    ;
-    if (metadata != null) {
-      final res = (await http.get(
-          Uri.parse(
-              '$apiUrl/servers?id=${metadata['id']}&num=${metadata['epNumber']}'),
-          headers: headers));
-      final List<dynamic> data = jsonDecode(res.body);
-      final dub = <ServerData>[];
-      final sub = <ServerData>[];
+    if (metadata == null) return BaseServerModel();
 
-      for (final d in data) {
-        final server =
-            ServerData(name: d['tip'], id: d['id'], isDub: d['hasDub']);
+    final res = await http.get(
+      Uri.parse(
+        '$apiUrl/servers?id=${metadata['id']}&num=${metadata['epNumber']}',
+      ),
+      headers: headers,
+    );
 
-        if (d['hasDub'] == 'true') {
-          dub.add(server);
-        } else {
-          sub.add(server);
-        }
+    final List<dynamic> data = jsonDecode(res.body);
+
+    final sub = <ServerData>[];
+    final dub = <ServerData>[];
+
+    for (final d in data) {
+      final bool hasDub = d['hasDub'] == true || d['hasDub'] == 'true';
+
+      final base = ServerData(name: d['tip'], id: d['id'], isDub: false);
+
+      sub.add(base);
+      if (hasDub) {
+        dub.add(base.copyWith(isDub: true));
       }
-
-      return BaseServerModel(
-        dub: dub,
-        sub: sub,
-      );
     }
-    return BaseServerModel();
+
+    return BaseServerModel(sub: sub, dub: dub);
   }
 
   @override

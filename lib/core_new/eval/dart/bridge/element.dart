@@ -3,7 +3,7 @@ import 'package:html/dom.dart';
 import 'package:shonenx/core_new/eval/model/element.dart';
 
 class MElementBridge {
-  final elementBridgedClass = BridgedClassDefinition(
+  final elementBridgedClass = BridgedClass(
     nativeType: MElement,
     name: 'MElement',
     constructors: {

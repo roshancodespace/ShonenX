@@ -17,4 +17,12 @@ class ServerData {
   final String? id;
 
   ServerData({this.isDub = false, this.name, this.id});
+
+  ServerData copyWith({bool? isDub, String? name, String? id}) {
+    return ServerData(
+      isDub: isDub ?? this.isDub,
+      name: name ?? this.name,
+      id: id ?? this.id,
+    );
+  }
 }

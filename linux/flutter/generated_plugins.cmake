@@ -7,13 +7,11 @@ list(APPEND FLUTTER_PLUGIN_LIST
   dynamic_color
   flutter_qjs
   flutter_secure_storage_linux
-  flutter_volume_controller
   isar_flutter_libs
   media_kit_libs_linux
   media_kit_video
   screen_retriever_linux
   url_launcher_linux
-  volume_controller
   window_manager
   window_to_front
 )

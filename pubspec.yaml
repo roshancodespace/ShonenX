@@ -71,7 +71,6 @@ dependencies:
   rename: ^3.0.2
   riverpod_annotation: ^3.0.1
   screenshot: ^3.0.0
-  smooth_page_indicator: ^1.2.0+3
   url_launcher: ^6.3.1
   window_manager: ^0.4.3
   xpath_selector_html_parser: ^3.0.1

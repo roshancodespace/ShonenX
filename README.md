@@ -90,7 +90,6 @@ dependencies:
   graphql_flutter: ^5.2.0
   google_fonts: ^6.2.1
   cached_network_image: ^3.4.1
-  flutter_staggered_animations: ^1.1.1
 ```
 
 ## 🚀 Installation

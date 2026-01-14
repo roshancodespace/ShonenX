@@ -54,7 +54,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   Timer? _progressTimer;
   bool _isPlaying = false;
-  bool _resumeChecked = false;
+  int? _resumeCheckedEpisodeIndex;
+  int? _lastAniSkipEpisode;
 
   @override
   void initState() {
@@ -65,11 +66,15 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       vsync: this,
       duration: const Duration(milliseconds: 250),
     );
-    _panelAnimation =
-        CurvedAnimation(parent: _panelController, curve: Curves.easeOutCubic);
+    _panelAnimation = CurvedAnimation(
+      parent: _panelController,
+      curve: Curves.easeOutCubic,
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await ref.read(episodeListProvider.notifier).fetchEpisodes(
+      await ref
+          .read(episodeListProvider.notifier)
+          .fetchEpisodes(
             animeTitle: widget.animeName,
             animeId: widget.animeId,
             episodes: widget.episodes ?? [],
@@ -85,73 +90,77 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   }
 
   void _attachListeners() {
-    ref.listen<bool>(
-      playerStateProvider.select((p) => p.isPlaying),
-      (prev, next) {
-        _isPlaying = next;
-        if (prev == true && next == false) {
-          _saveProgress(takeScreenshot: true);
-        }
-      },
-    );
+    ref.listen<bool>(playerStateProvider.select((p) => p.isPlaying), (
+      prev,
+      next,
+    ) {
+      _isPlaying = next;
+      if (prev == true && next == false) {
+        _saveProgress(takeScreenshot: true);
+      }
+    });
 
-    ref.listen<Duration?>(
-      playerStateProvider.select((p) => p.duration),
-      (_, duration) {
-        _resumeChecked = false;
+    ref.listen<Duration?>(playerStateProvider.select((p) => p.duration), (
+      _,
+      duration,
+    ) {
+      if (duration == null || duration.inSeconds <= 120) return;
 
-        if (duration == null || duration.inSeconds <= 0) return;
+      final episodes = ref.read(episodeListProvider).episodes;
+      final currentIndex = ref.read(episodeDataProvider).selectedEpisodeIdx;
 
-        final episodes = ref.read(episodeListProvider).episodes;
-        final currentIndex = ref.read(episodeDataProvider).selectedEpisodeIdx;
+      if (currentIndex == null ||
+          currentIndex < 0 ||
+          currentIndex >= episodes.length)
+        return;
 
-        if (currentIndex == null ||
-            currentIndex < 0 ||
-            currentIndex >= episodes.length) return;
+      final settings = ref.read(playerSettingsProvider);
 
-        final settings = ref.read(playerSettingsProvider);
+      if (!settings.enableAniSkip) {
+        ref.read(aniSkipProvider.notifier).clear();
+        return;
+      }
 
-        if (!settings.enableAniSkip) {
-          ref.read(aniSkipProvider.notifier).clear();
-          return;
-        }
+      final ep = episodes[currentIndex];
 
-        final ep = episodes[currentIndex];
+      if (ep.number == null) return;
+      if (ep.number == _lastAniSkipEpisode) return;
 
-        if (ep.number == null) return;
+      _lastAniSkipEpisode = ep.number;
 
-        ref.read(aniSkipProvider.notifier).fetchSkipTimes(
-              mediaId: widget.mediaId,
-              animeTitle: widget.animeName,
-              episodeNumber: ep.number!.toInt(),
-              episodeLength: duration.inSeconds,
-            );
-      },
-    );
+      ref
+          .read(aniSkipProvider.notifier)
+          .fetchSkipTimes(
+            mediaId: widget.mediaId,
+            animeTitle: widget.animeName,
+            episodeNumber: ep.number!.toInt(),
+            episodeLength: duration.inSeconds,
+          );
+    });
 
     // Auto-Skip Listener
-    ref.listen<Duration>(
-      playerStateProvider.select((p) => p.position),
-      (_, pos) {
-        final skips = ref.read(aniSkipProvider);
-        if (skips.isEmpty) return;
+    ref.listen<Duration>(playerStateProvider.select((p) => p.position), (
+      _,
+      pos,
+    ) {
+      final skips = ref.read(aniSkipProvider);
+      if (skips.isEmpty) return;
 
-        final settings = ref.read(playerSettingsProvider);
-        if (!settings.enableAutoSkip) return;
+      final settings = ref.read(playerSettingsProvider);
+      if (!settings.enableAutoSkip) return;
 
-        for (final skip in skips) {
-          if (skip.interval == null) continue;
-          final start = Duration(seconds: skip.interval!.startTime.toInt());
-          final end = Duration(seconds: skip.interval!.endTime.toInt());
+      for (final skip in skips) {
+        if (skip.interval == null) continue;
+        final start = Duration(seconds: skip.interval!.startTime.toInt());
+        final end = Duration(seconds: skip.interval!.endTime.toInt());
 
-          if (pos >= start && pos < end) {
-            ref.read(playerStateProvider.notifier).seek(end);
-            // Break to avoid multiple matches or conflicts
-            break;
-          }
+        if (pos >= start && pos < end) {
+          ref.read(playerStateProvider.notifier).seek(end);
+          // Break to avoid multiple matches or conflicts
+          break;
         }
-      },
-    );
+      }
+    });
 
     ref.listen<PlayerState>(
       playerStateProvider,
@@ -226,12 +235,15 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   }
 
   Future<void> _handleResume(PlayerState state) async {
-    if (_resumeChecked || state.duration == Duration.zero) return;
-    _resumeChecked = true;
+    if (state.duration == Duration.zero) return;
 
     final episodeData = ref.read(episodeDataProvider);
     final idx = episodeData.selectedEpisodeIdx;
-    if (idx == null) return;
+
+    if (idx == null || idx == _resumeCheckedEpisodeIndex) return;
+
+    // Set immediately to prevent re-entry
+    _resumeCheckedEpisodeIndex = idx;
 
     final episode = ref.read(episodeListProvider).episodes.elementAt(idx);
     final repo = ref.read(watchProgressRepositoryProvider);
@@ -316,11 +328,13 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
                   controller: notifier.videoController,
                   fit: fit,
                   wakelock: true,
-                  filterQuality:
-                      kDebugMode ? FilterQuality.none : FilterQuality.low,
+                  filterQuality: kDebugMode
+                      ? FilterQuality.none
+                      : FilterQuality.low,
                   controls: NoVideoControls,
-                  subtitleViewConfiguration:
-                      SubtitleViewConfiguration(visible: false),
+                  subtitleViewConfiguration: SubtitleViewConfiguration(
+                    visible: false,
+                  ),
                 ),
               ),
               ControlsOverlay(onEpisodesPressed: _togglePanel),

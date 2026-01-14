@@ -360,6 +360,8 @@ class UniversalTitle {
         'english': english,
         'native': native,
       };
+  
+  String get available => english ?? romaji ?? native ?? 'Unknown';
 }
 
 class UniversalCoverImage {

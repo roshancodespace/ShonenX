@@ -1,6 +1,7 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/features/home/view/widget/continue_section.dart';
@@ -18,60 +19,133 @@ class HomeScreen extends ConsumerWidget {
 
     if (state.isLoading)
       return const Center(child: CircularProgressIndicator());
+
     if (state.error != null)
       return Center(child: Text('Error: ${state.error}'));
 
     final home = state.homePage;
-    if (home == null) return const SizedBox.shrink();
 
-    final sections = [
-      if (home.trendingAnime.isNotEmpty)
-        _buildHomeSection('Trending Anime', home.trendingAnime),
-      if (home.popularAnime.isNotEmpty)
-        _buildHomeSection('Popular Anime', home.popularAnime),
-      if (home.mostFavoriteAnime.isNotEmpty)
-        _buildHomeSection('Most Favorite', home.mostFavoriteAnime),
-      if (home.mostWatchedAnime.isNotEmpty)
-        _buildHomeSection('Most Watched', home.mostWatchedAnime),
-      if (home.topRatedAnime.isNotEmpty)
-        _buildHomeSection('Top Rated', home.topRatedAnime),
-      if (home.recentlyUpdated.isNotEmpty)
-        _buildHomeSection('Recently Updated', home.recentlyUpdated),
-      if (home.upcomingAnime.isNotEmpty)
-        _buildHomeSection('Upcoming', home.upcomingAnime),
-    ];
+    if (home == null) return const SizedBox.shrink();
 
     return RefreshIndicator(
       onRefresh: () => ref.read(homepageProvider.notifier).fetchHomePage(),
-      child: ListView(
+      child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        children: [
-          const HeaderSection(isDesktop: false),
-          if (home.trendingAnime.isNotEmpty)
-            SpotlightSection(spotlightAnime: home.trendingAnime),
-          const SizedBox(height: 16),
+        cacheExtent: 600,
+        itemCount: _itemCount(home),
 
-          // Continue Watching Section
-          ref.watch(watchProgressStreamProvider).when(
-                data: (allProgress) {
-                  if (allProgress.isEmpty) return const SizedBox.shrink();
-                  final sorted = allProgress.toList()
-                    ..sort((a, b) => (b.lastUpdated ?? DateTime(0))
-                        .compareTo(a.lastUpdated ?? DateTime(0)));
-                  return ContinueSection(allProgress: sorted.take(15).toList());
-                },
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-
-          // All home sections
-          ...sections,
-          const SizedBox(height: 80),
-        ],
+        itemBuilder: (context, index) {
+          return _buildItemByIndex(context, ref, home, index);
+        },
       ),
     );
   }
+  
+  int _itemCount(HomePage home) {
+    int count = 0;
 
-  Widget _buildHomeSection(String title, List<UniversalMedia> mediaList) =>
-      HomeSectionWidget(title: title, mediaList: mediaList);
+    count++; // Header
+    if (home.trendingAnime.isNotEmpty) count++; // Spotlight
+    count++; // Continue Watching
+
+    if (home.trendingAnime.isNotEmpty) count++;
+    if (home.popularAnime.isNotEmpty) count++;
+    if (home.mostFavoriteAnime.isNotEmpty) count++;
+    if (home.mostWatchedAnime.isNotEmpty) count++;
+    if (home.topRatedAnime.isNotEmpty) count++;
+    if (home.recentlyUpdated.isNotEmpty) count++;
+    if (home.upcomingAnime.isNotEmpty) count++;
+
+    count++; // Bottom spacing
+
+    return count;
+  }
+
+  Widget _buildItemByIndex(
+    BuildContext context,
+    WidgetRef ref,
+    HomePage home,
+    int index,
+  ) {
+    int currentIndex = 0;
+
+    /// HEADER
+    if (index == currentIndex) {
+      return const HeaderSection(isDesktop: false);
+    }
+    currentIndex++;
+
+    /// SPOTLIGHT
+    if (home.trendingAnime.isNotEmpty) {
+      if (index == currentIndex) {
+        return SpotlightSection(spotlightAnime: home.trendingAnime);
+      }
+      currentIndex++;
+    }
+
+    /// CONTINUE WATCHING
+    if (index == currentIndex) {
+      return _ContinueWatchingSection();
+    }
+    currentIndex++;
+
+    /// HOME SECTIONS
+    final sections = <_HomeSectionData>[
+      if (home.trendingAnime.isNotEmpty)
+        _HomeSectionData('Trending Anime', home.trendingAnime),
+      if (home.popularAnime.isNotEmpty)
+        _HomeSectionData('Popular Anime', home.popularAnime),
+      if (home.mostFavoriteAnime.isNotEmpty)
+        _HomeSectionData('Most Favorite', home.mostFavoriteAnime),
+      if (home.mostWatchedAnime.isNotEmpty)
+        _HomeSectionData('Most Watched', home.mostWatchedAnime),
+      if (home.topRatedAnime.isNotEmpty)
+        _HomeSectionData('Top Rated', home.topRatedAnime),
+      if (home.recentlyUpdated.isNotEmpty)
+        _HomeSectionData('Recently Updated', home.recentlyUpdated),
+      if (home.upcomingAnime.isNotEmpty)
+        _HomeSectionData('Upcoming', home.upcomingAnime),
+    ];
+
+    final sectionIndex = index - currentIndex;
+
+    if (sectionIndex >= 0 && sectionIndex < sections.length) {
+      final section = sections[sectionIndex];
+      return HomeSectionWidget(title: section.title, mediaList: section.media);
+    }
+
+    /// BOTTOM SPACING
+    return const SizedBox(height: 80);
+  }
+}
+
+class _ContinueWatchingSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref
+        .watch(watchProgressStreamProvider)
+        .when(
+          data: (allProgress) {
+            if (allProgress.isEmpty) return const SizedBox.shrink();
+
+            final sorted = [...allProgress]
+              ..sort(
+                (a, b) => (b.lastUpdated ?? DateTime(0)).compareTo(
+                  a.lastUpdated ?? DateTime(0),
+                ),
+              );
+
+            return ContinueSection(allProgress: sorted.take(15).toList());
+          },
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+        );
+  }
+}
+
+class _HomeSectionData {
+  final String title;
+  final List<UniversalMedia> media;
+
+  _HomeSectionData(this.title, this.media);
 }

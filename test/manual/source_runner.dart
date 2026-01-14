@@ -7,6 +7,7 @@ import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/utils/extractors.dart' as extractor;
+import 'package:shonenx/core/utils/env_loader.dart';
 
 // ==========================================
 // 🔧 CONFIGURATION
@@ -19,38 +20,6 @@ const debugConfig = DebugConfig(
   manualServerIndex: 0,
 );
 // ==========================================
-
-/* ============================================================
- * ENV LOADER (pure Dart, reads root .env as text)
- * ============================================================ */
-class Env {
-  static final Map<String, String> _vars = {};
-
-  static Future<void> load([String path = '.env']) async {
-    final file = File(path);
-    if (!await file.exists()) return;
-
-    for (final line in await file.readAsLines()) {
-      final trimmed = line.trim();
-      if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
-
-      final idx = trimmed.indexOf('=');
-      if (idx == -1) continue;
-
-      final key = trimmed.substring(0, idx).trim();
-      var value = trimmed.substring(idx + 1).trim();
-
-      if ((value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))) {
-        value = value.substring(1, value.length - 1);
-      }
-
-      _vars[key] = value;
-    }
-  }
-
-  static String? get(String key) => Platform.environment[key] ?? _vars[key];
-}
 
 /* ============================================================
  * DEBUG CONFIG / CONTEXT
@@ -98,7 +67,7 @@ class DebugContext {
  * CACHE
  * ============================================================ */
 class CacheManager {
-  static final File _file = File('tool/.debug_cache');
+  static final File _file = File('.debug_cache');
 
   static Future<Map<String, dynamic>?> load() async {
     if (!debugConfig.useCache) return null;
@@ -128,14 +97,16 @@ class CacheManager {
   ) async {
     if (!debugConfig.useCache) return;
 
-    await _file.writeAsString(jsonEncode({
-      'provider': debugConfig.provider,
-      'query': debugConfig.searchQuery,
-      'animeId': animeId,
-      'animeName': animeName,
-      'epId': epId,
-      'epNumber': epNumber,
-    }));
+    await _file.writeAsString(
+      jsonEncode({
+        'provider': debugConfig.provider,
+        'query': debugConfig.searchQuery,
+        'animeId': animeId,
+        'animeName': animeName,
+        'epId': epId,
+        'epNumber': epNumber,
+      }),
+    );
   }
 }
 
@@ -191,7 +162,7 @@ Future<T> retry<T>(
 Future<void> main() async {
   HttpOverrides.global = null;
 
-  await Env.load('.env');
+  await Env.init();
 
   final ctx = DebugContext();
   final cache = await CacheManager.load();
@@ -218,11 +189,7 @@ Future<void> main() async {
     } else {
       await runStep('SEARCH', () async {
         ctx.searchResult = await retry(
-          () => ctx.provider.getSearch(
-            debugConfig.searchQuery,
-            null,
-            1,
-          ),
+          () => ctx.provider.getSearch(debugConfig.searchQuery, null, 1),
           attempts: debugConfig.retryAttempts,
         );
 
@@ -250,11 +217,13 @@ Future<void> main() async {
 
     await runStep('SERVERS', () async {
       ctx.servers = await retry(
-        () => ctx.provider.getSupportedServers(metadata: {
-          'id': ctx.selectedAnime.id,
-          'epId': ctx.selectedEpisode.id,
-          'epNumber': ctx.selectedEpisode.number,
-        }),
+        () => ctx.provider.getSupportedServers(
+          metadata: {
+            'id': ctx.selectedAnime.id,
+            'epId': ctx.selectedEpisode.id,
+            'epNumber': ctx.selectedEpisode.number,
+          },
+        ),
       );
 
       final servers = ctx.servers?.flatten() ?? [];
@@ -298,28 +267,26 @@ Future<void> main() async {
     });
 
     if (debugConfig.verifyStreams) {
-      await runStep(
-        'STREAM HEALTH CHECK',
-        () async {
-          for (final source in ctx.sourcesResult.sources) {
-            AppLogger.raw('Testing [${source.quality}]...');
-            final res = await http.get(
-              Uri.parse(source.url),
-              headers: {
-                ...ctx.sourcesResult.headers.cast<String, String>(),
-                'Range': 'bytes=0-1024',
-              },
-            ).timeout(debugConfig.requestTimeout);
+      await runStep('STREAM HEALTH CHECK', () async {
+        for (final source in ctx.sourcesResult.sources) {
+          AppLogger.raw('Testing [${source.quality}]...');
+          final res = await http
+              .get(
+                Uri.parse(source.url),
+                headers: {
+                  ...ctx.sourcesResult.headers.cast<String, String>(),
+                  'Range': 'bytes=0-1024',
+                },
+              )
+              .timeout(debugConfig.requestTimeout);
 
-            if (res.statusCode < 400) {
-              AppLogger.success('OK ${res.statusCode}');
-            } else {
-              AppLogger.fail('FAIL ${res.statusCode}');
-            }
+          if (res.statusCode < 400) {
+            AppLogger.success('OK ${res.statusCode}');
+          } else {
+            AppLogger.fail('FAIL ${res.statusCode}');
           }
-        },
-        failFast: false,
-      );
+        }
+      }, failFast: false);
     }
   } catch (e, st) {
     AppLogger.e('Fatal error', e, st);

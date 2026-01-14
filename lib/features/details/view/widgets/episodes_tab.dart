@@ -408,8 +408,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
             onLongPress: () => _showEpisodeMenu(context, ep, isWatched),
           );
         case EpisodeViewMode.list:
-        default:
-          return EpisodeListItem(
+        return EpisodeListItem(
             episode: ep,
             index: index,
             isWatched: isWatched,

@@ -5,8 +5,8 @@ import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
-import 'package:shonenx/core/sources/anime/aniwatch/parser.dart';
-import 'package:shonenx/core/sources/anime/anime_provider.dart';
+import 'package:shonenx/core/registery/sources/anime/aniwatch/parser.dart';
+import 'package:shonenx/core/registery/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/env_loader.dart';
 import 'package:html/parser.dart' show parse;
 

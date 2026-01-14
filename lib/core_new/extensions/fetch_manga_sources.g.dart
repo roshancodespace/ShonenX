@@ -6,174 +6,86 @@ part of 'fetch_manga_sources.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$fetchMangaSourcesListHash() =>
-    r'f66f3011e72a3b234d7729ef203fc5f255870db3';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// Copied from Dart SDK
-class _SystemHash {
-  _SystemHash._();
-
-  static int combine(int hash, int value) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + value);
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
-    return hash ^ (hash >> 6);
-  }
-
-  static int finish(int hash) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
-    // ignore: parameter_assignments
-    hash = hash ^ (hash >> 11);
-    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
-  }
-}
-
-/// See also [fetchMangaSourcesList].
 @ProviderFor(fetchMangaSourcesList)
-const fetchMangaSourcesListProvider = FetchMangaSourcesListFamily();
+const fetchMangaSourcesListProvider = FetchMangaSourcesListFamily._();
 
-/// See also [fetchMangaSourcesList].
-class FetchMangaSourcesListFamily extends Family<AsyncValue> {
-  /// See also [fetchMangaSourcesList].
-  const FetchMangaSourcesListFamily();
+final class FetchMangaSourcesListProvider
+    extends $FunctionalProvider<AsyncValue<dynamic>, dynamic, FutureOr<dynamic>>
+    with $FutureModifier<dynamic>, $FutureProvider<dynamic> {
+  const FetchMangaSourcesListProvider._({
+    required FetchMangaSourcesListFamily super.from,
+    required ({int? id, dynamic reFresh}) super.argument,
+  }) : super(
+         retry: null,
+         name: r'fetchMangaSourcesListProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
-  /// See also [fetchMangaSourcesList].
-  FetchMangaSourcesListProvider call({
-    int? id,
-    required dynamic reFresh,
-  }) {
-    return FetchMangaSourcesListProvider(
-      id: id,
-      reFresh: reFresh,
-    );
+  @override
+  String debugGetCreateSourceHash() => _$fetchMangaSourcesListHash();
+
+  @override
+  String toString() {
+    return r'fetchMangaSourcesListProvider'
+        ''
+        '$argument';
   }
 
+  @$internal
   @override
-  FetchMangaSourcesListProvider getProviderOverride(
-    covariant FetchMangaSourcesListProvider provider,
-  ) {
-    return call(
-      id: provider.id,
-      reFresh: provider.reFresh,
+  $FutureProviderElement<dynamic> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<dynamic> create(Ref ref) {
+    final argument = this.argument as ({int? id, dynamic reFresh});
+    return fetchMangaSourcesList(
+      ref,
+      id: argument.id,
+      reFresh: argument.reFresh,
     );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'fetchMangaSourcesListProvider';
-}
-
-/// See also [fetchMangaSourcesList].
-class FetchMangaSourcesListProvider extends AutoDisposeFutureProvider<Object?> {
-  /// See also [fetchMangaSourcesList].
-  FetchMangaSourcesListProvider({
-    int? id,
-    required dynamic reFresh,
-  }) : this._internal(
-          (ref) => fetchMangaSourcesList(
-            ref as FetchMangaSourcesListRef,
-            id: id,
-            reFresh: reFresh,
-          ),
-          from: fetchMangaSourcesListProvider,
-          name: r'fetchMangaSourcesListProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$fetchMangaSourcesListHash,
-          dependencies: FetchMangaSourcesListFamily._dependencies,
-          allTransitiveDependencies:
-              FetchMangaSourcesListFamily._allTransitiveDependencies,
-          id: id,
-          reFresh: reFresh,
-        );
-
-  FetchMangaSourcesListProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.id,
-    required this.reFresh,
-  }) : super.internal();
-
-  final int? id;
-  final dynamic reFresh;
-
-  @override
-  Override overrideWith(
-    FutureOr<Object?> Function(FetchMangaSourcesListRef provider) create,
-  ) {
-    return ProviderOverride(
-      origin: this,
-      override: FetchMangaSourcesListProvider._internal(
-        (ref) => create(ref as FetchMangaSourcesListRef),
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        id: id,
-        reFresh: reFresh,
-      ),
-    );
-  }
-
-  @override
-  AutoDisposeFutureProviderElement<Object?> createElement() {
-    return _FetchMangaSourcesListProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is FetchMangaSourcesListProvider &&
-        other.id == id &&
-        other.reFresh == reFresh;
+    return other is FetchMangaSourcesListProvider && other.argument == argument;
   }
 
   @override
   int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, id.hashCode);
-    hash = _SystemHash.combine(hash, reFresh.hashCode);
-
-    return _SystemHash.finish(hash);
+    return argument.hashCode;
   }
 }
 
-// ignore: unused_element
-mixin FetchMangaSourcesListRef on AutoDisposeFutureProviderRef<Object?> {
-  /// The parameter `id` of this provider.
-  int? get id;
+String _$fetchMangaSourcesListHash() =>
+    r'54d62588a16e6912345a61c3574d807690acbc7c';
 
-  /// The parameter `reFresh` of this provider.
-  dynamic get reFresh;
-}
+final class FetchMangaSourcesListFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<dynamic>,
+          ({int? id, dynamic reFresh})
+        > {
+  const FetchMangaSourcesListFamily._()
+    : super(
+        retry: null,
+        name: r'fetchMangaSourcesListProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
-class _FetchMangaSourcesListProviderElement
-    extends AutoDisposeFutureProviderElement<Object?>
-    with FetchMangaSourcesListRef {
-  _FetchMangaSourcesListProviderElement(super.provider);
+  FetchMangaSourcesListProvider call({int? id, required dynamic reFresh}) =>
+      FetchMangaSourcesListProvider._(
+        argument: (id: id, reFresh: reFresh),
+        from: this,
+      );
 
   @override
-  int? get id => (origin as FetchMangaSourcesListProvider).id;
-
-  @override
-  dynamic get reFresh => (origin as FetchMangaSourcesListProvider).reFresh;
+  String toString() => r'fetchMangaSourcesListProvider';
 }
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

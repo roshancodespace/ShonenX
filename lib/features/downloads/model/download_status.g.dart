@@ -8,7 +8,7 @@ part of 'download_status.dart';
 
 class DownloadStatusAdapter extends TypeAdapter<DownloadStatus> {
   @override
-  final int typeId = 13;
+  final typeId = 13;
 
   @override
   DownloadStatus read(BinaryReader reader) {
@@ -35,22 +35,16 @@ class DownloadStatusAdapter extends TypeAdapter<DownloadStatus> {
     switch (obj) {
       case DownloadStatus.downloaded:
         writer.writeByte(0);
-        break;
       case DownloadStatus.downloading:
         writer.writeByte(1);
-        break;
       case DownloadStatus.paused:
         writer.writeByte(2);
-        break;
       case DownloadStatus.error:
         writer.writeByte(3);
-        break;
       case DownloadStatus.queued:
         writer.writeByte(4);
-        break;
       case DownloadStatus.failed:
         writer.writeByte(5);
-        break;
     }
   }
 

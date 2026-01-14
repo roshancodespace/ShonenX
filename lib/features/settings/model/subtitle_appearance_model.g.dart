@@ -9,7 +9,7 @@ part of 'subtitle_appearance_model.dart';
 class SubtitleAppearanceModelAdapter
     extends TypeAdapter<SubtitleAppearanceModel> {
   @override
-  final int typeId = 10;
+  final typeId = 10;
 
   @override
   SubtitleAppearanceModel read(BinaryReader reader) {
@@ -18,27 +18,33 @@ class SubtitleAppearanceModelAdapter
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return SubtitleAppearanceModel(
-      fontSize: fields[0] == null ? 16.0 : fields[0] as double,
-      textColor: fields[1] == null ? 4294967295 : fields[1] as int,
-      backgroundOpacity: fields[2] == null ? 0.5 : fields[2] as double,
+      fontSize: fields[0] == null ? 16.0 : (fields[0] as num).toDouble(),
+      textColor: fields[1] == null ? 4294967295 : (fields[1] as num).toInt(),
+      backgroundOpacity: fields[2] == null
+          ? 0.5
+          : (fields[2] as num).toDouble(),
       hasShadow: fields[3] == null ? true : fields[3] as bool,
-      shadowOpacity: fields[4] == null ? 0.5 : fields[4] as double,
-      shadowBlur: fields[5] == null ? 2.0 : fields[5] as double,
+      shadowOpacity: fields[4] == null ? 0.5 : (fields[4] as num).toDouble(),
+      shadowBlur: fields[5] == null ? 2.0 : (fields[5] as num).toDouble(),
       fontFamily: fields[6] as String?,
-      position: fields[7] == null ? 1 : fields[7] as int,
+      position: fields[7] == null ? 1 : (fields[7] as num).toInt(),
       boldText: fields[8] == null ? true : fields[8] as bool,
       forceUppercase: fields[9] == null ? false : fields[9] as bool,
-      bottomMargin: fields[10] == null ? 20.0 : fields[10] as double,
-      backgroundColor: fields[11] == null ? 4294967295 : fields[11] as int,
-      outlineColor: fields[12] == null ? 4294967295 : fields[12] as int,
-      outlineWidth: fields[13] == null ? 0.0 : fields[13] as double,
+      bottomMargin: fields[10] == null ? 20.0 : (fields[10] as num).toDouble(),
+      backgroundColor: fields[11] == null
+          ? 4278190080
+          : (fields[11] as num).toInt(),
+      outlineColor: fields[12] == null
+          ? 4278190080
+          : (fields[12] as num).toInt(),
+      outlineWidth: fields[13] == null ? 0.0 : (fields[13] as num).toDouble(),
     );
   }
 
   @override
   void write(BinaryWriter writer, SubtitleAppearanceModel obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.fontSize)
       ..writeByte(1)

@@ -8,7 +8,7 @@ part of 'home_page.dart';
 
 class HomePageModelAdapter extends TypeAdapter<HomePageModel> {
   @override
-  final int typeId = 5;
+  final typeId = 5;
 
   @override
   HomePageModel read(BinaryReader reader) {
@@ -17,11 +17,12 @@ class HomePageModelAdapter extends TypeAdapter<HomePageModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return HomePageModel(
-      sections: (fields[0] as Map).map((dynamic k, dynamic v) => MapEntry(
+      sections: (fields[0] as Map).map(
+        (dynamic k, dynamic v) => MapEntry(
           k as String,
-          (v as List)
-              .map((dynamic e) => (e as Map).cast<String, dynamic>())
-              .toList())),
+          (v as List).map((e) => (e as Map).cast<String, dynamic>()).toList(),
+        ),
+      ),
       lastUpdated: fields[1] as DateTime,
     );
   }

@@ -8,7 +8,7 @@ part of 'download_settings_model.dart';
 
 class DownloadSettingsModelAdapter extends TypeAdapter<DownloadSettingsModel> {
   @override
-  final int typeId = 14;
+  final typeId = 14;
 
   @override
   DownloadSettingsModel read(BinaryReader reader) {
@@ -18,11 +18,13 @@ class DownloadSettingsModelAdapter extends TypeAdapter<DownloadSettingsModel> {
     };
     return DownloadSettingsModel(
       customDownloadPath: fields[0] as String?,
-      useCustomPath: fields[1] as bool,
-      folderStructure: fields[2] as String,
-      parallelDownloads: fields[3] as int,
-      speedLimitKBps: fields[4] as int,
-      wifiOnly: fields[5] as bool,
+      useCustomPath: fields[1] == null ? false : fields[1] as bool,
+      folderStructure: fields[2] == null
+          ? 'Anime/Episode'
+          : fields[2] as String,
+      parallelDownloads: fields[3] == null ? 5 : (fields[3] as num).toInt(),
+      speedLimitKBps: fields[4] == null ? 0 : (fields[4] as num).toInt(),
+      wifiOnly: fields[5] == null ? false : fields[5] as bool,
     );
   }
 

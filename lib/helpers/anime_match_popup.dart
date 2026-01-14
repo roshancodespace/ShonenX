@@ -8,7 +8,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
-import 'package:shonenx/core/sources/anime/anime_provider.dart';
+import 'package:shonenx/core/registery/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';

@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+
+part 'player_provider.g.dart';
 
 @immutable
 class PlayerState {
@@ -29,15 +30,15 @@ class PlayerState {
   });
 
   factory PlayerState.initial() => const PlayerState(
-        position: Duration.zero,
-        duration: Duration.zero,
-        buffer: Duration.zero,
-        isPlaying: false,
-        isBuffering: false,
-        playbackSpeed: 1.0,
-        subtitle: [],
-        fit: BoxFit.contain,
-      );
+    position: Duration.zero,
+    duration: Duration.zero,
+    buffer: Duration.zero,
+    isPlaying: false,
+    isBuffering: false,
+    playbackSpeed: 1.0,
+    subtitle: [],
+    fit: BoxFit.contain,
+  );
 
   PlayerState copyWith({
     Duration? position,
@@ -62,7 +63,8 @@ class PlayerState {
   }
 }
 
-class PlayerController extends AutoDisposeNotifier<PlayerState> {
+@riverpod
+class PlayerStateNotifier extends _$PlayerStateNotifier {
   late final Player _player;
   late final VideoController videoController;
   final List<StreamSubscription> _subs = [];
@@ -81,8 +83,9 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
     videoController = VideoController(
       _player,
       configuration: VideoControllerConfiguration(
-        androidAttachSurfaceAfterVideoParameters:
-            Platform.isAndroid ? true : null,
+        androidAttachSurfaceAfterVideoParameters: Platform.isAndroid
+            ? true
+            : null,
       ),
     );
 
@@ -93,40 +96,42 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
     return PlayerState.initial();
   }
 
-  /* ───────────────────────── LISTENERS ───────────────────────── */
-
   void _attachListeners() {
     final stream = _player.stream;
 
-    _subs.add(stream.position.listen((pos) {
-      if (_player.state.duration > Duration.zero) {
-        state = state.copyWith(position: pos);
-      }
-    }));
+    _subs.add(
+      stream.position.listen((pos) {
+        if (_player.state.duration > Duration.zero) {
+          state = state.copyWith(position: pos);
+        }
+      }),
+    );
 
-    _subs.add(stream.duration.listen(
-      (dur) => state = state.copyWith(duration: dur),
-    ));
+    _subs.add(
+      stream.duration.listen((dur) => state = state.copyWith(duration: dur)),
+    );
 
-    _subs.add(stream.buffer.listen(
-      (buf) => state = state.copyWith(buffer: buf),
-    ));
+    _subs.add(
+      stream.buffer.listen((buf) => state = state.copyWith(buffer: buf)),
+    );
 
-    _subs.add(stream.buffering.listen(
-      (buf) => state = state.copyWith(isBuffering: buf),
-    ));
+    _subs.add(
+      stream.buffering.listen(
+        (buf) => state = state.copyWith(isBuffering: buf),
+      ),
+    );
 
-    _subs.add(stream.playing.listen(
-      (play) => state = state.copyWith(isPlaying: play),
-    ));
+    _subs.add(
+      stream.playing.listen((play) => state = state.copyWith(isPlaying: play)),
+    );
 
-    _subs.add(stream.rate.listen(
-      (rate) => state = state.copyWith(playbackSpeed: rate),
-    ));
+    _subs.add(
+      stream.rate.listen((rate) => state = state.copyWith(playbackSpeed: rate)),
+    );
 
-    _subs.add(stream.subtitle.listen(
-      (subs) => state = state.copyWith(subtitle: subs),
-    ));
+    _subs.add(
+      stream.subtitle.listen((subs) => state = state.copyWith(subtitle: subs)),
+    );
   }
 
   void _dispose() {
@@ -134,10 +139,7 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
       s.cancel();
     }
     _player.dispose();
-    videoController.notifier.dispose();
   }
-
-  /* ───────────────────────── CORE CONTROLS ───────────────────────── */
 
   Future<void> open(
     String url,
@@ -154,15 +156,11 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
           .timeout(const Duration(seconds: 10));
 
       await _player.seek(startAt);
-    } catch (_) {
-      // silent fail (network / live streams)
-    }
+    } catch (_) {}
   }
 
   Future<void> togglePlay() async {
-    _player.state.playing
-        ? await _player.pause()
-        : await _player.play();
+    _player.state.playing ? await _player.pause() : await _player.play();
   }
 
   Future<void> play() => _player.play();
@@ -171,39 +169,27 @@ class PlayerController extends AutoDisposeNotifier<PlayerState> {
   Future<void> seek(Duration pos) => _player.seek(pos);
 
   void forward(int seconds) {
-    final p = _player.state.position +
-        Duration(seconds: seconds);
+    final p = _player.state.position + Duration(seconds: seconds);
     _player.seek(p);
   }
 
   void rewind(int seconds) {
-    final p = _player.state.position -
-        Duration(seconds: seconds);
+    final p = _player.state.position - Duration(seconds: seconds);
     _player.seek(p < Duration.zero ? Duration.zero : p);
   }
 
-  /* ───────────────────────── AUDIO / VIDEO ───────────────────────── */
+  Future<void> setSpeed(double speed) => _player.setRate(speed);
 
-  Future<void> setSpeed(double speed) =>
-      _player.setRate(speed);
-
-  void setFit(BoxFit fit) =>
-      state = state.copyWith(fit: fit);
+  void setFit(BoxFit fit) => state = state.copyWith(fit: fit);
 
   Future<void> setSubtitle(SubtitleTrack track) =>
       _player.setSubtitleTrack(track);
 
-  void volumeUp() => _player.setVolume(
-      (_player.state.volume + 10).clamp(0, 100));
+  void volumeUp() =>
+      _player.setVolume((_player.state.volume + 10).clamp(0, 100));
 
-  void volumeDown() => _player.setVolume(
-      (_player.state.volume - 10).clamp(0, 100));
+  void volumeDown() =>
+      _player.setVolume((_player.state.volume - 10).clamp(0, 100));
 
-  void toggleMute() =>
-      _player.setVolume(_player.state.volume == 0 ? 100 : 0);
+  void toggleMute() => _player.setVolume(_player.state.volume == 0 ? 100 : 0);
 }
-
-final playerStateProvider =
-    AutoDisposeNotifierProvider<PlayerController, PlayerState>(
-  PlayerController.new,
-);

@@ -30,19 +30,20 @@ class DownloadCard extends ConsumerWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-            color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: isCompleted
             ? () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => LocalPlayerScreen(
-                      filePath: item.filePath,
-                      title: '${item.animeTitle} - ${item.episodeTitle}',
-                    ),
+                MaterialPageRoute(
+                  builder: (context) => LocalPlayerScreen(
+                    filePath: item.filePath,
+                    title: '${item.animeTitle} - ${item.episodeTitle}',
                   ),
-                )
+                ),
+              )
             : null,
         child: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -190,9 +191,7 @@ class DownloadCard extends ConsumerWidget {
         const SizedBox(height: 4),
         Row(
           children: [
-            Expanded(
-              child: _buildStatusText(theme),
-            ),
+            Expanded(child: _buildStatusText(theme)),
             Text(
               '${(progressValue * 100).toStringAsFixed(0)}%',
               style: theme.textTheme.labelSmall?.copyWith(
@@ -244,7 +243,7 @@ class DownloadCard extends ConsumerWidget {
 
   Widget _buildActionButtons(
     ThemeData theme,
-    DownloadNotifier downloadNotifier,
+    DownloadsNotifier downloadNotifier,
     bool isDownloading,
     bool isPaused,
     bool isCompleted,

@@ -8,7 +8,7 @@ part of 'track_search.dart';
 
 class TrackSearchAdapter extends TypeAdapter<TrackSearch> {
   @override
-  final int typeId = 0;
+  final typeId = 0;
 
   @override
   TrackSearch read(BinaryReader reader) {
@@ -17,23 +17,23 @@ class TrackSearchAdapter extends TypeAdapter<TrackSearch> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return TrackSearch(
-      id: fields[0] as int?,
-      libraryId: fields[1] as int?,
-      mediaId: fields[2] as int?,
-      syncId: fields[3] as int?,
+      id: (fields[0] as num?)?.toInt(),
+      libraryId: (fields[1] as num?)?.toInt(),
+      mediaId: (fields[2] as num?)?.toInt(),
+      syncId: (fields[3] as num?)?.toInt(),
       title: fields[4] as String?,
-      lastChapterRead: fields[5] as int?,
-      totalChapter: fields[6] as int?,
-      score: fields[7] as double?,
-      status: fields[8] as String?,
-      startedReadingDate: fields[9] as int?,
-      finishedReadingDate: fields[10] as int?,
+      lastChapterRead: (fields[5] as num?)?.toInt(),
+      totalChapter: (fields[6] as num?)?.toInt(),
+      score: (fields[7] as num?)?.toDouble(),
+      status: fields[8] == null ? '' : fields[8] as String?,
+      startedReadingDate: (fields[9] as num?)?.toInt(),
+      finishedReadingDate: (fields[10] as num?)?.toInt(),
       trackingUrl: fields[11] as String?,
-      coverUrl: fields[12] as String?,
-      publishingStatus: fields[14] as String?,
-      publishingType: fields[15] as String?,
-      startDate: fields[16] as String?,
-      summary: fields[13] as String?,
+      coverUrl: fields[12] == null ? '' : fields[12] as String?,
+      publishingStatus: fields[14] == null ? '' : fields[14] as String?,
+      publishingType: fields[15] == null ? '' : fields[15] as String?,
+      startDate: fields[16] == null ? '' : fields[16] as String?,
+      summary: fields[13] == null ? '' : fields[13] as String?,
     );
   }
 

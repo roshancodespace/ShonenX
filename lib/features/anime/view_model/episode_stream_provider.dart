@@ -1,14 +1,15 @@
 // ignore_for_file: constant_identifier_names, use_build_context_synchronously
 import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
-import 'package:shonenx/core/sources/anime/anime_provider.dart';
+import 'package:shonenx/core/registery/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/anime/view/widgets/download_source_selector.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
@@ -18,6 +19,8 @@ import 'package:shonenx/features/settings/view_model/experimental_notifier.dart'
 import 'package:shonenx/features/settings/view_model/player_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/utils/extractors.dart' as extractor;
+
+part 'episode_stream_provider.g.dart';
 
 enum EpisodeStreamState {
   SOURCE_LOADING,
@@ -94,7 +97,8 @@ class EpisodeDataState {
   }
 }
 
-class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
+@riverpod
+class EpisodeData extends _$EpisodeData {
   EpisodeListState get _epState => ref.read(episodeListProvider);
   List<EpisodeDataModel> get _episodes => _epState.episodes;
   ExperimentalFeaturesModel get _exp => ref.read(experimentalProvider);
@@ -277,8 +281,6 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
 
   void reset() => state = const EpisodeDataState();
 
-  // -- Internals --
-
   bool _isValidEp(int idx) => idx >= 0 && idx < _episodes.length;
 
   Future<void> _fetchServers(int epIdx) async {
@@ -335,27 +337,23 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       headers: data.headers?.cast<String, String>(),
     );
 
-    // Auto-play first source
     await _loadSourceStream(0, startAt: startAt);
 
     state = state.copyWith(removeState: EpisodeStreamState.SOURCE_LOADING);
   }
 
-  /// Extracts qualities for the specific source and initializes player
   Future<void> _loadSourceStream(
     int sourceIdx, {
     required Duration startAt,
   }) async {
     final source = state.sources[sourceIdx];
 
-    // Optimistic UI update
     state = state.copyWith(addState: EpisodeStreamState.QUALITY_LOADING);
 
     final qualities = await _getQualitiesForSource(source, state.headers);
 
-    // Preference Matching
     final pref = ref.read(playerSettingsProvider).defaultQuality;
-    int qIdx = 0; // Default to first (usually auto/best)
+    int qIdx = 0;
 
     if (pref != 'Auto') {
       final match = qualities.indexWhere(
@@ -370,7 +368,6 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
         .read(playerStateProvider.notifier)
         .open(url, startAt, headers: state.headers);
 
-    // Auto-select English subtitles if available
     final engSubIdx = state.subtitles.indexWhere(
       (s) => s.lang?.toLowerCase().contains('eng') ?? false,
     );
@@ -384,12 +381,10 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     );
   }
 
-  /// Unified fetch logic for both Player and Downloader
   Future<BaseSourcesModel?> _fetchSourceData(
     EpisodeDataModel ep, {
     ServerData? server,
   }) async {
-    // 1. Mangayomi / Extension route
     if (_exp.useMangayomiExtensions && ep.url != null) {
       final res = await _sourceNotifier.getSources(ep.url!);
       return BaseSourcesModel(
@@ -411,7 +406,6 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       );
     }
 
-    // 2. Standard Provider route
     return _animeProvider?.getSources(
       _epState.animeId ?? '',
       ep.id ?? '',
@@ -437,14 +431,11 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
       return await extractor.extractQualities(url, headers ?? {});
     } catch (e) {
       AppLogger.e('Quality extraction failed', e);
-      // Fallback to original URL if extraction fails
       return [
         {'quality': source.quality ?? 'Default', 'url': url},
       ];
     }
   }
-
-  // -- UI Helpers --
 
   void _showLoading(BuildContext context) {
     showDialog(
@@ -465,7 +456,7 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     return showModalBottomSheet<ServerData>(
       context: context,
       isScrollControlled: true,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       builder: (context) {
@@ -551,8 +542,3 @@ class EpisodeDataNotifier extends AutoDisposeNotifier<EpisodeDataState> {
     );
   }
 }
-
-final episodeDataProvider =
-    AutoDisposeNotifierProvider<EpisodeDataNotifier, EpisodeDataState>(
-      EpisodeDataNotifier.new,
-    );

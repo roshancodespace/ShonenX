@@ -1,16 +1,24 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 
-class DetailsNotifier extends StateNotifier<AsyncValue<UniversalMedia>> {
-  final Ref ref;
-  final int animeId;
+part 'details_provider.g.dart';
 
-  DetailsNotifier(this.ref, this.animeId) : super(const AsyncLoading());
+@riverpod
+class Details extends _$Details {
+  @override
+  FutureOr<UniversalMedia> build(int animeId) async {
+    final repo = ref.read(animeRepositoryProvider);
+    final details = await repo.getAnimeDetails(animeId);
+    if (details == null) {
+      throw Exception('Failed to fetch anime details');
+    }
+    return details;
+  }
 
   void init(UniversalMedia initialMedia) {
-    if (!state.hasValue) {
+    if (state is! AsyncData) {
       state = AsyncData(initialMedia);
       fetchDetails();
     }
@@ -18,10 +26,9 @@ class DetailsNotifier extends StateNotifier<AsyncValue<UniversalMedia>> {
 
   Future<void> fetchDetails() async {
     final currentData = state.value;
-    // Set loading state while preserving previous data
+
     if (currentData != null) {
-      state = AsyncLoading<UniversalMedia>()
-          .copyWithPrevious(AsyncData(currentData));
+      state = AsyncLoading<UniversalMedia>();
     }
 
     try {
@@ -30,13 +37,11 @@ class DetailsNotifier extends StateNotifier<AsyncValue<UniversalMedia>> {
 
       if (fresh != null) {
         state = AsyncData(fresh);
-      } else {
-        // If fetch returns null (e.g. cancelled?), revert to current data
-        if (currentData != null) state = AsyncData(currentData);
+      } else if (currentData != null) {
+        state = AsyncData(currentData);
       }
     } catch (e, st) {
       AppLogger.e('Failed to fetch anime details for $animeId', e, st);
-      // On error, revert to current data silent failure
       if (currentData != null) {
         state = AsyncData(currentData);
       } else {
@@ -45,8 +50,3 @@ class DetailsNotifier extends StateNotifier<AsyncValue<UniversalMedia>> {
     }
   }
 }
-
-final detailsProvider = StateNotifierProvider.family<DetailsNotifier,
-    AsyncValue<UniversalMedia>, int>((ref, id) {
-  return DetailsNotifier(ref, id);
-});

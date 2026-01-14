@@ -8,7 +8,7 @@ part of 'theme_model.dart';
 
 class ThemeModelAdapter extends TypeAdapter<ThemeModel> {
   @override
-  final int typeId = 2;
+  final typeId = 2;
 
   @override
   ThemeModel read(BinaryReader reader) {
@@ -20,7 +20,7 @@ class ThemeModelAdapter extends TypeAdapter<ThemeModel> {
       themeMode: fields[0] == null ? 'system' : fields[0] as String,
       amoled: fields[1] == null ? false : fields[1] as bool,
       flexScheme: fields[2] as String?,
-      blendLevel: fields[3] == null ? 11 : fields[3] as int,
+      blendLevel: fields[3] == null ? 11 : (fields[3] as num).toInt(),
       swapColors: fields[4] == null ? false : fields[4] as bool,
       useMaterial3: fields[5] == null ? true : fields[5] as bool,
       useDynamicColors: fields[6] == null ? false : fields[6] as bool,

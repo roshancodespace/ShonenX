@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:shonenx/core_new/eval/model/m_source.dart';
 import 'package:shonenx/core_new/models/manga.dart';
 import 'package:shonenx/core_new/models/settings.dart';

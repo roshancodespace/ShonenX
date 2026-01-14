@@ -1,15 +1,16 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:hive_ce/hive.dart';
+
+part 'update_provider.g.dart';
 
 /// Keys
 const _settingsBox = 'settings';
 const _automaticUpdatesKey = 'useAutomaticUpdates';
 
-/// Notifier
-class AutomaticUpdatesNotifier extends StateNotifier<bool> {
-  AutomaticUpdatesNotifier() : super(_loadInitial());
-
-  static bool _loadInitial() {
+@riverpod
+class AutomaticUpdates extends _$AutomaticUpdates {
+  @override
+  bool build() {
     final box = Hive.box(_settingsBox);
     return box.get(_automaticUpdatesKey, defaultValue: true);
   }
@@ -24,9 +25,3 @@ class AutomaticUpdatesNotifier extends StateNotifier<bool> {
     Hive.box(_settingsBox).put(_automaticUpdatesKey, value);
   }
 }
-
-/// Provider
-final automaticUpdatesProvider =
-    StateNotifierProvider<AutomaticUpdatesNotifier, bool>(
-  (ref) => AutomaticUpdatesNotifier(),
-);

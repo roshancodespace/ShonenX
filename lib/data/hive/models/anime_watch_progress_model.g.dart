@@ -9,7 +9,7 @@ part of 'anime_watch_progress_model.dart';
 class AnimeWatchProgressEntryAdapter
     extends TypeAdapter<AnimeWatchProgressEntry> {
   @override
-  final int typeId = 7;
+  final typeId = 7;
 
   @override
   AnimeWatchProgressEntry read(BinaryReader reader) {
@@ -22,11 +22,13 @@ class AnimeWatchProgressEntryAdapter
       animeTitle: fields[1] as String,
       animeFormat: fields[2] as String,
       animeCover: fields[3] as String,
-      totalEpisodes: fields[4] as int,
-      episodesProgress: (fields[5] as Map).cast<int, EpisodeProgress>(),
+      totalEpisodes: (fields[4] as num).toInt(),
+      episodesProgress: fields[5] == null
+          ? const {}
+          : (fields[5] as Map).cast<int, EpisodeProgress>(),
       lastUpdated: fields[6] as DateTime?,
-      currentEpisode: fields[7] as int,
-      status: fields[8] as String,
+      currentEpisode: fields[7] == null ? 1 : (fields[7] as num).toInt(),
+      status: fields[8] == null ? 'watching' : fields[8] as String,
     );
   }
 
@@ -67,7 +69,7 @@ class AnimeWatchProgressEntryAdapter
 
 class EpisodeProgressAdapter extends TypeAdapter<EpisodeProgress> {
   @override
-  final int typeId = 8;
+  final typeId = 8;
 
   @override
   EpisodeProgress read(BinaryReader reader) {
@@ -76,11 +78,11 @@ class EpisodeProgressAdapter extends TypeAdapter<EpisodeProgress> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return EpisodeProgress(
-      episodeNumber: fields[0] as int,
+      episodeNumber: (fields[0] as num).toInt(),
       episodeTitle: fields[1] as String,
       episodeThumbnail: fields[2] as String?,
-      progressInSeconds: fields[3] as int?,
-      durationInSeconds: fields[4] as int?,
+      progressInSeconds: (fields[3] as num?)?.toInt(),
+      durationInSeconds: (fields[4] as num?)?.toInt(),
       isCompleted: fields[5] == null ? false : fields[5] as bool,
       watchedAt: fields[6] as DateTime?,
     );

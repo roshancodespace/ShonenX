@@ -8,7 +8,7 @@ part of 'player_model.dart';
 
 class PlayerModelAdapter extends TypeAdapter<PlayerModel> {
   @override
-  final int typeId = 4;
+  final typeId = 4;
 
   @override
   PlayerModel read(BinaryReader reader) {

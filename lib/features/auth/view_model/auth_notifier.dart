@@ -1,5 +1,6 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/anilist/services/anilist_service_provider.dart';
 import 'package:shonenx/core/anilist/services/auth_service.dart';
 import 'package:shonenx/core/myanimelist/services/auth_service.dart';
@@ -7,17 +8,16 @@ import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/features/auth/model/user.dart';
 import 'package:shonenx/shared/providers/auth_provider.dart';
 
-/// ------------------- Auth State -------------------
+part 'auth_notifier.g.dart';
+
+@immutable
 class AuthState {
   final bool anilistLoading;
   final bool malLoading;
-
   final String? anilistAccessToken;
   final String? malAccessToken;
-
   final AuthUser? anilistUser;
   final AuthUser? malUser;
-
   final AuthPlatform activePlatform;
 
   const AuthState({
@@ -51,7 +51,6 @@ class AuthState {
   }
 
   bool get isAniListAuthenticated => anilistAccessToken?.isNotEmpty == true;
-
   bool get isMalAuthenticated => malAccessToken?.isNotEmpty == true;
 
   bool isAuthenticatedFor(AuthPlatform platform) {
@@ -76,45 +75,44 @@ class AuthState {
   }
 }
 
-/// ------------------- Auth ViewModel -------------------
-class AuthViewModel extends StateNotifier<AuthState> {
-  final Ref _ref;
-  final AniListAuthService _anilistAuthService;
-  final MyAnimeListAuthService _malAuthService;
+@Riverpod(keepAlive: true)
+class Auth extends _$Auth {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
-  AuthViewModel(this._ref, this._anilistAuthService, this._malAuthService)
-      : super(const AuthState()) {
+  AniListAuthService get _anilistAuthService =>
+      ref.read(anilistAuthServiceProvider);
+  MyAnimeListAuthService get _malAuthService =>
+      ref.read(malAuthServiceProvider);
+
+  @override
+  AuthState build() {
     _init();
+    return const AuthState();
   }
 
   Future<void> _init() async {
-    await Future.wait([
-      _loadAnilistToken(),
-      _loadMalToken(),
-    ]);
+    await Future.wait([_loadAnilistToken(), _loadMalToken()]);
   }
 
-  /// ------------------- Helpers -------------------
   AuthUser _buildAnilistUser(Map<String, dynamic> data) =>
       AuthUser.fromJson(data);
 
   AuthUser _buildMalUser(Map<String, dynamic> data) => AuthUser(
-        id: data['id'].toString(),
-        name: data['name'],
-        avatarUrl: data['picture'],
-      );
+    id: data['id'].toString(),
+    name: data['name'],
+    avatarUrl: data['picture'],
+  );
 
-  /// ------------------- Actions -------------------
   Future<void> updateAnilistProfile({required String about}) async {
     try {
-      await _ref.read(anilistServiceProvider).updateUser(about: about);
+      await ref.read(anilistServiceProvider).updateUser(about: about);
 
       if (state.anilistUser != null) {
         final token = state.anilistAccessToken;
         if (token != null) {
-          final userData =
-              await _ref.read(anilistServiceProvider).getUserProfile(token);
+          final userData = await ref
+              .read(anilistServiceProvider)
+              .getUserProfile(token);
           state = state.copyWith(anilistUser: _buildAnilistUser(userData));
         }
       }
@@ -123,15 +121,15 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
-  /// ------------------- AniList -------------------
   Future<void> _loadAnilistToken() async {
     final token = await _secureStorage.read(key: 'anilist-token');
     if (token?.isNotEmpty != true) return;
 
     state = state.copyWith(anilistLoading: true);
     try {
-      final userData =
-          await _ref.read(anilistServiceProvider).getUserProfile(token!);
+      final userData = await ref
+          .read(anilistServiceProvider)
+          .getUserProfile(token!);
       state = state.copyWith(
         anilistAccessToken: token,
         anilistUser: _buildAnilistUser(userData),
@@ -145,7 +143,9 @@ class AuthViewModel extends StateNotifier<AuthState> {
 
   Future<void> _loginWithAnilist() async {
     state = state.copyWith(
-        anilistLoading: true, activePlatform: AuthPlatform.anilist);
+      anilistLoading: true,
+      activePlatform: AuthPlatform.anilist,
+    );
     try {
       final code = await _anilistAuthService.authenticate();
       if (code == null) return;
@@ -154,8 +154,9 @@ class AuthViewModel extends StateNotifier<AuthState> {
       if (token == null) return;
 
       await _secureStorage.write(key: 'anilist-token', value: token);
-      final userData =
-          await _ref.read(anilistServiceProvider).getUserProfile(token);
+      final userData = await ref
+          .read(anilistServiceProvider)
+          .getUserProfile(token);
 
       state = state.copyWith(
         anilistAccessToken: token,
@@ -167,7 +168,6 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
-  /// ------------------- MyAnimeList -------------------
   Future<void> _loadMalToken() async {
     final token = await _secureStorage.read(key: 'mal-token');
     if (token?.isNotEmpty != true) return;
@@ -199,9 +199,13 @@ class AuthViewModel extends StateNotifier<AuthState> {
       if (tokenData == null) return;
 
       await _secureStorage.write(
-          key: 'mal-token', value: tokenData['access_token']);
+        key: 'mal-token',
+        value: tokenData['access_token'],
+      );
       await _secureStorage.write(
-          key: 'mal-refresh-token', value: tokenData['refresh_token']);
+        key: 'mal-refresh-token',
+        value: tokenData['refresh_token'],
+      );
 
       final profile = await _malAuthService.getUserProfile();
       if (profile != null) {
@@ -216,7 +220,6 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
-  /// ------------------- Public -------------------
   Future<void> login(AuthPlatform platform) async {
     return switch (platform) {
       AuthPlatform.anilist => _loginWithAnilist(),
@@ -233,15 +236,12 @@ class AuthViewModel extends StateNotifier<AuthState> {
       case AuthPlatform.mal:
         await _secureStorage.delete(key: 'mal-token');
         await _secureStorage.delete(key: 'mal-refresh-token');
-        state = state.copyWith(
-          malAccessToken: null,
-          malUser: null,
-        );
+        state = state.copyWith(malAccessToken: null, malUser: null);
         break;
     }
 
     if (state.activePlatform == platform) {
-      state = state.copyWith(activePlatform: null);
+      // Logic for handling null platform if needed
     }
   }
 
@@ -250,9 +250,13 @@ class AuthViewModel extends StateNotifier<AuthState> {
     if (tokenData != null) {
       state = state.copyWith(malAccessToken: tokenData['access_token']);
       await _secureStorage.write(
-          key: 'mal-token', value: tokenData['access_token']);
+        key: 'mal-token',
+        value: tokenData['access_token'],
+      );
       await _secureStorage.write(
-          key: 'mal-refresh-token', value: tokenData['refresh_token']);
+        key: 'mal-refresh-token',
+        value: tokenData['refresh_token'],
+      );
     }
   }
 
@@ -260,10 +264,3 @@ class AuthViewModel extends StateNotifier<AuthState> {
     state = state.copyWith(activePlatform: platform);
   }
 }
-
-/// ------------------- Provider -------------------
-final authProvider = StateNotifierProvider<AuthViewModel, AuthState>((ref) {
-  final aService = ref.read(anilistAuthServiceProvider);
-  final malService = ref.read(malAuthServiceProvider);
-  return AuthViewModel(ref, aService, malService);
-});

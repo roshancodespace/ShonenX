@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/utils/app_utils.dart';
+import 'package:shonenx/core/utils/misc.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
@@ -171,7 +171,7 @@ class _WatchlistTabView extends ConsumerWidget {
           crossAxisSpacing: 16,
           childAspectRatio: 0.7,
           items: media.map((anime) {
-            final tag = '${generateId()}${anime.id}';
+            final tag = randomId();
             return AnimatedAnimeCard(
               anime: anime,
               tag: tag,

@@ -6,7 +6,7 @@ import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 part 'fetch_manga_sources.g.dart';
 
 @riverpod
-Future fetchMangaSourcesList(FetchMangaSourcesListRef ref,
+Future fetchMangaSourcesList(Ref ref,
     {int? id, required reFresh}) async {
   var repo = ref.watch(sourceProvider).activeMangaRepo;
   await fetchSourcesList(

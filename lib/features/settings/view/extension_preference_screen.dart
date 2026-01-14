@@ -9,12 +9,15 @@ import 'package:shonenx/core_new/providers/get_source_preference.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 import 'package:shonenx/main.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 
-final sourcePreferencesStreamProvider =
-    StreamProvider.autoDispose.family<void, int>((ref, sourceId) {
-  return isar.sourcePreferences.filter().sourceIdEqualTo(sourceId).watchLazy();
-});
+final sourcePreferencesStreamProvider = StreamProvider.autoDispose
+    .family<void, int>((ref, sourceId) {
+      return isar.sourcePreferences
+          .filter()
+          .sourceIdEqualTo(sourceId)
+          .watchLazy();
+    });
 
 class ExtensionPreferenceScreen extends ConsumerWidget {
   final Source source;
@@ -24,16 +27,17 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(sourcePreferencesStreamProvider(source.id!));
-    final extPrefs = getSourcePreference(source: source)
-        .map((e) => getSourcePreferenceEntry(e.key!, source.id!))
-        .toList();
+    final extPrefs = getSourcePreference(
+      source: source,
+    ).map((e) => getSourcePreferenceEntry(e.key!, source.id!)).toList();
 
     final theme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF8F9FA),
+      backgroundColor: isDark
+          ? const Color(0xFF0A0A0A)
+          : const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -47,10 +51,7 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
         ),
         title: Text(
           '${source.name} Preferences',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: theme.onSurface,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: theme.onSurface),
         ),
         forceMaterialTransparency: true,
       ),
@@ -72,11 +73,7 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
               color: theme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(
-              Iconsax.setting_2,
-              size: 40,
-              color: theme.primary,
-            ),
+            child: Icon(Iconsax.setting_2, size: 40, color: theme.primary),
           ),
           const SizedBox(height: 24),
           Text(
@@ -101,10 +98,14 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPreferencesList(BuildContext context,
-      List<SourcePreference> extPrefs, ColorScheme theme) {
-    final Map<String, List<SourcePreference>> groupedPrefs =
-        _groupPreferences(extPrefs);
+  Widget _buildPreferencesList(
+    BuildContext context,
+    List<SourcePreference> extPrefs,
+    ColorScheme theme,
+  ) {
+    final Map<String, List<SourcePreference>> groupedPrefs = _groupPreferences(
+      extPrefs,
+    );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -130,27 +131,51 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
   }
 
   Map<String, List<SourcePreference>> _groupPreferences(
-      List<SourcePreference> prefs) {
+    List<SourcePreference> prefs,
+  ) {
     return {'General': prefs};
   }
 
   BaseSettingsItem _buildSettingsItem(
-      BuildContext context, SourcePreference preference, ColorScheme theme) {
+    BuildContext context,
+    SourcePreference preference,
+    ColorScheme theme,
+  ) {
     if (preference.editTextPreference != null) {
       return _buildEditTextSettingsItem(
-          context, preference, preference.editTextPreference!, theme);
+        context,
+        preference,
+        preference.editTextPreference!,
+        theme,
+      );
     } else if (preference.checkBoxPreference != null) {
       return _buildCheckBoxSettingsItem(
-          context, preference, preference.checkBoxPreference!, theme);
+        context,
+        preference,
+        preference.checkBoxPreference!,
+        theme,
+      );
     } else if (preference.switchPreferenceCompat != null) {
       return _buildSwitchSettingsItem(
-          context, preference, preference.switchPreferenceCompat!, theme);
+        context,
+        preference,
+        preference.switchPreferenceCompat!,
+        theme,
+      );
     } else if (preference.listPreference != null) {
       return _buildListSettingsItem(
-          context, preference, preference.listPreference!, theme);
+        context,
+        preference,
+        preference.listPreference!,
+        theme,
+      );
     } else if (preference.multiSelectListPreference != null) {
       return _buildMultiSelectSettingsItem(
-          context, preference, preference.multiSelectListPreference!, theme);
+        context,
+        preference,
+        preference.multiSelectListPreference!,
+        theme,
+      );
     }
 
     // Fallback for unknown preference types
@@ -162,8 +187,12 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
     );
   }
 
-  NormalSettingsItem _buildEditTextSettingsItem(BuildContext context,
-      SourcePreference preference, EditTextPreference pref, ColorScheme theme) {
+  NormalSettingsItem _buildEditTextSettingsItem(
+    BuildContext context,
+    SourcePreference preference,
+    EditTextPreference pref,
+    ColorScheme theme,
+  ) {
     return NormalSettingsItem(
       icon: const Icon(Iconsax.edit),
       accent: theme.primary,
@@ -173,8 +202,12 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
     );
   }
 
-  ToggleableSettingsItem _buildCheckBoxSettingsItem(BuildContext context,
-      SourcePreference preference, CheckBoxPreference pref, ColorScheme theme) {
+  ToggleableSettingsItem _buildCheckBoxSettingsItem(
+    BuildContext context,
+    SourcePreference preference,
+    CheckBoxPreference pref,
+    ColorScheme theme,
+  ) {
     return ToggleableSettingsItem(
       icon: const Icon(Iconsax.tick_square),
       accent: theme.primary,
@@ -189,10 +222,11 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
   }
 
   ToggleableSettingsItem _buildSwitchSettingsItem(
-      BuildContext context,
-      SourcePreference preference,
-      SwitchPreferenceCompat pref,
-      ColorScheme theme) {
+    BuildContext context,
+    SourcePreference preference,
+    SwitchPreferenceCompat pref,
+    ColorScheme theme,
+  ) {
     return ToggleableSettingsItem(
       icon: const Icon(Iconsax.toggle_on),
       accent: theme.primary,
@@ -206,9 +240,14 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
     );
   }
 
-  DropdownSettingsItem _buildListSettingsItem(BuildContext context,
-      SourcePreference preference, ListPreference pref, ColorScheme theme) {
-    final currentValue = pref.valueIndex != null &&
+  DropdownSettingsItem _buildListSettingsItem(
+    BuildContext context,
+    SourcePreference preference,
+    ListPreference pref,
+    ColorScheme theme,
+  ) {
+    final currentValue =
+        pref.valueIndex != null &&
             pref.entries != null &&
             pref.valueIndex! < pref.entries!.length
         ? pref.entries![pref.valueIndex!]
@@ -222,10 +261,7 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
       layoutType: SettingsItemLayout.horizontal,
       value: currentValue,
       items: (pref.entries ?? []).map((String item) {
-        return DropdownMenuItem<String>(
-          value: item,
-          child: Text(item),
-        );
+        return DropdownMenuItem<String>(value: item, child: Text(item));
       }).toList(),
       onChanged: (value) {
         if (value != null && pref.entries != null) {
@@ -240,10 +276,11 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
   }
 
   NormalSettingsItem _buildMultiSelectSettingsItem(
-      BuildContext context,
-      SourcePreference preference,
-      MultiSelectListPreference pref,
-      ColorScheme theme) {
+    BuildContext context,
+    SourcePreference preference,
+    MultiSelectListPreference pref,
+    ColorScheme theme,
+  ) {
     final selectedCount = pref.values?.length ?? 0;
     final totalCount = pref.entries?.length ?? 0;
 
@@ -256,8 +293,11 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _showEditTextDialog(BuildContext context,
-      SourcePreference preference, EditTextPreference pref) async {
+  Future<void> _showEditTextDialog(
+    BuildContext context,
+    SourcePreference preference,
+    EditTextPreference pref,
+  ) async {
     await showDialog(
       context: context,
       builder: (context) => ModernEditTextDialog(
@@ -272,8 +312,11 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
     );
   }
 
-  void _showMultiSelectDialog(BuildContext context, SourcePreference preference,
-      MultiSelectListPreference pref) {
+  void _showMultiSelectDialog(
+    BuildContext context,
+    SourcePreference preference,
+    MultiSelectListPreference pref,
+  ) {
     List<String> indexList = List.from(pref.values ?? []);
     final theme = Theme.of(context).colorScheme;
 
@@ -304,8 +347,9 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
                       return const SizedBox.shrink();
                     }
 
-                    final isSelected =
-                        indexList.contains(pref.entryValues?[index]);
+                    final isSelected = indexList.contains(
+                      pref.entryValues?[index],
+                    );
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 8),
@@ -339,8 +383,9 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
                           setState(() {
                             if (pref.entryValues != null &&
                                 index < pref.entryValues!.length) {
-                              if (indexList
-                                  .contains(pref.entryValues![index])) {
+                              if (indexList.contains(
+                                pref.entryValues![index],
+                              )) {
                                 indexList.remove(pref.entryValues![index]);
                               } else {
                                 indexList.add(pref.entryValues![index]);
@@ -358,10 +403,7 @@ class ExtensionPreferenceScreen extends ConsumerWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Close',
-                    style: TextStyle(color: theme.primary),
-                  ),
+                  child: Text('Close', style: TextStyle(color: theme.primary)),
                 ),
               ],
             );
@@ -418,9 +460,7 @@ class _ModernEditTextDialogState extends State<ModernEditTextDialog> {
 
     return AlertDialog(
       backgroundColor: theme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -457,8 +497,10 @@ class _ModernEditTextDialogState extends State<ModernEditTextDialog> {
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: theme.primary, width: 2),
           ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
         ),
         style: TextStyle(color: theme.onSurface),
         maxLines: null,

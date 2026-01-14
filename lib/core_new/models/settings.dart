@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:shonenx/core_new/models/source.dart';
 import 'package:shonenx/core_new/utils/constant.dart';
 part 'settings.g.dart';

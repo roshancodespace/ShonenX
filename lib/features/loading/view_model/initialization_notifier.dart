@@ -1,6 +1,5 @@
 import 'dart:async';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
@@ -10,7 +9,7 @@ import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/helpers/ui.dart';
 
-const noError = Object();
+part 'initialization_notifier.g.dart';
 
 enum InitializationStatus {
   idle,
@@ -39,13 +38,12 @@ class InitializationState {
   });
 
   factory InitializationState.initial() => const InitializationState(
-        status: InitializationStatus.idle,
-        message: 'Initializing…',
-        progress: 0.0,
-        error: noError,
-      );
+    status: InitializationStatus.idle,
+    message: 'Initializing…',
+    progress: 0.0,
+  );
 
-  bool get hasError => error != noError;
+  bool get hasError => error != null;
   bool get isCompleted => status == InitializationStatus.success;
 
   InitializationState copyWith({
@@ -54,24 +52,28 @@ class InitializationState {
     double? progress,
     Object? error,
     StackTrace? stackTrace,
+    bool clearError = false,
   }) {
     return InitializationState(
       status: status ?? this.status,
       message: message ?? this.message,
       progress: progress ?? this.progress,
-      error: error ?? this.error,
-      stackTrace: stackTrace ?? this.stackTrace,
+      error: clearError ? null : (error ?? this.error),
+      stackTrace: clearError ? null : (stackTrace ?? this.stackTrace),
     );
   }
 }
 
-class InitializationNotifier extends StateNotifier<InitializationState> {
-  InitializationNotifier(this._ref) : super(InitializationState.initial());
-
-  final Ref _ref;
-
+@Riverpod(keepAlive: true)
+class Initialization extends _$Initialization {
   Timer? _timeoutTimer;
   static const _timeout = Duration(seconds: 30);
+
+  @override
+  InitializationState build() {
+    ref.onDispose(() => _timeoutTimer?.cancel());
+    return InitializationState.initial();
+  }
 
   Future<void> initialize() async {
     if (_isAlreadyRunning) {
@@ -114,15 +116,13 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
       progress: 0.1,
     );
 
-    final registry = _ref.read(animeSourceRegistryProvider);
+    final registry = ref.read(animeSourceRegistryProvider);
 
     AppLogger.infoPair('Registry initialized', registry.isInitialized);
 
     if (!registry.isInitialized) {
       AppLogger.fail('Anime source registry failed');
-      throw StateError(
-        registry.error?.toString() ?? 'Unknown registry error',
-      );
+      throw StateError(registry.error?.toString() ?? 'Unknown registry error');
     }
 
     AppLogger.success('Core registry ready');
@@ -137,7 +137,7 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
       progress: 0.35,
     );
 
-    await _ref.read(sourceProvider.notifier).initialize();
+    await ref.read(sourceProvider.notifier).initialize();
 
     AppLogger.success('Extensions loaded');
   }
@@ -151,7 +151,8 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
       progress: 0.45,
     );
 
-    _ref.read(authProvider.notifier);
+    // Initializing the auth provider
+    ref.read(authProvider.notifier);
 
     AppLogger.success('Auth bootstrap complete');
   }
@@ -165,7 +166,7 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
       progress: 0.65,
     );
 
-    await _ref.read(homepageProvider.notifier).initialize();
+    await ref.read(homepageProvider.notifier).initialize();
 
     AppLogger.success('Homepage initialized');
   }
@@ -191,7 +192,7 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
 
   Future<void> _applyUISettings() async {
     try {
-      final ui = _ref.read(uiSettingsProvider);
+      final ui = ref.read(uiSettingsProvider);
       AppLogger.infoPair('Immersive mode', ui.immersiveMode);
 
       if (ui.immersiveMode) {
@@ -205,7 +206,7 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
 
   void _applyThemeSettings() {
     try {
-      _ref.read(themeSettingsProvider);
+      ref.read(themeSettingsProvider);
       AppLogger.success('Theme applied');
     } catch (e, st) {
       AppLogger.w('Theme settings failed', e, st);
@@ -226,8 +227,6 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
     Object? error,
     StackTrace? stackTrace,
   }) {
-    if (!mounted) return;
-
     state = state.copyWith(
       status: status,
       message: message,
@@ -283,15 +282,4 @@ class InitializationNotifier extends StateNotifier<InitializationState> {
       );
     });
   }
-
-  @override
-  void dispose() {
-    _timeoutTimer?.cancel();
-    super.dispose();
-  }
 }
-
-final initializationProvider =
-    StateNotifierProvider<InitializationNotifier, InitializationState>(
-  (ref) => InitializationNotifier(ref),
-);

@@ -200,7 +200,10 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
       GenericSelectionSheet<String>(
         title: 'Server',
         items: data.servers
-            .map((e) => '${e.id}-${e.isDub ? "Dub" : ""}')
+            .map(
+              (e) =>
+                  '${e.id}${e.name?.isNotEmpty == true ? ' - ${e.name}' : ''} (${e.isDub ? 'Dub' : 'Sub'})',
+            )
             .toList(),
         selectedIndex: data.servers.indexOf(data.selectedServer!),
         displayBuilder: (e) => e,

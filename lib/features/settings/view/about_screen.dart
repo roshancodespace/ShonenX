@@ -41,7 +41,7 @@ class AboutScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: colorScheme.surface.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(24),
@@ -221,8 +221,9 @@ class AboutScreen extends StatelessWidget {
                         context,
                         icon: Iconsax.code_1,
                         label: 'Source Code',
-                        onTap: () =>
-                            _launchUrl('https://github.com/roshancodespace/ShonenX'),
+                        onTap: () => _launchUrl(
+                          'https://github.com/roshancodespace/ShonenX',
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -232,7 +233,8 @@ class AboutScreen extends StatelessWidget {
                         icon: Iconsax.message,
                         label: 'Report Issue',
                         onTap: () => _launchUrl(
-                            'https://github.com/roshancodespace/ShonenX/issues'),
+                          'https://github.com/roshancodespace/ShonenX/issues',
+                        ),
                       ),
                     ),
                   ],
@@ -317,9 +319,7 @@ class AboutScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withOpacity(0.1),
-        ),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
       ),
       child: Row(
         children: [
@@ -329,11 +329,7 @@ class AboutScreen extends StatelessWidget {
               color: colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: colorScheme.primary,
-              size: 24,
-            ),
+            child: Icon(icon, color: colorScheme.primary, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -390,11 +386,7 @@ class AboutScreen extends StatelessWidget {
               color: colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: colorScheme.primary,
-              size: 20,
-            ),
+            child: Icon(icon, color: colorScheme.primary, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -440,14 +432,10 @@ class AboutScreen extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(10),
           child: Column(
             children: [
-              Icon(
-                icon,
-                color: colorScheme.primary,
-                size: 24,
-              ),
+              Icon(icon, color: colorScheme.primary, size: 24),
               const SizedBox(height: 8),
               Text(
                 label,

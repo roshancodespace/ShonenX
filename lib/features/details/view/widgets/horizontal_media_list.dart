@@ -26,22 +26,19 @@ class HorizontalMediaSection<T> extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 20,
-                    ),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                ),
               ),
               if (onMoreTap != null)
-                TextButton(
-                  onPressed: onMoreTap,
-                  child: const Text('More'),
-                ),
+                TextButton(onPressed: onMoreTap, child: const Text('More')),
             ],
           ),
         ),
@@ -51,14 +48,14 @@ class HorizontalMediaSection<T> extends StatelessWidget {
           child: isLoading && items.isEmpty
               ? ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   itemCount: 4,
                   separatorBuilder: (_, __) => const SizedBox(width: 12),
                   itemBuilder: (_, __) => const _ShimmerItem(),
                 )
               : ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   itemCount: items.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 12),
                   itemBuilder: (context, index) {
@@ -77,12 +74,7 @@ class MediaCard extends StatelessWidget {
   final String? badgeText;
   final VoidCallback? onTap;
 
-  const MediaCard({
-    super.key,
-    required this.media,
-    this.badgeText,
-    this.onTap,
-  });
+  const MediaCard({super.key, required this.media, this.badgeText, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -95,9 +87,7 @@ class MediaCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: 130,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -190,9 +180,7 @@ class _ShimmerItem extends StatelessWidget {
 
     return Container(
       width: 130,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -240,11 +228,7 @@ class StaffCard extends StatelessWidget {
   final UniversalStaff staff;
   final VoidCallback? onTap;
 
-  const StaffCard({
-    super.key,
-    required this.staff,
-    this.onTap,
-  });
+  const StaffCard({super.key, required this.staff, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -256,9 +240,7 @@ class StaffCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: 130,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -270,9 +252,8 @@ class StaffCard extends StatelessWidget {
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,
-                  placeholder: (context, url) => Container(
-                    color: theme.colorScheme.surfaceContainer,
-                  ),
+                  placeholder: (context, url) =>
+                      Container(color: theme.colorScheme.surfaceContainer),
                   errorWidget: (_, __, ___) => Container(
                     color: theme.colorScheme.surfaceContainer,
                     child: Icon(

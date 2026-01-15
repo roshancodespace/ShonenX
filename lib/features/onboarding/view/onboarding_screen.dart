@@ -72,8 +72,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           children: [
             // Progress Indicator
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
+              ),
               child: Row(
                 children: List.generate(_totalPages, (index) {
                   return Expanded(
@@ -128,7 +130,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   FilledButton(
                     onPressed: _nextPage,
                     child: Text(
-                        _currentPage == _totalPages - 1 ? 'Finish' : 'Next'),
+                      _currentPage == _totalPages - 1 ? 'Finish' : 'Next',
+                    ),
                   ),
                 ],
               ),
@@ -147,9 +150,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Text(
             title,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
@@ -213,27 +216,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 selectedValue: theme.themeMode == 'light'
                     ? 1
                     : theme.themeMode == 'dark'
-                        ? 2
-                        : 0,
+                    ? 2
+                    : 0,
                 onValueChanged: (index) {
                   final newMode = index == 0
                       ? 'system'
                       : index == 1
-                          ? 'light'
-                          : 'dark';
+                      ? 'light'
+                      : 'dark';
                   themeNotifier.updateSettings(
-                      (prev) => prev.copyWith(themeMode: newMode));
+                    (prev) => prev.copyWith(themeMode: newMode),
+                  );
                 },
                 children: const {
                   0: Icon(Iconsax.monitor),
                   1: Icon(Iconsax.sun_1),
                   2: Icon(Iconsax.moon),
                 },
-                labels: const {
-                  0: 'System',
-                  1: 'Light',
-                  2: 'Dark',
-                },
+                labels: const {0: 'System', 1: 'Light', 2: 'Dark'},
                 icon: const Icon(Iconsax.color_swatch),
               ),
             ],
@@ -252,8 +252,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   description: 'Use pure black for dark backgrounds',
                   value: theme.amoled,
                   onChanged: (value) {
-                    themeNotifier
-                        .updateSettings((prev) => prev.copyWith(amoled: value));
+                    themeNotifier.updateSettings(
+                      (prev) => prev.copyWith(amoled: value),
+                    );
                   },
                 ),
               NormalSettingsItem(
@@ -294,7 +295,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   final provider = animeSources[index];
                   final statusInfo = statusData[provider];
                   final status = statusInfo?['status'] as String?;
-                  final isSelected = selectedAnimeSource?.providerName ==
+                  final isSelected =
+                      selectedAnimeSource?.providerName ==
                       provider.toLowerCase();
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
@@ -317,9 +319,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 },
               ),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(
-                child: Text('Failed to load status: $error'),
-              ),
+              error: (error, stack) =>
+                  Center(child: Text('Failed to load status: $error')),
             ),
           ),
         ],
@@ -383,9 +384,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ],
                   ),
                   Expanded(
-                    child: Center(
-                      child: _buildLivePreview(currentStyle),
-                    ),
+                    child: Center(child: _buildLivePreview(currentStyle)),
                   ),
                 ],
               ),
@@ -406,7 +405,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 selected: isSelected,
                 onSelected: (selected) {
                   if (selected) {
-                    ref.read(uiSettingsProvider.notifier).updateSettings(
+                    ref
+                        .read(uiSettingsProvider.notifier)
+                        .updateSettings(
                           (prev) => prev.copyWith(cardStyle: style),
                         );
                   }
@@ -465,8 +466,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Helpers
   Widget _buildLivePreview(String cardStyle) {
-    final mode = AnimeCardMode.values.firstWhere((e) => e.name == cardStyle,
-        orElse: () => AnimeCardMode.defaults);
+    final mode = AnimeCardMode.values.firstWhere(
+      (e) => e.name == cardStyle,
+      orElse: () => AnimeCardMode.defaults,
+    );
     final anime = UniversalMedia(
       id: '21',
       title: UniversalTitle(
@@ -490,8 +493,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return AnimatedAnimeCard(anime: anime, tag: 'preview', mode: mode);
   }
 
-  void _showColorSchemeSheet(BuildContext context, WidgetRef ref,
-      ThemeSettingsNotifier themeNotifier) {
+  void _showColorSchemeSheet(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeSettingsNotifier themeNotifier,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -508,8 +514,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             return Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
               ),
               child: Column(
                 children: [
@@ -518,15 +525,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     width: 40,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .outline
-                          .withOpacity(0.4),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withOpacity(0.4),
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Text(
                       'Color Scheme',
                       style: Theme.of(context).textTheme.titleLarge,
@@ -536,7 +542,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   Expanded(
                     child: ListView.builder(
                       controller: scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                       itemCount: FlexScheme.values.length,
                       itemBuilder: (context, index) {
                         final scheme = FlexScheme.values[index];
@@ -551,14 +557,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           leading: _buildMinimalPreview(scheme),
                           title: Text(_formatSchemeName(scheme.name)),
                           trailing: isSelected
-                              ? Icon(Iconsax.tick_circle,
-                                  color: Theme.of(context).colorScheme.primary)
+                              ? Icon(
+                                  Iconsax.tick_circle,
+                                  color: Theme.of(context).colorScheme.primary,
+                                )
                               : null,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
                         );
                       },
                     ),
@@ -609,9 +619,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           (match) => '${match.group(1)} ${match.group(2)}',
         )
         .split(' ')
-        .map((word) => word.isNotEmpty
-            ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
-            : word)
+        .map(
+          (word) => word.isNotEmpty
+              ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
+              : word,
+        )
         .join(' ');
   }
 

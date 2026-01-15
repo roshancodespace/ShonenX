@@ -199,9 +199,8 @@ class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
     _restartHide();
   }
 
-  void _openSettings() => _sheet(
-        SettingsSheetContent(onDismiss: () => Navigator.pop(context)),
-      );
+  void _openSettings() =>
+      _sheet(SettingsSheetContent(onDismiss: () => Navigator.pop(context)));
 
   void _openQuality() {
     final data = ref.read(episodeDataProvider);
@@ -246,8 +245,9 @@ class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
     _sheet(
       GenericSelectionSheet<String>(
         title: 'Server',
-        items:
-            data.servers.map((e) => '${e.id}-${e.isDub ? "Dub" : ""}').toList(),
+        items: data.servers
+            .map((e) => '${e.id}-${e.isDub ? "Dub" : ""}')
+            .toList(),
         selectedIndex: data.servers.indexOf(data.selectedServer!),
         displayBuilder: (e) => e,
         onItemSelected: (i) {
@@ -259,11 +259,7 @@ class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
   }
 
   void _openSubtitle() {
-    _sheet(
-      SubtitleSelectionSheet(
-        onLocalFilePressed: _pickLocalSubtitle,
-      ),
-    );
+    _sheet(SubtitleSelectionSheet(onLocalFilePressed: _pickLocalSubtitle));
   }
 
   Future<void> _pickLocalSubtitle() async {
@@ -294,7 +290,8 @@ class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
   Widget _buildSpeedScale() {
     final speeds = [4.0, 3.0, 2.0, 1.5, 1.0, 0.5];
     final closest = speeds.reduce(
-        (a, b) => (_lastSpeed - a).abs() < (_lastSpeed - b).abs() ? a : b);
+      (a, b) => (_lastSpeed - a).abs() < (_lastSpeed - b).abs() ? a : b,
+    );
 
     return Positioned(
       right: 40,
@@ -306,7 +303,7 @@ class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
           children: [
             // Precise Indicator
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.8),
                 borderRadius: BorderRadius.circular(12),
@@ -365,7 +362,7 @@ class ControlsOverlayState extends ConsumerState<ControlsOverlay> {
                                 color: Theme.of(context).colorScheme.primary,
                                 shape: BoxShape.circle,
                               ),
-                            )
+                            ),
                         ],
                       ),
                     ),

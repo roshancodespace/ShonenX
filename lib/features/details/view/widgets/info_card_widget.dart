@@ -7,11 +7,7 @@ class AnimeInfoCard extends StatelessWidget {
   final UniversalMedia anime;
   final VoidCallback onShare;
 
-  const AnimeInfoCard({
-    super.key,
-    required this.anime,
-    required this.onShare,
-  });
+  const AnimeInfoCard({super.key, required this.anime, required this.onShare});
 
   @override
   Widget build(BuildContext context) {
@@ -108,13 +104,11 @@ class _StatItem extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withOpacity(0.1),
-        ),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -168,13 +162,11 @@ class NextEpisodeWidget extends StatelessWidget {
     final minutes = timeUntil.inMinutes % 60;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer.withOpacity(0.3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.primary.withOpacity(0.2),
-        ),
+        border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
       ),
       child: Row(
         children: [

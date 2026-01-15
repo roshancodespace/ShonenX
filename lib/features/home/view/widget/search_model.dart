@@ -10,16 +10,19 @@ void showSearchModal(BuildContext context) {
       backgroundColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(10),
         constraints: const BoxConstraints(maxWidth: 400),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             SearchBar(
               padding: WidgetStatePropertyAll(
-                  EdgeInsets.symmetric(horizontal: 15, vertical: 5)),
-              leading: Icon(Iconsax.search_normal,
-                  color: theme.colorScheme.onSurface),
+                EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+              ),
+              leading: Icon(
+                Iconsax.search_normal,
+                color: theme.colorScheme.onSurface,
+              ),
               trailing: [
                 IconButton(
                   icon: Icon(Icons.close, color: theme.colorScheme.onSurface),

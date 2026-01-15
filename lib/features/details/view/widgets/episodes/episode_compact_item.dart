@@ -34,7 +34,7 @@ class EpisodeCompactItem extends StatelessWidget {
       children: [
         ListTile(
           dense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
           leading: SizedBox(
             width: 40,
             child: Center(
@@ -43,8 +43,9 @@ class EpisodeCompactItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color:
-                      isWatched ? theme.hintColor : theme.colorScheme.primary,
+                  color: isWatched
+                      ? theme.hintColor
+                      : theme.colorScheme.primary,
                 ),
               ),
             ),
@@ -53,9 +54,7 @@ class EpisodeCompactItem extends StatelessWidget {
             episode.title ?? 'Episode ${episode.number ?? index + 1}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: isWatched ? theme.hintColor : null,
-            ),
+            style: TextStyle(color: isWatched ? theme.hintColor : null),
           ),
           subtitle: (download != null || episode.isFiller == true)
               ? Row(
@@ -63,9 +62,13 @@ class EpisodeCompactItem extends StatelessWidget {
                     if (episode.isFiller == true)
                       Padding(
                         padding: const EdgeInsets.only(right: 8.0),
-                        child: Text('FILLER',
-                            style: TextStyle(
-                                color: Colors.orange.shade700, fontSize: 10)),
+                        child: Text(
+                          'FILLER',
+                          style: TextStyle(
+                            color: Colors.orange.shade700,
+                            fontSize: 10,
+                          ),
+                        ),
                       ),
                     if (download != null)
                       _buildDownloadStatus(theme, download!),
@@ -101,11 +104,17 @@ class EpisodeCompactItem extends StatelessWidget {
         ),
       );
     } else if (download.state == DownloadStatus.downloaded) {
-      return Icon(Icons.download_done_rounded,
-          size: 14, color: theme.colorScheme.primary);
+      return Icon(
+        Icons.download_done_rounded,
+        size: 14,
+        color: theme.colorScheme.primary,
+      );
     } else {
-      return Icon(Icons.downloading,
-          size: 14, color: theme.colorScheme.tertiary);
+      return Icon(
+        Icons.downloading,
+        size: 14,
+        color: theme.colorScheme.tertiary,
+      );
     }
   }
 }

@@ -189,12 +189,12 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
     return width >= 1400
         ? 6
         : width >= 1100
-            ? 5
-            : width >= 800
-                ? 4
-                : width >= 500
-                    ? 3
-                    : 2;
+        ? 5
+        : width >= 800
+        ? 4
+        : width >= 420
+        ? 3
+        : 2;
   }
 
   @override
@@ -223,14 +223,14 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
                     isLoading: _isExploreLoading,
                   )
                 : _results.isEmpty && !_isLoading
-                    ? _EmptyState()
-                    : _ResultsGrid(
-                        results: _results,
-                        scrollController: _scrollController,
-                        columnCount: _getColumnCount(),
-                        isLoading: _isLoading,
-                        animation: _animationController,
-                      ),
+                ? _EmptyState()
+                : _ResultsGrid(
+                    results: _results,
+                    scrollController: _scrollController,
+                    columnCount: _getColumnCount(),
+                    isLoading: _isLoading,
+                    animation: _animationController,
+                  ),
           ),
         ],
       ),
@@ -264,7 +264,7 @@ class _Header extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         child: AnimatedBuilder(
           animation: animation,
           builder: (context, child) {
@@ -276,18 +276,17 @@ class _Header extends StatelessWidget {
                   Text(
                     'Discover Anime',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Find your next favorite series',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withOpacity(0.7),
-                        ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.7),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   _SearchBar(
@@ -375,10 +374,9 @@ class _SearchBar extends StatelessWidget {
                     Iconsax.setting_4,
                     color: hasFilter
                         ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.5),
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.5),
                   ),
                   onPressed: onFilter,
                 ),
@@ -387,7 +385,7 @@ class _SearchBar extends StatelessWidget {
             ),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
+              horizontal: 10,
               vertical: 16,
             ),
           ),
@@ -420,7 +418,7 @@ class _ResultsGrid extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          padding: const EdgeInsets.fromLTRB(10, 0, 10, 16),
           child: AnimatedBuilder(
             animation: animation,
             builder: (context, child) {
@@ -428,9 +426,9 @@ class _ResultsGrid extends ConsumerWidget {
                 opacity: animation.value,
                 child: Text(
                   '${results.length} Results',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
                 ),
               );
             },
@@ -445,19 +443,24 @@ class _ResultsGrid extends ConsumerWidget {
                 child: ShonenXGridView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
+                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 100),
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
                   childAspectRatio: 0.75,
                   crossAxisCount: columnCount,
                   items: [
-                    ...results.map((anime) => AnimatedAnimeCard(
-                          onTap: () => navigateToDetail(
-                              context, anime, anime.id.toString()),
-                          anime: anime,
-                          mode: mode,
-                          tag: anime.id.toString(),
-                        )),
+                    ...results.map(
+                      (anime) => AnimatedAnimeCard(
+                        onTap: () => navigateToDetail(
+                          context,
+                          anime,
+                          anime.id.toString(),
+                        ),
+                        anime: anime,
+                        mode: mode,
+                        tag: anime.id.toString(),
+                      ),
+                    ),
                     if (isLoading) const _LoadingIndicator(),
                   ],
                 ),
@@ -494,19 +497,16 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               'Start Your Search',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'Enter an anime title to discover amazing series',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.7),
-                  ),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -522,8 +522,8 @@ class _LoadingIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -545,9 +545,8 @@ class _LoadingIndicator extends StatelessWidget {
           Text(
             'Loading more...',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                ),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
           ),
         ],
       ),
@@ -611,17 +610,23 @@ class _HorizontalSection extends ConsumerWidget {
             children: [
               Text(
                 title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               IconButton(
-                icon: Icon(Iconsax.arrow_right_3,
-                    size: 20, color: Theme.of(context).colorScheme.primary),
+                icon: Icon(
+                  Iconsax.arrow_right_3,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 onPressed: () {
                   final repo = ref.read(animeRepositoryProvider);
-                  Future<List<UniversalMedia>> Function(
-                      {int page, int perPage})? fetcher;
+                  Future<List<UniversalMedia>> Function({
+                    int page,
+                    int perPage,
+                  })?
+                  fetcher;
 
                   if (title == 'Trending Now') {
                     fetcher = repo.getTrendingAnime;

@@ -30,7 +30,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
         forceMaterialTransparency: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(10.0),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,27 +47,24 @@ class ThemeSettingsScreen extends ConsumerWidget {
                     selectedValue: theme.themeMode == 'light'
                         ? 1
                         : theme.themeMode == 'dark'
-                            ? 2
-                            : 0,
+                        ? 2
+                        : 0,
                     onValueChanged: (index) {
                       final newMode = index == 0
                           ? 'system'
                           : index == 1
-                              ? 'light'
-                              : 'dark';
+                          ? 'light'
+                          : 'dark';
                       themeNotifier.updateSettings(
-                          (prev) => prev.copyWith(themeMode: newMode));
+                        (prev) => prev.copyWith(themeMode: newMode),
+                      );
                     },
                     children: const {
                       0: Icon(Iconsax.monitor),
                       1: Icon(Iconsax.sun_1),
                       2: Icon(Iconsax.moon),
                     },
-                    labels: const {
-                      0: 'System',
-                      1: 'Light',
-                      2: 'Dark',
-                    },
+                    labels: const {0: 'System', 1: 'Light', 2: 'Dark'},
                     icon: const Icon(Iconsax.color_swatch),
                   ),
                 ],
@@ -78,8 +75,10 @@ class ThemeSettingsScreen extends ConsumerWidget {
                 titleColor: colorScheme.primary,
                 children: [
                   NormalSettingsItem(
-                    icon:
-                        Icon(Iconsax.colors_square, color: colorScheme.primary),
+                    icon: Icon(
+                      Iconsax.colors_square,
+                      color: colorScheme.primary,
+                    ),
                     accent: colorScheme.primary,
                     title: 'Color Scheme',
                     description: _formatSchemeName(theme.flexScheme ?? ''),
@@ -89,15 +88,18 @@ class ThemeSettingsScreen extends ConsumerWidget {
                   if (theme.themeMode == 'dark' ||
                       (theme.themeMode == 'system' && isCurrentlyDark))
                     ToggleableSettingsItem(
-                      icon:
-                          Icon(Iconsax.colorfilter, color: colorScheme.primary),
+                      icon: Icon(
+                        Iconsax.colorfilter,
+                        color: colorScheme.primary,
+                      ),
                       accent: colorScheme.primary,
                       title: 'AMOLED Dark',
                       description: 'Use pure black for dark backgrounds',
                       value: theme.amoled,
                       onChanged: (value) {
                         themeNotifier.updateSettings(
-                            (prev) => prev.copyWith(amoled: value));
+                          (prev) => prev.copyWith(amoled: value),
+                        );
                       },
                     ),
                   ToggleableSettingsItem(
@@ -108,12 +110,15 @@ class ThemeSettingsScreen extends ConsumerWidget {
                     value: theme.swapColors,
                     onChanged: (value) {
                       themeNotifier.updateSettings(
-                          (prev) => prev.copyWith(swapColors: value));
+                        (prev) => prev.copyWith(swapColors: value),
+                      );
                     },
                   ),
                   ToggleableSettingsItem(
-                    icon:
-                        Icon(Iconsax.color_swatch, color: colorScheme.primary),
+                    icon: Icon(
+                      Iconsax.color_swatch,
+                      color: colorScheme.primary,
+                    ),
                     accent: colorScheme.primary,
                     title:
                         'System Colors ${Platform.isAndroid ? '(A12+)' : ''}',
@@ -121,7 +126,8 @@ class ThemeSettingsScreen extends ConsumerWidget {
                     value: theme.useDynamicColors,
                     onChanged: (value) async {
                       themeNotifier.updateSettings(
-                          (prev) => prev.copyWith(useDynamicColors: value));
+                        (prev) => prev.copyWith(useDynamicColors: value),
+                      );
                     },
                   ),
                   ToggleableSettingsItem(
@@ -132,12 +138,15 @@ class ThemeSettingsScreen extends ConsumerWidget {
                     value: theme.useMaterial3,
                     onChanged: (value) {
                       themeNotifier.updateSettings(
-                          (prev) => prev.copyWith(useMaterial3: value));
+                        (prev) => prev.copyWith(useMaterial3: value),
+                      );
                     },
                   ),
                   SliderSettingsItem(
-                    icon: Icon(Icons.blender_outlined,
-                        color: colorScheme.primary),
+                    icon: Icon(
+                      Icons.blender_outlined,
+                      color: colorScheme.primary,
+                    ),
                     accent: colorScheme.primary,
                     value: theme.blendLevel.toDouble(),
                     min: 0,
@@ -147,7 +156,8 @@ class ThemeSettingsScreen extends ConsumerWidget {
                     description: 'Adjust the color blend intensity',
                     onChanged: (value) {
                       themeNotifier.updateSettings(
-                          (prev) => prev.copyWith(blendLevel: value.toInt()));
+                        (prev) => prev.copyWith(blendLevel: value.toInt()),
+                      );
                     },
                   ),
                 ],
@@ -159,8 +169,11 @@ class ThemeSettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showColorSchemeSheet(BuildContext context, WidgetRef ref,
-      ThemeSettingsNotifier themeNotifier) {
+  void _showColorSchemeSheet(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeSettingsNotifier themeNotifier,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -177,8 +190,9 @@ class ThemeSettingsScreen extends ConsumerWidget {
             return Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
               ),
               child: Column(
                 children: [
@@ -187,15 +201,14 @@ class ThemeSettingsScreen extends ConsumerWidget {
                     width: 40,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .outline
-                          .withOpacity(0.4),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withOpacity(0.4),
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Text(
                       'Color Scheme',
                       style: Theme.of(context).textTheme.titleLarge,
@@ -205,7 +218,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                   Expanded(
                     child: ListView.builder(
                       controller: scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                       itemCount: FlexScheme.values.length,
                       itemBuilder: (context, index) {
                         final scheme = FlexScheme.values[index];
@@ -220,14 +233,18 @@ class ThemeSettingsScreen extends ConsumerWidget {
                           leading: _buildMinimalPreview(scheme),
                           title: Text(_formatSchemeName(scheme.name)),
                           trailing: isSelected
-                              ? Icon(Iconsax.tick_circle,
-                                  color: Theme.of(context).colorScheme.primary)
+                              ? Icon(
+                                  Iconsax.tick_circle,
+                                  color: Theme.of(context).colorScheme.primary,
+                                )
                               : null,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
                         );
                       },
                     ),
@@ -278,9 +295,11 @@ class ThemeSettingsScreen extends ConsumerWidget {
           (match) => '${match.group(1)} ${match.group(2)}',
         )
         .split(' ')
-        .map((word) => word.isNotEmpty
-            ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
-            : word)
+        .map(
+          (word) => word.isNotEmpty
+              ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
+              : word,
+        )
         .join(' ');
   }
 }

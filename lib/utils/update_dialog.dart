@@ -78,17 +78,18 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
       await InstallPlugin.install(savePath, appId: 'com.example.shonenx')
           .then((_) async {
-        developer.log('Install triggered');
-      }).catchError((e) {
-        developer.log('Installation failed: $e');
-        if (mounted) {
-          setState(() {
-            _error = true;
-            _statusMessage = "Installation failed: $e";
-            _downloading = false;
+            developer.log('Install triggered');
+          })
+          .catchError((e) {
+            developer.log('Installation failed: $e');
+            if (mounted) {
+              setState(() {
+                _error = true;
+                _statusMessage = "Installation failed: $e";
+                _downloading = false;
+              });
+            }
           });
-        }
-      });
     } catch (e) {
       developer.log('Download failed: $e');
       if (mounted) {
@@ -112,7 +113,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
       child: Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
+        insetPadding: const EdgeInsets.all(10),
         child: GlassContainer.clearGlass(
           height: MediaQuery.of(context).size.height * 0.8,
           width: double.infinity,
@@ -127,9 +128,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                    ),
+                    bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
                   ),
                 ),
                 child: Row(
@@ -167,7 +166,9 @@ class _UpdateDialogState extends State<UpdateDialog> {
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: isStable
                                       ? colorScheme.primary
@@ -225,18 +226,23 @@ class _UpdateDialogState extends State<UpdateDialog> {
                           data: widget.releaseNotes!,
                           styleSheet: MarkdownStyleSheet(
                             p: theme.textTheme.bodyMedium?.copyWith(
-                                color: Colors.white.withOpacity(0.9)),
-                            listBullet:
-                                TextStyle(color: Colors.white.withOpacity(0.7)),
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                            listBullet: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                            ),
                             h1: theme.textTheme.titleLarge?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold),
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                             h2: theme.textTheme.titleMedium?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold),
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                             h3: theme.textTheme.titleSmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold),
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                             code: TextStyle(
                               backgroundColor: Colors.black.withOpacity(0.3),
                               color: Colors.amberAccent,
@@ -262,15 +268,21 @@ class _UpdateDialogState extends State<UpdateDialog> {
                           _buildLinkButton(
                             icon: Icons.public,
                             label: "Website",
-                            onTap: () => launchUrl(Uri.parse(
-                                'https://shonenx.vercel.app/#downloads')),
+                            onTap: () => launchUrl(
+                              Uri.parse(
+                                'https://shonenx.vercel.app/#downloads',
+                              ),
+                            ),
                           ),
                           const SizedBox(width: 12),
                           _buildLinkButton(
                             icon: Icons.code,
                             label: "GitHub",
-                            onTap: () => launchUrl(Uri.parse(
-                                'https://github.com/roshancodespace/ShonenX/releases')),
+                            onTap: () => launchUrl(
+                              Uri.parse(
+                                'https://github.com/roshancodespace/ShonenX/releases',
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -284,9 +296,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   border: Border(
-                    top: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                    ),
+                    top: BorderSide(color: Colors.white.withOpacity(0.1)),
                   ),
                 ),
                 child: Column(
@@ -335,17 +345,19 @@ class _UpdateDialogState extends State<UpdateDialog> {
                       child: ElevatedButton.icon(
                         onPressed:
                             (_downloading || widget.apkDownloadUrl == null)
-                                ? null
-                                : _downloadAndInstall,
+                            ? null
+                            : _downloadAndInstall,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isStable
                               ? colorScheme.primary
                               : colorScheme.secondary,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor:
-                              Colors.white.withOpacity(0.1),
-                          disabledForegroundColor:
-                              Colors.white.withOpacity(0.4),
+                          disabledBackgroundColor: Colors.white.withOpacity(
+                            0.1,
+                          ),
+                          disabledForegroundColor: Colors.white.withOpacity(
+                            0.4,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -356,7 +368,10 @@ class _UpdateDialogState extends State<UpdateDialog> {
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white))
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
                             : const Icon(Icons.download_rounded),
                         label: Text(
                           _downloading ? 'Downloading...' : 'Update Now',
@@ -377,10 +392,11 @@ class _UpdateDialogState extends State<UpdateDialog> {
     );
   }
 
-  Widget _buildLinkButton(
-      {required IconData icon,
-      required String label,
-      required VoidCallback onTap}) {
+  Widget _buildLinkButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -399,7 +415,9 @@ class _UpdateDialogState extends State<UpdateDialog> {
             Text(
               label,
               style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w500),
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),

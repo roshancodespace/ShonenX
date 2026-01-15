@@ -58,7 +58,6 @@ class AccountAuthenticationSection extends ConsumerWidget {
                 primaryColor: const Color(0xFF2E51A2),
                 isLast: true,
               ),
-              
             ],
           ),
         ),
@@ -117,24 +116,27 @@ class AccountAuthenticationSection extends ConsumerWidget {
                   height: isSmallScreen ? 40 : 56,
                   decoration: BoxDecoration(
                     color: primaryColor.withOpacity(0.1),
-                    borderRadius:
-                        BorderRadius.circular(isSmallScreen ? 12.0 : 16.0),
+                    borderRadius: BorderRadius.circular(
+                      isSmallScreen ? 12.0 : 16.0,
+                    ),
                     border: isActive
                         ? Border.all(color: primaryColor, width: 2)
                         : null,
                   ),
                   child: ClipRRect(
-                    borderRadius:
-                        BorderRadius.circular(isSmallScreen ? 12.0 : 16.0),
+                    borderRadius: BorderRadius.circular(
+                      isSmallScreen ? 12.0 : 16.0,
+                    ),
                     child: Image.network(
                       logoUrl,
                       width: isSmallScreen ? 40 : 56,
                       height: isSmallScreen ? 40 : 56,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Icon(
-                          Icons.image_not_supported_rounded,
-                          color: primaryColor,
-                          size: isSmallScreen ? 20 : 28),
+                        Icons.image_not_supported_rounded,
+                        color: primaryColor,
+                        size: isSmallScreen ? 20 : 28,
+                      ),
                     ),
                   ),
                 ),
@@ -159,12 +161,14 @@ class AccountAuthenticationSection extends ConsumerWidget {
                             SizedBox(width: isSmallScreen ? 6 : 8),
                             Container(
                               padding: EdgeInsets.symmetric(
-                                  horizontal: isSmallScreen ? 6 : 8,
-                                  vertical: isSmallScreen ? 2 : 4),
+                                horizontal: isSmallScreen ? 6 : 8,
+                                vertical: isSmallScreen ? 2 : 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: primaryColor.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(
-                                    isSmallScreen ? 6.0 : 8.0),
+                                  isSmallScreen ? 6.0 : 8.0,
+                                ),
                               ),
                               child: Text(
                                 'ACTIVE',
@@ -236,18 +240,23 @@ class AccountAuthenticationSection extends ConsumerWidget {
                   )
                 else if (isAuthenticated)
                   IconButton(
-                      onPressed: () {
-                        _showLogoutDialog(context, serviceName,
-                            () => notifier.logout(platform));
-                      },
-                      icon: Icon(Icons.logout_rounded,
-                          size: isSmallScreen ? 20 : 24,
-                          color: theme.colorScheme.error),
-                      style: IconButton.styleFrom(
-                        padding: EdgeInsets.all(isSmallScreen ? 8 : 8),
-                        backgroundColor:
-                            theme.colorScheme.error.withOpacity(0.1),
-                      ))
+                    onPressed: () {
+                      _showLogoutDialog(
+                        context,
+                        serviceName,
+                        () => notifier.logout(platform),
+                      );
+                    },
+                    icon: Icon(
+                      Icons.logout_rounded,
+                      size: isSmallScreen ? 20 : 24,
+                      color: theme.colorScheme.error,
+                    ),
+                    style: IconButton.styleFrom(
+                      padding: EdgeInsets.all(isSmallScreen ? 8 : 8),
+                      backgroundColor: theme.colorScheme.error.withOpacity(0.1),
+                    ),
+                  )
                 else
                   ElevatedButton(
                     onPressed: () => notifier.login(platform),
@@ -256,16 +265,21 @@ class AccountAuthenticationSection extends ConsumerWidget {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: EdgeInsets.symmetric(
-                          horizontal: isSmallScreen ? 12 : 20,
-                          vertical: isSmallScreen ? 8 : 12),
+                        horizontal: isSmallScreen ? 12 : 20,
+                        vertical: isSmallScreen ? 8 : 12,
+                      ),
                       minimumSize: isSmallScreen ? const Size(0, 32) : null,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.0)),
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
                     ),
-                    child: Text('Connect',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: isSmallScreen ? 12 : null)),
+                    child: Text(
+                      'Connect',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: isSmallScreen ? 12 : null,
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -283,7 +297,7 @@ class AccountAuthenticationSection extends ConsumerWidget {
     };
 
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(10.0),
       decoration: BoxDecoration(
         color: theme.colorScheme.secondary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12.0),
@@ -291,8 +305,11 @@ class AccountAuthenticationSection extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline_rounded,
-              color: theme.colorScheme.secondary, size: 20),
+          Icon(
+            Icons.info_outline_rounded,
+            color: theme.colorScheme.secondary,
+            size: 20,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -309,17 +326,24 @@ class AccountAuthenticationSection extends ConsumerWidget {
   }
 
   void _showLogoutDialog(
-      BuildContext context, String serviceName, VoidCallback onConfirm) {
+    BuildContext context,
+    String serviceName,
+    VoidCallback onConfirm,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
         title: Row(
           children: [
-            Icon(Icons.logout_rounded,
-                color: colorScheme.errorContainer, size: 24),
+            Icon(
+              Icons.logout_rounded,
+              color: colorScheme.errorContainer,
+              size: 24,
+            ),
             const SizedBox(width: 12),
             const Text('Disconnect Account'),
           ],
@@ -329,16 +353,18 @@ class AccountAuthenticationSection extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
               onConfirm();
             },
             style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.errorContainer,
-                foregroundColor: colorScheme.onErrorContainer),
+              backgroundColor: colorScheme.errorContainer,
+              foregroundColor: colorScheme.onErrorContainer,
+            ),
             child: const Text('Disconnect'),
           ),
         ],

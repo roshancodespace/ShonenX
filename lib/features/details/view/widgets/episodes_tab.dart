@@ -171,7 +171,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
               hasScrollBody: false,
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(10.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -219,7 +219,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                   child: Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 10.0),
                         child: Row(
                           children: [
                             Text(
@@ -723,7 +723,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(10.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,

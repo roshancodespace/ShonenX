@@ -21,7 +21,7 @@ class GenericSelectionSheet<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(10.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,7 +33,8 @@ class GenericSelectionSheet<T> extends StatelessWidget {
             else
               ConstrainedBox(
                 constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.4),
+                  maxHeight: MediaQuery.of(context).size.height * 0.4,
+                ),
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: items.length,
@@ -43,8 +44,9 @@ class GenericSelectionSheet<T> extends StatelessWidget {
                     return ListTile(
                       title: Text(displayBuilder(item)),
                       selected: isSelected,
-                      trailing:
-                          isSelected ? const Icon(Iconsax.tick_circle) : null,
+                      trailing: isSelected
+                          ? const Icon(Iconsax.tick_circle)
+                          : null,
                       onTap: () => onItemSelected(index),
                     );
                   },

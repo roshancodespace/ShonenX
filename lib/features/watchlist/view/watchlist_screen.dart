@@ -49,11 +49,9 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
   Future<void> _fetch(int i, {bool force = false, int page = 1}) async {
     if (_statuses.isEmpty) return;
 
-    await ref.read(watchlistProvider.notifier).fetchListForStatus(
-          _statuses[i],
-          force: force,
-          page: page,
-        );
+    await ref
+        .read(watchlistProvider.notifier)
+        .fetchListForStatus(_statuses[i], force: force, page: page);
   }
 
   @override
@@ -65,9 +63,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
   @override
   Widget build(BuildContext context) {
     if (_controller == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final theme = Theme.of(context);
@@ -77,8 +73,9 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
       appBar: AppBar(
         title: Text(
           'Your Library',
-          style: theme.textTheme.headlineMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
@@ -153,10 +150,7 @@ class _WatchlistTabView extends ConsumerWidget {
             info.hasNextPage &&
             !state.loadingStatuses.contains(status) &&
             n.metrics.pixels >= n.metrics.maxScrollExtent * 0.9) {
-          notifier.fetchListForStatus(
-            status,
-            page: info.currentPage + 1,
-          );
+          notifier.fetchListForStatus(status, page: info.currentPage + 1);
           print('Fetching page ${info.currentPage + 1} for $status');
         }
         return false;
@@ -165,7 +159,7 @@ class _WatchlistTabView extends ConsumerWidget {
         onRefresh: () => notifier.fetchListForStatus(status, force: true),
         child: ShonenXGridView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 120),
           crossAxisCount: _columns(context),
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
@@ -203,8 +197,9 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'Failed to load list',
-              style: theme.textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -252,8 +247,9 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 24),
           Text(
             'List is Empty',
-            style: theme.textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           Text(

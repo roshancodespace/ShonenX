@@ -7,10 +7,14 @@ import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 
-final providerStatusProvider =
-    FutureProvider<Map<String, dynamic>>((ref) async {
-  final response = await http.get(Uri.parse(
-      'https://raw.githubusercontent.com/Darkx-dev/ShonenX-Providers-Status/refs/heads/main/server_status.json'));
+final providerStatusProvider = FutureProvider<Map<String, dynamic>>((
+  ref,
+) async {
+  final response = await http.get(
+    Uri.parse(
+      'https://raw.githubusercontent.com/Darkx-dev/ShonenX-Providers-Status/refs/heads/main/server_status.json',
+    ),
+  );
   if (response.statusCode == 200) {
     return json.decode(response.body);
   }
@@ -29,27 +33,29 @@ class AnimeSourcesSettingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton.filledTonal(
-            onPressed: () => context.pop(),
-            icon: const Icon(Iconsax.arrow_left_2)),
+          onPressed: () => context.pop(),
+          icon: const Icon(Iconsax.arrow_left_2),
+        ),
         title: const Text('Anime Sources'),
         forceMaterialTransparency: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Available Sources',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-                'Select a source to fetch anime from. The status indicates if the source is currently working.',
-                style: Theme.of(context).textTheme.bodySmall),
+              'Select a source to fetch anime from. The status indicates if the source is currently working.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
             const SizedBox(height: 16),
             Expanded(
               child: providerStatus.when(
@@ -59,7 +65,8 @@ class AnimeSourcesSettingsScreen extends ConsumerWidget {
                     final provider = animeSources[index];
                     final statusInfo = statusData[provider];
                     final status = statusInfo?['status'] as String?;
-                    final isSelected = selectedAnimeSource?.providerName ==
+                    final isSelected =
+                        selectedAnimeSource?.providerName ==
                         provider.toLowerCase();
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
@@ -86,8 +93,11 @@ class AnimeSourcesSettingsScreen extends ConsumerWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline,
-                          size: 48, color: Colors.red),
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red,
+                      ),
                       const SizedBox(height: 16),
                       const Text('Failed to load provider status'),
                       const SizedBox(height: 8),

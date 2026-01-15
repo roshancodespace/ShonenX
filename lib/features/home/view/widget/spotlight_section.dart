@@ -99,7 +99,7 @@ class _SpotlightHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(15, 0, 0, 0),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: theme.colorScheme.tertiaryContainer,
           borderRadius: BorderRadius.circular(30),

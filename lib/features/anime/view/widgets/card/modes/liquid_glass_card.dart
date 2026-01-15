@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
@@ -23,7 +22,6 @@ class LiquidGlassCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Pre-calculate image URL to avoid digging through objects repeatedly
     final imageUrl = anime?.coverImage.large ?? anime?.coverImage.medium ?? '';
     final title = anime?.title.english ?? anime?.title.romaji ?? 'Unknown';
 
@@ -51,7 +49,6 @@ class LiquidGlassCard extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Base Background Layer
                 AnimatedScale(
                   scale: isHovered ? 1.1 : 1.0,
                   duration: const Duration(milliseconds: 1400),
@@ -62,12 +59,7 @@ class LiquidGlassCard extends StatelessWidget {
                     height: double.infinity,
                   ),
                 ),
-
-                // Legibility Gradient
-                // Legibility Gradient
                 const ShonenXGlassGradient.legibility(),
-
-                // Top Right - Score Shard
                 if (anime?.averageScore != null)
                   Positioned(
                     top: 12,
@@ -100,8 +92,6 @@ class LiquidGlassCard extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                // Bottom Content Cluster
                 Positioned(
                   bottom: 12,
                   left: 12,
@@ -110,7 +100,6 @@ class LiquidGlassCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Format & EPS badges
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -157,8 +146,6 @@ class LiquidGlassCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 10),
-
-                      // Title Shard
                       ShonenXGlassShard.network(
                         width: w,
                         height: h,

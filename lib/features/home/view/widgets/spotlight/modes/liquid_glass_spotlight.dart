@@ -36,7 +36,6 @@ class LiquidGlassSpotlight extends StatelessWidget {
       offset: const Offset(0, 1),
       blurRadius: 2,
     );
-
     return GestureDetector(
       onTap: () => onTap?.call(anime!),
       child: ClipRRect(
@@ -65,8 +64,6 @@ class LiquidGlassSpotlight extends StatelessWidget {
                       ),
                     ),
                     const ShonenXGlassGradient.vignette(),
-
-                    // Status
                     Positioned(
                       top: isMobile ? 16 : 24,
                       left: isMobile ? 16 : 24,
@@ -91,8 +88,6 @@ class LiquidGlassSpotlight extends StatelessWidget {
                         ),
                       ),
                     ),
-
-                    // Score
                     if (anime!.averageScore != null)
                       Positioned(
                         top: isMobile ? 16 : 24,
@@ -126,8 +121,6 @@ class LiquidGlassSpotlight extends StatelessWidget {
                           ),
                         ),
                       ),
-
-                    // Bottom Info
                     Positioned(
                       bottom: isMobile ? 16 : 24,
                       left: isMobile ? 16 : 24,
@@ -184,8 +177,6 @@ class LiquidGlassSpotlight extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 12),
-
-                          // Title
                           ShonenXGlassShard.network(
                             isDark: isDark,
                             borderRadius: 24,

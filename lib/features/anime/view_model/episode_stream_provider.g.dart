@@ -20,7 +20,7 @@ final class EpisodeDataProvider
         argument: null,
         retry: null,
         name: r'episodeDataProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -41,7 +41,7 @@ final class EpisodeDataProvider
   }
 }
 
-String _$episodeDataHash() => r'25d7d534d8e0c5e6f02d00e6dffbbc6ffaa1a5fe';
+String _$episodeDataHash() => r'3648b49b01aa1f92aa71dd41b9d9c93058277e8f';
 
 abstract class _$EpisodeData extends $Notifier<EpisodeDataState> {
   EpisodeDataState build();

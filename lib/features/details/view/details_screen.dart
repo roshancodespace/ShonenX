@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
-
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
-import 'package:shonenx/features/details/view_model/details_provider.dart';
+import 'package:shonenx/features/details/view_model/details_page_notifier.dart';
 import 'package:shonenx/features/details/view/widgets/episodes_tab.dart';
 import 'package:shonenx/features/details/view/widgets/characters_tab.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
@@ -31,7 +30,6 @@ class AnimeDetailsScreen extends ConsumerStatefulWidget {
 class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  bool _isWatchLoading = false;
 
   @override
   void initState() {
@@ -39,18 +37,10 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     _tabController = TabController(length: 3, vsync: this);
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-    // Trigger background fetch silently
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final id = _getAnimeId(widget.anime);
-      ref.read(detailsProvider(id).notifier).init(widget.anime);
+      final id = widget.anime.id;
+      ref.read(detailsPageProvider(id).notifier).init(widget.anime);
     });
-  }
-
-  int _getAnimeId(UniversalMedia media) {
-    if (int.tryParse(media.id) != null) {
-      return int.parse(media.id);
-    }
-    return 0; // Or handle error
   }
 
   @override
@@ -76,10 +66,8 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AnimeDetailsScreen(
-          anime: media,
-          tag: 'tag-${media.id}',
-        ),
+        builder: (_) =>
+            AnimeDetailsScreen(anime: media, tag: 'tag-${media.id}'),
       ),
     );
   }
@@ -89,14 +77,13 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final useMangayomi = ref.watch(
-        experimentalProvider.select((exp) => exp.useMangayomiExtensions));
+      experimentalProvider.select((exp) => exp.useMangayomiExtensions),
+    );
 
-    final id = _getAnimeId(widget.anime);
-    final detailsAsync = ref.watch(detailsProvider(id));
-
-    // Use the latest data if available, otherwise fallback to widget.anime
-    final displayedAnime = detailsAsync.value ?? widget.anime;
-    final isLoading = detailsAsync.isLoading;
+    final id = widget.anime.id;
+    final pageState = ref.watch(detailsPageProvider(id));
+    final displayedAnime = pageState.details.value ?? widget.anime;
+    final isLoading = pageState.details.isLoading;
 
     return Scaffold(
       backgroundColor: colorScheme.surfaceContainerLowest,
@@ -115,34 +102,37 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
           child: TabBarView(
             controller: _tabController,
             children: [
-              // About Tab
-              SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(0, 16, 0, 100),
-                child: DetailsContent(
-                  anime: displayedAnime,
-                  isLoading: isLoading,
-                  onMediaTap: _onMediaTap,
+              _KeepAliveWrapper(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(0, 16, 0, 100),
+                  child: DetailsContent(
+                    anime: displayedAnime,
+                    isLoading: isLoading,
+                    onMediaTap: _onMediaTap,
+                  ),
                 ),
               ),
-              // Episodes Tab
-              EpisodesTab(
-                mediaId: displayedAnime.id.toString(),
-                mediaTitle: displayedAnime.title,
-                mediaFormat: displayedAnime.format ?? '',
-                mediaCover: displayedAnime.coverImage.large ??
-                    displayedAnime.coverImage.medium ??
-                    '',
+              _KeepAliveWrapper(
+                child: EpisodesTab(
+                  mediaId: displayedAnime.id.toString(),
+                  mediaTitle: displayedAnime.title,
+                  mediaFormat: displayedAnime.format ?? '',
+                  mediaCover:
+                      displayedAnime.coverImage.large ??
+                      displayedAnime.coverImage.medium ??
+                      '',
+                ),
               ),
-              // Characters Tab
-              CharactersTab(
-                characters: displayedAnime.characters,
-                isLoading: isLoading,
+              _KeepAliveWrapper(
+                child: CharactersTab(
+                  characters: displayedAnime.characters,
+                  isLoading: isLoading,
+                ),
               ),
             ],
           ),
         ),
       ),
-      // Bottom Tab Bar - cleaner design
       bottomNavigationBar: Material(
         color: colorScheme.surface,
         elevation: 8,
@@ -166,60 +156,91 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
         ),
       ),
       floatingActionButton: !useMangayomi
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Watch Now Button (extended)
-                Consumer(builder: (context, ref, child) {
-                  final repo = ref.watch(watchProgressRepositoryProvider);
-                  final progress =
-                      repo.getProgress(displayedAnime.id.toString());
-                  return FloatingActionButton.extended(
-                    heroTag: 'watch_btn',
-                    onPressed: _isWatchLoading
-                        ? null
-                        : () async {
-                            setState(() => _isWatchLoading = true);
-                            await providerAnimeMatchSearch(
-                              context: context,
-                              ref: ref,
-                              animeMedia: displayedAnime,
-                            );
-                            if (mounted) {
-                              setState(() => _isWatchLoading = false);
-                            }
-                          },
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: colorScheme.onPrimary,
-                    elevation: 6,
-                    icon: _isWatchLoading
-                        ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                  colorScheme.onPrimary),
-                            ),
-                          )
-                        : const Icon(Iconsax.play_circle, size: 24),
-                    label: Text(
-                      _isWatchLoading
-                          ? 'Loading...'
-                          : progress?.currentEpisode != null
-                              ? 'EP ${progress?.currentEpisode}'
-                              : 'Watch Now',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  );
-                }),
-              ],
-            )
+          ? _WatchFab(anime: displayedAnime)
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
+}
+
+class _WatchFab extends ConsumerStatefulWidget {
+  final UniversalMedia anime;
+  const _WatchFab({required this.anime});
+
+  @override
+  ConsumerState<_WatchFab> createState() => _WatchFabState();
+}
+
+class _WatchFabState extends ConsumerState<_WatchFab> {
+  bool _isWatchLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final progress = ref.watch(
+      watchProgressRepositoryProvider.select(
+        (repo) => repo.getProgress(widget.anime.id.toString()),
+      ),
+    );
+
+    return FloatingActionButton.extended(
+      heroTag: 'watch_btn',
+      onPressed: _isWatchLoading
+          ? null
+          : () async {
+              setState(() => _isWatchLoading = true);
+              await providerAnimeMatchSearch(
+                context: context,
+                ref: ref,
+                animeMedia: widget.anime,
+              );
+              if (mounted) {
+                setState(() => _isWatchLoading = false);
+              }
+            },
+      backgroundColor: colorScheme.primary,
+      foregroundColor: colorScheme.onPrimary,
+      elevation: 6,
+      icon: _isWatchLoading
+          ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  colorScheme.onPrimary,
+                ),
+              ),
+            )
+          : const Icon(Iconsax.play_circle, size: 24),
+      label: Text(
+        _isWatchLoading
+            ? 'Loading...'
+            : progress?.currentEpisode != null
+            ? 'EP ${progress?.currentEpisode}'
+            : 'Watch Now',
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+}
+
+class _KeepAliveWrapper extends StatefulWidget {
+  final Widget child;
+  const _KeepAliveWrapper({required this.child});
+
+  @override
+  State<_KeepAliveWrapper> createState() => _KeepAliveWrapperState();
+}
+
+class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 }

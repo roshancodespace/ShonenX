@@ -12,7 +12,7 @@ import 'package:shonenx/helpers/anime_match_popup.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
-import 'package:shonenx/features/details/view_model/episodes_tab_notifier.dart';
+import 'package:shonenx/features/details/view_model/details_page_notifier.dart';
 import 'package:collection/collection.dart';
 import 'package:shonenx/features/downloads/view_model/downloads_notifier.dart';
 import 'package:shonenx/features/details/view/widgets/episodes/episode_block_item.dart';
@@ -51,9 +51,8 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     super.build(context);
 
     // Watch State
-    final notifierProvider = episodesTabProvider(widget.mediaTitle);
-    final notifier = ref.read(notifierProvider.notifier);
-    final state = ref.watch(notifierProvider);
+    final notifier = ref.read(detailsPageProvider(widget.mediaId).notifier);
+    final state = ref.watch(detailsPageProvider(widget.mediaId));
     final uiSettings = ref.watch(uiSettingsProvider);
     final viewMode = EpisodeViewMode.values.firstWhere(
       (e) => e.name == uiSettings.episodeViewMode,
@@ -519,7 +518,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
   void _showSourceSelectionDialog(
     BuildContext context,
     WidgetRef ref,
-    EpisodesTabNotifier notifier,
+    DetailsPageNotifier notifier,
   ) {
     final theme = Theme.of(context);
 
@@ -605,7 +604,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
   Widget _buildMangayomiSourceList(
     WidgetRef ref,
     ScrollController scrollController,
-    EpisodesTabNotifier notifier,
+    DetailsPageNotifier notifier,
   ) {
     final sourceState = ref.watch(sourceProvider);
     final sources = sourceState.installedAnimeExtensions;
@@ -643,7 +642,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
   Widget _buildLegacySourceList(
     WidgetRef ref,
     ScrollController scrollController,
-    EpisodesTabNotifier notifier,
+    DetailsPageNotifier notifier,
   ) {
     final registry = ref.read(animeSourceRegistryProvider);
     final selectedAnimeSource = ref.watch(selectedAnimeProvider);
@@ -681,9 +680,9 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
   Future<void> _handleWrongMatch(
     BuildContext context,
     WidgetRef ref,
-    EpisodesTabNotifier notifier,
+    DetailsPageNotifier notifier,
   ) async {
-    final currentState = ref.read(episodesTabProvider(widget.mediaTitle));
+    final currentState = ref.read(detailsPageProvider(widget.mediaId));
     AppLogger.i(
       'User reported a wrong match. Best match was: ${currentState.bestMatchName}',
     );

@@ -58,7 +58,7 @@ class EpisodeListState {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class EpisodeListNotifier extends _$EpisodeListNotifier {
   final JikanService _jikan = JikanService();
 

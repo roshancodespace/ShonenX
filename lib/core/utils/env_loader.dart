@@ -1,14 +1,18 @@
-import 'dart:io';
+import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:shonenx/core/utils/app_logger.dart';
 
 class Env {
-  static late final Map<String, String> _vars;
+  static Map<String, String> _vars = {};
+  static bool _isInitialized = false;
 
-  static Future<void> init([String path = '.env']) async {
-    final file = File(path);
-    final map = <String, String>{};
+  static Future<void> init([String assetPath = '.env']) async {
+    if (_isInitialized) return;
 
-    if (await file.exists()) {
-      final lines = await file.readAsLines();
+    try {
+      final content = await rootBundle.loadString(assetPath);
+      final lines = const LineSplitter().convert(content);
+      final map = <String, String>{};
 
       for (final line in lines) {
         final trimmed = line.trim();
@@ -27,10 +31,21 @@ class Env {
 
         map[key] = value;
       }
-    }
+      
+      _vars = map;
+      _isInitialized = true;
+      AppLogger.i('Env initialized successfully with ${_vars.length} keys');
 
-    _vars = map;
+    } catch (e) {
+      AppLogger.w('Warning: Could not load env file: $e');
+      _vars = {}; 
+    }
   }
 
-  static String? get(String key) => Platform.environment[key] ?? _vars[key];
+  static String get(String key, {String? fallback}) {
+    if (!_isInitialized) {
+      AppLogger.w('Warning: Env.get called before Env.init');
+    }
+    return _vars[key] ?? fallback ?? '';
+  }
 }

@@ -8,8 +8,8 @@ import 'package:shonenx/core/utils/env_loader.dart';
 
 class MyAnimeListAuthService {
   // --- Configuration ---
-  static String get clientId => Env.get('MAL_CLIENT_ID') ?? '';
-  static String get clientSecret => Env.get('MAL_CLIENT_SECRET') ?? '';
+  static String get clientId => Env.get('MAL_CLIENT_ID');
+  static String get clientSecret => Env.get('MAL_CLIENT_SECRET');
 
   static const String _redirectUri = 'shonenx://callback';
   static const String _callbackScheme = 'shonenx';

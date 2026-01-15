@@ -3,12 +3,20 @@ class BaseServerModel {
   final List<ServerData> dub;
   final List<ServerData> raw;
 
-  BaseServerModel(
-      {this.sub = const [], this.dub = const [], this.raw = const []});
+  BaseServerModel({
+    this.sub = const [],
+    this.dub = const [],
+    this.raw = const [],
+  });
 
   List<ServerData> flatten() {
     return [...sub, ...dub, ...raw];
   }
+
+  static BaseServerModel defaultServer = BaseServerModel(
+    sub: [ServerData(name: "Default", id: "default", isDub: false)],
+    dub: [],
+  );
 }
 
 class ServerData {

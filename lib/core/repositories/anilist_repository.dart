@@ -41,7 +41,7 @@ class AniListRepository implements AnimeRepository {
 
   @override
   Future<UniversalPageResponse<UniversalMedia>> getFavorites(
-      {int page = 1, int perPage = 10}) async {
+      {int page = 1, int perPage = 25}) async {
     final data = await service.getFavorites(page: page, perPage: perPage);
     final flattenMedias = data.mediaList.map((e) => e.media).toList();
     return UniversalPageResponse(
@@ -64,14 +64,14 @@ class AniListRepository implements AnimeRepository {
 
   @override
   Future<List<UniversalMedia>> getPopularAnime(
-      {int page = 1, int perPage = 10}) async {
+      {int page = 1, int perPage = 25}) async {
     final media = await service.getPopularAnime(page: page, perPage: perPage);
     return media.map((e) => UniversalMedia.fromAnilist(e)).toList();
   }
 
   @override
   Future<List<UniversalMedia>> getRecentlyUpdatedAnime(
-      {int page = 1, int perPage = 10}) async {
+      {int page = 1, int perPage = 25}) async {
     final media =
         await service.getRecentlyUpdatedAnime(page: page, perPage: perPage);
     return media.map((e) => UniversalMedia.fromAnilist(e)).toList();
@@ -79,28 +79,28 @@ class AniListRepository implements AnimeRepository {
 
   @override
   Future<List<UniversalMedia>> getTopRatedAnime(
-      {int page = 1, int perPage = 10}) async {
+      {int page = 1, int perPage = 25}) async {
     final media = await service.getTopRatedAnime(page: page, perPage: perPage);
     return media.map((e) => UniversalMedia.fromAnilist(e)).toList();
   }
 
   @override
   Future<List<UniversalMedia>> getTrendingAnime(
-      {int page = 1, int perPage = 10}) async {
+      {int page = 1, int perPage = 25}) async {
     final media = await service.getTrendingAnime(page: page, perPage: perPage);
     return media.map((e) => UniversalMedia.fromAnilist(e)).toList();
   }
 
   @override
   Future<List<UniversalMedia>> getUpcomingAnime(
-      {int page = 1, int perPage = 10}) async {
+      {int page = 1, int perPage = 25}) async {
     final media = await service.getUpcomingAnime(page: page, perPage: perPage);
     return media.map((e) => UniversalMedia.fromAnilist(e)).toList();
   }
 
   @override
   Future<List<UniversalMedia>> getMostFavoriteAnime(
-      {int page = 1, int perPage = 10}) async {
+      {int page = 1, int perPage = 25}) async {
     final media =
         await service.getMostFavoriteAnime(page: page, perPage: perPage);
     return media.map((e) => UniversalMedia.fromAnilist(e)).toList();

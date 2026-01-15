@@ -79,14 +79,15 @@ class WatchlistNotifier extends Notifier<WatchListState> {
           : [
               ...state.favorites,
               UniversalMediaListEntry(
-                  id: 'fav_${anime.id}', // dummy ID
-                  media: anime,
-                  status: 'CURRENT',
-                  score: 0,
-                  progress: 0,
-                  repeat: 0,
-                  isPrivate: false,
-                  notes: '')
+                id: 'fav_${anime.id}', // dummy ID
+                media: anime,
+                status: 'CURRENT',
+                score: 0,
+                progress: 0,
+                repeat: 0,
+                isPrivate: false,
+                notes: '',
+              ),
             ];
 
       state = state.copyWith(favorites: updated);
@@ -101,7 +102,7 @@ class WatchlistNotifier extends Notifier<WatchListState> {
     String status, {
     bool force = false,
     int page = 1,
-    int perPage = 5,
+    int perPage = 25,
   }) async {
     if (_shouldSkip(status, force, page)) return state;
 
@@ -114,7 +115,8 @@ class WatchlistNotifier extends Notifier<WatchListState> {
       if (status == 'favorites') {
         final data = await _repo.getFavorites(page: page, perPage: perPage);
         final entries = data.data
-            .map((m) => UniversalMediaListEntry(
+            .map(
+              (m) => UniversalMediaListEntry(
                 id: 'fav_${m.id}',
                 media: m,
                 status: 'CURRENT',
@@ -122,11 +124,14 @@ class WatchlistNotifier extends Notifier<WatchListState> {
                 progress: 0,
                 repeat: 0,
                 isPrivate: false,
-                notes: ''))
+                notes: '',
+              ),
+            )
             .toList();
 
-        final existing =
-            page == 1 ? <UniversalMediaListEntry>[] : state.favorites;
+        final existing = page == 1
+            ? <UniversalMediaListEntry>[]
+            : state.favorites;
 
         state = state.copyWith(
           favorites: [...existing, ...entries],
@@ -142,24 +147,20 @@ class WatchlistNotifier extends Notifier<WatchListState> {
         perPage: perPage,
       );
 
-      final existing =
-          page == 1 ? <UniversalMediaListEntry>[] : state.listFor(status);
+      final existing = page == 1
+          ? <UniversalMediaListEntry>[]
+          : state.listFor(status);
 
       state = state.copyWith(
         lists: {
           ...state.lists,
           status: [...existing, ...res.data],
         },
-        pageInfo: {
-          ...state.pageInfo,
-          status: res.pageInfo,
-        },
+        pageInfo: {...state.pageInfo, status: res.pageInfo},
       );
       return state;
     } catch (e) {
-      state = state.copyWith(
-        errors: {...state.errors, status: e.toString()},
-      );
+      state = state.copyWith(errors: {...state.errors, status: e.toString()});
       return state;
     } finally {
       final updated = {...state.loadingStatuses}..remove(status);
@@ -186,17 +187,13 @@ class WatchlistNotifier extends Notifier<WatchListState> {
       list.add(entry);
     }
 
-    state = state.copyWith(
-      lists: {...state.lists, status: list},
-    );
+    state = state.copyWith(lists: {...state.lists, status: list});
   }
 
   Future<void> fetchAll({bool force = false}) async {
     final statuses = await _repo.getSupportedStatuses();
     await Future.wait([
-      ...statuses.map(
-        (s) => fetchListForStatus(s, force: force),
-      ),
+      ...statuses.map((s) => fetchListForStatus(s, force: force)),
       fetchListForStatus('favorites', force: force),
     ]);
   }

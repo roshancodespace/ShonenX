@@ -283,7 +283,7 @@ class AnilistService {
   Future<List<Media>> searchAnime(
     String title, {
     int page = 1,
-    int perPage = 10,
+    int perPage = 25,
     SearchFilter? filter,
   }) async {
     final adultParam = _getAdultParam();
@@ -358,7 +358,7 @@ class AnilistService {
     return Media.fromJson(data!['Media']);
   }
 
-  Future<List<Media>> getTrendingAnime({int page = 1, int perPage = 15}) async {
+  Future<List<Media>> getTrendingAnime({int page = 1, int perPage = 25}) async {
     final adultParam = _getAdultParam();
     final useAdult = adultParam != null;
 
@@ -408,7 +408,7 @@ class AnilistService {
   }
 
   Future<List<Media>> getRecentlyUpdatedAnime(
-      {int page = 1, int perPage = 15}) async {
+      {int page = 1, int perPage = 25}) async {
     final adultParam = _getAdultParam();
     final useAdult = adultParam != null;
 
@@ -441,7 +441,7 @@ class AnilistService {
   }
 
   Future<List<Media>> getMostFavoriteAnime(
-      {int page = 1, int perPage = 15}) async {
+      {int page = 1, int perPage = 25}) async {
     final adultParam = _getAdultParam();
     final useAdult = adultParam != null;
 

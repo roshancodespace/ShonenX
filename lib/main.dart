@@ -17,7 +17,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/app_initializer.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
-import 'package:shonenx/shared/providers/router_provider.dart';
+import 'package:shonenx/router/router_config.dart';
 import 'package:shonenx/storage_provider.dart';
 import 'package:shonenx/core/utils/env_loader.dart';
 

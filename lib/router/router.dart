@@ -6,32 +6,36 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/features/browse/view/browse_screen.dart';
 import 'package:shonenx/features/downloads/view/downloads_screen.dart';
-import 'package:shonenx/features/loading/view/loading_screen.dart';
-import 'package:shonenx/features/watchlist/view/watchlist_screen.dart';
-import 'package:shonenx/features/loading/view_model/initialization_notifier.dart';
 import 'package:shonenx/features/home/view/home_screen.dart' as h_screen;
+import 'package:shonenx/features/loading/view/loading_screen.dart';
+import 'package:shonenx/features/loading/view_model/initialization_notifier.dart';
+import 'package:shonenx/features/watchlist/view/watchlist_screen.dart';
 
-// Navigation item configuration
 class NavItem {
   final String path;
   final IconData icon;
   final Widget screen;
 
-  NavItem({required this.path, required this.icon, required this.screen});
+  const NavItem({required this.path, required this.icon, required this.screen});
 }
 
 final List<NavItem> navItems = [
-  NavItem(path: '/', icon: Iconsax.home, screen: const h_screen.HomeScreen()),
-  NavItem(
-      path: '/browse', icon: Iconsax.discover_1, screen: const BrowseScreen()),
-  NavItem(
-      path: '/downloads',
-      icon: Iconsax.receive_square,
-      screen: const DownloadsScreen()),
-  NavItem(
-      path: '/watchlist',
-      icon: Iconsax.bookmark,
-      screen: const WatchlistScreen()),
+  const NavItem(path: '/', icon: Iconsax.home, screen: h_screen.HomeScreen()),
+  const NavItem(
+    path: '/browse',
+    icon: Iconsax.discover_1,
+    screen: BrowseScreen(),
+  ),
+  const NavItem(
+    path: '/downloads',
+    icon: Iconsax.receive_square,
+    screen: DownloadsScreen(),
+  ),
+  const NavItem(
+    path: '/watchlist',
+    icon: Iconsax.bookmark,
+    screen: WatchlistScreen(),
+  ),
 ];
 
 class AppRouterScreen extends ConsumerWidget {
@@ -41,29 +45,28 @@ class AppRouterScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isWideScreen = MediaQuery.of(context).size.width > 800;
-    final initializationState = ref.watch(initializationProvider);
-    if (initializationState.status != InitializationStatus.success) {
-      return const LoadingScreen();
-    }
+    final status = ref.watch(initializationProvider).status;
+    if (status != InitializationStatus.success) return const LoadingScreen();
+
+    final isWide = MediaQuery.sizeOf(context).width > 800;
+
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        showExitConfirmationDialog(context, isSystemExit: true);
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) showExitConfirmationDialog(context, isSystemExit: true);
       },
       child: Scaffold(
         extendBody: true,
         extendBodyBehindAppBar: true,
         body: Stack(
-          clipBehavior: Clip.none,
           fit: StackFit.expand,
           children: [
             Padding(
-              padding: EdgeInsets.only(
-                left: isWideScreen ? 90 : 0,
-                bottom: isWideScreen ? 15 : 0,
-                top: isWideScreen ? 15 : 0,
+              padding: EdgeInsets.fromLTRB(
+                isWide ? 90 : 0,
+                isWide ? 15 : 0,
+                0,
+                isWide ? 15 : 0,
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(15),
@@ -71,14 +74,14 @@ class AppRouterScreen extends ConsumerWidget {
               ),
             ),
             Positioned(
-              left: isWideScreen ? 10 : 0,
-              right: isWideScreen ? null : 0,
-              top: isWideScreen ? 20 : null,
+              left: isWide ? 10 : 0,
+              right: isWide ? null : 0,
+              top: isWide ? 20 : null,
               bottom: 10,
               child: SafeArea(
-                child: isWideScreen
-                    ? _buildFloatingSideNav(context)
-                    : _buildCrystalBottomNav(context),
+                child: isWide
+                    ? _SideNav(shell: navigationShell)
+                    : _BottomNav(shell: navigationShell),
               ),
             ),
           ],
@@ -86,15 +89,24 @@ class AppRouterScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildFloatingSideNav(BuildContext context) {
+class _SideNav extends StatelessWidget {
+  final StatefulNavigationShell shell;
+
+  const _SideNav({required this.shell});
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       width: 75,
       decoration: BoxDecoration(
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(35),
-        color: theme.colorScheme.surface,
-        border: Border.all(color: theme.colorScheme.primary),
+        border: Border.all(color: colorScheme.primary),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -104,93 +116,89 @@ class AppRouterScreen extends ConsumerWidget {
         ],
       ),
       child: Column(
-        children: navItems.asMap().entries.map((entry) {
-          final index = entry.key;
-          final item = entry.value;
-          final isSelected = navigationShell.currentIndex == index;
+        children: List.generate(navItems.length, (index) {
+          final isSelected = shell.currentIndex == index;
           return Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: index == 0
-                    ? BorderRadius.only(
-                        topLeft: Radius.circular(50),
-                        topRight: Radius.circular(50))
-                    : index == (navItems.length - 1)
-                        ? BorderRadius.only(
-                            bottomLeft: Radius.circular(50),
-                            bottomRight: Radius.circular(50),
-                          )
-                        : null,
-                color: isSelected
-                    ? theme.colorScheme.primary.withOpacity(0.2)
-                    : null,
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              margin: const EdgeInsets.all(5),
+            child: Padding(
+              padding: const EdgeInsets.all(5),
               child: InkWell(
-                onTap: () => navigationShell.goBranch(index),
-                child: Center(
-                  child: Icon(
-                    item.icon,
+                onTap: () => shell.goBranch(index),
+                borderRadius: BorderRadius.circular(30),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(30),
                     color: isSelected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface,
+                        ? colorScheme.primary.withOpacity(0.2)
+                        : null,
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    navItems[index].icon,
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.onSurface,
                   ),
                 ),
               ),
             ),
           );
-        }).toList(),
+        }),
       ),
     );
   }
+}
 
-  Widget _buildCrystalBottomNav(BuildContext context) {
+class _BottomNav extends StatelessWidget {
+  final StatefulNavigationShell shell;
+
+  const _BottomNav({required this.shell});
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final width = MediaQuery.sizeOf(context).width;
+
     return Padding(
-      padding: EdgeInsets.symmetric(
-          horizontal: MediaQuery.sizeOf(context).width * 0.15),
+      padding: EdgeInsets.symmetric(horizontal: width * 0.15),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(100),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: Container(
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
+              color: colorScheme.surface.withOpacity(0.5),
               borderRadius: BorderRadius.circular(100),
-              color: theme.colorScheme.surface.withOpacity(0.5),
-              border:
-                  Border.all(color: theme.colorScheme.primary.withOpacity(0.8)),
+              border: Border.all(color: colorScheme.primary.withOpacity(0.8)),
             ),
-            padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 7),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: navItems.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                final isSelected = navigationShell.currentIndex == index;
+              children: List.generate(navItems.length, (index) {
+                final isSelected = shell.currentIndex == index;
                 return Expanded(
                   child: InkWell(
-                    onTap: () => navigationShell.goBranch(index),
+                    onTap: () => shell.goBranch(index),
+                    borderRadius: BorderRadius.circular(100),
                     child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(100),
-                        color: isSelected
-                            ? theme.colorScheme.primary.withOpacity(0.2)
-                            : null,
-                      ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Center(
-                        child: Icon(
-                          item.icon,
-                          color: isSelected
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurface,
-                        ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? colorScheme.primary.withOpacity(0.2)
+                            : null,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        navItems[index].icon,
+                        color: isSelected
+                            ? colorScheme.primary
+                            : colorScheme.onSurface,
                       ),
                     ),
                   ),
                 );
-              }).toList(),
+              }),
             ),
           ),
         ),
@@ -199,9 +207,10 @@ class AppRouterScreen extends ConsumerWidget {
   }
 }
 
-// Exit confirmation dialog
-void showExitConfirmationDialog(BuildContext context,
-    {bool isSystemExit = false}) {
+void showExitConfirmationDialog(
+  BuildContext context, {
+  bool isSystemExit = false,
+}) {
   showDialog(
     context: context,
     builder: (context) => AlertDialog(
@@ -209,12 +218,12 @@ void showExitConfirmationDialog(BuildContext context,
       content: const Text('Are you sure you want to exit the app?'),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
         TextButton(
           onPressed: () {
-            Navigator.of(context).pop();
+            Navigator.pop(context);
             if (isSystemExit) {
               SystemNavigator.pop();
             } else {

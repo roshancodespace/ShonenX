@@ -7,11 +7,7 @@ class EpisodesInfo extends StatelessWidget {
   final UniversalMedia? anime;
   final bool compact;
 
-  const EpisodesInfo({
-    super.key,
-    required this.anime,
-    this.compact = false,
-  });
+  const EpisodesInfo({super.key, required this.anime, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +117,8 @@ class AnimeTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final title = anime?.title.english ??
+    final title =
+        anime?.title.english ??
         anime?.title.romaji ??
         anime?.title.native ??
         'Unknown Title';
@@ -143,7 +140,8 @@ class AnimeTitle extends StatelessWidget {
         title,
         maxLines: maxLines,
         overflow: TextOverflow.ellipsis,
-        style: style ??
+        style:
+            style ??
             theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w800,
               letterSpacing: 0.2,
@@ -164,7 +162,8 @@ class AnimeTitle extends StatelessWidget {
       title,
       maxLines: maxLines,
       overflow: TextOverflow.ellipsis,
-      style: style ??
+      style:
+          style ??
           theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -194,26 +193,19 @@ class AnimeImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Hero(
       tag: tag,
-      child: ClipRRect(
-        borderRadius:
-            (theme.cardTheme.shape as RoundedRectangleBorder?)?.borderRadius ??
-                BorderRadius.circular(8),
-        child: SizedBox(
-          height: height,
-          width: double.infinity,
-          child: CachedNetworkImage(
-            imageUrl:
-                anime?.coverImage.large ?? anime?.coverImage.medium ?? '',
-            fit: BoxFit.cover,
-            fadeInDuration: const Duration(milliseconds: 300),
-            placeholder: (_, __) => AnimeCardShimmer(height: height),
-            errorWidget: (_, __, ___) => AnimeCardShimmer(height: height),
-            filterQuality: FilterQuality.medium,
-            useOldImageOnUrlChange: true,
-          ),
+      child: SizedBox(
+        height: height,
+        width: double.infinity,
+        child: CachedNetworkImage(
+          imageUrl: anime?.coverImage.large ?? anime?.coverImage.medium ?? '',
+          fit: BoxFit.cover,
+          fadeInDuration: const Duration(milliseconds: 300),
+          placeholder: (_, __) => AnimeCardShimmer(height: height),
+          errorWidget: (_, __, ___) => AnimeCardShimmer(height: height),
+          filterQuality: FilterQuality.medium,
+          useOldImageOnUrlChange: true,
         ),
       ),
     );
@@ -224,11 +216,7 @@ class AnimeCardShimmer extends StatelessWidget {
   final double height;
   final double? width;
 
-  const AnimeCardShimmer({
-    super.key,
-    required this.height,
-    this.width,
-  });
+  const AnimeCardShimmer({super.key, required this.height, this.width});
 
   @override
   Widget build(BuildContext context) {

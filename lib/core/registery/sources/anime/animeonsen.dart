@@ -13,17 +13,17 @@ class AnimeOnsenProvider extends AnimeProvider {
   int _tokenExpiration = 0;
 
   AnimeOnsenProvider()
-      : super(
-          baseUrl: "https://animeonsen.xyz",
-          apiUrl: "https://api.animeonsen.xyz/v4",
-          providerName: "animeonsen",
-        );
+    : super(
+        baseUrl: "https://animeonsen.xyz",
+        apiUrl: "https://api.animeonsen.xyz/v4",
+        providerName: "animeonsen",
+      );
 
   @override
   Map<String, String> get headers => {
-        "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
-      };
+    "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+  };
 
   // --- Token Logic ---
 
@@ -46,7 +46,7 @@ class AnimeOnsenProvider extends AnimeProvider {
       "client_id": "f296be26-28b5-4358-b5a1-6259575e23b7",
       "client_secret":
           "349038c4157d0480784753841217270c3c5b35f4281eaee029de21cb04084235",
-      "grant_type": "client_credentials"
+      "grant_type": "client_credentials",
     };
 
     final res = await http.post(Uri.parse(url), body: body);
@@ -58,7 +58,7 @@ class AnimeOnsenProvider extends AnimeProvider {
     final Map<String, dynamic> jsoned = jsonDecode(res.body);
     return {
       'expiration': jsoned['expires_in'],
-      'token': jsoned['access_token']
+      'token': jsoned['access_token'],
     };
   }
 
@@ -70,15 +70,15 @@ class AnimeOnsenProvider extends AnimeProvider {
   }
 
   @override
-  Future<BaseEpisodeModel> getEpisodes(String animeId,
-      {String? anilistId, String? malId}) async {
+  Future<BaseEpisodeModel> getEpisodes(
+    String animeId, {
+    String? anilistId,
+    String? malId,
+  }) async {
     await _checkAndUpdateToken();
 
     final url = Uri.parse('$apiUrl/content/$animeId/episodes');
-    final apiHeader = {
-      "Authorization": "Bearer $_animeOnsenToken",
-      ...headers,
-    };
+    final apiHeader = {"Authorization": "Bearer $_animeOnsenToken", ...headers};
 
     final res = await http.get(url, headers: apiHeader);
 
@@ -97,23 +97,22 @@ class AnimeOnsenProvider extends AnimeProvider {
       final String uniqueId = "$item+$animeId";
       final int epNum = int.tryParse(item) ?? i;
 
-      episodes.add(EpisodeDataModel(
-        id: uniqueId,
-        number: epNum,
-        title: (title?.isEmpty ?? true) ? "Episode $epNum" : title!,
-        thumbnail: null,
-        isFiller: false,
-      ));
+      episodes.add(
+        EpisodeDataModel(
+          id: uniqueId,
+          number: epNum,
+          title: (title?.isEmpty ?? true) ? "Episode $epNum" : title!,
+          thumbnail: null,
+          isFiller: false,
+        ),
+      );
       i++;
     }
 
     // Sort by episode number
     episodes.sort((a, b) => (a.number ?? 0).compareTo(b.number ?? 0));
 
-    return BaseEpisodeModel(
-      episodes: episodes,
-      totalEpisodes: episodes.length,
-    );
+    return BaseEpisodeModel(episodes: episodes, totalEpisodes: episodes.length);
   }
 
   @override
@@ -151,19 +150,21 @@ class AnimeOnsenProvider extends AnimeProvider {
     if (jsoned['result'] != null) {
       jsoned['result'].forEach((item) {
         final String id = item['content_id'];
-        searchResults.add(BaseAnimeModel(
-          id: id,
-          anilistId: null,
-          name: item['content_title_en'] ?? item['content_title'],
-          jname: item['content_title_jp'],
-          type: null,
-          description: null,
-          poster: "https://api.animeonsen.xyz/v4/image/210x300/$id",
-          banner: null,
-          genres: [],
-          releaseDate: null,
-          number: null,
-        ));
+        searchResults.add(
+          BaseAnimeModel(
+            id: id,
+            anilistId: null,
+            name: item['content_title_en'] ?? item['content_title'],
+            jname: item['content_title_jp'],
+            type: null,
+            description: null,
+            poster: "https://api.animeonsen.xyz/v4/image/210x300/$id",
+            banner: null,
+            genres: [],
+            releaseDate: null,
+            number: null,
+          ),
+        );
       });
     }
 
@@ -171,8 +172,12 @@ class AnimeOnsenProvider extends AnimeProvider {
   }
 
   @override
-  Future<BaseSourcesModel> getSources(String animeId, String episodeId,
-      String? serverName, String? category) async {
+  Future<BaseSourcesModel> getSources(
+    String animeId,
+    String episodeId,
+    String? serverName,
+    String? category,
+  ) async {
     // Logic extracted from getStreams
     // We expect episodeId to be formatted as "episodeNumber+animeId" from getEpisodes
     final parts = episodeId.split("+");
@@ -194,11 +199,7 @@ class AnimeOnsenProvider extends AnimeProvider {
       // Removed headers here
     );
 
-    final track = Subtitle(
-      url: subtitleUrl,
-      lang: "English",
-      isSub: true,
-    );
+    final track = Subtitle(url: subtitleUrl, lang: "English", isSub: true);
 
     return BaseSourcesModel(
       sources: [source],
@@ -211,7 +212,7 @@ class AnimeOnsenProvider extends AnimeProvider {
 
   @override
   Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {
-    return BaseServerModel();
+    return BaseServerModel.defaultServer;
   }
 
   @override

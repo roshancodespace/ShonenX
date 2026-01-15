@@ -177,10 +177,7 @@ class AnizoneProvider implements AnimeProvider {
 
   @override
   Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {
-    return BaseServerModel(
-      sub: [ServerData(name: "Default", id: "default", isDub: false)],
-      dub: [],
-    );
+    return BaseServerModel.defaultServer;
   }
 
   // Stubs

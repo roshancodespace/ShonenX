@@ -33,7 +33,7 @@ class HomeSectionWidget extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Text(title, style: theme.textTheme.titleLarge),
         ),
         const SizedBox(height: 12),
@@ -42,7 +42,6 @@ class HomeSectionWidget extends ConsumerWidget {
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: mediaList.length,
             itemBuilder: (context, index) {
               final media = mediaList[index];

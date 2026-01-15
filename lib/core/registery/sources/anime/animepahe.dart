@@ -20,11 +20,11 @@ class AnimePaheProvider extends AnimeProvider {
   };
 
   AnimePaheProvider()
-      : super(
-          baseUrl: "https://animepahe.si",
-          apiUrl: "https://animepahe.si/api",
-          providerName: "animepahe",
-        );
+    : super(
+        baseUrl: "https://animepahe.si",
+        apiUrl: "https://animepahe.si/api",
+        providerName: "animepahe",
+      );
 
   @override
   Map<String, String> get headers => _sourceHeaders;
@@ -57,19 +57,21 @@ class AnimePaheProvider extends AnimeProvider {
 
     if (results != null) {
       for (final result in results) {
-        searchResults.add(BaseAnimeModel(
-          id: result['session'],
-          anilistId: null,
-          name: result['title'],
-          jname: null,
-          type: result['type'],
-          description: null,
-          poster: result['poster'],
-          banner: null,
-          genres: [],
-          releaseDate: result['year']?.toString(),
-          number: result['episodes'],
-        ));
+        searchResults.add(
+          BaseAnimeModel(
+            id: result['session'],
+            anilistId: null,
+            name: result['title'],
+            jname: null,
+            type: result['type'],
+            description: null,
+            poster: result['poster'],
+            banner: null,
+            genres: [],
+            releaseDate: result['year']?.toString(),
+            number: result['episodes'],
+          ),
+        );
       }
     }
 
@@ -77,8 +79,11 @@ class AnimePaheProvider extends AnimeProvider {
   }
 
   @override
-  Future<BaseEpisodeModel> getEpisodes(String animeId,
-      {String? anilistId, String? malId}) async {
+  Future<BaseEpisodeModel> getEpisodes(
+    String animeId, {
+    String? anilistId,
+    String? malId,
+  }) async {
     List<dynamic> list = [];
     final String url = "$apiUrl?m=release&id=$animeId&sort=episode_asc";
 
@@ -93,8 +98,10 @@ class AnimePaheProvider extends AnimeProvider {
 
     for (int i = 1; i < totalPages; i++) {
       if (i >= 5) break;
-      final nextRes =
-          await http.get(Uri.parse("$url&page=${i + 1}"), headers: headers);
+      final nextRes = await http.get(
+        Uri.parse("$url&page=${i + 1}"),
+        headers: headers,
+      );
       final nextBody = json.decode(nextRes.body);
       if (nextBody['data'] != null) {
         list.add(nextBody['data']);
@@ -110,34 +117,38 @@ class AnimePaheProvider extends AnimeProvider {
       final String combinedId = "$animeId+$episodeSession";
 
       final num? epNumFromApi = item['episode'];
-      final int calculatedEpNum =
-          (epNumFromApi != null) ? epNumFromApi.toInt() : (i + 1);
+      final int calculatedEpNum = (epNumFromApi != null)
+          ? epNumFromApi.toInt()
+          : (i + 1);
 
       final String? title =
           (item['title'] == null || item['title'].toString().isEmpty)
-              ? null
-              : item['title'];
+          ? null
+          : item['title'];
       final String? thumbnail = item['snapshot'];
       final bool isFiller = (item['filler'] ?? 0) != 0;
 
-      episodes.add(EpisodeDataModel(
-        id: combinedId,
-        number: calculatedEpNum,
-        title: title ?? 'Episode $calculatedEpNum',
-        thumbnail: thumbnail,
-        isFiller: isFiller,
-      ));
+      episodes.add(
+        EpisodeDataModel(
+          id: combinedId,
+          number: calculatedEpNum,
+          title: title ?? 'Episode $calculatedEpNum',
+          thumbnail: thumbnail,
+          isFiller: isFiller,
+        ),
+      );
     }
     episodes.sort((a, b) => a.number!.compareTo(b.number!));
-    return BaseEpisodeModel(
-      episodes: episodes,
-      totalEpisodes: episodes.length,
-    );
+    return BaseEpisodeModel(episodes: episodes, totalEpisodes: episodes.length);
   }
 
   @override
-  Future<BaseSourcesModel> getSources(String animeId, String episodeId,
-      String? serverName, String? category) async {
+  Future<BaseSourcesModel> getSources(
+    String animeId,
+    String episodeId,
+    String? serverName,
+    String? category,
+  ) async {
     final parts = episodeId.split("+");
     if (parts.length < 2) throw Exception("Invalid ID format");
     final String animeSession = parts[0];
@@ -172,7 +183,8 @@ class AnimePaheProvider extends AnimeProvider {
         size = sizeMatch.group(1)!;
       }
 
-      final bool isStreamDub = e.attributes['data-audio'] == 'eng' ||
+      final bool isStreamDub =
+          e.attributes['data-audio'] == 'eng' ||
           text.toLowerCase().contains('eng');
 
       if (isStreamDub != isRequestingDub) continue;
@@ -180,13 +192,15 @@ class AnimePaheProvider extends AnimeProvider {
       extractTasks.add(() async {
         try {
           final mp4Url = await _extractDownloadLink(link);
-          sources.add(Source(
-            url: mp4Url,
-            quality: "$quality [$size]",
-            type: "mp4",
-            isM3U8: false,
-            isDub: isStreamDub,
-          ));
+          sources.add(
+            Source(
+              url: mp4Url,
+              quality: "$quality [$size]",
+              type: "mp4",
+              isM3U8: false,
+              isDub: isStreamDub,
+            ),
+          );
         } catch (e) {
           // ignore error
         }
@@ -201,16 +215,13 @@ class AnimePaheProvider extends AnimeProvider {
       intro: Intro(start: 0, end: 0),
       outro: Intro(start: 0, end: 0),
       // IMPORTANT: Provide the headers so the player/tester can bypass the 403
-      headers: {
-        'Referer': 'https://kwik.cx/',
-        'User-Agent': _userAgent,
-      },
+      headers: {'Referer': 'https://kwik.cx/', 'User-Agent': _userAgent},
     );
   }
 
   @override
   Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {
-    return BaseServerModel(dub: [], sub: []);
+    return BaseServerModel.defaultServer;
   }
 
   @override
@@ -228,7 +239,8 @@ class AnimePaheProvider extends AnimeProvider {
     final slice = _map.substring(0, s2);
     int acc = 0;
     content.reversed.toList().asMap().forEach((index, c) {
-      acc += (RegExp(r'\d').hasMatch(c) ? int.parse(c) : 0) *
+      acc +=
+          (RegExp(r'\d').hasMatch(c) ? int.parse(c) : 0) *
           pow(s1, index).toInt();
     });
     String k = "";
@@ -286,10 +298,10 @@ class AnimePaheProvider extends AnimeProvider {
 
     if (kwikLink == null) throw Exception("Couldnt extract kwik link");
 
-    final kwikRes = await http.get(Uri.parse(kwikLink), headers: {
-      'referer': downloadLink,
-      'User-Agent': _userAgent,
-    });
+    final kwikRes = await http.get(
+      Uri.parse(kwikLink),
+      headers: {'referer': downloadLink, 'User-Agent': _userAgent},
+    );
 
     String cookieHeader = "";
     if (kwikRes.headers['set-cookie'] != null) {
@@ -323,7 +335,7 @@ class AnimePaheProvider extends AnimeProvider {
         headers: {
           'referer': kwikLink,
           'cookie': cookieHeader,
-          'User-Agent': _userAgent
+          'User-Agent': _userAgent,
         },
       );
       final mp4Url = r2.headers['location'];

@@ -241,19 +241,28 @@ class EpisodeData extends _$EpisodeData {
           metadata: {'id': ep.id, 'epNumber': ep.number, 'epId': ep.id},
         );
 
-        Navigator.pop(context);
+        if (!context.mounted) return;
+        Navigator.pop(context); // Close loading dialog
 
         final servers = result?.flatten() ?? [];
 
+        if (servers.isEmpty) {
+          _showSnack(context, "No servers found for this episode");
+          return;
+        }
+
         if (servers.length == 1) {
           selectedServer = servers.first;
-        } else if (servers.length > 1) {
+        }
+        else {
           selectedServer = await _showServerSelectionSheet(context, servers);
-          if (selectedServer == null) return;
+          if (selectedServer == null) return; // User cancelled
         }
       } catch (e) {
-        Navigator.pop(context);
-        _showSnack(context, "Failed to load servers: $e");
+        if (context.mounted) {
+          Navigator.pop(context);
+          _showSnack(context, "Failed to load servers: $e");
+        }
         return;
       }
     }
@@ -263,17 +272,24 @@ class EpisodeData extends _$EpisodeData {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (c) => DraggableScrollableSheet(
         initialChildSize: 0.5,
         minChildSize: 0.3,
         maxChildSize: 0.9,
         expand: false,
-        builder: (c, controller) => DownloadSourceSelector(
-          animeTitle: _epState.animeTitle ?? 'Unknown',
-          episode: ep,
-          server: selectedServer,
-          fetchSources: () => _fetchSourceData(ep, server: selectedServer),
-          scrollController: controller,
+        builder: (c, controller) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: DownloadSourceSelector(
+            animeTitle: _epState.animeTitle ?? 'Unknown',
+            episode: ep,
+            server: selectedServer,
+            fetchSources: () => _fetchSourceData(ep, server: selectedServer),
+            scrollController: controller,
+          ),
         ),
       ),
     );

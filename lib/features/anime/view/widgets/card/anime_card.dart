@@ -25,14 +25,11 @@ class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Get the configuration for the current mode
     final config = cardConfigs[widget.mode]!;
 
-    // 2. Get screen width once for responsive calculations
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 600;
 
-    // 3. Use the config to determine size
     final width = isSmallScreen
         ? config.responsiveWidth.small
         : config.responsiveWidth.large;
@@ -63,19 +60,6 @@ class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
               margin: EdgeInsets.only(
                 top: _isHovered ? 0 : 4,
                 bottom: _isHovered ? 4 : 0,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(config.radius),
-                // boxShadow: [
-                //   BoxShadow(
-                //     color: Theme.of(context)
-                //         .colorScheme
-                //         .shadow
-                //         .withOpacity(_isHovered ? 0.25 : 0.1),
-                //     blurRadius: 8,
-                //     offset: const Offset(0, 2),
-                //   ),
-                // ],
               ),
               child: config.builder(
                 anime: widget.anime.copyWith(

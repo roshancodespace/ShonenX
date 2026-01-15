@@ -134,12 +134,35 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
               ),
               Row(
                 children: [
-                  if (_watch(
-                    ref,
-                    (s) =>
-                        s.selectedServer?.isDub != null &&
-                        s.servers.any((e) => e.isDub),
-                  ))
+                  if (_watch(ref, (s) {
+                    if (s.servers.isEmpty) return false;
+                    final firstId = s.servers.first.id;
+                    return s.servers.any((e) => e.id != firstId);
+                  }))
+                    _pill(
+                      text: _watch(
+                        ref,
+                        (s) => s.selectedServer?.id?.toUpperCase() ?? 'SERVER',
+                      ),
+                      onTap: widget.onServerPressed,
+                    )
+                  else if (_watch(ref, (s) {
+                    if (s.servers.isEmpty) return false;
+
+                    final firstId = s.servers.first.id;
+                    final isSingleProvider = s.servers.every(
+                      (e) => e.id == firstId,
+                    );
+
+                    if (!isSingleProvider) {
+                      return false;
+                    }
+
+                    final hasDub = s.servers.any((e) => e.isDub);
+                    final hasSub = s.servers.any((e) => !e.isDub);
+
+                    return hasDub && hasSub;
+                  }))
                     _pill(
                       text: _watch(ref, (s) => s.selectedServer?.isDub == true)
                           ? 'DUB'

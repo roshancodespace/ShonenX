@@ -12,7 +12,7 @@ import 'package:go_router/go_router.dart';
 class SectionScreen extends ConsumerStatefulWidget {
   final String title;
   final Future<List<UniversalMedia>> Function({int page, int perPage})
-      fetchItems;
+  fetchItems;
 
   const SectionScreen({
     super.key,
@@ -87,12 +87,12 @@ class _SectionScreenState extends ConsumerState<SectionScreen> {
     final columnCount = width >= 1400
         ? 6
         : width >= 1100
-            ? 5
-            : width >= 800
-                ? 4
-                : width >= 500
-                    ? 3
-                    : 2;
+        ? 5
+        : width >= 800
+        ? 4
+        : width >= 420
+        ? 3
+        : 2;
 
     return Scaffold(
       appBar: AppBar(
@@ -105,25 +105,27 @@ class _SectionScreenState extends ConsumerState<SectionScreen> {
       body: _items.isEmpty && _isLoading
           ? const Center(child: CircularProgressIndicator())
           : ShonenXGridView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(10),
               controller: _scrollController,
               crossAxisCount: columnCount,
               physics: const BouncingScrollPhysics(),
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
               childAspectRatio: 0.75,
               items: [
-                ..._items.map((media) => AnimatedAnimeCard(
-                      anime: media,
-                      mode: mode,
-                      tag: 'section_${media.id}',
-                      onTap: () => navigateToDetail(
-                          context, media, 'section_${media.id}'),
-                    )),
+                ..._items.map(
+                  (media) => AnimatedAnimeCard(
+                    anime: media,
+                    mode: mode,
+                    tag: 'section_${media.id}',
+                    onTap: () =>
+                        navigateToDetail(context, media, 'section_${media.id}'),
+                  ),
+                ),
                 if (_isLoading)
                   const Center(
                     child: Padding(
-                      padding: EdgeInsets.all(16.0),
+                      padding: EdgeInsets.all(10.0),
                       child: CircularProgressIndicator(),
                     ),
                   ),

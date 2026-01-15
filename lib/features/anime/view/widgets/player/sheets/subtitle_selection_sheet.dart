@@ -8,10 +8,7 @@ import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 class SubtitleSelectionSheet extends ConsumerWidget {
   final VoidCallback onLocalFilePressed;
 
-  const SubtitleSelectionSheet({
-    super.key,
-    required this.onLocalFilePressed,
-  });
+  const SubtitleSelectionSheet({super.key, required this.onLocalFilePressed});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,14 +17,11 @@ class SubtitleSelectionSheet extends ConsumerWidget {
     final selectedIndex = data.selectedSubtitleIdx;
 
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(10.0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'Subtitles',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          Text('Subtitles', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 16),
           ListTile(
             leading: const Icon(Iconsax.folder_open),
@@ -45,8 +39,10 @@ class SubtitleSelectionSheet extends ConsumerWidget {
                 return ListTile(
                   title: Text(sub.lang ?? 'Unknown'),
                   trailing: isSelected
-                      ? Icon(Iconsax.tick_circle,
-                          color: Theme.of(context).primaryColor)
+                      ? Icon(
+                          Iconsax.tick_circle,
+                          color: Theme.of(context).primaryColor,
+                        )
                       : null,
                   onTap: () {
                     ref

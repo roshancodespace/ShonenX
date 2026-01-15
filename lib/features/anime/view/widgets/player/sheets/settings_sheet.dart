@@ -7,8 +7,10 @@ class SettingsSheetContent extends ConsumerWidget {
   final VoidCallback onDismiss;
   const SettingsSheetContent({super.key, required this.onDismiss});
 
-  void _showDialog(BuildContext context,
-      {required Widget Function(BuildContext) builder}) {
+  void _showDialog(
+    BuildContext context, {
+    required Widget Function(BuildContext) builder,
+  }) {
     showDialog(context: context, builder: builder).then((_) {
       if (!context.mounted) return;
       if (Navigator.of(context).canPop()) onDismiss();
@@ -19,7 +21,7 @@ class SettingsSheetContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(10.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -30,15 +32,19 @@ class SettingsSheetContent extends ConsumerWidget {
               leading: const Icon(Iconsax.speedometer),
               title: const Text("Playback Speed"),
               trailing: Text(
-                  "${ref.watch(playerStateProvider.select((p) => p.playbackSpeed))}x"),
+                "${ref.watch(playerStateProvider.select((p) => p.playbackSpeed))}x",
+              ),
               onTap: () =>
                   _showDialog(context, builder: (ctx) => const SpeedDialog()),
             ),
             ListTile(
               leading: const Icon(Iconsax.crop),
               title: const Text("Video Fit"),
-              trailing: Text(_fitModeToString(
-                  ref.watch(playerStateProvider.select((p) => p.fit)))),
+              trailing: Text(
+                _fitModeToString(
+                  ref.watch(playerStateProvider.select((p) => p.fit)),
+                ),
+              ),
               onTap: () =>
                   _showDialog(context, builder: (ctx) => const FitDialog()),
             ),
@@ -73,19 +79,22 @@ class _SpeedDialogState extends ConsumerState<SpeedDialog> {
         spacing: 8.0,
         runSpacing: 4.0,
         children: [0.5, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0]
-            .map((speed) => ChoiceChip(
-                  label: Text("${speed}x"),
-                  selected: _selectedSpeed == speed,
-                  onSelected: (isSelected) {
-                    if (isSelected) setState(() => _selectedSpeed = speed);
-                  },
-                ))
+            .map(
+              (speed) => ChoiceChip(
+                label: Text("${speed}x"),
+                selected: _selectedSpeed == speed,
+                onSelected: (isSelected) {
+                  if (isSelected) setState(() => _selectedSpeed = speed);
+                },
+              ),
+            )
             .toList(),
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel")),
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
         TextButton(
           onPressed: () {
             ref.read(playerStateProvider.notifier).setSpeed(_selectedSpeed);
@@ -122,20 +131,23 @@ class _FitDialogState extends ConsumerState<FitDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: fitModes
-            .map((fit) => RadioListTile<BoxFit>(
-                  title: Text(_fitModeToString(fit)),
-                  value: fit,
-                  groupValue: _selectedFit,
-                  onChanged: (value) {
-                    if (value != null) setState(() => _selectedFit = value);
-                  },
-                ))
+            .map(
+              (fit) => RadioListTile<BoxFit>(
+                title: Text(_fitModeToString(fit)),
+                value: fit,
+                groupValue: _selectedFit,
+                onChanged: (value) {
+                  if (value != null) setState(() => _selectedFit = value);
+                },
+              ),
+            )
             .toList(),
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel")),
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
         TextButton(
           onPressed: () {
             ref.read(playerStateProvider.notifier).setFit(_selectedFit);

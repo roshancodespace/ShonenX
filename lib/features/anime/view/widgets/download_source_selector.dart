@@ -143,16 +143,24 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
       final notifier = providerContext.read(downloadsProvider.notifier);
 
       final baseDir = settings.useCustomPath
-          ? (settings.customDownloadPath != null ? Directory(settings.customDownloadPath!) : null)
+          ? (settings.customDownloadPath != null
+                ? Directory(settings.customDownloadPath!)
+                : null)
           : await StorageProvider().getDefaultDirectory();
 
       if (baseDir == null) return;
 
-      final cleanAnime = widget.animeTitle.replaceAll(RegExp(r'[<>:"/\\|?*]'), '').trim();
+      final cleanAnime = widget.animeTitle
+          .replaceAll(RegExp(r'[<>:"/\\|?*]'), '')
+          .trim();
       final epNum = widget.episode.number ?? 0;
-      final cleanEpTitle = (widget.episode.title ?? 'Episode $epNum').replaceAll(RegExp(r'[<>:"/\\|?*]'), '').trim();
+      final cleanEpTitle = (widget.episode.title ?? 'Episode $epNum')
+          .replaceAll(RegExp(r'[<>:"/\\|?*]'), '')
+          .trim();
 
-      final epDir = Directory(p.join(baseDir.path, cleanAnime, '$epNum - $cleanEpTitle'));
+      final epDir = Directory(
+        p.join(baseDir.path, cleanAnime, '$epNum - $cleanEpTitle'),
+      );
       if (!await epDir.exists()) await epDir.create(recursive: true);
 
       final ext = isM3U8 ? '.ts' : '.mp4';
@@ -170,7 +178,8 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
         filePath: filePath,
         subtitles: _subtitles.map((s) => jsonEncode(s.toJson())).toList(),
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36...',
+          'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36...',
           ...?headers,
         },
       );
@@ -178,7 +187,9 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
       notifier.addDownload(item);
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Download started')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Download started')));
       }
     } catch (e) {
       debugPrint(e.toString());
@@ -215,7 +226,7 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
 
     return ListView.builder(
       controller: widget.scrollController,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(10),
       itemCount: _sources.length,
       itemBuilder: (context, index) {
         final source = _sources[index];
@@ -231,9 +242,18 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
             maintainState: true,
             initiallyExpanded: isExpanded,
             onExpansionChanged: (val) => _expandSource(index, source),
-            title: Text(source.quality ?? 'Source ${index + 1}', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(
+              source.quality ?? 'Source ${index + 1}',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             subtitle: Text(source.isDub ? 'Dubbed' : 'Subtitled'),
-            trailing: isExtracting ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : null,
+            trailing: isExtracting
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : null,
             children: [
               if (cachedQualities.isNotEmpty)
                 Padding(
@@ -247,8 +267,17 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
                         final isErr = q['quality'].toString().contains('Error');
                         return ActionChip(
                           label: Text(q['quality']),
-                          onPressed: isErr ? null : () => _triggerDownload(q['url'], q['quality'], source.headers, source.isM3U8),
-                          backgroundColor: isErr ? colorScheme.errorContainer : colorScheme.secondaryContainer,
+                          onPressed: isErr
+                              ? null
+                              : () => _triggerDownload(
+                                  q['url'],
+                                  q['quality'],
+                                  source.headers,
+                                  source.isM3U8,
+                                ),
+                          backgroundColor: isErr
+                              ? colorScheme.errorContainer
+                              : colorScheme.secondaryContainer,
                         );
                       }).toList(),
                     ),
@@ -256,9 +285,9 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
                 )
               else if (!isExtracting)
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(10.0),
                   child: Text("Loading quality options..."),
-                )
+                ),
             ],
           ),
         );

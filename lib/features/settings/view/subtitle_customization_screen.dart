@@ -287,8 +287,9 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(
           leading: IconButton.filledTonal(
-              onPressed: () => context.pop(),
-              icon: const Icon(Iconsax.arrow_left_2)),
+            onPressed: () => context.pop(),
+            icon: const Icon(Iconsax.arrow_left_2),
+          ),
           title: const Text('Subtitle Customization'),
           forceMaterialTransparency: true,
           bottom: TabBar(
@@ -315,7 +316,8 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                   color: Colors.black,
                   image: const DecorationImage(
                     image: NetworkImage(
-                        'https://s4.anilist.co/file/anilistcdn/media/anime/banner/16498-8jpFCOcDmneX.jpg'),
+                      'https://s4.anilist.co/file/anilistcdn/media/anime/banner/16498-8jpFCOcDmneX.jpg',
+                    ),
                     fit: BoxFit.cover,
                     opacity: 0.4,
                   ),
@@ -353,15 +355,16 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                 children: [
                   // --- PRESETS TAB ---
                   ListView(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(10.0),
                     children: [
                       SettingsSection(
                         title: 'Quick Styles',
                         titleColor: colorScheme.primary,
                         children: [
                           (() {
-                            final screenWidth =
-                                MediaQuery.of(context).size.width;
+                            final screenWidth = MediaQuery.of(
+                              context,
+                            ).size.width;
                             final crossAxisCount = screenWidth ~/ 180;
                             final spacing = screenWidth * 0.01;
 
@@ -370,12 +373,13 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                               physics: const NeverScrollableScrollPhysics(),
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount:
-                                    crossAxisCount > 0 ? crossAxisCount : 1,
-                                childAspectRatio: 1,
-                                crossAxisSpacing: spacing,
-                                mainAxisSpacing: spacing,
-                              ),
+                                    crossAxisCount: crossAxisCount > 0
+                                        ? crossAxisCount
+                                        : 1,
+                                    childAspectRatio: 1,
+                                    crossAxisSpacing: spacing,
+                                    mainAxisSpacing: spacing,
+                                  ),
                               itemCount: presets.length,
                               itemBuilder: (context, index) {
                                 return _PresetCard(
@@ -384,12 +388,15 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                                     subtitleNotifier.updateSettings((prev) {
                                       final m = presets[index].model;
                                       return prev.copyWith(
-                                        fontSize: m.fontSize *
-                                            MediaQuery.of(context)
-                                                .textScaleFactor,
+                                        fontSize:
+                                            m.fontSize *
+                                            MediaQuery.of(
+                                              context,
+                                            ).textScaleFactor,
                                         textColor: m.textColor,
                                         outlineColor: m.outlineColor,
-                                        outlineWidth: m.outlineWidth *
+                                        outlineWidth:
+                                            m.outlineWidth *
                                             (screenWidth /
                                                 400), // scale outline
                                         backgroundColor: m.backgroundColor,
@@ -406,13 +413,16 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                                         content: Text(
                                           '${presets[index].name} Applied',
                                           style: TextStyle(
-                                            fontSize: 14 *
-                                                MediaQuery.of(context)
-                                                    .textScaleFactor,
+                                            fontSize:
+                                                14 *
+                                                MediaQuery.of(
+                                                  context,
+                                                ).textScaleFactor,
                                           ),
                                         ),
-                                        duration:
-                                            const Duration(milliseconds: 800),
+                                        duration: const Duration(
+                                          milliseconds: 800,
+                                        ),
                                         behavior: SnackBarBehavior.floating,
                                       ),
                                     );
@@ -420,7 +430,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                                 );
                               },
                             );
-                          })()
+                          })(),
                         ],
                       ),
                     ],
@@ -428,39 +438,47 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
 
                   // --- TEXT TAB ---
                   ListView(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(10.0),
                     children: [
                       SettingsSection(
                         title: 'Typography',
                         titleColor: colorScheme.primary,
                         children: [
                           DropdownSettingsItem(
-                            icon: Icon(Iconsax.text_block,
-                                color: colorScheme.primary),
+                            icon: Icon(
+                              Iconsax.text_block,
+                              color: colorScheme.primary,
+                            ),
                             accent: colorScheme.primary,
                             title: 'Font Family',
-                            description: watchTheme(ref, (s) => s.fontFamily) ??
+                            description:
+                                watchTheme(ref, (s) => s.fontFamily) ??
                                 'Default',
                             layoutType: SettingsItemLayout.horizontal,
-                            value: SubtitleUtils.availableFonts.contains(
-                                    watchTheme(ref, (s) => s.fontFamily))
+                            value:
+                                SubtitleUtils.availableFonts.contains(
+                                  watchTheme(ref, (s) => s.fontFamily),
+                                )
                                 ? watchTheme(ref, (s) => s.fontFamily)!
                                 : 'Default',
                             items: SubtitleUtils.availableFonts
                                 .map<DropdownMenuItem<String>>((String value) {
-                              return DropdownMenuItem<String>(
-                                value: value,
-                                child: Text(value),
-                              );
-                            }).toList(),
+                                  return DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Text(value),
+                                  );
+                                })
+                                .toList(),
                             onChanged: (value) =>
                                 subtitleNotifier.updateSettings(
-                              (prev) => prev.copyWith(fontFamily: value),
-                            ),
+                                  (prev) => prev.copyWith(fontFamily: value),
+                                ),
                           ),
                           SliderSettingsItem(
-                            icon:
-                                Icon(Iconsax.text, color: colorScheme.primary),
+                            icon: Icon(
+                              Iconsax.text,
+                              color: colorScheme.primary,
+                            ),
                             accent: colorScheme.primary,
                             title: 'Font Scale',
                             description:
@@ -473,44 +491,52 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                             suffix: 'x',
                             onChanged: (value) =>
                                 subtitleNotifier.updateSettings(
-                              (prev) => prev.copyWith(fontSize: value * 20.0),
-                            ),
+                                  (prev) =>
+                                      prev.copyWith(fontSize: value * 20.0),
+                                ),
                           ),
                           ColorPickerSettingsItem(
                             accent: colorScheme.primary,
                             title: 'Text Color',
                             description: 'Choose subtitle text color',
-                            icon: Icon(Iconsax.color_swatch,
-                                color: colorScheme.primary),
+                            icon: Icon(
+                              Iconsax.color_swatch,
+                              color: colorScheme.primary,
+                            ),
                             selectedColor: watchTheme(ref, (s) => s.textColor),
                             onColorChanged: (value) =>
                                 subtitleNotifier.updateSettings(
-                              (prev) => prev.copyWith(textColor: value),
-                            ),
+                                  (prev) => prev.copyWith(textColor: value),
+                                ),
                           ),
                           ToggleableSettingsItem(
-                            icon: Icon(Iconsax.text_bold,
-                                color: colorScheme.primary),
+                            icon: Icon(
+                              Iconsax.text_bold,
+                              color: colorScheme.primary,
+                            ),
                             accent: colorScheme.primary,
                             title: 'Bold Text',
                             description: 'Make subtitle text bold',
                             value: watchTheme(ref, (s) => s.boldText),
                             onChanged: (value) =>
                                 subtitleNotifier.updateSettings(
-                              (prev) => prev.copyWith(boldText: value),
-                            ),
+                                  (prev) => prev.copyWith(boldText: value),
+                                ),
                           ),
                           ToggleableSettingsItem(
-                            icon: Icon(Iconsax.arrow_up_3,
-                                color: colorScheme.primary),
+                            icon: Icon(
+                              Iconsax.arrow_up_3,
+                              color: colorScheme.primary,
+                            ),
                             accent: colorScheme.primary,
                             title: 'Force Uppercase',
                             description: 'Render all text in capital letters',
                             value: watchTheme(ref, (s) => s.forceUppercase),
                             onChanged: (value) =>
                                 subtitleNotifier.updateSettings(
-                              (prev) => prev.copyWith(forceUppercase: value),
-                            ),
+                                  (prev) =>
+                                      prev.copyWith(forceUppercase: value),
+                                ),
                           ),
                         ],
                       ),
@@ -519,7 +545,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
 
                   // --- BACKGROUND TAB ---
                   ListView(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(10.0),
                     children: [
                       SettingsSection(
                         title: 'Background',
@@ -529,18 +555,25 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                             accent: colorScheme.primary,
                             title: 'Background Color',
                             description: 'Choose background color',
-                            icon: Icon(Iconsax.bucket_square,
-                                color: colorScheme.primary),
-                            selectedColor:
-                                watchTheme(ref, (s) => s.backgroundColor),
+                            icon: Icon(
+                              Iconsax.bucket_square,
+                              color: colorScheme.primary,
+                            ),
+                            selectedColor: watchTheme(
+                              ref,
+                              (s) => s.backgroundColor,
+                            ),
                             onColorChanged: (value) =>
                                 subtitleNotifier.updateSettings(
-                              (prev) => prev.copyWith(backgroundColor: value),
-                            ),
+                                  (prev) =>
+                                      prev.copyWith(backgroundColor: value),
+                                ),
                           ),
                           SliderSettingsItem(
-                            icon: Icon(Iconsax.square,
-                                color: colorScheme.primary),
+                            icon: Icon(
+                              Iconsax.square,
+                              color: colorScheme.primary,
+                            ),
                             accent: colorScheme.primary,
                             title: 'Background Opacity',
                             description:
@@ -550,8 +583,9 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                             max: 1,
                             onChanged: (value) =>
                                 subtitleNotifier.updateSettings(
-                              (prev) => prev.copyWith(backgroundOpacity: value),
-                            ),
+                                  (prev) =>
+                                      prev.copyWith(backgroundOpacity: value),
+                                ),
                           ),
                         ],
                       ),
@@ -560,15 +594,17 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
 
                   // --- EFFECTS TAB ---
                   ListView(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(10.0),
                     children: [
                       SettingsSection(
                         title: 'Outline',
                         titleColor: colorScheme.primary,
                         children: [
                           SliderSettingsItem(
-                            icon: Icon(Iconsax.edit_2,
-                                color: colorScheme.primary),
+                            icon: Icon(
+                              Iconsax.edit_2,
+                              color: colorScheme.primary,
+                            ),
                             accent: colorScheme.primary,
                             title: 'Outline Width',
                             description:
@@ -580,21 +616,25 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                             suffix: 'px',
                             onChanged: (value) =>
                                 subtitleNotifier.updateSettings(
-                              (prev) => prev.copyWith(outlineWidth: value),
-                            ),
+                                  (prev) => prev.copyWith(outlineWidth: value),
+                                ),
                           ),
                           ColorPickerSettingsItem(
                             accent: colorScheme.primary,
                             title: 'Outline Color',
                             description: 'Choose outline color',
-                            icon: Icon(Iconsax.colorfilter,
-                                color: colorScheme.primary),
-                            selectedColor:
-                                watchTheme(ref, (s) => s.outlineColor),
+                            icon: Icon(
+                              Iconsax.colorfilter,
+                              color: colorScheme.primary,
+                            ),
+                            selectedColor: watchTheme(
+                              ref,
+                              (s) => s.outlineColor,
+                            ),
                             onColorChanged: (value) =>
                                 subtitleNotifier.updateSettings(
-                              (prev) => prev.copyWith(outlineColor: value),
-                            ),
+                                  (prev) => prev.copyWith(outlineColor: value),
+                                ),
                           ),
                         ],
                       ),
@@ -604,8 +644,10 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                         titleColor: colorScheme.primary,
                         children: [
                           ToggleableSettingsItem(
-                            icon:
-                                Icon(Iconsax.ghost, color: colorScheme.primary),
+                            icon: Icon(
+                              Iconsax.ghost,
+                              color: colorScheme.primary,
+                            ),
                             accent: colorScheme.primary,
                             title: 'Enable Shadow',
                             description:
@@ -613,13 +655,15 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                             value: hasShadow,
                             onChanged: (value) =>
                                 subtitleNotifier.updateSettings(
-                              (prev) => prev.copyWith(hasShadow: value),
-                            ),
+                                  (prev) => prev.copyWith(hasShadow: value),
+                                ),
                           ),
                           if (hasShadow) ...[
                             SliderSettingsItem(
-                              icon:
-                                  Icon(Iconsax.eye, color: colorScheme.primary),
+                              icon: Icon(
+                                Iconsax.eye,
+                                color: colorScheme.primary,
+                              ),
                               accent: colorScheme.primary,
                               title: 'Shadow Opacity',
                               description:
@@ -629,12 +673,15 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                               max: 1,
                               onChanged: (value) =>
                                   subtitleNotifier.updateSettings(
-                                (prev) => prev.copyWith(shadowOpacity: value),
-                              ),
+                                    (prev) =>
+                                        prev.copyWith(shadowOpacity: value),
+                                  ),
                             ),
                             SliderSettingsItem(
-                              icon: Icon(Iconsax.blur,
-                                  color: colorScheme.primary),
+                              icon: Icon(
+                                Iconsax.blur,
+                                color: colorScheme.primary,
+                              ),
                               accent: colorScheme.primary,
                               title: 'Shadow Blur',
                               description:
@@ -646,8 +693,8 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                               suffix: 'px',
                               onChanged: (value) =>
                                   subtitleNotifier.updateSettings(
-                                (prev) => prev.copyWith(shadowBlur: value),
-                              ),
+                                    (prev) => prev.copyWith(shadowBlur: value),
+                                  ),
                             ),
                           ],
                         ],
@@ -657,7 +704,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
 
                   // --- POSITION TAB ---
                   ListView(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(10.0),
                     children: [
                       SettingsSection(
                         title: 'Position',
@@ -680,15 +727,13 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                               2: Icon(Iconsax.minus),
                               1: Icon(Iconsax.arrow_down_1),
                             },
-                            labels: const {
-                              3: 'Top',
-                              2: 'Center',
-                              1: 'Bottom',
-                            },
+                            labels: const {3: 'Top', 2: 'Center', 1: 'Bottom'},
                           ),
                           SliderSettingsItem(
-                            icon: Icon(Iconsax.arrow_bottom,
-                                color: colorScheme.primary),
+                            icon: Icon(
+                              Iconsax.arrow_bottom,
+                              color: colorScheme.primary,
+                            ),
                             accent: colorScheme.primary,
                             title: 'Bottom Margin',
                             description:
@@ -700,8 +745,8 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                             suffix: 'px',
                             onChanged: (value) =>
                                 subtitleNotifier.updateSettings(
-                              (prev) => prev.copyWith(bottomMargin: value),
-                            ),
+                                  (prev) => prev.copyWith(bottomMargin: value),
+                                ),
                           ),
                         ],
                       ),
@@ -731,13 +776,14 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
         alignment: subtitleStyle.position == 1
             ? Alignment.bottomCenter
             : subtitleStyle.position == 2
-                ? Alignment.center
-                : Alignment.topCenter,
+            ? Alignment.center
+            : Alignment.topCenter,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Color(subtitleStyle.backgroundColor)
-                .withOpacity(subtitleStyle.backgroundOpacity),
+            color: Color(
+              subtitleStyle.backgroundColor,
+            ).withOpacity(subtitleStyle.backgroundOpacity),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Stack(
@@ -748,8 +794,10 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                       ? sampleText.toUpperCase()
                       : sampleText,
                   textAlign: TextAlign.center,
-                  style: SubtitleUtils.getSubtitleTextStyle(subtitleStyle,
-                      stroke: true),
+                  style: SubtitleUtils.getSubtitleTextStyle(
+                    subtitleStyle,
+                    stroke: true,
+                  ),
                 ),
               Text(
                 subtitleStyle.forceUppercase
@@ -792,10 +840,7 @@ class _PresetCard extends StatelessWidget {
   final _SubtitlePreset preset;
   final VoidCallback onTap;
 
-  const _PresetCard({
-    required this.preset,
-    required this.onTap,
-  });
+  const _PresetCard({required this.preset, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -825,15 +870,18 @@ class _PresetCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   image: const DecorationImage(
                     image: NetworkImage(
-                        'https://s4.anilist.co/file/anilistcdn/media/anime/banner/16498-8jpFCOcDmneX.jpg'),
+                      'https://s4.anilist.co/file/anilistcdn/media/anime/banner/16498-8jpFCOcDmneX.jpg',
+                    ),
                     fit: BoxFit.cover,
                     opacity: 0.5,
                   ),
                 ),
                 alignment: Alignment.center,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: preset.backgroundColor,
                     borderRadius: BorderRadius.circular(4),

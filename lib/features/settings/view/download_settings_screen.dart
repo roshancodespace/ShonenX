@@ -19,13 +19,14 @@ class DownloadSettingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton.filledTonal(
-            onPressed: () => context.pop(),
-            icon: const Icon(Iconsax.arrow_left_2)),
+          onPressed: () => context.pop(),
+          icon: const Icon(Iconsax.arrow_left_2),
+        ),
         title: const Text('Download Settings'),
         forceMaterialTransparency: true,
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         children: [
           SettingsSection(
             title: 'Storage',
@@ -52,29 +53,26 @@ class DownloadSettingsScreen extends ConsumerWidget {
                   description:
                       settings.customDownloadPath ?? 'Tap to select...',
                   onTap: () async {
-                    String? selectedDirectory =
-                        await FilePicker.platform.getDirectoryPath();
+                    String? selectedDirectory = await FilePicker.platform
+                        .getDirectoryPath();
                     if (selectedDirectory != null) {
                       notifier.setCustomPath(selectedDirectory);
                     }
                   },
                 ),
               DropdownSettingsItem(
-                  icon: Icon(Iconsax.sort),
-                  accent: colorScheme.primary,
-                  title: 'Folder Structure',
-                  description: 'Organize downloaded files',
-                  value: settings.folderStructure,
-                  items: [
-                    'Anime/Episode',
-                    'Anime',
-                    'Flat',
-                  ]
-                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                      .toList(),
-                  onChanged: (val) {
-                    if (val != null) notifier.setFolderStructure(val);
-                  })
+                icon: Icon(Iconsax.sort),
+                accent: colorScheme.primary,
+                title: 'Folder Structure',
+                description: 'Organize downloaded files',
+                value: settings.folderStructure,
+                items: ['Anime/Episode', 'Anime', 'Flat']
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) notifier.setFolderStructure(val);
+                },
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -84,29 +82,30 @@ class DownloadSettingsScreen extends ConsumerWidget {
             onTap: () {},
             children: [
               SliderSettingsItem(
-                  accent: colorScheme.primary,
-                  title: 'Parallel Downloads (M3U8)',
-                  description:
-                      'Concurrent segments: ${settings.parallelDownloads}',
-                  value: settings.parallelDownloads.toDouble(),
-                  min: 1,
-                  max: 100,
-                  divisions: 99,
-                  onChanged: (val) =>
-                      notifier.setParallelDownloads(val.toInt()),
-                  icon: Icon(Iconsax.flash_1, color: colorScheme.primary)),
+                accent: colorScheme.primary,
+                title: 'Parallel Downloads (M3U8)',
+                description:
+                    'Concurrent segments: ${settings.parallelDownloads}',
+                value: settings.parallelDownloads.toDouble(),
+                min: 1,
+                max: 100,
+                divisions: 99,
+                onChanged: (val) => notifier.setParallelDownloads(val.toInt()),
+                icon: Icon(Iconsax.flash_1, color: colorScheme.primary),
+              ),
               SliderSettingsItem(
-                  accent: colorScheme.primary,
-                  title: 'Speed Limit',
-                  description: settings.speedLimitKBps == 0
-                      ? 'Unlimited'
-                      : '${settings.speedLimitKBps} KB/s',
-                  value: settings.speedLimitKBps.toDouble(),
-                  min: 0,
-                  max: 10000,
-                  divisions: 100,
-                  onChanged: (val) => notifier.setSpeedLimit(val.toInt()),
-                  icon: Icon(Iconsax.timer_1, color: colorScheme.primary)),
+                accent: colorScheme.primary,
+                title: 'Speed Limit',
+                description: settings.speedLimitKBps == 0
+                    ? 'Unlimited'
+                    : '${settings.speedLimitKBps} KB/s',
+                value: settings.speedLimitKBps.toDouble(),
+                min: 0,
+                max: 10000,
+                divisions: 100,
+                onChanged: (val) => notifier.setSpeedLimit(val.toInt()),
+                icon: Icon(Iconsax.timer_1, color: colorScheme.primary),
+              ),
             ],
           ),
           const SizedBox(height: 10),

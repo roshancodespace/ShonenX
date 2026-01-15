@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum SettingsItemLayout {
-  auto,
-  horizontal,
-  vertical,
-}
+enum SettingsItemLayout { auto, horizontal, vertical }
 
 abstract class BaseSettingsItem extends StatelessWidget {
   final Widget? leading;
@@ -40,8 +36,10 @@ abstract class BaseSettingsItem extends StatelessWidget {
     final isSmallScreen = screenWidth < 600;
     final effectiveCompact = isCompact || isSmallScreen;
 
-    final dimensions =
-        _getResponsiveDimensions(effectiveCompact, isSmallScreen);
+    final dimensions = _getResponsiveDimensions(
+      effectiveCompact,
+      isSmallScreen,
+    );
 
     return Card(
       elevation: effectiveCompact ? 1 : 2,
@@ -73,9 +71,7 @@ abstract class BaseSettingsItem extends StatelessWidget {
     bool isSmallScreen,
     ResponsiveDimensions dimensions,
   ) {
-    final bool useVerticalLayout = _shouldUseVerticalLayout(
-      isSmallScreen,
-    );
+    final bool useVerticalLayout = _shouldUseVerticalLayout(isSmallScreen);
 
     if (useVerticalLayout) {
       return buildVerticalLayout(context, effectiveCompact, dimensions);
@@ -109,7 +105,9 @@ abstract class BaseSettingsItem extends StatelessWidget {
   );
 
   Widget buildIconContainer(
-      bool effectiveCompact, ResponsiveDimensions dimensions) {
+    bool effectiveCompact,
+    ResponsiveDimensions dimensions,
+  ) {
     return Container(
       width: dimensions.iconContainerSize,
       height: dimensions.iconContainerSize,
@@ -127,8 +125,8 @@ abstract class BaseSettingsItem extends StatelessWidget {
                 child: icon!,
               )
             : (leading != null)
-                ? leading
-                : const SizedBox.shrink(),
+            ? leading
+            : const SizedBox.shrink(),
       ),
     );
   }
@@ -181,7 +179,9 @@ abstract class BaseSettingsItem extends StatelessWidget {
   }
 
   ResponsiveDimensions _getResponsiveDimensions(
-      bool effectiveCompact, bool isSmallScreen) {
+    bool effectiveCompact,
+    bool isSmallScreen,
+  ) {
     return ResponsiveDimensions(
       iconSize: effectiveCompact ? 20 : (isSmallScreen ? 22 : 24),
       iconContainerSize: effectiveCompact ? 40 : (isSmallScreen ? 44 : 48),
@@ -190,8 +190,8 @@ abstract class BaseSettingsItem extends StatelessWidget {
       padding: effectiveCompact
           ? const EdgeInsets.all(12.0)
           : (isSmallScreen
-              ? const EdgeInsets.all(14.0)
-              : const EdgeInsets.all(16.0)),
+                ? const EdgeInsets.all(14.0)
+                : const EdgeInsets.all(10.0)),
       spacing: effectiveCompact ? 12 : (isSmallScreen ? 14 : 16),
     );
   }

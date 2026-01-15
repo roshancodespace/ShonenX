@@ -29,7 +29,8 @@ Future<BaseAnimeModel?> providerAnimeMatchSearch({
 
   final title = animeMedia.title;
   AppLogger.d(
-      'Starting anime match search for anime: ${title.english ?? title.romaji ?? title.native}');
+    'Starting anime match search for anime: ${title.english ?? title.romaji ?? title.native}',
+  );
 
   try {
     final animeProvider = ref.read(selectedAnimeProvider);
@@ -125,8 +126,10 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
         _searchController.text = title;
       }
 
-      final success =
-          await _performSearch(title, autoMatch: widget.withAnimeMatch);
+      final success = await _performSearch(
+        title,
+        autoMatch: widget.withAnimeMatch,
+      );
       if (success) return;
     }
 
@@ -144,8 +147,9 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
     List<BaseAnimeModel> fetchedCandidates = [];
 
     try {
-      final useMangayomi =
-          ref.read(experimentalProvider).useMangayomiExtensions;
+      final useMangayomi = ref
+          .read(experimentalProvider)
+          .useMangayomiExtensions;
 
       // Mangayomi Extensions
       if (useMangayomi) {
@@ -153,23 +157,22 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
         final res = await ref.read(sourceProvider.notifier).search(query);
         fetchedCandidates = res.list
             .where((e) => e.name != null && e.link != null)
-            .map((e) => BaseAnimeModel(
-                  id: e.link ?? '',
-                  name: e.name ?? '',
-                  poster: e.imageUrl ?? '',
-                ))
+            .map(
+              (e) => BaseAnimeModel(
+                id: e.link ?? '',
+                name: e.name ?? '',
+                poster: e.imageUrl ?? '',
+              ),
+            )
             .toList();
       }
       // Legacy Source
       else {
         AppLogger.d('Using Legacy source for search with query: $query');
-        final res = await widget.animeProvider.getSearch(
-          query.trim(),
-          null,
-          1,
-        );
-        fetchedCandidates =
-            res.results.where((e) => e.name != null && e.id != null).toList();
+        final res = await widget.animeProvider.getSearch(query.trim(), null, 1);
+        fetchedCandidates = res.results
+            .where((e) => e.name != null && e.id != null)
+            .toList();
       }
 
       if (!mounted) return false;
@@ -205,7 +208,8 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
               animeId: bestMatch.id!,
               animeName: bestMatch.name!,
               animeFormat: widget.animeMedia.format ?? '',
-              animeCover: bestMatch.poster ??
+              animeCover:
+                  bestMatch.poster ??
                   widget.animeMedia.coverImage.large ??
                   widget.animeMedia.coverImage.medium ??
                   '',
@@ -257,7 +261,8 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
       mediaId: widget.animeMedia.id.toString(),
       animeId: anime.id!,
       animeFormat: widget.animeMedia.format ?? '',
-      animeCover: widget.animeMedia.coverImage.large ??
+      animeCover:
+          widget.animeMedia.coverImage.large ??
           widget.animeMedia.coverImage.medium ??
           '',
       animeName: anime.name ?? 'Unknown',
@@ -275,7 +280,7 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
       child: Dialog(
         backgroundColor: theme.colorScheme.surface.withOpacity(0.9),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        insetPadding: const EdgeInsets.all(16),
+        insetPadding: const EdgeInsets.all(10),
         child: Container(
           constraints: const BoxConstraints(maxWidth: 500, maxHeight: 700),
           padding: const EdgeInsets.all(24),
@@ -299,8 +304,11 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
             children: [
               Row(
                 children: [
-                  Icon(Iconsax.search_favorite,
-                      color: theme.colorScheme.primary, size: 28),
+                  Icon(
+                    Iconsax.search_favorite,
+                    color: theme.colorScheme.primary,
+                    size: 28,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -354,18 +362,23 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide(
-                        color: theme.colorScheme.primary, width: 1.5),
+                      color: theme.colorScheme.primary,
+                      width: 1.5,
+                    ),
                   ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color:
-                        theme.colorScheme.surfaceContainerLow.withOpacity(0.5),
+                    color: theme.colorScheme.surfaceContainerLow.withOpacity(
+                      0.5,
+                    ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: theme.colorScheme.outline.withOpacity(0.05),
@@ -405,8 +418,11 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Iconsax.search_status,
-                size: 64, color: theme.colorScheme.outline.withOpacity(0.5)),
+            Icon(
+              Iconsax.search_status,
+              size: 64,
+              color: theme.colorScheme.outline.withOpacity(0.5),
+            ),
             const SizedBox(height: 16),
             Text(
               'No Matches Found',
@@ -447,9 +463,10 @@ class _AnimeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final metadata = [anime.releaseDate, anime.type]
-        .where((s) => s != null && s.isNotEmpty)
-        .join(' • ');
+    final metadata = [
+      anime.releaseDate,
+      anime.type,
+    ].where((s) => s != null && s.isNotEmpty).join(' • ');
 
     return Material(
       color: Colors.transparent,
@@ -489,8 +506,10 @@ class _AnimeTile extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorWidget: (_, __, ___) => Container(
                         color: theme.colorScheme.surfaceContainerHigh,
-                        child: Icon(Iconsax.image,
-                            color: theme.colorScheme.onSurfaceVariant),
+                        child: Icon(
+                          Iconsax.image,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ),
@@ -514,7 +533,9 @@ class _AnimeTile extends StatelessWidget {
                       const SizedBox(height: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.secondaryContainer
                               .withOpacity(0.5),
@@ -533,8 +554,11 @@ class _AnimeTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Icon(Iconsax.arrow_circle_right,
-                  color: theme.colorScheme.primary, size: 24),
+              Icon(
+                Iconsax.arrow_circle_right,
+                color: theme.colorScheme.primary,
+                size: 24,
+              ),
               const SizedBox(width: 8),
             ],
           ),

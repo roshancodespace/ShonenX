@@ -42,10 +42,12 @@ class CharactersTab extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount =
-            (constraints.maxWidth / 140).floor().clamp(1, 10);
+        final crossAxisCount = (constraints.maxWidth / 140).floor().clamp(
+          1,
+          10,
+        );
         return GridView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(10),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             childAspectRatio: 0.7,
@@ -93,9 +95,8 @@ class _CharacterCard extends StatelessWidget {
             CachedNetworkImage(
               imageUrl: character.image!,
               fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                color: theme.colorScheme.surfaceContainerHigh,
-              ),
+              placeholder: (context, url) =>
+                  Container(color: theme.colorScheme.surfaceContainerHigh),
               errorWidget: (context, url, error) => Container(
                 color: theme.colorScheme.surfaceContainerHigh,
                 child: const Icon(Icons.person),
@@ -116,10 +117,7 @@ class _CharacterCard extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.8),
-                  ],
+                  colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
                 ),
               ),
             ),

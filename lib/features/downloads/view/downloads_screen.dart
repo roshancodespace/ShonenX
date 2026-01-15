@@ -41,10 +41,12 @@ class DownloadsScreen extends ConsumerWidget {
             _buildDownloadList(
               context,
               downloads
-                  .where((d) =>
-                      d.state == DownloadStatus.downloading ||
-                      d.state == DownloadStatus.paused ||
-                      d.state == DownloadStatus.queued)
+                  .where(
+                    (d) =>
+                        d.state == DownloadStatus.downloading ||
+                        d.state == DownloadStatus.paused ||
+                        d.state == DownloadStatus.queued,
+                  )
                   .toList(),
             ),
             _buildDownloadList(
@@ -61,28 +63,33 @@ class DownloadsScreen extends ConsumerWidget {
                   final path =
                       (await StorageProvider().getDefaultDirectory())!.path;
                   AppLogger.d(
-                      "$path/Offline/One piece/1 - I am gonna be king of the pirates/Auto");
+                    "$path/Offline/One piece/1 - I am gonna be king of the pirates/Auto",
+                  );
 
-                  ref.read(downloadsProvider.notifier).addDownload(DownloadItem(
-                        animeTitle: 'One piece',
-                        episodeTitle: '1 - I am gonna be king of the pirates',
-                        episodeNumber: 1,
-                        thumbnail:
-                            'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbUFgoWQMHU93hyXCzppyDfhPEcAf76WscJg&s',
-                        state: DownloadStatus.downloading,
-                        downloadUrl:
-                            'https://proxy.animetsu.cc/oppai/pahe/Fw8cARFZQkZuChkMER0eWl4OHkYeEQYWFC1KX1BdSUdbSQNbWA8GEktNIVdXW0EaEUAfB1hQVQQWQEAiBw8HFEpHTElUCghYAEMRRnNVDFBLHUFMT1FbDQxTTBBCcwBbV10MBwEEDF0cVQ',
-                        quality: 'Auto',
-                        progress: 0,
-                        filePath: '$path/Anime Title/1 - Episode Title/Auto',
-                        headers: {
-                          'User-Agent':
-                              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-                          // 'Referer':
-                          //     'https://megacloud.blog/embed-2/v3/e-1/j7cbMWEbkUys?k=1',
-                          // 'Origin': 'https://megacloud.blog',
-                        },
-                      ));
+                  ref
+                      .read(downloadsProvider.notifier)
+                      .addDownload(
+                        DownloadItem(
+                          animeTitle: 'One piece',
+                          episodeTitle: '1 - I am gonna be king of the pirates',
+                          episodeNumber: 1,
+                          thumbnail:
+                              'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbUFgoWQMHU93hyXCzppyDfhPEcAf76WscJg&s',
+                          state: DownloadStatus.downloading,
+                          downloadUrl:
+                              'https://proxy.animetsu.cc/oppai/pahe/Fw8cARFZQkZuChkMER0eWl4OHkYeEQYWFC1KX1BdSUdbSQNbWA8GEktNIVdXW0EaEUAfB1hQVQQWQEAiBw8HFEpHTElUCghYAEMRRnNVDFBLHUFMT1FbDQxTTBBCcwBbV10MBwEEDF0cVQ',
+                          quality: 'Auto',
+                          progress: 0,
+                          filePath: '$path/Anime Title/1 - Episode Title/Auto',
+                          headers: {
+                            'User-Agent':
+                                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                            // 'Referer':
+                            //     'https://megacloud.blog/embed-2/v3/e-1/j7cbMWEbkUys?k=1',
+                            // 'Origin': 'https://megacloud.blog',
+                          },
+                        ),
+                      );
                 },
                 child: const Icon(Iconsax.add),
               )
@@ -106,18 +113,15 @@ class DownloadsScreen extends ConsumerWidget {
             Text(
               'No Downloads',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.5),
-                  ),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              ),
             ),
           ],
         ),
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(10),
       itemCount: items.length,
       itemBuilder: (context, index) {
         return DownloadCard(item: items[index]);

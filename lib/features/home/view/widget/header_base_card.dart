@@ -13,14 +13,17 @@ class HeaderBaseCard extends StatelessWidget {
     this.onTap,
     this.color,
     this.gradient,
-    this.padding = const EdgeInsets.all(16.0),
+    this.padding = const EdgeInsets.all(10.0),
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final borderRadius = (theme.cardTheme.shape as RoundedRectangleBorder?)?.borderRadius ??
-        BorderRadius.circular(20.0); // Use a slightly larger, bolder radius for home
+    final borderRadius =
+        (theme.cardTheme.shape as RoundedRectangleBorder?)?.borderRadius ??
+        BorderRadius.circular(
+          20.0,
+        ); // Use a slightly larger, bolder radius for home
 
     return Card(
       margin: EdgeInsets.zero,
@@ -29,18 +32,13 @@ class HeaderBaseCard extends StatelessWidget {
         borderRadius: borderRadius,
         side: BorderSide(color: theme.colorScheme.outline.withOpacity(0.1)),
       ),
-      clipBehavior: Clip.antiAlias, // Ensures the InkWell ripple respects the border radius
+      clipBehavior: Clip
+          .antiAlias, // Ensures the InkWell ripple respects the border radius
       child: InkWell(
         onTap: onTap,
         child: Ink(
-          decoration: BoxDecoration(
-            color: color,
-            gradient: gradient,
-          ),
-          child: Padding(
-            padding: padding,
-            child: child,
-          ),
+          decoration: BoxDecoration(color: color, gradient: gradient),
+          child: Padding(padding: padding, child: child),
         ),
       ),
     );

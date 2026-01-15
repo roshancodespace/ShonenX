@@ -30,7 +30,7 @@ class HomeScreen extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () => ref.read(homepageProvider.notifier).fetchHomePage(),
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(top: 10),
         cacheExtent: 600,
         itemCount: _itemCount(home),
 
@@ -40,7 +40,7 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
-  
+
   int _itemCount(HomePage home) {
     int count = 0;
 
@@ -71,7 +71,10 @@ class HomeScreen extends ConsumerWidget {
 
     /// HEADER
     if (index == currentIndex) {
-      return const HeaderSection(isDesktop: false);
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: const HeaderSection(isDesktop: false),
+      );
     }
     currentIndex++;
 
@@ -85,7 +88,10 @@ class HomeScreen extends ConsumerWidget {
 
     /// CONTINUE WATCHING
     if (index == currentIndex) {
-      return _ContinueWatchingSection();
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: _ContinueWatchingSection(),
+      );
     }
     currentIndex++;
 
@@ -111,7 +117,13 @@ class HomeScreen extends ConsumerWidget {
 
     if (sectionIndex >= 0 && sectionIndex < sections.length) {
       final section = sections[sectionIndex];
-      return HomeSectionWidget(title: section.title, mediaList: section.media);
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: HomeSectionWidget(
+          title: section.title,
+          mediaList: section.media,
+        ),
+      );
     }
 
     /// BOTTOM SPACING

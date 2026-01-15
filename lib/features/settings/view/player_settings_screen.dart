@@ -17,13 +17,14 @@ class PlayerSettingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton.filledTonal(
-            onPressed: () => context.pop(),
-            icon: const Icon(Iconsax.arrow_left_2)),
+          onPressed: () => context.pop(),
+          icon: const Icon(Iconsax.arrow_left_2),
+        ),
         title: const Text('Video Player'),
         forceMaterialTransparency: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(10.0),
         child: ListView(
           children: [
             SettingsSection(
@@ -37,32 +38,17 @@ class PlayerSettingsScreen extends ConsumerWidget {
                   description: 'Current: ${playerSettings.defaultQuality}',
                   value: playerSettings.defaultQuality,
                   items: const [
-                    DropdownMenuItem(
-                      value: 'Auto',
-                      child: Text('Auto'),
-                    ),
-                    DropdownMenuItem(
-                      value: '1080p',
-                      child: Text('1080p'),
-                    ),
-                    DropdownMenuItem(
-                      value: '720p',
-                      child: Text('720p'),
-                    ),
-                    DropdownMenuItem(
-                      value: '480p',
-                      child: Text('480p'),
-                    ),
-                    DropdownMenuItem(
-                      value: '360p',
-                      child: Text('360p'),
-                    ),
+                    DropdownMenuItem(value: 'Auto', child: Text('Auto')),
+                    DropdownMenuItem(value: '1080p', child: Text('1080p')),
+                    DropdownMenuItem(value: '720p', child: Text('720p')),
+                    DropdownMenuItem(value: '480p', child: Text('480p')),
+                    DropdownMenuItem(value: '360p', child: Text('360p')),
                   ],
                   onChanged: (value) => ref
                       .read(playerSettingsProvider.notifier)
-                      .updateSettings((prev) => prev.copyWith(
-                            defaultQuality: value!,
-                          )),
+                      .updateSettings(
+                        (prev) => prev.copyWith(defaultQuality: value!),
+                      ),
                 ),
               ],
             ),
@@ -78,13 +64,15 @@ class PlayerSettingsScreen extends ConsumerWidget {
                   value: playerSettings.enableAniSkip,
                   onChanged: (value) => ref
                       .read(playerSettingsProvider.notifier)
-                      .updateSettings((prev) => prev.copyWith(
-                            enableAniSkip: value,
-                          )),
+                      .updateSettings(
+                        (prev) => prev.copyWith(enableAniSkip: value),
+                      ),
                 ),
                 ToggleableSettingsItem(
-                  icon:
-                      Icon(Iconsax.autobrightness, color: colorScheme.primary),
+                  icon: Icon(
+                    Iconsax.autobrightness,
+                    color: colorScheme.primary,
+                  ),
                   accent: colorScheme.primary,
                   title: 'Auto Skip',
                   description: 'Automatically skip intro/outro without asking',
@@ -93,9 +81,9 @@ class PlayerSettingsScreen extends ConsumerWidget {
                     if (playerSettings.enableAniSkip) {
                       ref
                           .read(playerSettingsProvider.notifier)
-                          .updateSettings((prev) => prev.copyWith(
-                                enableAutoSkip: value,
-                              ));
+                          .updateSettings(
+                            (prev) => prev.copyWith(enableAutoSkip: value),
+                          );
                     }
                   },
                 ),

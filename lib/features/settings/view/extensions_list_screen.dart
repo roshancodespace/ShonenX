@@ -331,7 +331,7 @@ class ExtensionsListScreen extends ConsumerWidget {
           });
 
         return ListView.builder(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(10.0),
           itemCount: sortedLanguages.length,
           itemBuilder: (context, index) {
             final language = sortedLanguages[index];

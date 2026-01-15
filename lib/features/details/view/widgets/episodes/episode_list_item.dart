@@ -39,7 +39,7 @@ class EpisodeListItem extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
             leading: SizedBox(
               width: 90,
               child: AspectRatio(
@@ -71,7 +71,7 @@ class EpisodeListItem extends StatelessWidget {
                 if (download != null) ...[
                   const SizedBox(height: 4),
                   _buildDownloadStatus(theme, download!),
-                ]
+                ],
               ],
             ),
             trailing: IconButton(
@@ -83,11 +83,12 @@ class EpisodeListItem extends StatelessWidget {
           ),
           if (watchProgress > 0)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
               child: LinearProgressIndicator(
                 value: watchProgress,
-                backgroundColor:
-                    theme.colorScheme.primaryContainer.withOpacity(0.2),
+                backgroundColor: theme.colorScheme.primaryContainer.withOpacity(
+                  0.2,
+                ),
                 color: isWatched
                     ? theme.colorScheme.tertiaryContainer
                     : theme.colorScheme.primaryContainer,
@@ -188,20 +189,28 @@ class EpisodeListItem extends StatelessWidget {
             ),
           )
         else if (download.state == DownloadStatus.downloaded)
-          Icon(Icons.download_done_rounded,
-              size: 14, color: theme.colorScheme.primary)
+          Icon(
+            Icons.download_done_rounded,
+            size: 14,
+            color: theme.colorScheme.primary,
+          )
         else if (download.state == DownloadStatus.paused)
-          Icon(Icons.pause_circle_outline,
-              size: 14, color: theme.colorScheme.tertiary),
+          Icon(
+            Icons.pause_circle_outline,
+            size: 14,
+            color: theme.colorScheme.tertiary,
+          ),
         const SizedBox(width: 6),
         Text(
           download.state == DownloadStatus.downloaded
               ? 'Downloaded'
               : download.state == DownloadStatus.downloading
-                  ? '${(download.progressPercentage * 100).toStringAsFixed(0)}%'
-                  : download.state.name,
-          style: theme.textTheme.labelSmall
-              ?.copyWith(color: theme.hintColor, fontSize: 10),
+              ? '${(download.progressPercentage * 100).toStringAsFixed(0)}%'
+              : download.state.name,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.hintColor,
+            fontSize: 10,
+          ),
         ),
       ],
     );

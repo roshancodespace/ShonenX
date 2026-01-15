@@ -448,21 +448,20 @@ class _ResultsGrid extends ConsumerWidget {
                   crossAxisSpacing: 10,
                   childAspectRatio: 0.75,
                   crossAxisCount: columnCount,
-                  items: [
-                    ...results.map(
-                      (anime) => AnimatedAnimeCard(
-                        onTap: () => navigateToDetail(
-                          context,
-                          anime,
-                          anime.id.toString(),
-                        ),
-                        anime: anime,
-                        mode: mode,
-                        tag: anime.id.toString(),
-                      ),
-                    ),
-                    if (isLoading) const _LoadingIndicator(),
-                  ],
+                  itemCount: results.length + (isLoading ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == results.length) {
+                      return const _LoadingIndicator();
+                    }
+                    final anime = results[index];
+                    return AnimatedAnimeCard(
+                      onTap: () =>
+                          navigateToDetail(context, anime, anime.id.toString()),
+                      anime: anime,
+                      mode: mode,
+                      tag: anime.id.toString(),
+                    );
+                  },
                 ),
               );
             },

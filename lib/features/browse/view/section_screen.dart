@@ -112,24 +112,25 @@ class _SectionScreenState extends ConsumerState<SectionScreen> {
               mainAxisSpacing: 10,
               crossAxisSpacing: 10,
               childAspectRatio: 0.75,
-              items: [
-                ..._items.map(
-                  (media) => AnimatedAnimeCard(
-                    anime: media,
-                    mode: mode,
-                    tag: 'section_${media.id}',
-                    onTap: () =>
-                        navigateToDetail(context, media, 'section_${media.id}'),
-                  ),
-                ),
-                if (_isLoading)
-                  const Center(
+              itemCount: _items.length + (_isLoading ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == _items.length) {
+                  return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(10.0),
                       child: CircularProgressIndicator(),
                     ),
-                  ),
-              ],
+                  );
+                }
+                final media = _items[index];
+                return AnimatedAnimeCard(
+                  anime: media,
+                  mode: mode,
+                  tag: 'section_${media.id}',
+                  onTap: () =>
+                      navigateToDetail(context, media, 'section_${media.id}'),
+                );
+              },
             ),
     );
   }

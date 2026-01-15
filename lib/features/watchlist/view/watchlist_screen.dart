@@ -126,20 +126,22 @@ class _WatchlistTabView extends ConsumerWidget {
     final cardStyle = ref.watch(uiSettingsProvider).cardStyle;
     final mode = AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
 
-    if (state.loadingStatuses.contains(status)) {
+    final media = status == 'favorites'
+        ? state.favorites.map((e) => e.media).toList()
+        : state.listFor(status).map((e) => e.media).toList();
+
+    final isLoading = state.loadingStatuses.contains(status);
+
+    if (isLoading && media.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (state.errors.containsKey(status)) {
+    if (state.errors.containsKey(status) && media.isEmpty) {
       return _ErrorView(
         message: state.errors[status]!,
         onRetry: () => notifier.fetchListForStatus(status, force: true),
       );
     }
-
-    final media = status == 'favorites'
-        ? state.favorites.map((e) => e.media).toList()
-        : state.listFor(status).map((e) => e.media).toList();
 
     if (media.isEmpty) return const _EmptyState();
 
@@ -148,10 +150,9 @@ class _WatchlistTabView extends ConsumerWidget {
         final info = state.pageInfo[status];
         if (info != null &&
             info.hasNextPage &&
-            !state.loadingStatuses.contains(status) &&
+            !isLoading &&
             n.metrics.pixels >= n.metrics.maxScrollExtent * 0.9) {
           notifier.fetchListForStatus(status, page: info.currentPage + 1);
-          print('Fetching page ${info.currentPage + 1} for $status');
         }
         return false;
       },
@@ -164,7 +165,12 @@ class _WatchlistTabView extends ConsumerWidget {
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
           childAspectRatio: 0.7,
-          items: media.map((anime) {
+          itemCount: media.length + (isLoading ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == media.length) {
+              return const _LoadingIndicator();
+            }
+            final anime = media[index];
             final tag = randomId();
             return AnimatedAnimeCard(
               anime: anime,
@@ -172,7 +178,7 @@ class _WatchlistTabView extends ConsumerWidget {
               mode: mode,
               onTap: () => navigateToDetail(context, anime, tag),
             );
-          }).toList(),
+          },
         ),
       ),
     );
@@ -256,6 +262,44 @@ class _EmptyState extends StatelessWidget {
             'Add some anime to track your progress!',
             style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingIndicator extends StatelessWidget {
+  const _LoadingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Loading more...',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
         ],

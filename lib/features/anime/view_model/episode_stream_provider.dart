@@ -97,7 +97,7 @@ class EpisodeDataState {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class EpisodeData extends _$EpisodeData {
   EpisodeListState get _epState => ref.read(episodeListProvider);
   List<EpisodeDataModel> get _episodes => _epState.episodes;
@@ -253,8 +253,7 @@ class EpisodeData extends _$EpisodeData {
 
         if (servers.length == 1) {
           selectedServer = servers.first;
-        }
-        else {
+        } else {
           selectedServer = await _showServerSelectionSheet(context, servers);
           if (selectedServer == null) return; // User cancelled
         }

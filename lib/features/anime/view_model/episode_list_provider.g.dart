@@ -20,7 +20,7 @@ final class EpisodeListNotifierProvider
         argument: null,
         retry: null,
         name: r'episodeListProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -42,7 +42,7 @@ final class EpisodeListNotifierProvider
 }
 
 String _$episodeListNotifierHash() =>
-    r'd765ea0c08178daeea93c9547d245818cec3becf';
+    r'20bb1d077a3b6f5b2c232af42a69b42a490e03f3';
 
 abstract class _$EpisodeListNotifier extends $Notifier<EpisodeListState> {
   EpisodeListState build();

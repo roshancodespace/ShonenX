@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:media_kit_video/media_kit_video.dart';
+
 import 'package:screenshot/screenshot.dart';
 
 import 'package:shonenx/core/models/anime/episode_model.dart';
@@ -11,7 +11,7 @@ import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/features/anime/view/widgets/episodes_panel.dart';
-import 'package:shonenx/features/anime/view/widgets/player/controls_overlay.dart';
+import 'package:shonenx/features/anime/view/widgets/player/shonenx_video_player.dart';
 import 'package:shonenx/features/anime/view_model/aniskip_notifier.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
@@ -156,7 +156,6 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
         if (pos >= start && pos < end) {
           ref.read(playerStateProvider.notifier).seek(end);
-          // Break to avoid multiple matches or conflicts
           break;
         }
       }
@@ -312,33 +311,13 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   Widget build(BuildContext context) {
     _attachListeners();
 
-    final fit = ref.watch(playerStateProvider.select((p) => p.fit));
-    final notifier = ref.read(playerStateProvider.notifier);
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: OrientationBuilder(
         builder: (_, orientation) {
-          final player = Stack(
-            fit: StackFit.expand,
-            children: [
-              Screenshot(
-                controller: _screenshotController,
-                child: Video(
-                  controller: notifier.videoController,
-                  fit: fit,
-                  wakelock: true,
-                  filterQuality: kDebugMode
-                      ? FilterQuality.none
-                      : FilterQuality.low,
-                  controls: NoVideoControls,
-                  subtitleViewConfiguration: SubtitleViewConfiguration(
-                    visible: false,
-                  ),
-                ),
-              ),
-              ControlsOverlay(onEpisodesPressed: _togglePanel),
-            ],
+          final player = ShonenXVideoPlayer(
+            onEpisodesPressed: _togglePanel,
+            screenshotController: _screenshotController,
           );
 
           if (orientation == Orientation.landscape) {

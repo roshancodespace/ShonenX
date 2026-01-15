@@ -30,7 +30,7 @@ import 'package:shonenx/features/settings/view/subtitle_customization_screen.dar
 import 'package:shonenx/features/settings/view/temporary/demo_screen.dart';
 import 'package:shonenx/features/settings/view/theme_settings_screen.dart';
 import 'package:shonenx/features/settings/view/ui_settings_screen.dart';
-import 'package:shonenx/router/router.dart';
+import 'package:shonenx/router/router_wrapper.dart';
 
 final routerConfig = GoRouter(
   errorBuilder: (context, state) => ErrorScreen(error: state.error),

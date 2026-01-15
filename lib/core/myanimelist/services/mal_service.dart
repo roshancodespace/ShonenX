@@ -151,7 +151,7 @@ class MyAnimeListService implements AnimeRepository {
   // ---------------------- FAVORITES ----------------------
   @override
   Future<UniversalPageResponse<UniversalMedia>> getFavorites(
-      {int page = 1, int perPage = 10}) async {
+      {int page = 1, int perPage = 25}) async {
     final url = 'https://api.myanimelist.net/v2/users/@me/favorites'
         '?limit=$perPage'
         '&offset=${(page - 1) * perPage}'
@@ -260,37 +260,37 @@ class MyAnimeListService implements AnimeRepository {
 
   @override
   Future<List<UniversalMedia>> getPopularAnime(
-      {int page = 1, int perPage = 15}) async {
+      {int page = 1, int perPage = 25}) async {
     return _getRankedAnime('bypopularity', page, perPage);
   }
 
   @override
   Future<List<UniversalMedia>> getRecentlyUpdatedAnime(
-      {int page = 1, int perPage = 15}) async {
+      {int page = 1, int perPage = 25}) async {
     return _getRankedAnime('airing', page, perPage);
   }
 
   @override
   Future<List<UniversalMedia>> getTopRatedAnime(
-      {int page = 1, int perPage = 15}) async {
+      {int page = 1, int perPage = 25}) async {
     return _getRankedAnime('all', page, perPage);
   }
 
   @override
   Future<List<UniversalMedia>> getTrendingAnime(
-      {int page = 1, int perPage = 15}) async {
+      {int page = 1, int perPage = 25}) async {
     return _getRankedAnime('airing', page, perPage);
   }
 
   @override
   Future<List<UniversalMedia>> getUpcomingAnime(
-      {int page = 1, int perPage = 15}) async {
+      {int page = 1, int perPage = 25}) async {
     return _getRankedAnime('upcoming', page, perPage);
   }
 
   @override
   Future<List<UniversalMedia>> getMostFavoriteAnime(
-      {int page = 1, int perPage = 15}) async {
+      {int page = 1, int perPage = 25}) async {
     return getPopularAnime(page: page, perPage: perPage);
   }
 

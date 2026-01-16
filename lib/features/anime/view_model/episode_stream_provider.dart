@@ -352,7 +352,7 @@ class EpisodeData extends _$EpisodeData {
       headers: data.headers?.cast<String, String>(),
     );
 
-    await _loadSourceStream(0, startAt: startAt);
+    await _loadSourceStream(state.selectedSourceIdx ?? 0, startAt: startAt);
 
     state = state.copyWith(removeState: EpisodeStreamState.SOURCE_LOADING);
   }
@@ -420,6 +420,10 @@ class EpisodeData extends _$EpisodeData {
             [],
       );
     }
+
+    AppLogger.d(
+      'Fetching sources for ${ep.id} from ${server?.id}, ${server?.isDub == true ? 'dub' : 'sub'}',
+    );
 
     return _animeProvider?.getSources(
       _epState.animeId ?? '',

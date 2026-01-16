@@ -17,7 +17,7 @@ const debugConfig = DebugConfig(
   searchQuery: 'attack on titan',
   useCache: true,
   resetCache: false,
-  manualServerIndex: 0,
+  manualServerIndex: 1,
 );
 // ==========================================
 
@@ -252,7 +252,7 @@ Future<void> main() async {
           ctx.selectedAnime.id,
           ctx.selectedEpisode.id,
           ctx.selectedServer?.id,
-          null,
+          ctx.selectedServer?.isDub == true ? 'dub' : 'sub',
         ),
       );
 

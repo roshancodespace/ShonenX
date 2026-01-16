@@ -296,7 +296,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
 
   Future<void> _resetSystemUI() async {
     await UIHelper.exitImmersiveMode();
-    await UIHelper.forcePortrait();
+    // await UIHelper.forcePortrait();
+    await UIHelper.enableAutoRotate();
   }
 
   @override

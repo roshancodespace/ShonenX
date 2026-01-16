@@ -23,14 +23,14 @@ class AnilistServiceException implements Exception {
 
 class AnilistService {
   final ({String userId, String accessToken})? Function()
-      _getAuthContextCallback;
+  _getAuthContextCallback;
   final bool? Function() _getAdultParamCallback;
 
   AnilistService({
     required ({String userId, String accessToken})? Function() getAuthContext,
     required bool? Function() getAdultParam,
-  })  : _getAuthContextCallback = getAuthContext,
-        _getAdultParamCallback = getAdultParam;
+  }) : _getAuthContextCallback = getAuthContext,
+       _getAdultParamCallback = getAdultParam;
 
   String get name => 'Anilist';
 
@@ -125,9 +125,7 @@ class AnilistService {
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: auth.accessToken,
       query: AnilistQueries.updateUserMutation,
-      variables: {
-        'about': about,
-      },
+      variables: {'about': about},
       isMutation: true,
       operationName: 'UpdateUser',
     );
@@ -247,11 +245,7 @@ class AnilistService {
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: auth.accessToken,
       query: AnilistQueries.userFavoritesQuery,
-      variables: {
-        'userId': auth.userId,
-        'page': page,
-        'perPage': perPage,
-      },
+      variables: {'userId': auth.userId, 'page': page, 'perPage': perPage},
       operationName: 'GetFavorites',
     );
 
@@ -277,7 +271,8 @@ class AnilistService {
       operationName: 'ToggleFavourite',
     );
     return _parseMediaList(
-        data?['data']?['ToggleFavourite']?['anime']?['nodes']);
+      data?['data']?['ToggleFavourite']?['anime']?['nodes'],
+    );
   }
 
   Future<List<Media>> searchAnime(
@@ -371,7 +366,6 @@ class AnilistService {
       variables: variables,
       operationName: 'GetTrendingAnime',
     );
-    AppLogger.d(data);
     return _parseMediaList(data?['Page']?['media']);
   }
 
@@ -407,8 +401,10 @@ class AnilistService {
     return _parseMediaList(data?['Page']?['media']);
   }
 
-  Future<List<Media>> getRecentlyUpdatedAnime(
-      {int page = 1, int perPage = 25}) async {
+  Future<List<Media>> getRecentlyUpdatedAnime({
+    int page = 1,
+    int perPage = 25,
+  }) async {
     final adultParam = _getAdultParam();
     final useAdult = adultParam != null;
 
@@ -440,8 +436,10 @@ class AnilistService {
     return _parseMediaList(data?['Page']?['media']);
   }
 
-  Future<List<Media>> getMostFavoriteAnime(
-      {int page = 1, int perPage = 25}) async {
+  Future<List<Media>> getMostFavoriteAnime({
+    int page = 1,
+    int perPage = 25,
+  }) async {
     final adultParam = _getAdultParam();
     final useAdult = adultParam != null;
 

@@ -153,8 +153,7 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
     _restartHide(); // Resume auto-hide
   }
 
-  void _openSettings() =>
-      _sheet(SettingsSheetContent(onDismiss: () => Navigator.pop(context)));
+  void _openSettings() => _sheet(SettingsSheetContent(onDismiss: _restartHide));
 
   void _openQuality() {
     final data = ref.read(episodeDataProvider);

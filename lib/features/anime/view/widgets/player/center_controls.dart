@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
+import 'package:iconsax/iconsax.dart';
 
 class CenterControls extends ConsumerWidget {
   final VoidCallback onInteraction;
@@ -13,40 +14,75 @@ class CenterControls extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    final (
-      isPlaying,
-      isBuffering,
-    ) = ref.watch(
-      playerStateProvider.select(
-        (p) => (p.isPlaying, p.isBuffering),
-      ),
+    final (isPlaying, isBuffering) = ref.watch(
+      playerStateProvider.select((p) => (p.isPlaying, p.isBuffering)),
     );
 
-    final episodeStreamState =
-        ref.watch(episodeDataProvider.select((e) => e.states));
-    final episodesLoading =
-        ref.watch(episodeListProvider.select((e) => e.isLoading));
+    final episodeStreamState = ref.watch(
+      episodeDataProvider.select((e) => e.states),
+    );
+    final episodesLoading = ref.watch(
+      episodeListProvider.select((e) => e.isLoading),
+    );
 
     final playerNotifier = ref.read(playerStateProvider.notifier);
 
     return Center(
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 200),
-        child: isBuffering
-            ? _LoadingState(
-                scheme: scheme,
-                textTheme: textTheme,
-                sourceLoading: episodeStreamState
-                    .contains(EpisodeStreamState.SOURCE_LOADING),
-                episodesLoading: episodesLoading,
-              )
-            : _PlayPauseButton(
-                isPlaying: isPlaying,
-                onPressed: () {
-                  onInteraction();
-                  playerNotifier.togglePlay();
-                },
-              ),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 35),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _icon(
+              Iconsax.previous,
+              () => ref
+                  .read(episodeDataProvider.notifier)
+                  .changeEpisode(null, by: -1),
+            ),
+            const SizedBox(width: 24),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: isBuffering
+                  ? _LoadingState(
+                      scheme: scheme,
+                      textTheme: textTheme,
+                      sourceLoading: episodeStreamState.contains(
+                        EpisodeStreamState.SOURCE_LOADING,
+                      ),
+                      episodesLoading: episodesLoading,
+                    )
+                  : _PlayPauseButton(
+                      isPlaying: isPlaying,
+                      onPressed: () {
+                        onInteraction();
+                        playerNotifier.togglePlay();
+                      },
+                    ),
+            ),
+            const SizedBox(width: 24),
+            _icon(
+              Iconsax.next,
+              () => ref
+                  .read(episodeDataProvider.notifier)
+                  .changeEpisode(null, by: 1),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _icon(IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.black.withOpacity(0.35),
+        ),
+        child: Icon(icon, color: Colors.white, size: 24),
       ),
     );
   }
@@ -106,10 +142,7 @@ class _PlayPauseButton extends StatelessWidget {
   final bool isPlaying;
   final VoidCallback onPressed;
 
-  const _PlayPauseButton({
-    required this.isPlaying,
-    required this.onPressed,
-  });
+  const _PlayPauseButton({required this.isPlaying, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -120,9 +153,9 @@ class _PlayPauseButton extends StatelessWidget {
         onTap: onPressed,
         customBorder: const CircleBorder(),
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(24),
           child: Icon(
-            isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            isPlaying ? Iconsax.pause5 : Iconsax.play5,
             color: Colors.white,
             size: 56,
           ),

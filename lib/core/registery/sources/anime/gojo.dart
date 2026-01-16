@@ -96,10 +96,20 @@ class GojoProvider implements AnimeProvider {
     final sources = <Source>[];
     List<Subtitle> tracks = [];
 
-    final url =
-        "$apiUrl/tiddies?server=$serverName&id=$animeId&num=$episodeId&subType=$category";
+    print(
+      "AnimeId: $animeId, EpisodeId: $episodeId, ServerName: $serverName, Category: $category",
+    );
 
-    final response = await http.get(Uri.parse(url), headers: headers);
+    final uri = Uri.parse("$apiUrl/tiddies").replace(
+      queryParameters: {
+        'server': serverName,
+        'id': animeId,
+        'num': episodeId,
+        'subType': category,
+      },
+    );
+
+    final response = await http.get(uri, headers: headers);
 
     if (response.statusCode != 200) {
       return BaseSourcesModel(

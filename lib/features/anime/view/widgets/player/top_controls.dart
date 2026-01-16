@@ -31,10 +31,7 @@ class TopControls extends ConsumerWidget {
     };
   }
 
-  T watchEpisode<T>(
-    WidgetRef ref,
-    T Function(EpisodeDataState s) selector,
-  ) {
+  T watchEpisode<T>(WidgetRef ref, T Function(EpisodeDataState s) selector) {
     return ref.watch(episodeDataProvider.select(selector));
   }
 
@@ -92,9 +89,9 @@ class TopControls extends ConsumerWidget {
                       Text(
                         _getSourceName(ref),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Colors.white.withOpacity(0.7),
-                              fontWeight: FontWeight.w500,
-                            ),
+                          color: Colors.white.withOpacity(0.7),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
 
                       const SizedBox(height: 2),
@@ -103,11 +100,11 @@ class TopControls extends ConsumerWidget {
                       if (selectedEpisodeIdx != null && sources.isNotEmpty)
                         Text(
                           episodeTitle ?? 'Episode: ${selectedEpisodeIdx + 1}',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -148,8 +145,9 @@ class TopControls extends ConsumerWidget {
                         icon: Iconsax.crop,
                         color: Colors.white,
                         onPressed: () {
-                          final notifier =
-                              ref.read(playerStateProvider.notifier);
+                          final notifier = ref.read(
+                            playerStateProvider.notifier,
+                          );
                           final currentFit = ref.read(playerStateProvider).fit;
 
                           final index = fitModes.indexOf(currentFit);
@@ -187,11 +185,7 @@ class TopControls extends ConsumerWidget {
         borderRadius: BorderRadius.circular(24),
         child: Container(
           padding: const EdgeInsets.all(8),
-          child: Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
+          child: Icon(icon, color: color, size: 24),
         ),
       ),
     );

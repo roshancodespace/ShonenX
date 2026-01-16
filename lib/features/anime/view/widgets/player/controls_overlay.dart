@@ -59,7 +59,7 @@ class ControlsOverlay extends ConsumerWidget {
     return RepaintBoundary(
       child: Stack(
         children: [
-          Center(child: CenterControls(onInteraction: onRestartHide)),
+          CenterControls(onInteraction: onRestartHide),
           TopControls(
             onInteraction: onRestartHide,
             onEpisodesPressed: onEpisodesPressed,

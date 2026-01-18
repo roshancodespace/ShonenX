@@ -10,7 +10,7 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
-        android:label="ShonenX Beta"
+        android:label="ShonenX"
         android:name="${applicationName}"
         android:extractNativeLibs="true"
         android:icon="@mipmap/ic_launcher"

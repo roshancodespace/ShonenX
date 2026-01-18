@@ -65,8 +65,15 @@ class _WatchHistoryScreenState extends ConsumerState<WatchHistoryScreen> {
                 : ListView.builder(
                     padding: const EdgeInsets.only(top: 8),
                     itemCount: filtered.length,
-                    itemBuilder: (context, index) =>
-                        _HistoryTile(entry: filtered[index]),
+                    itemBuilder: (context, index) => _HistoryTile(
+                      entry: filtered[index],
+                      onDelete: () async {
+                        await ref
+                            .read(watchProgressRepositoryProvider)
+                            .deleteProgress(filtered[index].animeId);
+                        setState(() {});
+                      },
+                    ),
                   ),
           ),
         ],
@@ -154,6 +161,15 @@ class _AnimeHistoryDetailScreenState
               itemBuilder: (context, index) => _EpisodeRow(
                 episode: filtered[index],
                 onPlay: () => _play(entry, filtered[index].episodeNumber),
+                onDelete: () async {
+                  await ref
+                      .read(watchProgressRepositoryProvider)
+                      .deleteEpisodeProgress(
+                        entry.animeId,
+                        filtered[index].episodeNumber,
+                      );
+                  setState(() {});
+                },
               ),
             ),
           ),
@@ -319,36 +335,75 @@ class _DetailHeader extends StatelessWidget {
 
 class _HistoryTile extends StatelessWidget {
   final AnimeWatchProgressEntry entry;
-  const _HistoryTile({required this.entry});
+  final VoidCallback onDelete;
+  const _HistoryTile({required this.entry, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AnimeHistoryDetailScreen(animeId: entry.animeId),
+    final theme = Theme.of(context);
+    return Dismissible(
+      key: ValueKey(entry.animeId),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20.0),
+        color: theme.colorScheme.errorContainer,
+        child: Icon(
+          Icons.delete_forever_rounded,
+          color: theme.colorScheme.onErrorContainer,
         ),
       ),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: CachedNetworkImage(
-          imageUrl: entry.animeCover,
-          width: 44,
-          height: 60,
-          fit: BoxFit.cover,
+      confirmDismiss: (direction) async {
+        return await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Delete History"),
+              content: const Text(
+                "Are you sure you want to delete this anime from your history?",
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text("Cancel"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text("Delete"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+      onDismissed: (direction) => onDelete(),
+      child: ListTile(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AnimeHistoryDetailScreen(animeId: entry.animeId),
+          ),
         ),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: CachedNetworkImage(
+            imageUrl: entry.animeCover,
+            width: 44,
+            height: 60,
+            fit: BoxFit.cover,
+          ),
+        ),
+        title: Text(
+          entry.animeTitle,
+          maxLines: 1,
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+        ),
+        subtitle: Text(
+          "Ep ${entry.currentEpisode} • ${DateFormat.MMMd().format(entry.lastUpdated ?? DateTime.now())}",
+          style: const TextStyle(fontSize: 12),
+        ),
+        trailing: const Icon(Iconsax.arrow_right_3, size: 14),
       ),
-      title: Text(
-        entry.animeTitle,
-        maxLines: 1,
-        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-      ),
-      subtitle: Text(
-        "Ep ${entry.currentEpisode} • ${DateFormat.MMMd().format(entry.lastUpdated ?? DateTime.now())}",
-        style: const TextStyle(fontSize: 12),
-      ),
-      trailing: const Icon(Iconsax.arrow_right_3, size: 14),
     );
   }
 }
@@ -356,51 +411,94 @@ class _HistoryTile extends StatelessWidget {
 class _EpisodeRow extends StatelessWidget {
   final EpisodeProgress episode;
   final VoidCallback onPlay;
-  const _EpisodeRow({required this.episode, required this.onPlay});
+  final VoidCallback onDelete;
+  const _EpisodeRow({
+    required this.episode,
+    required this.onPlay,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final progress = (episode.durationInSeconds ?? 0) > 0
         ? (episode.progressInSeconds ?? 0) / episode.durationInSeconds!
         : 0.0;
-    return ListTile(
-      onTap: onPlay,
-      leading: SizedBox(
-        width: 110,
-        height: 62,
-        child: Stack(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: _Thumb(url: episode.episodeThumbnail),
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: LinearProgressIndicator(
-                value: progress.clamp(0.0, 1.0),
-                minHeight: 2,
-                valueColor: AlwaysStoppedAnimation(
-                  Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ),
-            const Center(
-              child: Icon(Iconsax.play5, color: Colors.white70, size: 20),
-            ),
-          ],
+    return Dismissible(
+      key: ValueKey(episode.episodeNumber),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20.0),
+        color: theme.colorScheme.errorContainer,
+        child: Icon(
+          Icons.delete_forever_rounded,
+          color: theme.colorScheme.onErrorContainer,
         ),
       ),
-      title: Text(
-        "Episode ${episode.episodeNumber}",
-        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-      ),
-      subtitle: Text(
-        episode.episodeTitle,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontSize: 11),
+      confirmDismiss: (direction) async {
+        return await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Delete Progress"),
+              content: const Text(
+                "Are you sure you want to delete progress for this episode?",
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text("Cancel"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text("Delete"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+      onDismissed: (direction) => onDelete(),
+      child: ListTile(
+        onTap: onPlay,
+        leading: SizedBox(
+          width: 110,
+          height: 62,
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: _Thumb(url: episode.episodeThumbnail),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: LinearProgressIndicator(
+                  value: progress.clamp(0.0, 1.0),
+                  minHeight: 2,
+                  valueColor: AlwaysStoppedAnimation(
+                    Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+              const Center(
+                child: Icon(Iconsax.play5, color: Colors.white70, size: 20),
+              ),
+            ],
+          ),
+        ),
+        title: Text(
+          "Episode ${episode.episodeNumber}",
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+        ),
+        subtitle: Text(
+          episode.episodeTitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 11),
+        ),
       ),
     );
   }

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/features/home/view/widgets/spotlight/modes/classic_spotlight.dart';
-import 'package:shonenx/features/home/view/widgets/spotlight/modes/compact_spotlight.dart';
-import 'package:shonenx/features/home/view/widgets/spotlight/modes/cover_only_spotlight.dart';
-import 'package:shonenx/features/home/view/widgets/spotlight/modes/default_spotlight.dart';
-import 'package:shonenx/features/home/view/widgets/spotlight/modes/liquid_glass_spotlight.dart';
-import 'package:shonenx/features/home/view/widgets/spotlight/modes/manga_spotlight.dart';
-import 'package:shonenx/features/home/view/widgets/spotlight/modes/minimal_spotlight.dart';
-import 'package:shonenx/features/home/view/widgets/spotlight/modes/neon_spotlight.dart';
-import 'package:shonenx/features/home/view/widgets/spotlight/modes/polaroid_spotlight.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/modes/classic_spotlight.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/modes/compact_spotlight.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/modes/cover_only_spotlight.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/modes/default_spotlight.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/modes/liquid_glass_spotlight.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/modes/manga_spotlight.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/modes/minimal_spotlight.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/modes/neon_spotlight.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/modes/polaroid_spotlight.dart';
 
 enum SpotlightCardMode {
   defaults,

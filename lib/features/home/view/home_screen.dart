@@ -32,8 +32,9 @@ class HomeScreen extends ConsumerWidget {
       child: ListView.builder(
         padding: const EdgeInsets.only(top: 10),
         cacheExtent: 600,
+        addAutomaticKeepAlives: true,
+        addRepaintBoundaries: true,
         itemCount: _itemCount(home),
-
         itemBuilder: (context, index) {
           return _buildItemByIndex(context, ref, home, index);
         },

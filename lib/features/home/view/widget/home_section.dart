@@ -40,6 +40,8 @@ class HomeSectionWidget extends ConsumerWidget {
         SizedBox(
           height: small ? height.small : height.large,
           child: ListView.builder(
+            addAutomaticKeepAlives: true,
+            addRepaintBoundaries: true,
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             itemCount: mediaList.length,

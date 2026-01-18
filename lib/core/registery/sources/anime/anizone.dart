@@ -1,5 +1,5 @@
 import 'package:html/parser.dart';
-import 'package:http/http.dart' as http;
+import 'package:shonenx/core/network/universal_client.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
@@ -26,9 +26,11 @@ class AnizoneProvider implements AnimeProvider {
 
   @override
   Future<SearchPage> getSearch(String keyword, String? type, int page) async {
-
     final url = "$baseUrl/anime?search=$keyword&page=$page";
-    final res = await http.get(Uri.parse(url), headers: headers);
+    final res = await UniversalHttpClient.instance.get(
+      Uri.parse(url),
+      headers: headers,
+    );
 
     if (res.statusCode != 200) {
       throw Exception("Failed to search");
@@ -50,18 +52,11 @@ class AnizoneProvider implements AnimeProvider {
       if (a == null) continue;
 
       final title = a.attributes['title'] ?? "Unknown";
-      final href =
-          a.attributes['href'];
+      final href = a.attributes['href'];
       final img = imgTag?.attributes['src'];
 
       if (href != null) {
-        searchRes.add(
-          BaseAnimeModel(
-            id: href,
-            name: title,
-            poster: img ?? "",
-          ),
-        );
+        searchRes.add(BaseAnimeModel(id: href, name: title, poster: img ?? ""));
       }
     }
 
@@ -74,10 +69,12 @@ class AnizoneProvider implements AnimeProvider {
     String? anilistId,
     String? malId,
   }) async {
-
     final url = animeId.startsWith("http") ? animeId : "$baseUrl$animeId";
 
-    final res = await http.get(Uri.parse(url), headers: headers);
+    final res = await UniversalHttpClient.instance.get(
+      Uri.parse(url),
+      headers: headers,
+    );
 
     if (res.statusCode != 200) {
       throw Exception("Failed to load episodes page");
@@ -109,7 +106,7 @@ class AnizoneProvider implements AnimeProvider {
             number: i,
             title: title ?? "Episode $i",
             thumbnail: epImg,
-            isFiller: false, 
+            isFiller: false,
           ),
         );
         i++;
@@ -130,7 +127,10 @@ class AnizoneProvider implements AnimeProvider {
   ) async {
     final url = episodeId.startsWith("http") ? episodeId : "$baseUrl$episodeId";
 
-    final res = await http.get(Uri.parse(url), headers: headers);
+    final res = await UniversalHttpClient.instance.get(
+      Uri.parse(url),
+      headers: headers,
+    );
 
     if (res.statusCode != 200) {
       return BaseSourcesModel();

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:shonenx/core/network/universal_client.dart';
 import 'package:shonenx/core/anilist/services/anilist_service.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
@@ -34,7 +34,7 @@ class GojoProvider implements AnimeProvider {
     String? malId,
   }) async {
     final url = Uri.parse("$apiUrl/eps/$animeId");
-    final res = await http.get(url, headers: headers);
+    final res = await UniversalHttpClient.instance.get(url, headers: headers);
 
     if (res.statusCode != 200) {
       throw Exception("Failed to load episodes: ${res.statusCode}");
@@ -109,7 +109,10 @@ class GojoProvider implements AnimeProvider {
       },
     );
 
-    final response = await http.get(uri, headers: headers);
+    final response = await UniversalHttpClient.instance.get(
+      uri,
+      headers: headers,
+    );
 
     if (response.statusCode != 200) {
       return BaseSourcesModel(
@@ -168,7 +171,7 @@ class GojoProvider implements AnimeProvider {
   Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {
     if (metadata == null) return BaseServerModel();
 
-    final res = await http.get(
+    final res = await UniversalHttpClient.instance.get(
       Uri.parse(
         '$apiUrl/servers?id=${metadata['id']}&num=${metadata['epNumber']}',
       ),

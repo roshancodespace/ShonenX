@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/features/home/view/widget/header_base_card.dart'; // Import the base card
+import 'package:shonenx/features/home/view/widget/header_base_card.dart';
+import 'package:shonenx/features/news/view/news_screen.dart';
+import 'package:shonenx/features/news/view_model/news_provider.dart';
 
-class DiscoverCard extends StatelessWidget {
+class DiscoverCard extends ConsumerWidget {
   const DiscoverCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final borderRadius = BorderRadius.circular(15.0);
+    final newsState = ref.watch(newsProvider);
+
+    final unreadCount = newsState.hasValue
+        ? newsState.value!.where((n) => !n.isRead).length
+        : 0;
 
     return HeaderBaseCard(
       onTap: () => context.go('/browse'),
-      // Apply the unique gradient here
       gradient: LinearGradient(
         colors: [
           theme.colorScheme.primary.withOpacity(0.2),
@@ -24,7 +31,6 @@ class DiscoverCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // The prominent icon
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -64,6 +70,24 @@ class DiscoverCard extends StatelessWidget {
             color: theme.colorScheme.primary,
             size: 20,
           ),
+          const SizedBox(width: 10),
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const NewsScreen()),
+              );
+            },
+            icon: Badge(
+              isLabelVisible: unreadCount > 0,
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              label: Text('$unreadCount', style: TextStyle(fontSize: 14)),
+              backgroundColor: theme.colorScheme.errorContainer,
+              textColor: theme.colorScheme.onErrorContainer,
+              child: const Icon(Icons.newspaper_rounded),
+            ),
+            tooltip: 'News',
+          ),
+          const SizedBox(width: 20),
         ],
       ),
     );

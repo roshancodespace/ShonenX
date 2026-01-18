@@ -9,12 +9,48 @@ import 'package:shonenx/features/home/view_model/homepage_notifier.dart';
 import 'package:shonenx/features/home/view/widget/header_section.dart';
 import 'package:shonenx/features/home/view/widget/home_section.dart';
 import 'package:shonenx/features/home/view/widget/spotlight_section.dart';
+import 'package:shonenx/features/news/view/news_screen.dart';
+import 'package:shonenx/features/news/view_model/news_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(newsProvider, (previous, next) {
+      if (previous is AsyncData && next is AsyncData) {
+        final oldList = previous!.value ?? [];
+        final newList = next.value ?? [];
+
+        final oldUrls = oldList.map((e) => e.url).toSet();
+        final newItems = newList
+            .where((e) => !oldUrls.contains(e.url))
+            .toList();
+
+        if (newItems.isNotEmpty) {
+          final count = newItems.length;
+          final message = count == 1
+              ? 'New Article: ${newItems.first.title ?? "Check it out!"}'
+              : '$count New Articles Available!';
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              action: SnackBarAction(
+                label: 'VIEW',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const NewsScreen()),
+                  );
+                },
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    });
+
     final state = ref.watch(homepageProvider);
 
     if (state.isLoading)

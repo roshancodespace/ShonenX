@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:shonenx/core/network/universal_client.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
@@ -49,7 +49,10 @@ class AnimeOnsenProvider extends AnimeProvider {
       "grant_type": "client_credentials",
     };
 
-    final res = await http.post(Uri.parse(url), body: body);
+    final res = await UniversalHttpClient.instance.post(
+      Uri.parse(url),
+      body: body,
+    );
 
     if (res.statusCode != 200) {
       throw Exception("Exception: couldnt generate AO token");
@@ -80,7 +83,7 @@ class AnimeOnsenProvider extends AnimeProvider {
     final url = Uri.parse('$apiUrl/content/$animeId/episodes');
     final apiHeader = {"Authorization": "Bearer $_animeOnsenToken", ...headers};
 
-    final res = await http.get(url, headers: apiHeader);
+    final res = await UniversalHttpClient.instance.get(url, headers: apiHeader);
 
     if (res.statusCode != 200) {
       throw Exception("Failed to load episodes: ${res.statusCode}");
@@ -138,7 +141,10 @@ class AnimeOnsenProvider extends AnimeProvider {
       ...headers,
     };
 
-    final res = await http.get(url, headers: apiHeaders);
+    final res = await UniversalHttpClient.instance.get(
+      url,
+      headers: apiHeaders,
+    );
 
     if (res.statusCode != 200) {
       return SearchPage(results: []);

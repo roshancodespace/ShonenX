@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
-import 'package:http/http.dart' as http;
+import 'package:shonenx/core/network/universal_client.dart';
 import 'package:html/parser.dart' as html;
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
@@ -49,7 +49,7 @@ class AnimePaheProvider extends AnimeProvider {
     final query = keyword.replaceAll("-", " ");
     final url = Uri.parse("$apiUrl?m=search&q=$query");
 
-    final res = await http.get(url, headers: headers);
+    final res = await UniversalHttpClient.instance.get(url, headers: headers);
     final Map<String, dynamic> decoded = json.decode(res.body);
 
     final List<dynamic>? results = decoded['data'];
@@ -87,7 +87,10 @@ class AnimePaheProvider extends AnimeProvider {
     List<dynamic> list = [];
     final String url = "$apiUrl?m=release&id=$animeId&sort=episode_asc";
 
-    final res = await http.get(Uri.parse(url), headers: headers);
+    final res = await UniversalHttpClient.instance.get(
+      Uri.parse(url),
+      headers: headers,
+    );
     var bodyDecoded = json.decode(res.body);
 
     if (bodyDecoded['data'] != null) {
@@ -98,7 +101,7 @@ class AnimePaheProvider extends AnimeProvider {
 
     for (int i = 1; i < totalPages; i++) {
       if (i >= 5) break;
-      final nextRes = await http.get(
+      final nextRes = await UniversalHttpClient.instance.get(
         Uri.parse("$url&page=${i + 1}"),
         headers: headers,
       );
@@ -157,7 +160,10 @@ class AnimePaheProvider extends AnimeProvider {
     final episodeUrl = "https://animepahe.si/play/$animeSession/$epSession";
     final bool isRequestingDub = category?.toLowerCase() == 'dub';
 
-    final data = await http.get(Uri.parse(episodeUrl), headers: headers);
+    final data = await UniversalHttpClient.instance.get(
+      Uri.parse(episodeUrl),
+      headers: headers,
+    );
     final document = html.parse(data.body);
 
     final downloadQualities = document.querySelectorAll('div#pickDownload > a');
@@ -278,7 +284,10 @@ class AnimePaheProvider extends AnimeProvider {
     final urlRegex = RegExp(r'action="(.+?)"');
     final tokenRegex = RegExp(r'value="(.+?)"');
 
-    final resp = await http.get(Uri.parse(downloadLink), headers: headers);
+    final resp = await UniversalHttpClient.instance.get(
+      Uri.parse(downloadLink),
+      headers: headers,
+    );
     final scripts = html.parse(resp.body).querySelectorAll('script');
 
     String? kwikLink;
@@ -298,7 +307,7 @@ class AnimePaheProvider extends AnimeProvider {
 
     if (kwikLink == null) throw Exception("Couldnt extract kwik link");
 
-    final kwikRes = await http.get(
+    final kwikRes = await UniversalHttpClient.instance.get(
       Uri.parse(kwikLink),
       headers: {'referer': downloadLink, 'User-Agent': _userAgent},
     );
@@ -329,7 +338,7 @@ class AnimePaheProvider extends AnimeProvider {
     final token = tokenMatch.group(1)!;
 
     try {
-      final r2 = await http.post(
+      final r2 = await UniversalHttpClient.instance.post(
         Uri.parse(postUrl),
         body: {'_token': token},
         headers: {

@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/features/anime/view/widgets/card/anime_spotlight_card.dart';
-import 'package:shonenx/features/home/view/widgets/spotlight/spotlight_card_config.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/anime_spotlight_card.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/spotlight_card_config.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';
 

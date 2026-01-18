@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/features/home/view/widgets/spotlight/spotlight_card_config.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/spotlight_card_config.dart';
 
 class AnimeSpotlightCard extends ConsumerWidget {
   final UniversalMedia? anime;

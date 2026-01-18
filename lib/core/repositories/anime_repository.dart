@@ -25,8 +25,10 @@ abstract class AnimeRepository {
   });
   Future<UniversalMediaListEntry?> getAnimeEntry(int animeId);
   Future<List<UniversalMedia>> toggleFavorite(int ani);
-  Future<UniversalPageResponse<UniversalMedia>> getFavorites(
-      {int page = 1, int perPage = 25});
+  Future<UniversalPageResponse<UniversalMedia>> getFavorites({
+    int page = 1,
+    int perPage = 25,
+  });
   Future<List<UniversalMedia>> searchAnime(
     String title, {
     int page = 1,
@@ -34,18 +36,30 @@ abstract class AnimeRepository {
     SearchFilter? filter,
   });
   Future<UniversalMedia?> getAnimeDetails(int animeId);
-  Future<List<UniversalMedia>> getTrendingAnime(
-      {int page = 1, int perPage = 25});
-  Future<List<UniversalMedia>> getPopularAnime(
-      {int page = 1, int perPage = 25});
-  Future<List<UniversalMedia>> getTopRatedAnime(
-      {int page = 1, int perPage = 25});
-  Future<List<UniversalMedia>> getRecentlyUpdatedAnime(
-      {int page = 1, int perPage = 25});
-  Future<List<UniversalMedia>> getUpcomingAnime(
-      {int page = 1, int perPage = 25});
-  Future<List<UniversalMedia>> getMostFavoriteAnime(
-      {int page = 1, int perPage = 25});
+  Future<List<UniversalMedia>> getTrendingAnime({
+    int page = 1,
+    int perPage = 25,
+  });
+  Future<List<UniversalMedia>> getPopularAnime({
+    int page = 1,
+    int perPage = 25,
+  });
+  Future<List<UniversalMedia>> getTopRatedAnime({
+    int page = 1,
+    int perPage = 25,
+  });
+  Future<List<UniversalMedia>> getRecentlyUpdatedAnime({
+    int page = 1,
+    int perPage = 25,
+  });
+  Future<List<UniversalMedia>> getUpcomingAnime({
+    int page = 1,
+    int perPage = 25,
+  });
+  Future<List<UniversalMedia>> getMostFavoriteAnime({
+    int page = 1,
+    int perPage = 25,
+  });
   Future<List<String>> getSupportedStatuses();
   Future<List<String>> getGenres();
   Future<List<String>> getTags();

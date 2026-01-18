@@ -3,6 +3,7 @@
 // Check in to version control
 
 import 'package:hive_ce/hive.dart';
+import 'package:shonenx/core/models/universal/universal_news.dart';
 import 'package:shonenx/core_new/models/track_search.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
@@ -31,6 +32,7 @@ extension HiveRegistrar on HiveInterface {
     registerAdapter(ThemeModelAdapter());
     registerAdapter(TrackSearchAdapter());
     registerAdapter(UiModelAdapter());
+    registerAdapter(UniversalNewsAdapter());
   }
 }
 
@@ -49,5 +51,6 @@ extension IsolatedHiveRegistrar on IsolatedHiveInterface {
     registerAdapter(ThemeModelAdapter());
     registerAdapter(TrackSearchAdapter());
     registerAdapter(UiModelAdapter());
+    registerAdapter(UniversalNewsAdapter());
   }
 }

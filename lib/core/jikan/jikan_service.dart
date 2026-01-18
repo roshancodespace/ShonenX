@@ -1,54 +1,74 @@
 import 'dart:convert';
-
-import 'package:shonenx/core/jikan/models/jikan_media.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:http/http.dart' as http;
+import 'package:shonenx/core/jikan/models/jikan_media.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
+class JikanEpisode {
+  final int malId;
+  final String title;
+  final String? aired;
+  final double? filler;
+  final double? recap;
+
+  JikanEpisode({
+    required this.malId,
+    required this.title,
+    this.aired,
+    this.filler,
+    this.recap,
+  });
+
+  factory JikanEpisode.fromJson(Map<String, dynamic> json) {
+    return JikanEpisode(
+      malId: json['mal_id'] ?? 0,
+      title: json['title'] ?? 'Episode ${json['mal_id']}',
+      aired: json['aired'] != null ? json['aired'].toString() : null,
+      filler: json['filler'] != null
+          ? (json['filler'] as num).toDouble()
+          : null,
+      recap: json['recap'] != null ? (json['recap'] as num).toDouble() : null,
+    );
+  }
+}
+
 class JikanService {
-  static const _baseUrl = "https://api.jikan.moe/v4";
+  static const _baseUrl = 'https://api.jikan.moe/v4';
 
-  static Future<dynamic> _fetch(String endpoint) async {
-    AppLogger.w("$_baseUrl$endpoint");
-    return jsonDecode((await http.get(Uri.parse("$_baseUrl$endpoint"))).body);
-  }
-
-  Future<List<JikanMedia>> getSearch(
-      {required String title,
-      int page = 1,
-      int limit = 10,
-      String mediaType = 'anime'}) async {
+  Future<List<JikanMedia>> getSearch({
+    required String title,
+    int limit = 5,
+  }) async {
     try {
-      final data = await _fetch("/$mediaType?q=$title?page=$page&limit=$limit");
-      return (data?['data'] as List<dynamic>)
-          .map((itemJson) =>
-              JikanMedia.fromMap(itemJson as Map<String, dynamic>))
-          .toList();
-    } catch (err) {
-      throw Exception(err);
+      // Jikan search logic
+      final url = '$_baseUrl/anime?q=$title&limit=$limit';
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> results = data['data'];
+        return results.map((e) => JikanMedia.fromMap(e)).toList();
+      }
+      return [];
+    } catch (e) {
+      AppLogger.e('Jikan Search Error: $e');
+      return [];
     }
   }
 
-  Future<List<StreamingEpisode>> getEpisodes(int animeId, int page) async {
+  Future<List<JikanEpisode>> getEpisodes(int malId, int page) async {
     try {
-      final data = await _fetch('/anime/$animeId/episodes?page=$page');
-      return (data?['data'] as List<dynamic>)
-          .map((itemJson) => StreamingEpisode(
-              title: _parseJikanTitle(itemJson['title']),
-              url: itemJson['url'] ?? '',
-              id: itemJson['malId'].toString()))
-          .toList();
-    } catch (err) {
-      throw Exception(err);
-    }
-  }
+      final url = '$_baseUrl/anime/$malId/episodes?page=$page';
+      final response = await http.get(Uri.parse(url));
 
-  String _parseJikanTitle(dynamic raw) {
-    if (raw == null) return 'Unknown';
-    if (raw is String) return raw;
-    if (raw is Map<String, dynamic>) {
-      return raw['english'] ?? raw['romaji'] ?? 'Unknown';
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> episodes = data['data'];
+        return episodes.map((e) => JikanEpisode.fromJson(e)).toList();
+      }
+      return [];
+    } catch (e) {
+      AppLogger.e('Jikan Episodes Error: $e');
+      return [];
     }
-    return 'Unknown';
   }
 }

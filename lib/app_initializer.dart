@@ -20,6 +20,7 @@ import 'package:shonenx/features/settings/model/theme_model.dart';
 import 'package:shonenx/features/settings/model/ui_model.dart';
 import 'package:shonenx/features/settings/model/download_settings_model.dart';
 import 'package:shonenx/features/settings/model/content_settings_model.dart';
+import 'package:shonenx/core/models/universal/universal_news.dart';
 
 import 'package:window_manager/window_manager.dart';
 
@@ -82,7 +83,8 @@ class AppInitializer {
         ..registerAdapter(DownloadItemAdapter())
         ..registerAdapter(DownloadStatusAdapter())
         ..registerAdapter(DownloadSettingsModelAdapter())
-        ..registerAdapter(ContentSettingsModelAdapter());
+        ..registerAdapter(ContentSettingsModelAdapter())
+        ..registerAdapter(UniversalNewsAdapter());
 
       AppLogger.success('Hive adapters registered');
 
@@ -104,6 +106,8 @@ class AppInitializer {
         Hive.openBox('onboard'),
         Hive.openBox<DownloadSettingsModel>('download_settings'),
         Hive.openBox<ContentSettingsModel>('content_settings'),
+        Hive.openBox<UniversalNews>('news_cache'),
+        Hive.openBox<String>('news_read_status'),
       ]);
 
       AppLogger.success('Hive boxes opened');

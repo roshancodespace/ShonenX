@@ -10,6 +10,7 @@ import 'package:shonenx/core_new/models/source.dart';
 // Features
 import 'package:shonenx/features/anime/view/watch_screen.dart';
 import 'package:shonenx/features/browse/view/browse_screen.dart';
+import 'package:shonenx/features/browse/model/search_filter.dart';
 import 'package:shonenx/features/details/view/details_screen.dart';
 import 'package:shonenx/features/error/view/error_screen.dart';
 import 'package:shonenx/features/home/view/watch_history_screen.dart';
@@ -60,6 +61,7 @@ final routerConfig = GoRouter(
                   return BrowseScreen(
                     key: ValueKey(state.uri.toString()),
                     keyword: state.uri.queryParameters['keyword'],
+                    initialFilter: state.extra as SearchFilter?,
                   );
                 }
                 return item.screen;

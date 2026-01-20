@@ -284,8 +284,10 @@ class AnilistService {
     final adultParam = _getAdultParam();
     final useAdult = adultParam != null;
 
+    final hasSearch = title.trim().isNotEmpty;
+
     final variables = <String, dynamic>{
-      'search': title,
+      if (hasSearch) 'search': title,
       'page': page,
       'perPage': perPage,
     };
@@ -312,6 +314,7 @@ class AnilistService {
         hasStatus: filter?.status != null,
         hasSort: filter?.sort != null,
         hasTag: filter?.tags.isNotEmpty ?? false,
+        hasSearch: hasSearch,
       ),
       variables: variables,
       operationName: 'SearchAnime',

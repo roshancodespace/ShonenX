@@ -197,12 +197,13 @@ class AnilistQueries {
     required bool hasStatus,
     required bool hasSort,
     required bool hasTag,
+    required bool hasSearch,
   }) {
     final args = <String>[
       '\$page: Int',
       '\$perPage: Int',
       if (includeAdult) '\$isAdult: Boolean',
-      '\$search: String',
+      if (hasSearch) '\$search: String',
       if (hasGenre) '\$genre: [String]',
       if (hasSeason) '\$season: MediaSeason',
       if (hasYear) '\$year: Int',
@@ -214,7 +215,7 @@ class AnilistQueries {
     final mediaArgs = <String>[
       'type: ANIME',
       if (includeAdult) 'isAdult: \$isAdult',
-      'search: \$search',
+      if (hasSearch) 'search: \$search',
       if (hasSort) 'sort: \$sort' else 'sort: POPULARITY_DESC',
       if (hasGenre) 'genre_in: \$genre',
       if (hasSeason) 'season: \$season',

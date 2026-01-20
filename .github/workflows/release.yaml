@@ -26,12 +26,12 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.5"
+          flutter-version: "3.38.6"
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          ndk-version: 25.2.9519653
+          ndk-version: 29.0.14033849
 
       - name: Install CMake 3.18.1
         run: |
@@ -102,7 +102,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.5"
+          flutter-version: "3.38.6"
 
       - name: Install dependencies
         run: flutter pub get
@@ -137,7 +137,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.5"
+          flutter-version: "3.38.6"
 
       - name: Install dependencies
         run: flutter pub get

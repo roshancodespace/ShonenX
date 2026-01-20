@@ -30,6 +30,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_inappwebview: ^6.1.5
+  flutter_local_notifications: ^19.5.0
   flutter_markdown: ^0.7.7+1
   flutter_qjs:
     git:

@@ -129,6 +129,14 @@ class SettingsScreen extends ConsumerWidget {
               titleColor: colorScheme.primary,
               onTap: () {},
               children: [
+                if (kDebugMode)
+                  NormalSettingsItem(
+                    icon: Icon(Iconsax.code, color: colorScheme.primary),
+                    accent: colorScheme.primary,
+                    title: 'Debug Menu',
+                    description: 'Developer tools and testing',
+                    onTap: () => context.push('/settings/debug'),
+                  ),
                 NormalSettingsItem(
                   icon: Icon(Iconsax.danger, color: colorScheme.primary),
                   accent: colorScheme.primary,

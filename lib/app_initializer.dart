@@ -21,6 +21,7 @@ import 'package:shonenx/features/settings/model/ui_model.dart';
 import 'package:shonenx/features/settings/model/download_settings_model.dart';
 import 'package:shonenx/features/settings/model/content_settings_model.dart';
 import 'package:shonenx/core/models/universal/universal_news.dart';
+import 'package:shonenx/core/services/notification_service.dart';
 
 import 'package:window_manager/window_manager.dart';
 
@@ -39,6 +40,7 @@ class AppInitializer {
     await _initializeHive();
     await _initializeWindowManager();
     await _initializeMediaKit();
+    await NotificationService().initialize();
 
     AppLogger.section('Initialization Complete');
   }

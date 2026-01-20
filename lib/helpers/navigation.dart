@@ -4,13 +4,29 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/features/browse/model/search_filter.dart';
 
-void navigateToDetail(BuildContext context, UniversalMedia media, String tag,
-    {bool forceFetch = false}) {
+void navigateToDetail(
+  BuildContext context,
+  UniversalMedia media,
+  String tag, {
+  bool forceFetch = false,
+}) {
   context.push('/details?tag=$tag&forceFetch=$forceFetch', extra: media);
 }
 
-/// Helper to construct the route and navigate to the watch screen.
+void navigateToBrowse(
+  BuildContext context, {
+  String? keyword,
+  SearchFilter? filter,
+}) {
+  final uri = Uri(
+    path: '/browse',
+    queryParameters: keyword != null ? {'keyword': keyword} : null,
+  );
+  context.go(uri.toString(), extra: filter);
+}
+
 void navigateToWatch({
   required BuildContext context,
   required WidgetRef ref,
@@ -23,14 +39,8 @@ void navigateToWatch({
   required int currentEpisode,
   int? startAt,
 }) {
-  // final progress = ref
-  //     .read(animeWatchProgressProvider.notifier)
-  //     .getMostRecentEpisodeProgressByAnimeId(animeMedia.id!);
-
-  // final episode = (progress?.episodeNumber ?? 0) + plusEpisode;
-  // final startAt = progress?.progressInSeconds ?? 0;
-  // final encodedName = Uri.encodeComponent(animeName);
-  final route = '/watch/$mediaId?animeId=$animeId'
+  final route =
+      '/watch/$mediaId?animeId=$animeId'
       '&animeName=$animeName'
       '&animeFormat=$animeFormat'
       '&animeCover=$animeCover'

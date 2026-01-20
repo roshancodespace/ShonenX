@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 
 class HorizontalMediaSection<T> extends StatelessWidget {
@@ -83,8 +84,15 @@ class MediaCard extends StatelessWidget {
     // Get the best available title
     final title = media.title.english ?? media.title.romaji ?? 'Unknown';
 
+    // Check if media is manga/novel to disable clicks
+    final isManga =
+        media.format == 'MANGA' ||
+        media.format == 'NOVEL' ||
+        media.format == 'ONE_SHOT' ||
+        (media.format != null && media.format!.contains('MANGA'));
+
     return GestureDetector(
-      onTap: onTap,
+      onTap: isManga ? null : onTap,
       child: Container(
         width: 130,
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
@@ -147,6 +155,23 @@ class MediaCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                  if (isManga)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Iconsax.book_14,
+                          size: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -159,6 +184,9 @@ class MediaCard extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                   fontSize: 13,
                   height: 1.3,
+                  color: isManga
+                      ? theme.textTheme.bodySmall?.color?.withOpacity(0.5)
+                      : null,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

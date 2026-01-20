@@ -16,7 +16,9 @@ import 'package:shonenx/features/browse/view/section_screen.dart';
 
 class BrowseScreen extends ConsumerStatefulWidget {
   final String? keyword;
-  const BrowseScreen({super.key, this.keyword});
+  final SearchFilter? initialFilter;
+
+  const BrowseScreen({super.key, this.keyword, this.initialFilter});
 
   @override
   ConsumerState<BrowseScreen> createState() => _BrowseScreenState();
@@ -39,7 +41,8 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
   List<UniversalMedia> _trending = [];
   List<UniversalMedia> _popular = [];
   List<UniversalMedia> _upcoming = [];
-  SearchFilter _currentFilter = const SearchFilter();
+  late SearchFilter _currentFilter =
+      widget.initialFilter ?? const SearchFilter();
 
   var _currentPage = 1;
   var _isLoading = false;
@@ -51,7 +54,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
   void initState() {
     super.initState();
     _animationController.forward();
-    if (widget.keyword?.isNotEmpty == true) {
+    if (widget.keyword?.isNotEmpty == true || !_currentFilter.isEmpty) {
       _search();
     } else {
       _fetchExploreData();
@@ -63,6 +66,12 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
     super.didUpdateWidget(oldWidget);
     if (widget.keyword != oldWidget.keyword) {
       _searchController.text = widget.keyword ?? '';
+      _search();
+    }
+    if (widget.initialFilter != oldWidget.initialFilter) {
+      setState(() {
+        _currentFilter = widget.initialFilter ?? const SearchFilter();
+      });
       _search();
     }
   }
@@ -100,7 +109,9 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
   }
 
   Future<void> _fetchResults(String keyword, int page) async {
-    if (_isLoading || !_hasMore || keyword.isEmpty) return;
+    if (_isLoading || !_hasMore) return;
+    // Allow search if keyword is empty BUT filter is present
+    if (keyword.isEmpty && _currentFilter.isEmpty) return;
 
     setState(() => _isLoading = true);
 
@@ -166,6 +177,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
     final result = await showModalBottomSheet<SearchFilter>(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (context) => FilterBottomSheet(initialFilter: _currentFilter),
     );
@@ -215,7 +227,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
             hasFilter: !_currentFilter.isEmpty,
           ),
           Expanded(
-            child: _searchController.text.isEmpty
+            child: _searchController.text.isEmpty && _currentFilter.isEmpty
                 ? _ExploreView(
                     trending: _trending,
                     popular: _popular,

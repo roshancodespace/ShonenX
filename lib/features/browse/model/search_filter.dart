@@ -20,19 +20,24 @@ class SearchFilter {
   SearchFilter copyWith({
     List<String>? genres,
     String? season,
+    bool resetSeason = false,
     int? year,
+    bool resetYear = false,
     String? format,
+    bool resetFormat = false,
     String? status,
+    bool resetStatus = false,
     String? sort,
+    bool resetSort = false,
     List<String>? tags,
   }) {
     return SearchFilter(
       genres: genres ?? this.genres,
-      season: season ?? this.season,
-      year: year ?? this.year,
-      format: format ?? this.format,
-      status: status ?? this.status,
-      sort: sort ?? this.sort,
+      season: resetSeason ? null : (season ?? this.season),
+      year: resetYear ? null : (year ?? this.year),
+      format: resetFormat ? null : (format ?? this.format),
+      status: resetStatus ? null : (status ?? this.status),
+      sort: resetSort ? null : (sort ?? this.sort),
       tags: tags ?? this.tags,
     );
   }

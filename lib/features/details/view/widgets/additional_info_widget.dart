@@ -3,6 +3,8 @@ import 'package:iconsax/iconsax.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:intl/intl.dart';
+import 'package:shonenx/helpers/navigation.dart';
+import 'package:shonenx/features/browse/model/search_filter.dart';
 
 class AdditionalInfoWidget extends StatelessWidget {
   final UniversalMedia anime;
@@ -67,27 +69,36 @@ class AnimeTagsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Limit tags to show initially? Or just show all?
-    // Let's show all but formatted nicely.
 
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: tags.map((tag) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              navigateToBrowse(context, filter: SearchFilter(tags: [tag]));
+            },
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.1),
-            ),
-          ),
-          child: Text(
-            tag,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withOpacity(
+                  0.3,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withOpacity(0.1),
+                ),
+              ),
+              child: Text(
+                tag,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ),
         );
@@ -114,7 +125,9 @@ class AnimeInformationGrid extends StatelessWidget {
         _InfoItemData('Source', _formatSource(anime.source!)),
       if (anime.startDate != null)
         _InfoItemData(
-            'Aired', _formatDateRange(anime.startDate, anime.endDate)),
+          'Aired',
+          _formatDateRange(anime.startDate, anime.endDate),
+        ),
       if (anime.studios.isNotEmpty)
         _InfoItemData('Studios', anime.studios.map((s) => s.name).join(', ')),
     ];
@@ -125,42 +138,49 @@ class AnimeInformationGrid extends StatelessWidget {
       spacing: 16,
       runSpacing: 16,
       children: items.map((item) {
-        return LayoutBuilder(builder: (context, constraints) {
-          final screenWidth = MediaQuery.of(context).size.width;
-          final itemWidth = (screenWidth - 32 - 16) / 2;
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = MediaQuery.of(context).size.width;
+            final itemWidth = (screenWidth - 32 - 16) / 2;
 
-          return SizedBox(
-            width: itemWidth,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.label,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item.value,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        height: 1.2,
-                      ),
-                ),
-              ],
-            ),
-          );
-        });
+            return SizedBox(
+              width: itemWidth,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.value,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
       }).toList(),
     );
   }
 
   String _formatSource(String source) {
-    return source.replaceAll('_', ' ').toLowerCase().split(' ').map((word) {
-      if (word.isEmpty) return word;
-      return word[0].toUpperCase() + word.substring(1);
-    }).join(' ');
+    return source
+        .replaceAll('_', ' ')
+        .toLowerCase()
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1);
+        })
+        .join(' ');
   }
 
   String _formatDateRange(dynamic start, dynamic end) {
@@ -202,7 +222,8 @@ class ExternalLinksWidget extends StatelessWidget {
               label: 'Watch Trailer',
               color: const Color(0xFFFF0000), // YouTube Red
               onTap: () => _launchUrl(
-                  'https://www.youtube.com/watch?v=${anime.trailer!.id}'),
+                'https://www.youtube.com/watch?v=${anime.trailer!.id}',
+              ),
             ),
           ),
         if (anime.trailer != null && anime.siteUrl != null)

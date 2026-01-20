@@ -30,6 +30,7 @@ import 'package:shonenx/features/settings/view/subtitle_customization_screen.dar
 import 'package:shonenx/features/settings/view/temporary/demo_screen.dart';
 import 'package:shonenx/features/settings/view/theme_settings_screen.dart';
 import 'package:shonenx/features/settings/view/ui_settings_screen.dart';
+import 'package:shonenx/features/debug/view/debug_screen.dart';
 import 'package:shonenx/router/router_wrapper.dart';
 
 final routerConfig = GoRouter(
@@ -100,6 +101,10 @@ final routerConfig = GoRouter(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),
       routes: [
+        GoRoute(
+          path: 'debug',
+          builder: (context, state) => const DebugScreen(),
+        ),
         GoRoute(
           path: 'account',
           builder: (context, state) => const AccountSettingsScreen(),

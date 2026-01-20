@@ -4,6 +4,7 @@ import 'package:hive_ce/hive.dart';
 import 'package:shonenx/core/models/universal/universal_news.dart';
 import 'package:shonenx/core/services/anime_news_network_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/core/services/notification_service.dart';
 
 part 'news_provider.g.dart';
 
@@ -59,6 +60,27 @@ class News extends _$News {
           }
           return news;
         }).toList();
+
+        // If background poll, check if we actually have *new* unread items to notify implicitly via state change.
+        if (isBackgroundPoll) {
+          final oldState = state.value ?? [];
+          final oldUrls = oldState.map((e) => e.url).toSet();
+          final newItems = mergedNews
+              .where((e) => !oldUrls.contains(e.url))
+              .toList();
+
+          if (newItems.isNotEmpty) {
+            final count = newItems.length;
+            final message = count == 1
+                ? 'New: ${newItems.first.title ?? "Anime News"}'
+                : '$count New Anime Articles!';
+
+            await NotificationService().showNewsNotification(
+              title: 'ShonenX News',
+              body: message,
+            );
+          }
+        }
 
         final box = Hive.box<UniversalNews>('news_cache');
         await box.clear();

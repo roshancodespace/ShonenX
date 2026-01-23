@@ -108,12 +108,6 @@ Track and manage your anime library with AniList and MyAnimeList integration. Bu
     <td align="center"><img src="screenshots/mobile/image17.jpg" width="200"/></td>
     <td align="center"><img src="screenshots/mobile/image18.jpg" width="200"/></td>
     <td align="center"><img src="screenshots/mobile/image19.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image20.jpg" width="200"/></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="screenshots/mobile/image21.jpg" width="200"/></td>
-    <td></td>
-    <td></td>
     <td></td>
   </tr>
 </table>

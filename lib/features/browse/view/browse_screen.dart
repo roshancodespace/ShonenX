@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/core/utils/misc.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
+
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/features/watchlist/view/widget/shonenx_gridview.dart';
 import 'package:shonenx/helpers/navigation.dart';
@@ -424,8 +426,7 @@ class _ResultsGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cardStyle = ref.watch(uiSettingsProvider).cardStyle;
-    final mode = AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
+    final mode = ref.watch(uiSettingsProvider).cardStyle;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -608,9 +609,12 @@ class _HorizontalSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (items.isEmpty) return const SizedBox.shrink();
 
-    final cardStyle = ref.watch(uiSettingsProvider).cardStyle;
-    final mode = AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
-
+    final mode = ref.watch(uiSettingsProvider).cardStyle;
+    final cardConfig = cardConfigs[mode]!;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final sectionHeight = screenWidth > 600
+        ? cardConfig.responsiveHeight.large
+        : cardConfig.responsiveHeight.small;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -662,7 +666,7 @@ class _HorizontalSection extends ConsumerWidget {
           ),
         ),
         SizedBox(
-          height: 250, // Height for anime cards
+          height: sectionHeight,
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             scrollDirection: Axis.horizontal,
@@ -670,14 +674,14 @@ class _HorizontalSection extends ConsumerWidget {
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final anime = items[index];
+              final tag = randomId();
               return SizedBox(
-                width: 155, // Fixed width for horizontal items
+                width: 155,
                 child: AnimatedAnimeCard(
-                  onTap: () =>
-                      navigateToDetail(context, anime, anime.id.toString()),
+                  onTap: () => navigateToDetail(context, anime, tag),
                   anime: anime,
                   mode: mode,
-                  tag: 'explore_${anime.id}_$title',
+                  tag: tag,
                 ),
               );
             },

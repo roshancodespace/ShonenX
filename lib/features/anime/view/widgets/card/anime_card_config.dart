@@ -9,27 +9,16 @@ import 'package:shonenx/features/anime/view/widgets/card/modes/manga_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/modes/minimal_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/modes/neon_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/modes/polaroid_card.dart';
-
-enum AnimeCardMode {
-  defaults,
-  minimal,
-  classic,
-  coverOnly,
-  liquidGlass,
-  neon,
-  manga,
-  compact,
-  polaroid,
-}
+import 'package:shonenx/features/anime/view/widgets/card/anime_card_mode.dart';
 
 typedef ResponsiveSize = ({double small, double large});
 
-// The definition of the expected function signature
-typedef AnimeCardBuilder = Widget Function({
-  required UniversalMedia? anime,
-  required String tag,
-  required bool isHovered,
-});
+typedef AnimeCardBuilder =
+    Widget Function({
+      required UniversalMedia? anime,
+      required String tag,
+      required bool isHovered,
+    });
 
 class AnimeCardConfig {
   final ResponsiveSize responsiveWidth;
@@ -91,7 +80,7 @@ final Map<AnimeCardMode, AnimeCardConfig> cardConfigs = {
   AnimeCardMode.manga: AnimeCardConfig(
     responsiveWidth: (small: 140.0, large: 160.0),
     responsiveHeight: (small: 210.0, large: 250.0),
-    radius: 0.0, // Sharp corners
+    radius: 0.0,
     builder: ({required anime, required tag, required isHovered}) =>
         MangaCard(anime: anime, tag: tag, isHovered: isHovered),
   ),

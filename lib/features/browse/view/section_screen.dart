@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
-import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
+
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/features/watchlist/view/widget/shonenx_gridview.dart';
 import 'package:shonenx/helpers/navigation.dart';
@@ -81,8 +81,7 @@ class _SectionScreenState extends ConsumerState<SectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cardStyle = ref.watch(uiSettingsProvider).cardStyle;
-    final mode = AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
+    final mode = ref.watch(uiSettingsProvider).cardStyle;
     final width = MediaQuery.sizeOf(context).width;
     final columnCount = width >= 1400
         ? 6

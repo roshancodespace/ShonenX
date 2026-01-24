@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/spotlight_card_mode.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/spotlight/spotlight_card_config.dart';
@@ -19,7 +20,8 @@ class AnimeSpotlightCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final config = spotlightCardConfigs[mode] ??
+    final config =
+        spotlightCardConfigs[mode] ??
         spotlightCardConfigs[SpotlightCardMode.defaults]!;
     return RepaintBoundary(
       child: AnimatedContainer(
@@ -39,11 +41,7 @@ class AnimeSpotlightCard extends ConsumerWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(config.radius),
-          child: config.builder(
-            anime: anime,
-            heroTag: heroTag,
-            onTap: onTap,
-          ),
+          child: config.builder(anime: anime, heroTag: heroTag, onTap: onTap),
         ),
       ),
     );

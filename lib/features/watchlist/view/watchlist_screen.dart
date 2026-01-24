@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/utils/misc.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
-import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
+
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/features/watchlist/view/widget/shonenx_gridview.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
@@ -123,8 +123,7 @@ class _WatchlistTabView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(watchlistProvider);
     final notifier = ref.read(watchlistProvider.notifier);
-    final cardStyle = ref.watch(uiSettingsProvider).cardStyle;
-    final mode = AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
+    final mode = ref.watch(uiSettingsProvider).cardStyle;
 
     final media = status == 'favorites'
         ? state.favorites.map((e) => e.media).toList()

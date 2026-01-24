@@ -710,7 +710,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                         title: 'Position',
                         titleColor: colorScheme.primary,
                         children: [
-                          SegmentedToggleSettingsItem<int>(
+                          SegmentedToggleSettingsItem<dynamic>(
                             accent: colorScheme.primary,
                             iconColor: colorScheme.primary,
                             title: 'Vertical Position',

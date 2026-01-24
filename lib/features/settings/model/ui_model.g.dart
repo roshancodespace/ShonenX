@@ -17,9 +17,19 @@ class UiModelAdapter extends TypeAdapter<UiModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return UiModel(
-      cardStyle: fields[2] == null ? 'defaults' : fields[2] as String,
+      cardStyle: fields[2] == null
+          ? AnimeCardMode.defaults
+          : AnimeCardMode.values.firstWhere(
+              (e) => e.name == (fields[2] as String),
+              orElse: () => AnimeCardMode.defaults,
+            ),
       immersiveMode: fields[5] == null ? false : fields[5] as bool,
-      spotlightCardStyle: fields[3] == null ? 'defaults' : fields[3] as String,
+      spotlightCardStyle: fields[3] == null
+          ? SpotlightCardMode.defaults
+          : SpotlightCardMode.values.firstWhere(
+              (e) => e.name == (fields[3] as String),
+              orElse: () => SpotlightCardMode.defaults,
+            ),
       episodeViewMode: fields[6] == null ? 'list' : fields[6] as String,
     );
   }
@@ -29,9 +39,9 @@ class UiModelAdapter extends TypeAdapter<UiModel> {
     writer
       ..writeByte(4)
       ..writeByte(2)
-      ..write(obj.cardStyle)
+      ..write(obj.cardStyle.name)
       ..writeByte(3)
-      ..write(obj.spotlightCardStyle)
+      ..write(obj.spotlightCardStyle.name)
       ..writeByte(5)
       ..write(obj.immersiveMode)
       ..writeByte(6)

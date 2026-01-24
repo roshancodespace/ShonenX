@@ -4,6 +4,7 @@ import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/utils/misc.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
+
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';
 
@@ -23,8 +24,7 @@ class HomeSectionWidget extends ConsumerWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final small = screenWidth < 600;
 
-    final cardStyle = ref.watch(uiSettingsProvider).cardStyle;
-    final mode = AnimeCardMode.values.firstWhere((e) => e.name == cardStyle);
+    final mode = ref.watch(uiSettingsProvider).cardStyle;
     final height = cardConfigs[mode]!.responsiveHeight;
 
     if (mediaList.isEmpty) return const SizedBox.shrink();

@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:shonenx/features/settings/view/widgets/color_picker_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 
-enum SettingsSectionLayout {
-  list,
-  grid,
-}
+enum SettingsSectionLayout { list, grid }
 
 class SettingsSection extends StatelessWidget {
   final String title;
-  final Color titleColor;
+  final Color? titleColor;
   final VoidCallback? onTap;
   final List<Widget> children;
-  final double roundness;
+
+  // M3 Expressive Props
+  final bool isExpressive;
+  final double? roundness;
 
   // Grid layout properties
   final SettingsSectionLayout layout;
@@ -23,10 +24,11 @@ class SettingsSection extends StatelessWidget {
   const SettingsSection({
     super.key,
     required this.title,
-    required this.titleColor,
+    this.titleColor,
     this.onTap,
     required this.children,
-    this.roundness = 12,
+    this.isExpressive = true,
+    this.roundness,
     this.layout = SettingsSectionLayout.list,
     this.gridColumns = 2,
     this.gridCrossAxisSpacing = 8.0,
@@ -36,18 +38,19 @@ class SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Section title
         Padding(
-          padding: const EdgeInsets.only(left: 4.0, bottom: 16.0),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: Text(
             title,
-            style: TextStyle(
-              fontSize: 20,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: titleColor ?? theme.colorScheme.primary,
               fontWeight: FontWeight.bold,
-              color: titleColor,
             ),
           ),
         ),
@@ -70,7 +73,7 @@ class SettingsSection extends StatelessWidget {
   Widget _buildListLayout() {
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOutCubic,
+      curve: Curves.fastOutSlowIn,
       alignment: Alignment.topCenter,
       child: Column(
         children: children.asMap().entries.map((entry) {
@@ -79,7 +82,7 @@ class SettingsSection extends StatelessWidget {
 
           return Padding(
             padding: EdgeInsets.only(
-              bottom: index < children.length - 1 ? 5.0 : 0.0,
+              bottom: index < children.length - 1 ? 6.0 : 0.0,
             ),
             child: _wrapChild(child, false),
           );
@@ -107,6 +110,12 @@ class SettingsSection extends StatelessWidget {
 
   Widget _wrapChild(Widget child, bool isInGrid) {
     if (child is BaseSettingsItem) {
+      final commonProps = _CommonSettingsProps(
+        isExpressive: isExpressive,
+        roundness: roundness,
+        isCompact: isInGrid,
+      );
+
       if (child is NormalSettingsItem) {
         return NormalSettingsItem(
           key: child.key,
@@ -117,10 +126,11 @@ class SettingsSection extends StatelessWidget {
           title: child.title,
           description: child.description,
           onTap: child.onTap,
-          roundness: roundness,
           trailingWidgets: child.trailingWidgets,
           layoutType: child.layoutType,
-          isCompact: isInGrid,
+          isExpressive: commonProps.isExpressive,
+          roundness: commonProps.roundness,
+          isCompact: commonProps.isCompact,
         );
       } else if (child is SelectableSettingsItem) {
         return SelectableSettingsItem(
@@ -132,12 +142,13 @@ class SettingsSection extends StatelessWidget {
           title: child.title,
           description: child.description,
           onTap: child.onTap,
-          roundness: roundness,
           trailingWidgets: child.trailingWidgets,
           layoutType: child.layoutType,
           isSelected: child.isSelected,
           isInSelectionMode: child.isInSelectionMode,
-          isCompact: isInGrid,
+          isExpressive: commonProps.isExpressive,
+          roundness: commonProps.roundness,
+          isCompact: commonProps.isCompact,
         );
       } else if (child is ToggleableSettingsItem) {
         return ToggleableSettingsItem(
@@ -148,12 +159,13 @@ class SettingsSection extends StatelessWidget {
           accent: child.accent,
           title: child.title,
           description: child.description,
-          roundness: roundness,
           trailingWidgets: child.trailingWidgets,
           layoutType: child.layoutType,
           value: child.value,
           onChanged: child.onChanged,
-          isCompact: isInGrid,
+          isExpressive: commonProps.isExpressive,
+          roundness: commonProps.roundness,
+          isCompact: commonProps.isCompact,
         );
       } else if (child is SliderSettingsItem) {
         return SliderSettingsItem(
@@ -164,7 +176,6 @@ class SettingsSection extends StatelessWidget {
           accent: child.accent,
           title: child.title,
           description: child.description,
-          roundness: roundness,
           layoutType: child.layoutType,
           value: child.value,
           onChanged: child.onChanged,
@@ -172,7 +183,9 @@ class SettingsSection extends StatelessWidget {
           max: child.max,
           divisions: child.divisions,
           suffix: child.suffix,
-          isCompact: isInGrid,
+          isExpressive: commonProps.isExpressive,
+          roundness: commonProps.roundness,
+          isCompact: commonProps.isCompact,
         );
       } else if (child is DropdownSettingsItem) {
         return DropdownSettingsItem(
@@ -183,15 +196,18 @@ class SettingsSection extends StatelessWidget {
           accent: child.accent,
           title: child.title,
           description: child.description,
-          roundness: roundness,
           layoutType: child.layoutType,
           value: child.value,
           items: child.items,
-          onChanged: (String? value) => child.onChanged(value),
-          isCompact: isInGrid,
+          onChanged: child.onChanged,
+          isExpressive: commonProps.isExpressive,
+          roundness: commonProps.roundness,
+          isCompact: commonProps.isCompact,
         );
       } else if (child is SegmentedToggleSettingsItem) {
-        return SegmentedToggleSettingsItem(
+        return _buildSegmentedToggle(child, commonProps);
+      } else if (child is ColorPickerSettingsItem) {
+        return ColorPickerSettingsItem(
           key: child.key,
           icon: child.icon,
           leading: child.leading,
@@ -199,18 +215,52 @@ class SettingsSection extends StatelessWidget {
           accent: child.accent,
           title: child.title,
           description: child.description,
-          roundness: roundness,
           layoutType: child.layoutType,
-          selectedValue: child.selectedValue,
-          children: child.children,
-          onValueChanged: (int value) => child.onValueChanged(value),
-          labels: child.labels,
-          isCompact: isInGrid,
+          selectedColor: child.selectedColor,
+          onColorChanged: child.onColorChanged,
+          colors: child.colors,
+          isExpressive: commonProps.isExpressive,
+          roundness: commonProps.roundness,
+          isCompact: commonProps.isCompact,
         );
       }
     }
 
-    // If it's not a SettingsItem, render it directly.
     return child;
   }
+
+  Widget _buildSegmentedToggle(
+    SegmentedToggleSettingsItem item,
+    _CommonSettingsProps props,
+  ) {
+    return SegmentedToggleSettingsItem<dynamic>(
+      key: item.key,
+      icon: item.icon,
+      leading: item.leading,
+      iconColor: item.iconColor,
+      accent: item.accent,
+      title: item.title,
+      description: item.description,
+      layoutType: item.layoutType,
+      selectedValue: item.selectedValue,
+      children: item.children,
+      onValueChanged: item.onValueChanged,
+      labels: item.labels,
+      isExpressive: props.isExpressive,
+      roundness: props.roundness,
+      isCompact: props.isCompact,
+    );
+  }
+}
+
+class _CommonSettingsProps {
+  final bool isExpressive;
+  final double? roundness;
+  final bool isCompact;
+
+  _CommonSettingsProps({
+    required this.isExpressive,
+    this.roundness,
+    required this.isCompact,
+  });
 }

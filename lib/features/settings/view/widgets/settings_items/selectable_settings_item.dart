@@ -9,12 +9,14 @@ class SelectableSettingsItem extends BaseSettingsItem {
     super.key,
     super.icon,
     super.iconColor,
-    required super.accent,
+    super.accent,
     required super.title,
-    required super.description,
+    super.description,
     super.leading,
     super.onTap,
+    super.isExpressive,
     super.roundness,
+    super.containerColor,
     super.isCompact,
     super.trailingWidgets,
     super.layoutType,
@@ -26,7 +28,7 @@ class SelectableSettingsItem extends BaseSettingsItem {
   Widget build(BuildContext context) {
     final bool shouldGreyOut = isInSelectionMode && !isSelected;
     return Opacity(
-      opacity: shouldGreyOut ? 0.5 : 1.0,
+      opacity: shouldGreyOut ? 0.38 : 1.0, 
       child: super.build(context),
     );
   }
@@ -40,25 +42,33 @@ class SelectableSettingsItem extends BaseSettingsItem {
     bool effectiveCompact,
     ResponsiveDimensions dimensions,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    final activeColor = iconColor ?? accent ?? colorScheme.primary;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        buildIconContainer(effectiveCompact, dimensions),
-        SizedBox(width: dimensions.spacing),
-        buildTitleAndDescription(effectiveCompact, dimensions),
+        if (icon != null || leading != null) ...[
+          buildIconContainer(context, effectiveCompact, dimensions),
+          SizedBox(width: dimensions.spacing),
+        ],
+        buildTitleAndDescription(context, effectiveCompact, dimensions),
         if (trailingWidgets == null) ...[
           if (isSelected)
-            Container(
-              width: effectiveCompact ? 20 : 24,
-              height: effectiveCompact ? 20 : 24,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: effectiveCompact ? 24 : 28,
+              height: effectiveCompact ? 24 : 28,
               decoration: BoxDecoration(
-                color: iconColor ?? accent,
-                borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
+                color: activeColor,
+                shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.check,
-                size: effectiveCompact ? 14 : 16,
-                color: Colors.white,
+                size: effectiveCompact ? 16 : 18,
+                color: colorScheme.onPrimary,
               ),
             )
         ] else

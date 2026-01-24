@@ -9,17 +9,19 @@ class ToggleableSettingsItem extends BaseSettingsItem {
     super.key,
     super.icon,
     super.iconColor,
-    required super.accent,
+    super.accent,
     required super.title,
     required super.description,
     super.leading,
+    super.isExpressive,
     super.roundness,
+    super.containerColor,
     super.isCompact,
     super.trailingWidgets,
     super.layoutType,
     required this.value,
     required this.onChanged,
-  }) : super(onTap: null); // Disable onTap
+  }) : super(onTap: null);
 
   @override
   bool needsVerticalLayoutByContent() => false;
@@ -30,19 +32,33 @@ class ToggleableSettingsItem extends BaseSettingsItem {
     bool effectiveCompact,
     ResponsiveDimensions dimensions,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    final effectiveActiveColor = accent ?? colorScheme.primary;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        buildIconContainer(effectiveCompact, dimensions),
-        SizedBox(width: dimensions.spacing),
-        buildTitleAndDescription(effectiveCompact, dimensions),
+        if (icon != null || leading != null) ...[
+          buildIconContainer(context, effectiveCompact, dimensions),
+          SizedBox(width: dimensions.spacing),
+        ],
+        buildTitleAndDescription(context, effectiveCompact, dimensions),
         if (trailingWidgets == null)
           Transform.scale(
-            scale: effectiveCompact ? 0.8 : 1.0,
+            scale: effectiveCompact ? 0.8 : 0.9,
+            alignment: Alignment.centerRight,
             child: Switch(
               value: value,
               onChanged: onChanged,
-              activeColor: iconColor ?? accent,
+              activeColor: colorScheme.onPrimary,
+              activeTrackColor: effectiveActiveColor,
+              inactiveThumbColor: colorScheme.outline,
+              inactiveTrackColor: colorScheme.surfaceContainerHighest,
+              trackOutlineColor: WidgetStateProperty.resolveWith(
+                (states) => Colors.transparent,
+              ),
             ),
           )
         else

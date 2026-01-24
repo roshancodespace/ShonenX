@@ -7,12 +7,14 @@ class NormalSettingsItem extends BaseSettingsItem {
     super.key,
     super.icon,
     super.iconColor,
-    required super.accent,
+    super.accent,
     required super.title,
-    required super.description,
+    super.description,
     super.leading,
     super.onTap,
+    super.isExpressive,
     super.roundness,
+    super.containerColor,
     super.isCompact,
     super.trailingWidgets,
     super.layoutType,
@@ -27,17 +29,22 @@ class NormalSettingsItem extends BaseSettingsItem {
     bool effectiveCompact,
     ResponsiveDimensions dimensions,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        buildIconContainer(effectiveCompact, dimensions),
-        SizedBox(width: dimensions.spacing),
-        buildTitleAndDescription(effectiveCompact, dimensions),
+        if (icon != null || leading != null) ...[
+          buildIconContainer(context, effectiveCompact, dimensions),
+          SizedBox(width: dimensions.spacing),
+        ],
+        buildTitleAndDescription(context, effectiveCompact, dimensions),
         if (trailingWidgets == null)
           Icon(
             Iconsax.arrow_right_3,
             size: effectiveCompact ? 16 : 20,
-            color: Colors.grey[400],
+            color: colorScheme.onSurfaceVariant.withOpacity(0.5),
           )
         else
           ...buildCustomTrailingWidgets(effectiveCompact),

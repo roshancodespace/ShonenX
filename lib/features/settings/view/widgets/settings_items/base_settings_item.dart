@@ -2,15 +2,24 @@ import 'package:flutter/material.dart';
 
 enum SettingsItemLayout { auto, horizontal, vertical }
 
+const double kM3ExpressiveRadiusLarge = 28.0;
+const double kM3ExpressiveRadiusMedium = 20.0;
+const double kM3ExpressiveRadiusSmall = 12.0;
+
 abstract class BaseSettingsItem extends StatelessWidget {
   final Widget? leading;
   final Icon? icon;
   final Color? iconColor;
-  final Color accent;
+  final Color? accent;
   final String title;
   final String description;
   final VoidCallback? onTap;
-  final double roundness;
+  
+  // M3 Expressive Params
+  final bool isExpressive; 
+  final double? roundness;
+  final Color? containerColor;
+  
   final bool isCompact;
   final List<Widget>? trailingWidgets;
   final SettingsItemLayout layoutType;
@@ -19,46 +28,69 @@ abstract class BaseSettingsItem extends StatelessWidget {
     super.key,
     this.icon,
     this.iconColor,
-    required this.accent,
+    this.accent,
     required this.title,
-    required this.description,
+    this.description = '',
     this.leading,
     this.onTap,
-    this.roundness = 12,
+    this.isExpressive = true,
+    this.roundness,
+    this.containerColor,
     this.isCompact = false,
     this.trailingWidgets,
     this.layoutType = SettingsItemLayout.auto,
   });
 
+  /// Helper for Squircle shape
+  ShapeBorder _getShape(double radius) {
+    if (isExpressive) {
+      return ContinuousRectangleBorder(
+        borderRadius: BorderRadius.circular(radius * 2.5),
+      );
+    }
+    return RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(radius),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     final isSmallScreen = screenWidth < 600;
+    
+    final double effectiveRadius = roundness ?? 
+        (isExpressive ? kM3ExpressiveRadiusMedium : kM3ExpressiveRadiusSmall);
+
     final effectiveCompact = isCompact || isSmallScreen;
 
     final dimensions = _getResponsiveDimensions(
+      context,
       effectiveCompact,
       isSmallScreen,
     );
 
-    return Card(
-      elevation: effectiveCompact ? 1 : 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(roundness),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(roundness),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(roundness),
-          child: Padding(
-            padding: dimensions.padding,
-            child: _buildLayout(
-              context,
-              effectiveCompact,
-              isSmallScreen,
-              dimensions,
-            ),
+    final effectiveContainerColor = containerColor ?? 
+        (isExpressive 
+            ? colorScheme.surfaceContainerLow 
+            : colorScheme.surface);
+
+    return Material(
+      color: effectiveContainerColor,
+      elevation: 0,
+      shape: _getShape(effectiveRadius),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: _getShape(effectiveRadius),
+        child: Padding(
+          padding: dimensions.padding,
+          child: _buildLayout(
+            context,
+            effectiveCompact,
+            isSmallScreen,
+            dimensions,
           ),
         ),
       ),
@@ -105,62 +137,78 @@ abstract class BaseSettingsItem extends StatelessWidget {
   );
 
   Widget buildIconContainer(
+    BuildContext context,
     bool effectiveCompact,
     ResponsiveDimensions dimensions,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    final effectiveAccent = accent ?? colorScheme.primary;
+    final effectiveIconColor = iconColor ?? effectiveAccent;
+
     return Container(
       width: dimensions.iconContainerSize,
       height: dimensions.iconContainerSize,
       decoration: BoxDecoration(
-        color: (iconColor ?? accent).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(effectiveCompact ? 6 : 8),
+        color: isExpressive 
+            ? effectiveAccent.withOpacity(0.12)
+            : Colors.transparent, 
+        borderRadius: isExpressive
+             ? BorderRadius.circular(12)
+             : BorderRadius.circular(effectiveCompact ? 8 : 10),
+        shape: isExpressive ? BoxShape.rectangle : BoxShape.rectangle, 
       ),
       child: Center(
         child: (icon != null)
             ? IconTheme(
                 data: IconThemeData(
-                  color: (iconColor ?? accent),
+                  color: effectiveIconColor,
                   size: dimensions.iconSize,
                 ),
                 child: icon!,
               )
             : (leading != null)
-            ? leading
-            : const SizedBox.shrink(),
+                ? leading
+                : const SizedBox.shrink(),
       ),
     );
   }
 
   Widget buildTitleAndDescription(
+    BuildContext context,
     bool effectiveCompact,
     ResponsiveDimensions dimensions, {
     bool isVertical = false,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Expanded(
       flex: isVertical ? 0 : 1,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             title,
-            style: TextStyle(
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: isExpressive ? FontWeight.w600 : FontWeight.w500,
+              color: colorScheme.onSurface,
               fontSize: dimensions.titleFontSize,
-              fontWeight: FontWeight.bold,
             ),
             overflow: TextOverflow.ellipsis,
             maxLines: (effectiveCompact || isVertical) ? 1 : 2,
           ),
-          if (description.isNotEmpty &&
-              (!effectiveCompact || description.isNotEmpty)) ...[
-            SizedBox(height: effectiveCompact ? 1 : 2),
+          if (description.isNotEmpty) ...[
+            SizedBox(height: 2),
             Text(
               description,
-              style: TextStyle(
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
                 fontSize: dimensions.descriptionFontSize,
-                color: Colors.grey[600],
               ),
               overflow: TextOverflow.ellipsis,
-              maxLines: (effectiveCompact || isVertical) ? 1 : 2,
+              maxLines: (effectiveCompact || isVertical) ? 2 : 3,
             ),
           ],
         ],
@@ -179,20 +227,19 @@ abstract class BaseSettingsItem extends StatelessWidget {
   }
 
   ResponsiveDimensions _getResponsiveDimensions(
+    BuildContext context,
     bool effectiveCompact,
     bool isSmallScreen,
   ) {
     return ResponsiveDimensions(
-      iconSize: effectiveCompact ? 20 : (isSmallScreen ? 22 : 24),
-      iconContainerSize: effectiveCompact ? 40 : (isSmallScreen ? 44 : 48),
-      titleFontSize: effectiveCompact ? 14 : (isSmallScreen ? 15 : 16),
-      descriptionFontSize: effectiveCompact ? 11 : (isSmallScreen ? 11.5 : 12),
+      iconSize: effectiveCompact ? 22 : 24,
+      iconContainerSize: effectiveCompact ? 44 : 52,
+      titleFontSize: effectiveCompact ? 14 : 16,
+      descriptionFontSize: effectiveCompact ? 12 : 13,
       padding: effectiveCompact
-          ? const EdgeInsets.all(12.0)
-          : (isSmallScreen
-                ? const EdgeInsets.all(14.0)
-                : const EdgeInsets.all(10.0)),
-      spacing: effectiveCompact ? 12 : (isSmallScreen ? 14 : 16),
+          ? const EdgeInsets.symmetric(horizontal: 12, vertical: 12)
+          : const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      spacing: effectiveCompact ? 12 : 16,
     );
   }
 }

@@ -10,11 +10,13 @@ class ColorPickerSettingsItem extends BaseSettingsItem {
     super.key,
     super.icon,
     super.iconColor,
-    required super.accent,
+    super.accent,
     required super.title,
     required super.description,
     super.leading,
+    super.isExpressive,
     super.roundness,
+    super.containerColor,
     super.isCompact,
     super.layoutType,
     required this.selectedColor,
@@ -45,12 +47,14 @@ class ColorPickerSettingsItem extends BaseSettingsItem {
       children: [
         Row(
           children: [
-            buildIconContainer(effectiveCompact, dimensions),
-            SizedBox(width: dimensions.spacing),
-            buildTitleAndDescription(effectiveCompact, dimensions),
+            if (icon != null || leading != null) ...[
+              buildIconContainer(context, effectiveCompact, dimensions),
+              SizedBox(width: dimensions.spacing),
+            ],
+            buildTitleAndDescription(context, effectiveCompact, dimensions),
           ],
         ),
-        SizedBox(height: effectiveCompact ? 8 : 12),
+        SizedBox(height: effectiveCompact ? 12 : 16),
         _buildColorList(context, effectiveCompact),
       ],
     );
@@ -66,36 +70,52 @@ class ColorPickerSettingsItem extends BaseSettingsItem {
   }
 
   Widget _buildColorList(BuildContext context, bool effectiveCompact) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final activeRingColor = accent ?? colorScheme.primary;
+    final swatchSize = effectiveCompact ? 40.0 : 48.0;
+
     return SizedBox(
-      height: effectiveCompact ? 40 : 50,
+      height: swatchSize,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
         itemCount: colors.length,
         separatorBuilder: (context, index) =>
-            SizedBox(width: effectiveCompact ? 8 : 12),
+            SizedBox(width: effectiveCompact ? 10 : 14),
         itemBuilder: (context, index) {
           final colorValue = colors[index];
           final isSelected = selectedColor == colorValue;
           final color = Color(colorValue);
+          
+          final isLightColor = color.computeLuminance() > 0.5;
 
           return GestureDetector(
             onTap: () => onColorChanged(colorValue),
-            child: Container(
-              width: effectiveCompact ? 40 : 50,
-              height: effectiveCompact ? 40 : 50,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: swatchSize,
+              height: swatchSize,
               decoration: BoxDecoration(
-                color: color,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? accent : Colors.grey.withOpacity(0.3),
-                  width: isSelected ? 3 : 1,
-                ),
+                color: color,
+                border: isSelected
+                    ? Border.all(
+                        color: activeRingColor,
+                        width: 2.5,
+                        strokeAlign: BorderSide.strokeAlignOutside,
+                      )
+                    : Border.all(
+                        color: colorScheme.outline.withOpacity(0.2),
+                        width: 1,
+                        strokeAlign: BorderSide.strokeAlignInside,
+                      ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: accent.withOpacity(0.4),
+                          color: activeRingColor.withOpacity(0.25),
                           blurRadius: 8,
-                          spreadRadius: 1,
+                          spreadRadius: 2,
                         )
                       ]
                     : null,
@@ -103,10 +123,8 @@ class ColorPickerSettingsItem extends BaseSettingsItem {
               child: isSelected
                   ? Icon(
                       Icons.check,
-                      color: color.computeLuminance() > 0.5
-                          ? Colors.black
-                          : Colors.white,
-                      size: effectiveCompact ? 20 : 24,
+                      color: isLightColor ? Colors.black87 : Colors.white,
+                      size: effectiveCompact ? 20 : 22,
                     )
                   : null,
             ),

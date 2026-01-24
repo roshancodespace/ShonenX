@@ -10,11 +10,13 @@ class DropdownSettingsItem extends BaseSettingsItem {
     super.key,
     super.icon,
     super.iconColor,
-    required super.accent,
+    super.accent,
     required super.title,
-    required super.description,
+    super.description,
     super.leading,
+    super.isExpressive,
     super.roundness,
+    super.containerColor,
     super.isCompact,
     super.layoutType,
     required this.value,
@@ -32,51 +34,31 @@ class DropdownSettingsItem extends BaseSettingsItem {
     ResponsiveDimensions dimensions,
   ) {
     final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
 
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          buildIconContainer(effectiveCompact, dimensions),
-          SizedBox(width: dimensions.spacing),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: dimensions.titleFontSize,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-                if (description.isNotEmpty) ...[
-                  SizedBox(height: effectiveCompact ? 1 : 2),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: dimensions.descriptionFontSize,
-                      color: Colors.grey[600],
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ],
-              ],
-            ),
-          ),
+          if (icon != null || leading != null) ...[
+            buildIconContainer(context, effectiveCompact, dimensions),
+            SizedBox(width: dimensions.spacing),
+          ],
+          buildTitleAndDescription(context, effectiveCompact, dimensions),
           SizedBox(width: dimensions.spacing),
           Container(
             constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.4,
+              maxWidth: MediaQuery.sizeOf(context).width * 0.4,
               minWidth: 100,
             ),
             padding: EdgeInsets.symmetric(
               horizontal: effectiveCompact ? 8 : 12,
+            ),
+            decoration: ShapeDecoration(
+              color: colorScheme.surfaceContainerHigh,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(effectiveCompact ? 8 : 12),
+              ),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
@@ -84,17 +66,16 @@ class DropdownSettingsItem extends BaseSettingsItem {
                 isExpanded: true,
                 icon: Icon(
                   Icons.keyboard_arrow_down_rounded,
-                  color: (iconColor ?? accent).withOpacity(0.8),
+                  color: colorScheme.onSurfaceVariant,
                   size: effectiveCompact ? 20 : 24,
                 ),
-                style: theme.dropdownMenuTheme.textStyle?.copyWith(
-                  fontSize: effectiveCompact ? 14 : 15,
-                  color: theme.textTheme.bodyMedium?.color,
+                style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurface,
                 ),
-                dropdownColor: isDarkMode ? Colors.grey[900] : Colors.white,
-                borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
-                elevation: 2,
+                dropdownColor: colorScheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(12),
+                elevation: 1,
                 menuMaxHeight: 300,
                 itemHeight: effectiveCompact ? 48 : 52,
                 items: items,
@@ -114,30 +95,32 @@ class DropdownSettingsItem extends BaseSettingsItem {
     ResponsiveDimensions dimensions,
   ) {
     final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            buildIconContainer(effectiveCompact, dimensions),
-            SizedBox(width: dimensions.spacing),
-            buildTitleAndDescription(effectiveCompact, dimensions,
-                isVertical: true),
+             if (icon != null || leading != null) ...[
+              buildIconContainer(context, effectiveCompact, dimensions),
+              SizedBox(width: dimensions.spacing),
+            ],
+            buildTitleAndDescription(
+              context,
+              effectiveCompact,
+              dimensions,
+              isVertical: true,
+            ),
           ],
         ),
-        SizedBox(height: effectiveCompact ? 8 : 12),
+        SizedBox(height: effectiveCompact ? 12 : 16),
         Container(
           width: double.infinity,
-          decoration: BoxDecoration(
-            color: isDarkMode
-                ? Colors.grey[850]?.withOpacity(0.5)
-                : Colors.grey[100]?.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
-            border: Border.all(
-              color: isDarkMode ? Colors.grey[700]! : accent.withOpacity(0.2),
-              width: 1,
+          decoration: ShapeDecoration(
+            color: colorScheme.surfaceContainerHigh,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(effectiveCompact ? 8 : 12),
             ),
           ),
           padding: EdgeInsets.symmetric(
@@ -150,17 +133,16 @@ class DropdownSettingsItem extends BaseSettingsItem {
               isExpanded: true,
               icon: Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: (iconColor ?? accent).withOpacity(0.8),
+                color: colorScheme.onSurfaceVariant,
                 size: effectiveCompact ? 20 : 24,
               ),
-              style: theme.dropdownMenuTheme.textStyle?.copyWith(
-                fontSize: effectiveCompact ? 14 : 15,
-                color: theme.textTheme.bodyMedium?.color,
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
               ),
-              dropdownColor: isDarkMode ? Colors.grey[900] : Colors.white,
-              borderRadius: BorderRadius.circular(effectiveCompact ? 10 : 12),
-              elevation: 2,
+              dropdownColor: colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(12),
+              elevation: 1,
               menuMaxHeight: 300,
               itemHeight: effectiveCompact ? 48 : 52,
               items: items,

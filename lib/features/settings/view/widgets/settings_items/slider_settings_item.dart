@@ -13,11 +13,13 @@ class SliderSettingsItem extends BaseSettingsItem {
     super.key,
     super.icon,
     super.iconColor,
-    required super.accent,
+    super.accent,
     required super.title,
     required super.description,
     super.leading,
+    super.isExpressive,
     super.roundness,
+    super.containerColor,
     super.isCompact,
     super.layoutType,
     required this.value,
@@ -26,7 +28,7 @@ class SliderSettingsItem extends BaseSettingsItem {
     this.max = 100.0,
     this.divisions,
     this.suffix,
-  }) : super(onTap: null); // Disable onTap
+  }) : super(onTap: null); 
 
   @override
   bool needsVerticalLayoutByContent() => true;
@@ -37,18 +39,24 @@ class SliderSettingsItem extends BaseSettingsItem {
     bool effectiveCompact,
     ResponsiveDimensions dimensions,
   ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        buildIconContainer(effectiveCompact, dimensions),
-        SizedBox(width: dimensions.spacing),
-        buildTitleAndDescription(effectiveCompact, dimensions),
-        SizedBox(width: dimensions.spacing),
-        Expanded(
-          flex: 2,
-          child: _buildSlider(context, effectiveCompact),
-        ),
-      ],
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (icon != null || leading != null) ...[
+            buildIconContainer(context, effectiveCompact, dimensions),
+            SizedBox(width: dimensions.spacing),
+          ],
+          buildTitleAndDescription(context, effectiveCompact, dimensions),
+          SizedBox(width: dimensions.spacing),
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: _buildSlider(context, effectiveCompact),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -63,10 +71,16 @@ class SliderSettingsItem extends BaseSettingsItem {
       children: [
         Row(
           children: [
-            buildIconContainer(effectiveCompact, dimensions),
-            SizedBox(width: dimensions.spacing),
-            buildTitleAndDescription(effectiveCompact, dimensions,
-                isVertical: true),
+             if (icon != null || leading != null) ...[
+              buildIconContainer(context, effectiveCompact, dimensions),
+              SizedBox(width: dimensions.spacing),
+            ],
+            buildTitleAndDescription(
+              context,
+              effectiveCompact,
+              dimensions,
+              isVertical: true,
+            ),
           ],
         ),
         SizedBox(height: effectiveCompact ? 8 : 12),
@@ -76,22 +90,29 @@ class SliderSettingsItem extends BaseSettingsItem {
   }
 
   Widget _buildSlider(BuildContext context, bool effectiveCompact) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final effectiveColor = accent ?? colorScheme.primary;
+
     return Row(
       children: [
         Expanded(
           child: SliderTheme(
             data: SliderTheme.of(context).copyWith(
-              activeTrackColor: accent,
-              inactiveTrackColor: accent.withOpacity(0.3),
-              thumbColor: accent,
-              overlayColor: accent.withOpacity(0.2),
-              trackHeight: effectiveCompact ? 2 : 3,
+              activeTrackColor: effectiveColor,
+              inactiveTrackColor: effectiveColor.withOpacity(0.12),
+              thumbColor: effectiveColor,
+              overlayColor: effectiveColor.withOpacity(0.12),
+              trackHeight: effectiveCompact ? 2 : 4,
               thumbShape: RoundSliderThumbShape(
                 enabledThumbRadius: effectiveCompact ? 6 : 8,
+                elevation: 0, 
+                pressedElevation: 2,
               ),
               overlayShape: RoundSliderOverlayShape(
-                overlayRadius: effectiveCompact ? 12 : 16,
+                overlayRadius: effectiveCompact ? 14 : 20,
               ),
+              trackShape: const RoundedRectSliderTrackShape(),
             ),
             child: Slider(
               value: value,
@@ -102,13 +123,25 @@ class SliderSettingsItem extends BaseSettingsItem {
             ),
           ),
         ),
-        SizedBox(width: effectiveCompact ? 6 : 8),
-        Text(
-          '${(value).toStringAsFixed(divisions != null ? 0 : 1)}${suffix ?? ''}',
-          style: TextStyle(
-            fontSize: effectiveCompact ? 13 : 14,
-            fontWeight: FontWeight.w500,
-            color: accent,
+        SizedBox(width: effectiveCompact ? 8 : 12),
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: 8, 
+            vertical: effectiveCompact ? 2 : 4
+          ),
+          decoration: ShapeDecoration(
+            color: colorScheme.surfaceContainerHigh,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            '${(value).toStringAsFixed(divisions != null ? 0 : 1)}${suffix ?? ''}',
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: effectiveColor,
+              fontFeatures: [const FontFeature.tabularFigures()],
+            ),
           ),
         ),
       ],

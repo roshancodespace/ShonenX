@@ -16,8 +16,9 @@ class ExperimentalScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton.filledTonal(
-            onPressed: () => context.pop(),
-            icon: const Icon(Iconsax.arrow_left_2)),
+          onPressed: () => context.pop(),
+          icon: const Icon(Iconsax.arrow_left_2),
+        ),
         title: const Text('Experimental Features'),
         forceMaterialTransparency: true,
       ),
@@ -27,17 +28,21 @@ class ExperimentalScreen extends ConsumerWidget {
           children: [
             ToggleableSettingsItem(
               accent: colorScheme.primary,
-              icon: Icon(experimentalSettings.useMangayomiExtensions
-                  ? Icons.extension_outlined
-                  : Icons.extension_off_outlined),
+              icon: Icon(
+                experimentalSettings.useMangayomiExtensions
+                    ? Icons.extension_outlined
+                    : Icons.extension_off_outlined,
+              ),
               title: 'Mangayomi extension',
               description: 'Enables the experimental extension support',
               value: experimentalSettings.useMangayomiExtensions,
               onChanged: (value) {
                 experimentalNotifier.updateSettings(
-                    (state) => state.copyWith(useMangayomiExtensions: value));
+                  (state) => state.copyWith(useMangayomiExtensions: value),
+                );
               },
             ),
+            const SizedBox(height: 8),
             ToggleableSettingsItem(
               accent: colorScheme.primary,
               icon: Icon(Icons.replay_outlined),
@@ -46,7 +51,8 @@ class ExperimentalScreen extends ConsumerWidget {
               value: experimentalSettings.episodeTitleSync,
               onChanged: (value) {
                 experimentalNotifier.updateSettings(
-                    (state) => state.copyWith(episodeTitleSync: value));
+                  (state) => state.copyWith(episodeTitleSync: value),
+                );
               },
             ),
           ],

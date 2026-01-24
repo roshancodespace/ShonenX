@@ -39,7 +39,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                 title: 'Appearance',
                 titleColor: colorScheme.primary,
                 children: [
-                  SegmentedToggleSettingsItem<int>(
+                  SegmentedToggleSettingsItem<dynamic>(
                     accent: colorScheme.primary,
                     iconColor: colorScheme.primary,
                     title: 'Theme Mode',
@@ -49,7 +49,8 @@ class ThemeSettingsScreen extends ConsumerWidget {
                         : theme.themeMode == 'dark'
                         ? 2
                         : 0,
-                    onValueChanged: (index) {
+                    onValueChanged: (value) {
+                      final index = value as int;
                       final newMode = index == 0
                           ? 'system'
                           : index == 1

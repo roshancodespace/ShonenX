@@ -28,7 +28,7 @@ class SliderSettingsItem extends BaseSettingsItem {
     this.max = 100.0,
     this.divisions,
     this.suffix,
-  }) : super(onTap: null); 
+  }) : super(onTap: null);
 
   @override
   bool needsVerticalLayoutByContent() => true;
@@ -51,9 +51,7 @@ class SliderSettingsItem extends BaseSettingsItem {
           SizedBox(width: dimensions.spacing),
           Expanded(
             flex: 2,
-            child: Center(
-              child: _buildSlider(context, effectiveCompact),
-            ),
+            child: Center(child: _buildSlider(context, effectiveCompact)),
           ),
         ],
       ),
@@ -66,12 +64,15 @@ class SliderSettingsItem extends BaseSettingsItem {
     bool effectiveCompact,
     ResponsiveDimensions dimensions,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final effectiveColor = accent ?? colorScheme.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-             if (icon != null || leading != null) ...[
+            if (icon != null || leading != null) ...[
               buildIconContainer(context, effectiveCompact, dimensions),
               SizedBox(width: dimensions.spacing),
             ],
@@ -80,6 +81,28 @@ class SliderSettingsItem extends BaseSettingsItem {
               effectiveCompact,
               dimensions,
               isVertical: true,
+            ),
+            const Spacer(),
+
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: effectiveCompact ? 12 : 14,
+              ),
+              decoration: ShapeDecoration(
+                color: colorScheme.surfaceContainerHigh,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                '${(value).toStringAsFixed(divisions != null ? 0 : 1)}${suffix ?? ''}',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: effectiveColor,
+                  fontFeatures: [const FontFeature.tabularFigures()],
+                ),
+              ),
             ),
           ],
         ),
@@ -94,57 +117,30 @@ class SliderSettingsItem extends BaseSettingsItem {
     final colorScheme = theme.colorScheme;
     final effectiveColor = accent ?? colorScheme.primary;
 
-    return Row(
-      children: [
-        Expanded(
-          child: SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: effectiveColor,
-              inactiveTrackColor: effectiveColor.withOpacity(0.12),
-              thumbColor: effectiveColor,
-              overlayColor: effectiveColor.withOpacity(0.12),
-              trackHeight: effectiveCompact ? 2 : 4,
-              thumbShape: RoundSliderThumbShape(
-                enabledThumbRadius: effectiveCompact ? 6 : 8,
-                elevation: 0, 
-                pressedElevation: 2,
-              ),
-              overlayShape: RoundSliderOverlayShape(
-                overlayRadius: effectiveCompact ? 14 : 20,
-              ),
-              trackShape: const RoundedRectSliderTrackShape(),
-            ),
-            child: Slider(
-              value: value,
-              min: min,
-              max: max,
-              divisions: divisions,
-              onChanged: onChanged,
-            ),
-          ),
+    return SliderTheme(
+      data: SliderTheme.of(context).copyWith(
+        activeTrackColor: effectiveColor,
+        inactiveTrackColor: effectiveColor.withOpacity(0.12),
+        thumbColor: effectiveColor,
+        overlayColor: effectiveColor.withOpacity(0.12),
+        trackHeight: effectiveCompact ? 2 : 4,
+        thumbShape: RoundSliderThumbShape(
+          enabledThumbRadius: effectiveCompact ? 6 : 8,
+          elevation: 0,
+          pressedElevation: 2,
         ),
-        SizedBox(width: effectiveCompact ? 8 : 12),
-        Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: 8, 
-            vertical: effectiveCompact ? 2 : 4
-          ),
-          decoration: ShapeDecoration(
-            color: colorScheme.surfaceContainerHigh,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            '${(value).toStringAsFixed(divisions != null ? 0 : 1)}${suffix ?? ''}',
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: effectiveColor,
-              fontFeatures: [const FontFeature.tabularFigures()],
-            ),
-          ),
+        overlayShape: RoundSliderOverlayShape(
+          overlayRadius: effectiveCompact ? 14 : 20,
         ),
-      ],
+        trackShape: const RoundedRectSliderTrackShape(),
+      ),
+      child: Slider(
+        value: value,
+        min: min,
+        max: max,
+        divisions: divisions,
+        onChanged: onChanged,
+      ),
     );
   }
 }

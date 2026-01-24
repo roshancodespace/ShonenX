@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
+import 'package:shonenx/features/anime/view/widgets/card/anime_card_mode.dart';
 
 class AnimatedAnimeCard extends StatefulWidget {
   final UniversalMedia anime;

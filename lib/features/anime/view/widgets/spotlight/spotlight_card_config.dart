@@ -9,25 +9,14 @@ import 'package:shonenx/features/anime/view/widgets/spotlight/modes/manga_spotli
 import 'package:shonenx/features/anime/view/widgets/spotlight/modes/minimal_spotlight.dart';
 import 'package:shonenx/features/anime/view/widgets/spotlight/modes/neon_spotlight.dart';
 import 'package:shonenx/features/anime/view/widgets/spotlight/modes/polaroid_spotlight.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/spotlight_card_mode.dart';
 
-enum SpotlightCardMode {
-  defaults,
-  minimal,
-  classic,
-  coverOnly,
-  liquidGlass,
-  neon,
-  manga,
-  compact,
-  polaroid,
-}
-
-// The definition of the expected function signature
-typedef SpotlightCardBuilder = Widget Function({
-  required UniversalMedia? anime,
-  required String heroTag,
-  required Function(UniversalMedia)? onTap,
-});
+typedef SpotlightCardBuilder =
+    Widget Function({
+      required UniversalMedia? anime,
+      required String heroTag,
+      required Function(UniversalMedia)? onTap,
+    });
 
 class SpotlightCardConfig {
   final double height;

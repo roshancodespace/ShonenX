@@ -14,7 +14,6 @@ class ThemeSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the provider to rebuild the UI on state changes.
     final theme = ref.watch(themeSettingsProvider);
     final themeNotifier = ref.read(themeSettingsProvider.notifier);
     final colorScheme = Theme.of(context).colorScheme;
@@ -180,14 +179,38 @@ class ThemeSettingsScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        final theme = ref.watch(themeSettingsProvider);
-
         return DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          minChildSize: 0.4,
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
           maxChildSize: 0.9,
           expand: false,
           builder: (context, scrollController) {
+            final theme = ref.watch(themeSettingsProvider);
+            final currentScheme = FlexScheme.values.firstWhere(
+              (s) => s.name == theme.flexScheme,
+              orElse: () => FlexScheme.material,
+            );
+
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final previewScheme = isDark
+                ? FlexThemeData.dark(scheme: currentScheme).colorScheme
+                : FlexThemeData.light(scheme: currentScheme).colorScheme;
+
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (scrollController.hasClients && scrollController.offset == 0) {
+                final index = FlexScheme.values.indexWhere(
+                  (s) => s.name == theme.flexScheme,
+                );
+                if (index > 0) {
+                  scrollController.animateTo(
+                    index * 56.0,
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeInOut,
+                  );
+                }
+              }
+            });
+
             return Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
@@ -198,7 +221,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   Container(
-                    margin: const EdgeInsets.only(top: 12, bottom: 12),
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
                     width: 40,
                     height: 5,
                     decoration: BoxDecoration(
@@ -208,14 +231,21 @@ class ThemeSettingsScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text(
-                      'Color Scheme',
-                      style: Theme.of(context).textTheme.titleLarge,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
                     ),
+                    child: _buildSimpleSkeleton(previewScheme),
                   ),
-                  const SizedBox(height: 8),
+
+                  Divider(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outlineVariant.withOpacity(0.5),
+                  ),
+
                   Expanded(
                     child: ListView.builder(
                       controller: scrollController,
@@ -231,7 +261,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                               (prev) => prev.copyWith(flexScheme: scheme.name),
                             );
                           },
-                          leading: _buildMinimalPreview(scheme),
+                          leading: _buildListIcon(scheme),
                           title: Text(_formatSchemeName(scheme.name)),
                           trailing: isSelected
                               ? Icon(
@@ -259,7 +289,80 @@ class ThemeSettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMinimalPreview(FlexScheme scheme) {
+  Widget _buildSimpleSkeleton(ColorScheme colors) {
+    const duration = Duration(milliseconds: 300);
+
+    return AnimatedContainer(
+      duration: duration,
+      height: 80,
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainer,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.outline.withOpacity(0.1)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 1,
+            child: AnimatedContainer(
+              duration: duration,
+              decoration: BoxDecoration(
+                color: colors.primary,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 3,
+            child: Column(
+              children: [
+                Expanded(
+                  child: AnimatedContainer(
+                    duration: duration,
+                    decoration: BoxDecoration(
+                      color: colors.secondaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: AnimatedContainer(
+                          duration: duration,
+                          decoration: BoxDecoration(
+                            color: colors.tertiary,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: AnimatedContainer(
+                          duration: duration,
+                          decoration: BoxDecoration(
+                            color: colors.surface,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListIcon(FlexScheme scheme) {
     final colors = FlexThemeData.light(scheme: scheme).colorScheme;
 
     return Container(

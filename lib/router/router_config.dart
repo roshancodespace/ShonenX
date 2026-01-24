@@ -14,6 +14,7 @@ import 'package:shonenx/features/browse/model/search_filter.dart';
 import 'package:shonenx/features/details/view/details_screen.dart';
 import 'package:shonenx/features/error/view/error_screen.dart';
 import 'package:shonenx/features/home/view/watch_history_screen.dart';
+import 'package:shonenx/features/news/view/news_screen.dart';
 import 'package:shonenx/features/onboarding/view/onboarding_screen.dart';
 
 // Settings Features
@@ -71,6 +72,7 @@ final routerConfig = GoRouter(
         );
       }).toList(),
     ),
+    GoRoute(path: '/news', builder: (context, state) => const NewsScreen()),
     GoRoute(
       path: '/onboarding',
       builder: (context, state) => const OnboardingScreen(),

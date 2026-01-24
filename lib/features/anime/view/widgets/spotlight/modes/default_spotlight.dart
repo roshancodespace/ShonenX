@@ -4,7 +4,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/utils/html_parser.dart';
 
-class DefaultSpotlight extends StatelessWidget {
+class DefaultSpotlight extends StatefulWidget {
   final UniversalMedia? anime;
   final String heroTag;
   final Function(UniversalMedia)? onTap;
@@ -17,212 +17,231 @@ class DefaultSpotlight extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    if (anime == null) return const SizedBox.shrink();
+  State<DefaultSpotlight> createState() => _DefaultSpotlightState();
+}
 
-    final isSmallScreen = MediaQuery.of(context).size.width < 600;
+class _DefaultSpotlightState extends State<DefaultSpotlight> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.anime == null) return const SizedBox.shrink();
+
+    final size = MediaQuery.sizeOf(context);
+    final isSmallScreen = size.width < 600;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final borderRadius = BorderRadius.circular(28.0);
 
-    final imageUrl = anime!.bannerImage?.isNotEmpty == true
-        ? anime!.bannerImage!
-        : (anime!.coverImage.large ?? anime!.coverImage.medium ?? '');
+    final imageUrl = widget.anime!.bannerImage?.isNotEmpty == true
+        ? widget.anime!.bannerImage!
+        : (widget.anime!.coverImage.large ??
+              widget.anime!.coverImage.medium ??
+              '');
 
-    return GestureDetector(
-      onTap: () => onTap?.call(anime!),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Background Image
-              Hero(
-                tag: heroTag,
-                child: CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  fit: BoxFit.cover,
-                  alignment: Alignment.center,
-                ),
-              ),
-
-              // Gradient Overlay
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.0),
-                      Colors.black.withOpacity(0.5),
-                      Colors.black.withOpacity(0.9),
-                    ],
-                    stops: const [0.0, 0.4, 0.7, 1.0],
-                  ),
-                ),
-              ),
-
-              // Content
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Padding(
-                  padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Score Tag
-                      if (anime?.averageScore != null)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Iconsax.star1,
-                                size: 16,
-                                color: colorScheme.onPrimaryContainer,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                ((anime!.averageScore ?? 0) / 10)
-                                    .toStringAsFixed(1),
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: colorScheme.onPrimaryContainer,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                      // Title
-                      Text(
-                        anime!.title.english ??
-                            anime!.title.romaji ??
-                            anime!.title.native ??
-                            'Unknown Title',
-                        maxLines: isSmallScreen ? 1 : 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Description
-                      if (!isSmallScreen && anime!.description != null) ...[
-                        Text(
-                          parseHtmlToString(anime!.description!),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontSize: 14,
-                            color: Colors.white.withOpacity(0.8),
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-
-                      // Meta Tags Row
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _SpotlightTag(
-                            icon: Iconsax.video_play,
-                            label: '${anime?.episodes ?? "?"} Episodes',
-                            colorScheme: colorScheme,
-                          ),
-                          if (anime?.duration != null)
-                            _SpotlightTag(
-                              icon: Iconsax.timer_1,
-                              label: '${anime!.duration} min',
-                              colorScheme: colorScheme,
-                            ),
-                          _SpotlightTag(
-                            icon: Iconsax.calendar_1,
-                            label: anime?.seasonYear?.toString() ??
-                                anime?.startDate?.year?.toString() ??
-                                'Unknown',
-                            colorScheme: colorScheme,
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 8),
-                    ],
-                  ),
-                ),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: () => widget.onTap?.call(widget.anime!),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.identity()..scale(_isHovered ? 1.01 : 1.0),
+          decoration: BoxDecoration(
+            borderRadius: borderRadius,
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.shadow.withOpacity(_isHovered ? 0.25 : 0.15),
+                blurRadius: _isHovered ? 30 : 20,
+                offset: Offset(0, _isHovered ? 12 : 8),
               ),
             ],
+          ),
+          child: ClipRRect(
+            borderRadius: borderRadius,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                AnimatedScale(
+                  scale: _isHovered ? 1.05 : 1.0,
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeOutCubic,
+                  child: Hero(
+                    tag: widget.heroTag,
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.center,
+                    ),
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.2),
+                        Colors.black.withOpacity(0.8),
+                        Colors.black,
+                      ],
+                      stops: const [0.0, 0.4, 0.8, 1.0],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 24,
+                  right: 24,
+                  child: _buildScoreBadge(context, widget.anime?.averageScore),
+                ),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Padding(
+                    padding: EdgeInsets.all(isSmallScreen ? 20 : 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedSlide(
+                          offset: _isHovered
+                              ? const Offset(0, 0)
+                              : const Offset(0, 0.05),
+                          duration: const Duration(milliseconds: 400),
+                          curve: Curves.easeOutBack,
+                          child: Text(
+                            widget.anime!.title.english ??
+                                widget.anime!.title.romaji ??
+                                widget.anime!.title.native ??
+                                'Unknown',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.displaySmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              fontSize: isSmallScreen ? 24 : 36,
+                              height: 1.1,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ),
+                        if (!isSmallScreen &&
+                            widget.anime!.description != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            parseHtmlToString(widget.anime!.description!),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: Colors.white.withOpacity(0.9),
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            _SpotlightChip(
+                              icon: Iconsax.video_play,
+                              label:
+                                  '${widget.anime?.episodes ?? "?"} Episodes',
+                            ),
+                            if (widget.anime?.duration != null)
+                              _SpotlightChip(
+                                icon: Iconsax.timer_1,
+                                label: '${widget.anime!.duration} min',
+                              ),
+                            if (widget.anime?.format != null)
+                              _SpotlightChip(
+                                icon: Iconsax.monitor,
+                                label: widget.anime!.format.toString(),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-}
 
-class _SpotlightTag extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final ColorScheme colorScheme;
+  Widget _buildScoreBadge(BuildContext context, dynamic score) {
+    if (score == null) return const SizedBox.shrink();
+    final colorScheme = Theme.of(context).colorScheme;
 
-  const _SpotlightTag({
-    required this.icon,
-    required this.label,
-    required this.colorScheme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        color: colorScheme.primaryContainer.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
-          width: 1,
+          color: colorScheme.onPrimaryContainer.withOpacity(0.1),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 14,
-            color: Colors.white,
-          ),
+          Icon(Iconsax.star1, size: 18, color: colorScheme.onPrimaryContainer),
           const SizedBox(width: 6),
+          Text(
+            ((score ?? 0) / 10).toStringAsFixed(1),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: colorScheme.onPrimaryContainer,
+              height: 1.0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpotlightChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _SpotlightChip({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.white),
+          const SizedBox(width: 8),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: Colors.white,
+              letterSpacing: 0.2,
             ),
           ),
         ],

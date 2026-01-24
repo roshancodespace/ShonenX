@@ -2,16 +2,18 @@
 import 'package:hive_ce/hive.dart';
 
 import 'package:shonenx/data/hive/hive_type_ids.dart';
+import 'package:shonenx/features/anime/view/widgets/card/anime_card_mode.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/spotlight_card_mode.dart';
 
 part 'ui_model.g.dart';
 
 @HiveType(typeId: HiveTypeIds.ui)
 class UiModel {
-  @HiveField(2, defaultValue: 'defaults')
-  final String cardStyle;
+  @HiveField(2, defaultValue: AnimeCardMode.defaults)
+  final AnimeCardMode cardStyle;
 
-  @HiveField(3, defaultValue: 'defaults')
-  final String spotlightCardStyle;
+  @HiveField(3, defaultValue: SpotlightCardMode.defaults)
+  final SpotlightCardMode spotlightCardStyle;
 
   @HiveField(5, defaultValue: false)
   final bool immersiveMode;
@@ -20,16 +22,16 @@ class UiModel {
   final String episodeViewMode;
 
   UiModel({
-    this.cardStyle = 'defaults',
+    this.cardStyle = AnimeCardMode.defaults,
     this.immersiveMode = false,
-    this.spotlightCardStyle = 'defaults',
+    this.spotlightCardStyle = SpotlightCardMode.defaults,
     this.episodeViewMode = 'list',
   });
 
   UiModel copyWith({
-    String? cardStyle,
+    AnimeCardMode? cardStyle,
     bool? immersiveMode,
-    String? spotlightCardStyle,
+    SpotlightCardMode? spotlightCardStyle,
     String? episodeViewMode,
   }) {
     return UiModel(

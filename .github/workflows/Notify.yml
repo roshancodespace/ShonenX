@@ -2,250 +2,78 @@ name: Notify Release
 
 on:
   workflow_run:
-    workflows:
-      - "Release Build"
-    types:
-      - completed
+    workflows: ["Release Build"]
+    types: [completed]
   workflow_dispatch:
 
 jobs:
   notify:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     steps:
-      # 1. Check Job Statuses of Android Release
-      - name: Check Job Statuses
-        id: check_jobs
-        env:
-          WORKFLOW_RUN: ${{ toJSON(github.event.workflow_run) }}
-          JOBS: ${{ toJSON(github.event.workflow_run.jobs) }}
+      - name: Fetch Latest Tag and Release Notes
         run: |
-          echo "Workflow run event: $WORKFLOW_RUN"
-          if [ -z "$JOBS" ] || [ "$JOBS" == "null" ]; then
-            echo "Warning: No job data available from workflow_run. This may occur if the triggering workflow failed. Assuming failure unless manual trigger."
-            ALL_SUCCESS=false
-          else
-            ALL_SUCCESS=true
-          fi
-
-          REQUIRED_JOBS=("build-android" "build-linux" "build-windows")
-
-          if [ -n "$JOBS" ] && [ "$JOBS" != "null" ]; then
-            for JOB in "${REQUIRED_JOBS[@]}"; do
-              JOB_STATUS=$(echo "$JOBS" | jq -c ".[] | select(.name == \"$JOB\") | .conclusion")
-              if [ -z "$JOB_STATUS" ] || [ "$JOB_STATUS" != '"success"' ]; then
-                echo "Job $JOB failed or was not found. Status: $JOB_STATUS"
-                ALL_SUCCESS=false
-                break
-              else
-                echo "Job $JOB succeeded. Status: $JOB_STATUS"
-              fi
-            done
-          fi
-
-          echo "all_jobs_success=$ALL_SUCCESS" >> $GITHUB_OUTPUT
-        shell: /usr/bin/bash -e {0}
-
-      # 2. Cloning repository
-      - name: Cloning repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Fetch Repository Tags by Date and Time
-        id: fetch_tags
-        if: ${{ steps.check_jobs.outputs.all_jobs_success == 'true' || github.event_name == 'workflow_dispatch' }}
-        run: |
-          curl -s "https://api.github.com/repos/${{github.repository}}/tags" -o tags.json
-          TAGS=$(jq -r '.[].name' tags.json)
-          declare -a TAGS_WITH_DATES=()
-          for TAG in $TAGS; do
-            TAG_DETAILS=$(curl -s "https://api.github.com/repos/${{github.repository}}/git/refs/tags/$TAG")
-            OBJECT_URL=$(echo "$TAG_DETAILS" | jq -r '.object.url // empty')
-            if [ -n "$OBJECT_URL" ]; then
-              OBJECT_DETAILS=$(curl -s "$OBJECT_URL")
-              DATE=$(echo "$OBJECT_DETAILS" | jq -r '.tagger.date // .committer.date // empty')
-              if [ -n "$DATE" ]; then
-                TAGS_WITH_DATES+=("$DATE $TAG")
-              fi
-            fi
-          done
-          LATEST_TAG=""
-          LATEST_DATE=""
-          for TAG_DATE in "${TAGS_WITH_DATES[@]}"; do
-            TAG_DATE_TIME=$(echo "$TAG_DATE" | awk '{print $1}')
-            TAG_NAME=$(echo "$TAG_DATE" | awk '{print $2}')
-            if [[ -z "$LATEST_DATE" || "$TAG_DATE_TIME" > "$LATEST_DATE" ]]; then
-              LATEST_DATE="$TAG_DATE_TIME"
-              LATEST_TAG="$TAG_NAME"
-            fi
-          done
-          echo "$LATEST_TAG"
+          LATEST_TAG=$(curl -s "https://api.github.com/repos/${{github.repository}}/tags" | jq -r '.[0].name')
+          RELEASE_DATA=$(curl -s "https://api.github.com/repos/${{github.repository}}/releases/tags/$LATEST_TAG")
+          
+          echo "$RELEASE_DATA" | jq -r '.body' > release_notes.txt
           echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
 
-      - name: Get Latest Release Notes
-        id: get_release_notes
-        if: ${{ steps.check_jobs.outputs.all_jobs_success == 'true' || github.event_name == 'workflow_dispatch' }}
+      - name: Get and Categorize Assets
+        id: categorize
         run: |
-          RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/${{github.repository}}/releases/tags/${{ env.LATEST_TAG }}")
-
-          RELEASE_NOTES=$(echo "$RELEASE_DATA" | jq -r '.body')
-          echo "Release Notes: $RELEASE_NOTES"
-
-          # Write to file to handle multiline content safely
-          echo "$RELEASE_NOTES" > release_notes.txt
-
-      - name: Format Release Notes
-        id: format_notes
-        if: ${{ steps.check_jobs.outputs.all_jobs_success == 'true' || github.event_name == 'workflow_dispatch' }}
-        run: |
-          # Just clean the || markers and set as environment variable
-          sed 's/||//g' release_notes.txt > clean_release_notes.txt
-
-          # Set the entire content as environment variable
-          echo "FORMATTED_NOTES<<EOF" >> $GITHUB_ENV
-          cat clean_release_notes.txt >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-          echo "Preview of release notes:"
-          cat clean_release_notes.txt
-
-      - name: Get and Categorize Assets with Sizes
-        id: categorize_assets
-        if: ${{ steps.check_jobs.outputs.all_jobs_success == 'true' || github.event_name == 'workflow_dispatch' }}
-        run: |
-          # Fetch release assets based on the latest tag
-          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-           -H "Accept: application/vnd.github.v3+json" \
-           "https://api.github.com/repos/${{github.repository}}/releases/tags/${{ env.LATEST_TAG }}" -o release.json
-
-          # Initialize environment variables
-          echo "apk_universal_message=" >> $GITHUB_ENV
-          echo "setup_message=" >> $GITHUB_ENV
-
-          # Process each asset
-          jq -r '.assets[] | "\(.browser_download_url) \(.size)"' release.json | while read -r LINE; do
-            ASSET_URL=$(echo "$LINE" | awk '{print $1}')
-            ASSET_SIZE=$(echo "$LINE" | awk '{print $2}')
-            SIZE_HR=$(awk -v size="$ASSET_SIZE" 'BEGIN{
-              split("B KB MB GB TB", unit);
-              for (i=1; size>=1024 && i<5; i++) size/=1024;
-              printf "%.2f %s", size, unit[i]
-            }')
-            FILE_NAME=$(basename "$ASSET_URL")
-
-            # Categorize and set variables
-            if [[ "$FILE_NAME" == "app-arm64-v8a-release.apk" ]]; then
-              echo "apk_arm64_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
-            elif [[ "$FILE_NAME" == "app-armeabi-v7a-release.apk" ]]; then
-              echo "apk_armeabi_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
-            elif [[ "$FILE_NAME" == "app-x86_64-release.apk" ]]; then
-              echo "apk_x86_64_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
-            elif [[ "$FILE_NAME" == *".exe" ]] || [[ "$FILE_NAME" == *".msi" ]]; then
-              echo "setup_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
-            elif [[ "$FILE_NAME" == *"Linux.zip" ]]; then
-              echo "linux_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
-            elif [[ "$FILE_NAME" == *"Windows.zip" ]]; then
-              echo "windows_message=[Download]($ASSET_URL) | $SIZE_HR" >> $GITHUB_ENV
+          curl -s "https://api.github.com/repos/${{github.repository}}/releases/tags/${{ env.LATEST_TAG }}" -o release.json
+          
+          jq -r '.assets[] | "\(.browser_download_url) \(.size)"' release.json | while read -r URL SIZE; do
+            NAME=$(basename "$URL")
+            SIZE_HR=$(awk -v s="$SIZE" 'BEGIN{split("B KB MB GB",u); for(i=1;s>=1024&&i<4;i++)s/=1024; printf "%.2f %s",s,u[i]}')
+            
+            if [[ "$NAME" == *"arm64-v8a"* ]]; then echo "APK_ARM64=[Download]($URL) | $SIZE_HR" >> $GITHUB_ENV
+            elif [[ "$NAME" == *"armeabi-v7a"* ]]; then echo "APK_V7A=[Download]($URL) | $SIZE_HR" >> $GITHUB_ENV
+            elif [[ "$NAME" == *"x86_64"* ]]; then echo "APK_X64=[Download]($URL) | $SIZE_HR" >> $GITHUB_ENV
+            elif [[ "$NAME" == *"-Setup.exe" ]]; then echo "WIN_EXE=[Download]($URL) | $SIZE_HR" >> $GITHUB_ENV
+            elif [[ "$NAME" == *"Windows-Portable.zip" ]]; then echo "WIN_ZIP=[Download]($URL) | $SIZE_HR" >> $GITHUB_ENV
+            elif [[ "$NAME" == *"Linux.zip" ]]; then echo "LINUX_ZIP=[Download]($URL) | $SIZE_HR" >> $GITHUB_ENV
             fi
           done
 
-      - name: Send message to Discord
-        if: ${{ steps.check_jobs.outputs.all_jobs_success == 'true' || github.event_name == 'workflow_dispatch' }}
+      - name: Send Discord Embed
         env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          # Clean the formatted notes for Discord
-          FORMATTED_NOTES_CLEAN=$(echo "$FORMATTED_NOTES" | sed -E 's/\): [^:]+:/) :/g')
+          NOTES=$(cat release_notes.txt | sed 's/||//g')
+          
+          # Mention @everyone or specific roles
+          MENTION="@everyone"
+          
+          # Embed Data
+          PAYLOAD=$(jq -nc \
+            --arg mention "$MENTION" \
+            --arg title "🚀 New Release: ${{ env.LATEST_TAG }}" \
+            --arg desc "$NOTES" \
+            --arg color "1754309" \
+            '{
+              content: $mention,
+              embeds: [{
+                title: $title,
+                description: $desc,
+                color: ($color | tonumber),
+                timestamp: (now | strftime("%Y-%m-%dT%H:%M:%SZ"))
+              }]
+            }')
+          
+          curl -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK"
 
-          # Mention the role based on the release name
-          if [[ "${{ env.LATEST_TAG }}" == *alpha* ]]; then
-            role_mention="@everyone"  # Role ID for alpha channel
-          elif [[ "${{ env.LATEST_TAG }}" == *beta* ]]; then
-            role_mention="@everyone"  # Role ID for beta channel
-          else
-            role_mention="@everyone"  # Default role ID
-          fi
-
-          default_color="#1ac4c5"
-          hex_to_decimal() { printf '%d' "0x${1#"#"}"; }
-          embed_color=$(hex_to_decimal "$default_color")
-
-          # Ensure VERSION is not empty
-          VERSION=${VERSION:-"${{env.LATEST_TAG}}"}
-
-          discord_data=$(jq -nc \
-                        --arg role_mention "$role_mention" \
-                        --arg field_value "$FORMATTED_NOTES_CLEAN" \
-                        --arg footer_text "Version $VERSION" \
-                        --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
-                        --argjson embed_color "$embed_color" \
-                        --arg title "🚀 New Release: ${{env.LATEST_TAG}}" \
-                        '{
-                          "content": $role_mention,
-                          "embeds": [
-                            {
-                              "title": $title,
-                              "color": $embed_color,
-                              "description": $field_value,
-                              "footer": {
-                                "text": $footer_text
-                              },
-                              "timestamp": $timestamp
-                            }
-                          ]
-                        }')
-
-          echo "Debug: Final Discord payload is: $discord_data"
-
-          # Send the message to Discord using the webhook
-          curl -H "Content-Type: application/json" \
-              -X POST \
-              -d "$discord_data" \
-              "$DISCORD_WEBHOOK_URL"
-
-      - name: Send Assets to Discord
-        if: ${{ steps.check_jobs.outputs.all_jobs_success == 'true' || github.event_name == 'workflow_dispatch' }}
+      - name: Send Discord Asset Links
         env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          # Build the message with available assets
-          MESSAGE="$LATEST_TAG Released"$'\n'
+          MSG="📦 **Assets for ${{ env.LATEST_TAG }}**"$'\n'
+          [ -n "$WIN_EXE" ] && MSG="${MSG}🔹 **Windows Setup:** $WIN_EXE"$'\n'
+          [ -n "$WIN_ZIP" ] && MSG="${MSG}🔹 **Windows Portable:** $WIN_ZIP"$'\n'
+          [ -n "$LINUX_ZIP" ] && MSG="${MSG}🔹 **Linux Zip:** $LINUX_ZIP"$'\n'
+          [ -n "$APK_ARM64" ] && MSG="${MSG}🔹 **Android arm64:** $APK_ARM64"$'\n'
+          [ -n "$APK_V7A" ] && MSG="${MSG}🔹 **Android v7a:** $APK_V7A"$'\n'
 
-          # Add APK downloads if available
-          if [ -n "$apk_arm64_message" ]; then
-            MESSAGE="${MESSAGE}🔹 $apk_arm64_message | **APK (arm64-v8a)**"$'\n'
-          fi
-
-          if [ -n "$apk_armeabi_message" ]; then
-            MESSAGE="${MESSAGE}🔹 $apk_armeabi_message | **APK (armeabi-v7a)**"$'\n'
-          fi
-
-          if [ -n "$apk_x86_64_message" ]; then
-            MESSAGE="${MESSAGE}🔹 $apk_x86_64_message | **APK (x86_64)**"$'\n'
-          fi
-
-          # Add Windows setup if available
-          if [ -n "$setup_message" ]; then
-            MESSAGE="${MESSAGE}🔹 $setup_message | **Windows Setup**"$'\n'
-          fi
-
-          # Add Linux bundle if available
-          if [ -n "$linux_message" ]; then
-            MESSAGE="${MESSAGE}🔹 $linux_message | **Linux (Zip)**"$'\n'
-          fi
-
-          # Add Windows bundle if available
-          if [ -n "$windows_message" ]; then
-            MESSAGE="${MESSAGE}🔹 $windows_message | **Windows (Zip)**"$'\n'
-          fi
-
-          # Only send if we have at least one asset
-          if [ -n "$apk_arm64_message" ] || [ -n "$apk_armeabi_message" ] || [ -n "$apk_x86_64_message" ] || [ -n "$setup_message" ] || [ -n "$linux_message" ] || [ -n "$windows_message" ]; then
-            PAYLOAD=$(jq -n --arg content "$MESSAGE" '{ content: $content }')
-            curl -X POST "$DISCORD_WEBHOOK_URL" \
-              -H "Content-Type: application/json" \
-              -d "$PAYLOAD"
-          else
-            echo "No assets found to send"
-          fi
+          PAYLOAD=$(jq -n --arg content "$MSG" '{content: $content}')
+          curl -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK"

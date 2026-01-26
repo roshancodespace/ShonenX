@@ -5,75 +5,57 @@ on:
     workflows: ["Release Build"]
     types: [completed]
   workflow_dispatch:
+    inputs:
+      mention_everyone:
+        description: "Ping @everyone on Discord?"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   notify:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
     steps:
-      - name: Fetch Latest Tag and Release Notes
+      - name: Fetch Release Data
+        id: fetch_data
         run: |
-          LATEST_TAG=$(curl -s "https://api.github.com/repos/${{github.repository}}/tags" | jq -r '.[0].name')
-          RELEASE_DATA=$(curl -s "https://api.github.com/repos/${{github.repository}}/releases/tags/$LATEST_TAG")
+          RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{github.repository}}/releases" | jq '.[0]')
+          
+          TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
           
           echo "$RELEASE_DATA" | jq -r '.body' > release_notes.txt
-          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
+          echo "$RELEASE_DATA" > release.json
 
-      - name: Get and Categorize Assets
-        id: categorize
+      - name: Categorize Assets
         run: |
-          curl -s "https://api.github.com/repos/${{github.repository}}/releases/tags/${{ env.LATEST_TAG }}" -o release.json
-          
-          jq -r '.assets[] | "\(.browser_download_url) \(.size)"' release.json | while read -r URL SIZE; do
-            NAME=$(basename "$URL")
-            SIZE_HR=$(awk -v s="$SIZE" 'BEGIN{split("B KB MB GB",u); for(i=1;s>=1024&&i<4;i++)s/=1024; printf "%.2f %s",s,u[i]}')
-            
-            if [[ "$NAME" == *"arm64-v8a"* ]]; then echo "APK_ARM64=[Download]($URL) | $SIZE_HR" >> $GITHUB_ENV
-            elif [[ "$NAME" == *"armeabi-v7a"* ]]; then echo "APK_V7A=[Download]($URL) | $SIZE_HR" >> $GITHUB_ENV
-            elif [[ "$NAME" == *"x86_64"* ]]; then echo "APK_X64=[Download]($URL) | $SIZE_HR" >> $GITHUB_ENV
-            elif [[ "$NAME" == *"-Setup.exe" ]]; then echo "WIN_EXE=[Download]($URL) | $SIZE_HR" >> $GITHUB_ENV
-            elif [[ "$NAME" == *"Windows-Portable.zip" ]]; then echo "WIN_ZIP=[Download]($URL) | $SIZE_HR" >> $GITHUB_ENV
-            elif [[ "$NAME" == *"Linux.zip" ]]; then echo "LINUX_ZIP=[Download]($URL) | $SIZE_HR" >> $GITHUB_ENV
-            fi
-          done
+          jq -r '.assets[] | "🔹 [\(.name)](\(.browser_download_url)) | \((.size/1048576) | tonumber | round) MB"' release.json > asset_list.txt
 
-      - name: Send Discord Embed
+      - name: Send Discord Notification
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          MENTION: ${{ github.event.inputs.mention_everyone == 'true' && '@everyone' || '' }}
+          TAG: ${{ steps.fetch_data.outputs.tag }}
         run: |
-          NOTES=$(cat release_notes.txt | sed 's/||//g')
-          
-          # Mention @everyone or specific roles
-          MENTION="@everyone"
-          
-          # Embed Data
-          PAYLOAD=$(jq -nc \
-            --arg mention "$MENTION" \
-            --arg title "🚀 New Release: ${{ env.LATEST_TAG }}" \
-            --arg desc "$NOTES" \
-            --arg color "1754309" \
-            '{
-              content: $mention,
-              embeds: [{
-                title: $title,
-                description: $desc,
-                color: ($color | tonumber),
-                timestamp: (now | strftime("%Y-%m-%dT%H:%M:%SZ"))
-              }]
-            }')
-          
-          curl -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK"
+          NOTES=$(cat release_notes.txt)
+          ASSETS=$(cat asset_list.txt)
+          FULL_DESC=$(printf "### Changelog\n%s\n\n### Downloads\n%s" "$NOTES" "$ASSETS")
 
-      - name: Send Discord Asset Links
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        run: |
-          MSG="📦 **Assets for ${{ env.LATEST_TAG }}**"$'\n'
-          [ -n "$WIN_EXE" ] && MSG="${MSG}🔹 **Windows Setup:** $WIN_EXE"$'\n'
-          [ -n "$WIN_ZIP" ] && MSG="${MSG}🔹 **Windows Portable:** $WIN_ZIP"$'\n'
-          [ -n "$LINUX_ZIP" ] && MSG="${MSG}🔹 **Linux Zip:** $LINUX_ZIP"$'\n'
-          [ -n "$APK_ARM64" ] && MSG="${MSG}🔹 **Android arm64:** $APK_ARM64"$'\n'
-          [ -n "$APK_V7A" ] && MSG="${MSG}🔹 **Android v7a:** $APK_V7A"$'\n'
+          cat <<EOF > discord_payload.json
+          {
+            "content": "$MENTION",
+            "embeds": [{
+              "title": "🚀 New Release: $TAG",
+              "description": "",
+              "color": 1754309,
+              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            }]
+          }
+          EOF
 
-          PAYLOAD=$(jq -n --arg content "$MSG" '{content: $content}')
-          curl -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK"
+          jq --arg desc "$FULL_DESC" '.embeds[0].description = $desc' discord_payload.json > final_payload.json
+
+          curl -H "Content-Type: application/json" -X POST -d @final_payload.json "$DISCORD_WEBHOOK"

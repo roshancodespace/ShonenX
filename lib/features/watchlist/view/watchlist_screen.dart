@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/utils/misc.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
-
+import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
-import 'package:shonenx/features/watchlist/view/widget/shonenx_gridview.dart';
+import 'package:shonenx/features/watchlist/view/widget/watchlist_grid_view.dart';
+import 'package:shonenx/features/watchlist/view/widget/watchlist_states_widgets.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/shared/providers/anime_repo_provider.dart';
@@ -48,6 +48,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
 
   Future<void> _fetch(int i, {bool force = false, int page = 1}) async {
     if (_statuses.isEmpty) return;
+    if (_statuses.length <= i) return;
 
     await ref
         .read(watchlistProvider.notifier)
@@ -67,6 +68,8 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
     }
 
     final theme = Theme.of(context);
+    final auth = ref.watch(authProvider);
+    final isLocal = ref.watch(watchlistProvider.select((s) => s.isLocal));
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -79,6 +82,13 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
         ),
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
+        actions: [
+          if (auth.isAniListAuthenticated)
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: _ModeSwitch(isLocal: isLocal),
+            ),
+        ],
         bottom: TabBar(
           controller: _controller,
           isScrollable: true,
@@ -96,28 +106,98 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
 
   String _label(String s) {
     switch (s.toLowerCase()) {
+      case 'watching':
       case 'current':
         return 'Watching';
+      case 'completed':
+        return 'Completed';
+      case 'on_hold':
+      case 'onhold':
+        return 'On Hold';
+      case 'dropped':
+        return 'Dropped';
+      case 'plan_to_watch':
       case 'planning':
         return 'Plan to Watch';
+      case 'favorites':
+        return 'Favorites';
       default:
         return s[0].toUpperCase() + s.substring(1).toLowerCase();
     }
   }
 }
 
+class _ModeSwitch extends ConsumerWidget {
+  final bool isLocal;
+  const _ModeSwitch({required this.isLocal});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _SwitchOption(
+            label: 'Cloud',
+            isSelected: !isLocal,
+            onTap: () => ref.read(watchlistProvider.notifier).setMode(false),
+          ),
+          _SwitchOption(
+            label: 'Local',
+            isSelected: isLocal,
+            onTap: () => ref.read(watchlistProvider.notifier).setMode(true),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SwitchOption extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SwitchOption({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: isSelected
+                ? theme.colorScheme.onPrimary
+                : theme.colorScheme.onSurfaceVariant,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _WatchlistTabView extends ConsumerWidget {
   final String status;
   const _WatchlistTabView({required this.status});
-
-  int _columns(BuildContext context) {
-    final w = MediaQuery.sizeOf(context).width;
-    if (w >= 1400) return 6;
-    if (w >= 1100) return 5;
-    if (w >= 800) return 4;
-    if (w >= 450) return 3;
-    return 2;
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -136,173 +216,43 @@ class _WatchlistTabView extends ConsumerWidget {
     }
 
     if (state.errors.containsKey(status) && media.isEmpty) {
-      return _ErrorView(
+      return WatchlistErrorView(
         message: state.errors[status]!,
         onRetry: () => notifier.fetchListForStatus(status, force: true),
       );
     }
 
-    if (media.isEmpty) return const _EmptyState();
+    if (media.isEmpty) return const WatchlistEmptyState();
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: (n) {
-        final info = state.pageInfo[status];
-        if (info != null &&
-            info.hasNextPage &&
-            !isLoading &&
-            n.metrics.pixels >= n.metrics.maxScrollExtent * 0.9) {
-          notifier.fetchListForStatus(status, page: info.currentPage + 1);
+    return WatchlistGridView(
+      itemCount: media.length + (isLoading ? 1 : 0),
+      onRefresh: () async => notifier.fetchListForStatus(status, force: true),
+      onScrollNotification: (n) {
+        // Pagination only for Remote
+        if (!state.isLocal) {
+          final info = state.pageInfo[status];
+          if (info != null &&
+              info.hasNextPage &&
+              !isLoading &&
+              n.metrics.pixels >= n.metrics.maxScrollExtent * 0.9) {
+            notifier.fetchListForStatus(status, page: info.currentPage + 1);
+          }
         }
         return false;
       },
-      child: RefreshIndicator(
-        onRefresh: () => notifier.fetchListForStatus(status, force: true),
-        child: ShonenXGridView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(10, 10, 10, 120),
-          crossAxisCount: _columns(context),
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 0.7,
-          itemCount: media.length + (isLoading ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index == media.length) {
-              return const _LoadingIndicator();
-            }
-            final anime = media[index];
-            final tag = randomId();
-            return AnimatedAnimeCard(
-              anime: anime,
-              tag: tag,
-              mode: mode,
-              onTap: () => navigateToDetail(context, anime, tag),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-  const _ErrorView({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Iconsax.warning_2, size: 64, color: theme.colorScheme.error),
-            const SizedBox(height: 16),
-            Text(
-              'Failed to load list',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Iconsax.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Iconsax.archive_add,
-              size: 48,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'List is Empty',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Add some anime to track your progress!',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LoadingIndicator extends StatelessWidget {
-  const _LoadingIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(10),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Loading more...',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-            ),
-          ),
-        ],
-      ),
+      itemBuilder: (context, index) {
+        if (index == media.length) {
+          return const WatchlistLoadingIndicator();
+        }
+        final anime = media[index];
+        final tag = randomId();
+        return AnimatedAnimeCard(
+          anime: anime,
+          tag: tag,
+          mode: mode,
+          onTap: () => navigateToDetail(context, anime, tag),
+        );
+      },
     );
   }
 }

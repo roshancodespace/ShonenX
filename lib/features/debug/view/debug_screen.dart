@@ -5,6 +5,7 @@ import 'package:shonenx/core/services/notification_service.dart';
 import 'package:shonenx/features/news/view/news_screen.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
+import 'package:shonenx/utils/updater.dart';
 
 class DebugScreen extends StatelessWidget {
   const DebugScreen({super.key});
@@ -57,6 +58,15 @@ class DebugScreen extends StatelessWidget {
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
+                },
+              ),
+              NormalSettingsItem(
+                title: 'Debug Update',
+                icon: Icon(Icons.download_rounded, color: colorScheme.primary),
+                accent: colorScheme.primary,
+                description: 'Trigger an update immediately',
+                onTap: () {
+                  checkForUpdates(context, debugMode: true);
                 },
               ),
             ],

@@ -30,7 +30,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_inappwebview: ^6.1.5
-  flutter_local_notifications: ^19.5.0
+  flutter_local_notifications: ^20.0.0
   flutter_markdown: ^0.7.7+1
   flutter_qjs:
     git:
@@ -99,3 +99,14 @@ flutter_launcher_icons:
   windows:
     generate: true
     image_path: "assets/icons/app_icon-modified-2.png"
+
+inno_bundle:
+  id: 0516d984-72bf-47d4-bfbc-b2b8fd563479
+  publisher: Roshan Kumar
+  name: ShonenX
+  url: https://github.com/roshancodespace/ShonenX
+  support_url: https://github.com/roshancodespace/ShonenX/issues
+  updates_url: https://github.com/roshancodespace/ShonenX/releases
+  languages:
+    - english
+  admin: false

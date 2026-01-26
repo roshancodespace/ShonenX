@@ -5,6 +5,22 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      build_windows:
+        description: "Build Windows"
+        required: false
+        default: true
+        type: boolean
+      build_linux:
+        description: "Build Linux"
+        required: false
+        default: true
+        type: boolean
+      build_android:
+        description: "Build Android"
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: write
@@ -14,13 +30,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: "17"
+          distribution: "temurin"
+          java-version: "21"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -61,12 +78,24 @@ jobs:
         run: |
           echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" >> .env
           echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
+          echo "MAL_CLIENT_ID=${{ secrets.MAL_CLIENT_ID }}" >> .env
+          echo "MAL_CLIENT_SECRET=${{ secrets.MAL_CLIENT_SECRET }}" >> .env
           echo "API_URL=${{ secrets.API_URL }}" >> .env
 
-      - name: Build APKs
+      - name: Build APK (split per ABI)
         run: flutter build apk --release --split-per-abi
 
-      - name: Upload Android APKs
+      - name: Verify APK signing
+        run: |
+          BUILD_TOOLS_VERSION=$(ls $ANDROID_HOME/build-tools | sort -V | tail -n 1)
+          APKSIGNER_PATH="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
+          echo "Using apksigner at: $APKSIGNER_PATH"
+          for apk in build/app/outputs/flutter-apk/*.apk; do
+            echo "Verifying $apk"
+            "$APKSIGNER_PATH" verify --verbose "$apk"
+          done
+
+      - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: android-apks
@@ -76,9 +105,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Install Linux dependencies
+      - name: Install Linux Build Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -99,17 +129,20 @@ jobs:
         run: |
           echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" >> .env
           echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
+          echo "MAL_CLIENT_ID=${{ secrets.MAL_CLIENT_ID }}" >> .env
+          echo "MAL_CLIENT_SECRET=${{ secrets.MAL_CLIENT_SECRET }}" >> .env
           echo "API_URL=${{ secrets.API_URL }}" >> .env
 
       - name: Build Linux
         run: flutter build linux --release
 
-      - name: Package Linux
+      - name: Compress Linux Bundle
         run: |
           cd build/linux/x64/release/bundle
           zip -r ../../../../../ShonenX-Linux.zip .
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: linux-bundle
           path: ShonenX-Linux.zip
@@ -118,7 +151,8 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Enable long paths
         run: git config --system core.longpaths true
@@ -128,93 +162,157 @@ jobs:
         with:
           flutter-version: "3.38.6"
 
-      - name: Flutter doctor
-        run: flutter doctor -v
-
       - name: Install dependencies
         run: flutter pub get
 
       - name: Create .env file
-        shell: bash
         run: |
           echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" > .env
           echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
+          echo "MAL_CLIENT_ID=${{ secrets.MAL_CLIENT_ID }}" >> .env
+          echo "MAL_CLIENT_SECRET=${{ secrets.MAL_CLIENT_SECRET }}" >> .env
           echo "API_URL=${{ secrets.API_URL }}" >> .env
-
-      - name: Flutter clean
-        run: flutter clean
+        shell: bash
 
       - name: Build Windows
-        run: flutter build windows --release -v
+        run: flutter build windows --release
 
-      - name: Package Windows
+      - name: Dynamically Generate Inno Setup Script
+        shell: pwsh
         run: |
-          Compress-Archive `
-            -Path build\windows\x64\runner\release\* `
-            -DestinationPath ShonenX-Windows.zip
+          # 1. Read pubspec.yaml
+          $pubspec = Get-Content pubspec.yaml -Raw
+          
+          # 2. Extract version and metadata using regex (robust for YAML)
+          $version = ([regex]::Match($pubspec, 'version:\s*([^\s+]+)')).Groups[1].Value
+          $appId = ([regex]::Match($pubspec, 'id:\s*([^\s\n\r]+)')).Groups[1].Value
+          $publisher = ([regex]::Match($pubspec, 'publisher:\s*([^\n\r]+)')).Groups[1].Value.Trim()
+          $appName = ([regex]::Match($pubspec, 'name:\s*([^\n\r]+)', [System.Text.RegularExpressions.RegexOptions]::RightToLeft)).Groups[1].Value.Trim()
+          
+          Write-Host "Generating installer for $appName version $version with ID $appId"
 
-      - uses: actions/upload-artifact@v4
+          # 3. Create the .iss content
+          $issContent = @"
+          [Setup]
+          AppId={{$appId}}
+          AppName=$appName
+          AppVersion=$version
+          AppPublisher=$publisher
+          DefaultDirName={autopf}\$appName
+          DefaultGroupName=$appName
+          AllowNoIcons=yes
+          OutputDir=build\windows\x64\installer
+          OutputBaseFilename=$appName-v$version-Setup
+          Compression=lzma
+          SolidCompression=yes
+          WizardStyle=modern
+          ArchitecturesInstallIn64BitMode=x64
+
+          [Languages]
+          Name: "english"; MessagesFile: "compiler:Default.isl"
+
+          [Tasks]
+          Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+          [Files]
+          Source: "build\windows\x64\runner\release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+          [Icons]
+          Name: "{group}\$appName"; Filename: "{app}\shonenx.exe"
+          Name: "{autodesktop}\$appName"; Filename: "{app}\shonenx.exe"; Tasks: desktopicon
+
+          [Run]
+          Filename: "{app}\shonenx.exe"; Description: "{cm:LaunchProgram,$appName}"; Flags: nowait postinstall skipifsilent
+          "@
+
+          $issContent | Out-File -FilePath installer.iss -Encoding utf8
+
+      - name: Compile Inno Setup Installer
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+
+      - name: Compress Windows Portable Bundle
+        run: Compress-Archive -Path build\windows\x64\runner\release\* -DestinationPath ShonenX-Windows-Portable.zip
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: windows-bundle
-          path: ShonenX-Windows.zip
+          name: windows-dist
+          path: |
+            build/windows/x64/installer/*.exe
+            ShonenX-Windows-Portable.zip
 
   publish-release:
     needs: [build-android, build-linux, build-windows]
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v4
+      - name: Download Android Artifacts
+        uses: actions/download-artifact@v4
         with:
           name: android-apks
           path: android-apks
 
-      - uses: actions/download-artifact@v4
+      - name: Download Linux Artifacts
+        uses: actions/download-artifact@v4
         with:
           name: linux-bundle
           path: linux-bundle
 
-      - uses: actions/download-artifact@v4
+      - name: Download Windows Artifacts
+        uses: actions/download-artifact@v4
         with:
-          name: windows-bundle
-          path: windows-bundle
+          name: windows-dist
+          path: windows-dist
 
-      - name: Generate changelog
+      - name: Generate Changelog
         id: changelog
         run: |
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
           if [ -z "$PREVIOUS_TAG" ]; then
-            git log HEAD --pretty=format:'%s' > commits.txt
+            git log HEAD --pretty=format:'%s' > all_commits.txt
           else
-            git log $PREVIOUS_TAG..HEAD --pretty=format:'%s' > commits.txt
+            git log $PREVIOUS_TAG..HEAD --pretty=format:'%s' > all_commits.txt
           fi
 
           TAG_NAME=${GITHUB_REF_NAME}
-          WARNING=""
+          WARNING_MSG=""
 
-          case "$TAG_NAME" in
-            *debug*)   WARNING="> [!WARNING]\n> **DEBUG BUILD**" ;;
-            *beta*)    WARNING="> [!IMPORTANT]\n> **BETA RELEASE**" ;;
-            *alpha*)   WARNING="> [!CAUTION]\n> **ALPHA RELEASE**" ;;
-            *hotfix*)  WARNING="> [!NOTE]\n> **HOTFIX RELEASE**" ;;
-          esac
+          if [[ "$TAG_NAME" == *"debug"* ]]; then
+            WARNING_MSG="> [!WARNING]\n> **DEBUG BUILD**"
+          elif [[ "$TAG_NAME" == *"beta"* ]]; then
+            WARNING_MSG="> [!IMPORTANT]\n> **BETA RELEASE**"
+          elif [[ "$TAG_NAME" == *"alpha"* ]]; then
+            WARNING_MSG="> [!CAUTION]\n> **ALPHA RELEASE**"
+          elif [[ "$TAG_NAME" == *"hotfix"* ]]; then
+            WARNING_MSG="> [!NOTE]\n> **HOTFIX RELEASE**"
+          fi
 
-          echo -e "$WARNING\n## Changelog" > release_notes.md
-          grep -Ei "^(feat|fix|perf|refactor|chore)" commits.txt | sed 's/^[^:]*[: ]*/- /' >> release_notes.md || true
+          echo -e "$WARNING_MSG\n## Changelog" > release_notes.md
+
+          grep -i "^feat" all_commits.txt | sed "s/^feat[: ]*/- /" >> release_notes.md || true
+          grep -i "^fix" all_commits.txt | sed "s/^fix[: ]*/- /" >> release_notes.md || true
+          grep -i "^perf" all_commits.txt | sed "s/^perf[: ]*/- /" >> release_notes.md || true
+          grep -i "^refactor" all_commits.txt | sed "s/^refactor[: ]*/- /" >> release_notes.md || true
+          grep -i "^chore" all_commits.txt | sed "s/^chore[: ]*/- /" >> release_notes.md || true
 
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           cat release_notes.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Publish GitHub release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             android-apks/*.apk
             linux-bundle/*.zip
-            windows-bundle/*.zip
+            windows-dist/ShonenX-Windows-Portable.zip
+            windows-dist/*.exe
           body: ${{ steps.changelog.outputs.notes }}
           token: ${{ secrets.GITHUB_TOKEN }}

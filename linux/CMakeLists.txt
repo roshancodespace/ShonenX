@@ -7,7 +7,7 @@ add_compile_definitions(FLUTTER_ENABLE_IMPELLER=0)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "shonenx")
+set(BINARY_NAME "ShonenX")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
 set(APPLICATION_ID "com.example.shonenx")

@@ -24,8 +24,8 @@ class NotificationService {
     const WindowsInitializationSettings initializationSettingsWindows =
         WindowsInitializationSettings(
           appName: 'ShonenX',
-          appUserModelId: 'com.shonenx.app',
-          guid: 'com.shonenx.app',
+          appUserModelId: 'RoshanKumar.ShonenX.App.v2',
+          guid: '0516d984-72bf-47d4-bfbc-b2b8fd563479',
         );
 
     const InitializationSettings initializationSettings =
@@ -37,7 +37,7 @@ class NotificationService {
         );
 
     await flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
+      settings: initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         // Handle notification tap
         AppLogger.infoPair('Notification tapped', response.payload);
@@ -86,10 +86,10 @@ class NotificationService {
     );
 
     await flutterLocalNotificationsPlugin.show(
-      0,
-      title,
-      body,
-      platformChannelSpecifics,
+      id: 0,
+      title: title,
+      body: body,
+      notificationDetails: platformChannelSpecifics,
       payload: payload,
     );
   }

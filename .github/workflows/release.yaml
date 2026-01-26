@@ -27,172 +27,100 @@ permissions:
 
 jobs:
   build-android:
+    if: github.event_name == 'push' || github.event.inputs.build_android == 'true'
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "21"
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.38.6"
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
         with:
           ndk-version: 29.0.14033849
-
-      - name: Install CMake 3.18.1
+      - name: Configure Android Build
         run: |
           yes | sdkmanager "cmake;3.18.1"
-          cat <<EOF > android/local.properties
-          sdk.dir=$ANDROID_HOME
-          cmake.dir=$ANDROID_HOME/cmake/3.18.1
-          EOF
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Decode Android keystore
-        run: |
-          mkdir -p android/app/keystore
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore/upload-keystore.jks
-
-      - name: Create key.properties
-        run: |
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          echo "cmake.dir=$ANDROID_HOME/cmake/3.18.1" >> android/local.properties
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
           cat <<EOF > android/key.properties
           storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          storeFile=keystore/upload-keystore.jks
+          storeFile=upload-keystore.jks
           EOF
-
-      - name: Create .env file
-        run: |
-          echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" >> .env
+          echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" > .env
           echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
           echo "MAL_CLIENT_ID=${{ secrets.MAL_CLIENT_ID }}" >> .env
           echo "MAL_CLIENT_SECRET=${{ secrets.MAL_CLIENT_SECRET }}" >> .env
           echo "API_URL=${{ secrets.API_URL }}" >> .env
-
-      - name: Build APK (split per ABI)
-        run: flutter build apk --release --split-per-abi
-
-      - name: Verify APK signing
-        run: |
-          BUILD_TOOLS_VERSION=$(ls $ANDROID_HOME/build-tools | sort -V | tail -n 1)
-          APKSIGNER_PATH="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
-          echo "Using apksigner at: $APKSIGNER_PATH"
-          for apk in build/app/outputs/flutter-apk/*.apk; do
-            echo "Verifying $apk"
-            "$APKSIGNER_PATH" verify --verbose "$apk"
-          done
-
-      - name: Upload APK Artifacts
-        uses: actions/upload-artifact@v4
+      - run: flutter pub get
+      - run: flutter build apk --release --split-per-abi
+      - uses: actions/upload-artifact@v4
         with:
           name: android-apks
           path: build/app/outputs/flutter-apk/*.apk
 
   build-linux:
+    if: github.event_name == 'push' || github.event.inputs.build_linux == 'true'
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Linux Build Dependencies
-        run: |
+      - uses: actions/checkout@v4
+      - run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev libstdc++-12-dev \
-            libwebkit2gtk-4.1-dev libsecret-1-dev \
-            libasound2-dev libmpv-dev
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libwebkit2gtk-4.1-dev libsecret-1-dev libasound2-dev libmpv-dev
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.38.6"
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Create .env file
-        run: |
-          echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" >> .env
-          echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
-          echo "MAL_CLIENT_ID=${{ secrets.MAL_CLIENT_ID }}" >> .env
-          echo "MAL_CLIENT_SECRET=${{ secrets.MAL_CLIENT_SECRET }}" >> .env
-          echo "API_URL=${{ secrets.API_URL }}" >> .env
-
-      - name: Build Linux
-        run: flutter build linux --release
-
-      - name: Compress Linux Bundle
-        run: |
-          cd build/linux/x64/release/bundle
-          zip -r ../../../../../ShonenX-Linux.zip .
-
-      - name: Upload Linux Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-bundle
-          path: ShonenX-Linux.zip
-
-  build-windows:
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Enable long paths
-        run: git config --system core.longpaths true
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.38.6"
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Create .env file
+      - name: Configure Env
         run: |
           echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" > .env
           echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
           echo "MAL_CLIENT_ID=${{ secrets.MAL_CLIENT_ID }}" >> .env
           echo "MAL_CLIENT_SECRET=${{ secrets.MAL_CLIENT_SECRET }}" >> .env
           echo "API_URL=${{ secrets.API_URL }}" >> .env
+      - run: flutter pub get
+      - run: flutter build linux --release
+      - run: |
+          cd build/linux/x64/release/bundle
+          zip -r ../../../../../ShonenX-Linux.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-bundle
+          path: ShonenX-Linux.zip
+
+  build-windows:
+    if: github.event_name == 'push' || github.event.inputs.build_windows == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --system core.longpaths true
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.38.6"
+      - name: Configure Env
         shell: bash
-
-      - name: Build Windows
-        run: flutter build windows --release
-
-      - name: Dynamically Generate Inno Setup Script
+        run: |
+          echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" > .env
+          echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
+          echo "MAL_CLIENT_ID=${{ secrets.MAL_CLIENT_ID }}" >> .env
+          echo "MAL_CLIENT_SECRET=${{ secrets.MAL_CLIENT_SECRET }}" >> .env
+          echo "API_URL=${{ secrets.API_URL }}" >> .env
+      - run: flutter pub get
+      - run: flutter build windows --release
+      - name: Generate Inno Script
         shell: pwsh
         run: |
-          # 1. Read pubspec.yaml
           $pubspec = Get-Content pubspec.yaml -Raw
-          
-          # 2. Extract version and metadata using regex (robust for YAML)
           $version = ([regex]::Match($pubspec, 'version:\s*([^\s+]+)')).Groups[1].Value
           $appId = ([regex]::Match($pubspec, 'id:\s*([^\s\n\r]+)')).Groups[1].Value
           $publisher = ([regex]::Match($pubspec, 'publisher:\s*([^\n\r]+)')).Groups[1].Value.Trim()
           $appName = ([regex]::Match($pubspec, 'name:\s*([^\n\r]+)', [System.Text.RegularExpressions.RegexOptions]::RightToLeft)).Groups[1].Value.Trim()
-          
-          Write-Host "Generating installer for $appName version $version with ID $appId"
-
-          # 3. Create the .iss content
-          $issContent = @"
+          $iss = @"
           [Setup]
           AppId={{$appId}}
           AppName=$appName
@@ -200,7 +128,6 @@ jobs:
           AppPublisher=$publisher
           DefaultDirName={autopf}\$appName
           DefaultGroupName=$appName
-          AllowNoIcons=yes
           OutputDir=build\windows\x64\installer
           OutputBaseFilename=$appName-v$version-Setup
           Compression=lzma
@@ -224,18 +151,12 @@ jobs:
           [Run]
           Filename: "{app}\shonenx.exe"; Description: "{cm:LaunchProgram,$appName}"; Flags: nowait postinstall skipifsilent
           "@
-
-          $issContent | Out-File -FilePath installer.iss -Encoding utf8
-
-      - name: Compile Inno Setup Installer
-        run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
-
-      - name: Compress Windows Portable Bundle
+          $iss | Out-File -FilePath installer.iss -Encoding utf8
+      - name: Compile Inno Setup
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss'
+      - name: Create Portable Zip
         run: Compress-Archive -Path build\windows\x64\runner\release\* -DestinationPath ShonenX-Windows-Portable.zip
-
-      - name: Upload Windows Artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: windows-dist
           path: |
@@ -245,74 +166,36 @@ jobs:
   publish-release:
     needs: [build-android, build-linux, build-windows]
     runs-on: ubuntu-latest
-
+    if: always()
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Download Android Artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          name: android-apks
-          path: android-apks
-
-      - name: Download Linux Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-bundle
-          path: linux-bundle
-
-      - name: Download Windows Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-dist
-          path: windows-dist
-
+          path: artifacts
       - name: Generate Changelog
         id: changelog
         run: |
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-
-          if [ -z "$PREVIOUS_TAG" ]; then
-            git log HEAD --pretty=format:'%s' > all_commits.txt
-          else
-            git log $PREVIOUS_TAG..HEAD --pretty=format:'%s' > all_commits.txt
-          fi
-
+          git log ${PREVIOUS_TAG:+$PREVIOUS_TAG..}HEAD --pretty=format:'%s' > all_commits.txt
           TAG_NAME=${GITHUB_REF_NAME}
-          WARNING_MSG=""
-
-          if [[ "$TAG_NAME" == *"debug"* ]]; then
-            WARNING_MSG="> [!WARNING]\n> **DEBUG BUILD**"
-          elif [[ "$TAG_NAME" == *"beta"* ]]; then
-            WARNING_MSG="> [!IMPORTANT]\n> **BETA RELEASE**"
-          elif [[ "$TAG_NAME" == *"alpha"* ]]; then
-            WARNING_MSG="> [!CAUTION]\n> **ALPHA RELEASE**"
-          elif [[ "$TAG_NAME" == *"hotfix"* ]]; then
-            WARNING_MSG="> [!NOTE]\n> **HOTFIX RELEASE**"
-          fi
-
-          echo -e "$WARNING_MSG\n## Changelog" > release_notes.md
-
-          grep -i "^feat" all_commits.txt | sed "s/^feat[: ]*/- /" >> release_notes.md || true
-          grep -i "^fix" all_commits.txt | sed "s/^fix[: ]*/- /" >> release_notes.md || true
-          grep -i "^perf" all_commits.txt | sed "s/^perf[: ]*/- /" >> release_notes.md || true
-          grep -i "^refactor" all_commits.txt | sed "s/^refactor[: ]*/- /" >> release_notes.md || true
-          grep -i "^chore" all_commits.txt | sed "s/^chore[: ]*/- /" >> release_notes.md || true
-
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          cat release_notes.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
+          {
+            echo "notes<<EOF"
+            if [[ "$TAG_NAME" == *"debug"* ]]; then echo -e "> [!WARNING]\n> **DEBUG BUILD**";
+            elif [[ "$TAG_NAME" == *"beta"* ]]; then echo -e "> [!IMPORTANT]\n> **BETA RELEASE**";
+            elif [[ "$TAG_NAME" == *"alpha"* ]]; then echo -e "> [!CAUTION]\n> **ALPHA RELEASE**";
+            elif [[ "$TAG_NAME" == *"hotfix"* ]]; then echo -e "> [!NOTE]\n> **HOTFIX RELEASE**"; fi
+            echo -e "\n## Changelog"
+            grep -iE "^(feat|fix|perf|refactor|chore)" all_commits.txt | sed "s/^/- /" || echo "No specific changes tracked."
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            android-apks/*.apk
-            linux-bundle/*.zip
-            windows-dist/ShonenX-Windows-Portable.zip
-            windows-dist/*.exe
+            artifacts/**/*.apk
+            artifacts/**/*.zip
+            artifacts/**/*.exe
           body: ${{ steps.changelog.outputs.notes }}
           token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,11 +1,8 @@
 import 'dart:io';
-import 'dart:ui';
-import 'dart:developer' as developer;
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:glass_kit/glass_kit.dart';
 import 'package:install_plugin/install_plugin.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/utils/updater.dart';
@@ -37,9 +34,33 @@ class _UpdateDialogState extends State<UpdateDialog> {
   String? _statusMessage;
   bool _error = false;
 
-  Future<void> _downloadAndInstall() async {
-    if (widget.apkDownloadUrl == null) return;
+  final String _linuxCmd =
+      'bash <(curl -fsSL https://raw.githubusercontent.com/Darkx-dev/ShonenX/main/install.sh)';
 
+  Future<void> _handleUpdateAction() async {
+    if (Platform.isAndroid) {
+      if (widget.apkDownloadUrl == null) return;
+      await _downloadAndInstall();
+    } else if (Platform.isLinux) {
+      await Clipboard.setData(ClipboardData(text: _linuxCmd));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('Command copied! Paste it in your terminal.'),
+          ),
+        );
+      }
+    } else if (Platform.isWindows) {
+      if (widget.apkDownloadUrl == null) return;
+      await launchUrl(
+        Uri.parse(widget.apkDownloadUrl!),
+        mode: LaunchMode.externalApplication,
+      );
+    }
+  }
+
+  Future<void> _downloadAndInstall() async {
     setState(() {
       _downloading = true;
       _progress = 0;
@@ -47,19 +68,16 @@ class _UpdateDialogState extends State<UpdateDialog> {
       _error = false;
     });
 
-    final tempDir = await getTemporaryDirectory();
-    final savePath = '${tempDir.path}/app-update.apk';
-
     try {
-      if (await File(savePath).exists()) {
-        await File(savePath).delete();
-      }
+      final tempDir = await getTemporaryDirectory();
+      final savePath = '${tempDir.path}/app-update.apk';
+      if (await File(savePath).exists()) await File(savePath).delete();
 
       await Dio().download(
         widget.apkDownloadUrl!,
         savePath,
         onReceiveProgress: (rec, total) {
-          if (mounted) {
+          if (mounted && total != -1) {
             setState(() {
               _progress = rec / total;
               _statusMessage =
@@ -69,33 +87,13 @@ class _UpdateDialogState extends State<UpdateDialog> {
         },
       );
 
-      developer.log('Downloaded APK: $savePath');
-      if (mounted) {
-        setState(() {
-          _statusMessage = "Installing...";
-        });
-      }
-
-      await InstallPlugin.install(savePath, appId: 'com.example.shonenx')
-          .then((_) async {
-            developer.log('Install triggered');
-          })
-          .catchError((e) {
-            developer.log('Installation failed: $e');
-            if (mounted) {
-              setState(() {
-                _error = true;
-                _statusMessage = "Installation failed: $e";
-                _downloading = false;
-              });
-            }
-          });
+      if (mounted) setState(() => _statusMessage = "Installing...");
+      await InstallPlugin.install(savePath, appId: 'com.darkx.shonenx');
     } catch (e) {
-      developer.log('Download failed: $e');
       if (mounted) {
         setState(() {
           _error = true;
-          _statusMessage = "Download failed. Please try again.";
+          _statusMessage = "Download failed. Check your connection.";
           _downloading = false;
         });
       }
@@ -106,320 +104,240 @@ class _UpdateDialogState extends State<UpdateDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final typeText = widget.type.name.toUpperCase();
-    final isStable = widget.type == UpdateType.stable;
+    final isLinux = Platform.isLinux;
 
-    return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-      child: Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(10),
-        child: GlassContainer.clearGlass(
-          height: MediaQuery.of(context).size.height * 0.8,
-          width: double.infinity,
-          borderRadius: BorderRadius.circular(24),
-          borderWidth: 1.0,
-          borderColor: Colors.white.withOpacity(0.2),
-          elevation: 10,
-          child: Column(
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+    final statusColor = widget.type == UpdateType.stable
+        ? colorScheme.primary
+        : widget.type == UpdateType.hotfix
+        ? colorScheme.error
+        : colorScheme.tertiary;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 500),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => launchUrl(
+                      Uri.parse(
+                        'https://github.com/roshancodespace/ShonenX/releases',
+                      ),
+                    ),
+                    icon: const Icon(Icons.code_rounded, size: 18),
+                    label: const Text('GitHub'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: isStable
-                            ? colorScheme.primary.withOpacity(0.2)
-                            : colorScheme.secondary.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.system_update_rounded,
-                        color: isStable
-                            ? colorScheme.primary
-                            : colorScheme.secondary,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Update Available',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isStable
-                                      ? colorScheme.primary
-                                      : colorScheme.secondary,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  typeText,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${widget.currentVersion} ➔ ${widget.latestVersion}',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close, color: Colors.white),
-                    ),
-                  ],
-                ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
               ),
+            ),
 
-              // Content (Scrollable)
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (widget.releaseNotes != null &&
-                          widget.releaseNotes!.isNotEmpty) ...[
-                        Text(
-                          "What's New",
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        MarkdownBody(
-                          data: widget.releaseNotes!,
-                          styleSheet: MarkdownStyleSheet(
-                            p: theme.textTheme.bodyMedium?.copyWith(
-                              color: Colors.white.withOpacity(0.9),
-                            ),
-                            listBullet: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                            ),
-                            h1: theme.textTheme.titleLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            h2: theme.textTheme.titleMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            h3: theme.textTheme.titleSmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            code: TextStyle(
-                              backgroundColor: Colors.black.withOpacity(0.3),
-                              color: Colors.amberAccent,
-                              fontFamily: 'monospace',
-                            ),
-                            codeblockDecoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onTapLink: (text, href, title) {
-                            if (href != null) {
-                              launchUrl(Uri.parse(href));
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-
-                      // External Links
-                      Row(
-                        children: [
-                          _buildLinkButton(
-                            icon: Icons.public,
-                            label: "Website",
-                            onTap: () => launchUrl(
-                              Uri.parse(
-                                'https://shonenx.vercel.app/#downloads',
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          _buildLinkButton(
-                            icon: Icons.code,
-                            label: "GitHub",
-                            onTap: () => launchUrl(
-                              Uri.parse(
-                                'https://github.com/roshancodespace/ShonenX/releases',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isLinux
+                          ? Icons.terminal_rounded
+                          : Icons.rocket_launch_rounded,
+                      size: 40,
+                      color: statusColor,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  Text(
+                    isLinux ? 'Update via Terminal' : 'Update Available',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _VersionBadge(
+                    current: widget.currentVersion,
+                    latest: widget.latestVersion,
+                    type: widget.type,
+                    color: statusColor,
+                  ),
+                ],
               ),
+            ),
 
-              // Footer (Action)
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: Colors.white.withOpacity(0.1)),
-                  ),
-                ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (_downloading || _error) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _statusMessage ?? "",
-                            style: TextStyle(
-                              color: _error
-                                  ? Colors.redAccent
-                                  : Colors.white.withOpacity(0.8),
-                              fontSize: 12,
-                            ),
-                          ),
-                          if (_downloading)
-                            Text(
-                              "${(_progress * 100).toStringAsFixed(0)}%",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                        ],
+                    if (isLinux) ...[
+                      Text(
+                        "Run this command:",
+                        style: theme.textTheme.labelLarge,
                       ),
                       const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: _downloading ? _progress : (_error ? 0 : 1),
-                          backgroundColor: Colors.white.withOpacity(0.1),
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            _error ? Colors.redAccent : colorScheme.primary,
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: colorScheme.outlineVariant),
+                        ),
+                        child: Text(
+                          _linuxCmd,
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant,
                           ),
-                          minHeight: 6,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 24),
                     ],
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        onPressed:
-                            (_downloading || widget.apkDownloadUrl == null)
-                            ? null
-                            : _downloadAndInstall,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isStable
-                              ? colorScheme.primary
-                              : colorScheme.secondary,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: Colors.white.withOpacity(
-                            0.1,
-                          ),
-                          disabledForegroundColor: Colors.white.withOpacity(
-                            0.4,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        icon: _downloading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.download_rounded),
-                        label: Text(
-                          _downloading ? 'Downloading...' : 'Update Now',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
+                    Text(
+                      "What's New",
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: statusColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    MarkdownBody(
+                      data:
+                          widget.releaseNotes ?? "No release notes available.",
+                      styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                        p: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  if (_downloading || _error) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _statusMessage ?? "",
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: _error
+                                  ? colorScheme.error
+                                  : colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        if (_downloading)
+                          Text(
+                            "${(_progress * 100).toInt()}%",
+                            style: theme.textTheme.labelMedium,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: _downloading ? _progress : 0,
+                      borderRadius: BorderRadius.circular(8),
+                      minHeight: 8,
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed:
+                          (_downloading ||
+                              (widget.apkDownloadUrl == null && !isLinux))
+                          ? null
+                          : _handleUpdateAction,
+                      icon: Icon(
+                        isLinux
+                            ? Icons.content_copy_rounded
+                            : Icons.download_rounded,
+                      ),
+                      label: Text(
+                        isLinux
+                            ? 'Copy Command'
+                            : (_downloading ? 'Downloading...' : 'Update Now'),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: statusColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildLinkButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: 16),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+class _VersionBadge extends StatelessWidget {
+  final String current;
+  final String latest;
+  final UpdateType type;
+  final Color color;
+
+  const _VersionBadge({
+    required this.current,
+    required this.latest,
+    required this.type,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Text(
+        '${type.name.toUpperCase()} • $current → $latest',
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: color,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

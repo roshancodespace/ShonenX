@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -44,7 +43,7 @@ Future<void> checkForUpdates(
       if (tag.contains('hotfix')) return true;
       if (includeBeta && tag.contains('beta')) return true;
       if (includeAlpha && tag.contains('alpha')) return true;
-      
+
       return false;
     }, orElse: () => null);
 
@@ -65,7 +64,7 @@ Future<void> checkForUpdates(
       String? downloadUrl = _getPlatformSpecificAsset(assets);
 
       if (!context.mounted) return;
-      
+
       showUpdateBottomSheet(
         context,
         tagName,
@@ -75,7 +74,7 @@ Future<void> checkForUpdates(
         apkDownloadUrl: downloadUrl,
       );
     } else if (debugMode) {
-       showAppSnackBar('No updates', 'You are on the latest allowed version');
+      showAppSnackBar('No updates', 'You are on the latest allowed version');
     }
   } catch (e) {
     AppLogger.w('Failed to check for updates: $e');
@@ -85,7 +84,9 @@ Future<void> checkForUpdates(
 String? _getPlatformSpecificAsset(List<dynamic> assets) {
   if (Platform.isAndroid) {
     return assets.firstWhere(
-      (a) => (a['name'] as String).contains('arm64-v8a') && (a['name'] as String).endsWith('.apk'),
+      (a) =>
+          (a['name'] as String).contains('arm64-v8a') &&
+          (a['name'] as String).endsWith('.apk'),
       orElse: () => null,
     )?['browser_download_url'];
   } else if (Platform.isWindows) {
@@ -114,17 +115,22 @@ UpdateType _determineUpdateType(String tag, bool prerelease) {
 }
 
 bool _isNewerVersion(String latestTag, String currentVersion) {
-  final latestClean = latestTag.startsWith('v') ? latestTag.substring(1) : latestTag;
+  final latestClean = latestTag.startsWith('v')
+      ? latestTag.substring(1)
+      : latestTag;
   if (latestClean == currentVersion) return false;
 
   List<dynamic> parseVersion(String v) {
     final mainParts = v.split('-');
     final numericPart = mainParts[0];
-    final numbers = numericPart.split('.').map((e) => int.tryParse(e) ?? 0).toList();
-    
+    final numbers = numericPart
+        .split('.')
+        .map((e) => int.tryParse(e) ?? 0)
+        .toList();
+
     int subPatch = 0;
     String label = '';
-    
+
     if (mainParts.length > 1) {
       label = mainParts[1]; // e.g., hotfix.1
       final subMatch = RegExp(r'\.(\d+)').firstMatch(label);
@@ -132,7 +138,7 @@ bool _isNewerVersion(String latestTag, String currentVersion) {
         subPatch = int.tryParse(subMatch.group(1)!) ?? 0;
       }
     }
-    
+
     return [numbers, label, subPatch];
   }
 
@@ -160,7 +166,7 @@ bool _isNewerVersion(String latestTag, String currentVersion) {
   if (lLabel.isNotEmpty && cLabel.isNotEmpty) {
     final lType = lLabel.split('.')[0];
     final cType = cLabel.split('.')[0];
-    
+
     if (lType == cType) {
       return lSub > cSub;
     }
@@ -182,25 +188,29 @@ void showUpdateBottomSheet(
     useRootNavigator: true,
     barrierDismissible: true,
     barrierLabel: 'Dismiss',
-    barrierColor: Colors.black.withOpacity(0.5),
+    barrierColor: Colors.black54,
     transitionDuration: const Duration(milliseconds: 300),
-    pageBuilder: (context, animation, secondaryAnimation) {
-      return UpdateDialog(
-        latestVersion: latestVersion,
-        currentVersion: currentVersion,
-        type: type,
-        releaseNotes: releaseNotes,
-        apkDownloadUrl: apkDownloadUrl,
-      );
-    },
+    pageBuilder: (context, animation, secondaryAnimation) => UpdateDialog(
+      latestVersion: latestVersion,
+      currentVersion: currentVersion,
+      type: type,
+      releaseNotes: releaseNotes,
+      apkDownloadUrl: apkDownloadUrl,
+    ),
     transitionBuilder: (context, animation, secondaryAnimation, child) {
+      final curvedAnimation = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeInOutCubicEmphasized,
+        reverseCurve: Curves.easeInOutCubicEmphasized,
+      );
+
       return FadeTransition(
         opacity: animation,
-        child: ScaleTransition(
-          scale: CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOutBack,
-          ),
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.05),
+            end: Offset.zero,
+          ).animate(curvedAnimation),
           child: child,
         ),
       );

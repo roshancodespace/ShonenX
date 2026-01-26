@@ -12,16 +12,14 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
 import 'package:collection/collection.dart';
+import 'package:shonenx/features/details/view_model/local_tracker_notifier.dart';
 import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 
 /// Bottom sheet for editing anime list entry
 class EditListBottomSheet extends ConsumerStatefulWidget {
   final UniversalMedia anime;
 
-  const EditListBottomSheet({
-    super.key,
-    required this.anime,
-  });
+  const EditListBottomSheet({super.key, required this.anime});
 
   @override
   ConsumerState<EditListBottomSheet> createState() =>
@@ -35,7 +33,7 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
     'COMPLETED',
     'REPEATING',
     'PAUSED',
-    'DROPPED'
+    'DROPPED',
   ];
 
   late String _selectedStatus;
@@ -94,13 +92,22 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
       final animeRepo = ref.read(animeRepositoryProvider);
       final watchlist = ref.read(watchlistProvider);
 
-      dynamic entry = watchlist.lists.values
-          .expand((e) => e)
-          .firstWhereOrNull((media) => media.id == widget.anime.id);
+      dynamic entry;
 
-      if (entry == null && auth.activePlatform == AuthPlatform.anilist) {
-        entry = await animeRepo.getAnimeEntry(int.parse(widget.anime.id));
-        if (entry != null) watchlistNotifier.addEntry(entry);
+      if (auth.isAniListAuthenticated) {
+        entry = watchlist.lists.values
+            .expand((e) => e)
+            .firstWhereOrNull((media) => media.id == widget.anime.id);
+
+        if (entry == null && auth.activePlatform == AuthPlatform.anilist) {
+          entry = await animeRepo.getAnimeEntry(int.parse(widget.anime.id));
+          if (entry != null) watchlistNotifier.addEntry(entry);
+        }
+      } else {
+        // Local load
+        entry = await ref
+            .read(localTrackerProvider.notifier)
+            .getEntry(widget.anime.id);
       }
 
       if (entry != null) _updateEntryFields(entry);
@@ -120,8 +127,10 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
       final progress = int.tryParse(_progressController.text) ?? 0;
       final repeats = int.tryParse(_repeatsController.text) ?? 0;
 
-      if (auth.activePlatform == AuthPlatform.anilist) {
-        await ref.read(anilistServiceProvider).updateUserAnimeList(
+      if (auth.isAniListAuthenticated) {
+        await ref
+            .read(anilistServiceProvider)
+            .updateUserAnimeList(
               mediaId: int.parse(widget.anime.id),
               status: _selectedStatus,
               score: score,
@@ -142,15 +151,31 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
             );
         _showSnackBar('Success', 'Anime list updated', ContentType.success);
       } else {
-        _showSnackBar(
-            'Info', 'MAL support not implemented yet', ContentType.warning);
+        // Local Save
+        await ref
+            .read(localTrackerProvider.notifier)
+            .saveEntry(
+              widget.anime,
+              status: _selectedStatus,
+              score: score,
+              progress: progress,
+              repeat: repeats,
+              notes: _notesController.text,
+              isPrivate: _isPrivate,
+              startedAt: _startDate,
+              completedAt: _completedDate,
+            );
+        _showSnackBar('Success', 'Saved to local library', ContentType.success);
       }
 
       if (mounted) Navigator.pop(context);
     } catch (e, st) {
       AppLogger.e('Error while saving anime list: $e\n$st');
       _showSnackBar(
-          'Error', 'Failed to update anime list', ContentType.failure);
+        'Error',
+        'Failed to update anime list',
+        ContentType.failure,
+      );
     } finally {
       _isSaving.value = false;
     }
@@ -160,16 +185,18 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.transparent,
-        content: AwesomeSnackbarContent(
-          title: title,
-          message: message,
-          contentType: type,
+      ..showSnackBar(
+        SnackBar(
+          elevation: 0,
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.transparent,
+          content: AwesomeSnackbarContent(
+            title: title,
+            message: message,
+            contentType: type,
+          ),
         ),
-      ));
+      );
   }
 
   Future<void> _pickDate(bool isStartDate) async {
@@ -269,7 +296,11 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-          16, 16, 16, 16 + MediaQuery.of(context).viewInsets.bottom),
+        16,
+        16,
+        16,
+        16 + MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -340,29 +371,30 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         ValueListenableBuilder(
-            valueListenable: _isFetching,
-            builder: (context, value, child) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      value ? 'Syncing Entry...' : 'Edit Entry',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+          valueListenable: _isFetching,
+          builder: (context, value, child) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value ? 'Syncing Entry...' : 'Edit Entry',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (value)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: SizedBox(
+                    height: 2,
+                    width: 80,
+                    child: LinearProgressIndicator(
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    if (value)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4.0),
-                        child: SizedBox(
-                          height: 2,
-                          width: 80,
-                          child: LinearProgressIndicator(
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                  ],
-                )),
+                  ),
+                ),
+            ],
+          ),
+        ),
         IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Iconsax.close_circle),
@@ -376,20 +408,21 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
       value: _selectedStatus,
       onChanged: _handleStatusChange,
       items: _statusOptions
-          .map((item) => DropdownMenuItem(
-                value: item,
-                child: Text(
-                  item
-                      .toLowerCase()
-                      .replaceFirst(item[0].toLowerCase(), item[0]),
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ))
+          .map(
+            (item) => DropdownMenuItem(
+              value: item,
+              child: Text(
+                item.toLowerCase().replaceFirst(item[0].toLowerCase(), item[0]),
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ),
+          )
           .toList(),
       decoration: const InputDecoration(
         labelText: 'Status',
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12))),
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       ),
       isExpanded: true,
@@ -418,7 +451,7 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
               child: Slider(
                 value:
                     double.tryParse(_scoreController.text)?.clamp(0.0, 10.0) ??
-                        0,
+                    0,
                 min: 0,
                 max: 10,
                 divisions: 100, // Allow .1 increments effectively
@@ -426,8 +459,8 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
                 onChanged: (val) {
                   setState(() {
                     // Round to 1 decimal place
-                    _scoreController.text =
-                        ((val * 10).round() / 10).toString();
+                    _scoreController.text = ((val * 10).round() / 10)
+                        .toString();
                   });
                 },
               ),
@@ -480,8 +513,10 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
       ),
       child: IconButton(
         onPressed: onTap,
-        icon:
-            Icon(icon, color: Theme.of(context).colorScheme.onPrimaryContainer),
+        icon: Icon(
+          icon,
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+        ),
         constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
       ),
     );
@@ -489,33 +524,40 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
 
   Widget _buildSaveButton(ThemeData theme) {
     return ValueListenableBuilder(
-        valueListenable: _isSaving,
-        builder: (context, saving, child) {
-          return FilledButton.icon(
-            onPressed: saving ? null : _saveChanges,
-            icon: saving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Iconsax.save_2),
-            label: Text(saving ? 'Saving...' : 'Save Changes'),
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              textStyle: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+      valueListenable: _isSaving,
+      builder: (context, saving, child) {
+        return FilledButton.icon(
+          onPressed: saving ? null : _saveChanges,
+          icon: saving
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Iconsax.save_2),
+          label: Text(saving ? 'Saving...' : 'Save Changes'),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            textStyle: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-          );
-        });
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        );
+      },
+    );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller,
-      {String? suffixText,
-      int maxLines = 1,
-      Widget? suffixIcon,
-      Function(String)? onChanged}) {
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
+    String? suffixText,
+    int maxLines = 1,
+    Widget? suffixIcon,
+    Function(String)? onChanged,
+  }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
@@ -524,25 +566,35 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
           ? const TextInputType.numberWithOptions(decimal: true)
           : TextInputType.multiline,
       inputFormatters:
-          maxLines == 1 && label != 'Score' // Allow decimals for score
-              ? [FilteringTextInputFormatter.digitsOnly]
-              : [],
+          maxLines == 1 &&
+              label !=
+                  'Score' // Allow decimals for score
+          ? [FilteringTextInputFormatter.digitsOnly]
+          : [],
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12))),
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
         suffixText: suffixText,
         suffixIcon: suffixIcon,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 16,
+        ),
       ),
     );
   }
 
   Widget _buildDateField(
-      String label, DateTime? date, VoidCallback onTap, VoidCallback onToday) {
-    final formatted =
-        date != null ? DateFormat.yMMMd().format(date) : 'Select Date';
+    String label,
+    DateTime? date,
+    VoidCallback onTap,
+    VoidCallback onToday,
+  ) {
+    final formatted = date != null
+        ? DateFormat.yMMMd().format(date)
+        : 'Select Date';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -553,9 +605,12 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
             decoration: InputDecoration(
               labelText: label,
               border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12))),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 16,
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

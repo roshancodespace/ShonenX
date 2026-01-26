@@ -26,7 +26,7 @@ class AccountAuthenticationSection extends ConsumerWidget {
         _ServiceCard(
           platform: AuthPlatform.mal,
           name: 'MyAnimeList',
-          description: 'Organize, discuss, and track lists',
+          description: 'Work in progress',
           logoUrl:
               'https://cdn.myanimelist.net/img/sp/icon/apple-touch-icon-256.png',
           brandColor: const Color(0xFF2E51A2),

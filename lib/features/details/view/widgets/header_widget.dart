@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
+import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
+import 'package:shonenx/features/details/view_model/local_tracker_notifier.dart';
 
 class DetailsHeader extends ConsumerStatefulWidget {
   final UniversalMedia anime;
@@ -29,11 +31,20 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
   @override
   void initState() {
     super.initState();
-    // initialize from current state
-    final watchlist = ref.read(watchlistProvider.notifier);
+    _checkFavorite();
+  }
+
+  void _checkFavorite() {
+    final auth = ref.read(authProvider);
     Future.microtask(() async {
-      isFavorite = await watchlist.ensureFavorite(widget.anime.id);
-      setState(() {});
+      if (auth.isAniListAuthenticated) {
+        final watchlist = ref.read(watchlistProvider.notifier);
+        isFavorite = await watchlist.ensureFavorite(widget.anime.id);
+      } else {
+        final localTracker = ref.read(localTrackerProvider.notifier);
+        isFavorite = await localTracker.isFavorite(widget.anime.id);
+      }
+      if (mounted) setState(() {});
     });
   }
 
@@ -42,10 +53,16 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
     setState(() => isLoading = true);
 
     try {
-      await ref.read(watchlistProvider.notifier).toggleFavorite(widget.anime);
-      setState(() => isFavorite = !isFavorite); // optimistic update
+      final auth = ref.read(authProvider);
+      if (auth.isAniListAuthenticated) {
+        await ref.read(watchlistProvider.notifier).toggleFavorite(widget.anime);
+        setState(() => isFavorite = !isFavorite);
+      } else {
+        final localTracker = ref.read(localTrackerProvider.notifier);
+        final newStatus = await localTracker.toggleFavorite(widget.anime);
+        setState(() => isFavorite = newStatus);
+      }
     } catch (_) {
-      // optionally handle error
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -67,12 +84,13 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
           fit: StackFit.expand,
           children: [
             CachedNetworkImage(
-              imageUrl: widget.anime.bannerImage != null &&
+              imageUrl:
+                  widget.anime.bannerImage != null &&
                       widget.anime.bannerImage!.isNotEmpty
                   ? widget.anime.bannerImage!
                   : widget.anime.coverImage.large ??
-                      widget.anime.coverImage.medium ??
-                      '',
+                        widget.anime.coverImage.medium ??
+                        '',
               fit: BoxFit.cover,
               placeholder: (_, __) =>
                   Container(color: colorScheme.surfaceContainer),
@@ -102,7 +120,8 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: CachedNetworkImage(
-                        imageUrl: widget.anime.coverImage.large ??
+                        imageUrl:
+                            widget.anime.coverImage.large ??
                             widget.anime.coverImage.medium ??
                             '',
                         width: 105,
@@ -122,8 +141,9 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                               widget.anime.title.romaji ??
                               '',
                           style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface),
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -133,7 +153,8 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                             child: Text(
                               widget.anime.title.native!,
                               style: theme.textTheme.titleMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant),
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
                         const SizedBox(height: 12),
@@ -141,8 +162,11 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                         Row(
                           children: [
                             if (widget.anime.averageScore != null) ...[
-                              Icon(Iconsax.star1,
-                                  color: theme.colorScheme.primary, size: 16),
+                              Icon(
+                                Iconsax.star1,
+                                color: theme.colorScheme.primary,
+                                size: 16,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 (widget.anime.averageScore! / 10)
@@ -164,8 +188,9 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                                 widget.anime.status,
                               ].whereType<String>().join(' • '),
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurface
-                                    .withOpacity(0.8),
+                                color: theme.colorScheme.onSurface.withOpacity(
+                                  0.8,
+                                ),
                                 fontWeight: FontWeight.w500,
                               ),
                               maxLines: 1,
@@ -174,9 +199,7 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        GenreTags(
-                          genres: widget.anime.genres,
-                        ),
+                        GenreTags(genres: widget.anime.genres),
                       ],
                     ),
                   ),
@@ -209,8 +232,9 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                   color: Colors.white,
                   size: 30,
                 ),
-                tooltip:
-                    isFavorite ? 'Remove from favourites' : 'Add to favourites',
+                tooltip: isFavorite
+                    ? 'Remove from favourites'
+                    : 'Add to favourites',
                 onPressed: toggleFavorite,
               ),
         const SizedBox(width: 8),
@@ -229,10 +253,7 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
 class GenreTags extends StatelessWidget {
   final List<String> genres;
 
-  const GenreTags({
-    super.key,
-    required this.genres,
-  });
+  const GenreTags({super.key, required this.genres});
 
   @override
   Widget build(BuildContext context) {
@@ -240,10 +261,12 @@ class GenreTags extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: genres
-            .map((genre) => Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: GenreTag(text: genre),
-                ))
+            .map(
+              (genre) => Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GenreTag(text: genre),
+              ),
+            )
             .toList(),
       ),
     );
@@ -274,9 +297,9 @@ class GenreTag extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: color ?? Colors.white.withOpacity(0.9),
-              fontWeight: isStatus ? FontWeight.w600 : FontWeight.w500,
-            ),
+          color: color ?? Colors.white.withOpacity(0.9),
+          fontWeight: isStatus ? FontWeight.w600 : FontWeight.w500,
+        ),
       ),
     );
   }

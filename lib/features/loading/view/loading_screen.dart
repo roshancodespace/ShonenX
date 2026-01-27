@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/loading/view_model/initialization_notifier.dart';
+import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/shared/providers/update_provider.dart';
 import 'package:shonenx/utils/updater.dart';
 
@@ -39,7 +40,8 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
       ref.read(initializationProvider.notifier).initialize();
 
       if (!kDebugMode && ref.read(automaticUpdatesProvider)) {
-        checkForUpdates(context);
+        final useTest = ref.read(experimentalProvider).useTestReleases;
+        checkForUpdates(context, useTestReleases: useTest);
       }
     });
   }
@@ -118,9 +120,10 @@ class _PulsingLogoState extends State<_PulsingLogo>
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.08,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -369,10 +372,7 @@ class _BackgroundDecoration extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            colorScheme.surface,
-            colorScheme.surfaceContainerLowest,
-          ],
+          colors: [colorScheme.surface, colorScheme.surfaceContainerLowest],
         ),
       ),
       child: Stack(
@@ -435,10 +435,7 @@ class _ErrorOverlay extends StatelessWidget {
   final String errorMessage;
   final VoidCallback onRetry;
 
-  const _ErrorOverlay({
-    required this.errorMessage,
-    required this.onRetry,
-  });
+  const _ErrorOverlay({required this.errorMessage, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -485,10 +482,7 @@ class _ErrorOverlay extends StatelessWidget {
                     child: const Text('Exit'),
                   ),
                   const SizedBox(width: 16),
-                  FilledButton(
-                    onPressed: onRetry,
-                    child: const Text('Retry'),
-                  ),
+                  FilledButton(onPressed: onRetry, child: const Text('Retry')),
                 ],
               ),
             ],

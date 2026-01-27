@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
+import 'package:shonenx/features/settings/view/home_settings_screen.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 import 'package:go_router/go_router.dart';
@@ -100,6 +101,18 @@ class SettingsScreen extends ConsumerWidget {
                   onTap: () => context.push('/settings/theme'),
                 ),
                 NormalSettingsItem(
+                  icon: Icon(Iconsax.home_2, color: colorScheme.primary),
+                  accent: colorScheme.primary,
+                  title: 'Home Layout',
+                  description: 'Customize home screen sections',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HomeSettingsScreen(),
+                    ),
+                  ),
+                ),
+                NormalSettingsItem(
                   icon: Icon(Iconsax.mobile, color: colorScheme.primary),
                   accent: colorScheme.primary,
                   title: 'UI Settings',
@@ -149,7 +162,11 @@ class SettingsScreen extends ConsumerWidget {
                   accent: colorScheme.primary,
                   title: 'Check for updates',
                   description: 'Manually check for latest release',
-                  onTap: () => checkForUpdates(context, debugMode: kDebugMode),
+                  onTap: () => checkForUpdates(
+                    context,
+                    debugMode: kDebugMode,
+                    useTestReleases: experimental.useTestReleases,
+                  ),
                 ),
                 Consumer(
                   builder: (context, ref, child) {

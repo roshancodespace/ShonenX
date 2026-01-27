@@ -19,9 +19,7 @@ class ProfileSettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text('Not logged in')),
-      );
+      return const Scaffold(body: Center(child: Text('Not logged in')));
     }
 
     return Scaffold(
@@ -73,8 +71,9 @@ class ProfileSettingsScreen extends ConsumerWidget {
                       tag: 'user-avatar',
                       child: CircleAvatar(
                         radius: 48,
-                        backgroundImage:
-                            CachedNetworkImageProvider(user.avatarUrl!),
+                        backgroundImage: CachedNetworkImageProvider(
+                          user.avatarUrl!,
+                        ),
                       ),
                     ),
                   ),
@@ -95,16 +94,19 @@ class ProfileSettingsScreen extends ConsumerWidget {
                   /// NAME
                   Text(
                     user.name,
-                    style: theme.textTheme.headlineMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
 
                   const SizedBox(height: 6),
 
                   /// PLATFORM BADGE
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(20),
@@ -113,8 +115,9 @@ class ProfileSettingsScreen extends ConsumerWidget {
                       activePlatform == AuthPlatform.anilist
                           ? 'AniList'
                           : 'MyAnimeList',
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
 
@@ -136,8 +139,9 @@ class ProfileSettingsScreen extends ConsumerWidget {
                           children: [
                             Text(
                               'About',
-                              style: theme.textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             // if (activePlatform == AuthPlatform.anilist)
                             //   IconButton(
@@ -157,11 +161,7 @@ class ProfileSettingsScreen extends ConsumerWidget {
                           highlightColor: Colors.transparent,
                           onTap: () {
                             if (activePlatform == AuthPlatform.anilist) {
-                              _showEditAboutDialog(
-                                context,
-                                ref,
-                                user.about,
-                              );
+                              _showEditAboutDialog(context, ref, user.about);
                             }
                           },
                           child: Text(
@@ -218,8 +218,9 @@ class ProfileSettingsScreen extends ConsumerWidget {
       children: [
         Text(
           value,
-          style:
-              theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         Text(label, style: theme.textTheme.labelSmall),
       ],
@@ -234,23 +235,24 @@ class ProfileSettingsScreen extends ConsumerWidget {
     return FilledButton(
       onPressed: () async {
         final shouldLogout = await showDialog<bool>(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                title: const Text('Sign Out'),
-                content: const Text('Are you sure you want to sign out?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Cancel'),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Sign Out'),
-                  ),
-                ],
-              );
-            });
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Sign Out'),
+              content: const Text('Are you sure you want to sign out?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Sign Out'),
+                ),
+              ],
+            );
+          },
+        );
         if (shouldLogout != null && shouldLogout) {
           ref.read(authProvider.notifier).logout(platform);
           if (!context.mounted) return;

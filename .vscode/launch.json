@@ -1,39 +1,70 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Flutter: Attach to Device",
-            "type": "dart",
-            "request": "attach"
-        },
-        {
-            "name": "ShonenX-Dev",
-            "request": "launch",
-            "type": "dart"
-        },
-        {
-            "name": "ShonenX-Dev (profile mode)",
-            "request": "launch",
-            "type": "dart",
-            "flutterMode": "profile"
-        },
-        {
-            "name": "ShonenX-Dev (release mode)",
-            "request": "launch",
-            "type": "dart",
-            "flutterMode": "release"
-        },
-        {
-            "name": "Flutter Linux (No Impeller)",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "linux",
-            "toolArgs": [
-                "--no-enable-impeller"
-            ]
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter: Attach to Device",
+      "type": "dart",
+      "request": "attach"
+    },
+
+    // ─────────────────────────────────────────────
+    // WINDOWS – Impeller Disabled
+    // ─────────────────────────────────────────────
+
+    {
+      "name": "Windows (No Impeller) – Debug",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "windows",
+      "toolArgs": ["--no-enable-impeller"]
+    },
+    {
+      "name": "Windows (No Impeller) – Release",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "windows",
+      "flutterMode": "release",
+      "toolArgs": ["--no-enable-impeller"]
+    },
+
+    // ─────────────────────────────────────────────
+    // LINUX – Impeller Disabled
+    // ─────────────────────────────────────────────
+
+    {
+      "name": "Linux (No Impeller) – Debug",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "linux",
+      "toolArgs": ["--no-enable-impeller"]
+    },
+    {
+      "name": "Linux (No Impeller) – Release",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "linux",
+      "flutterMode": "release",
+      "toolArgs": ["--no-enable-impeller"]
+    },
+
+    // ─────────────────────────────────────────────
+    // ANDROID – Impeller Disabled
+    // ─────────────────────────────────────────────
+
+    {
+      "name": "Android (No Impeller) – Debug",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "android",
+      "toolArgs": ["--no-enable-impeller"]
+    },
+    {
+      "name": "Android (No Impeller) – Release",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "android",
+      "flutterMode": "release",
+      "toolArgs": ["--no-enable-impeller"]
+    }
+  ]
 }

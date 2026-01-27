@@ -110,6 +110,7 @@ class AppInitializer {
         Hive.openBox<ContentSettingsModel>('content_settings'),
         Hive.openBox<UniversalNews>('news_cache'),
         Hive.openBox<String>('news_read_status'),
+        Hive.openBox('home_layout'),
       ]);
 
       AppLogger.success('Hive boxes opened');

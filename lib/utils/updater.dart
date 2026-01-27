@@ -1,3 +1,5 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -14,9 +16,12 @@ Future<void> checkForUpdates(
   bool debugMode = false,
   bool includeBeta = false,
   bool includeAlpha = false,
+  bool useTestReleases = false,
 }) async {
   try {
-    const repo = 'roshancodespace/ShonenX';
+    final repo = useTestReleases
+        ? 'roshancodespace/shonenx-test-releases'
+        : 'roshancodespace/ShonenX';
     final url = Uri.parse('https://api.github.com/repos/$repo/releases');
 
     final response = await Dio().get(
@@ -43,6 +48,7 @@ Future<void> checkForUpdates(
       if (tag.contains('hotfix')) return true;
       if (includeBeta && tag.contains('beta')) return true;
       if (includeAlpha && tag.contains('alpha')) return true;
+      if (useTestReleases && tag.contains('test')) return true;
 
       return false;
     }, orElse: () => null);
@@ -111,6 +117,8 @@ UpdateType _determineUpdateType(String tag, bool prerelease) {
   if (lowerTag.contains('hotfix')) return UpdateType.hotfix;
   if (lowerTag.contains('beta')) return UpdateType.beta;
   if (lowerTag.contains('alpha')) return UpdateType.alpha;
+  if (lowerTag.contains('test'))
+    return UpdateType.alpha; // Treat test as unstable/alpha
   return UpdateType.stable;
 }
 

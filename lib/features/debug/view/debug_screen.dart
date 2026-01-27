@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/services/notification_service.dart';
 import 'package:shonenx/features/news/view/news_screen.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
+import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/utils/updater.dart';
 
-class DebugScreen extends StatelessWidget {
+class DebugScreen extends ConsumerWidget {
   const DebugScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -66,7 +68,14 @@ class DebugScreen extends StatelessWidget {
                 accent: colorScheme.primary,
                 description: 'Trigger an update immediately',
                 onTap: () {
-                  checkForUpdates(context, debugMode: true);
+                  final useTest = ref
+                      .read(experimentalProvider)
+                      .useTestReleases;
+                  checkForUpdates(
+                    context,
+                    debugMode: true,
+                    useTestReleases: useTest,
+                  );
                 },
               ),
             ],

@@ -55,6 +55,19 @@ class ExperimentalScreen extends ConsumerWidget {
                 );
               },
             ),
+            const SizedBox(height: 8),
+            ToggleableSettingsItem(
+              accent: colorScheme.primary,
+              icon: Icon(Iconsax.flash_15),
+              title: 'Test Releases',
+              description: 'Receive unstable test updates',
+              value: experimentalSettings.useTestReleases,
+              onChanged: (value) {
+                experimentalNotifier.updateSettings(
+                  (state) => state.copyWith(useTestReleases: value),
+                );
+              },
+            ),
           ],
         ),
       ),

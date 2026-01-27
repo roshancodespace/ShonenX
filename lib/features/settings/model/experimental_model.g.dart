@@ -20,17 +20,20 @@ class ExperimentalFeaturesModelAdapter
     return ExperimentalFeaturesModel(
       episodeTitleSync: fields[0] == null ? false : fields[0] as bool,
       useMangayomiExtensions: fields[1] == null ? false : fields[1] as bool,
+      useTestReleases: fields[2] == null ? false : fields[2] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, ExperimentalFeaturesModel obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(3)
       ..writeByte(0)
       ..write(obj.episodeTitleSync)
       ..writeByte(1)
-      ..write(obj.useMangayomiExtensions);
+      ..write(obj.useMangayomiExtensions)
+      ..writeByte(2)
+      ..write(obj.useTestReleases);
   }
 
   @override

@@ -59,7 +59,7 @@ jobs:
           echo "MAL_CLIENT_SECRET=${{ secrets.MAL_CLIENT_SECRET }}" >> .env
           echo "API_URL=${{ secrets.API_URL }}" >> .env
       - run: flutter pub get
-      - run: flutter build apk --release --split-per-abi
+      - run: flutter build apk --release --split-per-abi --obfuscate --split-debug-info=build/app/outputs/symbols --dart-define-from-file=.env
       - uses: actions/upload-artifact@v4
         with:
           name: android-apks
@@ -84,7 +84,7 @@ jobs:
           echo "MAL_CLIENT_SECRET=${{ secrets.MAL_CLIENT_SECRET }}" >> .env
           echo "API_URL=${{ secrets.API_URL }}" >> .env
       - run: flutter pub get
-      - run: flutter build linux --release
+      - run: flutter build linux --release --obfuscate --split-debug-info=build/linux/debug-info
       - run: |
           cd build/linux/x64/release/bundle
           zip -r ../../../../../ShonenX-Linux.zip .
@@ -111,7 +111,7 @@ jobs:
           echo "MAL_CLIENT_SECRET=${{ secrets.MAL_CLIENT_SECRET }}" >> .env
           echo "API_URL=${{ secrets.API_URL }}" >> .env
       - run: flutter pub get
-      - run: flutter build windows --release
+      - run: flutter build windows --release --obfuscate --split-debug-info=build/windows/debug-info --dart-define-from-file=.env
       - name: Generate Inno Script
         shell: pwsh
         run: |

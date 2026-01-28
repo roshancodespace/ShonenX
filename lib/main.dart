@@ -27,7 +27,7 @@ final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Env.init();
+  Env.init();
   if (Platform.isLinux && runWebViewTitleBarWidget(args)) return;
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
     final availableVersion = await WebViewEnvironment.getAvailableVersion();

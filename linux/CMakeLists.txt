@@ -10,7 +10,7 @@ add_compile_definitions(FLUTTER_ENABLE_IMPELLER=0)
 set(BINARY_NAME "ShonenX")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
-set(APPLICATION_ID "com.example.shonenx")
+set(APPLICATION_ID "com.shonenx.anime")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.

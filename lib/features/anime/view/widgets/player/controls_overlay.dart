@@ -16,6 +16,7 @@ class ControlsOverlay extends ConsumerWidget {
   final VoidCallback onSourcePressed;
   final VoidCallback onServerPressed;
   final VoidCallback onSubtitlePressed;
+  final VoidCallback onFullScreenPressed;
 
   const ControlsOverlay({
     super.key,
@@ -29,6 +30,7 @@ class ControlsOverlay extends ConsumerWidget {
     required this.onSourcePressed,
     required this.onServerPressed,
     required this.onSubtitlePressed,
+    required this.onFullScreenPressed,
   });
 
   @override
@@ -78,6 +80,7 @@ class ControlsOverlay extends ConsumerWidget {
               onSourcePressed: onSourcePressed,
               onSubtitlePressed: onSubtitlePressed,
               onServerPressed: onServerPressed,
+              onFullScreenPressed: onFullScreenPressed
             ),
           ),
         ],

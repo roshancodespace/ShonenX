@@ -17,6 +17,7 @@ class BottomControls extends ConsumerStatefulWidget {
   final VoidCallback onServerPressed;
   final VoidCallback onForwardPressed;
   final VoidCallback? onEpisodePressed;
+  final VoidCallback? onFullScreenPressed;
 
   const BottomControls({
     super.key,
@@ -26,6 +27,7 @@ class BottomControls extends ConsumerStatefulWidget {
     required this.onSubtitlePressed,
     required this.onServerPressed,
     required this.onForwardPressed,
+    required this.onFullScreenPressed,
     this.onEpisodePressed,
   });
 
@@ -188,6 +190,10 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                             context.push('/settings/player/subtitles'),
                       ),
                       _icon(Icons.lock_rounded, widget.onLockPressed),
+                      _icon(
+                        Icons.fullscreen_rounded,
+                        widget.onFullScreenPressed,
+                      ),
                       _icon(Icons.view_list_rounded, widget.onEpisodePressed),
                     ],
                   ),

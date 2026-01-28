@@ -15,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.shonenx"
+    namespace = "com.shonenx.anime"
     compileSdk = 36
     ndkVersion = "29.0.14033849"
 

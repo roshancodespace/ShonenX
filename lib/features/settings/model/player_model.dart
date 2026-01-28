@@ -14,21 +14,27 @@ class PlayerModel {
   @HiveField(2, defaultValue: false)
   final bool enableAutoSkip;
 
+  @HiveField(3, defaultValue: false)
+  final bool preferDub;
+
   PlayerModel({
     this.defaultQuality = 'Auto',
     this.enableAniSkip = true,
     this.enableAutoSkip = false,
+    this.preferDub = false,
   });
 
   PlayerModel copyWith({
     String? defaultQuality,
     bool? enableAniSkip,
     bool? enableAutoSkip,
+    bool? preferDub,
   }) {
     return PlayerModel(
       defaultQuality: defaultQuality ?? this.defaultQuality,
       enableAniSkip: enableAniSkip ?? this.enableAniSkip,
       enableAutoSkip: enableAutoSkip ?? this.enableAutoSkip,
+      preferDub: preferDub ?? this.preferDub,
     );
   }
 }

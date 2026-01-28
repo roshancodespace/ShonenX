@@ -1,196 +1,148 @@
 #!/bin/bash
+set -euo pipefail
 
-# ShonenX Installer Script
-# Author: Darkx-dev
-# support: Arch, Debian/Ubuntu, Fedora
-
-set -e
-
-# ANSI Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-LOG_FILE="/tmp/shonenx_install.log"
-
-log() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-    exit 1
-}
-
-warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-# Check for sudo
-if [ "$EUID" -eq 0 ]; then
-    warning "Running as root is not recommended specifically for the extraction part, but we will proceed carefully." || true
-fi
-
-# -------------------------------------------------------------------------
-# Configuration & Directories
-# -------------------------------------------------------------------------
-
-INSTALL_DIR="$HOME/.local/share/ShonenX"
-ICON_DIR="$HOME/.local/share/icons"
-DESKTOP_DIR="$HOME/.local/share/applications"
-BIN_DIR="$HOME/.local/bin"
-VERSION_FILE="$INSTALL_DIR/version"
+# --- Configuration ---
+APP_NAME="shonenx"
 REPO="Darkx-dev/ShonenX"
+INSTALL_DIR="$HOME/.local/share/ShonenX"
+BIN_DIR="$HOME/.local/bin"
+LOG_FILE="/tmp/shonenx_install.log"
+SYS_DESKTOP="/usr/share/applications/$APP_NAME.desktop"
+SYS_ICON="/usr/share/icons/hicolor/256x256/apps/$APP_NAME.png"
 
-# -------------------------------------------------------------------------
-# Uninstall Function
-# -------------------------------------------------------------------------
+# --- Dark Theme ---
+export NEWT_COLORS='
+  root=,black
+  window=black,black
+  border=black,black
+  shadow=black,black
+  button=black,cyan
+  actbutton=white,cyan
+  compactbutton=black,cyan
+  title=cyan,black
+  roottext=cyan,black
+  textbox=cyan,black
+  actlistbox=black,cyan
+  listbox=cyan,black
+  checkbox=cyan,black
+  actcheckbox=black,cyan
+'
 
-uninstall() {
-    log "Uninstalling ShonenX..."
-    rm -rf "$INSTALL_DIR"
-    rm -f "$ICON_DIR/shonenx.png"
-    rm -f "$DESKTOP_DIR/shonenx.desktop"
-    rm -f "$BIN_DIR/shonenx"
-    success "Uninstallation complete."
-    exit 0
+# --- Responsive Logic ---
+get_size() {
+    TERM_WIDTH=$(tput cols || echo 80)
+    BOX_WIDTH=$(( TERM_WIDTH * 70 / 100 ))
+    [[ $BOX_WIDTH -lt 45 ]] && BOX_WIDTH=45
+    BOX_HEIGHT=15
 }
 
-if [ "$1" == "--uninstall" ]; then
-    uninstall
-fi
+# --- Logic Functions ---
 
-log "Starting ShonenX Installation..."
+pre_auth_sudo() {
+    sudo -v
+}
 
-# -------------------------------------------------------------------------
-# 1. OS Detection & Dependency Installation
-# -------------------------------------------------------------------------
-
-log "Detecting OS and checking dependencies..."
-
-install_mpv() {
-    log "Installing libmpv..."
-    if command -v apt &> /dev/null; then
-        # Debian/Ubuntu
-        sudo apt update -y | tee -a "$LOG_FILE"
-        sudo apt install -y libmpv-dev curl unzip | tee -a "$LOG_FILE"
-    elif command -v pacman &> /dev/null; then
-        # Arch Linux
-        sudo pacman -Sy --noconfirm mpv curl unzip | tee -a "$LOG_FILE"
-    elif command -v dnf &> /dev/null; then
-        # Fedora
-        sudo dnf install -y mpv-libs-devel curl unzip | tee -a "$LOG_FILE"
-    else
-        warning "Could not detect package manager (apt, pacman, dnf). Please ensure 'libmpv', 'curl', and 'unzip' are installed manually."
+task_deps() {
+    if command -v pacman &>/dev/null; then
+        sudo pacman -S --noconfirm --needed mpv curl unzip wget desktop-file-utils > "$LOG_FILE" 2>&1
+    elif command -v dnf &>/dev/null; then
+        sudo dnf install -y -q mpv-libs-devel curl unzip wget desktop-file-utils > "$LOG_FILE" 2>&1
+    elif command -v apt &>/dev/null; then
+        sudo apt update -qq && sudo apt install -y -qq libmpv-dev curl unzip wget desktop-file-utils > "$LOG_FILE" 2>&1
     fi
 }
 
-# Install dependencies
-install_mpv
-
-# -------------------------------------------------------------------------
-# 2. Version Check
-# -------------------------------------------------------------------------
-
-check_version() {
-    log "Checking for updates..."
-    
-    # Get latest version tag from GitHub
-    LATEST_VERSION=$(curl -sI "https://github.com/$REPO/releases/latest" | grep -i "location:" | sed 's/.*\///' | tr -d '\r')
-    
-    if [ -f "$VERSION_FILE" ]; then
-        CURRENT_VERSION=$(cat "$VERSION_FILE")
-        log "Current version: $CURRENT_VERSION"
-        log "Latest version: $LATEST_VERSION"
-        
-        if [ "$CURRENT_VERSION" == "$LATEST_VERSION" ]; then
-            echo -ne "${YELLOW}[?]${NC} You are already on the latest version ($CURRENT_VERSION). Force re-install? [y/N]: "
-            read -r response
-            if [[ ! "$response" =~ ^[Yy]$ ]]; then
-                log "Installation cancelled by user."
-                exit 0
-            fi
-        fi
-    else
-        log "Installing version: $LATEST_VERSION"
-    fi
-    
-    # Export for next steps
-    TARGET_VERSION="$LATEST_VERSION"
+task_download() {
+    mkdir -p "$INSTALL_DIR" "$BIN_DIR"
+    TMP_ZIP="/tmp/ShonenX_latest.zip"
+    curl -L "https://github.com/$REPO/releases/latest/download/ShonenX-Linux.zip" -o "$TMP_ZIP" 2>> "$LOG_FILE"
+    rm -rf "${INSTALL_DIR:?}"/*
+    unzip -o -q "$TMP_ZIP" -d "$INSTALL_DIR" >> "$LOG_FILE" 2>&1
+    rm -f "$TMP_ZIP"
 }
 
-check_version
+task_normalize() {
+    RAW_BIN=$(find "$INSTALL_DIR" -maxdepth 2 -iname "shonenx*" -type f -not -name "*.so*" -not -name "*.txt" -not -name "*.png" | head -n 1)
+    if [[ -n "$RAW_BIN" ]]; then
+        mv "$RAW_BIN" "$INSTALL_DIR/$APP_NAME"
+        chmod +x "$INSTALL_DIR/$APP_NAME"
+        ln -sf "$INSTALL_DIR/$APP_NAME" "$BIN_DIR/$APP_NAME"
+    else
+        return 1
+    fi
+}
 
-# -------------------------------------------------------------------------
-# 3. Download & Extract
-# -------------------------------------------------------------------------
-
-LATEST_RELEASE_URL="https://github.com/$REPO/releases/latest/download/ShonenX-Linux.zip"
-ICON_URL="https://raw.githubusercontent.com/$REPO/main/assets/icons/app_icon-modified-2.png"
-
-TMP_ZIP="/tmp/ShonenX-Linux.zip"
-
-mkdir -p "$INSTALL_DIR"
-mkdir -p "$ICON_DIR"
-mkdir -p "$DESKTOP_DIR"
-mkdir -p "$BIN_DIR"
-
-log "Downloading latest release from $LATEST_RELEASE_URL..."
-if curl -L -o "$TMP_ZIP" "$LATEST_RELEASE_URL" --progress-bar; then
-    success "Download complete."
-else
-    error "Failed to download ShonenX. Please check your internet connection or if the release exists."
-fi
-
-log "Extracting to $INSTALL_DIR..."
-# Clean old installation
-rm -rf "$INSTALL_DIR"/*
-
-unzip -o -q "$TMP_ZIP" -d "$INSTALL_DIR" >> "$LOG_FILE" 2>&1
-rm -f "$TMP_ZIP"
-echo "$TARGET_VERSION" > "$VERSION_FILE"
-
-# -------------------------------------------------------------------------
-# 4. Icon & Desktop Entry
-# -------------------------------------------------------------------------
-
-log "Setting up icon and desktop entry..."
-
-# Download Icon
-rm -f "$ICON_DIR/shonenx.png" # Force remove old icon
-curl -L -o "$ICON_DIR/shonenx.png" "$ICON_URL" >> "$LOG_FILE" 2>&1
-
-# Create Desktop File
-cat > "$DESKTOP_DIR/shonenx.desktop" <<EOF
+task_ui() {
+    sudo mkdir -p "/usr/share/icons/hicolor/256x256/apps"
+    sudo wget -qO "$SYS_ICON" "https://raw.githubusercontent.com/$REPO/main/assets/icons/app_icon-modified-2.png" || true
+    sudo bash -c "cat <<EOF > $SYS_DESKTOP
 [Desktop Entry]
-Name=ShonenX
-Comment=Anime Streaming App
-Exec=$INSTALL_DIR/shonenx
-Icon=$ICON_DIR/shonenx.png
-Terminal=false
+Version=1.0
 Type=Application
+Name=ShonenX
+Comment=Anime Streaming Desktop
+Exec=$BIN_DIR/$APP_NAME
+Icon=$APP_NAME
+Terminal=false
 Categories=Video;AudioVideo;Player;
-Keywords=anime;streaming;
 StartupWMClass=shonenx
-EOF
+EOF"
+    sudo chmod 644 "$SYS_DESKTOP"
+    sudo update-desktop-database /usr/share/applications >/dev/null 2>&1
+    rm -rf "$HOME/.cache/wofi" "$HOME/.cache/rofi" "$HOME/.cache/fuzzel" 2>/dev/null || true
+}
 
-chmod +x "$DESKTOP_DIR/shonenx.desktop"
-update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
+task_path() {
+    if [[ "$SHELL" == *"fish"* ]]; then
+        fish -c "set -U fish_user_paths $BIN_DIR \$fish_user_paths" >/dev/null 2>&1
+    else
+        PROFILE="$HOME/.bashrc"
+        [[ "$SHELL" == *"zsh"* ]] && PROFILE="$HOME/.zshrc"
+        grep -q "$BIN_DIR" "$PROFILE" || echo "export PATH=\"$BIN_DIR:\$PATH\"" >> "$PROFILE"
+    fi
+}
 
-# CLI Access
-log "Creating command line shortcut..."
-ln -sf "$INSTALL_DIR/shonenx" "$BIN_DIR/shonenx"
+# --- TUI Loop ---
 
-# -------------------------------------------------------------------------
-# 5. Finish
-# -------------------------------------------------------------------------
+while true; do
+    get_size
+    STATUS=$( [[ -d "$INSTALL_DIR" ]] && echo "INSTALLED" || echo "NOT FOUND" )
 
-success "ShonenX installed successfully!"
-echo -e "You can launch it from your application menu or by running 'shonenx' in the terminal."
-echo -e "Note: Ensure $HOME/.local/bin is in your PATH."
+    CHOICE=$(whiptail --title " SHONENX MANAGER [$STATUS] " \
+        --menu "\nNavigation: Arrows | Confirm: Enter" \
+        $BOX_HEIGHT $BOX_WIDTH 5 \
+        "1" "Full Install / Update" \
+        "2" "Fix Shortcuts/Menu" \
+        "3" "Fix PATH/Terminal" \
+        "4" "Nuclear Uninstall" \
+        "5" "Exit" 3>&1 1>&2 2>&3) || exit 0
+
+    case $CHOICE in
+        1)
+            pre_auth_sudo
+            { 
+              echo 25; task_deps
+              echo 50; task_download
+              echo 75; task_normalize
+              echo 100; task_ui; task_path
+            } | whiptail --title " Installing " --gauge "\nProcessing build steps..." 8 $BOX_WIDTH 0
+            whiptail --title " Complete " --msgbox "\nShonenX is ready." 8 $BOX_WIDTH
+            ;;
+        2) 
+            pre_auth_sudo; task_ui
+            whiptail --title " Fixed " --msgbox "\nDesktop menu rebuilt." 8 $BOX_WIDTH
+            ;;
+        3) 
+            task_path
+            whiptail --title " Fixed " --msgbox "\nShell PATH updated." 8 $BOX_WIDTH
+            ;;
+        4) 
+            pre_auth_sudo
+            rm -rf "$INSTALL_DIR" && rm -f "$BIN_DIR/$APP_NAME"
+            sudo rm -f "$SYS_DESKTOP" "$SYS_ICON"
+            sudo update-desktop-database /usr/share/applications >/dev/null 2>&1
+            whiptail --title " Wiped " --msgbox "\nAll files removed." 8 $BOX_WIDTH
+            ;;
+        5) exit 0 ;;
+    esac
+done

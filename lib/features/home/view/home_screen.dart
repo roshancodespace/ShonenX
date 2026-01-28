@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
@@ -10,17 +11,51 @@ import 'package:shonenx/features/home/view_model/homepage_notifier.dart';
 import 'package:shonenx/features/home/view/widget/header_section.dart';
 import 'package:shonenx/features/home/view/widget/home_section.dart';
 import 'package:shonenx/features/home/view/widget/spotlight_section.dart';
-import 'package:shonenx/features/news/view/news_screen.dart';
 import 'package:shonenx/features/news/view_model/news_provider.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
+import 'package:go_router/go_router.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  Future<void> _setAppOpenStatus(bool isOpen) async {
+    final box = Hive.box('settings');
+    await box.put('is_app_open', isOpen);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final isOpen = state == AppLifecycleState.resumed;
+    _setAppOpenStatus(isOpen);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.listen(newsProvider, (previous, next) {
       if (previous is AsyncData && next is AsyncData) {
+        final router = GoRouter.of(context);
+        final String currentLocation =
+            router.routerDelegate.currentConfiguration.last.matchedLocation;
+        const mainTabs = {'/', '/browse', '/downloads', '/watchlist'};
+        if (!mainTabs.contains(currentLocation)) return;
         final oldList = previous!.value ?? [];
         final newList = next.value ?? [];
 
@@ -41,9 +76,7 @@ class HomeScreen extends ConsumerWidget {
               action: SnackBarAction(
                 label: 'VIEW',
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const NewsScreen()),
-                  );
+                  context.push('/news');
                 },
               ),
               behavior: SnackBarBehavior.floating,

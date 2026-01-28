@@ -66,3 +66,6 @@ android/app/keystore/*.jks
 
 # upload temp
 scripts/upload_temp.dart
+
+# installer
+dist

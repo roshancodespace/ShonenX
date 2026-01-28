@@ -91,7 +91,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icons/app_icon-modified-2.png
-    - .env
 
 flutter_launcher_icons:
   android: true

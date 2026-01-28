@@ -8,63 +8,63 @@
     },
 
     // ─────────────────────────────────────────────
-    // WINDOWS – Impeller Disabled
+    // WINDOWS
     // ─────────────────────────────────────────────
 
     {
-      "name": "Windows (No Impeller) – Debug",
+      "name": "Windows – Debug",
       "request": "launch",
       "type": "dart",
       "deviceId": "windows",
-      "toolArgs": ["--no-enable-impeller"]
+      "toolArgs": ["--dart-define-from-file=.env"]
     },
     {
-      "name": "Windows (No Impeller) – Release",
+      "name": "Windows – Release",
       "request": "launch",
       "type": "dart",
       "deviceId": "windows",
       "flutterMode": "release",
-      "toolArgs": ["--no-enable-impeller"]
+      "toolArgs": ["--dart-define-from-file=.env"]
     },
 
     // ─────────────────────────────────────────────
-    // LINUX – Impeller Disabled
+    // LINUX
     // ─────────────────────────────────────────────
 
     {
-      "name": "Linux (No Impeller) – Debug",
+      "name": "Linux – Debug",
       "request": "launch",
       "type": "dart",
       "deviceId": "linux",
-      "toolArgs": ["--no-enable-impeller"]
+      "toolArgs": ["--dart-define-from-file=.env"]
     },
     {
-      "name": "Linux (No Impeller) – Release",
+      "name": "Linux – Release",
       "request": "launch",
       "type": "dart",
       "deviceId": "linux",
       "flutterMode": "release",
-      "toolArgs": ["--no-enable-impeller"]
+      "toolArgs": ["--dart-define-from-file=.env"]
     },
 
     // ─────────────────────────────────────────────
-    // ANDROID – Impeller Disabled
+    // ANDROID
     // ─────────────────────────────────────────────
 
     {
-      "name": "Android (No Impeller) – Debug",
+      "name": "Android – Debug",
       "request": "launch",
       "type": "dart",
       "deviceId": "android",
-      "toolArgs": ["--no-enable-impeller"]
+      "toolArgs": ["--dart-define-from-file=.env"]
     },
     {
-      "name": "Android (No Impeller) – Release",
+      "name": "Android – Release",
       "request": "launch",
       "type": "dart",
       "deviceId": "android",
       "flutterMode": "release",
-      "toolArgs": ["--no-enable-impeller"]
+      "toolArgs": ["--dart-define-from-file=.env"]
     }
   ]
 }

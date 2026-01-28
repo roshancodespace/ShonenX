@@ -1,4 +1,4 @@
-package com.example.shonenx
+package com.shonenx.anime
 
 import io.flutter.embedding.android.FlutterActivity
 

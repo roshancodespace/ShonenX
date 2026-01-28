@@ -20,6 +20,7 @@ import 'package:shonenx/features/anime/view/widgets/player/speed_indicator_overl
 import 'package:shonenx/features/anime/view/widgets/player/subtitle_overlay.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
+import 'package:window_manager/window_manager.dart';
 
 class ShonenXVideoPlayer extends ConsumerStatefulWidget {
   final VoidCallback? onEpisodesPressed;
@@ -66,6 +67,9 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
     _hideTimer?.cancel();
     _seekResetTimer?.cancel();
     _focusNode.dispose();
+    if (!(Platform.isAndroid || Platform.isIOS)) {
+      windowManager.setFullScreen(false);
+    }
     super.dispose();
   }
 
@@ -214,6 +218,12 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
     );
   }
 
+  void _toggleFullScreen() async {
+    if (!(Platform.isAndroid || Platform.isIOS)) {
+      windowManager.setFullScreen(!(await windowManager.isFullScreen()));
+    }
+  }
+
   void _openSubtitle() {
     _sheet(SubtitleSelectionSheet(onLocalFilePressed: _pickLocalSubtitle));
   }
@@ -276,6 +286,8 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
         const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
             notifier.forward(10),
         const SingleActivator(LogicalKeyboardKey.keyM): notifier.toggleMute,
+        const SingleActivator(LogicalKeyboardKey.f11): _toggleFullScreen,
+        const SingleActivator(LogicalKeyboardKey.keyF): _toggleFullScreen,
       },
       child: Focus(
         focusNode: _focusNode,
@@ -294,6 +306,7 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
                 onLongPressStart: _onLongPressStart,
                 onLongPressUpdate: _onLongPressUpdate,
                 onLongPressEnd: _onLongPressEnd,
+                onEpisodesPressed: widget.onEpisodesPressed,
                 child: Container(color: Colors.transparent),
               ),
             ),
@@ -310,6 +323,7 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
               onSourcePressed: _openSource,
               onServerPressed: _openServer,
               onSubtitlePressed: _openSubtitle,
+              onFullScreenPressed: _toggleFullScreen,
             ),
 
             // Seek Indicator (Dynamic)

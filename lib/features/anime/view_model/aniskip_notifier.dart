@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/anilist/services/anilist_service_provider.dart';
 import 'package:shonenx/core/jikan/jikan_service.dart';
@@ -12,6 +14,10 @@ part 'aniskip_notifier.g.dart';
 @riverpod
 class AniSkipNotifier extends _$AniSkipNotifier {
   final JikanService _jikan = JikanService();
+
+  DateTime? _lastFetch;
+  final Duration _minInterval = const Duration(seconds: 3);
+
   @override
   List<AniSkipResultItem> build() {
     return const [];
@@ -23,6 +29,16 @@ class AniSkipNotifier extends _$AniSkipNotifier {
     required int episodeNumber,
     required int episodeLength,
   }) async {
+    final now = DateTime.now();
+
+    // Check rate limit
+    if (_lastFetch != null &&
+        now.difference(_lastFetch!) < _minInterval) {
+      AppLogger.w('Fetch skipped due to rate limiting.');
+      return;
+    }
+    _lastFetch = now;
+
     state = [];
     int? malId;
 
@@ -66,5 +82,6 @@ class AniSkipNotifier extends _$AniSkipNotifier {
 
   void clear() {
     state = [];
+    _lastFetch = null;
   }
 }

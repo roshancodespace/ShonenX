@@ -127,6 +127,20 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                   reverse: true,
                   child: Row(
                     children: [
+                      if (_watch(ref, (s) => s.servers.isNotEmpty)) ...[
+                        _pill(
+                          fontSize: 12,
+                          text: _watch(
+                            ref,
+                            (s) =>
+                                s.selectedServer?.isDub == true ? 'DUB' : 'SUB',
+                          ),
+                          onTap: () => ref
+                              .read(episodeDataProvider.notifier)
+                              .toggleDubSub(),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       if (_watch(
                         ref,
                         (s) =>
@@ -143,28 +157,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                           ),
                           onTap: widget.onServerPressed,
                         ),
-                      if (_watch(ref, (s) {
-                        if (s.servers.isEmpty) return false;
-                        final firstId = s.servers.first.id;
-                        if (!s.servers.every((e) => e.id == firstId)) {
-                          return false;
-                        }
-                        return s.servers.any((e) => e.isDub) &&
-                            s.servers.any((e) => !e.isDub);
-                      })) ...[
-                        const SizedBox(width: 8),
-                        _pill(
-                          fontSize: 12,
-                          text: _watch(
-                            ref,
-                            (s) =>
-                                s.selectedServer?.isDub == true ? 'DUB' : 'SUB',
-                          ),
-                          onTap: () => ref
-                              .read(episodeDataProvider.notifier)
-                              .toggleDubSub(),
-                        ),
-                      ],
                       if (_watch(ref, (s) => s.sources.length) > 1)
                         Padding(
                           padding: const EdgeInsets.only(left: 8),

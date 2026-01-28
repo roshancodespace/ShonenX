@@ -1,7 +1,9 @@
 // ignore_for_file: constant_identifier_names, use_build_context_synchronously
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -313,7 +315,14 @@ class EpisodeData extends _$EpisodeData {
       );
 
       final flat = res?.flatten() ?? [];
-      state = state.copyWith(servers: flat, selectedServer: flat.firstOrNull);
+      ServerData? selectedServer = flat.firstOrNull;
+      final preferDub = ref.read(
+        playerSettingsProvider.select((s) => s.preferDub),
+      );
+      if (preferDub) {
+        selectedServer = flat.firstWhereOrNull((i) => i.isDub);
+      }
+      state = state.copyWith(servers: flat, selectedServer: selectedServer);
     } catch (e) {
       AppLogger.e("Server fetch failed", e);
     } finally {

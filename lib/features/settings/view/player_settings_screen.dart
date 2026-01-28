@@ -13,6 +13,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final playerSettings = ref.watch(playerSettingsProvider);
+    final playerNotifier = ref.read(playerSettingsProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
@@ -44,11 +45,18 @@ class PlayerSettingsScreen extends ConsumerWidget {
                     DropdownMenuItem(value: '480p', child: Text('480p')),
                     DropdownMenuItem(value: '360p', child: Text('360p')),
                   ],
-                  onChanged: (value) => ref
-                      .read(playerSettingsProvider.notifier)
-                      .updateSettings(
-                        (prev) => prev.copyWith(defaultQuality: value!),
-                      ),
+                  onChanged: (value) => playerNotifier.updateSettings(
+                    (prev) => prev.copyWith(defaultQuality: value!),
+                  ),
+                ),
+                ToggleableSettingsItem(
+                  icon: Icon(Iconsax.microphone),
+                  title: 'Prefer Dub',
+                  description: 'Do you prefer dubbed over subbed?',
+                  value: playerSettings.preferDub,
+                  onChanged: (value) => playerNotifier.updateSettings(
+                    (prev) => prev.copyWith(preferDub: value),
+                  ),
                 ),
               ],
             ),
@@ -62,11 +70,9 @@ class PlayerSettingsScreen extends ConsumerWidget {
                   title: 'Enable AniSkip',
                   description: 'Skip intro and outro automatically or manually',
                   value: playerSettings.enableAniSkip,
-                  onChanged: (value) => ref
-                      .read(playerSettingsProvider.notifier)
-                      .updateSettings(
-                        (prev) => prev.copyWith(enableAniSkip: value),
-                      ),
+                  onChanged: (value) => playerNotifier.updateSettings(
+                    (prev) => prev.copyWith(enableAniSkip: value),
+                  ),
                 ),
                 ToggleableSettingsItem(
                   icon: Icon(
@@ -79,11 +85,9 @@ class PlayerSettingsScreen extends ConsumerWidget {
                   value: playerSettings.enableAutoSkip,
                   onChanged: (value) {
                     if (playerSettings.enableAniSkip) {
-                      ref
-                          .read(playerSettingsProvider.notifier)
-                          .updateSettings(
-                            (prev) => prev.copyWith(enableAutoSkip: value),
-                          );
+                      playerNotifier.updateSettings(
+                        (prev) => prev.copyWith(enableAutoSkip: value),
+                      );
                     }
                   },
                 ),

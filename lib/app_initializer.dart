@@ -24,6 +24,9 @@ import 'package:shonenx/core/models/universal/universal_news.dart';
 import 'package:shonenx/core/services/notification_service.dart';
 
 import 'package:window_manager/window_manager.dart';
+import 'package:workmanager/workmanager.dart';
+
+import 'package:shonenx/background_handler.dart';
 
 class AppInitializer {
   static Future<void> initialize() async {
@@ -33,6 +36,7 @@ class AppInitializer {
     }
 
     AppLogger.section('App Initialization');
+    await _initializeBackgroundService();
 
     WidgetsFlutterBinding.ensureInitialized();
     AppLogger.success('Flutter bindings initialized');
@@ -43,6 +47,13 @@ class AppInitializer {
     await NotificationService().initialize();
 
     AppLogger.section('Initialization Complete');
+  }
+
+  static Future<void> _initializeBackgroundService() async {
+    if (!(Platform.isAndroid || Platform.isIOS)) return;
+    AppLogger.section('Background services');
+    Workmanager().initialize(callbackDispatcher);
+    AppLogger.success('Background services initialized');
   }
 
   static Future<void> _initializeMediaKit() async {

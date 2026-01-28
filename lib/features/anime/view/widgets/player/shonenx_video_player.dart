@@ -277,10 +277,7 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
       bindings: {
         const SingleActivator(LogicalKeyboardKey.space): notifier.togglePlay,
         const SingleActivator(LogicalKeyboardKey.keyK): notifier.togglePlay,
-        const SingleActivator(LogicalKeyboardKey.keyJ): () =>
-            notifier.rewind(10),
-        const SingleActivator(LogicalKeyboardKey.keyL): () =>
-            notifier.forward(10),
+        const SingleActivator(LogicalKeyboardKey.keyL): () => _toggleLock(),
         const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
             notifier.rewind(10),
         const SingleActivator(LogicalKeyboardKey.arrowRight): () =>

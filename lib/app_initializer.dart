@@ -145,7 +145,7 @@ class AppInitializer {
             center: true,
             backgroundColor: Colors.black,
             skipTaskbar: false,
-            title: 'ShonenX Beta',
+            title: 'ShonenX',
           ),
           () async {
             await windowManager.show();

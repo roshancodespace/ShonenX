@@ -6,13 +6,16 @@ import 'package:shonenx/features/settings/view_model/home_layout_notifier.dart';
 import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 
 class HomeSettingsScreen extends ConsumerWidget {
-  const HomeSettingsScreen({super.key});
+  final bool noAppBar;
+  const HomeSettingsScreen({super.key, this.noAppBar = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final layout = ref.watch(homeLayoutProvider);
     final notifier = ref.read(homeLayoutProvider.notifier);
-    final theme = Theme.of(context);
+
+    if (noAppBar) {
+      return _buildReorderableLayout(context, ref, notifier);
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -36,119 +39,7 @@ class HomeSettingsScreen extends ConsumerWidget {
           const SizedBox(width: 8),
         ],
       ),
-      body: ReorderableListView.builder(
-        buildDefaultDragHandles: false,
-        padding: const EdgeInsets.fromLTRB(10, 5, 10, 80),
-        itemCount: layout.length,
-        onReorder: notifier.move,
-        proxyDecorator: (child, index, animation) {
-          return AnimatedBuilder(
-            animation: animation,
-            builder: (context, child) {
-              final elevation = Tween<double>(
-                begin: 0,
-                end: 8,
-              ).evaluate(animation);
-              return Material(
-                elevation: elevation,
-                color: theme.colorScheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(20),
-                child: child,
-              );
-            },
-            child: child,
-          );
-        },
-        itemBuilder: (context, index) {
-          final section = layout[index];
-          final accent = _sectionColor(section.type, theme);
-
-          return Padding(
-            key: ValueKey(section.id),
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Material(
-              color: theme.colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(20),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: () {},
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: [
-                      // Drag handle
-                      ReorderableDragStartListener(
-                        index: index,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Icon(
-                            Icons.drag_handle,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-
-                      // Accent bar
-                      Container(
-                        width: 4,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: accent,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-
-                      // Title + subtitle
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              section.title,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _getTypeLabel(section.type),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Actions
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Switch.adaptive(
-                            value: section.enabled,
-                            onChanged: (_) => notifier.toggle(index),
-                          ),
-                          if (section.type == HomeSectionType.watchlist)
-                            IconButton(
-                              tooltip: 'Remove',
-                              icon: const Icon(Icons.close_rounded),
-                              color: theme.colorScheme.error,
-                              onPressed: () => notifier.delete(index),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+      body: _buildReorderableLayout(context, ref, notifier),
     );
   }
 
@@ -163,6 +54,128 @@ class HomeSettingsScreen extends ConsumerWidget {
       case HomeSectionType.watchlist:
         return 'Watchlist';
     }
+  }
+
+  Widget _buildReorderableLayout(
+    BuildContext context,
+    WidgetRef ref,
+    HomeLayoutNotifier notifier,
+  ) {
+    final layout = ref.watch(homeLayoutProvider);
+    final theme = Theme.of(context);
+    return ReorderableListView.builder(
+      buildDefaultDragHandles: false,
+      padding: const EdgeInsets.fromLTRB(10, 5, 10, 80),
+      itemCount: layout.length,
+      onReorder: notifier.move,
+      proxyDecorator: (child, index, animation) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) {
+            final elevation = Tween<double>(
+              begin: 0,
+              end: 8,
+            ).evaluate(animation);
+            return Material(
+              elevation: elevation,
+              color: theme.colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(20),
+              child: child,
+            );
+          },
+          child: child,
+        );
+      },
+      itemBuilder: (context, index) {
+        final section = layout[index];
+        final accent = _sectionColor(section.type, theme);
+
+        return Padding(
+          key: ValueKey(section.id),
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Material(
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {},
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    // Drag handle
+                    ReorderableDragStartListener(
+                      index: index,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Icon(
+                          Icons.drag_handle,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+
+                    // Accent bar
+                    Container(
+                      width: 4,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: accent,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Title + subtitle
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            section.title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _getTypeLabel(section.type),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Actions
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Switch.adaptive(
+                          value: section.enabled,
+                          onChanged: (_) => notifier.toggle(index),
+                        ),
+                        if (section.type == HomeSectionType.watchlist)
+                          IconButton(
+                            tooltip: 'Remove',
+                            icon: const Icon(Icons.close_rounded),
+                            color: theme.colorScheme.error,
+                            onPressed: () => notifier.delete(index),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Color _sectionColor(HomeSectionType type, ThemeData theme) {

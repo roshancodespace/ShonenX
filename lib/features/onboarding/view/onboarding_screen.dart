@@ -9,6 +9,7 @@ import 'package:shonenx/features/anime/view/widgets/card/anime_card_mode.dart';
 import 'package:shonenx/features/anime/view/widgets/spotlight/spotlight_card_mode.dart';
 import 'package:shonenx/features/auth/view/auth_button.dart';
 import 'package:shonenx/features/settings/view/anime_sources_settings_screen.dart';
+import 'package:shonenx/features/settings/view/home_settings_screen.dart';
 import 'package:shonenx/features/settings/view/ui_settings_screen.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
@@ -26,7 +27,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 6;
+  final int _totalPages = 7;
 
   @override
   void dispose() {
@@ -105,6 +106,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   _buildSourceStep(context, ref),
                   _buildCardModeStep(context, ref),
                   _buildSpotlightModeStep(context, ref),
+                  _buildHomeLayoutStep(context, ref),
                   _buildUpdatesStep(context, ref),
                 ],
               ),
@@ -400,6 +402,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             },
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildHomeLayoutStep(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(
+          context,
+          'Home\nLayout',
+          'Use ShonenX with your own preferred home layout.',
+        ),
+        Expanded(child: HomeSettingsScreen(noAppBar: true)),
       ],
     );
   }

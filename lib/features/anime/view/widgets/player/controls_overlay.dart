@@ -57,19 +57,30 @@ class ControlsOverlay extends ConsumerWidget {
 
   Widget _controls(WidgetRef ref) {
     final notifier = ref.read(playerStateProvider.notifier);
+    const duration = Duration(milliseconds: 300);
+    const curve = Curves.easeOut;
 
     return RepaintBoundary(
       child: Stack(
         children: [
           CenterControls(onInteraction: onRestartHide),
-          TopControls(
-            onInteraction: onRestartHide,
-            onEpisodesPressed: onEpisodesPressed,
-            onSettingsPressed: onSettingsPressed,
-            onQualityPressed: onQualityPressed,
+          AnimatedPositioned(
+            duration: duration,
+            curve: curve,
+            top: visible ? 0 : -100,
+            left: 0,
+            right: 0,
+            child: TopControls(
+              onInteraction: onRestartHide,
+              onEpisodesPressed: onEpisodesPressed,
+              onSettingsPressed: onSettingsPressed,
+              onQualityPressed: onQualityPressed,
+            ),
           ),
-          Positioned(
-            bottom: 0,
+          AnimatedPositioned(
+            duration: duration,
+            curve: curve,
+            bottom: visible ? 0 : -120,
             left: 0,
             right: 0,
             child: BottomControls(
@@ -80,7 +91,7 @@ class ControlsOverlay extends ConsumerWidget {
               onSourcePressed: onSourcePressed,
               onSubtitlePressed: onSubtitlePressed,
               onServerPressed: onServerPressed,
-              onFullScreenPressed: onFullScreenPressed
+              onFullScreenPressed: onFullScreenPressed,
             ),
           ),
         ],

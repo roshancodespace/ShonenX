@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 
 class ColorPickerSettingsItem extends BaseSettingsItem {
@@ -22,19 +23,19 @@ class ColorPickerSettingsItem extends BaseSettingsItem {
     required this.selectedColor,
     required this.onColorChanged,
     this.colors = const [
-      0xFFFFFFFF, // White
-      0xFFFFFF00, // Yellow
-      0xFF00FFFF, // Cyan
-      0xFF00FF00, // Green
-      0xFFFF00FF, // Magenta
-      0xFFFF0000, // Red
-      0xFF0000FF, // Blue
-      0xFF000000, // Black
+      0xFFFFFFFF,
+      0xFFFFFF00,
+      0xFF00FFFF,
+      0xFF00FF00,
+      0xFFFF00FF,
+      0xFFFF0000,
+      0xFF0000FF,
+      0xFF000000,
     ],
   }) : super(onTap: null);
 
   @override
-  bool needsVerticalLayoutByContent() => true;
+  bool needsVerticalLayoutByContent() => false;
 
   @override
   Widget buildHorizontalLayout(
@@ -42,95 +43,123 @@ class ColorPickerSettingsItem extends BaseSettingsItem {
     bool effectiveCompact,
     ResponsiveDimensions dimensions,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            if (icon != null || leading != null) ...[
-              buildIconContainer(context, effectiveCompact, dimensions),
-              SizedBox(width: dimensions.spacing),
-            ],
-            buildTitleAndDescription(context, effectiveCompact, dimensions),
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: () => _openColorPickerDialog(context),
+      child: Row(
+        children: [
+          if (icon != null || leading != null) ...[
+            buildIconContainer(context, effectiveCompact, dimensions),
+            SizedBox(width: dimensions.spacing),
           ],
-        ),
-        SizedBox(height: effectiveCompact ? 12 : 16),
-        _buildColorList(context, effectiveCompact),
-      ],
+          Expanded(
+            child: buildTitleAndDescription(
+              context,
+              effectiveCompact,
+              dimensions,
+            ),
+          ),
+
+          // Current color preview with a "glow" because we're fancy
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: Color(selectedColor),
+              shape: BoxShape.circle,
+              border: Border.all(color: colorScheme.outlineVariant, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(selectedColor).withOpacity(0.4),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   @override
-  Widget buildVerticalLayout(
-    BuildContext context,
-    bool effectiveCompact,
-    ResponsiveDimensions dimensions,
-  ) {
-    return buildHorizontalLayout(context, effectiveCompact, dimensions);
-  }
+  Widget buildVerticalLayout(context, effectiveCompact, dimensions) =>
+      buildHorizontalLayout(context, effectiveCompact, dimensions);
 
-  Widget _buildColorList(BuildContext context, bool effectiveCompact) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final activeRingColor = accent ?? colorScheme.primary;
-    final swatchSize = effectiveCompact ? 40.0 : 48.0;
-
-    return SizedBox(
-      height: swatchSize,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        itemCount: colors.length,
-        separatorBuilder: (context, index) =>
-            SizedBox(width: effectiveCompact ? 10 : 14),
-        itemBuilder: (context, index) {
-          final colorValue = colors[index];
-          final isSelected = selectedColor == colorValue;
-          final color = Color(colorValue);
-          
-          final isLightColor = color.computeLuminance() > 0.5;
-
-          return GestureDetector(
-            onTap: () => onColorChanged(colorValue),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: swatchSize,
-              height: swatchSize,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color,
-                border: isSelected
-                    ? Border.all(
-                        color: activeRingColor,
-                        width: 2.5,
-                        strokeAlign: BorderSide.strokeAlignOutside,
-                      )
-                    : Border.all(
-                        color: colorScheme.outline.withOpacity(0.2),
-                        width: 1,
-                        strokeAlign: BorderSide.strokeAlignInside,
-                      ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: activeRingColor.withOpacity(0.25),
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        )
-                      ]
-                    : null,
+  void _openColorPickerDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        int tempColor = selectedColor;
+        return AlertDialog(
+          scrollable: true,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          title: const Text('Customize Color'),
+          content: Column(
+            children: [
+              ColorPicker(
+                pickerColor: Color(selectedColor),
+                onColorChanged: (color) => tempColor = color.value,
+                colorPickerWidth: 300,
+                pickerAreaHeightPercent: 0.7,
+                enableAlpha: true,
+                displayThumbColor: true,
+                paletteType: PaletteType.hsvWithHue,
+                labelTypes: const [],
+                pickerAreaBorderRadius: BorderRadius.circular(20),
               ),
-              child: isSelected
-                  ? Icon(
-                      Icons.check,
-                      color: isLightColor ? Colors.black87 : Colors.white,
-                      size: effectiveCompact ? 20 : 22,
+              const SizedBox(height: 20),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Presets',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: colors
+                    .map(
+                      (c) => GestureDetector(
+                        onTap: () {
+                          onColorChanged(c);
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Color(c),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white24),
+                          ),
+                        ),
+                      ),
                     )
-                  : null,
+                    .toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
             ),
-          );
-        },
-      ),
+            FilledButton(
+              onPressed: () {
+                onColorChanged(tempColor);
+                Navigator.pop(context);
+              },
+              child: const Text('Apply'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

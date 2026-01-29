@@ -29,6 +29,7 @@ dependencies:
   flex_color_scheme: ^8.4.0
   flutter:
     sdk: flutter
+  flutter_colorpicker: ^1.1.0
   flutter_inappwebview: ^6.1.5
   flutter_local_notifications: ^20.0.0
   flutter_markdown: ^0.7.7+1

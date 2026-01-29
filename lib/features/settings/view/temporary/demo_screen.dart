@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/core_new/eval/model/m_manga.dart';
+import 'package:shonenx/core_mangayomi/eval/model/m_manga.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';

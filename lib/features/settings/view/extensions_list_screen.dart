@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:isar_community/isar.dart';
 
-import 'package:shonenx/core_new/models/manga.dart';
-import 'package:shonenx/core_new/models/source.dart';
+import 'package:shonenx/core_mangayomi/models/manga.dart';
+import 'package:shonenx/core_mangayomi/models/source.dart';
 import 'package:shonenx/features/settings/view/widgets/extension_tile.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';

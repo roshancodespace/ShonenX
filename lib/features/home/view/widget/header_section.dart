@@ -9,6 +9,7 @@ import 'package:shonenx/features/auth/model/user.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/home/view/widget/search_model.dart';
 import 'package:shonenx/features/news/view_model/news_provider.dart';
+import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/utils/greeting_methods.dart';
 
 class HeaderSection extends ConsumerWidget {
@@ -26,20 +27,68 @@ class HeaderSection extends ConsumerWidget {
             activePlatform == AuthPlatform.anilist ? s.anilistUser : s.malUser,
       ),
     );
-
+    final useNewUI = ref.read(experimentalProvider.select((s) => s.newUI));
+    final colorScheme = Theme.of(context);
     return Column(
       children: [
         SizedBox(height: MediaQuery.viewPaddingOf(context).top),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: UserProfileCard(user: user)),
-            const SizedBox(width: 10),
-            ActionPanel(isDesktop: isDesktop),
-          ],
-        ),
-        const SizedBox(height: 10),
-        const _DiscoverCard(),
+
+        if (!useNewUI) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: UserProfileCard(user: user)),
+              const SizedBox(width: 10),
+              ActionPanel(isDesktop: isDesktop),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const _DiscoverCard(),
+        ]
+        // NEW UI
+        else ...[
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () => context.push('/settings/account/profile'),
+                  child: _UserAvatar(user: user),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: VerticalDivider(
+                    color: colorScheme.primaryColor,
+                    thickness: 1,
+                    width: 15,
+                    indent: 2,
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${getGreeting()},',
+                      style: TextStyle(color: colorScheme.primaryColor),
+                    ),
+                    Text(
+                      user?.name ?? "Guest",
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                _NewsActionBadge(),
+                const SizedBox(width: 10),
+                _ActionButton(
+                  icon: Icons.settings_rounded,
+                  onTap: () => context.push('/settings'),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 10),
       ],
     );
@@ -139,8 +188,11 @@ class _NewsActionBadge extends ConsumerWidget {
       onPressed: () => context.push('/news'),
       icon: Badge(
         isLabelVisible: newsCount > 0,
-        label: Text('$newsCount'),
-        backgroundColor: theme.colorScheme.error,
+        label: Text(
+          '$newsCount',
+          style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+        ),
+        backgroundColor: theme.colorScheme.primaryContainer,
         child: const Icon(Iconsax.document_text),
       ),
       tooltip: 'Latest News',

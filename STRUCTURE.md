@@ -1,5 +1,5 @@
 lib/
-├── core/
+├── core/ (shonenx core)
 │   ├── anilist/
 │   │   ├── services/
 │   │   ├── graphql_client.dart
@@ -20,25 +20,12 @@ lib/
 │   └── widgets/
 │       └── design/
 │           └── glass/
-├── core_new/
-│   ├── eval/
-│   │   ├── dart/
-│   │   ├── javascript/
-│   │   ├── model/
-│   │   ├── providers/
-│   │   ├── search/
-│   │   ├── services/
-│   │   └── utils/
-│   ├── extensions/
-│   ├── models/
-│   ├── providers/
-│   ├── search/
-│   ├── services/
-│   └── utils/
+├── core_mangayomi (mangayomi extension core)
+│ 
 ├── data/
 │   └── hive/
 │       └── models/
-├── features/
+├── features/ (mvvm architecture)
 │   ├── anime/
 │   │   ├── view/
 │   │   │   ├── widgets/

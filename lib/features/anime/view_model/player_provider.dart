@@ -168,6 +168,11 @@ class PlayerStateNotifier extends _$PlayerStateNotifier {
 
   Future<void> seek(Duration pos) => _player.seek(pos);
 
+  void seekRelative(int seconds) {
+    final p = _player.state.position + Duration(seconds: seconds);
+    _player.seek(p);
+  }
+
   void forward(int seconds) {
     final p = _player.state.position + Duration(seconds: seconds);
     _player.seek(p);

@@ -63,7 +63,7 @@ jobs:
           }
           EOF
       - run: flutter pub get
-      - run: flutter build apk --release --split-per-abi --obfuscate --split-debug-info=build/app/outputs/symbols --dart-define-from-file=.env
+      - run: flutter build apk --release --split-per-abi --obfuscate --split-debug-info=build/app/outputs/symbols --dart-define-from-file=keys.json
       - uses: actions/upload-artifact@v4
         with:
           name: android-apks
@@ -92,7 +92,7 @@ jobs:
           }
           EOF
       - run: flutter pub get
-      - run: flutter build linux --release --obfuscate --split-debug-info=build/linux/debug-info
+      - run: flutter build linux --release --obfuscate --split-debug-info=build/linux/debug-info --dart-define-from-file=keys.json
       - run: |
           cd build/linux/x64/release/bundle
           zip -r ../../../../../ShonenX-Linux.zip .
@@ -123,7 +123,7 @@ jobs:
           }
           EOF
       - run: flutter pub get
-      - run: flutter build windows --release --obfuscate --split-debug-info=build/windows/debug-info --dart-define-from-file=.env
+      - run: flutter build windows --release --obfuscate --split-debug-info=build/windows/debug-info --dart-define-from-file=keys.json
       - name: Generate Inno Script
         shell: pwsh
         run: |

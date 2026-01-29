@@ -7,6 +7,7 @@ import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 
 class HomeSettingsScreen extends ConsumerWidget {
   final bool noAppBar;
+
   const HomeSettingsScreen({super.key, this.noAppBar = false});
 
   @override
@@ -14,7 +15,7 @@ class HomeSettingsScreen extends ConsumerWidget {
     final notifier = ref.read(homeLayoutProvider.notifier);
 
     if (noAppBar) {
-      return _buildReorderableLayout(context, ref, notifier);
+      return ReorderableLayout(ref: ref, notifier: notifier);
     }
 
     return Scaffold(
@@ -29,7 +30,7 @@ class HomeSettingsScreen extends ConsumerWidget {
           IconButton(
             tooltip: 'Add Watchlist Row',
             icon: const Icon(Iconsax.add),
-            onPressed: () => _showAddDialog(context, ref),
+            onPressed: () => AddWatchlistDialog.show(context, ref),
           ),
           IconButton(
             tooltip: 'Reset to Default',
@@ -39,11 +40,14 @@ class HomeSettingsScreen extends ConsumerWidget {
           const SizedBox(width: 8),
         ],
       ),
-      body: _buildReorderableLayout(context, ref, notifier),
+      body: ReorderableLayout(ref: ref, notifier: notifier),
     );
   }
+}
 
-  String _getTypeLabel(HomeSectionType type) {
+// Maps HomeSectionType to readable labels and colors
+class HomeSectionLabel {
+  static String fromType(HomeSectionType type) {
     switch (type) {
       case HomeSectionType.spotlight:
         return 'Hero Section';
@@ -56,19 +60,43 @@ class HomeSettingsScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildReorderableLayout(
-    BuildContext context,
-    WidgetRef ref,
-    HomeLayoutNotifier notifier,
-  ) {
+  static Color accentColor(HomeSectionType type, ThemeData theme) {
+    switch (type) {
+      case HomeSectionType.spotlight:
+        return Colors.orangeAccent;
+      case HomeSectionType.continueWatching:
+        return Colors.blueAccent;
+      case HomeSectionType.watchlist:
+        return Colors.greenAccent;
+      case HomeSectionType.standard:
+        return theme.colorScheme.primary;
+    }
+  }
+}
+
+// Widget for the reorderable home layout
+class ReorderableLayout extends ConsumerWidget {
+  final WidgetRef ref;
+  final HomeLayoutNotifier notifier;
+
+  const ReorderableLayout({
+    super.key,
+    required this.ref,
+    required this.notifier,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final layout = ref.watch(homeLayoutProvider);
     final theme = Theme.of(context);
+
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
       padding: const EdgeInsets.fromLTRB(10, 5, 10, 80),
       itemCount: layout.length,
       onReorder: notifier.move,
       proxyDecorator: (child, index, animation) {
+        // floating effect when dragging
         return AnimatedBuilder(
           animation: animation,
           builder: (context, child) {
@@ -88,7 +116,7 @@ class HomeSettingsScreen extends ConsumerWidget {
       },
       itemBuilder: (context, index) {
         final section = layout[index];
-        final accent = _sectionColor(section.type, theme);
+        final accent = HomeSectionLabel.accentColor(section.type, theme);
 
         return Padding(
           key: ValueKey(section.id),
@@ -106,7 +134,7 @@ class HomeSettingsScreen extends ConsumerWidget {
                 ),
                 child: Row(
                   children: [
-                    // Drag handle
+                    // drag handle
                     ReorderableDragStartListener(
                       index: index,
                       child: Padding(
@@ -118,7 +146,7 @@ class HomeSettingsScreen extends ConsumerWidget {
                       ),
                     ),
 
-                    // Accent bar
+                    // accent bar
                     Container(
                       width: 4,
                       height: 40,
@@ -129,7 +157,7 @@ class HomeSettingsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: 12),
 
-                    // Title + subtitle
+                    // title and type
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,7 +170,7 @@ class HomeSettingsScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            _getTypeLabel(section.type),
+                            HomeSectionLabel.fromType(section.type),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -151,7 +179,7 @@ class HomeSettingsScreen extends ConsumerWidget {
                       ),
                     ),
 
-                    // Actions
+                    // toggle and remove button
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -177,21 +205,11 @@ class HomeSettingsScreen extends ConsumerWidget {
       },
     );
   }
+}
 
-  Color _sectionColor(HomeSectionType type, ThemeData theme) {
-    switch (type) {
-      case HomeSectionType.spotlight:
-        return Colors.orangeAccent;
-      case HomeSectionType.continueWatching:
-        return Colors.blueAccent;
-      case HomeSectionType.watchlist:
-        return Colors.greenAccent;
-      case HomeSectionType.standard:
-        return theme.colorScheme.primary;
-    }
-  }
-
-  Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
+// Dialog for adding a watchlist row
+class AddWatchlistDialog {
+  static Future<void> show(BuildContext context, WidgetRef ref) async {
     final repo = ref.read(animeRepositoryProvider);
     final statuses = await repo.getSupportedStatuses();
 

@@ -7,7 +7,6 @@ import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/utils/extractors.dart' as extractor;
-import 'package:shonenx/core/utils/env_loader.dart';
 
 // ==========================================
 // 🔧 CONFIGURATION
@@ -161,8 +160,6 @@ Future<T> retry<T>(
  * ============================================================ */
 Future<void> main() async {
   HttpOverrides.global = null;
-
-  await Env.init();
 
   final ctx = DebugContext();
   final cache = await CacheManager.load();

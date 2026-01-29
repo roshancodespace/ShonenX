@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
-import 'package:shonenx/core_new/models/manga.dart';
-import 'package:shonenx/core_new/models/track.dart';
+import 'package:shonenx/core_mangayomi/models/manga.dart';
+import 'package:shonenx/core_mangayomi/models/track.dart';
 
 import 'package:shonenx/main.dart';
 

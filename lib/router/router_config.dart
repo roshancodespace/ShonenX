@@ -5,7 +5,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 // Core & Models
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/core_new/models/source.dart';
+import 'package:shonenx/core_mangayomi/models/source.dart';
 
 // Features
 import 'package:shonenx/features/anime/view/watch_screen.dart';

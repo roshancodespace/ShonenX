@@ -68,6 +68,19 @@ class ExperimentalScreen extends ConsumerWidget {
                 );
               },
             ),
+            const SizedBox(height: 8),
+            ToggleableSettingsItem(
+              accent: colorScheme.primary,
+              icon: Icon(Icons.upcoming_rounded),
+              title: 'New UI (ALPHA)',
+              description: 'Trying to cook a better UI',
+              value: experimentalSettings.newUI,
+              onChanged: (value) {
+                experimentalNotifier.updateSettings(
+                  (state) => state.copyWith(newUI: value),
+                );
+              },
+            ),
           ],
         ),
       ),

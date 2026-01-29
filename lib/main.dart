@@ -19,7 +19,6 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
 import 'package:shonenx/router/router_config.dart';
 import 'package:shonenx/storage_provider.dart';
-import 'package:shonenx/core/utils/env_loader.dart';
 
 late Isar isar;
 WebViewEnvironment? webViewEnvironment;
@@ -27,7 +26,6 @@ final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-  Env.init();
   if (Platform.isLinux && runWebViewTitleBarWidget(args)) return;
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
     final availableVersion = await WebViewEnvironment.getAvailableVersion();

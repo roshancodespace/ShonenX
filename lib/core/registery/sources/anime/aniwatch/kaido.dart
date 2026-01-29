@@ -16,7 +16,7 @@ class KaidoProvider extends AnimeProvider {
       : super(
             apiUrl: customApiUrl != null
                 ? '$customApiUrl/anime/zoro'
-                : "${Env.get('API_URL')}/anime/zoro",
+                : "$API_URL/anime/zoro",
             baseUrl: 'https://kaido.to',
             providerName: 'kaido');
 

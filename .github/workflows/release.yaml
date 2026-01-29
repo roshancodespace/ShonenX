@@ -53,11 +53,15 @@ jobs:
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           storeFile=upload-keystore.jks
           EOF
-          echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" > .env
-          echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
-          echo "MAL_CLIENT_ID=${{ secrets.MAL_CLIENT_ID }}" >> .env
-          echo "MAL_CLIENT_SECRET=${{ secrets.MAL_CLIENT_SECRET }}" >> .env
-          echo "API_URL=${{ secrets.API_URL }}" >> .env
+          cat <<EOF > keys.json
+          {
+            "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
+            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
+            "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
+            "API_URL": "${{ secrets.API_URL }}"
+          }
+          EOF
       - run: flutter pub get
       - run: flutter build apk --release --split-per-abi --obfuscate --split-debug-info=build/app/outputs/symbols --dart-define-from-file=.env
       - uses: actions/upload-artifact@v4
@@ -77,12 +81,16 @@ jobs:
         with:
           flutter-version: "3.38.6"
       - name: Configure Env
-        run: |
-          echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" > .env
-          echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
-          echo "MAL_CLIENT_ID=${{ secrets.MAL_CLIENT_ID }}" >> .env
-          echo "MAL_CLIENT_SECRET=${{ secrets.MAL_CLIENT_SECRET }}" >> .env
-          echo "API_URL=${{ secrets.API_URL }}" >> .env
+        run:  |
+          cat <<EOF > keys.json
+          {
+            "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
+            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
+            "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
+            "API_URL": "${{ secrets.API_URL }}"
+          }
+          EOF
       - run: flutter pub get
       - run: flutter build linux --release --obfuscate --split-debug-info=build/linux/debug-info
       - run: |
@@ -104,12 +112,16 @@ jobs:
           flutter-version: "3.38.6"
       - name: Configure Env
         shell: bash
-        run: |
-          echo "ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}" > .env
-          echo "ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}" >> .env
-          echo "MAL_CLIENT_ID=${{ secrets.MAL_CLIENT_ID }}" >> .env
-          echo "MAL_CLIENT_SECRET=${{ secrets.MAL_CLIENT_SECRET }}" >> .env
-          echo "API_URL=${{ secrets.API_URL }}" >> .env
+        run:  |
+          cat <<EOF > keys.json
+          {
+            "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
+            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
+            "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
+            "API_URL": "${{ secrets.API_URL }}"
+          }
+          EOF
       - run: flutter pub get
       - run: flutter build windows --release --obfuscate --split-debug-info=build/windows/debug-info --dart-define-from-file=.env
       - name: Generate Inno Script

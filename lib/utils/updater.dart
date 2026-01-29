@@ -1,12 +1,13 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shonenx/core/network/universal_client.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/main.dart';
-import 'package:dio/dio.dart';
 import 'package:shonenx/utils/update_dialog.dart';
 
 enum UpdateType { stable, beta, alpha, hotfix }
@@ -22,23 +23,29 @@ Future<void> checkForUpdates(
     final repo = useTestReleases
         ? 'roshancodespace/shonenx-test-releases'
         : 'roshancodespace/ShonenX';
-    final url = Uri.parse('https://api.github.com/repos/$repo/releases');
 
-    final response = await Dio().get(
-      url.toString(),
-      options: Options(
-        headers: {'Accept': 'application/vnd.github.v3+json'},
-        responseType: ResponseType.json,
-      ),
+    final pageSize = (includeBeta || includeAlpha) ? 5 : 1;
+    final url = Uri.parse(
+      'https://api.github.com/repos/$repo/releases?per_page=$pageSize',
     );
 
-    if (response.statusCode != 200 || response.data is! List) {
-      AppLogger.w('Failed to fetch releases');
+    final response = await UniversalHttpClient.instance.get(
+      url,
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'ShonenX',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      AppLogger.w('Failed to fetch releases: ${response.statusCode}');
       return;
     }
 
-    final List<dynamic> releases = response.data;
-    if (releases.isEmpty) return;
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! List || decoded.isEmpty) return;
+
+    final List<dynamic> releases = decoded;
 
     final latestRelease = releases.firstWhere((rel) {
       final tag = (rel['tag_name'] as String).toLowerCase();
@@ -61,7 +68,11 @@ Future<void> checkForUpdates(
     final updateType = _determineUpdateType(tagName, isPrerelease);
 
     final packageInfo = await PackageInfo.fromPlatform();
-    final currentVersion = packageInfo.version;
+    final currentVersion = '${packageInfo.version}-${packageInfo.buildNumber}';
+
+    if (debugMode) {
+      AppLogger.d('Latest: $tagName | Current: $currentVersion');
+    }
 
     bool isNewer = _isNewerVersion(tagName, currentVersion);
 
@@ -88,26 +99,18 @@ Future<void> checkForUpdates(
 }
 
 String? _getPlatformSpecificAsset(List<dynamic> assets) {
-  if (Platform.isAndroid) {
-    return assets.firstWhere(
-      (a) =>
-          (a['name'] as String).contains('arm64-v8a') &&
-          (a['name'] as String).endsWith('.apk'),
-      orElse: () => null,
-    )?['browser_download_url'];
-  } else if (Platform.isWindows) {
-    return assets.firstWhere(
-      (a) => (a['name'] as String).endsWith('-Setup.exe'),
-      orElse: () => assets.firstWhere(
-        (a) => (a['name'] as String).contains('Windows-Portable.zip'),
-        orElse: () => null,
-      ),
-    )?['browser_download_url'];
-  } else if (Platform.isLinux) {
-    return assets.firstWhere(
-      (a) => (a['name'] as String).contains('Linux.zip'),
-      orElse: () => null,
-    )?['browser_download_url'];
+  for (final a in assets) {
+    final name = (a['name'] as String).toLowerCase();
+    final url = a['browser_download_url'] as String;
+
+    if (Platform.isAndroid &&
+        name.contains('arm64-v8a') &&
+        name.endsWith('.apk'))
+      return url;
+    if (Platform.isWindows &&
+        (name.endsWith('-setup.exe') || name.contains('windows-portable.zip')))
+      return url;
+    if (Platform.isLinux && name.contains('linux.zip')) return url;
   }
   return null;
 }
@@ -116,9 +119,8 @@ UpdateType _determineUpdateType(String tag, bool prerelease) {
   final lowerTag = tag.toLowerCase();
   if (lowerTag.contains('hotfix')) return UpdateType.hotfix;
   if (lowerTag.contains('beta')) return UpdateType.beta;
-  if (lowerTag.contains('alpha')) return UpdateType.alpha;
-  if (lowerTag.contains('test'))
-    return UpdateType.alpha; // Treat test as unstable/alpha
+  if (lowerTag.contains('alpha') || lowerTag.contains('test'))
+    return UpdateType.alpha;
   return UpdateType.stable;
 }
 
@@ -126,58 +128,39 @@ bool _isNewerVersion(String latestTag, String currentVersion) {
   final latestClean = latestTag.startsWith('v')
       ? latestTag.substring(1)
       : latestTag;
+
   if (latestClean == currentVersion) return false;
 
-  List<dynamic> parseVersion(String v) {
-    final mainParts = v.split('-');
-    final numericPart = mainParts[0];
-    final numbers = numericPart
+  List<int> getNumbers(String v) {
+    return v
+        .replaceAll(RegExp(r'[a-zA-Z-]'), '.')
         .split('.')
+        .where((s) => s.isNotEmpty)
         .map((e) => int.tryParse(e) ?? 0)
         .toList();
-
-    int subPatch = 0;
-    String label = '';
-
-    if (mainParts.length > 1) {
-      label = mainParts[1]; // e.g., hotfix.1
-      final subMatch = RegExp(r'\.(\d+)').firstMatch(label);
-      if (subMatch != null) {
-        subPatch = int.tryParse(subMatch.group(1)!) ?? 0;
-      }
-    }
-
-    return [numbers, label, subPatch];
   }
 
-  final latestData = parseVersion(latestClean);
-  final currentData = parseVersion(currentVersion);
+  final lNums = getNumbers(latestClean);
+  final cNums = getNumbers(currentVersion);
 
-  final List<int> lNums = latestData[0];
-  final List<int> cNums = currentData[0];
+  final maxLength = lNums.length > cNums.length ? lNums.length : cNums.length;
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < maxLength; i++) {
     int l = i < lNums.length ? lNums[i] : 0;
     int c = i < cNums.length ? cNums[i] : 0;
+
     if (l > c) return true;
     if (l < c) return false;
   }
 
-  final String lLabel = latestData[1];
-  final String cLabel = currentData[1];
-  final int lSub = latestData[2];
-  final int cSub = currentData[2];
+  final bool latestHasSuffix = latestClean.contains('-');
+  final bool currentHasSuffix = currentVersion.contains('-');
 
-  if (lLabel.isEmpty && cLabel.isNotEmpty) return true;
-  if (lLabel.isNotEmpty && cLabel.isEmpty) return false;
+  if (latestHasSuffix && !currentHasSuffix) return true;
+  if (!latestHasSuffix && currentHasSuffix) return false;
 
-  if (lLabel.isNotEmpty && cLabel.isNotEmpty) {
-    final lType = lLabel.split('.')[0];
-    final cType = cLabel.split('.')[0];
-
-    if (lType == cType) {
-      return lSub > cSub;
-    }
+  if (latestHasSuffix && currentHasSuffix) {
+    return latestClean.compareTo(currentVersion) > 0;
   }
 
   return false;
@@ -208,8 +191,7 @@ void showUpdateBottomSheet(
     transitionBuilder: (context, animation, secondaryAnimation, child) {
       final curvedAnimation = CurvedAnimation(
         parent: animation,
-        curve: Curves.easeInOutCubicEmphasized,
-        reverseCurve: Curves.easeInOutCubicEmphasized,
+        curve: Curves.easeOutCubic,
       );
 
       return FadeTransition(

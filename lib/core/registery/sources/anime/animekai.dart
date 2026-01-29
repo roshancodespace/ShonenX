@@ -14,7 +14,7 @@ class AnimekaiProvider extends AnimeProvider {
       : super(
             apiUrl: customApiUrl != null
                 ? '$customApiUrl/anime/animekai'
-                : "${Env.get('API_URL')}/anime/animekai",
+                : "$API_URL/anime/animekai",
             baseUrl: 'https://animekai.to/',
             providerName: 'animekai');
 

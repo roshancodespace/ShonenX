@@ -1,31 +1,7 @@
-import 'package:shonenx/core/utils/app_logger.dart';
+// ignore_for_file: constant_identifier_names
 
-class Env {
-  static bool _isLogged = false;
-
-  static void init() {
-    if (_isLogged) return;
-    
-    if (get('API_URL').isEmpty) {
-      AppLogger.w('Warning: API_URL is missing from environment defines.');
-    } else {
-      AppLogger.i('Env initialized successfully via dart-define.');
-    }
-    
-    _isLogged = true;
-  }
-
-  static String get(String key, {String? fallback}) {
-    final value = String.fromEnvironment(key);
-    
-    if (value.isEmpty) {
-      return fallback ?? '';
-    }
-    
-    return value;
-  }
-
-  static bool getBool(String key, {bool fallback = false}) {
-    return bool.fromEnvironment(key, defaultValue: fallback);
-  }
-}
+const API_URL = String.fromEnvironment('API_URL');
+const ANILIST_CLIENT_ID = String.fromEnvironment('ANILIST_CLIENT_ID');
+const ANILIST_CLIENT_SECRET = String.fromEnvironment('ANILIST_CLIENT_SECRET');
+const MAL_CLIENT_ID = String.fromEnvironment('MAL_CLIENT_ID');
+const MAL_CLIENT_SECRET = String.fromEnvironment('MAL_CLIENT_SECRET');

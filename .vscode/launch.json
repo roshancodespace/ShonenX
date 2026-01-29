@@ -6,65 +6,23 @@
       "type": "dart",
       "request": "attach"
     },
-
-    // ─────────────────────────────────────────────
-    // WINDOWS
-    // ─────────────────────────────────────────────
-
     {
-      "name": "Windows – Debug",
-      "request": "launch",
+      "name": "Flutter: Debug",
       "type": "dart",
-      "deviceId": "windows",
-      "toolArgs": ["--dart-define-from-file=.env"]
+      "request": "launch",
+      "flutterMode": "debug",
+      "args": [
+        "--dart-define-from-file=keys.json"
+      ]
     },
     {
-      "name": "Windows – Release",
-      "request": "launch",
+      "name": "Flutter: Release",
       "type": "dart",
-      "deviceId": "windows",
+      "request": "launch",
       "flutterMode": "release",
-      "toolArgs": ["--dart-define-from-file=.env"]
+      "args": [
+        "--dart-define-from-file=keys.json"
+      ]
     },
-
-    // ─────────────────────────────────────────────
-    // LINUX
-    // ─────────────────────────────────────────────
-
-    {
-      "name": "Linux – Debug",
-      "request": "launch",
-      "type": "dart",
-      "deviceId": "linux",
-      "toolArgs": ["--dart-define-from-file=.env"]
-    },
-    {
-      "name": "Linux – Release",
-      "request": "launch",
-      "type": "dart",
-      "deviceId": "linux",
-      "flutterMode": "release",
-      "toolArgs": ["--dart-define-from-file=.env"]
-    },
-
-    // ─────────────────────────────────────────────
-    // ANDROID
-    // ─────────────────────────────────────────────
-
-    {
-      "name": "Android – Debug",
-      "request": "launch",
-      "type": "dart",
-      "deviceId": "android",
-      "toolArgs": ["--dart-define-from-file=.env"]
-    },
-    {
-      "name": "Android – Release",
-      "request": "launch",
-      "type": "dart",
-      "deviceId": "android",
-      "flutterMode": "release",
-      "toolArgs": ["--dart-define-from-file=.env"]
-    }
   ]
 }

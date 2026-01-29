@@ -54,8 +54,9 @@ app.*.map.json
 fixer.js
 read.js
 
-# env
+# env/keys
 .env
+keys.json
 
 # expression for github history cleaing
 expressions.txt

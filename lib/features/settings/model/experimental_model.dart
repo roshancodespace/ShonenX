@@ -12,23 +12,28 @@ class ExperimentalFeaturesModel {
   bool useMangayomiExtensions;
   @HiveField(2, defaultValue: false)
   bool useTestReleases;
+  @HiveField(3, defaultValue: false)
+  bool newUI;
 
   ExperimentalFeaturesModel({
     this.episodeTitleSync = false,
     this.useMangayomiExtensions = false,
     this.useTestReleases = false,
+    this.newUI = false,
   });
 
   ExperimentalFeaturesModel copyWith({
     bool? episodeTitleSync,
     bool? useMangayomiExtensions,
     bool? useTestReleases,
+    bool? newUI,
   }) {
     return ExperimentalFeaturesModel(
       episodeTitleSync: episodeTitleSync ?? this.episodeTitleSync,
       useMangayomiExtensions:
           useMangayomiExtensions ?? this.useMangayomiExtensions,
       useTestReleases: useTestReleases ?? this.useTestReleases,
+      newUI: newUI ?? this.newUI,
     );
   }
 }

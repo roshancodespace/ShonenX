@@ -1,3 +1,4 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce/hive.dart';
@@ -36,6 +37,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     super.dispose();
   }
 
+  // let background tasks know if we're actually looking at the app
   Future<void> _setAppOpenStatus(bool isOpen) async {
     final box = Hive.box('settings');
     await box.put('is_app_open', isOpen);
@@ -55,10 +57,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         final String currentLocation =
             router.routerDelegate.currentConfiguration.last.matchedLocation;
         const mainTabs = {'/', '/browse', '/downloads', '/watchlist'};
+
         if (!mainTabs.contains(currentLocation)) return;
+
         final oldList = previous!.value ?? [];
         final newList = next.value ?? [];
-
         final oldUrls = oldList.map((e) => e.url).toSet();
         final newItems = newList
             .where((e) => !oldUrls.contains(e.url))
@@ -75,9 +78,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               content: Text(message),
               action: SnackBarAction(
                 label: 'VIEW',
-                onPressed: () {
-                  context.push('/news');
-                },
+                onPressed: () => context.push('/news'),
               ),
               behavior: SnackBarBehavior.floating,
             ),
@@ -88,18 +89,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     final state = ref.watch(homepageProvider);
     final layout = ref.watch(homeLayoutProvider);
-
-    if (state.isLoading)
-      return const Center(child: CircularProgressIndicator());
-
-    if (state.error != null)
-      return Center(child: Text('Error: ${state.error}'));
-
-    final home = state.homePage;
-
-    if (home == null) return const SizedBox.shrink();
-
-    // Filter enabled sections
     final sections = layout.where((s) => s.enabled).toList();
 
     return RefreshIndicator(
@@ -107,42 +96,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       child: ListView.builder(
         padding: const EdgeInsets.only(top: 10),
         cacheExtent: 600,
-        addAutomaticKeepAlives: true,
-        addRepaintBoundaries: true,
-        itemCount: sections.length + 2, // + Header + Bottom Padding
+        itemCount: sections.length + 2,
         itemBuilder: (context, index) {
-          if (index == 0) {
+          if (index == 0)
             return const Padding(
               padding: EdgeInsets.symmetric(horizontal: 10),
               child: HeaderSection(isDesktop: false),
             );
-          }
 
-          if (index == sections.length + 1) {
-            return const SizedBox(height: 80);
-          }
+          if (state.isLoading)
+            return const SizedBox(
+              height: 200,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          if (state.error != null)
+            return Center(child: Text('Error: ${state.error}'));
 
-          final section = sections[index - 1]; // Offset header
-          return _buildSection(context, ref, section, home);
+          final home = state.homePage;
+          if (home == null) return const SizedBox.shrink();
+
+          // bottom spacer so the nav bar doesn't choke the content
+          if (index == sections.length + 1) return const SizedBox(height: 80);
+
+          return _HomeSectionRenderer(section: sections[index - 1], home: home);
         },
       ),
     );
   }
+}
 
-  Widget _buildSection(
-    BuildContext context,
-    WidgetRef ref,
-    HomeSection section,
-    HomePage home,
-  ) {
+//  handles the switching logic so the main build isn't a mess
+class _HomeSectionRenderer extends StatelessWidget {
+  final HomeSection section;
+  final HomePage home;
+
+  const _HomeSectionRenderer({required this.section, required this.home});
+
+  @override
+  Widget build(BuildContext context) {
     switch (section.type) {
       case HomeSectionType.spotlight:
         if (home.trendingAnime.isEmpty) return const SizedBox.shrink();
         return SpotlightSection(spotlightAnime: home.trendingAnime);
 
       case HomeSectionType.continueWatching:
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+        return const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10),
           child: _ContinueWatchingSection(),
         );
 
@@ -165,25 +164,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
+  // mapping the dynamic data IDs to the actual home page lists
   List<UniversalMedia> _getStandardMedia(String? id, HomePage home) {
-    switch (id) {
-      case 'trending':
-        return home.trendingAnime;
-      case 'popular':
-        return home.popularAnime;
-      case 'most_favorite':
-        return home.mostFavoriteAnime;
-      case 'most_watched':
-        return home.mostWatchedAnime;
-      case 'top_rated':
-        return home.topRatedAnime;
-      case 'recently_updated':
-        return home.recentlyUpdated;
-      case 'upcoming':
-        return home.upcomingAnime;
-      default:
-        return [];
-    }
+    return switch (id) {
+      'trending' => home.trendingAnime,
+      'popular' => home.popularAnime,
+      'most_favorite' => home.mostFavoriteAnime,
+      'most_watched' => home.mostWatchedAnime,
+      'top_rated' => home.topRatedAnime,
+      'recently_updated' => home.recentlyUpdated,
+      'upcoming' => home.upcomingAnime,
+      _ => [],
+    };
   }
 }
 
@@ -200,11 +192,11 @@ class _WatchlistHomeSection extends ConsumerWidget {
 
     if (list.isEmpty) {
       if (!state.loadingStatuses.contains(status)) {
-        Future.microtask(() {
-          ref.read(watchlistProvider.notifier).fetchListForStatus(status);
-        });
+        Future.microtask(
+          () => ref.read(watchlistProvider.notifier).fetchListForStatus(status),
+        );
       }
-      return const SizedBox.shrink(); // Hide if empty
+      return const SizedBox.shrink();
     }
 
     return HomeSectionWidget(
@@ -215,6 +207,8 @@ class _WatchlistHomeSection extends ConsumerWidget {
 }
 
 class _ContinueWatchingSection extends ConsumerWidget {
+  const _ContinueWatchingSection();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ref
@@ -223,6 +217,7 @@ class _ContinueWatchingSection extends ConsumerWidget {
           data: (allProgress) {
             if (allProgress.isEmpty) return const SizedBox.shrink();
 
+            // sort by most recent because we're not animals
             final sorted = [...allProgress]
               ..sort(
                 (a, b) => (b.lastUpdated ?? DateTime(0)).compareTo(

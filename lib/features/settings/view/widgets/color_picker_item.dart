@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 
 class ColorPickerSettingsItem extends BaseSettingsItem {
@@ -98,52 +98,44 @@ class ColorPickerSettingsItem extends BaseSettingsItem {
             borderRadius: BorderRadius.circular(28),
           ),
           title: const Text('Customize Color'),
-          content: Column(
-            children: [
-              ColorPicker(
-                pickerColor: Color(selectedColor),
-                onColorChanged: (color) => tempColor = color.value,
-                colorPickerWidth: 300,
-                pickerAreaHeightPercent: 0.7,
-                enableAlpha: true,
-                displayThumbColor: true,
-                paletteType: PaletteType.hsvWithHue,
-                labelTypes: const [],
-                pickerAreaBorderRadius: BorderRadius.circular(20),
-              ),
-              const SizedBox(height: 20),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Presets',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: colors
-                    .map(
-                      (c) => GestureDetector(
-                        onTap: () {
-                          onColorChanged(c);
-                          Navigator.pop(context);
-                        },
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Color(c),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white24),
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
+          content: ColorPicker(
+            color: Color(selectedColor),
+            onColorChanged: (color) => tempColor = color.value,
+            width: 40,
+            height: 40,
+            borderRadius: 4,
+            spacing: 5,
+            runSpacing: 5,
+            wheelDiameter: 200,
+            heading: Text(
+              'Select color',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            subheading: Text(
+              'Select color shade',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            wheelSubheading: Text(
+              'Selected color and its shades',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            showMaterialName: true,
+            showColorName: true,
+            showColorCode: true,
+            copyPasteBehavior: const ColorPickerCopyPasteBehavior(
+              longPressMenu: true,
+            ),
+            materialNameTextStyle: Theme.of(context).textTheme.bodySmall,
+            colorNameTextStyle: Theme.of(context).textTheme.bodySmall,
+            colorCodeTextStyle: Theme.of(context).textTheme.bodySmall,
+            pickersEnabled: const <ColorPickerType, bool>{
+              ColorPickerType.both: false,
+              ColorPickerType.primary: true,
+              ColorPickerType.accent: true,
+              ColorPickerType.bw: false,
+              ColorPickerType.custom: false,
+              ColorPickerType.wheel: true,
+            },
           ),
           actions: [
             TextButton(

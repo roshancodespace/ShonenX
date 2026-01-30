@@ -12,19 +12,19 @@ import 'package:html/parser.dart' show parse;
 
 class HiAnimeProvider extends AnimeProvider {
   HiAnimeProvider({String? customApiUrl})
-    : super(
-        apiUrl: customApiUrl != null
-            ? '$customApiUrl/anime/zoro'
-            : "$API_URL/anime/zoro",
-        baseUrl: 'https://hianime.to',
-        providerName: 'hianime',
-      );
+      : super(
+          apiUrl: customApiUrl != null
+              ? '$customApiUrl/anime/zoro'
+              : "$API_URL/anime/zoro",
+          baseUrl: 'https://hianime.to',
+          providerName: 'hianime',
+        );
 
   @override
   Map<String, String> get headers => {
-    'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-  };
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+      };
 
   @override
   Future<HomePage> getHome() async {
@@ -120,6 +120,7 @@ class HiAnimeProvider extends AnimeProvider {
       Uri.parse(
         'https://yumaapi.vercel.app/watch?episodeId=$actualAnimeId\$episode\$$actualEpisodeId&type=dub&server=$serverName',
       ),
+      cacheConfig: CacheConfig.infinite,
     );
     final data = jsonDecode(response.body);
     final preview = (data['previews'] as List<dynamic>).first;
@@ -144,8 +145,7 @@ class HiAnimeProvider extends AnimeProvider {
             ),
           )
           .toList(),
-      tracks:
-          (data['subtitles'] as List<dynamic>?)
+      tracks: (data['subtitles'] as List<dynamic>?)
               ?.map((track) => Subtitle(url: track['url'], lang: track['lang']))
               .toList() ??
           [],
@@ -182,9 +182,8 @@ class HiAnimeProvider extends AnimeProvider {
 
   @override
   Future<SearchPage> getSearch(String keyword, String? type, int page) async {
-    final hianimeType = type != null
-        ? _mapTypeToHianimeType(type.toLowerCase())
-        : null;
+    final hianimeType =
+        type != null ? _mapTypeToHianimeType(type.toLowerCase()) : null;
     final url = hianimeType != null
         ? '$baseUrl/search?keyword=$keyword&type=$hianimeType&page=$page'
         : '$baseUrl/search?keyword=$keyword&page=$page';

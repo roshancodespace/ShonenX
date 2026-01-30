@@ -20,11 +20,11 @@ class AnimePaheProvider extends AnimeProvider {
   };
 
   AnimePaheProvider()
-    : super(
-        baseUrl: "https://animepahe.si",
-        apiUrl: "https://animepahe.si/api",
-        providerName: "animepahe",
-      );
+      : super(
+          baseUrl: "https://animepahe.si",
+          apiUrl: "https://animepahe.si/api",
+          providerName: "animepahe",
+        );
 
   @override
   Map<String, String> get headers => _sourceHeaders;
@@ -100,10 +100,10 @@ class AnimePaheProvider extends AnimeProvider {
     final int totalPages = bodyDecoded['last_page'] ?? 1;
 
     for (int i = 1; i < totalPages; i++) {
-      if (i >= 5) break;
       final nextRes = await UniversalHttpClient.instance.get(
         Uri.parse("$url&page=${i + 1}"),
         headers: headers,
+        cacheConfig: CacheConfig.infinite,
       );
       final nextBody = json.decode(nextRes.body);
       if (nextBody['data'] != null) {
@@ -120,14 +120,15 @@ class AnimePaheProvider extends AnimeProvider {
       final String combinedId = "$animeId+$episodeSession";
 
       final num? epNumFromApi = item['episode'];
-      final int calculatedEpNum = (epNumFromApi != null)
-          ? epNumFromApi.toInt()
-          : (i + 1);
+      final int calculatedEpNum =
+          (epNumFromApi != null) ? epNumFromApi.toInt() : (i + 1);
 
-      final String? title =
-          (item['title'] == null || item['title'].toString().isEmpty)
-          ? null
-          : item['title'];
+      // Robust title checking
+      String? title = item['title'];
+      if (title != null && title.trim().isEmpty) {
+        title = null;
+      }
+
       final String? thumbnail = item['snapshot'];
       final bool isFiller = (item['filler'] ?? 0) != 0;
 
@@ -163,6 +164,7 @@ class AnimePaheProvider extends AnimeProvider {
     final data = await UniversalHttpClient.instance.get(
       Uri.parse(episodeUrl),
       headers: headers,
+      cacheConfig: CacheConfig.infinite
     );
     final document = html.parse(data.body);
 
@@ -189,10 +191,11 @@ class AnimePaheProvider extends AnimeProvider {
         size = sizeMatch.group(1)!;
       }
 
-      final bool isStreamDub =
-          e.attributes['data-audio'] == 'eng' ||
+      // Determining audio type from the link attributes or text
+      final bool isStreamDub = e.attributes['data-audio'] == 'eng' ||
           text.toLowerCase().contains('eng');
 
+      // Filter based on what the user requested (Sub or Dub)
       if (isStreamDub != isRequestingDub) continue;
 
       extractTasks.add(() async {
@@ -220,14 +223,21 @@ class AnimePaheProvider extends AnimeProvider {
       tracks: [],
       intro: Intro(start: 0, end: 0),
       outro: Intro(start: 0, end: 0),
-      // IMPORTANT: Provide the headers so the player/tester can bypass the 403
       headers: {'Referer': 'https://kwik.cx/', 'User-Agent': _userAgent},
     );
   }
 
   @override
   Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {
-    return BaseServerModel.defaultServer;
+    final subServers = [
+      ServerData(name: "AnimePahe", id: "animepahe", isDub: false),
+    ];
+
+    final dubServers = [
+      ServerData(name: "AnimePahe", id: "animepahe", isDub: true),
+    ];
+
+    return BaseServerModel(sub: subServers, dub: dubServers);
   }
 
   @override
@@ -245,8 +255,7 @@ class AnimePaheProvider extends AnimeProvider {
     final slice = _map.substring(0, s2);
     int acc = 0;
     content.reversed.toList().asMap().forEach((index, c) {
-      acc +=
-          (RegExp(r'\d').hasMatch(c) ? int.parse(c) : 0) *
+      acc += (RegExp(r'\d').hasMatch(c) ? int.parse(c) : 0) *
           pow(s1, index).toInt();
     });
     String k = "";
@@ -266,7 +275,6 @@ class AnimePaheProvider extends AnimeProvider {
         s += fullKey[i];
         i++;
       }
-      // Use replaceAll instead of RegExp to avoid special char issues in key
       for (int j = 0; j < key.length; j++) {
         s = s.replaceAll(key[j], j.toString());
       }
@@ -287,6 +295,7 @@ class AnimePaheProvider extends AnimeProvider {
     final resp = await UniversalHttpClient.instance.get(
       Uri.parse(downloadLink),
       headers: headers,
+      cacheConfig: CacheConfig.infinite,
     );
     final scripts = html.parse(resp.body).querySelectorAll('script');
 
@@ -296,7 +305,6 @@ class AnimePaheProvider extends AnimeProvider {
       if (e.text.isNotEmpty) {
         final matches = redirectRegex.allMatches(e.innerHtml).toList();
         if (matches.isNotEmpty) {
-          // Often the real link is in the last match if there are multiple
           final candidate = matches.last.group(1);
           if (candidate != null && candidate.contains('http')) {
             kwikLink = candidate;
@@ -310,6 +318,7 @@ class AnimePaheProvider extends AnimeProvider {
     final kwikRes = await UniversalHttpClient.instance.get(
       Uri.parse(kwikLink),
       headers: {'referer': downloadLink, 'User-Agent': _userAgent},
+      cacheConfig: CacheConfig.infinite,
     );
 
     String cookieHeader = "";

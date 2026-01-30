@@ -16,11 +16,11 @@ class GojoProvider implements AnimeProvider {
 
   @override
   Map<String, String> get headers => {
-    'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-    'Origin': 'https://animetsu.net',
-    'Referer': 'https://animetsu.net/',
-  };
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+        'Origin': 'https://animetsu.net',
+        'Referer': 'https://animetsu.net/',
+      };
 
   @override
   Future<DetailPage> getDetails(String animeId) {
@@ -112,6 +112,7 @@ class GojoProvider implements AnimeProvider {
     final response = await UniversalHttpClient.instance.get(
       uri,
       headers: headers,
+      cacheConfig: CacheConfig.infinite,
     );
 
     if (response.statusCode != 200) {
@@ -176,6 +177,7 @@ class GojoProvider implements AnimeProvider {
         '$apiUrl/servers?id=${metadata['id']}&num=${metadata['epNumber']}',
       ),
       headers: headers,
+      cacheConfig: CacheConfig.long,
     );
 
     final List<dynamic> data = jsonDecode(res.body);

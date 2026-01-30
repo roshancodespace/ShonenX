@@ -125,6 +125,7 @@ class AppInitializer {
         Hive.openBox<UniversalNews>('news_cache'),
         Hive.openBox<String>('news_read_status'),
         Hive.openBox('home_layout'),
+        Hive.openBox('http_cache_v1'),
       ]);
 
       AppLogger.success('Hive boxes opened');

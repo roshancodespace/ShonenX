@@ -83,7 +83,7 @@ class AnimeOnsenProvider extends AnimeProvider {
     final url = Uri.parse('$apiUrl/content/$animeId/episodes');
     final apiHeader = {"Authorization": "Bearer $_animeOnsenToken", ...headers};
 
-    final res = await UniversalHttpClient.instance.get(url, headers: apiHeader);
+    final res = await UniversalHttpClient.instance.get(url, headers: apiHeader, cacheConfig: CacheConfig.medium);
 
     if (res.statusCode != 200) {
       throw Exception("Failed to load episodes: ${res.statusCode}");

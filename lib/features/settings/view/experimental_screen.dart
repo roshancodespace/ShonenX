@@ -81,6 +81,19 @@ class ExperimentalScreen extends ConsumerWidget {
                 );
               },
             ),
+            const SizedBox(height: 8),
+            ToggleableSettingsItem(
+              accent: colorScheme.primary,
+              icon: Icon(Icons.bug_report_outlined),
+              title: 'Debug Mode',
+              description: 'Enable debug mode',
+              value: experimentalSettings.debugMode,
+              onChanged: (value) {
+                experimentalNotifier.updateSettings(
+                  (state) => state.copyWith(debugMode: value),
+                );
+              },
+            ),
           ],
         ),
       ),

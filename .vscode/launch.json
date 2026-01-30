@@ -13,7 +13,11 @@
       "flutterMode": "debug",
       "args": [
         "--dart-define-from-file=keys.json"
-      ]
+      ],
+      "env": {
+        "FLUTTER_ENGINE_IMPELER_ENABLE": "false",
+        "DISABLE_IMPELER": "true",
+      }
     },
     {
       "name": "Flutter: Release",
@@ -22,7 +26,41 @@
       "flutterMode": "release",
       "args": [
         "--dart-define-from-file=keys.json"
-      ]
+      ],
+      "env": {
+        "FLUTTER_ENGINE_IMPELER_ENABLE": "false",
+        "DISABLE_IMPELER": "true",
+      }
     },
+    {
+      "name": "Flutter: Debug (Wayland)",
+      "type": "dart",
+      "request": "launch",
+      "flutterMode": "debug",
+      "args": [
+        "--dart-define-from-file=keys.json"
+      ],
+      "env": {
+        "FLUTTER_ENGINE_IMPELER_ENABLE": "false",
+        "DISABLE_IMPELER": "true",
+        "GDK_BACKEND": "wayland",
+        "WAYLAND_DISPLAY": "${env:WAYLAND_DISPLAY}"
+      }
+    },
+    {
+      "name": "Flutter: Debug (X11 Fallback)",
+      "type": "dart",
+      "request": "launch",
+      "flutterMode": "debug",
+      "args": [
+        "--dart-define-from-file=keys.json",
+        "--enable-software-rendering"
+      ],
+      "env": {
+        "FLUTTER_ENGINE_IMPELER_ENABLE": "false",
+        "DISABLE_IMPELER": "true",
+        "GDK_BACKEND": "x11"
+      }
+    }
   ]
 }

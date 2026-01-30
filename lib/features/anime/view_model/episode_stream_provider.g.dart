@@ -20,7 +20,7 @@ final class EpisodeDataProvider
         argument: null,
         retry: null,
         name: r'episodeDataProvider',
-        isAutoDispose: false,
+        isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );

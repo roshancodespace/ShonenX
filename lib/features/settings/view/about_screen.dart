@@ -147,8 +147,9 @@ class AboutScreen extends StatelessWidget {
                   context,
                   icon: Iconsax.global,
                   title: 'Powered by',
-                  content: 'Consumet API',
-                  subtitle: 'Multi-provider anime streaming API',
+                  content: 'Consumet API & Mangayomi Extensions Core',
+                  subtitle:
+                      'Multi-provider anime streaming API & Custom Extensions',
                 ),
 
                 const SizedBox(height: 16),
@@ -158,7 +159,7 @@ class AboutScreen extends StatelessWidget {
                   context,
                   icon: Iconsax.heart,
                   title: 'Open Source',
-                  content: 'MIT License',
+                  content: 'Apache License 2.0',
                   subtitle: 'Free and open source software',
                 ),
 
@@ -271,7 +272,7 @@ class AboutScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'ShonenX does not host any content. All anime content is provided by third-party sources through the Consumet API. Please respect copyright laws and support official anime distributors.',
+                        'ShonenX does not host any content. All anime content is provided by third-party sources through the Consumet API & Custom Extensions . Please respect copyright laws and support official anime distributors.',
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant.withOpacity(0.8),
                           height: 1.5,

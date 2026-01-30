@@ -1,6 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view/home_settings_screen.dart';
@@ -9,6 +11,7 @@ import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/shared/providers/update_provider.dart';
 import 'package:shonenx/utils/updater.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -142,7 +145,7 @@ class SettingsScreen extends ConsumerWidget {
               titleColor: colorScheme.primary,
               onTap: () {},
               children: [
-                if (kDebugMode)
+                if (experimental.debugMode)
                   NormalSettingsItem(
                     icon: Icon(Iconsax.code, color: colorScheme.primary),
                     accent: colorScheme.primary,
@@ -188,6 +191,57 @@ class SettingsScreen extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(height: 50),
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 30.0),
+                    child: InkWell(
+                      onTap: () {
+                        launchUrl(
+                          Uri.parse(
+                            'https://www.buymeacoffee.com/roshan.codespace',
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(15),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFDD00),
+                          borderRadius: BorderRadius.circular(15),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CachedNetworkImage(
+                              imageUrl:
+                                  'https://cdn.buymeacoffee.com/assets/logos/icon-black.png',
+                              height: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Buy me a coffee',
+                              style: GoogleFonts.cookie(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ],

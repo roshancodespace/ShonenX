@@ -105,12 +105,16 @@ class _SpotlightHeader extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Iconsax.star5, size: 18, color: theme.colorScheme.tertiary),
+            Icon(
+              Iconsax.star5,
+              size: 18,
+              color: theme.colorScheme.onTertiaryContainer,
+            ),
             const SizedBox(width: 8),
             Text(
               'Trending ${spotlightAnime?.length ?? 0}',
               style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.tertiary,
+                color: theme.colorScheme.onTertiaryContainer,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
               ),

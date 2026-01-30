@@ -99,7 +99,7 @@ class EpisodeDataState {
   }
 }
 
-@Riverpod(keepAlive: true)
+@riverpod
 class EpisodeData extends _$EpisodeData {
   EpisodeListState get _epState => ref.read(episodeListProvider);
   List<EpisodeDataModel> get _episodes => _epState.episodes;
@@ -310,8 +310,9 @@ class EpisodeData extends _$EpisodeData {
 
     try {
       final ep = _episodes[epIdx];
+      final animeId = ref.read(episodeListProvider).animeId;
       final res = await _animeProvider?.getSupportedServers(
-        metadata: {'id': ep.id, 'epNumber': ep.number, 'epId': ep.id},
+        metadata: {'id': animeId, 'epNumber': ep.number, 'epId': ep.id},
       );
 
       final flat = res?.flatten() ?? [];

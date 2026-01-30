@@ -18,45 +18,46 @@ class ProfileSettingsScreen extends ConsumerWidget {
     final user = authState.userFor(activePlatform);
     final theme = Theme.of(context);
 
-    if (user == null) {
-      return const Scaffold(body: Center(child: Text('Not logged in')));
-    }
-
     return Scaffold(
       body: CustomScrollView(
-        slivers: [
-          ProfileAppBar(user: user, theme: theme),
-          const SliverToBoxAdapter(child: SizedBox(height: 70)),
-          SliverList(
-            delegate: SliverChildListDelegate([
-              Column(
-                children: [
-                  const SizedBox(height: 8),
-                  ProfileName(user: user, theme: theme),
-                  const SizedBox(height: 6),
-                  PlatformBadge(activePlatform: activePlatform, theme: theme),
-                  const SizedBox(height: 24),
-                  ProfileStats(user: user),
-                  const SizedBox(height: 32),
-                  ProfileAbout(
-                    user: user,
-                    activePlatform: activePlatform,
-                    ref: ref,
-                  ),
-                  const SizedBox(height: 40),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: ProfileActions(
-                      activePlatform: activePlatform,
-                      ref: ref,
+        slivers: user == null
+            ? []
+            : [
+                ProfileAppBar(user: user, theme: theme),
+                const SliverToBoxAdapter(child: SizedBox(height: 70)),
+                SliverList(
+                  delegate: SliverChildListDelegate([
+                    Column(
+                      children: [
+                        const SizedBox(height: 8),
+                        ProfileName(user: user, theme: theme),
+                        const SizedBox(height: 6),
+                        PlatformBadge(
+                          activePlatform: activePlatform,
+                          theme: theme,
+                        ),
+                        const SizedBox(height: 24),
+                        ProfileStats(user: user),
+                        const SizedBox(height: 32),
+                        ProfileAbout(
+                          user: user,
+                          activePlatform: activePlatform,
+                          ref: ref,
+                        ),
+                        const SizedBox(height: 40),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: ProfileActions(
+                            activePlatform: activePlatform,
+                            ref: ref,
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 40),
-                ],
-              ),
-            ]),
-          ),
-        ],
+                  ]),
+                ),
+              ],
       ),
     );
   }

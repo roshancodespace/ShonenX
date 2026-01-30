@@ -13,10 +13,11 @@ import 'package:shonenx/utils/extractors.dart' as extractor;
 // ==========================================
 const debugConfig = DebugConfig(
   provider: 'gojo',
-  searchQuery: 'attack on titan',
+  searchQuery: 'one piece',
   useCache: true,
   resetCache: false,
   manualServerIndex: 1,
+  manualEpiosodeIndex: 1,
 );
 // ==========================================
 
@@ -27,6 +28,7 @@ class DebugConfig {
   final String provider;
   final String searchQuery;
   final int manualServerIndex;
+  final int manualEpiosodeIndex;
   final bool useCache;
   final bool resetCache;
   final int maxResultsToPrint;
@@ -40,6 +42,7 @@ class DebugConfig {
     required this.provider,
     required this.searchQuery,
     this.manualServerIndex = 0,
+    this.manualEpiosodeIndex = 0,
     this.useCache = true,
     this.resetCache = false,
     this.maxResultsToPrint = 5,
@@ -200,7 +203,8 @@ Future<void> main() async {
           attempts: debugConfig.retryAttempts,
         );
 
-        ctx.selectedEpisode = ctx.episodeResult.episodes.first;
+        ctx.selectedEpisode =
+            ctx.episodeResult.episodes[debugConfig.manualEpiosodeIndex];
         AppLogger.infoPair('Episode', ctx.selectedEpisode.number);
 
         await CacheManager.save(

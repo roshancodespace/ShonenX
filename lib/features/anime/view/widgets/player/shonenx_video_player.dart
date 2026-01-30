@@ -20,6 +20,7 @@ import 'package:shonenx/features/anime/view/widgets/player/speed_indicator_overl
 import 'package:shonenx/features/anime/view/widgets/player/subtitle_overlay.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
+import 'package:shonenx/helpers/ui.dart';
 import 'package:window_manager/window_manager.dart';
 
 class ShonenXVideoPlayer extends ConsumerStatefulWidget {
@@ -83,8 +84,8 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
     });
   }
 
-  void _toggleVisible() {
-    setState(() => _visible = !_visible);
+  void _toggleVisible({bool? override}) {
+    setState(() => _visible = override ?? !_visible);
     _visible ? _restartHide() : _hideTimer?.cancel();
   }
 
@@ -219,9 +220,7 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
   }
 
   void _toggleFullScreen() async {
-    if (!(Platform.isAndroid || Platform.isIOS)) {
-      windowManager.setFullScreen(!(await windowManager.isFullScreen()));
-    }
+    UIHelper.handleToggleFullscreen();
   }
 
   void _openSubtitle() {
@@ -273,81 +272,85 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
       );
     }
 
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.space): notifier.togglePlay,
-        const SingleActivator(LogicalKeyboardKey.keyK): notifier.togglePlay,
-        const SingleActivator(LogicalKeyboardKey.keyL): () => _toggleLock(),
-        const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
-            notifier.rewind(10),
-        const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
-            notifier.forward(10),
-        const SingleActivator(LogicalKeyboardKey.keyM): notifier.toggleMute,
-        const SingleActivator(LogicalKeyboardKey.f11): _toggleFullScreen,
-        const SingleActivator(LogicalKeyboardKey.keyF): _toggleFullScreen,
-      },
-      child: Focus(
-        focusNode: _focusNode,
-        autofocus: true,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Video Layer
-            videoView,
+    return MouseRegion(
+      cursor: !_visible ? SystemMouseCursors.none : SystemMouseCursors.click,
+      onHover: (event) => _toggleVisible(override: true),
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.space): notifier.togglePlay,
+          const SingleActivator(LogicalKeyboardKey.keyK): notifier.togglePlay,
+          const SingleActivator(LogicalKeyboardKey.keyL): () => _toggleLock(),
+          const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
+              notifier.rewind(10),
+          const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
+              notifier.forward(10),
+          const SingleActivator(LogicalKeyboardKey.keyM): notifier.toggleMute,
+          const SingleActivator(LogicalKeyboardKey.f11): _toggleFullScreen,
+          const SingleActivator(LogicalKeyboardKey.keyF): _toggleFullScreen,
+        },
+        child: Focus(
+          focusNode: _focusNode,
+          autofocus: true,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Video Layer
+              videoView,
 
-            // Gesture Layer (Background)
-            Positioned.fill(
-              child: PlayerGestureHandler(
-                onTap: _toggleVisible,
-                onDoubleTap: _onDoubleTap,
-                onLongPressStart: _onLongPressStart,
-                onLongPressUpdate: _onLongPressUpdate,
-                onLongPressEnd: _onLongPressEnd,
-                onEpisodesPressed: widget.onEpisodesPressed,
-                child: Container(color: Colors.transparent),
-              ),
-            ),
-
-            // Controls & UI Layer (Foreground)
-            ControlsOverlay(
-              visible: _visible,
-              locked: _locked,
-              onLockPressed: _toggleLock,
-              onRestartHide: _restartHide,
-              onEpisodesPressed: widget.onEpisodesPressed,
-              onSettingsPressed: _openSettings,
-              onQualityPressed: _openQuality,
-              onSourcePressed: _openSource,
-              onServerPressed: _openServer,
-              onSubtitlePressed: _openSubtitle,
-              onFullScreenPressed: _toggleFullScreen,
-            ),
-
-            // Seek Indicator (Dynamic)
-            if (_seekAccum != 0)
+              // Gesture Layer (Background)
               Positioned.fill(
-                child: Align(
-                  alignment: _seekAccum > 0
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: SeekIndicatorOverlay(
-                    isForward: _seekAccum > 0,
-                    seconds: _seekAccum.abs(),
-                  ),
+                child: PlayerGestureHandler(
+                  onTap: _toggleVisible,
+                  onDoubleTap: _onDoubleTap,
+                  onLongPressStart: _onLongPressStart,
+                  onLongPressUpdate: _onLongPressUpdate,
+                  onLongPressEnd: _onLongPressEnd,
+                  onEpisodesPressed: widget.onEpisodesPressed,
+                  child: Container(color: Colors.transparent),
                 ),
               ),
 
-            // Speed Indicator
-            if (_isSpeeding) SpeedIndicatorOverlay(currentSpeed: _lastSpeed),
+              // Controls & UI Layer (Foreground)
+              ControlsOverlay(
+                visible: _visible,
+                locked: _locked,
+                onLockPressed: _toggleLock,
+                onRestartHide: _restartHide,
+                onEpisodesPressed: widget.onEpisodesPressed,
+                onSettingsPressed: _openSettings,
+                onQualityPressed: _openQuality,
+                onSourcePressed: _openSource,
+                onServerPressed: _openServer,
+                onSubtitlePressed: _openSubtitle,
+                onFullScreenPressed: _toggleFullScreen,
+              ),
 
-            // Subtitles
-            Positioned(
-              left: 8,
-              right: 8,
-              bottom: _visible ? 90 : 20,
-              child: const SubtitleOverlay(),
-            ),
-          ],
+              // Seek Indicator (Dynamic)
+              if (_seekAccum != 0)
+                Positioned.fill(
+                  child: Align(
+                    alignment: _seekAccum > 0
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: SeekIndicatorOverlay(
+                      isForward: _seekAccum > 0,
+                      seconds: _seekAccum.abs(),
+                    ),
+                  ),
+                ),
+
+              // Speed Indicator
+              if (_isSpeeding) SpeedIndicatorOverlay(currentSpeed: _lastSpeed),
+
+              // Subtitles
+              Positioned(
+                left: 8,
+                right: 8,
+                bottom: _visible ? 90 : 20,
+                child: const SubtitleOverlay(),
+              ),
+            ],
+          ),
         ),
       ),
     );

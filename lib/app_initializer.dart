@@ -22,6 +22,7 @@ import 'package:shonenx/features/settings/model/download_settings_model.dart';
 import 'package:shonenx/features/settings/model/content_settings_model.dart';
 import 'package:shonenx/core/models/universal/universal_news.dart';
 import 'package:shonenx/core/services/notification_service.dart';
+import 'package:shonenx/helpers/ui.dart';
 
 import 'package:window_manager/window_manager.dart';
 import 'package:workmanager/workmanager.dart';
@@ -166,8 +167,8 @@ class AppInitializer {
         AppLogger.e('Window Manager Error', e, st);
       }
     } else {
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      await SystemChrome.setPreferredOrientations([]);
+      await UIHelper.exitImmersiveMode();
+      await UIHelper.enableAutoRotate();
       SystemChrome.setSystemUIOverlayStyle(
         const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
       );

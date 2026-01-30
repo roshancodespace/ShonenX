@@ -103,7 +103,7 @@ class AnimePaheProvider extends AnimeProvider {
       final nextRes = await UniversalHttpClient.instance.get(
         Uri.parse("$url&page=${i + 1}"),
         headers: headers,
-        cacheConfig: CacheConfig.infinite,
+        cacheConfig: i == (totalPages - 1) ? CacheConfig.short : CacheConfig.infinite,
       );
       final nextBody = json.decode(nextRes.body);
       if (nextBody['data'] != null) {
@@ -161,11 +161,8 @@ class AnimePaheProvider extends AnimeProvider {
     final episodeUrl = "https://animepahe.si/play/$animeSession/$epSession";
     final bool isRequestingDub = category?.toLowerCase() == 'dub';
 
-    final data = await UniversalHttpClient.instance.get(
-      Uri.parse(episodeUrl),
-      headers: headers,
-      cacheConfig: CacheConfig.infinite
-    );
+    final data = await UniversalHttpClient.instance.get(Uri.parse(episodeUrl),
+        headers: headers, cacheConfig: CacheConfig.infinite);
     final document = html.parse(data.body);
 
     final downloadQualities = document.querySelectorAll('div#pickDownload > a');
@@ -208,6 +205,10 @@ class AnimePaheProvider extends AnimeProvider {
               type: "mp4",
               isM3U8: false,
               isDub: isStreamDub,
+              headers: {
+                'Referer': 'https://kwik.cx/',
+                'User-Agent': _userAgent
+              },
             ),
           );
         } catch (e) {

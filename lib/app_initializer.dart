@@ -36,6 +36,9 @@ class AppInitializer {
     }
 
     AppLogger.section('App Initialization');
+
+    await AppLogger.init();
+
     await _initializeBackgroundService();
 
     WidgetsFlutterBinding.ensureInitialized();
@@ -150,7 +153,9 @@ class AppInitializer {
           () async {
             await windowManager.show();
             await windowManager.focus();
-            await windowManager.setHasShadow(true);
+            if (!Platform.isLinux) {
+              await windowManager.setHasShadow(true);
+            }
           },
         );
 

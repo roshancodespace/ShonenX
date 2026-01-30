@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/services/notification_service.dart';
+import 'package:shonenx/features/debug/view/renderer_debug_screen.dart';
 import 'package:shonenx/features/news/view/news_screen.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
@@ -77,6 +78,17 @@ class DebugScreen extends ConsumerWidget {
                     useTestReleases: useTest,
                   );
                 },
+              ),
+              NormalSettingsItem(
+                title: 'Debug Renderer',
+                icon: Icon(Icons.code, color: colorScheme.primary),
+                accent: colorScheme.primary,
+                description: 'Debugger for renderer',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const RendererDebugScreen(),
+                  ),
+                ),
               ),
             ],
           ),

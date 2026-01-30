@@ -22,13 +22,14 @@ class ExperimentalFeaturesModelAdapter
       useMangayomiExtensions: fields[1] == null ? false : fields[1] as bool,
       useTestReleases: fields[2] == null ? false : fields[2] as bool,
       newUI: fields[3] == null ? false : fields[3] as bool,
+      debugMode: fields[4] == null ? false : fields[4] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, ExperimentalFeaturesModel obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.episodeTitleSync)
       ..writeByte(1)
@@ -36,7 +37,9 @@ class ExperimentalFeaturesModelAdapter
       ..writeByte(2)
       ..write(obj.useTestReleases)
       ..writeByte(3)
-      ..write(obj.newUI);
+      ..write(obj.newUI)
+      ..writeByte(4)
+      ..write(obj.debugMode);
   }
 
   @override

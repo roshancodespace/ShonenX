@@ -120,7 +120,7 @@ class HiAnimeProvider extends AnimeProvider {
       Uri.parse(
         'https://yumaapi.vercel.app/watch?episodeId=$actualAnimeId\$episode\$$actualEpisodeId&type=dub&server=$serverName',
       ),
-      cacheConfig: CacheConfig.infinite,
+      cacheConfig: CacheConfig.veryLong,
     );
     final data = jsonDecode(response.body);
     final preview = (data['previews'] as List<dynamic>).first;

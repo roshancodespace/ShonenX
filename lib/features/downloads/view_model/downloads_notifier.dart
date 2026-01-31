@@ -38,7 +38,7 @@ class DownloadsNotifier extends _$DownloadsNotifier {
 
   @override
   DownloadsState build() {
-    _service = DownloadService(ref);
+    _service = DownloadService(ref, this);
     _loadDownloads();
     return const DownloadsState(downloads: []);
   }
@@ -81,7 +81,8 @@ class DownloadsNotifier extends _$DownloadsNotifier {
 
     String fullFolder = switch (settings.folderStructure) {
       'Anime/Season/Episode' ||
-      'Anime/Episode' => p.join(baseDir, sanitizedAnime, sanitizedEpisode),
+      'Anime/Episode' =>
+        p.join(baseDir, sanitizedAnime, sanitizedEpisode),
       'Anime' => p.join(baseDir, sanitizedAnime),
       _ => baseDir,
     };
@@ -115,22 +116,18 @@ class DownloadsNotifier extends _$DownloadsNotifier {
   }
 
   void deleteDownload(DownloadItem item) {
-    _service
-        .deleteDownload(item)
-        .then((_) {
-          _repository.deleteDownload(item.filePath);
-          removeDownload(item);
-        })
-        .onError((error, stackTrace) {
-          setError(error);
-        });
+    _service.deleteDownload(item).then((_) {
+      _repository.deleteDownload(item.filePath);
+      removeDownload(item);
+    }).onError((error, stackTrace) {
+      setError(error);
+    });
   }
 
   void removeDownload(DownloadItem item) {
     state = state.copyWith(
-      downloads: state.downloads
-          .where((d) => d.filePath != item.filePath)
-          .toList(),
+      downloads:
+          state.downloads.where((d) => d.filePath != item.filePath).toList(),
     );
   }
 

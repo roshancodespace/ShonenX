@@ -37,4 +37,22 @@ class PlayerModel {
       preferDub: preferDub ?? this.preferDub,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'defaultQuality': defaultQuality,
+      'enableAniSkip': enableAniSkip,
+      'enableAutoSkip': enableAutoSkip,
+      'preferDub': preferDub,
+    };
+  }
+
+  factory PlayerModel.fromMap(Map<String, dynamic> map) {
+    return PlayerModel(
+      defaultQuality: map['defaultQuality'] ?? 'Auto',
+      enableAniSkip: map['enableAniSkip'] ?? true,
+      enableAutoSkip: map['enableAutoSkip'] ?? false,
+      preferDub: map['preferDub'] ?? false,
+    );
+  }
 }

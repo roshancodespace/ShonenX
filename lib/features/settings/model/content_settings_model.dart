@@ -16,13 +16,21 @@ class ContentSettingsModel {
     this.showMalAdult = false,
   });
 
-  ContentSettingsModel copyWith({
-    bool? showAnilistAdult,
-    bool? showMalAdult,
-  }) {
+  ContentSettingsModel copyWith({bool? showAnilistAdult, bool? showMalAdult}) {
     return ContentSettingsModel(
       showAnilistAdult: showAnilistAdult ?? this.showAnilistAdult,
       showMalAdult: showMalAdult ?? this.showMalAdult,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {'showAnilistAdult': showAnilistAdult, 'showMalAdult': showMalAdult};
+  }
+
+  factory ContentSettingsModel.fromMap(Map<String, dynamic> map) {
+    return ContentSettingsModel(
+      showAnilistAdult: map['showAnilistAdult'] ?? false,
+      showMalAdult: map['showMalAdult'] ?? false,
     );
   }
 }

@@ -144,15 +144,14 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
 
       final baseDir = settings.useCustomPath
           ? (settings.customDownloadPath != null
-                ? Directory(settings.customDownloadPath!)
-                : null)
+              ? Directory(settings.customDownloadPath!)
+              : null)
           : await StorageProvider().getDefaultDirectory();
 
       if (baseDir == null) return;
 
-      final cleanAnime = widget.animeTitle
-          .replaceAll(RegExp(r'[<>:"/\\|?*]'), '')
-          .trim();
+      final cleanAnime =
+          widget.animeTitle.replaceAll(RegExp(r'[<>:"/\\|?*]'), '').trim();
       final epNum = widget.episode.number ?? 0;
       final cleanEpTitle = (widget.episode.title ?? 'Episode $epNum')
           .replaceAll(RegExp(r'[<>:"/\\|?*]'), '')
@@ -179,7 +178,7 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
         subtitles: _subtitles.map((s) => jsonEncode(s.toJson())).toList(),
         headers: {
           'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36...',
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
           ...?headers,
         },
       );
@@ -270,11 +269,11 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
                           onPressed: isErr
                               ? null
                               : () => _triggerDownload(
-                                  q['url'],
-                                  q['quality'],
-                                  source.headers,
-                                  source.isM3U8,
-                                ),
+                                    q['url'],
+                                    q['quality'],
+                                    source.headers,
+                                    source.isM3U8,
+                                  ),
                           backgroundColor: isErr
                               ? colorScheme.errorContainer
                               : colorScheme.secondaryContainer,

@@ -1,8 +1,7 @@
-// ignore_for_file: curly_braces_in_flow_control_structures
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:encrypt/encrypt.dart';
@@ -10,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/core/utils/video_utils.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
 import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/downloads/view_model/downloads_notifier.dart';
@@ -19,385 +19,47 @@ import 'package:shonenx/storage_provider.dart';
 
 class DownloadService {
   final Ref ref;
-  final Map<String, SimpleCancelToken> _cancelTokens = {};
+  final DownloadsNotifier _notifier;
+  static const int _maxConcurrent = 2;
 
-  DownloadService(this.ref);
+  final List<DownloadItem> _queue = [];
+  final Map<String, Isolate> _isolates = {};
+  final Map<String, SendPort> _ports = {};
+
+  DownloadService(this.ref, this._notifier);
 
   DownloadSettingsModel get _settings => ref.read(downloadSettingsProvider);
 
-  DownloadsNotifier get _notifier => ref.read(downloadsProvider.notifier);
-
   Future<void> startDownload(DownloadItem item) async {
-    // Ensure storage permissions
+    // Check Permissions & Path
     if (!_settings.useCustomPath || _settings.customDownloadPath == null) {
       if (!await StorageProvider().requestPermission()) {
-        return _fail(item, 'Storage permission denied');
+        return _fail(item, 'Permission denied');
       }
     }
 
-    // Resolve content type if missing
-    if (item.contentType == null) {
-      item = await _resolveType(item);
-    }
+    final basePath = _settings.useCustomPath
+        ? _settings.customDownloadPath!
+        : (await StorageProvider().getDefaultDirectory())!.path;
 
-    final token = SimpleCancelToken();
-    _cancelTokens[item.filePath] = token;
-
-    try {
-      if (item.isM3U8) {
-        AppLogger.i('Downloading M3U8: ${item.downloadUrl}');
-        await _downloadM3U8(item, token);
-      } else {
-        AppLogger.i('Downloading File: ${item.downloadUrl}');
-        await _downloadFile(item, token);
-      }
-      _cancelTokens.remove(item.filePath);
-    } catch (e) {
-      if (token.isCancelled) {
-        _notifier.updateDownloadState(
-          item.copyWith(state: DownloadStatus.paused),
-        );
-      } else {
-        _fail(item, e.toString());
-      }
-    }
-  }
-
-  Future<DownloadItem> _resolveType(DownloadItem item) async {
-    try {
-      final res = await http.head(
-        Uri.parse(item.downloadUrl),
-        headers: item.headers.cast<String, String>(),
-      );
-
-      var contentType = res.headers['content-type'];
-
-      // If generic stream or null, try to guess from extension
-      if (contentType == null || contentType == 'application/octet-stream') {
-        final uri = Uri.parse(item.downloadUrl);
-        final path = uri.path.toLowerCase();
-        if (path.endsWith('.mp4')) {
-          contentType = 'video/mp4';
-        } else if (path.endsWith('.mkv')) {
-          contentType = 'video/x-matroska';
-        } else if (path.endsWith('.m3u8')) {
-          contentType = 'application/vnd.apple.mpegurl'; // Usual m3u8 mime
-        }
-      }
-
-      if (contentType != null) {
-        return item.copyWith(contentType: contentType);
-      }
-    } catch (_) {}
-    return item;
-  }
-
-  Future<void> _downloadFile(DownloadItem item, SimpleCancelToken token) async {
-    final file = File(item.filePath);
-    await file.parent.create(recursive: true);
-
-    final req = http.Request('GET', Uri.parse(item.downloadUrl));
-    req.headers.addAll(item.headers.cast<String, String>());
-
-    final existingSize = await file.exists() ? await file.length() : 0;
-    if (existingSize > 0) req.headers['Range'] = 'bytes=$existingSize-';
-
-    final client = http.Client();
-    token.addListener(() => client.close());
-
-    try {
-      final res = await client.send(req);
-      // Accept 200 and 206
-      if (res.statusCode >= 400) throw Exception('HTTP ${res.statusCode}');
-
-      int total = existingSize;
-
-      bool isResume = false;
-      if (res.statusCode == 206) {
-        isResume = true;
-        final contentRange = res.headers['content-range'];
-        if (contentRange != null) {
-          final totalStr = contentRange.split('/').last;
-          if (totalStr != '*') {
-            total = int.tryParse(totalStr) ?? 0;
-          }
-        }
-      }
-
-      if (res.statusCode == 200) {
-        isResume = false;
-        total = int.tryParse(res.headers['content-length'] ?? '') ?? 0;
-      } else if (total == 0) {
-        total =
-            (int.tryParse(res.headers['content-length'] ?? '') ?? 0) +
-            existingSize;
-      }
-
-      var current = isResume ? existingSize : 0;
-      final sink = file.openWrite(
-        mode: isResume ? FileMode.append : FileMode.write,
-      );
-
-      var downloadingItem = item.copyWith(
-        state: DownloadStatus.downloading,
-        size: total > 0 ? total : null,
-        totalSegments: null,
-      );
-
-      _notifier.updateDownloadState(downloadingItem);
-
-      try {
-        await for (final chunk in res.stream) {
-          if (token.isCancelled) {
-            throw Exception('Cancelled');
-          }
-          sink.add(chunk);
-          current += chunk.length;
-          if (!token.isCancelled) {
-            downloadingItem = downloadingItem.copyWith(progress: current);
-            _notifier.updateDownloadState(downloadingItem);
-          }
-        }
-      } finally {
-        await sink.close();
-      }
-
-      // Integrity Check
-      if (total > 0 && current < total) {
-        if (!token.isCancelled)
-          throw Exception('Download incomplete: $current / $total');
-      }
-
-      if (!token.isCancelled)
-        _notifier.updateDownloadState(
-          downloadingItem.copyWith(state: DownloadStatus.downloaded),
-        );
-    } catch (e) {
-      // If cancelled, likely ClientException or explicit Cancelled.
-      if (!token.isCancelled) rethrow;
-      throw Exception('Cancelled');
-    } finally {
-      client.close();
-    }
-  }
-
-  Future<http.Response> _getWithRetry(
-    Uri uri,
-    Map<String, String> headers, {
-    http.Client? client,
-  }) async {
-    int retries = 0;
-    while (retries < 5) {
-      try {
-        final res =
-            await (client?.get(uri, headers: headers) ??
-                http.get(uri, headers: headers));
-        if (res.statusCode == 200 || res.statusCode == 206) return res;
-        throw HttpException('HTTP ${res.statusCode}');
-      } catch (e) {
-        retries++;
-        if (retries >= 5) rethrow;
-        await Future.delayed(const Duration(seconds: 2));
-      }
-    }
-    throw Exception('Unreachable');
-  }
-
-  Future<void> _downloadM3U8(DownloadItem item, SimpleCancelToken token) async {
-    final tempDir = Directory(
-      p.join(
-        p.dirname(item.filePath),
-        '.temp_${p.basename(item.filePath).hashCode}',
-      ),
+    final queuedItem = item.copyWith(
+      state: DownloadStatus.queued,
+      filePath: p.join(basePath, item.filePath),
     );
-    await tempDir.create(recursive: true);
 
-    // 1. Fetch & Parse Playlist (Recursive)
-    AppLogger.i('Fetching M3U8: ${item.downloadUrl}');
-    List<_Segment> segments;
-    try {
-      segments = await _parsePlaylist(
-        item.downloadUrl,
-        item.headers.cast<String, String>(),
-      );
-    } catch (e) {
-      return _fail(item, 'Playlist processing failed: $e');
-    }
-
-    if (segments.isEmpty) return _fail(item, 'No segments found');
-
-    if (segments.length > 5000) {
-      AppLogger.w(
-        'Unusually high segment count: ${segments.length} for ${item.episodeTitle}',
-      );
-    }
-
-    AppLogger.infoPair('Segments', segments.length);
-    // Use a local variable to track state updates to avoid capturing stale 'item'
-    var downloadingItem = item.copyWith(
-      state: DownloadStatus.downloading,
-      totalSegments: segments.length,
-      size: null,
-      progress: 0,
-    );
-    _notifier.updateDownloadState(downloadingItem);
-
-    // 3. Download Segments
-    final batchSize = _settings.parallelDownloads;
-    int completed = 0;
-
-    // Skip existing
-    for (var i = 0; i < segments.length; i++) {
-      if (await File(p.join(tempDir.path, '$i.ts')).exists()) completed++;
-    }
-    downloadingItem = downloadingItem.copyWith(progress: completed);
-    _notifier.updateDownloadState(downloadingItem);
-
-    // Create a client for this download session
-    final client = http.Client();
-    token.addListener(() => client.close());
-
-    try {
-      for (var i = 0; i < segments.length; i += batchSize) {
-        if (token.isCancelled) return;
-
-        final end = (i + batchSize < segments.length)
-            ? i + batchSize
-            : segments.length;
-        final batch = segments.sublist(i, end);
-
-        try {
-          await Future.wait(
-            batch.map((seg) async {
-              if (token.isCancelled) return;
-              final file = File(p.join(tempDir.path, '${seg.index}.ts'));
-              if (await file.exists()) return;
-
-              try {
-                final res = await _getWithRetry(
-                  Uri.parse(seg.url),
-                  item.headers.cast<String, String>(),
-                  client: client,
-                ); // Use the cancellable client
-
-                var bytes = res.bodyBytes;
-                if (bytes.isEmpty) {
-                  AppLogger.w('Segment ${seg.index} returned 0 bytes');
-                } else if (seg.index < 5 || seg.index % 100 == 0) {
-                  // Sample log for size
-                  AppLogger.d(
-                    'Segment ${seg.index} size: ${bytes.length} bytes',
-                  );
-                }
-
-                if (seg.key != null) {
-                  bytes = _decrypt(bytes, seg.key!, seg.iv, seg.index);
-                }
-                await file.writeAsBytes(bytes);
-
-                if (token.isCancelled) return;
-
-                completed++;
-                if (completed % 10 == 0) {
-                  downloadingItem = downloadingItem.copyWith(
-                    progress: completed,
-                  );
-                  _notifier.updateDownloadState(downloadingItem);
-                }
-              } catch (e) {
-                if (token.isCancelled) {
-                  // Cancellation can cause client closed exception, which is expected
-                  return;
-                }
-                if (!token.isCancelled) {
-                  _fail(downloadingItem, 'Segment ${seg.index} failed: $e');
-                  pauseDownload(downloadingItem);
-                }
-              }
-            }),
-          );
-        } catch (e) {
-          // Futures might throw if client closed
-          if (token.isCancelled) return;
-          rethrow;
-        }
-
-        if (_settings.speedLimitKBps > 0)
-          await Future.delayed(
-            Duration(milliseconds: 1000 ~/ _settings.speedLimitKBps),
-          );
-      }
-    } finally {
-      client.close();
-    }
-
-    // 4. Stitch
-    AppLogger.i('Stitching...');
-    final output = File(item.filePath);
-    await output.parent.create(recursive: true);
-    final sink = output.openWrite();
-
-    int totalSize = 0;
-    for (var i = 0; i < segments.length; i++) {
-      final segFile = File(p.join(tempDir.path, '$i.ts'));
-      if (await segFile.exists()) {
-        final len = await segFile.length();
-        totalSize += len;
-        await sink.addStream(segFile.openRead());
-      }
-    }
-    await sink.close();
-    await tempDir.delete(recursive: true);
-
-    AppLogger.success(
-      'Download Complete: ${item.episodeTitle} (Size: $totalSize)',
-    );
-    _notifier.updateDownloadState(
-      downloadingItem.copyWith(
-        state: DownloadStatus.downloaded,
-        progress: totalSize,
-        size: totalSize,
-        totalSegments: null,
-      ),
-    );
-  }
-
-  Uint8List _decrypt(Uint8List bytes, Uint8List key, Uint8List? iv, int seq) {
-    // IV handling: Use provided IV or derive from sequence number
-    final effectiveIV = iv ?? _seqToIV(seq);
-    final encrypter = Encrypter(AES(Key(key), mode: AESMode.cbc));
-    return Uint8List.fromList(
-      encrypter.decryptBytes(Encrypted(bytes), iv: IV(effectiveIV)),
-    );
-  }
-
-  Uint8List _seqToIV(int seq) {
-    final iv = Uint8List(16);
-    for (int i = 15; i >= 0; i--) {
-      iv[i] = (seq >> (8 * (15 - i))) & 0xFF;
-    }
-    return iv;
-  }
-
-  Uint8List _hexToBytes(String hex) {
-    hex = hex.replaceAll('0x', '');
-    if (hex.length % 2 != 0) hex = '0$hex';
-    final result = Uint8List(hex.length ~/ 2);
-    for (int i = 0; i < result.length; i++) {
-      result[i] = int.parse(hex.substring(i * 2, i * 2 + 2), radix: 16);
-    }
-    return result;
-  }
-
-  void _fail(DownloadItem item, String reason) {
-    AppLogger.fail(reason);
-    ref
-        .read(downloadsProvider.notifier)
-        .updateDownloadState(item.copyWith(state: DownloadStatus.failed));
+    _notifier.updateDownloadState(queuedItem);
+    _queue.add(queuedItem);
+    _processQueue();
   }
 
   void pauseDownload(DownloadItem item) {
-    _cancelTokens[item.filePath]?.cancel();
+    if (_isolates.containsKey(item.id)) {
+      _ports[item.id]?.send('cancel');
+      _isolates[item.id]?.kill(priority: Isolate.immediate);
+      _cleanup(item.id);
+    } else {
+      _queue.removeWhere((i) => i.id == item.id);
+    }
     _notifier.updateDownloadState(item.copyWith(state: DownloadStatus.paused));
   }
 
@@ -405,165 +67,356 @@ class DownloadService {
 
   Future<void> deleteDownload(DownloadItem item) async {
     pauseDownload(item);
-
     try {
-      final basePath = _settings.useCustomPath
-          ? _settings.customDownloadPath
-          : (await StorageProvider().getDefaultDirectory())?.path;
+      final file = File(item.filePath);
+      if (await file.exists()) await file.delete();
 
-      if (basePath == null) return;
-
-      final file = File(p.join(basePath, item.filePath));
-      if (!await file.exists()) {
-        ref.read(downloadsProvider.notifier).removeDownload(item);
-        return;
+      // Cleanup parent folder if empty
+      if (await file.parent.exists() && file.parent.listSync().isEmpty) {
+        await file.parent.delete();
       }
-
-      final episodeDir = file.parent;
-      final animeDir = episodeDir.parent;
-
-      await file.delete();
-
-      final episodeRemaining = episodeDir.listSync(followLinks: false);
-
-      if (episodeRemaining.isEmpty) {
-        await episodeDir.delete();
-      }
-
-      final animeRemaining = animeDir.listSync(followLinks: false);
-
-      if (animeRemaining.isEmpty) {
-        await animeDir.delete(recursive: true);
-      }
-
-      ref.read(downloadsProvider.notifier).removeDownload(item);
+      _notifier.removeDownload(item);
     } catch (e) {
-      AppLogger.e('Failed to delete download: $e');
+      AppLogger.e('Delete failed: $e');
     }
   }
 
-  Future<List<_Segment>> _parsePlaylist(
-    String url,
-    Map<String, String> headers,
-  ) async {
-    final res = await _getWithRetry(Uri.parse(url), headers);
-    final lines = LineSplitter.split(res.body).toList();
-    final segments = <_Segment>[];
-    final baseUri = Uri.parse(url);
+  void _processQueue() {
+    if (_isolates.length >= _maxConcurrent || _queue.isEmpty) return;
+    _spawnIsolate(_queue.removeAt(0));
+  }
 
-    // CHECK FOR MASTER PLAYLIST
-    bool isMaster = lines.any((l) => l.contains('#EXT-X-STREAM-INF'));
+  Future<void> _spawnIsolate(DownloadItem item) async {
+    final receivePort = ReceivePort();
+    _notifier.updateDownloadState(
+      item.copyWith(state: DownloadStatus.downloading),
+    );
 
-    if (isMaster) {
-      AppLogger.i('Master Playlist detected: $url');
-      String? bestVariantUrl;
-      int maxBandwidth = 0;
+    try {
+      final isolate = await Isolate.spawn(
+        _downloadWorker,
+        _TaskConfig(item, _settings, receivePort.sendPort),
+      );
 
-      for (int i = 0; i < lines.length; i++) {
-        final line = lines[i];
-        if (line.startsWith('#EXT-X-STREAM-INF')) {
-          // Parse Bandwidth
-          final bandwidthMatch = RegExp(r'BANDWIDTH=(\d+)').firstMatch(line);
-          final bandwidth = bandwidthMatch != null
-              ? int.parse(bandwidthMatch.group(1)!)
-              : 0;
+      _isolates[item.id] = isolate;
 
-          // Resolution check if needed, but bandwidth is usually good proxy
-
-          // URL is next line
-          if (i + 1 < lines.length) {
-            final nextLine = lines[i + 1].trim();
-            if (nextLine.isNotEmpty && !nextLine.startsWith('#')) {
-              if (bandwidth > maxBandwidth) {
-                maxBandwidth = bandwidth;
-                bestVariantUrl = baseUri.resolve(nextLine).toString();
-              }
-            }
+      receivePort.listen((msg) {
+        if (msg is SendPort) {
+          _ports[item.id] = msg;
+        } else if (msg is DownloadItem) {
+          _notifier.updateDownloadState(msg);
+          if (msg.state == DownloadStatus.downloaded) _cleanup(item.id);
+        } else if (msg is String) {
+          if (msg.startsWith('err:')) _fail(item, msg.substring(4));
+          if (msg.startsWith('log:')) {
+            AppLogger.d('[Isolate] ${msg.substring(4)}');
           }
         }
-      }
-
-      if (bestVariantUrl != null) {
-        AppLogger.i(
-          'Selected Best Variant: $bestVariantUrl (Bandwidth: $maxBandwidth)',
-        );
-        return _parsePlaylist(bestVariantUrl, headers);
-      }
-
-      // If failed to parse variants, fall through or throw
-      throw Exception('Failed to find valid variant in Master Playlist');
+      });
+    } catch (e) {
+      _fail(item, 'Isolate Spawn Error: $e');
     }
+  }
 
-    // MEDIA PLAYLIST PARSING
-    String? currentKeyUrl;
-    Uint8List? currentKey;
-    Uint8List? currentIV;
+  void _cleanup(String id) {
+    _isolates.remove(id);
+    _ports.remove(id);
+    _processQueue();
+  }
 
-    for (final line in lines) {
-      final trimmed = line.trim();
-      if (trimmed.isEmpty) continue;
-
-      if (trimmed.startsWith('#')) {
-        if (trimmed.startsWith('#EXT-X-KEY')) {
-          final keyUri = RegExp(r'URI="([^"]+)"').firstMatch(trimmed)?.group(1);
-          final ivHex = RegExp(
-            r'IV=0x([0-9A-Fa-f]+)',
-          ).firstMatch(trimmed)?.group(1);
-
-          if (keyUri != null) {
-            final absKeyUrl = baseUri.resolve(keyUri).toString();
-            if (currentKeyUrl != absKeyUrl) {
-              currentKeyUrl = absKeyUrl;
-              AppLogger.d('Fetching Key: $absKeyUrl');
-              try {
-                final keyRes = await _getWithRetry(
-                  Uri.parse(absKeyUrl),
-                  headers,
-                );
-                currentKey = keyRes.bodyBytes;
-              } catch (e) {
-                AppLogger.d("Failed to fetch key $absKeyUrl: $e");
-              }
-            }
-          }
-          if (ivHex != null) {
-            currentIV = _hexToBytes(ivHex);
-          }
-        }
-      } else {
-        final absoluteUrl = baseUri.resolve(trimmed).toString();
-        if (trimmed.toLowerCase().contains('.m3u8')) {
-          AppLogger.d(
-            "Found nested playlist in Media Playlist context? $absoluteUrl",
-          );
-          segments.add(
-            _Segment(absoluteUrl, currentKey, currentIV, segments.length),
-          );
-        } else {
-          segments.add(
-            _Segment(absoluteUrl, currentKey, currentIV, segments.length),
-          );
-        }
-      }
-    }
-    return segments;
+  void _fail(DownloadItem item, String reason) {
+    AppLogger.e(reason);
+    _notifier.updateDownloadState(item.copyWith(state: DownloadStatus.failed));
+    _cleanup(item.id);
   }
 }
 
-class SimpleCancelToken {
+class _TaskConfig {
+  final DownloadItem item;
+  final DownloadSettingsModel settings;
+  final SendPort port;
+  _TaskConfig(this.item, this.settings, this.port);
+}
+
+Future<void> _downloadWorker(_TaskConfig task) async {
+  final cmdPort = ReceivePort();
+  task.port.send(cmdPort.sendPort);
+
   bool isCancelled = false;
-  final List<void Function()> _listeners = [];
+  cmdPort.listen((msg) {
+    if (msg == 'cancel') isCancelled = true;
+  });
 
-  void addListener(void Function() listener) => _listeners.add(listener);
+  final client = http.Client();
+  final item = task.item;
+  final isM3U8 = await VideoUtils.isM3U8(
+    item.downloadUrl,
+    headers: item.headers.cast(),
+  );
 
-  void cancel() {
-    isCancelled = true;
-    for (final listener in _listeners) {
-      try {
-        listener();
-      } catch (_) {}
+  task.port.send('log: Processing as ${isM3U8 ? "M3U8" : "File"}');
+
+  try {
+    DownloadItem result;
+    if (isM3U8) {
+      result = await _processM3U8(task, client, () => isCancelled);
+    } else {
+      result = await _processFile(task, client, () => isCancelled);
+    }
+
+    if (!isCancelled) task.port.send(result);
+  } catch (e) {
+    if (!isCancelled) task.port.send('err:$e');
+  } finally {
+    client.close();
+    Isolate.exit();
+  }
+}
+
+Future<DownloadItem> _processFile(
+  _TaskConfig task,
+  http.Client client,
+  bool Function() isCancelled,
+) async {
+  final file = File(task.item.filePath);
+  await file.parent.create(recursive: true);
+
+  // Resume Logic
+  final existing = await file.exists() ? await file.length() : 0;
+  final req = http.Request('GET', Uri.parse(task.item.downloadUrl));
+  req.headers.addAll(task.item.headers.cast());
+  if (existing > 0) req.headers['Range'] = 'bytes=$existing-';
+
+  final res = await client.send(req);
+  if (res.statusCode >= 400) throw Exception('HTTP ${res.statusCode}');
+
+  // Calc Total Size
+  int total = existing;
+  if (res.statusCode == 200) {
+    total = int.tryParse(res.headers['content-length'] ?? '0') ?? 0;
+  } else if (res.statusCode == 206) {
+    final range = res.headers['content-range']?.split('/').last;
+    if (range != null && range != '*') total = int.parse(range);
+  }
+
+  final sink = file.openWrite(mode: FileMode.append);
+  int current = existing;
+  DateTime lastLog = DateTime.now();
+
+  await for (final chunk in res.stream) {
+    if (isCancelled()) throw Exception("Cancelled");
+    sink.add(chunk);
+    current += chunk.length;
+
+    // Update UI every 500ms
+    if (DateTime.now().difference(lastLog).inMilliseconds > 500) {
+      task.port.send(
+        task.item.copyWith(
+          state: DownloadStatus.downloading,
+          size: total,
+          progress: current,
+        ),
+      );
+      lastLog = DateTime.now();
     }
   }
+  await sink.close();
+
+  return task.item.copyWith(
+    state: DownloadStatus.downloaded,
+    size: current,
+    progress: current,
+  );
+}
+
+Future<DownloadItem> _processM3U8(
+  _TaskConfig task,
+  http.Client client,
+  bool Function() isCancelled,
+) async {
+  final tempDir = Directory(
+    '${p.dirname(task.item.filePath)}/.temp_${task.item.id.hashCode}',
+  );
+  await tempDir.create(recursive: true);
+
+  // Parse Playlist
+  final segments = await _parsePlaylist(
+    task.item.downloadUrl,
+    task.item.headers,
+    client,
+    task.port,
+  );
+  if (segments.isEmpty) throw Exception("Empty playlist");
+
+  var currentItem = task.item.copyWith(
+    state: DownloadStatus.downloading,
+    totalSegments: segments.length,
+    progress: 0,
+  );
+  task.port.send(currentItem);
+
+  // Download Segments (Batched)
+  final batchSize = task.settings.parallelDownloads > 0
+      ? task.settings.parallelDownloads
+      : 3;
+  int completed = 0;
+  DateTime lastLog = DateTime.now();
+
+  // Count already downloaded
+  for (var s in segments) {
+    if (File(p.join(tempDir.path, '${s.index}.ts')).existsSync()) completed++;
+  }
+
+  for (var i = 0; i < segments.length; i += batchSize) {
+    if (isCancelled()) break;
+
+    final end = (i + batchSize < segments.length)
+        ? i + batchSize
+        : segments.length;
+    final batch = segments.sublist(i, end);
+
+    await Future.wait(
+      batch.map((seg) async {
+        if (isCancelled()) return;
+        final file = File(p.join(tempDir.path, '${seg.index}.ts'));
+        if (await file.exists()) return;
+
+        final bytes = await _fetch(seg.url, task.item.headers, client);
+        if (bytes != null) {
+          final data = seg.key != null
+              ? _decrypt(bytes, seg.key!, seg.iv, seg.index)
+              : bytes;
+          await file.writeAsBytes(data);
+          completed++;
+        }
+      }),
+    );
+
+    if (DateTime.now().difference(lastLog).inMilliseconds > 1000) {
+      task.port.send(currentItem.copyWith(progress: completed));
+      lastLog = DateTime.now();
+    }
+
+    if (task.settings.speedLimitKBps > 0) {
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+  }
+
+  if (isCancelled()) throw Exception("Cancelled");
+
+  // Stitch Files
+  final output = File(task.item.filePath);
+  final sink = output.openWrite();
+  int totalSize = 0;
+
+  for (var s in segments) {
+    final f = File(p.join(tempDir.path, '${s.index}.ts'));
+    if (await f.exists()) {
+      totalSize += await f.length();
+      await sink.addStream(f.openRead());
+    }
+  }
+  await sink.close();
+  await tempDir.delete(recursive: true);
+
+  return currentItem.copyWith(
+    state: DownloadStatus.downloaded,
+    size: totalSize,
+    progress: totalSize,
+  );
+}
+
+Future<List<_Segment>> _parsePlaylist(
+  String url,
+  Map headers,
+  http.Client client,
+  SendPort port,
+) async {
+  final bytes = await _fetch(url, headers, client);
+  if (bytes == null) throw Exception("Failed to load m3u8");
+
+  final lines = LineSplitter.split(utf8.decode(bytes)).toList();
+  final baseUri = Uri.parse(url);
+  final segments = <_Segment>[];
+
+  // Recursively handle Master Playlist
+  if (lines.any((l) => l.contains('#EXT-X-STREAM-INF'))) {
+    for (int i = 0; i < lines.length; i++) {
+      if (lines[i].startsWith('#EXT-X-STREAM-INF') && i + 1 < lines.length) {
+        final next = lines[i + 1].trim();
+        if (next.isNotEmpty && !next.startsWith('#')) {
+          return _parsePlaylist(
+            baseUri.resolve(next).toString(),
+            headers,
+            client,
+            port,
+          );
+        }
+      }
+    }
+  }
+
+  Uint8List? key, iv;
+  for (final line in lines) {
+    final trim = line.trim();
+    if (trim.isEmpty) continue;
+
+    if (trim.startsWith('#EXT-X-KEY')) {
+      final keyUri = RegExp(r'URI="([^"]+)"').firstMatch(trim)?.group(1);
+      final ivHex = RegExp(r'IV=0x([0-9A-Fa-f]+)').firstMatch(trim)?.group(1);
+
+      if (keyUri != null) {
+        key = await _fetch(baseUri.resolve(keyUri).toString(), headers, client);
+      }
+      if (ivHex != null) iv = _hexToBytes(ivHex);
+    } else if (!trim.startsWith('#')) {
+      segments.add(
+        _Segment(baseUri.resolve(trim).toString(), key, iv, segments.length),
+      );
+    }
+  }
+
+  port.send('log:Parsed ${segments.length} segments');
+  return segments;
+}
+
+Future<Uint8List?> _fetch(String url, Map headers, http.Client client) async {
+  for (int i = 0; i < 3; i++) {
+    try {
+      final res = await client.get(Uri.parse(url), headers: headers.cast());
+      if (res.statusCode == 200) return res.bodyBytes;
+    } catch (_) {
+      await Future.delayed(const Duration(seconds: 1));
+    }
+  }
+  return null;
+}
+
+Uint8List _decrypt(Uint8List bytes, Uint8List key, Uint8List? iv, int seq) {
+  final effectiveIV = iv ?? _seqToIV(seq);
+  final encrypter = Encrypter(AES(Key(key), mode: AESMode.cbc));
+  return Uint8List.fromList(
+    encrypter.decryptBytes(Encrypted(bytes), iv: IV(effectiveIV)),
+  );
+}
+
+Uint8List _seqToIV(int seq) {
+  final iv = Uint8List(16);
+  for (int i = 15; i >= 0; i--) {
+    iv[i] = (seq >> (8 * (15 - i))) & 0xFF;
+  }
+  return iv;
+}
+
+Uint8List _hexToBytes(String hex) {
+  hex = hex.replaceAll('0x', '');
+  if (hex.length % 2 != 0) hex = '0$hex';
+  return Uint8List.fromList(
+    List.generate(
+      hex.length ~/ 2,
+      (i) => int.parse(hex.substring(i * 2, i * 2 + 2), radix: 16),
+    ),
+  );
 }
 
 class _Segment {

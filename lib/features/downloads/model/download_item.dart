@@ -1,4 +1,5 @@
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:shonenx/core/utils/misc.dart';
 import 'package:shonenx/data/hive/hive_type_ids.dart';
 import 'package:shonenx/features/downloads/model/download_status.dart';
 
@@ -7,42 +8,53 @@ part 'download_item.g.dart';
 @HiveType(typeId: HiveTypeIds.downloads)
 class DownloadItem {
   @HiveField(0)
-  final String animeTitle;
+  final String id;
+
   @HiveField(1)
-  final String episodeTitle;
+  final String animeTitle;
+
   @HiveField(2)
-  final int episodeNumber;
+  final String episodeTitle;
+
   @HiveField(3)
-  final String thumbnail;
+  final int episodeNumber;
+
   @HiveField(4)
-  final int? size;
+  final String thumbnail;
+
   @HiveField(5)
-  final DownloadStatus state;
+  final int? size;
+
   @HiveField(6)
-  final int progress;
+  final DownloadStatus state;
+
   @HiveField(7)
-  final String downloadUrl;
+  final int progress;
+
   @HiveField(8)
-  final String quality;
+  final String downloadUrl;
+
   @HiveField(9)
+  final String quality;
+
+  @HiveField(10)
   final String filePath;
-  @HiveField(10, defaultValue: {
-    'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-  })
+
+  @HiveField(11)
   final Map<dynamic, dynamic> headers;
+
+  @HiveField(12)
+  final String? contentType;
+
+  @HiveField(13)
+  final List<dynamic>? subtitles;
+
+  @HiveField(14)
+  final int? totalSegments;
+
   final int speed;
   final Duration? eta;
   final dynamic error;
-
-  @HiveField(11)
-  final String? contentType;
-
-  @HiveField(12)
-  final List<dynamic>? subtitles;
-
-  @HiveField(13)
-  final int? totalSegments;
 
   bool get isM3U8 =>
       contentType == 'video/MP2T' ||
@@ -75,6 +87,7 @@ class DownloadItem {
   }
 
   DownloadItem({
+    String? id,
     this.quality = 'Default',
     required this.downloadUrl,
     required this.animeTitle,
@@ -95,9 +108,10 @@ class DownloadItem {
     this.error,
     this.subtitles,
     this.totalSegments,
-  });
+  }) : id = id ?? randomId();
 
   DownloadItem copyWith({
+    String? id,
     String? animeTitle,
     String? episodeTitle,
     int? episodeNumber,
@@ -114,8 +128,10 @@ class DownloadItem {
     dynamic error,
     String? contentType,
     int? totalSegments,
+    List<dynamic>? subtitles,
   }) {
     return DownloadItem(
+      id: id ?? this.id,
       animeTitle: animeTitle ?? this.animeTitle,
       episodeTitle: episodeTitle ?? this.episodeTitle,
       episodeNumber: episodeNumber ?? this.episodeNumber,
@@ -132,11 +148,12 @@ class DownloadItem {
       error: error ?? this.error,
       contentType: contentType ?? this.contentType,
       totalSegments: totalSegments ?? this.totalSegments,
+      subtitles: subtitles ?? this.subtitles,
     );
   }
 
   @override
   String toString() {
-    return 'DownloadItem(animeTitle: $animeTitle, episodeTitle: $episodeTitle, episodeNumber: $episodeNumber, thumbnail: $thumbnail, size: $size, state: $state, progress: $progress, downloadUrl: $downloadUrl, quality: $quality, filePath: $filePath, headers: $headers, speed: $speed, eta: $eta, contentType: $contentType, totalSegments: $totalSegments, error: $error)';
+    return 'DownloadItem(id: $id, animeTitle: $animeTitle, episodeTitle: $episodeTitle, episodeNumber: $episodeNumber, thumbnail: $thumbnail, size: $size, state: $state, progress: $progress, downloadUrl: $downloadUrl, quality: $quality, filePath: $filePath, headers: $headers, speed: $speed, eta: $eta, contentType: $contentType, totalSegments: $totalSegments, error: $error)';
   }
 }

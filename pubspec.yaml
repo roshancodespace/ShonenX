@@ -10,7 +10,7 @@ publish_to: "none"
 version: 1.7.5+12
 
 environment:
-  sdk: ">=3.5.1"
+  sdk: ">=3.8.1"
 
 dependencies:
   awesome_snackbar_content: ^0.1.7
@@ -22,7 +22,6 @@ dependencies:
   d4rt: ^0.1.9
   desktop_webview_window: ^0.2.3
   device_info_plus: ^11.2.1
-  dio: ^5.9.0
   dynamic_color: 1.7.0
   encrypt: ^5.0.3
   file_picker: ^10.3.10

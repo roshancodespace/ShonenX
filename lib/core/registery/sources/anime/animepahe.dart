@@ -103,7 +103,7 @@ class AnimePaheProvider extends AnimeProvider {
       final nextRes = await UniversalHttpClient.instance.get(
         Uri.parse("$url&page=${i + 1}"),
         headers: headers,
-        cacheConfig: i == (totalPages - 1) ? CacheConfig.short : CacheConfig.infinite,
+        cacheConfig: i == (totalPages - 1) ? CacheConfig.short : CacheConfig.year,
       );
       final nextBody = json.decode(nextRes.body);
       if (nextBody['data'] != null) {
@@ -162,7 +162,7 @@ class AnimePaheProvider extends AnimeProvider {
     final bool isRequestingDub = category?.toLowerCase() == 'dub';
 
     final data = await UniversalHttpClient.instance.get(Uri.parse(episodeUrl),
-        headers: headers, cacheConfig: CacheConfig.infinite);
+        headers: headers, cacheConfig: CacheConfig.veryLong);
     final document = html.parse(data.body);
 
     final downloadQualities = document.querySelectorAll('div#pickDownload > a');
@@ -296,7 +296,7 @@ class AnimePaheProvider extends AnimeProvider {
     final resp = await UniversalHttpClient.instance.get(
       Uri.parse(downloadLink),
       headers: headers,
-      cacheConfig: CacheConfig.infinite,
+      cacheConfig: CacheConfig.veryLong,
     );
     final scripts = html.parse(resp.body).querySelectorAll('script');
 
@@ -319,7 +319,7 @@ class AnimePaheProvider extends AnimeProvider {
     final kwikRes = await UniversalHttpClient.instance.get(
       Uri.parse(kwikLink),
       headers: {'referer': downloadLink, 'User-Agent': _userAgent},
-      cacheConfig: CacheConfig.infinite,
+      cacheConfig: CacheConfig.veryLong,
     );
 
     String cookieHeader = "";

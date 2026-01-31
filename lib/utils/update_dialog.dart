@@ -1,5 +1,6 @@
 import 'dart:io';
-import 'package:dio/dio.dart';
+import 'package:http/http.dart' as http;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -68,24 +69,50 @@ class _UpdateDialogState extends State<UpdateDialog> {
       _error = false;
     });
 
+    final client = http.Client();
     try {
       final tempDir = await getTemporaryDirectory();
       final savePath = '${tempDir.path}/app-update.apk';
-      if (await File(savePath).exists()) await File(savePath).delete();
+      final file = File(savePath);
+      if (await file.exists()) await file.delete();
 
-      await Dio().download(
-        widget.apkDownloadUrl!,
-        savePath,
-        onReceiveProgress: (rec, total) {
-          if (mounted && total != -1) {
-            setState(() {
-              _progress = rec / total;
-              _statusMessage =
-                  "Downloading... ${(_progress * 100).toStringAsFixed(0)}%";
-            });
-          }
-        },
-      );
+      final request = http.Request('GET', Uri.parse(widget.apkDownloadUrl!));
+      final response = await client.send(request);
+
+      if (response.statusCode >= 400) {
+        throw Exception('HTTP Error: ${response.statusCode}');
+      }
+
+      final contentLength = response.contentLength ?? -1;
+      int received = 0;
+
+      final sink = file.openWrite();
+
+      await response.stream
+          .listen(
+            (chunk) {
+              sink.add(chunk);
+              received += chunk.length;
+
+              if (mounted && contentLength != -1) {
+                setState(() {
+                  _progress = received / contentLength;
+                  _statusMessage =
+                      "Downloading... ${(_progress * 100).toStringAsFixed(0)}%";
+                });
+              }
+            },
+            onDone: () async {
+              await sink.flush();
+              await sink.close();
+            },
+            onError: (e) async {
+              await sink.close();
+              throw e;
+            },
+            cancelOnError: true,
+          )
+          .asFuture();
 
       if (mounted) setState(() => _statusMessage = "Installing...");
       await InstallPlugin.install(savePath, appId: 'com.darkx.shonenx');
@@ -97,6 +124,8 @@ class _UpdateDialogState extends State<UpdateDialog> {
           _downloading = false;
         });
       }
+    } finally {
+      client.close();
     }
   }
 

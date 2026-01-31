@@ -233,67 +233,76 @@ class EpisodeData extends _$EpisodeData {
 
     if (animeId == null) return;
 
-    ServerData? selectedServer;
+    // Keep the provider alive while the download sheet is open
+    final link = ref.keepAlive();
 
-    if (!_exp.useMangayomiExtensions && ep.url == null) {
-      _showLoading(context);
+    try {
+      ServerData? selectedServer;
 
-      try {
-        final result = await _animeProvider?.getSupportedServers(
-          metadata: {'id': ep.id, 'epNumber': ep.number, 'epId': ep.id},
-        );
+      if (!_exp.useMangayomiExtensions && ep.url == null) {
+        _showLoading(context);
 
-        if (!context.mounted) return;
-        Navigator.pop(context); // Close loading dialog
+        try {
+          final result = await _animeProvider?.getSupportedServers(
+            metadata: {'id': animeId, 'epNumber': ep.number, 'epId': ep.id},
+          );
 
-        final servers = result?.flatten() ?? [];
+          if (!context.mounted) return;
+          Navigator.pop(context); // Close loading dialog
 
-        if (servers.isEmpty) {
-          _showSnack(context, "No servers found for this episode");
+          final servers = result?.flatten() ?? [];
+
+          if (servers.isEmpty) {
+            _showSnack(context, "No servers found for this episode");
+            return;
+          }
+
+          if (servers.length == 1) {
+            selectedServer = servers.first;
+          } else {
+            selectedServer = await _showServerSelectionSheet(context, servers);
+            if (selectedServer == null) return; // User cancelled
+          }
+        } catch (e) {
+          if (context.mounted) {
+            Navigator.pop(context);
+            _showSnack(context, "Failed to load servers: $e");
+          }
           return;
         }
-
-        if (servers.length == 1) {
-          selectedServer = servers.first;
-        } else {
-          selectedServer = await _showServerSelectionSheet(context, servers);
-          if (selectedServer == null) return; // User cancelled
-        }
-      } catch (e) {
-        if (context.mounted) {
-          Navigator.pop(context);
-          _showSnack(context, "Failed to load servers: $e");
-        }
-        return;
       }
-    }
 
-    if (!context.mounted) return;
+      if (!context.mounted) return;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (c) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.3,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (c, controller) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: DownloadSourceSelector(
-            animeTitle: _epState.animeTitle ?? 'Unknown',
-            episode: ep,
-            server: selectedServer,
-            fetchSources: () => _fetchSourceData(ep, server: selectedServer),
-            scrollController: controller,
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (c) => DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (c, controller) => Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: DownloadSourceSelector(
+              animeTitle: _epState.animeTitle ?? 'Unknown',
+              episode: ep,
+              server: selectedServer,
+              fetchSources: () => _fetchSourceData(ep, server: selectedServer),
+              scrollController: controller,
+            ),
           ),
         ),
-      ),
-    );
+      );
+    } finally {
+      link.close();
+    }
   }
 
   void reset() => state = const EpisodeDataState();
@@ -310,7 +319,7 @@ class EpisodeData extends _$EpisodeData {
 
     try {
       final ep = _episodes[epIdx];
-      final animeId = ref.read(episodeListProvider).animeId;
+      final animeId = _epState.animeId;
       final res = await _animeProvider?.getSupportedServers(
         metadata: {'id': animeId, 'epNumber': ep.number, 'epId': ep.id},
       );

@@ -18,20 +18,20 @@ import 'package:shonenx/features/news/view/news_screen.dart';
 import 'package:shonenx/features/onboarding/view/onboarding_screen.dart';
 
 // Settings Features
-import 'package:shonenx/features/settings/view/about_screen.dart';
-import 'package:shonenx/features/settings/view/account_settings_screen.dart';
-import 'package:shonenx/features/settings/view/anime_sources_settings_screen.dart';
-import 'package:shonenx/features/settings/view/download_settings_screen.dart';
-import 'package:shonenx/features/settings/view/experimental_screen.dart';
-import 'package:shonenx/features/settings/view/extension_preference_screen.dart';
-import 'package:shonenx/features/settings/view/extensions_list_screen.dart';
-import 'package:shonenx/features/settings/view/player_settings_screen.dart';
-import 'package:shonenx/features/settings/view/profile_settings_screen.dart';
-import 'package:shonenx/features/settings/view/settings_screen.dart';
-import 'package:shonenx/features/settings/view/subtitle_customization_screen.dart';
+import 'package:shonenx/features/settings/view/screens/about_screen.dart';
+import 'package:shonenx/features/settings/view/screens/account_settings_screen.dart';
+import 'package:shonenx/features/settings/view/screens/anime_sources_settings_screen.dart';
+import 'package:shonenx/features/settings/view/screens/download_settings_screen.dart';
+import 'package:shonenx/features/settings/view/screens/experimental_screen.dart';
+import 'package:shonenx/features/settings/view/screens/extension_preference_screen.dart';
+import 'package:shonenx/features/settings/view/screens/extensions_list_screen.dart';
+import 'package:shonenx/features/settings/view/screens/player_settings_screen.dart';
+import 'package:shonenx/features/settings/view/screens/profile_settings_screen.dart';
+import 'package:shonenx/features/settings/view/screens/settings_screen.dart';
+import 'package:shonenx/features/settings/view/screens/subtitle_customization_screen.dart';
 import 'package:shonenx/features/settings/view/temporary/demo_screen.dart';
-import 'package:shonenx/features/settings/view/theme_settings_screen.dart';
-import 'package:shonenx/features/settings/view/ui_settings_screen.dart';
+import 'package:shonenx/features/settings/view/screens/theme_settings_screen.dart';
+import 'package:shonenx/features/settings/view/screens/ui_settings_screen.dart';
 import 'package:shonenx/features/debug/view/debug_screen.dart';
 import 'package:shonenx/router/router_wrapper.dart';
 

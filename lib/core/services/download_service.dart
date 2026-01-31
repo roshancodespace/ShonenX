@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/core/utils/video_utils.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
 import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/downloads/view_model/downloads_notifier.dart';
@@ -42,9 +41,14 @@ class DownloadService {
         ? _settings.customDownloadPath!
         : (await StorageProvider().getDefaultDirectory())!.path;
 
+    final itemPath = item.filePath;
+    final finalPath = p.isAbsolute(itemPath)
+        ? itemPath
+        : p.join(basePath, itemPath);
+
     final queuedItem = item.copyWith(
       state: DownloadStatus.queued,
-      filePath: p.join(basePath, item.filePath),
+      filePath: finalPath,
     );
 
     _notifier.updateDownloadState(queuedItem);
@@ -149,10 +153,7 @@ Future<void> _downloadWorker(_TaskConfig task) async {
 
   final client = http.Client();
   final item = task.item;
-  final isM3U8 = await VideoUtils.isM3U8(
-    item.downloadUrl,
-    headers: item.headers.cast(),
-  );
+  final isM3U8 = item.isM3U8;
 
   task.port.send('log: Processing as ${isM3U8 ? "M3U8" : "File"}');
 
@@ -203,10 +204,13 @@ Future<DownloadItem> _processFile(
   int current = existing;
   DateTime lastLog = DateTime.now();
 
+  final throttler = _Throttler(task.settings.speedLimitKBps);
+
   await for (final chunk in res.stream) {
     if (isCancelled()) throw Exception("Cancelled");
     sink.add(chunk);
     current += chunk.length;
+    await throttler.throttle(chunk.length);
 
     // Update UI every 500ms
     if (DateTime.now().difference(lastLog).inMilliseconds > 500) {
@@ -267,6 +271,8 @@ Future<DownloadItem> _processM3U8(
     if (File(p.join(tempDir.path, '${s.index}.ts')).existsSync()) completed++;
   }
 
+  final throttler = _Throttler(task.settings.speedLimitKBps);
+
   for (var i = 0; i < segments.length; i += batchSize) {
     if (isCancelled()) break;
 
@@ -288,6 +294,7 @@ Future<DownloadItem> _processM3U8(
               : bytes;
           await file.writeAsBytes(data);
           completed++;
+          await throttler.throttle(data.length);
         }
       }),
     );
@@ -295,10 +302,6 @@ Future<DownloadItem> _processM3U8(
     if (DateTime.now().difference(lastLog).inMilliseconds > 1000) {
       task.port.send(currentItem.copyWith(progress: completed));
       lastLog = DateTime.now();
-    }
-
-    if (task.settings.speedLimitKBps > 0) {
-      await Future.delayed(const Duration(milliseconds: 50));
     }
   }
 
@@ -425,4 +428,33 @@ class _Segment {
   final Uint8List? iv;
   final int index;
   _Segment(this.url, this.key, this.iv, this.index);
+}
+
+class _Throttler {
+  final int limitKBps;
+  int _bytesTransferred = 0;
+  final DateTime _startTime = DateTime.now();
+
+  _Throttler(this.limitKBps);
+
+  Future<void> throttle(int newBytes) async {
+    if (limitKBps <= 0) return;
+
+    _bytesTransferred += newBytes;
+    final elapsedMs = DateTime.now().difference(_startTime).inMilliseconds;
+    if (elapsedMs == 0) return;
+
+    // Expected milliseconds to transfer these bytes at the limit speed
+    // limitKBps is KB/s. 1 KB = 1024 bytes.
+    // Bytes / (KB/s * 1024) = seconds. * 1000 = ms.
+    final expectedMs = (_bytesTransferred / (limitKBps * 1024)) * 1000;
+
+    if (expectedMs > elapsedMs) {
+      final waitMs = (expectedMs - elapsedMs).toInt();
+      // Don't sleep for too tiny intervals, but ensure aggregated sleep.
+      if (waitMs > 10) {
+        await Future.delayed(Duration(milliseconds: waitMs));
+      }
+    }
+  }
 }

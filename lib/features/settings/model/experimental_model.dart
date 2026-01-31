@@ -41,4 +41,24 @@ class ExperimentalFeaturesModel {
       debugMode: debugMode ?? this.debugMode,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'episodeTitleSync': episodeTitleSync,
+      'useMangayomiExtensions': useMangayomiExtensions,
+      'useTestReleases': useTestReleases,
+      'newUI': newUI,
+      'debugMode': debugMode,
+    };
+  }
+
+  factory ExperimentalFeaturesModel.fromMap(Map<String, dynamic> map) {
+    return ExperimentalFeaturesModel(
+      episodeTitleSync: map['episodeTitleSync'] ?? false,
+      useMangayomiExtensions: map['useMangayomiExtensions'] ?? false,
+      useTestReleases: map['useTestReleases'] ?? false,
+      newUI: map['newUI'] ?? false,
+      debugMode: map['debugMode'] ?? false,
+    );
+  }
 }

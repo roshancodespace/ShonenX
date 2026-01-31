@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:shonenx/features/settings/view/screens/data_settings_screen.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
-import 'package:shonenx/features/settings/view/home_settings_screen.dart';
+import 'package:shonenx/features/settings/view/screens/home_settings_screen.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 import 'package:go_router/go_router.dart';
@@ -69,6 +70,18 @@ class SettingsScreen extends ConsumerWidget {
                   title: 'Download Settings',
                   description: 'Manage download paths and behavior',
                   onTap: () => context.push('/settings/downloads'),
+                ),
+                NormalSettingsItem(
+                  icon: Icon(Icons.data_object, color: colorScheme.primary),
+                  accent: colorScheme.primary,
+                  title: 'Data & Storage',
+                  description: 'Clear cache, backup & restore',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DataSettingsScreen(),
+                    ),
+                  ),
                 ),
                 if (experimental.useMangayomiExtensions)
                   NormalSettingsItem(

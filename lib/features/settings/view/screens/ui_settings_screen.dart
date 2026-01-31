@@ -368,12 +368,10 @@ class StyleSelectorState extends State<StyleSelector> {
               ),
             )
           : AnimatedAnimeCard(
-            anime: anime,
-            tag: 'prev_$styleName',
-            mode: AnimeCardMode.values.firstWhere(
-              (e) => e.name == styleName,
+              anime: anime,
+              tag: 'prev_$styleName',
+              mode: AnimeCardMode.values.firstWhere((e) => e.name == styleName),
             ),
-          ),
     );
   }
 }

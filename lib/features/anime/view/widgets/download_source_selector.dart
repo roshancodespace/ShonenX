@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
@@ -9,10 +7,7 @@ import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
 import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/downloads/view_model/downloads_notifier.dart';
-import 'package:shonenx/features/settings/view_model/download_settings_notifier.dart';
-import 'package:shonenx/storage_provider.dart';
 import 'package:shonenx/utils/extractors.dart' as extractor;
-import 'package:path/path.dart' as p;
 
 class DownloadSourceSelector extends StatefulWidget {
   final String animeTitle;
@@ -139,31 +134,11 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
 
     try {
       final providerContext = ProviderScope.containerOf(context);
-      final settings = providerContext.read(downloadSettingsProvider);
       final notifier = providerContext.read(downloadsProvider.notifier);
-
-      final baseDir = settings.useCustomPath
-          ? (settings.customDownloadPath != null
-              ? Directory(settings.customDownloadPath!)
-              : null)
-          : await StorageProvider().getDefaultDirectory();
-
-      if (baseDir == null) return;
-
-      final cleanAnime =
-          widget.animeTitle.replaceAll(RegExp(r'[<>:"/\\|?*]'), '').trim();
       final epNum = widget.episode.number ?? 0;
-      final cleanEpTitle = (widget.episode.title ?? 'Episode $epNum')
-          .replaceAll(RegExp(r'[<>:"/\\|?*]'), '')
-          .trim();
-
-      final epDir = Directory(
-        p.join(baseDir.path, cleanAnime, '$epNum - $cleanEpTitle'),
-      );
-      if (!await epDir.exists()) await epDir.create(recursive: true);
 
       final ext = isM3U8 ? '.ts' : '.mp4';
-      final filePath = p.join(epDir.path, 'video$ext');
+      final fileName = 'video$ext';
 
       final item = DownloadItem(
         animeTitle: widget.animeTitle,
@@ -174,8 +149,9 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
         progress: 0,
         downloadUrl: url,
         quality: quality,
-        filePath: filePath,
+        filePath: fileName,
         subtitles: _subtitles.map((s) => jsonEncode(s.toJson())).toList(),
+        contentType: isM3U8 ? 'application/vnd.apple.mpegurl' : null,
         headers: {
           'User-Agent':
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -269,11 +245,11 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
                           onPressed: isErr
                               ? null
                               : () => _triggerDownload(
-                                    q['url'],
-                                    q['quality'],
-                                    source.headers,
-                                    source.isM3U8,
-                                  ),
+                                  q['url'],
+                                  q['quality'],
+                                  source.headers,
+                                  source.isM3U8,
+                                ),
                           backgroundColor: isErr
                               ? colorScheme.errorContainer
                               : colorScheme.secondaryContainer,

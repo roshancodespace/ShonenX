@@ -54,7 +54,30 @@ class ThemeModel {
   }
 
   FlexScheme get flexSchemeEnum => FlexScheme.values.firstWhere(
-        (e) => e.name == flexScheme,
-        orElse: () => FlexScheme.red,
-      );
+    (e) => e.name == flexScheme,
+    orElse: () => FlexScheme.red,
+  );
+  Map<String, dynamic> toMap() {
+    return {
+      'themeMode': themeMode,
+      'amoled': amoled,
+      'flexScheme': flexScheme,
+      'blendLevel': blendLevel,
+      'swapColors': swapColors,
+      'useMaterial3': useMaterial3,
+      'useDynamicColors': useDynamicColors,
+    };
+  }
+
+  factory ThemeModel.fromMap(Map<String, dynamic> map) {
+    return ThemeModel(
+      themeMode: map['themeMode'] ?? 'system',
+      amoled: map['amoled'] ?? false,
+      flexScheme: map['flexScheme'],
+      blendLevel: map['blendLevel']?.toInt() ?? 11,
+      swapColors: map['swapColors'] ?? false,
+      useMaterial3: map['useMaterial3'] ?? true,
+      useDynamicColors: map['useDynamicColors'] ?? false,
+    );
+  }
 }

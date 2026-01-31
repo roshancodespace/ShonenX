@@ -41,4 +41,23 @@ class UiModel {
       episodeViewMode: episodeViewMode ?? this.episodeViewMode,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'cardStyle': cardStyle.index,
+      'immersiveMode': immersiveMode,
+      'spotlightCardStyle': spotlightCardStyle.index,
+      'episodeViewMode': episodeViewMode,
+    };
+  }
+
+  factory UiModel.fromMap(Map<String, dynamic> map) {
+    return UiModel(
+      cardStyle: AnimeCardMode.values[map['cardStyle'] ?? 0],
+      immersiveMode: map['immersiveMode'] ?? false,
+      spotlightCardStyle:
+          SpotlightCardMode.values[map['spotlightCardStyle'] ?? 0],
+      episodeViewMode: map['episodeViewMode'] ?? 'list',
+    );
+  }
 }

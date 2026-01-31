@@ -20,6 +20,7 @@ import 'package:shonenx/features/anime/view/widgets/player/speed_indicator_overl
 import 'package:shonenx/features/anime/view/widgets/player/subtitle_overlay.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
+import 'package:shonenx/features/settings/view_model/player_notifier.dart';
 import 'package:shonenx/helpers/ui.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -79,7 +80,8 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
   void _restartHide() {
     _hideTimer?.cancel();
     if (_locked || !_visible) return;
-    _hideTimer = Timer(const Duration(seconds: 4), () {
+    final settings = ref.read(playerSettingsProvider);
+    _hideTimer = Timer(Duration(seconds: settings.autoHideDuration), () {
       if (mounted) setState(() => _visible = false);
     });
   }
@@ -102,13 +104,15 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
   void _onDoubleTap(bool forward) {
     if (_locked) return;
     final notifier = ref.read(playerStateProvider.notifier);
+    final settings = ref.read(playerSettingsProvider);
+    final jump = settings.seekDuration;
 
     _seekResetTimer?.cancel();
     setState(() {
-      _seekAccum += forward ? 10 : -10;
+      _seekAccum += forward ? jump : -jump;
     });
 
-    forward ? notifier.forward(10) : notifier.rewind(10);
+    forward ? notifier.forward(jump) : notifier.rewind(jump);
 
     _seekResetTimer = Timer(const Duration(seconds: 1), () {
       if (mounted) setState(() => _seekAccum = 0);

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
+
+import 'package:shonenx/features/settings/view_model/player_notifier.dart';
 import 'package:iconsax/iconsax.dart';
 
 class CenterControls extends ConsumerWidget {
@@ -34,13 +36,15 @@ class CenterControls extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _icon(
-              Iconsax.previous,
-              () => ref
-                  .read(episodeDataProvider.notifier)
-                  .changeEpisode(null, by: -1),
-            ),
-            const SizedBox(width: 24),
+            if (ref.watch(playerSettingsProvider).showNextPrevButtons) ...[
+              _icon(
+                Iconsax.previous,
+                () => ref
+                    .read(episodeDataProvider.notifier)
+                    .changeEpisode(null, by: -1),
+              ),
+              const SizedBox(width: 24),
+            ],
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
               child: isBuffering
@@ -60,13 +64,15 @@ class CenterControls extends ConsumerWidget {
                       },
                     ),
             ),
-            const SizedBox(width: 24),
-            _icon(
-              Iconsax.next,
-              () => ref
-                  .read(episodeDataProvider.notifier)
-                  .changeEpisode(null, by: 1),
-            ),
+            if (ref.watch(playerSettingsProvider).showNextPrevButtons) ...[
+              const SizedBox(width: 24),
+              _icon(
+                Iconsax.next,
+                () => ref
+                    .read(episodeDataProvider.notifier)
+                    .changeEpisode(null, by: 1),
+              ),
+            ],
           ],
         ),
       ),

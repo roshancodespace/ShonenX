@@ -17,11 +17,23 @@ class PlayerModel {
   @HiveField(3, defaultValue: false)
   final bool preferDub;
 
+  @HiveField(4, defaultValue: 10)
+  final int seekDuration;
+
+  @HiveField(5, defaultValue: 4)
+  final int autoHideDuration;
+
+  @HiveField(6, defaultValue: true)
+  final bool showNextPrevButtons;
+
   PlayerModel({
     this.defaultQuality = 'Auto',
     this.enableAniSkip = true,
     this.enableAutoSkip = false,
     this.preferDub = false,
+    this.seekDuration = 10,
+    this.autoHideDuration = 4,
+    this.showNextPrevButtons = true,
   });
 
   PlayerModel copyWith({
@@ -29,12 +41,18 @@ class PlayerModel {
     bool? enableAniSkip,
     bool? enableAutoSkip,
     bool? preferDub,
+    int? seekDuration,
+    int? autoHideDuration,
+    bool? showNextPrevButtons,
   }) {
     return PlayerModel(
       defaultQuality: defaultQuality ?? this.defaultQuality,
       enableAniSkip: enableAniSkip ?? this.enableAniSkip,
       enableAutoSkip: enableAutoSkip ?? this.enableAutoSkip,
       preferDub: preferDub ?? this.preferDub,
+      seekDuration: seekDuration ?? this.seekDuration,
+      autoHideDuration: autoHideDuration ?? this.autoHideDuration,
+      showNextPrevButtons: showNextPrevButtons ?? this.showNextPrevButtons,
     );
   }
 
@@ -44,6 +62,9 @@ class PlayerModel {
       'enableAniSkip': enableAniSkip,
       'enableAutoSkip': enableAutoSkip,
       'preferDub': preferDub,
+      'seekDuration': seekDuration,
+      'autoHideDuration': autoHideDuration,
+      'showNextPrevButtons': showNextPrevButtons,
     };
   }
 
@@ -53,6 +74,9 @@ class PlayerModel {
       enableAniSkip: map['enableAniSkip'] ?? true,
       enableAutoSkip: map['enableAutoSkip'] ?? false,
       preferDub: map['preferDub'] ?? false,
+      seekDuration: map['seekDuration'] ?? 10,
+      autoHideDuration: map['autoHideDuration'] ?? 4,
+      showNextPrevButtons: map['showNextPrevButtons'] ?? true,
     );
   }
 }

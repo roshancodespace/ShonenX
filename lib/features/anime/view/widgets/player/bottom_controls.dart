@@ -6,6 +6,7 @@ import 'package:shonenx/core/models/aniskip/aniskip_result.dart';
 import 'package:shonenx/features/anime/view_model/aniskip_notifier.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
+import 'package:shonenx/features/settings/model/player_model.dart';
 import 'package:shonenx/features/settings/view_model/player_notifier.dart';
 import 'package:shonenx/utils/formatter.dart';
 
@@ -47,6 +48,10 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
 
   T _watch<T>(WidgetRef ref, T Function(EpisodeDataState s) sel) {
     return ref.watch(episodeDataProvider.select(sel));
+  }
+
+  PlayerModel _watchSettings(WidgetRef ref) {
+    return ref.watch(playerSettingsProvider);
   }
 
   @override
@@ -102,21 +107,25 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             children: [
               Row(
                 children: [
-                  _icon(
-                    Iconsax.previous,
-                    () => ref
-                        .read(episodeDataProvider.notifier)
-                        .changeEpisode(null, by: -1),
-                  ),
-                  const SizedBox(width: 8),
+                  if (_watchSettings(ref).showNextPrevButtons) ...[
+                    _icon(
+                      Iconsax.previous,
+                      () => ref
+                          .read(episodeDataProvider.notifier)
+                          .changeEpisode(null, by: -1),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   _buildPlayPause(ref),
-                  const SizedBox(width: 8),
-                  _icon(
-                    Iconsax.next,
-                    () => ref
-                        .read(episodeDataProvider.notifier)
-                        .changeEpisode(null, by: 1),
-                  ),
+                  if (_watchSettings(ref).showNextPrevButtons) ...[
+                    const SizedBox(width: 8),
+                    _icon(
+                      Iconsax.next,
+                      () => ref
+                          .read(episodeDataProvider.notifier)
+                          .changeEpisode(null, by: 1),
+                    ),
+                  ],
                   const SizedBox(width: 16),
                   _buildTime(ref),
                 ],

@@ -106,6 +106,50 @@ class PlayerSettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
+            SettingsSection(
+              title: 'Controls Overlay',
+              titleColor: colorScheme.primary,
+              children: [
+                SliderSettingsItem(
+                  icon: Icon(
+                    Iconsax.forward_10_seconds,
+                    color: colorScheme.primary,
+                  ),
+                  accent: colorScheme.primary,
+                  title: 'Seek Duration',
+                  description: '${playerSettings.seekDuration}s',
+                  value: playerSettings.seekDuration.toDouble(),
+                  min: 5,
+                  max: 30,
+                  divisions: 5,
+                  onChanged: (val) => playerNotifier.updateSettings(
+                    (prev) => prev.copyWith(seekDuration: val.toInt()),
+                  ),
+                ),
+                SliderSettingsItem(
+                  icon: Icon(Iconsax.timer_pause, color: colorScheme.primary),
+                  accent: colorScheme.primary,
+                  title: 'Auto Hide Timeout',
+                  description: '${playerSettings.autoHideDuration}s',
+                  value: playerSettings.autoHideDuration.toDouble(),
+                  min: 2,
+                  max: 10,
+                  onChanged: (val) => playerNotifier.updateSettings(
+                    (prev) => prev.copyWith(autoHideDuration: val.toInt()),
+                  ),
+                ),
+                ToggleableSettingsItem(
+                  icon: Icon(Iconsax.previous, color: colorScheme.primary),
+                  accent: colorScheme.primary,
+                  title: 'Show Next/Prev Buttons',
+                  description: 'Show next and previous episode buttons',
+                  value: playerSettings.showNextPrevButtons,
+                  onChanged: (val) => playerNotifier.updateSettings(
+                    (prev) => prev.copyWith(showNextPrevButtons: val),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

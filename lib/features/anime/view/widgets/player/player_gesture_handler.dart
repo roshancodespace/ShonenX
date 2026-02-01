@@ -18,7 +18,14 @@ class PlayerGestureHandler extends StatefulWidget {
     required this.onLongPressUpdate,
     required this.onLongPressEnd,
     required this.onEpisodesPressed,
+    this.onVerticalDragStart,
+    this.onVerticalDragUpdate,
+    this.onVerticalDragEnd,
   });
+
+  final Function(DragStartDetails)? onVerticalDragStart;
+  final Function(DragUpdateDetails)? onVerticalDragUpdate;
+  final Function(DragEndDetails)? onVerticalDragEnd;
 
   @override
   State<PlayerGestureHandler> createState() => _PlayerGestureHandlerState();
@@ -65,6 +72,9 @@ class _PlayerGestureHandlerState extends State<PlayerGestureHandler> {
       onLongPressStart: _onLongPressStart,
       onLongPressMoveUpdate: _onLongPressUpdate,
       onLongPressEnd: _onLongPressEnd,
+      onVerticalDragStart: widget.onVerticalDragStart,
+      onVerticalDragUpdate: widget.onVerticalDragUpdate,
+      onVerticalDragEnd: widget.onVerticalDragEnd,
       onLongPressUp: () {
         if (_isLongPressing) _onLongPressEnd(const LongPressEndDetails());
       },

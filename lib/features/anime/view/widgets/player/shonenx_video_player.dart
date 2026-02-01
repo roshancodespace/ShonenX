@@ -6,7 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:screen_brightness/screen_brightness.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
@@ -18,6 +20,7 @@ import 'package:shonenx/features/anime/view/widgets/player/sheets/settings_sheet
 import 'package:shonenx/features/anime/view/widgets/player/sheets/subtitle_selection_sheet.dart';
 import 'package:shonenx/features/anime/view/widgets/player/speed_indicator_overlay.dart';
 import 'package:shonenx/features/anime/view/widgets/player/subtitle_overlay.dart';
+import 'package:shonenx/features/anime/view/widgets/player/volume_brightness_overlay.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 import 'package:shonenx/features/settings/view_model/player_notifier.dart';
@@ -44,6 +47,14 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
   bool _locked = false;
   final FocusNode _focusNode = FocusNode();
 
+  // Volume & Brightness State
+  double _volume = 0.0;
+  double _brightness = 0.0;
+  bool _isChangingVolume = false;
+  bool _isChangingBrightness = false;
+  bool _allowBoost = false;
+  bool _isDragLeft = false;
+
   // Seek State
   int _seekAccum = 0;
   Timer? _seekResetTimer;
@@ -59,6 +70,7 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
   void initState() {
     super.initState();
     _restartHide();
+    _initVolumeBrightness();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNode.requestFocus();
     });
@@ -73,6 +85,103 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
       windowManager.setFullScreen(false);
     }
     super.dispose();
+  }
+
+  Future<void> _initVolumeBrightness() async {
+    try {
+      _volume = (await FlutterVolumeController.getVolume()) ?? 0.5;
+      _brightness = await ScreenBrightness().current;
+    } catch (_) {}
+  }
+
+  void _onVerticalDragStart(DragStartDetails details) {
+    if (_locked) return;
+    final w = MediaQuery.of(context).size.width;
+    _isDragLeft = details.globalPosition.dx < w / 2;
+
+    setState(() {
+      _visible = false;
+      if (_isDragLeft) {
+        _isChangingBrightness = true;
+      } else {
+        _isChangingVolume = true;
+      }
+    });
+  }
+
+  void _onVerticalDragUpdate(DragUpdateDetails details) async {
+    if (_locked) return;
+    final delta = -details.primaryDelta! / 300;
+
+    if (_isDragLeft) {
+      double newB = (_brightness + delta).clamp(0.0, 1.0);
+      try {
+        await ScreenBrightness().setScreenBrightness(newB);
+      } catch (_) {}
+      setState(() => _brightness = newB);
+    } else {
+      double maxVol = _allowBoost ? 1.25 : 1.0;
+      double newV = _volume + delta;
+
+      if (newV > 1.0 && !_allowBoost) {
+        newV = 1.0;
+        if (delta > 0) _showBoostWarning();
+      }
+
+      newV = newV.clamp(0.0, maxVol);
+
+      if (newV <= 1.0) {
+        FlutterVolumeController.setVolume(newV);
+        ref
+            .read(playerStateProvider.notifier)
+            .videoController
+            .player
+            .setVolume(100.0);
+      } else {
+        FlutterVolumeController.setVolume(1.0);
+        final gain = (newV * 100);
+        ref
+            .read(playerStateProvider.notifier)
+            .videoController
+            .player
+            .setVolume(gain);
+      }
+      setState(() => _volume = newV);
+    }
+  }
+
+  void _onVerticalDragEnd(DragEndDetails details) {
+    setState(() {
+      _isChangingBrightness = false;
+      _isChangingVolume = false;
+    });
+  }
+
+  void _showBoostWarning() {
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('High Volume Warning'),
+        content: const Text(
+          'Boost volume above 100%? This may damage hearing or speakers.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() => _allowBoost = true);
+            },
+            child: const Text('Boost'),
+          ),
+        ],
+      ),
+    );
   }
 
   // --- Visibility Logic ---
@@ -123,6 +232,7 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
   void _onLongPressStart() {
     if (_locked) return;
     setState(() {
+      _visible = false;
       _isSpeeding = true;
       _lastSpeed = 2.0;
     });
@@ -309,6 +419,9 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
                   onLongPressStart: _onLongPressStart,
                   onLongPressUpdate: _onLongPressUpdate,
                   onLongPressEnd: _onLongPressEnd,
+                  onVerticalDragStart: _onVerticalDragStart,
+                  onVerticalDragUpdate: _onVerticalDragUpdate,
+                  onVerticalDragEnd: _onVerticalDragEnd,
                   onEpisodesPressed: widget.onEpisodesPressed,
                   child: Container(color: Colors.transparent),
                 ),
@@ -345,6 +458,28 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
 
               // Speed Indicator
               if (_isSpeeding) SpeedIndicatorOverlay(currentSpeed: _lastSpeed),
+
+              // Volume/Brightness Overlays
+              if (_isChangingBrightness)
+                Positioned.fill(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: VolumeBrightnessOverlay(
+                      isVolume: false,
+                      value: _brightness,
+                    ),
+                  ),
+                ),
+              if (_isChangingVolume)
+                Positioned.fill(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: VolumeBrightnessOverlay(
+                      isVolume: true,
+                      value: _volume,
+                    ),
+                  ),
+                ),
 
               // Subtitles
               Positioned(

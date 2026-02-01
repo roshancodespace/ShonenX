@@ -43,6 +43,7 @@ dependencies:
       ref: master
       path: flutter_secure_storage
   flutter_staggered_animations: ^1.1.1
+  flutter_volume_controller: ^1.3.4
   flutter_web_auth_2: ^4.1.0
   glass_kit: ^4.0.2
   go_router: ^14.7.1
@@ -71,6 +72,7 @@ dependencies:
   pseudom: ^1.0.1
   rename: ^3.0.2
   riverpod_annotation: ^3.0.1
+  screen_brightness: ^2.1.7
   screenshot: ^3.0.0
   share_plus: ^12.0.1
   url_launcher: ^6.3.1

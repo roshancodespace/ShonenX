@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
-import 'package:http/http.dart' as http;
+import 'package:shonenx/core/network/universal_client.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core/utils/env_loader.dart';
 
@@ -27,7 +27,6 @@ class MyAnimeListAuthService {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   /// Step 1: Authenticate user and get authorization code.
-  /// This method now correctly generates and stores the PKCE verifier and returns the authorization code.
   Future<String?> authenticate() async {
     try {
       final codeVerifier = _generateCodeVerifier();
@@ -75,7 +74,6 @@ class MyAnimeListAuthService {
   }
 
   /// Step 2: Exchange authorization code for access & refresh tokens.
-  /// This method is now corrected to send the 'code_verifier', not the challenge.
   Future<Map<String, dynamic>?> getAccessToken(String code) async {
     try {
       final codeVerifier = await _secureStorage.read(key: _codeVerifierKey);
@@ -85,7 +83,7 @@ class MyAnimeListAuthService {
 
       AppLogger.i("Exchanging code for access token...");
 
-      final response = await http.post(
+      final response = await UniversalHttpClient.instance.post(
         Uri.parse(_tokenUrl),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {
@@ -121,7 +119,7 @@ class MyAnimeListAuthService {
 
       AppLogger.i("Refreshing MAL access token...");
 
-      final response = await http.post(
+      final response = await UniversalHttpClient.instance.post(
         Uri.parse(_tokenUrl),
         headers: {'Content-Type': 'application/x-form-urlencoded'},
         body: {
@@ -159,7 +157,7 @@ class MyAnimeListAuthService {
 
       AppLogger.i("Fetching MAL user profile...");
 
-      final response = await http.get(
+      final response = await UniversalHttpClient.instance.get(
         Uri.parse(_userProfileUrl),
         headers: {'Authorization': 'Bearer $accessToken'},
       );

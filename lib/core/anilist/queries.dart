@@ -625,4 +625,12 @@ class AnilistQueries {
       }
     }
   ''';
+  // Mutation: Delete a MediaListEntry (requires list entry ID)
+  static const String deleteMediaListEntryMutation = '''
+    mutation DeleteMediaListEntry(\$id: Int) {
+      DeleteMediaListEntry(id: \$id) {
+        deleted
+      }
+    }
+  ''';
 }

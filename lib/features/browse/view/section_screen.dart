@@ -122,12 +122,14 @@ class _SectionScreenState extends ConsumerState<SectionScreen> {
                   );
                 }
                 final media = _items[index];
-                return AnimatedAnimeCard(
-                  anime: media,
-                  mode: mode,
-                  tag: 'section_${media.id}',
+                return GestureDetector(
                   onTap: () =>
                       navigateToDetail(context, media, 'section_${media.id}'),
+                  child: AnimatedAnimeCard(
+                    anime: media,
+                    mode: mode,
+                    tag: 'section_${media.id}',
+                  ),
                 );
               },
             ),

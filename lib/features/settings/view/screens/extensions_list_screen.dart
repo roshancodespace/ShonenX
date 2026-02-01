@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:isar_community/isar.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import 'package:shonenx/core_mangayomi/models/manga.dart';
 import 'package:shonenx/core_mangayomi/models/source.dart';
@@ -69,6 +70,12 @@ class ExtensionsListScreen extends ConsumerWidget {
               icon: const Icon(Iconsax.refresh),
               tooltip: 'Refresh Extensions',
             ),
+            // settings
+            IconButton(
+              onPressed: () => _showSettingsDialog(context),
+              icon: const Icon(Iconsax.setting_2),
+              tooltip: 'Extension Settings',
+            ),
           ],
           bottom: const TabBar(
             tabs: [
@@ -102,8 +109,51 @@ class ExtensionsListScreen extends ConsumerWidget {
     );
   }
 
+  void _showSettingsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final settingsBox = Hive.box('settings');
+            final autoUpdate = settingsBox.get(
+              'auto_update_extensions',
+              defaultValue: false,
+            );
+
+            return AlertDialog(
+              title: const Text('Extension Settings'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SwitchListTile(
+                    title: const Text('Auto Update Extensions'),
+                    subtitle: const Text(
+                      'Automatically update extensions when a new version is available.',
+                    ),
+                    value: autoUpdate,
+                    onChanged: (value) {
+                      settingsBox.put('auto_update_extensions', value);
+                      setState(() {});
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   // dialog for adding a new repository
-  void _showAddRepoDialog(
+ void _showAddRepoDialog(
     BuildContext context,
     WidgetRef ref,
     SourceNotifier notifier,
@@ -125,9 +175,13 @@ class ExtensionsListScreen extends ConsumerWidget {
             TextField(
               controller: controller,
               decoration: const InputDecoration(
-                hintText: 'https://example.com/anime.json',
+                hintText: 'https://github.com/user/repo/blob/main/index.json',
                 border: OutlineInputBorder(),
+                helperText: 'GitHub links are automatically converted to raw',
+                helperMaxLines: 2,
               ),
+              minLines: 1,
+              maxLines: 3,
             ),
             const SizedBox(height: 16),
             Align(
@@ -158,8 +212,17 @@ class ExtensionsListScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () async {
-              final url = controller.text.trim();
+              var url = controller.text.trim();
+              
               if (url.isNotEmpty) {
+                if (url.contains('github.com') && url.contains('/blob/')) {
+                  url = url
+                      .replaceFirst('github.com', 'raw.githubusercontent.com')
+                      .replaceFirst('/blob/', '/');
+                }
+
+                Navigator.pop(context);
+
                 await ref.read(_uninstalledAnimeExtensionsProvider.future).then(
                   (sources) {
                     isar.writeTxn(() async {
@@ -169,9 +232,9 @@ class ExtensionsListScreen extends ConsumerWidget {
                     });
                   },
                 );
+                
                 notifier.setActiveRepo(url, ItemType.anime);
                 notifier.fetchSources(ItemType.anime);
-                Navigator.pop(context);
               }
             },
             child: const Text('Add Repository'),

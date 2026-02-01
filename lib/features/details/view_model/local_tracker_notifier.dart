@@ -108,8 +108,6 @@ class LocalTrackerNotifier extends Notifier<void> {
       await isar.tracks.put(track!);
       await isar.mangas.put(manga);
     });
-
-    // Refresh handled by watchers in WatchlistNotifier
   }
 
   /// Helper to create a Manga object from UniversalMedia if it doesn't exist.
@@ -200,6 +198,22 @@ class LocalTrackerNotifier extends Notifier<void> {
       status: manga.status.name.toUpperCase(),
       source: manga.source,
     );
+  }
+
+  Future<void> deleteEntry(String mediaId) async {
+    final int id = int.tryParse(mediaId) ?? 0;
+    if (id == 0) return;
+
+    await isar.writeTxn(() async {
+      await isar.tracks.filter().mangaIdEqualTo(id).deleteAll();
+
+      final manga = await isar.mangas.get(id);
+      if (manga != null) {
+        manga.status = Status.unknown;
+        manga.lastRead = 0;
+        await isar.mangas.put(manga);
+      }
+    });
   }
 }
 

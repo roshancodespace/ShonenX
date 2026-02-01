@@ -466,7 +466,11 @@ class EpisodeData extends _$EpisodeData {
     }
 
     try {
-      return await extractor.extractQualities(url, headers ?? {});
+      return await extractor.extractQualities(
+        url,
+        headers ?? {},
+        source.isM3U8,
+      );
     } catch (e) {
       AppLogger.e('Quality extraction failed', e);
       return [

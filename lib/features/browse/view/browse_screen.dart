@@ -467,12 +467,14 @@ class _ResultsGrid extends ConsumerWidget {
                       return const _LoadingIndicator();
                     }
                     final anime = results[index];
-                    return AnimatedAnimeCard(
+                    return GestureDetector(
                       onTap: () =>
                           navigateToDetail(context, anime, anime.id.toString()),
-                      anime: anime,
-                      mode: mode,
-                      tag: anime.id.toString(),
+                      child: AnimatedAnimeCard(
+                        anime: anime,
+                        mode: mode,
+                        tag: anime.id.toString(),
+                      ),
                     );
                   },
                 ),
@@ -677,11 +679,9 @@ class _HorizontalSection extends ConsumerWidget {
               final tag = randomId();
               return SizedBox(
                 width: 155,
-                child: AnimatedAnimeCard(
+                child: GestureDetector(
                   onTap: () => navigateToDetail(context, anime, tag),
-                  anime: anime,
-                  mode: mode,
-                  tag: tag,
+                  child: AnimatedAnimeCard(anime: anime, mode: mode, tag: tag),
                 ),
               );
             },

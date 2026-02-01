@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/aniskip/aniskip_result.dart';
+import 'package:shonenx/core/network/universal_client.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 class AniSkipService {
@@ -12,7 +12,7 @@ class AniSkipService {
       final uri = Uri.parse(
           '$_baseUrl/skip-times/$malId/$episodeNumber?types[]=op&types[]=ed&types[]=mixed-op&types[]=mixed-ed&types[]=recap&episodeLength=$episodeLength');
 
-      final response = await http.get(uri);
+      final response = await UniversalHttpClient.instance.get(uri, cacheConfig: CacheConfig.veryLong);
 
       AppLogger.d('AniSkip API response: ${response.body}');
 

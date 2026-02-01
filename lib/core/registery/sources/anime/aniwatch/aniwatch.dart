@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:html/dom.dart';
-import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
+import 'package:shonenx/core/network/universal_client.dart';
 import 'package:shonenx/core/registery/sources/anime/aniwatch/parser.dart';
 import 'package:shonenx/core/registery/sources/anime/anime_provider.dart';
 import 'package:html/parser.dart' show parse;
@@ -34,14 +34,14 @@ class AniwatchProvider extends AnimeProvider {
   @override
   Future<DetailPage> getDetails(String animeId) async {
     final response =
-        await http.get(Uri.parse('$baseUrl/$animeId'), headers: _getHeaders());
+        await UniversalHttpClient.instance.get(Uri.parse('$baseUrl/$animeId'), headers: _getHeaders());
     final document = parse(response.body);
     return parseDetail(document, baseUrl, animeId: animeId);
   }
 
   @override
   Future<WatchPage> getWatch(String animeId) async {
-    final response = await http.get(Uri.parse('$baseUrl/watch/$animeId'),
+    final response = await UniversalHttpClient.instance.get(Uri.parse('$baseUrl/watch/$animeId'),
         headers: _getHeaders());
     final document = parse(response.body);
     return parseWatch(document, baseUrl, animeId: animeId);
@@ -51,7 +51,7 @@ class AniwatchProvider extends AnimeProvider {
   Future<BaseEpisodeModel> getEpisodes(String animeId,
       {String? anilistId, String? malId}) async {
     final response =
-        await http.get(Uri.parse("$apiUrl/anime/$animeId/episodes"));
+        await UniversalHttpClient.instance.get(Uri.parse("$apiUrl/anime/$animeId/episodes"));
     final data = jsonDecode(response.body)['data'];
 
     return BaseEpisodeModel(
@@ -77,7 +77,7 @@ class AniwatchProvider extends AnimeProvider {
   @override
   Future<BaseSourcesModel> getSources(String animeId, String episodeId,
       String? serverName, String? category) async {
-    final response = await http.get(
+    final response = await UniversalHttpClient.instance.get(
       Uri.parse(
           '$apiUrl/episode/sources?animeEpisodeId=$episodeId&server=$serverName&category=${category ?? 'sub'}'),
     );
@@ -109,7 +109,7 @@ class AniwatchProvider extends AnimeProvider {
         ? '$apiUrl/search?q=$keyword&page=$page'
         : '$apiUrl/search?q=$keyword&page=$page';
 
-    final response = await http.get(Uri.parse(url), headers: _getHeaders());
+    final response = await UniversalHttpClient.instance.get(Uri.parse(url), headers: _getHeaders());
     final data = jsonDecode(response.body)['data'];
 
     return SearchPage(
@@ -134,7 +134,7 @@ class AniwatchProvider extends AnimeProvider {
 
   @override
   Future<SearchPage> getPage(String route, int page) async {
-    final response = await http.get(Uri.parse('$baseUrl/$route?page=$page'),
+    final response = await UniversalHttpClient.instance.get(Uri.parse('$baseUrl/$route?page=$page'),
         headers: _getHeaders());
     final document = parse(response.body);
     return parsePage(document, baseUrl, route: route, page: page);

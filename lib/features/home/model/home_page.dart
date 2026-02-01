@@ -1,17 +1,9 @@
-import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/utils/app_utils.dart';
-import 'package:shonenx/data/hive/hive_type_ids.dart';
 
-part 'home_page.g.dart';
-
-@HiveType(typeId: HiveTypeIds.homePage)
 class HomePageModel {
-  @HiveField(0)
   final Map<String, List<Map<String, dynamic>>> sections;
-
-  @HiveField(1)
   final DateTime lastUpdated;
 
   const HomePageModel({

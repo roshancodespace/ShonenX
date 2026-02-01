@@ -50,12 +50,9 @@ class HomeSectionWidget extends ConsumerWidget {
               final tag = randomId();
               return Padding(
                 padding: const EdgeInsets.only(right: 12),
-                child: AnimatedAnimeCard(
-                  anime: media,
-                  tag: tag,
-                  mode: mode,
-                  onTap: () =>
-                      navigateToDetail(context, media, tag, forceFetch: true),
+                child: GestureDetector(
+                  onTap: () => navigateToDetail(context, media, tag),
+                  child: AnimatedAnimeCard(anime: media, tag: tag, mode: mode),
                 ),
               );
             },

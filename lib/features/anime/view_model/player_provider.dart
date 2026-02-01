@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:shonenx/features/settings/view_model/player_notifier.dart';
 
 part 'player_provider.g.dart';
 
@@ -73,12 +74,25 @@ class PlayerStateNotifier extends _$PlayerStateNotifier {
 
   @override
   PlayerState build() {
+    final settings = ref.read(playerSettingsProvider);
+    final mpvSettings = settings.mpvSettings;
+    final vo = mpvSettings['vo'];
+
     _player = Player(
-      configuration: const PlayerConfiguration(
+      configuration: PlayerConfiguration(
         bufferSize: 64 * 1024 * 1024,
         logLevel: MPVLogLevel.v,
+        vo: vo,
       ),
     );
+
+    // Apply MPV settings
+    for (final entry in mpvSettings.entries) {
+      if (entry.key == 'vo') continue;
+      try {
+        (_player.platform as dynamic).setProperty(entry.key, entry.value);
+      } catch (_) {}
+    }
 
     videoController = VideoController(
       _player,

@@ -138,15 +138,20 @@ class PlayerSettingsScreen extends ConsumerWidget {
                     (prev) => prev.copyWith(autoHideDuration: val.toInt()),
                   ),
                 ),
-                ToggleableSettingsItem(
-                  icon: Icon(Iconsax.previous, color: colorScheme.primary),
-                  accent: colorScheme.primary,
-                  title: 'Show Next/Prev Buttons',
-                  description: 'Show next and previous episode buttons',
-                  value: playerSettings.showNextPrevButtons,
-                  onChanged: (val) => playerNotifier.updateSettings(
-                    (prev) => prev.copyWith(showNextPrevButtons: val),
+              ],
+            ),
+            SettingsSection(
+              title: 'Advanced',
+              titleColor: colorScheme.primary,
+              children: [
+                NormalSettingsItem(
+                  icon: Icon(
+                    Icons.settings_applications,
+                    color: colorScheme.primary,
                   ),
+                  title: 'Advanced Video Settings',
+                  description: 'Configure hardware acceleration and MPV flags',
+                  onTap: () => context.push('/settings/player/advanced'),
                 ),
               ],
             ),

@@ -132,7 +132,6 @@ class AnimeOnsenProvider extends AnimeProvider {
   Future<SearchPage> getSearch(String keyword, String? type, int page) async {
     await _checkAndUpdateToken();
 
-    // Source Logic: remove dashes from query
     final query = keyword.replaceAll("-", "");
     final url = Uri.parse("$apiUrl/search/$query");
 
@@ -144,6 +143,7 @@ class AnimeOnsenProvider extends AnimeProvider {
     final res = await UniversalHttpClient.instance.get(
       url,
       headers: apiHeaders,
+      cacheConfig: CacheConfig.medium
     );
 
     if (res.statusCode != 200) {
@@ -184,8 +184,6 @@ class AnimeOnsenProvider extends AnimeProvider {
     String? serverName,
     String? category,
   ) async {
-    // Logic extracted from getStreams
-    // We expect episodeId to be formatted as "episodeNumber+animeId" from getEpisodes
     final parts = episodeId.split("+");
     if (parts.length < 2) {
       throw Exception("Invalid Episode ID format");
@@ -202,7 +200,6 @@ class AnimeOnsenProvider extends AnimeProvider {
     final source = Source(
       url: streamUrl,
       quality: "AnimeOnsen - Auto",
-      // Removed headers here
     );
 
     final track = Subtitle(url: subtitleUrl, lang: "English", isSub: true);
@@ -212,7 +209,7 @@ class AnimeOnsenProvider extends AnimeProvider {
       tracks: [track],
       intro: Intro(start: 0, end: 0),
       outro: Intro(start: 0, end: 0),
-      headers: {'Referer': "https://animeonsen.xyz"}, // Added headers here
+      headers: {'Referer': "https://animeonsen.xyz"},
     );
   }
 

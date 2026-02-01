@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:shonenx/core/network/universal_client.dart';
 import 'package:shonenx/core/utils/env_loader.dart';
 
 class AniListAuthService {
@@ -29,7 +29,7 @@ class AniListAuthService {
 
   Future<String?> getAccessToken(String code) async {
     try {
-      final response = await http.post(
+      final response = await UniversalHttpClient.instance.post(
         Uri.parse(tokenUrl),
         headers: {
           "Content-Type": "application/json",

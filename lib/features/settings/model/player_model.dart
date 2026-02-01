@@ -1,30 +1,12 @@
-import 'package:hive_ce/hive.dart';
-import 'package:shonenx/data/hive/hive_type_ids.dart';
-
-part 'player_model.g.dart';
-
-@HiveType(typeId: HiveTypeIds.player)
 class PlayerModel {
-  @HiveField(0, defaultValue: 'Auto')
   final String defaultQuality;
-
-  @HiveField(1, defaultValue: true)
   final bool enableAniSkip;
-
-  @HiveField(2, defaultValue: false)
   final bool enableAutoSkip;
-
-  @HiveField(3, defaultValue: false)
   final bool preferDub;
-
-  @HiveField(4, defaultValue: 10)
   final int seekDuration;
-
-  @HiveField(5, defaultValue: 4)
   final int autoHideDuration;
-
-  @HiveField(6, defaultValue: true)
   final bool showNextPrevButtons;
+  final Map<String, String> mpvSettings;
 
   PlayerModel({
     this.defaultQuality = 'Auto',
@@ -34,6 +16,7 @@ class PlayerModel {
     this.seekDuration = 10,
     this.autoHideDuration = 4,
     this.showNextPrevButtons = true,
+    this.mpvSettings = const {},
   });
 
   PlayerModel copyWith({
@@ -44,6 +27,7 @@ class PlayerModel {
     int? seekDuration,
     int? autoHideDuration,
     bool? showNextPrevButtons,
+    Map<String, String>? mpvSettings,
   }) {
     return PlayerModel(
       defaultQuality: defaultQuality ?? this.defaultQuality,
@@ -53,6 +37,7 @@ class PlayerModel {
       seekDuration: seekDuration ?? this.seekDuration,
       autoHideDuration: autoHideDuration ?? this.autoHideDuration,
       showNextPrevButtons: showNextPrevButtons ?? this.showNextPrevButtons,
+      mpvSettings: mpvSettings ?? this.mpvSettings,
     );
   }
 
@@ -65,6 +50,7 @@ class PlayerModel {
       'seekDuration': seekDuration,
       'autoHideDuration': autoHideDuration,
       'showNextPrevButtons': showNextPrevButtons,
+      'mpvSettings': mpvSettings,
     };
   }
 
@@ -77,6 +63,7 @@ class PlayerModel {
       seekDuration: map['seekDuration'] ?? 10,
       autoHideDuration: map['autoHideDuration'] ?? 4,
       showNextPrevButtons: map['showNextPrevButtons'] ?? true,
+      mpvSettings: Map<String, String>.from(map['mpvSettings'] ?? {}),
     );
   }
 }

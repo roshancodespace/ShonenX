@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
 import 'package:shonenx/core/models/universal/universal_page_response.dart';
+import 'package:shonenx/core/network/universal_client.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
 import 'package:shonenx/core/myanimelist/services/auth_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
@@ -48,7 +48,7 @@ class MyAnimeListService implements AnimeRepository {
     final token = _getAccessToken();
     if (token == null) throw Exception('User not authenticated');
 
-    final res = await http.get(
+    final res = await UniversalHttpClient.instance.get(
       Uri.parse(url),
       headers: {'Authorization': 'Bearer $token', ...?headers},
     );
@@ -77,7 +77,7 @@ class MyAnimeListService implements AnimeRepository {
     final token = _getAccessToken();
     if (token == null) throw Exception('User not authenticated');
 
-    final res = await http.put(
+    final res = await UniversalHttpClient.instance.put(
       Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',

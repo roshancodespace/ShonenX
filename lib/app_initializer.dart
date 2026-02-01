@@ -11,7 +11,6 @@ import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 import 'package:shonenx/features/home/model/home_page.dart';
-import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
 import 'package:shonenx/features/settings/model/experimental_model.dart';
 import 'package:shonenx/features/settings/model/player_model.dart';
@@ -23,6 +22,7 @@ import 'package:shonenx/features/settings/model/content_settings_model.dart';
 import 'package:shonenx/core/models/universal/universal_news.dart';
 import 'package:shonenx/core/services/notification_service.dart';
 import 'package:shonenx/helpers/ui.dart';
+import 'package:shonenx/hive/hive_registrar.g.dart';
 
 import 'package:window_manager/window_manager.dart';
 import 'package:workmanager/workmanager.dart';
@@ -82,52 +82,60 @@ class AppInitializer {
 
       AppLogger.infoPair('Hive Path', customPath);
 
-      await Hive.initFlutter(customPath);
+      Hive
+        ..init(customPath)
+        ..registerAdapters();
+
       AppLogger.success('Hive initialized');
 
-      // --- Register adapters ---
-      AppLogger.section('Hive Adapters');
-
-      Hive
-        ..registerAdapter(ThemeModelAdapter())
-        ..registerAdapter(SubtitleAppearanceModelAdapter())
-        ..registerAdapter(HomePageModelAdapter())
-        ..registerAdapter(UiModelAdapter())
-        ..registerAdapter(PlayerModelAdapter())
-        ..registerAdapter(AnimeWatchProgressEntryAdapter())
-        ..registerAdapter(EpisodeProgressAdapter())
-        ..registerAdapter(ExperimentalFeaturesModelAdapter())
-        ..registerAdapter(DownloadItemAdapter())
-        ..registerAdapter(DownloadStatusAdapter())
-        ..registerAdapter(DownloadSettingsModelAdapter())
-        ..registerAdapter(ContentSettingsModelAdapter())
-        ..registerAdapter(UniversalNewsAdapter());
-
-      AppLogger.success('Hive adapters registered');
-
-      // --- Open boxes ---
       AppLogger.section('Hive Boxes');
 
-      await Future.wait([
-        Hive.openBox<ThemeModel>('theme_settings'),
-        Hive.openBox('themedata'),
-        Hive.openBox<SubtitleAppearanceModel>('subtitle_appearance'),
-        Hive.openBox<HomePageModel>('home_page'),
-        Hive.openBox<String>('selected_provider'),
-        Hive.openBox<UiModel>('ui_settings'),
-        Hive.openBox<PlayerModel>('player_settings'),
-        Hive.openBox<AnimeWatchProgressEntry>('anime_watch_progress'),
-        Hive.openBox<ExperimentalFeaturesModel>('experimental_features'),
-        Hive.openBox<DownloadItem>('downloads'),
-        Hive.openBox('settings'),
-        Hive.openBox('onboard'),
-        Hive.openBox<DownloadSettingsModel>('download_settings'),
-        Hive.openBox<ContentSettingsModel>('content_settings'),
-        Hive.openBox<UniversalNews>('news_cache'),
-        Hive.openBox<String>('news_read_status'),
-        Hive.openBox('home_layout'),
-        Hive.openBox('http_cache_v1'),
-      ]);
+      final boxesToOpen = <String, Future<void> Function()>{
+        'theme_settings': () => Hive.openBox<ThemeModel>('theme_settings'),
+        'themedata': () => Hive.openBox('themedata'),
+        'subtitle_appearance': () =>
+            Hive.openBox<SubtitleAppearanceModel>('subtitle_appearance'),
+        'home_page': () => Hive.openBox<HomePageModel>('home_page'),
+        'selected_provider': () => Hive.openBox<String>('selected_provider'),
+        'ui_settings': () => Hive.openBox<UiModel>('ui_settings'),
+        'player_settings': () => Hive.openBox<PlayerModel>('player_settings'),
+        'anime_watch_progress': () =>
+            Hive.openBox<AnimeWatchProgressEntry>('anime_watch_progress'),
+        'experimental_features': () =>
+            Hive.openBox<ExperimentalFeaturesModel>('experimental_features'),
+        'downloads': () => Hive.openBox<DownloadItem>('downloads'),
+        'settings': () => Hive.openBox('settings'),
+        'onboard': () => Hive.openBox('onboard'),
+        'download_settings': () =>
+            Hive.openBox<DownloadSettingsModel>('download_settings'),
+        'content_settings': () =>
+            Hive.openBox<ContentSettingsModel>('content_settings'),
+        'news_cache': () => Hive.openBox<UniversalNews>('news_cache'),
+        'news_read_status': () => Hive.openBox<String>('news_read_status'),
+        'home_layout': () => Hive.openBox('home_layout'),
+        'http_cache_v1': () => Hive.openBox('http_cache_v1'),
+      };
+
+      for (final entry in boxesToOpen.entries) {
+        try {
+          AppLogger.i('Opening box: ${entry.key}');
+          await entry.value();
+        } catch (e) {
+          AppLogger.fail('Failed to open box [${entry.key}]: $e');
+          AppLogger.warning(
+            'Deleting corrupted box: ${entry.key} and retrying...',
+          );
+          try {
+            await Hive.deleteBoxFromDisk(entry.key);
+            await entry.value();
+            AppLogger.success('Successfully recovered box: ${entry.key}');
+          } catch (e2) {
+            AppLogger.fail(
+              'CRITICAL: Failed to recover box [${entry.key}]: $e2',
+            );
+          }
+        }
+      }
 
       AppLogger.success('Hive boxes opened');
     } catch (e, st) {

@@ -62,6 +62,13 @@ class SettingsScreen extends ConsumerWidget {
                   onTap: () => context.push('/settings/anime-sources'),
                 ),
                 NormalSettingsItem(
+                  icon: Icon(Icons.sync_rounded, color: colorScheme.primary),
+                  accent: colorScheme.primary,
+                  title: 'Tracking & Sync (💀)',
+                  description: 'Manage tracking services and sync',
+                  onTap: () => context.push('/settings/tracking'),
+                ),
+                NormalSettingsItem(
                   icon: Icon(
                     Iconsax.document_download,
                     color: colorScheme.primary,

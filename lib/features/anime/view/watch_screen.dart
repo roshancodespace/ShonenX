@@ -5,6 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:screenshot/screenshot.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:shonenx/core/anilist/services/anilist_service_provider.dart';
+import 'package:shonenx/core/myanimelist/services/mal_service_provider.dart';
+import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
@@ -165,6 +169,123 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       playerStateProvider,
       (_, next) => _handleResume(next),
     );
+
+    // Tracking / Sync Listener
+    ref.listen<int?>(episodeDataProvider.select((p) => p.selectedEpisodeIdx), (
+      prev,
+      next,
+    ) async {
+      if (next == null || next == prev) return;
+
+      final episodes = ref.read(episodeListProvider).episodes;
+      if (next < 0 || next >= episodes.length) return;
+
+      final ep = episodes[next];
+      final episodeNum = ep.number?.toInt() ?? (next + 1);
+
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+
+      final settingsBox = Hive.box('settings');
+      final askToUpdate = settingsBox.get(
+        'tracking_ask_update_on_start',
+        defaultValue: false,
+      );
+      final syncAnilist = settingsBox.get(
+        'tracking_sync_anilist',
+        defaultValue: true,
+      );
+      final syncMal = settingsBox.get('tracking_sync_mal', defaultValue: true);
+
+      final auth = ref.read(authProvider);
+      final canSyncAnilist = auth.isAniListAuthenticated && syncAnilist;
+      final canSyncMal = auth.isMalAuthenticated && syncMal;
+
+      if (!canSyncAnilist && !canSyncMal) return;
+
+      if (askToUpdate) {
+        // Ask user
+        final shouldUpdate = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Update Tracking?'),
+            content: Text(
+              'Mark episode $episodeNum as watched on ${canSyncAnilist && canSyncMal ? 'AniList & MAL' : (canSyncAnilist ? 'AniList' : 'MyAnimeList')}?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('No'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Update'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldUpdate == true) {
+          _updateTracking(episodeNum, anilist: canSyncAnilist, mal: canSyncMal);
+        }
+      } else {
+        _updateTracking(episodeNum, anilist: canSyncAnilist, mal: canSyncMal);
+      }
+    });
+  }
+
+  Future<void> _updateTracking(
+    int episodeNum, {
+    bool anilist = false,
+    bool mal = false,
+  }) async {
+    try {
+      final List<Future> tasks = [];
+      final List<String> updatedServices = [];
+
+      if (anilist) {
+        tasks.add(
+          ref
+              .read(anilistServiceProvider)
+              .updateUserAnimeList(
+                mediaId: int.parse(widget.mediaId),
+                progress: episodeNum,
+                status: 'CURRENT',
+              )
+              .then((_) => updatedServices.add('AniList')),
+        );
+      }
+
+      if (mal) {
+        tasks.add(
+          ref
+              .read(malServiceProvider)
+              .updateUserAnimeList(
+                mediaId: int.parse(widget.mediaId),
+                progress: episodeNum,
+                status: 'CURRENT',
+              )
+              .then((_) => updatedServices.add('MAL')),
+        );
+      }
+
+      await Future.wait(tasks);
+
+      if (mounted && updatedServices.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Tracking updated: Episode $episodeNum (${updatedServices.join(", ")})',
+            ),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            width: 300,
+          ),
+        );
+      }
+    } catch (e) {
+      AppLogger.e('Failed to update tracking: $e');
+    }
   }
 
   void _startProgressTimer() {

@@ -33,6 +33,7 @@ import 'package:shonenx/features/settings/view/screens/subtitle_customization_sc
 import 'package:shonenx/features/settings/view/temporary/demo_screen.dart';
 import 'package:shonenx/features/settings/view/screens/theme_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/ui_settings_screen.dart';
+import 'package:shonenx/features/settings/view/screens/tracking_settings_screen.dart';
 import 'package:shonenx/features/debug/view/debug_screen.dart';
 import 'package:shonenx/router/router_wrapper.dart';
 
@@ -143,6 +144,10 @@ final routerConfig = GoRouter(
         GoRoute(
           path: 'watch-history',
           builder: (context, state) => const WatchHistoryScreen(),
+        ),
+        GoRoute(
+          path: 'tracking',
+          builder: (context, state) => const TrackingSettingsScreen(),
         ),
         GoRoute(
           path: 'player',

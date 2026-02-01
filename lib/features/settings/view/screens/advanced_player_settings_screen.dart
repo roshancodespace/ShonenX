@@ -102,7 +102,14 @@ class _AdvancedPlayerSettingsScreenState
         ),
         title: const Text('Settings'),
         forceMaterialTransparency: true,
-        actions: [TextButton(onPressed: _save, child: const Text('Save'))],
+        actions: [
+          TextButton.icon(
+            onPressed: _save,
+            icon: const Icon(Icons.save),
+            label: const Text('Save'),
+          ),
+          const SizedBox(width: 10),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(10.0),

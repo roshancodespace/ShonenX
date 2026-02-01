@@ -7,7 +7,7 @@ part 'fetch_novel_sources.g.dart';
 
 @riverpod
 Future fetchNovelSourcesList(Ref ref, {int? id, required reFresh}) async {
-  var repo = ref.watch(sourceProvider).activeNovelRepo;
+  var repo = ref.read(sourceProvider).activeNovelRepo;
   await fetchSourcesList(
     sourcesIndexUrl: repo,
     id: id,

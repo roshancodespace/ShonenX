@@ -98,7 +98,7 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
       List<Map<String, dynamic>> result = [];
       if (source.isM3U8) {
         result = await extractor
-            .extractQualities(url, source.headers ?? {})
+            .extractQualities(url, source.headers ?? {}, source.isM3U8)
             .timeout(const Duration(seconds: 15));
       } else {
         result = [

@@ -26,6 +26,7 @@ import 'package:shonenx/features/settings/view/screens/experimental_screen.dart'
 import 'package:shonenx/features/settings/view/screens/extension_preference_screen.dart';
 import 'package:shonenx/features/settings/view/screens/extensions_list_screen.dart';
 import 'package:shonenx/features/settings/view/screens/player_settings_screen.dart';
+import 'package:shonenx/features/settings/view/screens/advanced_player_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/profile_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/subtitle_customization_screen.dart';
@@ -150,6 +151,10 @@ final routerConfig = GoRouter(
             GoRoute(
               path: 'subtitles',
               builder: (context, state) => const SubtitleCustomizationScreen(),
+            ),
+            GoRoute(
+              path: 'advanced',
+              builder: (context, state) => const AdvancedPlayerSettingsScreen(),
             ),
           ],
         ),

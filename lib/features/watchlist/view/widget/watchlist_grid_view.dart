@@ -9,6 +9,7 @@ class WatchlistGridView extends StatelessWidget {
   final ScrollNotificationPredicate? notificationPredicate;
   final bool Function(ScrollNotification)? onScrollNotification;
   final EdgeInsets? padding;
+  final double? crossAxisExtent;
 
   const WatchlistGridView({
     super.key,
@@ -19,16 +20,8 @@ class WatchlistGridView extends StatelessWidget {
     this.notificationPredicate,
     this.onScrollNotification,
     this.padding,
+    this.crossAxisExtent,
   });
-
-  int _columns(BuildContext context) {
-    final w = MediaQuery.sizeOf(context).width;
-    if (w >= 1400) return 6;
-    if (w >= 1100) return 5;
-    if (w >= 800) return 4;
-    if (w >= 450) return 3;
-    return 2;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,9 +32,9 @@ class WatchlistGridView extends StatelessWidget {
         child: ShonenXGridView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: padding ?? const EdgeInsets.fromLTRB(10, 10, 10, 120),
-          crossAxisCount: _columns(context),
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
+          crossAxisExtent: crossAxisExtent,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
           childAspectRatio: 0.7,
           itemCount: itemCount,
           itemBuilder: itemBuilder,

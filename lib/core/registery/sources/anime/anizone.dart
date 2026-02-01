@@ -130,6 +130,7 @@ class AnizoneProvider implements AnimeProvider {
     final res = await UniversalHttpClient.instance.get(
       Uri.parse(url),
       headers: headers,
+      cacheConfig: CacheConfig.infinite,
     );
 
     if (res.statusCode != 200) {

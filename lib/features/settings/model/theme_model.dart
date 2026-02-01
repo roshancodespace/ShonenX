@@ -1,26 +1,12 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flex_color_scheme/flex_color_scheme.dart';
-import 'package:hive_ce/hive.dart';
 
-import 'package:shonenx/data/hive/hive_type_ids.dart';
-
-part 'theme_model.g.dart';
-
-@HiveType(typeId: HiveTypeIds.theme)
 class ThemeModel {
-  @HiveField(0, defaultValue: 'system')
   final String themeMode;
-  @HiveField(1, defaultValue: false)
   final bool amoled;
-  @HiveField(2)
   final String? flexScheme;
-  @HiveField(3, defaultValue: 11)
   final int blendLevel;
-  @HiveField(4, defaultValue: false)
   final bool swapColors;
-  @HiveField(5, defaultValue: true)
   final bool useMaterial3;
-  @HiveField(6, defaultValue: false)
   final bool useDynamicColors;
 
   ThemeModel({

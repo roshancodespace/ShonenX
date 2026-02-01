@@ -81,7 +81,7 @@ final class NewsProvider
   News create() => News();
 }
 
-String _$newsHash() => r'9ff62c108243e4e351af5b7fad9e54ec27d68560';
+String _$newsHash() => r'8676bded78cf35661a68a18550e7396c0823efa1';
 
 abstract class _$News extends $AsyncNotifier<List<UniversalNews>> {
   FutureOr<List<UniversalNews>> build();

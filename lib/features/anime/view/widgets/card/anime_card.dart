@@ -6,14 +6,12 @@ import 'package:shonenx/features/anime/view/widgets/card/anime_card_mode.dart';
 class AnimatedAnimeCard extends StatefulWidget {
   final UniversalMedia anime;
   final String tag;
-  final VoidCallback? onTap;
   final AnimeCardMode mode;
 
   const AnimatedAnimeCard({
     super.key,
     required this.anime,
     required this.tag,
-    this.onTap,
     this.mode = AnimeCardMode.defaults,
   });
 
@@ -53,26 +51,23 @@ class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
             cursor: SystemMouseCursors.click,
             onEnter: (_) => setState(() => _isHovered = true),
             onExit: (_) => setState(() => _isHovered = false),
-            child: GestureDetector(
-              onTap: widget.onTap,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                width: targetWidth,
-                height: targetHeight,
-                margin: EdgeInsets.only(
-                  top: _isHovered ? 0 : 4,
-                  bottom: _isHovered ? 4 : 0,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              width: targetWidth,
+              height: targetHeight,
+              margin: EdgeInsets.only(
+                top: _isHovered ? 0 : 4,
+                bottom: _isHovered ? 4 : 0,
+              ),
+              child: config.builder(
+                anime: widget.anime.copyWith(
+                  averageScore: widget.anime.averageScore == null
+                      ? null
+                      : widget.anime.averageScore! / 10,
                 ),
-                child: config.builder(
-                  anime: widget.anime.copyWith(
-                    averageScore: widget.anime.averageScore == null
-                        ? null
-                        : widget.anime.averageScore! / 10,
-                  ),
-                  tag: widget.tag,
-                  isHovered: _isHovered,
-                ),
+                tag: widget.tag,
+                isHovered: _isHovered,
               ),
             ),
           );

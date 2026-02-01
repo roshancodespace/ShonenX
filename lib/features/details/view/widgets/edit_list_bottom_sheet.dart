@@ -522,29 +522,114 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
     );
   }
 
+  Future<void> _deleteEntry() async {
+    final auth = ref.read(authProvider);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Entry?'),
+        content: const Text(
+          'Are you sure you want to delete this entry? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    _isSaving.value = true;
+    try {
+      if (auth.isAniListAuthenticated) {
+        final success = await ref
+            .read(anilistServiceProvider)
+            .deleteUserAnimeList(int.parse(widget.anime.id));
+        if (success) {
+          _showSnackBar('Success', 'Entry deleted', ContentType.success);
+        } else {
+          throw Exception('Failed to delete from AniList');
+        }
+      } else {
+        await ref
+            .read(localTrackerProvider.notifier)
+            .deleteEntry(widget.anime.id);
+        _showSnackBar('Success', 'Entry deleted locally', ContentType.success);
+      }
+
+      if (mounted) {
+        ref.invalidate(watchlistProvider);
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      AppLogger.e('Failed to delete entry: $e');
+      _showSnackBar('Error', 'Failed to delete entry', ContentType.failure);
+    } finally {
+      _isSaving.value = false;
+    }
+  }
+
   Widget _buildSaveButton(ThemeData theme) {
     return ValueListenableBuilder(
       valueListenable: _isSaving,
       builder: (context, saving, child) {
-        return FilledButton.icon(
-          onPressed: saving ? null : _saveChanges,
-          icon: saving
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Iconsax.save_2),
-          label: Text(saving ? 'Saving...' : 'Save Changes'),
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            textStyle: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
+        return Row(
+          children: [
+            Expanded(
+              flex: 1,
+              child: FilledButton.icon(
+                onPressed: saving ? null : _deleteEntry,
+                icon: const Icon(Iconsax.trash),
+                label: const Text('Delete'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.errorContainer,
+                  foregroundColor: theme.colorScheme.onErrorContainer,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
             ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+            const SizedBox(width: 16),
+            Expanded(
+              flex: 2,
+              child: FilledButton.icon(
+                onPressed: saving ? null : _saveChanges,
+                icon: saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Iconsax.save_2),
+                label: Text(saving ? 'Saving...' : 'Save Changes'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
         );
       },
     );

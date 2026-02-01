@@ -100,7 +100,6 @@ class _DemoScreenState extends ConsumerState<DemoScreen> {
                                       medium: anime.imageUrl ?? ''),
                                   format: anime.author,
                                 ),
-                                onTap: null,
                                 tag: anime.name ?? '',
                               ),
                             );

@@ -24,7 +24,7 @@ class _DataSettingsScreenState extends ConsumerState<DataSettingsScreen> {
       appBar: AppBar(
         leading: IconButton.filledTonal(
           onPressed: () => context.pop(),
-          icon: Icon(Iconsax.arrow_left_2),
+          icon: const Icon(Iconsax.arrow_left_2),
         ),
         title: const Text('Data & Storage'),
       ),

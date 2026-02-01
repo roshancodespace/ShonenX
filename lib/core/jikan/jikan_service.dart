@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:shonenx/core/jikan/models/jikan_media.dart';
+import 'package:shonenx/core/network/universal_client.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 class JikanEpisode {
@@ -22,7 +22,7 @@ class JikanEpisode {
     return JikanEpisode(
       malId: json['mal_id'] ?? 0,
       title: json['title'] ?? 'Episode ${json['mal_id']}',
-      aired: json['aired'] != null ? json['aired'].toString() : null,
+      aired: json['aired']?.toString(),
       filler: json['filler'] != null
           ? (json['filler'] as num).toDouble()
           : null,
@@ -39,9 +39,8 @@ class JikanService {
     int limit = 5,
   }) async {
     try {
-      // Jikan search logic
       final url = '$_baseUrl/anime?q=$title&limit=$limit';
-      final response = await http.get(Uri.parse(url));
+      final response = await UniversalHttpClient.instance.get(Uri.parse(url), cacheConfig: CacheConfig.long);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -58,7 +57,7 @@ class JikanService {
   Future<List<JikanEpisode>> getEpisodes(int malId, int page) async {
     try {
       final url = '$_baseUrl/anime/$malId/episodes?page=$page';
-      final response = await http.get(Uri.parse(url));
+      final response = await UniversalHttpClient.instance.get(Uri.parse(url), cacheConfig: CacheConfig.long);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

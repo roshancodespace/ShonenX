@@ -457,4 +457,22 @@ class AnilistService {
     );
     return _parseMediaList(data?['Page']?['media']);
   }
+
+  Future<bool> deleteUserAnimeList(int mediaId) async {
+    final auth = _getAuthContext();
+    if (auth == null) return false;
+
+    final entry = await getAnimeEntry(mediaId);
+    if (entry == null) return false;
+
+    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+      accessToken: auth.accessToken,
+      query: AnilistQueries.deleteMediaListEntryMutation,
+      variables: {'id': entry.id},
+      isMutation: true,
+      operationName: 'DeleteMediaListEntry',
+    );
+
+    return data?['DeleteMediaListEntry']?['deleted'] ?? false;
+  }
 }

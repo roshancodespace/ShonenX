@@ -116,6 +116,22 @@ class UniversalHttpClient {
     );
   }
 
+  Future<http.Response> put(
+    Uri url, {
+    Map<String, String>? headers,
+    Object? body,
+    Encoding? encoding,
+    CacheConfig? cacheConfig,
+  }) {
+    return _request(
+      method: 'PUT',
+      url: url,
+      cacheConfig: cacheConfig,
+      networkRequest: () =>
+          _client.put(url, headers: headers, body: body, encoding: encoding),
+    );
+  }
+
   Future<http.Response> head(
     Uri url, {
     Map<String, String>? headers,

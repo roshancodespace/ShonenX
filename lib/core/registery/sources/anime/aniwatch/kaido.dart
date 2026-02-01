@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:html/dom.dart';
-import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
+import 'package:shonenx/core/network/universal_client.dart';
 import 'package:shonenx/core/registery/sources/anime/aniwatch/parser.dart';
 import 'package:shonenx/core/registery/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/env_loader.dart';
@@ -30,7 +30,7 @@ class KaidoProvider extends AnimeProvider {
   Future<Document?> _fetchDocument(String url) async {
     try {
       log("Fetching: $url", name: providerName);
-      final response = await http.get(Uri.parse(url), headers: _getHeaders());
+      final response = await UniversalHttpClient.instance.get(Uri.parse(url), headers: _getHeaders());
 
       if (response.statusCode == 200) {
         return parse(response.body);
@@ -81,7 +81,7 @@ class KaidoProvider extends AnimeProvider {
       {String? anilistId, String? malId}) async {
     final episodeUrl = "$baseUrl/ajax/episode/list/${animeId.split('-').last}";
     final response =
-        await http.get(Uri.parse(episodeUrl), headers: _getHeaders());
+        await UniversalHttpClient.instance.get(Uri.parse(episodeUrl), headers: _getHeaders());
 
     if (response.statusCode == 200) {
       final document = parse(json.decode(response.body)['html']);
@@ -114,7 +114,7 @@ class KaidoProvider extends AnimeProvider {
     try {
       log("Fetching sources from: $apiUrl", name: providerName);
       final response =
-          await http.get(Uri.parse(apiUrl), headers: _getHeaders());
+          await UniversalHttpClient.instance.get(Uri.parse(apiUrl), headers: _getHeaders());
 
       if (response.statusCode == 200) {
         final responseBody = json.decode(response.body);

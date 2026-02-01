@@ -1,32 +1,16 @@
-import 'package:hive_ce/hive.dart';
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
-import 'package:shonenx/data/hive/hive_type_ids.dart';
 
-part 'anime_watch_progress_model.g.dart';
 
-@HiveType(typeId: HiveTypeIds.progressEntry)
-class AnimeWatchProgressEntry extends HiveObject {
-  @HiveField(0)
+class AnimeWatchProgressEntry {
   final String animeId;
-  @HiveField(1)
   final String animeTitle;
-  @HiveField(2)
   final String animeFormat;
-  @HiveField(3)
   final String animeCover;
-  @HiveField(4)
   final int totalEpisodes;
-  @HiveField(5)
   final Map<int, EpisodeProgress> episodesProgress;
-
-  @HiveField(6)
   final DateTime? lastUpdated;
-
-  @HiveField(7)
   final int currentEpisode;
-
-  @HiveField(8)
   final String status;
 
   AnimeWatchProgressEntry({
@@ -126,21 +110,13 @@ class AnimeWatchProgressEntry extends HiveObject {
   }
 }
 
-@HiveType(typeId: HiveTypeIds.progressEpisode)
 class EpisodeProgress {
-  @HiveField(0)
   final int episodeNumber;
-  @HiveField(1)
   final String episodeTitle;
-  @HiveField(2)
   final String? episodeThumbnail;
-  @HiveField(3)
-  final int? progressInSeconds; // For continue watching
-  @HiveField(4)
+  final int? progressInSeconds;
   final int? durationInSeconds;
-  @HiveField(5, defaultValue: false)
   final bool isCompleted;
-  @HiveField(6)
   final DateTime? watchedAt;
 
   EpisodeProgress({

@@ -25,7 +25,7 @@ class SettingsScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton.filledTonal(
           onPressed: () => context.pop(),
-          icon: Icon(Iconsax.arrow_left_2),
+          icon: const Icon(Iconsax.arrow_left_2),
         ),
         title: const Text('Settings'),
         forceMaterialTransparency: true,

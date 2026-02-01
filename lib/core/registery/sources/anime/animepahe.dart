@@ -20,11 +20,11 @@ class AnimePaheProvider extends AnimeProvider {
   };
 
   AnimePaheProvider()
-      : super(
-          baseUrl: "https://animepahe.si",
-          apiUrl: "https://animepahe.si/api",
-          providerName: "animepahe",
-        );
+    : super(
+        baseUrl: "https://animepahe.si",
+        apiUrl: "https://animepahe.si/api",
+        providerName: "animepahe",
+      );
 
   @override
   Map<String, String> get headers => _sourceHeaders;
@@ -103,7 +103,10 @@ class AnimePaheProvider extends AnimeProvider {
       final nextRes = await UniversalHttpClient.instance.get(
         Uri.parse("$url&page=${i + 1}"),
         headers: headers,
-        cacheConfig: i == (totalPages - 1) ? CacheConfig.short : CacheConfig.year,
+        cacheConfig:
+            (i == (totalPages - 1) || (i == 0 && i == (totalPages - 1)))
+            ? CacheConfig.short
+            : CacheConfig.year,
       );
       final nextBody = json.decode(nextRes.body);
       if (nextBody['data'] != null) {
@@ -120,8 +123,9 @@ class AnimePaheProvider extends AnimeProvider {
       final String combinedId = "$animeId+$episodeSession";
 
       final num? epNumFromApi = item['episode'];
-      final int calculatedEpNum =
-          (epNumFromApi != null) ? epNumFromApi.toInt() : (i + 1);
+      final int calculatedEpNum = (epNumFromApi != null)
+          ? epNumFromApi.toInt()
+          : (i + 1);
 
       // Robust title checking
       String? title = item['title'];
@@ -161,8 +165,11 @@ class AnimePaheProvider extends AnimeProvider {
     final episodeUrl = "https://animepahe.si/play/$animeSession/$epSession";
     final bool isRequestingDub = category?.toLowerCase() == 'dub';
 
-    final data = await UniversalHttpClient.instance.get(Uri.parse(episodeUrl),
-        headers: headers, cacheConfig: CacheConfig.veryLong);
+    final data = await UniversalHttpClient.instance.get(
+      Uri.parse(episodeUrl),
+      headers: headers,
+      cacheConfig: CacheConfig.veryLong,
+    );
     final document = html.parse(data.body);
 
     final downloadQualities = document.querySelectorAll('div#pickDownload > a');
@@ -189,7 +196,8 @@ class AnimePaheProvider extends AnimeProvider {
       }
 
       // Determining audio type from the link attributes or text
-      final bool isStreamDub = e.attributes['data-audio'] == 'eng' ||
+      final bool isStreamDub =
+          e.attributes['data-audio'] == 'eng' ||
           text.toLowerCase().contains('eng');
 
       // Filter based on what the user requested (Sub or Dub)
@@ -207,7 +215,7 @@ class AnimePaheProvider extends AnimeProvider {
               isDub: isStreamDub,
               headers: {
                 'Referer': 'https://kwik.cx/',
-                'User-Agent': _userAgent
+                'User-Agent': _userAgent,
               },
             ),
           );
@@ -256,7 +264,8 @@ class AnimePaheProvider extends AnimeProvider {
     final slice = _map.substring(0, s2);
     int acc = 0;
     content.reversed.toList().asMap().forEach((index, c) {
-      acc += (RegExp(r'\d').hasMatch(c) ? int.parse(c) : 0) *
+      acc +=
+          (RegExp(r'\d').hasMatch(c) ? int.parse(c) : 0) *
           pow(s1, index).toInt();
     });
     String k = "";

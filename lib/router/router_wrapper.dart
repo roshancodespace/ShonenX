@@ -76,7 +76,7 @@ class AppRouterScreen extends ConsumerWidget {
             Positioned(
               left: isWide ? 10 : 0,
               right: isWide ? null : 0,
-              top: isWide ? 20 : null,
+              top: isWide ? 10 : null,
               bottom: 10,
               child: SafeArea(
                 child: isWide

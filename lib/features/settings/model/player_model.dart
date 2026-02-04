@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class PlayerModel {
   final String defaultQuality;
   final bool enableAniSkip;
@@ -66,4 +68,9 @@ class PlayerModel {
       mpvSettings: Map<String, String>.from(map['mpvSettings'] ?? {}),
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory PlayerModel.fromJson(String source) =>
+      PlayerModel.fromMap(json.decode(source));
 }

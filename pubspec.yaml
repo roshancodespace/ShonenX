@@ -78,6 +78,7 @@ dependencies:
   screen_brightness: ^2.1.7
   screenshot: ^3.0.0
   share_plus: ^12.0.1
+  shared_preferences: ^2.5.4
   url_launcher: ^6.3.1
   window_manager: ^0.4.3
   workmanager: ^0.9.0+3

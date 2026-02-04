@@ -1,26 +1,28 @@
+import 'dart:convert';
+
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_mode.dart';
 import 'package:shonenx/features/anime/view/widgets/spotlight/spotlight_card_mode.dart';
 
-class UiModel {
+class UiSettings {
   final AnimeCardMode cardStyle;
   final SpotlightCardMode spotlightCardStyle;
   final bool immersiveMode;
   final String episodeViewMode;
 
-  UiModel({
+  UiSettings({
     this.cardStyle = AnimeCardMode.defaults,
     this.immersiveMode = false,
     this.spotlightCardStyle = SpotlightCardMode.defaults,
     this.episodeViewMode = 'list',
   });
 
-  UiModel copyWith({
+  UiSettings copyWith({
     AnimeCardMode? cardStyle,
     bool? immersiveMode,
     SpotlightCardMode? spotlightCardStyle,
     String? episodeViewMode,
   }) {
-    return UiModel(
+    return UiSettings(
       cardStyle: cardStyle ?? this.cardStyle,
       immersiveMode: immersiveMode ?? this.immersiveMode,
       spotlightCardStyle: spotlightCardStyle ?? this.spotlightCardStyle,
@@ -37,8 +39,8 @@ class UiModel {
     };
   }
 
-  factory UiModel.fromMap(Map<String, dynamic> map) {
-    return UiModel(
+  factory UiSettings.fromMap(Map<String, dynamic> map) {
+    return UiSettings(
       cardStyle: AnimeCardMode.values[map['cardStyle'] ?? 0],
       immersiveMode: map['immersiveMode'] ?? false,
       spotlightCardStyle:
@@ -46,4 +48,9 @@ class UiModel {
       episodeViewMode: map['episodeViewMode'] ?? 'list',
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory UiSettings.fromJson(String source) =>
+      UiSettings.fromMap(json.decode(source));
 }

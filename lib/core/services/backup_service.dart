@@ -65,10 +65,10 @@ class BackupService {
           final settings = Hive.box<PlayerModel>(_playerBox).get('settings');
           if (settings != null) settingsData['player'] = settings.toMap();
         }
-        if (Hive.isBoxOpen(_uiBox)) {
-          final settings = Hive.box<UiModel>(_uiBox).get('settings');
-          if (settings != null) settingsData['ui'] = settings.toMap();
-        }
+        // if (Hive.isBoxOpen(_uiBox)) {
+        //   final settings = Hive.box<UiModel>(_uiBox).get('settings');
+        //   if (settings != null) settingsData['ui'] = settings.toMap();
+        // }
         if (Hive.isBoxOpen(_experimentalBox)) {
           final settings = Hive.box<ExperimentalFeaturesModel>(
             _experimentalBox,
@@ -183,8 +183,8 @@ class BackupService {
             );
           }
           if (settingsData.containsKey('ui')) {
-            final box = Hive.box<UiModel>(_uiBox);
-            await box.put('settings', UiModel.fromMap(settingsData['ui']));
+            final box = Hive.box<UiSettings>(_uiBox);
+            await box.put('settings', UiSettings.fromMap(settingsData['ui']));
           }
           if (settingsData.containsKey('experimental')) {
             final box = Hive.box<ExperimentalFeaturesModel>(_experimentalBox);

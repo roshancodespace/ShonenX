@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shonenx/features/home/model/home_section.dart';
+import 'package:shonenx/main.dart';
 
 final homeLayoutProvider =
     NotifierProvider<HomeLayoutNotifier, List<HomeSection>>(
@@ -9,7 +11,8 @@ final homeLayoutProvider =
 
 class HomeLayoutNotifier extends Notifier<List<HomeSection>> {
   static const _boxName = 'home_layout';
-  static const _key = 'settings';
+  static const _hiveKey = 'settings';
+  static const _prefsKey = 'home_layout_data';
 
   @override
   List<HomeSection> build() {
@@ -17,23 +20,37 @@ class HomeLayoutNotifier extends Notifier<List<HomeSection>> {
   }
 
   List<HomeSection>? _load() {
-    final box = Hive.box(_boxName);
-    final List<dynamic>? data = box.get(_key);
-    if (data == null) return null;
-
-    try {
-      return data
-          .map((e) => HomeSection.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
-    } catch (_) {
-      return null;
+    final jsonString = sharedPrefs.getString(_prefsKey);
+    if (jsonString != null) {
+      try {
+        final List<dynamic> list = json.decode(jsonString);
+        return list.map((e) => HomeSection.fromJson(e)).toList();
+      } catch (_) {}
     }
+
+    if (Hive.isBoxOpen(_boxName)) {
+      try {
+        final box = Hive.box(_boxName);
+        final List<dynamic>? data = box.get(_hiveKey);
+        if (data != null) {
+          final migrated = data
+              .map((e) => HomeSection.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
+          _saveList(migrated);
+          return migrated;
+        }
+      } catch (_) {}
+    }
+    return null;
   }
 
-  Future<void> _save() async {
-    final box = Hive.box(_boxName);
-    final data = state.map((e) => e.toJson()).toList();
-    await box.put(_key, data);
+  void _save() {
+    _saveList(state);
+  }
+
+  void _saveList(List<HomeSection> sections) {
+    final data = sections.map((e) => e.toJson()).toList();
+    sharedPrefs.setString(_prefsKey, json.encode(data));
   }
 
   void move(int oldIndex, int newIndex) {

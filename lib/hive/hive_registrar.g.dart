@@ -7,6 +7,7 @@ import 'package:shonenx/hive/hive_adapters.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
+    registerAdapter(AnimeCardModeAdapter());
     registerAdapter(AnimeWatchProgressEntryAdapter());
     registerAdapter(ContentSettingsModelAdapter());
     registerAdapter(DownloadItemAdapter());
@@ -16,16 +17,18 @@ extension HiveRegistrar on HiveInterface {
     registerAdapter(ExperimentalFeaturesModelAdapter());
     registerAdapter(HomePageModelAdapter());
     registerAdapter(PlayerModelAdapter());
+    registerAdapter(SpotlightCardModeAdapter());
     registerAdapter(SubtitleAppearanceModelAdapter());
     registerAdapter(ThemeModelAdapter());
     registerAdapter(TrackSearchAdapter());
-    registerAdapter(UiModelAdapter());
+    registerAdapter(UiSettingsAdapter());
     registerAdapter(UniversalNewsAdapter());
   }
 }
 
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
+    registerAdapter(AnimeCardModeAdapter());
     registerAdapter(AnimeWatchProgressEntryAdapter());
     registerAdapter(ContentSettingsModelAdapter());
     registerAdapter(DownloadItemAdapter());
@@ -35,10 +38,11 @@ extension IsolatedHiveRegistrar on IsolatedHiveInterface {
     registerAdapter(ExperimentalFeaturesModelAdapter());
     registerAdapter(HomePageModelAdapter());
     registerAdapter(PlayerModelAdapter());
+    registerAdapter(SpotlightCardModeAdapter());
     registerAdapter(SubtitleAppearanceModelAdapter());
     registerAdapter(ThemeModelAdapter());
     registerAdapter(TrackSearchAdapter());
-    registerAdapter(UiModelAdapter());
+    registerAdapter(UiSettingsAdapter());
     registerAdapter(UniversalNewsAdapter());
   }
 }

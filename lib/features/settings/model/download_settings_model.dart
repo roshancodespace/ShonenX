@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class DownloadSettingsModel {
   final String? customDownloadPath;
   final bool useCustomPath;
@@ -54,4 +56,9 @@ class DownloadSettingsModel {
       wifiOnly: map['wifiOnly'] ?? false,
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory DownloadSettingsModel.fromJson(String source) =>
+      DownloadSettingsModel.fromMap(json.decode(source));
 }

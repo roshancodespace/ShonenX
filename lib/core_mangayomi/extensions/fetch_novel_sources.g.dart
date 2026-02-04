@@ -63,7 +63,7 @@ final class FetchNovelSourcesListProvider
 }
 
 String _$fetchNovelSourcesListHash() =>
-    r'f6a5e855d0c3e9325026bac8ffd0b4341eccd48c';
+    r'61c23a61a11d46e20f96d75de29854f11b641c7f';
 
 final class FetchNovelSourcesListFamily extends $Family
     with

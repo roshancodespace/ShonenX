@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:isar_community/isar.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import 'package:shonenx/core_mangayomi/models/manga.dart';
 import 'package:shonenx/core_mangayomi/models/source.dart';
@@ -120,11 +119,7 @@ class ExtensionsListScreen extends ConsumerWidget {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            final settingsBox = Hive.box('settings');
-            final autoUpdate = settingsBox.get(
-              'auto_update_extensions',
-              defaultValue: false,
-            );
+            final autoUpdate = sharedPrefs.getBool('auto_update_extensions') ?? false;
 
             return AlertDialog(
               title: const Text('Extension Settings'),
@@ -138,7 +133,7 @@ class ExtensionsListScreen extends ConsumerWidget {
                     ),
                     value: autoUpdate,
                     onChanged: (value) {
-                      settingsBox.put('auto_update_extensions', value);
+                      sharedPrefs.setBool('auto_update_extensions', value);
                       setState(() {});
                     },
                   ),

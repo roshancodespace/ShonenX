@@ -27,15 +27,24 @@ class ExtensionTile extends ConsumerWidget {
     final sourceNotifier = ref.read(sourceProvider.notifier);
     extension.itemType == ItemType.manga
         ? await ref.watch(
-            fetchMangaSourcesListProvider(id: extension.id, reFresh: true)
-                .future)
+            fetchMangaSourcesListProvider(
+              id: extension.id,
+              reFresh: true,
+            ).future,
+          )
         : extension.itemType == ItemType.anime
-            ? await ref.watch(
-                fetchAnimeSourcesListProvider(id: extension.id, reFresh: true)
-                    .future)
-            : await ref.watch(
-                fetchNovelSourcesListProvider(id: extension.id, reFresh: true)
-                    .future);
+        ? await ref.watch(
+            fetchAnimeSourcesListProvider(
+              id: extension.id,
+              reFresh: true,
+            ).future,
+          )
+        : await ref.watch(
+            fetchNovelSourcesListProvider(
+              id: extension.id,
+              reFresh: true,
+            ).future,
+          );
     await sourceNotifier.initialize();
   }
 
@@ -67,9 +76,7 @@ class ExtensionTile extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.all(0),
       elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => isInstalled ? _selectSource(ref) : _installSource(ref),
@@ -85,10 +92,8 @@ class ExtensionTile extends ConsumerWidget {
                   width: 48,
                   height: 48,
                   fit: BoxFit.cover,
-                  errorWidget: (context, url, error) => const Icon(
-                    Icons.error_outline,
-                    size: 40,
-                  ),
+                  errorWidget: (context, url, error) =>
+                      const Icon(Icons.error_outline, size: 40),
                 ),
               ),
               const SizedBox(width: 14),
@@ -126,6 +131,14 @@ class ExtensionTile extends ConsumerWidget {
                     const Icon(Icons.check_rounded, color: Colors.green),
                   if (isInstalled) ...[
                     IconButton(
+                      tooltip: "Edit Code",
+                      onPressed: () => context.push(
+                        '/settings/extensions/playground',
+                        extra: extension,
+                      ),
+                      icon: const Icon(Icons.code),
+                    ),
+                    IconButton(
                       tooltip: "Preferences",
                       onPressed: () => context.push(
                         '/settings/extensions/extension-preference',
@@ -146,7 +159,7 @@ class ExtensionTile extends ConsumerWidget {
                       icon: const Icon(Icons.file_download_rounded),
                     ),
                 ],
-              )
+              ),
             ],
           ),
         ),

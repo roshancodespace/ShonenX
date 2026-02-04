@@ -76,6 +76,11 @@ class ExtensionsListScreen extends ConsumerWidget {
               icon: const Icon(Iconsax.setting_2),
               tooltip: 'Extension Settings',
             ),
+            IconButton(
+              onPressed: () => context.push('/settings/extensions/playground'),
+              icon: const Icon(Iconsax.code),
+              tooltip: 'Extension Playground',
+            ),
           ],
           bottom: const TabBar(
             tabs: [
@@ -153,7 +158,7 @@ class ExtensionsListScreen extends ConsumerWidget {
   }
 
   // dialog for adding a new repository
- void _showAddRepoDialog(
+  void _showAddRepoDialog(
     BuildContext context,
     WidgetRef ref,
     SourceNotifier notifier,
@@ -213,7 +218,7 @@ class ExtensionsListScreen extends ConsumerWidget {
           ElevatedButton(
             onPressed: () async {
               var url = controller.text.trim();
-              
+
               if (url.isNotEmpty) {
                 if (url.contains('github.com') && url.contains('/blob/')) {
                   url = url
@@ -232,7 +237,7 @@ class ExtensionsListScreen extends ConsumerWidget {
                     });
                   },
                 );
-                
+
                 notifier.setActiveRepo(url, ItemType.anime);
                 notifier.fetchSources(ItemType.anime);
               }

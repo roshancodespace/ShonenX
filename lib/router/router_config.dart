@@ -34,6 +34,7 @@ import 'package:shonenx/features/settings/view/temporary/demo_screen.dart';
 import 'package:shonenx/features/settings/view/screens/theme_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/ui_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/tracking_settings_screen.dart';
+import 'package:shonenx/features/settings/view/screens/extension_playground_screen.dart';
 import 'package:shonenx/features/debug/view/debug_screen.dart';
 import 'package:shonenx/router/router_wrapper.dart';
 
@@ -175,6 +176,11 @@ final routerConfig = GoRouter(
               path: 'extension-preference',
               builder: (context, state) =>
                   ExtensionPreferenceScreen(source: state.extra as Source),
+            ),
+            GoRoute(
+              path: 'playground',
+              builder: (context, state) =>
+                  ExtensionPlaygroundScreen(source: state.extra as Source?),
             ),
           ],
         ),

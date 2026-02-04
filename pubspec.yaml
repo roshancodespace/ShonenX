@@ -16,6 +16,7 @@ dependencies:
   awesome_snackbar_content: ^0.1.7
   cached_network_image: ^3.4.1
   carousel_slider: ^5.1.1
+  code_text_field: ^1.1.0
   collection: ^1.19.1
   connectivity_plus: ^6.1.5
   crypto: ^3.0.6
@@ -29,6 +30,7 @@ dependencies:
   flex_color_scheme: ^8.3.1
   flutter:
     sdk: flutter
+  flutter_highlight: ^0.7.0
   flutter_inappwebview: ^6.1.5
   flutter_local_notifications: ^20.0.0
   flutter_markdown: ^0.7.7+1
@@ -49,6 +51,7 @@ dependencies:
   go_router: ^14.7.1
   google_fonts: ^6.2.1
   graphql: ^5.2.3
+  highlight: ^0.7.0
   hive_ce: ^2.16.0
   hive_ce_flutter: ^2.1.0
   html: ^0.15.5

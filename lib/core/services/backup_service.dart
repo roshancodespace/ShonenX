@@ -14,6 +14,7 @@ import 'package:shonenx/features/settings/model/experimental_model.dart';
 import 'package:shonenx/features/settings/model/player_model.dart';
 import 'package:shonenx/features/settings/model/theme_model.dart';
 import 'package:shonenx/features/settings/model/ui_model.dart';
+import 'package:shonenx/main.dart';
 import 'package:shonenx/storage_provider.dart';
 
 final backupServiceProvider = Provider<BackupService>((ref) {
@@ -22,12 +23,6 @@ final backupServiceProvider = Provider<BackupService>((ref) {
 
 class BackupService {
   static const String _progressBox = 'anime_watch_progress';
-  static const String _themeBox = 'theme_settings';
-  static const String _downloadBox = 'download_settings';
-  static const String _playerBox = 'player_settings';
-  static const String _uiBox = 'ui_settings';
-  static const String _experimentalBox = 'experimental_settings';
-  static const String _contentBox = 'content_settings';
 
   Future<void> exportData({
     required bool includeWatchlist,
@@ -51,35 +46,46 @@ class BackupService {
       if (includeSettings) {
         final settingsData = <String, dynamic>{};
 
-        if (Hive.isBoxOpen(_themeBox)) {
-          final settings = Hive.box<ThemeModel>(_themeBox).get('settings');
-          if (settings != null) settingsData['theme'] = settings.toMap();
+        // Theme
+        final themeJson = sharedPrefs.getString('theme_settings');
+        if (themeJson != null) {
+          settingsData['theme'] = ThemeModel.fromJson(themeJson).toMap();
         }
-        if (Hive.isBoxOpen(_downloadBox)) {
-          final settings = Hive.box<DownloadSettingsModel>(
-            _downloadBox,
-          ).get('settings');
-          if (settings != null) settingsData['download'] = settings.toMap();
+
+        // Download
+        final downloadJson = sharedPrefs.getString('download_settings');
+        if (downloadJson != null) {
+          settingsData['download'] = DownloadSettingsModel.fromJson(
+            downloadJson,
+          ).toMap();
         }
-        if (Hive.isBoxOpen(_playerBox)) {
-          final settings = Hive.box<PlayerModel>(_playerBox).get('settings');
-          if (settings != null) settingsData['player'] = settings.toMap();
+
+        // Player
+        final playerJson = sharedPrefs.getString('player_settings');
+        if (playerJson != null) {
+          settingsData['player'] = PlayerModel.fromJson(playerJson).toMap();
         }
-        // if (Hive.isBoxOpen(_uiBox)) {
-        //   final settings = Hive.box<UiModel>(_uiBox).get('settings');
-        //   if (settings != null) settingsData['ui'] = settings.toMap();
-        // }
-        if (Hive.isBoxOpen(_experimentalBox)) {
-          final settings = Hive.box<ExperimentalFeaturesModel>(
-            _experimentalBox,
-          ).get('settings');
-          if (settings != null) settingsData['experimental'] = settings.toMap();
+
+        // UI
+        final uiJson = sharedPrefs.getString('ui_settings');
+        if (uiJson != null) {
+          settingsData['ui'] = UiSettings.fromJson(uiJson).toMap();
         }
-        if (Hive.isBoxOpen(_contentBox)) {
-          final settings = Hive.box<ContentSettingsModel>(
-            _contentBox,
-          ).get('settings');
-          if (settings != null) settingsData['content'] = settings.toMap();
+
+        // Experimental
+        final experimentalJson = sharedPrefs.getString('experimental_settings');
+        if (experimentalJson != null) {
+          settingsData['experimental'] = ExperimentalFeaturesModel.fromJson(
+            experimentalJson,
+          ).toMap();
+        }
+
+        // Content
+        final contentJson = sharedPrefs.getString('content_settings');
+        if (contentJson != null) {
+          settingsData['content'] = ContentSettingsModel.fromJson(
+            contentJson,
+          ).toMap();
         }
 
         backupData['data']['settings'] = settingsData;
@@ -162,43 +168,35 @@ class BackupService {
           final settingsData = data['settings'] as Map<String, dynamic>;
 
           if (settingsData.containsKey('theme')) {
-            final box = Hive.box<ThemeModel>(_themeBox);
-            await box.put(
-              'settings',
-              ThemeModel.fromMap(settingsData['theme']),
-            );
+            final model = ThemeModel.fromMap(settingsData['theme']);
+            await sharedPrefs.setString('theme_settings', model.toJson());
           }
           if (settingsData.containsKey('download')) {
-            final box = Hive.box<DownloadSettingsModel>(_downloadBox);
-            await box.put(
-              'settings',
-              DownloadSettingsModel.fromMap(settingsData['download']),
+            final model = DownloadSettingsModel.fromMap(
+              settingsData['download'],
             );
+            await sharedPrefs.setString('download_settings', model.toJson());
           }
           if (settingsData.containsKey('player')) {
-            final box = Hive.box<PlayerModel>(_playerBox);
-            await box.put(
-              'settings',
-              PlayerModel.fromMap(settingsData['player']),
-            );
+            final model = PlayerModel.fromMap(settingsData['player']);
+            await sharedPrefs.setString('player_settings', model.toJson());
           }
           if (settingsData.containsKey('ui')) {
-            final box = Hive.box<UiSettings>(_uiBox);
-            await box.put('settings', UiSettings.fromMap(settingsData['ui']));
+            final model = UiSettings.fromMap(settingsData['ui']);
+            await sharedPrefs.setString('ui_settings', model.toJson());
           }
           if (settingsData.containsKey('experimental')) {
-            final box = Hive.box<ExperimentalFeaturesModel>(_experimentalBox);
-            await box.put(
-              'settings',
-              ExperimentalFeaturesModel.fromMap(settingsData['experimental']),
+            final model = ExperimentalFeaturesModel.fromMap(
+              settingsData['experimental'],
+            );
+            await sharedPrefs.setString(
+              'experimental_settings',
+              model.toJson(),
             );
           }
           if (settingsData.containsKey('content')) {
-            final box = Hive.box<ContentSettingsModel>(_contentBox);
-            await box.put(
-              'settings',
-              ContentSettingsModel.fromMap(settingsData['content']),
-            );
+            final model = ContentSettingsModel.fromMap(settingsData['content']);
+            await sharedPrefs.setString('content_settings', model.toJson());
           }
         }
       }

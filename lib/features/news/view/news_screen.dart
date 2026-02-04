@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:shonenx/main.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/features/news/view_model/news_provider.dart';
 import 'package:shonenx/features/news/view/widgets/news_card.dart';
@@ -20,14 +20,12 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
   @override
   void initState() {
     super.initState();
-    _viewMode = Hive.box(
-      'settings',
-    ).get('news_view_mode', defaultValue: 'grid');
+    _viewMode = sharedPrefs.getString('news_view_mode') ?? 'grid';
   }
 
   void _setViewMode(String mode) {
     setState(() => _viewMode = mode);
-    Hive.box('settings').put('news_view_mode', mode);
+    sharedPrefs.setString('news_view_mode', mode);
   }
 
   void _cycleViewMode() {

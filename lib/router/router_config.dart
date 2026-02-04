@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
+
+import 'package:shonenx/main.dart';
 
 // Core & Models
 import 'package:shonenx/core/models/anime/episode_model.dart';
@@ -42,9 +43,7 @@ final routerConfig = GoRouter(
   errorBuilder: (context, state) => ErrorScreen(error: state.error),
   initialLocation: '/',
   redirect: (context, state) {
-    final isOnboarded = Hive.box(
-      'onboard',
-    ).get('is_onboarded', defaultValue: false);
+    final isOnboarded = sharedPrefs.getBool('is_onboarded') ?? false;
     final isGoingToOnboarding = state.matchedLocation == '/onboarding';
 
     if (!isOnboarded && !isGoingToOnboarding) return '/onboarding';

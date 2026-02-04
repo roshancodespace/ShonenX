@@ -2,7 +2,8 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
+
+import 'package:shonenx/main.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_mode.dart';
@@ -56,8 +57,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _completeOnboarding() async {
-    final box = Hive.box('onboard');
-    await box.put('is_onboarded', true);
+    await sharedPrefs.setBool('is_onboarded', true);
     if (mounted) context.go('/');
   }
 

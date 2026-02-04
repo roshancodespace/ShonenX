@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:screenshot/screenshot.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
+
+import 'package:shonenx/main.dart';
 import 'package:shonenx/core/anilist/services/anilist_service_provider.dart';
 import 'package:shonenx/core/myanimelist/services/mal_service_provider.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
@@ -186,16 +187,12 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       await Future.delayed(const Duration(seconds: 2));
       if (!mounted) return;
 
-      final settingsBox = Hive.box('settings');
-      final askToUpdate = settingsBox.get(
-        'tracking_ask_update_on_start',
-        defaultValue: false,
-      );
-      final syncAnilist = settingsBox.get(
-        'tracking_sync_anilist',
-        defaultValue: true,
-      );
-      final syncMal = settingsBox.get('tracking_sync_mal', defaultValue: true);
+      if (!mounted) return;
+
+      final askToUpdate =
+          sharedPrefs.getBool('tracking_ask_update_on_start') ?? false;
+      final syncAnilist = sharedPrefs.getBool('tracking_sync_anilist') ?? true;
+      final syncMal = sharedPrefs.getBool('tracking_sync_mal') ?? true;
 
       final auth = ref.read(authProvider);
       final canSyncAnilist = auth.isAniListAuthenticated && syncAnilist;

@@ -1,7 +1,8 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_ce/hive.dart';
+
+import 'package:shonenx/main.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
@@ -39,8 +40,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   // let background tasks know if we're actually looking at the app
   Future<void> _setAppOpenStatus(bool isOpen) async {
-    final box = Hive.box('settings');
-    await box.put('is_app_open', isOpen);
+    await sharedPrefs.setBool('is_app_open', isOpen);
   }
 
   @override

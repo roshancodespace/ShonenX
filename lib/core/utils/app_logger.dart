@@ -18,7 +18,7 @@ class AppLogger {
 
   static File? _logFile;
   static bool _isFileLoggingEnabled = false;
-  
+
   // Strip colors before writing to file
   static final RegExp _ansiRegex = RegExp(r'\x1B\[[0-9;]*[mK]');
 
@@ -33,13 +33,14 @@ class AppLogger {
 
   /// Call in main() before runApp
   static Future<void> init() async {
-    if (!kDebugMode) return;
+    // if (!kDebugMode) return;
 
     try {
       final dir = await getApplicationDocumentsDirectory();
       final path = '${dir.path}/ShonenX/app_logs.txt';
 
       _logFile = File(path);
+      _clearLogFile(force: true);
       await _logFile!.create(recursive: true); // create dir if missing
       _isFileLoggingEnabled = true;
 
@@ -136,6 +137,16 @@ class AppLogger {
       );
     } catch (e) {
       debugPrint('Log write failed: $e');
+    }
+  }
+
+  static void _clearLogFile({bool force = false}) {
+    if (!force && !_isFileLoggingEnabled || _logFile == null) return;
+
+    try {
+      _logFile!.writeAsStringSync('', mode: FileMode.write);
+    } catch (e) {
+      debugPrint('Log clear failed: $e');
     }
   }
 

@@ -26,7 +26,6 @@ class AnimeSpotlightCard extends ConsumerWidget {
     return RepaintBoundary(
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        height: config.height,
         width: double.infinity,
         margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
         decoration: BoxDecoration(

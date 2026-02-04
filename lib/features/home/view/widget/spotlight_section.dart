@@ -4,6 +4,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/spotlight/anime_spotlight_card.dart';
+import 'package:shonenx/features/anime/view/widgets/spotlight/spotlight_card_config.dart';
 
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';
@@ -25,12 +26,12 @@ class _SpotlightSectionState extends ConsumerState<SpotlightSection> {
   Widget build(BuildContext context) {
     final trendingAnimes =
         widget.spotlightAnime ?? List<UniversalMedia?>.filled(9, null);
-    final carouselHeight = MediaQuery.of(context).size.width > 900
-        ? 520.0
-        : 260.0;
     final cardMode = ref.watch(
       uiSettingsProvider.select((ui) => ui.spotlightCardStyle),
     );
+    final carouselHeight = MediaQuery.of(context).size.width > 600
+        ? spotlightCardConfigs[cardMode]!.responsiveHeight.large
+        : spotlightCardConfigs[cardMode]!.responsiveHeight.small;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

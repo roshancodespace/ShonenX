@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
 import 'package:shonenx/features/anime/view/widgets/spotlight/modes/classic_spotlight.dart';
 import 'package:shonenx/features/anime/view/widgets/spotlight/modes/compact_spotlight.dart';
 import 'package:shonenx/features/anime/view/widgets/spotlight/modes/cover_only_spotlight.dart';
@@ -19,12 +20,12 @@ typedef SpotlightCardBuilder =
     });
 
 class SpotlightCardConfig {
-  final double height;
+  final ResponsiveSize responsiveHeight;
   final double radius;
   final SpotlightCardBuilder builder;
 
   const SpotlightCardConfig({
-    required this.height,
+    this.responsiveHeight = const (small: 240.0, large: 400.0),
     required this.radius,
     required this.builder,
   });
@@ -32,55 +33,47 @@ class SpotlightCardConfig {
 
 final Map<SpotlightCardMode, SpotlightCardConfig> spotlightCardConfigs = {
   SpotlightCardMode.defaults: SpotlightCardConfig(
-    height: 250.0,
     radius: 16.0,
     builder: ({required anime, required heroTag, required onTap}) =>
         DefaultSpotlight(anime: anime, heroTag: heroTag, onTap: onTap),
   ),
   SpotlightCardMode.minimal: SpotlightCardConfig(
-    height: 220.0,
     radius: 12.0,
     builder: ({required anime, required heroTag, required onTap}) =>
         MinimalSpotlight(anime: anime, heroTag: heroTag, onTap: onTap),
   ),
   SpotlightCardMode.classic: SpotlightCardConfig(
-    height: 260.0,
     radius: 14.0,
     builder: ({required anime, required heroTag, required onTap}) =>
         ClassicSpotlight(anime: anime, heroTag: heroTag, onTap: onTap),
   ),
   SpotlightCardMode.coverOnly: SpotlightCardConfig(
-    height: 240.0,
     radius: 16.0,
     builder: ({required anime, required heroTag, required onTap}) =>
         CoverOnlySpotlight(anime: anime, heroTag: heroTag, onTap: onTap),
   ),
   SpotlightCardMode.liquidGlass: SpotlightCardConfig(
-    height: 250.0,
     radius: 20.0,
     builder: ({required anime, required heroTag, required onTap}) =>
         LiquidGlassSpotlight(anime: anime, heroTag: heroTag, onTap: onTap),
   ),
   SpotlightCardMode.neon: SpotlightCardConfig(
-    height: 250.0,
     radius: 16.0,
     builder: ({required anime, required heroTag, required onTap}) =>
         NeonSpotlight(anime: anime, heroTag: heroTag, onTap: onTap),
   ),
   SpotlightCardMode.manga: SpotlightCardConfig(
-    height: 240.0,
     radius: 0.0,
     builder: ({required anime, required heroTag, required onTap}) =>
         MangaSpotlight(anime: anime, heroTag: heroTag, onTap: onTap),
   ),
   SpotlightCardMode.compact: SpotlightCardConfig(
-    height: 180.0,
     radius: 12.0,
+    responsiveHeight: (small: 180.0, large: 220.0),
     builder: ({required anime, required heroTag, required onTap}) =>
         CompactSpotlight(anime: anime, heroTag: heroTag, onTap: onTap),
   ),
   SpotlightCardMode.polaroid: SpotlightCardConfig(
-    height: 280.0,
     radius: 4.0,
     builder: ({required anime, required heroTag, required onTap}) =>
         PolaroidSpotlight(anime: anime, heroTag: heroTag, onTap: onTap),

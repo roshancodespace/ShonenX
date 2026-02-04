@@ -3,27 +3,34 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/core/models/universal/universal_news.dart';
 import 'package:shonenx/core/services/anime_news_network_service.dart';
 import 'package:shonenx/core/services/notification_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NewsBackgroundTask {
   static Future<bool> performUpdate() async {
     try {
       final appDir = await getApplicationDocumentsDirectory();
       Hive.init(appDir.path);
-      
+
       final cacheBox = await Hive.openBox<UniversalNews>('news_cache');
       final readBox = await Hive.openBox<String>('news_read_status');
-      final settingsBox = await Hive.openBox('settings');
 
-      final isAppOpen = settingsBox.get('is_app_open', defaultValue: false);
-      if (isAppOpen) return true;
+      try {
+        final pref = await SharedPreferencesWithCache.create(
+          cacheOptions: const SharedPreferencesWithCacheOptions(),
+        );
+        final isAppOpen = pref.getBool('is_app_open') ?? false;
+        if (isAppOpen) return true;
+      } catch (_) {}
 
       final service = AnimeNewsNetworkService();
       final freshNews = await service.getNews();
 
       if (freshNews.isNotEmpty) {
         final oldUrls = cacheBox.values.map((e) => e.url).toSet();
-        
-        final newItems = freshNews.where((e) => !oldUrls.contains(e.url)).toList();
+
+        final newItems = freshNews
+            .where((e) => !oldUrls.contains(e.url))
+            .toList();
 
         if (newItems.isNotEmpty) {
           final count = newItems.length;

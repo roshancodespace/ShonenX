@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 
 class ThemeModel {
@@ -66,4 +67,9 @@ class ThemeModel {
       useDynamicColors: map['useDynamicColors'] ?? false,
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory ThemeModel.fromJson(String source) =>
+      ThemeModel.fromMap(json.decode(source));
 }

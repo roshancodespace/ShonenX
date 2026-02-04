@@ -18,7 +18,7 @@ import 'package:shonenx/features/settings/model/ui_model.dart';
 @GenerateAdapters([
   AdapterSpec<TrackSearch>(),
   AdapterSpec<ThemeModel>(),
-  AdapterSpec<UiModel>(),
+  AdapterSpec<UiSettings>(),
   AdapterSpec<PlayerModel>(),
   AdapterSpec<HomePageModel>(),
   AdapterSpec<AnimeWatchProgressEntry>(),
@@ -30,5 +30,7 @@ import 'package:shonenx/features/settings/model/ui_model.dart';
   AdapterSpec<DownloadSettingsModel>(),
   AdapterSpec<ContentSettingsModel>(),
   AdapterSpec<UniversalNews>(),
+  AdapterSpec<AnimeCardMode>(),
+  AdapterSpec<SpotlightCardMode>(),
 ])
 part 'hive_adapters.g.dart';

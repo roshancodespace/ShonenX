@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class ExperimentalFeaturesModel {
   bool episodeTitleSync;
   bool useMangayomiExtensions;
@@ -49,4 +51,9 @@ class ExperimentalFeaturesModel {
       debugMode: map['debugMode'] ?? false,
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory ExperimentalFeaturesModel.fromJson(String source) =>
+      ExperimentalFeaturesModel.fromMap(json.decode(source));
 }

@@ -1,24 +1,41 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shonenx/features/settings/model/player_model.dart';
+import 'package:shonenx/main.dart';
 
 final playerSettingsProvider =
     NotifierProvider<PlayerSettingsNotifier, PlayerModel>(
-  PlayerSettingsNotifier.new,
-);
+      PlayerSettingsNotifier.new,
+    );
 
 class PlayerSettingsNotifier extends Notifier<PlayerModel> {
   static const _boxName = 'player_settings';
-  static const _key = 'settings';
+  static const _hiveKey = 'settings';
+  static const _prefsKey = 'player_settings_data';
 
   @override
   PlayerModel build() {
-    final box = Hive.box<PlayerModel>(_boxName);
-    return box.get(_key, defaultValue: PlayerModel()) ?? PlayerModel();
+    final jsonString = sharedPrefs.getString(_prefsKey);
+    if (jsonString != null) {
+      return PlayerModel.fromJson(jsonString);
+    }
+
+    if (Hive.isBoxOpen(_boxName)) {
+      try {
+        final box = Hive.box<PlayerModel>(_boxName);
+        final oldSettings = box.get(_hiveKey);
+        if (oldSettings != null) {
+          sharedPrefs.setString(_prefsKey, oldSettings.toJson());
+          return oldSettings;
+        }
+      } catch (_) {}
+    }
+
+    return PlayerModel();
   }
 
   void updateSettings(PlayerModel Function(PlayerModel) updater) {
     state = updater(state);
-    Hive.box<PlayerModel>(_boxName).put(_key, state);
+    sharedPrefs.setString(_prefsKey, state.toJson());
   }
 }

@@ -140,53 +140,6 @@ class ThemeModelAdapter extends TypeAdapter<ThemeModel> {
           typeId == other.typeId;
 }
 
-class UiModelAdapter extends TypeAdapter<UiModel> {
-  @override
-  final typeId = 3;
-
-  @override
-  UiModel read(BinaryReader reader) {
-    final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
-    return UiModel(
-      cardStyle: fields[2] == null
-          ? AnimeCardMode.defaults
-          : fields[2] as AnimeCardMode,
-      immersiveMode: fields[5] == null ? false : fields[5] as bool,
-      spotlightCardStyle: fields[3] == null
-          ? SpotlightCardMode.defaults
-          : fields[3] as SpotlightCardMode,
-      episodeViewMode: fields[6] == null ? 'list' : fields[6] as String,
-    );
-  }
-
-  @override
-  void write(BinaryWriter writer, UiModel obj) {
-    writer
-      ..writeByte(4)
-      ..writeByte(2)
-      ..write(obj.cardStyle)
-      ..writeByte(3)
-      ..write(obj.spotlightCardStyle)
-      ..writeByte(5)
-      ..write(obj.immersiveMode)
-      ..writeByte(6)
-      ..write(obj.episodeViewMode);
-  }
-
-  @override
-  int get hashCode => typeId.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is UiModelAdapter &&
-          runtimeType == other.runtimeType &&
-          typeId == other.typeId;
-}
-
 class PlayerModelAdapter extends TypeAdapter<PlayerModel> {
   @override
   final typeId = 4;
@@ -805,6 +758,183 @@ class UniversalNewsAdapter extends TypeAdapter<UniversalNews> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is UniversalNewsAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class AnimeCardModeAdapter extends TypeAdapter<AnimeCardMode> {
+  @override
+  final typeId = 17;
+
+  @override
+  AnimeCardMode read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return AnimeCardMode.defaults;
+      case 1:
+        return AnimeCardMode.minimal;
+      case 2:
+        return AnimeCardMode.classic;
+      case 3:
+        return AnimeCardMode.coverOnly;
+      case 4:
+        return AnimeCardMode.liquidGlass;
+      case 5:
+        return AnimeCardMode.neon;
+      case 6:
+        return AnimeCardMode.manga;
+      case 7:
+        return AnimeCardMode.compact;
+      case 8:
+        return AnimeCardMode.polaroid;
+      default:
+        return AnimeCardMode.defaults;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, AnimeCardMode obj) {
+    switch (obj) {
+      case AnimeCardMode.defaults:
+        writer.writeByte(0);
+      case AnimeCardMode.minimal:
+        writer.writeByte(1);
+      case AnimeCardMode.classic:
+        writer.writeByte(2);
+      case AnimeCardMode.coverOnly:
+        writer.writeByte(3);
+      case AnimeCardMode.liquidGlass:
+        writer.writeByte(4);
+      case AnimeCardMode.neon:
+        writer.writeByte(5);
+      case AnimeCardMode.manga:
+        writer.writeByte(6);
+      case AnimeCardMode.compact:
+        writer.writeByte(7);
+      case AnimeCardMode.polaroid:
+        writer.writeByte(8);
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AnimeCardModeAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class SpotlightCardModeAdapter extends TypeAdapter<SpotlightCardMode> {
+  @override
+  final typeId = 18;
+
+  @override
+  SpotlightCardMode read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return SpotlightCardMode.defaults;
+      case 1:
+        return SpotlightCardMode.minimal;
+      case 2:
+        return SpotlightCardMode.classic;
+      case 3:
+        return SpotlightCardMode.coverOnly;
+      case 4:
+        return SpotlightCardMode.liquidGlass;
+      case 5:
+        return SpotlightCardMode.neon;
+      case 6:
+        return SpotlightCardMode.manga;
+      case 7:
+        return SpotlightCardMode.compact;
+      case 8:
+        return SpotlightCardMode.polaroid;
+      default:
+        return SpotlightCardMode.defaults;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, SpotlightCardMode obj) {
+    switch (obj) {
+      case SpotlightCardMode.defaults:
+        writer.writeByte(0);
+      case SpotlightCardMode.minimal:
+        writer.writeByte(1);
+      case SpotlightCardMode.classic:
+        writer.writeByte(2);
+      case SpotlightCardMode.coverOnly:
+        writer.writeByte(3);
+      case SpotlightCardMode.liquidGlass:
+        writer.writeByte(4);
+      case SpotlightCardMode.neon:
+        writer.writeByte(5);
+      case SpotlightCardMode.manga:
+        writer.writeByte(6);
+      case SpotlightCardMode.compact:
+        writer.writeByte(7);
+      case SpotlightCardMode.polaroid:
+        writer.writeByte(8);
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SpotlightCardModeAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class UiSettingsAdapter extends TypeAdapter<UiSettings> {
+  @override
+  final typeId = 19;
+
+  @override
+  UiSettings read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return UiSettings(
+      cardStyle: fields[0] == null
+          ? AnimeCardMode.defaults
+          : fields[0] as AnimeCardMode,
+      immersiveMode: fields[2] == null ? false : fields[2] as bool,
+      spotlightCardStyle: fields[1] == null
+          ? SpotlightCardMode.defaults
+          : fields[1] as SpotlightCardMode,
+      episodeViewMode: fields[3] == null ? 'list' : fields[3] as String,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, UiSettings obj) {
+    writer
+      ..writeByte(4)
+      ..writeByte(0)
+      ..write(obj.cardStyle)
+      ..writeByte(1)
+      ..write(obj.spotlightCardStyle)
+      ..writeByte(2)
+      ..write(obj.immersiveMode)
+      ..writeByte(3)
+      ..write(obj.episodeViewMode);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UiSettingsAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

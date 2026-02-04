@@ -63,7 +63,7 @@ final class FetchAnimeSourcesListProvider
 }
 
 String _$fetchAnimeSourcesListHash() =>
-    r'3e381a53d0fb40f54497e54f827894187d1319ab';
+    r'51627e2c68f8552af3d62f133896e43d6664dae8';
 
 final class FetchAnimeSourcesListFamily extends $Family
     with

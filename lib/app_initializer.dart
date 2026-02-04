@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 
@@ -16,11 +17,11 @@ import 'package:shonenx/features/settings/model/experimental_model.dart';
 import 'package:shonenx/features/settings/model/player_model.dart';
 import 'package:shonenx/features/settings/model/subtitle_appearance_model.dart';
 import 'package:shonenx/features/settings/model/theme_model.dart';
-import 'package:shonenx/features/settings/model/ui_model.dart';
 import 'package:shonenx/features/settings/model/download_settings_model.dart';
 import 'package:shonenx/features/settings/model/content_settings_model.dart';
 import 'package:shonenx/core/models/universal/universal_news.dart';
 import 'package:shonenx/core/services/notification_service.dart';
+import 'package:shonenx/features/settings/model/ui_model.dart';
 import 'package:shonenx/helpers/ui.dart';
 import 'package:shonenx/hive/hive_registrar.g.dart';
 
@@ -28,6 +29,8 @@ import 'package:window_manager/window_manager.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'package:shonenx/background_handler.dart';
+
+import 'main.dart';
 
 class AppInitializer {
   static Future<void> initialize() async {
@@ -46,11 +49,24 @@ class AppInitializer {
     AppLogger.success('Flutter bindings initialized');
 
     await _initializeHive();
+    await _initializeSharedPrefs();
     await _initializeWindowManager();
     await _initializeMediaKit();
     await NotificationService().initialize();
-
     AppLogger.section('Initialization Complete');
+  }
+
+  static Future<void> _initializeSharedPrefs() async {
+    AppLogger.section('Shared Preferences');
+    try {
+      sharedPrefs = await SharedPreferencesWithCache.create(
+        cacheOptions: const SharedPreferencesWithCacheOptions(),
+      );
+      AppLogger.success('Shared Preferences initialized');
+    } catch (e, st) {
+      AppLogger.fail('Shared Preferences initialization failed');
+      AppLogger.e('Shared Preferences Error', e, st);
+    }
   }
 
   static Future<void> _initializeBackgroundService() async {
@@ -96,8 +112,8 @@ class AppInitializer {
         'subtitle_appearance': () =>
             Hive.openBox<SubtitleAppearanceModel>('subtitle_appearance'),
         'home_page': () => Hive.openBox<HomePageModel>('home_page'),
+        'ui_settings': () => Hive.openBox<UiSettings>('ui_settings'),
         'selected_provider': () => Hive.openBox<String>('selected_provider'),
-        'ui_settings': () => Hive.openBox<UiModel>('ui_settings'),
         'player_settings': () => Hive.openBox<PlayerModel>('player_settings'),
         'anime_watch_progress': () =>
             Hive.openBox<AnimeWatchProgressEntry>('anime_watch_progress'),

@@ -165,6 +165,7 @@ class StorageProvider {
 
     final isar = await Isar.open(
       [
+        // Mangayomi
         MangaSchema,
         ChangedPartSchema,
         ChapterSchema,

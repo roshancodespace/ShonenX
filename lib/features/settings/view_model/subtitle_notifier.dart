@@ -1,37 +1,54 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shonenx/features/settings/model/subtitle_appearance_model.dart';
+import 'package:shonenx/main.dart';
 
 final subtitleAppearanceProvider =
     NotifierProvider<SubtitleAppearanceNotifier, SubtitleAppearanceModel>(
-  SubtitleAppearanceNotifier.new,
-);
+      SubtitleAppearanceNotifier.new,
+    );
 
 class SubtitleAppearanceNotifier extends Notifier<SubtitleAppearanceModel> {
   static const _boxName = 'subtitle_appearance';
-  static const _key = 'settings';
+  static const _hiveKey = 'settings';
+  static const _prefsKey = 'subtitle_appearance_data';
 
   @override
   SubtitleAppearanceModel build() {
-    final box = Hive.box<SubtitleAppearanceModel>(_boxName);
-    return box.get(_key, defaultValue: SubtitleAppearanceModel()) ??
-        SubtitleAppearanceModel(
-          fontSize: 16,
-          textColor: 0xFFFFFFFF,
-          backgroundOpacity: 0.5,
-          hasShadow: true,
-          shadowOpacity: 0.5,
-          shadowBlur: 2,
-          fontFamily: null,
-          position: 1,
-          boldText: true,
-          forceUppercase: false,
-        );
+    final jsonString = sharedPrefs.getString(_prefsKey);
+    if (jsonString != null) {
+      return SubtitleAppearanceModel.fromJson(jsonString);
+    }
+
+    if (Hive.isBoxOpen(_boxName)) {
+      try {
+        final box = Hive.box<SubtitleAppearanceModel>(_boxName);
+        final oldSettings = box.get(_hiveKey);
+        if (oldSettings != null) {
+          sharedPrefs.setString(_prefsKey, oldSettings.toJson());
+          return oldSettings;
+        }
+      } catch (_) {}
+    }
+
+    return SubtitleAppearanceModel(
+      fontSize: 16,
+      textColor: 0xFFFFFFFF,
+      backgroundOpacity: 0.5,
+      hasShadow: true,
+      shadowOpacity: 0.5,
+      shadowBlur: 2,
+      fontFamily: null,
+      position: 1,
+      boldText: true,
+      forceUppercase: false,
+    );
   }
 
   void updateSettings(
-      SubtitleAppearanceModel Function(SubtitleAppearanceModel) updater) {
+    SubtitleAppearanceModel Function(SubtitleAppearanceModel) updater,
+  ) {
     state = updater(state);
-    Hive.box<SubtitleAppearanceModel>(_boxName).put(_key, state);
+    sharedPrefs.setString(_prefsKey, state.toJson());
   }
 }

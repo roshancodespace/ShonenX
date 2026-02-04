@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shonenx/core_mangayomi/eval/dart/service.dart';
 import 'package:shonenx/core_mangayomi/eval/javascript/service.dart';
 import 'package:shonenx/core_mangayomi/models/manga.dart';
@@ -67,11 +66,8 @@ Future<void> fetchSourcesList({
           if (sourc.isAdded!) {
             if (compareVersions(sourc.version!, source.version!) < 0) {
               // log("update aivalable auto update");
-              final settingsBox = Hive.box('settings');
-              final autoUpdate = settingsBox.get(
-                'auto_update_extensions',
-                defaultValue: false,
-              );
+              final autoUpdate =
+                  sharedPrefs.getBool('auto_update_extensions') ?? false;
 
               if (autoUpdate) {
                 // auto Update

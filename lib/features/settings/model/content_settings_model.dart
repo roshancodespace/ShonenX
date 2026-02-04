@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class ContentSettingsModel {
   final bool showAnilistAdult;
   final bool showMalAdult;
@@ -24,4 +26,9 @@ class ContentSettingsModel {
       showMalAdult: map['showMalAdult'] ?? false,
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory ContentSettingsModel.fromJson(String source) =>
+      ContentSettingsModel.fromMap(json.decode(source));
 }

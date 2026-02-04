@@ -60,19 +60,16 @@ class AppLogger {
   }
 
   static void i(dynamic msg) {
-    if (!kDebugMode) return;
     _console.i(msg);
     _writeLine('[INFO] $msg');
   }
 
   static void w(dynamic msg, [Object? error, StackTrace? stack]) {
-    if (!kDebugMode) return;
     _console.w(msg, error: error, stackTrace: stack);
     _writeLine('[WARN] $msg ${error ?? ""} ${stack ?? ""}');
   }
 
   static void e(dynamic msg, [Object? error, StackTrace? stack]) {
-    if (!kDebugMode) return;
     if (error is StackTrace) error = {error};
     _console.e(msg, error: error, stackTrace: stack);
     _writeLine('[ERROR] $msg ${error ?? ""} ${stack ?? ""}');

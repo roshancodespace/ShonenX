@@ -264,6 +264,7 @@ Future<void> main() async {
       await extractor.extractQualities(
         ctx.sourcesResult.sources.first.url,
         ctx.sourcesResult.headers.cast<String, String>(),
+        ctx.sourcesResult.sources.first.isM3u8,
       );
     });
 

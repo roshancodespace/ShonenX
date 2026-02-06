@@ -47,6 +47,11 @@ class PageResponse {
       mediaList: data.map((e) => MediaListEntry.fromMal(e)).toList(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'pageInfo': pageInfo.toJson(),
+    'items': mediaList.map((e) => e.toJson()).toList(),
+  };
 }
 
 class PageInfo {
@@ -65,19 +70,27 @@ class PageInfo {
   });
 
   const PageInfo.empty()
-      : total = 0,
-        currentPage = 1,
-        lastPage = 1,
-        hasNextPage = false,
-        perPage = 25;
+    : total = 0,
+      currentPage = 1,
+      lastPage = 1,
+      hasNextPage = false,
+      perPage = 25;
 
   factory PageInfo.fromJson(Map<String, dynamic> json) => PageInfo(
-        total: json['total'] ?? 0,
-        currentPage: json['currentPage'] ?? 1,
-        lastPage: json['lastPage'] ?? 1,
-        hasNextPage: json['hasNextPage'] ?? false,
-        perPage: json['perPage'] ?? 25,
-      );
+    total: json['total'] ?? 0,
+    currentPage: json['currentPage'] ?? 1,
+    lastPage: json['lastPage'] ?? 1,
+    hasNextPage: json['hasNextPage'] ?? false,
+    perPage: json['perPage'] ?? 25,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'total': total,
+    'currentPage': currentPage,
+    'lastPage': lastPage,
+    'hasNextPage': hasNextPage,
+    'perPage': perPage,
+  };
 
   PageInfo copyWith({
     int? total,

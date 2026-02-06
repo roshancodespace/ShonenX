@@ -4,9 +4,17 @@ import 'package:shonenx/core_mangayomi/models/source.dart';
 import 'dart/service.dart';
 import 'javascript/service.dart';
 
-ExtensionService getExtensionService(Source source) {
+import 'package:shonenx/core/anilist/services/anilist_service.dart';
+
+ExtensionService getExtensionService(
+  Source source, {
+  AnilistService? anilistService,
+}) {
   return switch (source.sourceCodeLanguage) {
     SourceCodeLanguage.dart => DartExtensionService(source),
-    SourceCodeLanguage.javascript => JsExtensionService(source),
+    SourceCodeLanguage.javascript => JsExtensionService(
+      source,
+      anilistService: anilistService,
+    ),
   };
 }

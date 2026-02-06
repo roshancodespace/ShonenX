@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:io';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'
     as flutter_inappwebview;
 import 'package:http/io_client.dart';
 import 'package:http_interceptor/http_interceptor.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:shonenx/core_mangayomi/eval/model/m_source.dart';
 import 'package:shonenx/core_mangayomi/models/settings.dart';
 import 'package:shonenx/main.dart';
@@ -17,8 +17,9 @@ class MClient {
     Map<String, dynamic>? reqcopyWith,
   }) {
     return InterceptedClient.build(
-        client: IOClient(HttpClient()),
-        interceptors: [MCookieManager(reqcopyWith), LoggerInterceptor()]);
+      client: IOClient(HttpClient()),
+      interceptors: [MCookieManager(reqcopyWith), LoggerInterceptor()],
+    );
   }
 
   static Map<String, String> getCookiesPref(String url) {
@@ -36,24 +37,30 @@ class MClient {
     return {HttpHeaders.cookieHeader: cookies};
   }
 
-  static Future<void> setCookie(String url, String ua,
-      flutter_inappwebview.InAppWebViewController? webViewController,
-      {String? cookie}) async {
+  static Future<void> setCookie(
+    String url,
+    String ua,
+    flutter_inappwebview.InAppWebViewController? webViewController, {
+    String? cookie,
+  }) async {
     List<String> cookies = [];
     if (Platform.isLinux) {
-      cookies = cookie
+      cookies =
+          cookie
               ?.split(RegExp('(?<=)(,)(?=[^;]+?=)'))
               .where((cookie) => cookie.isNotEmpty)
               .toList() ??
           [];
     } else {
-      cookies = (await flutter_inappwebview.CookieManager.instance(
-                  webViewEnvironment: webViewEnvironment)
-              .getCookies(
-                  url: flutter_inappwebview.WebUri(url),
-                  webViewController: webViewController))
-          .map((e) => "${e.name}=${e.value}")
-          .toList();
+      cookies =
+          (await flutter_inappwebview.CookieManager.instance(
+                webViewEnvironment: webViewEnvironment,
+              ).getCookies(
+                url: flutter_inappwebview.WebUri(url),
+                webViewController: webViewController,
+              ))
+              .map((e) => "${e.name}=${e.value}")
+              .toList();
     }
     if (cookies.isNotEmpty) {
       final host = Uri.parse(url).host;
@@ -65,11 +72,14 @@ class MClient {
           cookieList.add(cookie);
         }
       }
-      cookieList.add(MCookie()
-        ..host = host
-        ..cookie = newCookie);
+      cookieList.add(
+        MCookie()
+          ..host = host
+          ..cookie = newCookie,
+      );
       isar.writeTxnSync(
-          () => isar.settings.putSync(settings..cookiesList = cookieList));
+        () => isar.settings.putSync(settings..cookiesList = cookieList),
+      );
     }
     if (ua.isNotEmpty) {
       final settings = isar.settings.getSync(227);
@@ -86,8 +96,11 @@ class MClient {
         cookieList.add(cookie);
       }
     }
-    isar.writeTxnSync(() => isar.settings
-        .putSync(isar.settings.getSync(227)!..cookiesList = cookieList));
+    isar.writeTxnSync(
+      () => isar.settings.putSync(
+        isar.settings.getSync(227)!..cookiesList = cookieList,
+      ),
+    );
   }
 }
 
@@ -97,9 +110,7 @@ class MCookieManager extends InterceptorContract {
   Map<String, dynamic>? reqcopyWith;
 
   @override
-  Future<BaseRequest> interceptRequest({
-    required BaseRequest request,
-  }) async {
+  Future<BaseRequest> interceptRequest({required BaseRequest request}) async {
     final cookie = MClient.getCookiesPref(request.url.toString());
     if (cookie.isNotEmpty) {
       final userAgent = isar.settings.getSync(227)!.userAgent!;
@@ -139,10 +150,10 @@ class MCookieManager extends InterceptorContract {
 
 class LoggerInterceptor extends InterceptorContract {
   @override
-  Future<BaseRequest> interceptRequest({
-    required BaseRequest request,
-  }) async {
-    log('----- Request -----\n${request.toString()}\nheader: ${request.headers.toString()}');
+  Future<BaseRequest> interceptRequest({required BaseRequest request}) async {
+    AppLogger.w(
+      '----- Request -----\n${request.toString()}\nheader: ${request.headers.toString()}',
+    );
     return request;
   }
 
@@ -150,13 +161,19 @@ class LoggerInterceptor extends InterceptorContract {
   Future<BaseResponse> interceptResponse({
     required BaseResponse response,
   }) async {
-    final cloudflare = [403, 503].contains(response.statusCode) &&
+    final cloudflare =
+        [403, 503].contains(response.statusCode) &&
         ["cloudflare-nginx", "cloudflare"].contains(response.headers["server"]);
-    log("----- Response -----\n${response.request?.method}: ${response.request?.url}, statusCode: ${response.statusCode} ${cloudflare ? "Failed to bypass Cloudflare" : ""}");
-    debugPrint(
-        "----- Response -----\n${response.request?.method}: ${response.request?.url}, statusCode: ${response.statusCode} ${cloudflare ? "Failed to bypass Cloudflare" : ""}");
+    AppLogger.w(
+      "----- Response -----\n${response.request?.method}: ${response.request?.url}, statusCode: ${response.statusCode} ${cloudflare ? "Failed to bypass Cloudflare" : ""}",
+    );
     if (cloudflare) {
-      // errorSnackBar("${response.statusCode} Failed to bypass Cloudflare");
+      AppLogger.e("Failed to bypass Cloudflare");
+      showAppSnackBar(
+        "Cloudflare",
+        "Failed to bypass Cloudflare",
+        type: ContentType.failure,
+      );
     }
     return response;
   }

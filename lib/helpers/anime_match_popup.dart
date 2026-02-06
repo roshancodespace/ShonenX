@@ -153,18 +153,35 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
 
       // Mangayomi Extensions
       if (useMangayomi) {
-        AppLogger.d('Using Mangayomi for search with query: $query');
-        final res = await ref.read(sourceProvider.notifier).search(query);
-        fetchedCandidates = res.list
-            .where((e) => e.name != null && e.link != null)
-            .map(
-              (e) => BaseAnimeModel(
-                id: e.link ?? '',
-                name: e.name ?? '',
-                poster: e.imageUrl ?? '',
-              ),
-            )
-            .toList();
+        final activeSource = ref.read(sourceProvider).activeAnimeSource;
+        if (activeSource != null && (activeSource.isForShonenx ?? false)) {
+          AppLogger.d('Using ShonenX Mangayomi for search with query: $query');
+          final res = await ref.read(sourceProvider.notifier).search(query);
+          fetchedCandidates = res.list
+              .where((e) => e.name != null && e.link != null)
+              .map(
+                (e) => BaseAnimeModel(
+                  id: e.link ?? '',
+                  name: e.name ?? '',
+                  poster: e.imageUrl ?? '',
+                ),
+              )
+              .toList();
+        } else {
+          // Standard Mangayomi Extensions
+          AppLogger.d('Using Standard Mangayomi for search with query: $query');
+          final res = await ref.read(sourceProvider.notifier).search(query);
+          fetchedCandidates = res.list
+              .where((e) => e.name != null && e.link != null)
+              .map(
+                (e) => BaseAnimeModel(
+                  id: e.link ?? '',
+                  name: e.name ?? '',
+                  poster: e.imageUrl ?? '',
+                ),
+              )
+              .toList();
+        }
       }
       // Legacy Source
       else {

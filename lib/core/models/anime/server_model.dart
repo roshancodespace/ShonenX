@@ -33,4 +33,16 @@ class ServerData {
       id: id ?? this.id,
     );
   }
+
+  factory ServerData.fromJson(Map<String, dynamic> json) {
+    return ServerData(
+      id: json['id'],
+      name: json['name'],
+      isDub: json['isDub'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'name': name, 'isDub': isDub};
+  }
 }

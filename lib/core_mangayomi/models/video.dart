@@ -7,6 +7,8 @@ class Video {
   Map<String, String>? headers;
   List<Track>? subtitles;
   List<Track>? audios;
+  bool? isM3u8;
+  String? format;
 
   Video(
     this.url,
@@ -15,6 +17,8 @@ class Video {
     this.headers,
     this.subtitles,
     this.audios,
+    this.isM3u8 = false,
+    this.format,
   });
   factory Video.fromJson(Map<String, dynamic> json) {
     return Video(
@@ -28,6 +32,8 @@ class Video {
       audios: json['audios'] != null
           ? (json['audios'] as List).map((e) => Track.fromJson(e)).toList()
           : [],
+      isM3u8: json['isM3u8'] as bool?,
+      format: json['format']?.toString().trim(),
     );
   }
   Map<String, dynamic> toJson() => {
@@ -37,6 +43,8 @@ class Video {
     'headers': headers,
     'subtitles': subtitles?.map((e) => e.toJson()).toList(),
     'audios': audios?.map((e) => e.toJson()).toList(),
+    'isM3u8': isM3u8,
+    'format': format,
   };
 }
 

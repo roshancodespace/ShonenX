@@ -1,6 +1,4 @@
-// ignore_for_file: constant_identifier_names, use_build_context_synchronously
 import 'dart:io';
-
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,13 +36,11 @@ class EpisodeDataState {
   final List<Subtitle> subtitles;
   final List<Map<String, dynamic>> qualityOptions;
   final List<ServerData> servers;
-
   final int? selectedQualityIdx;
   final int? selectedSourceIdx;
   final int? selectedEpisodeIdx;
   final int selectedSubtitleIdx;
   final ServerData? selectedServer;
-
   final Set<EpisodeStreamState> states;
   final String? error;
 
@@ -63,6 +59,8 @@ class EpisodeDataState {
     this.error,
   });
 
+  bool get isLoading => states.isNotEmpty;
+
   EpisodeDataState copyWith({
     Map<String, String>? headers,
     List<Source>? sources,
@@ -77,6 +75,7 @@ class EpisodeDataState {
     EpisodeStreamState? addState,
     EpisodeStreamState? removeState,
     String? error,
+    bool clearError = false,
   }) {
     final newStates = Set<EpisodeStreamState>.from(states);
     if (removeState != null) newStates.remove(removeState);
@@ -94,18 +93,18 @@ class EpisodeDataState {
       selectedSubtitleIdx: selectedSubtitleIdx ?? this.selectedSubtitleIdx,
       selectedServer: selectedServer ?? this.selectedServer,
       states: newStates,
-      error: error,
+      error: clearError ? null : (error ?? this.error),
     );
   }
 }
 
 @riverpod
 class EpisodeData extends _$EpisodeData {
-  EpisodeListState get _epState => ref.read(episodeListProvider);
-  List<EpisodeDataModel> get _episodes => _epState.episodes;
+  EpisodeListState get _epList => ref.read(episodeListProvider);
   ExperimentalFeaturesModel get _exp => ref.read(experimentalProvider);
-  AnimeProvider? get _animeProvider => ref.read(selectedAnimeProvider);
-  SourceNotifier get _sourceNotifier => ref.read(sourceProvider.notifier);
+  AnimeProvider? get _provider => ref.read(selectedAnimeProvider);
+  SourceNotifier get _srcNotifier => ref.read(sourceProvider.notifier);
+  PlayerStateNotifier get _player => ref.read(playerStateProvider.notifier);
 
   @override
   EpisodeDataState build() => const EpisodeDataState();
@@ -115,13 +114,9 @@ class EpisodeData extends _$EpisodeData {
     bool play = true,
     Duration startAt = Duration.zero,
   }) async {
-    if (!_isValidEp(epIdx)) return;
-
+    if (!_isValidIdx(epIdx)) return;
     await _fetchServers(epIdx);
-
-    if (play) {
-      await changeEpisode(epIdx, startAt: startAt);
-    }
+    if (play) await changeEpisode(epIdx, startAt: startAt);
   }
 
   Future<void> changeEpisode(
@@ -129,34 +124,27 @@ class EpisodeData extends _$EpisodeData {
     Duration startAt = Duration.zero,
     int by = 0,
   }) async {
-    final nextIdx = by != 0 ? (state.selectedEpisodeIdx ?? 0) + by : epIdx;
+    final target = by != 0 ? (state.selectedEpisodeIdx ?? 0) + by : epIdx;
+    if (target == null || !_isValidIdx(target)) return;
 
-    if (nextIdx != null && !_isValidEp(nextIdx)) return;
-
-    state = state.copyWith(selectedEpisodeIdx: nextIdx);
-    await _playCurrentEpisode(startAt);
+    state = state.copyWith(selectedEpisodeIdx: target, clearError: true);
+    await _playCurrent(startAt);
   }
 
   Future<void> changeServer(ServerData server) async {
     state = state.copyWith(selectedServer: server);
-    await _playCurrentEpisode(ref.read(playerStateProvider).position);
+    await _playCurrent(ref.read(playerStateProvider).position);
   }
 
   Future<void> toggleDubSub() async {
     final current = state.selectedServer;
     if (current == null) return;
-
-    final alt = state.servers.firstWhere(
-      (s) => s.isDub != current.isDub,
-      orElse: () => current,
-    );
-
-    if (alt != current) await changeServer(alt);
+    final alt = state.servers.firstWhereOrNull((s) => s.isDub != current.isDub);
+    if (alt != null) await changeServer(alt);
   }
 
   Future<void> changeSource(int idx) async {
     if (idx < 0 || idx >= state.sources.length) return;
-
     await _loadSourceStream(
       idx,
       startAt: ref.read(playerStateProvider).position,
@@ -165,31 +153,25 @@ class EpisodeData extends _$EpisodeData {
 
   Future<void> changeQuality(int idx) async {
     if (idx < 0 || idx >= state.qualityOptions.length) return;
-
     final url = state.qualityOptions[idx]['url'] as String?;
     if (url == null) return;
 
     state = state.copyWith(selectedQualityIdx: idx);
-
-    ref
-        .read(playerStateProvider.notifier)
-        .open(
-          url,
-          ref.read(playerStateProvider).position,
-          headers: state.headers,
-        );
+    _player.open(
+      url,
+      ref.read(playerStateProvider).position,
+      headers: state.headers,
+    );
   }
 
   Future<void> changeSubtitle(int idx) async {
     state = state.copyWith(
       addState: EpisodeStreamState.SUBTITLE_LOADING,
-      error: null,
+      clearError: true,
     );
 
     if (idx == 0) {
-      await ref
-          .read(playerStateProvider.notifier)
-          .setSubtitle(SubtitleTrack.no());
+      await _player.setSubtitle(SubtitleTrack.no());
       state = state.copyWith(
         selectedSubtitleIdx: 0,
         removeState: EpisodeStreamState.SUBTITLE_LOADING,
@@ -198,13 +180,8 @@ class EpisodeData extends _$EpisodeData {
     }
 
     if (idx < 0 || idx >= state.subtitles.length) return;
-
     final sub = state.subtitles[idx];
-    if (sub.url != null) {
-      await ref
-          .read(playerStateProvider.notifier)
-          .setSubtitle(SubtitleTrack.uri(sub.url!));
-    }
+    if (sub.url != null) await _player.setSubtitle(SubtitleTrack.uri(sub.url!));
 
     state = state.copyWith(
       selectedSubtitleIdx: idx,
@@ -217,62 +194,28 @@ class EpisodeData extends _$EpisodeData {
       url: 'file://${file.path}',
       lang: 'Local: ${file.path.split('/').last}',
     );
-
-    final newSubtitles = [...state.subtitles, sub];
-    state = state.copyWith(subtitles: newSubtitles);
-
-    await changeSubtitle(newSubtitles.length - 1);
+    state = state.copyWith(subtitles: [...state.subtitles, sub]);
+    await changeSubtitle(state.subtitles.length - 1);
   }
 
   Future<void> downloadEpisode(BuildContext context, int epNumber) async {
-    final epIdx = epNumber - 1;
-    if (!_isValidEp(epIdx)) return;
+    final idx = epNumber - 1;
+    if (!_isValidIdx(idx) || _epList.animeId == null) return;
 
-    final ep = _episodes[epIdx];
-    final animeId = _epState.animeId;
-
-    if (animeId == null) return;
-
-    // Keep the provider alive while the download sheet is open
+    final ep = _epList.episodes[idx];
     final link = ref.keepAlive();
 
     try {
-      ServerData? selectedServer;
-
-      if (!_exp.useMangayomiExtensions && ep.url == null) {
-        _showLoading(context);
-
-        try {
-          final result = await _animeProvider?.getSupportedServers(
-            metadata: {'id': animeId, 'epNumber': ep.number, 'epId': ep.id},
-          );
-
-          if (!context.mounted) return;
-          Navigator.pop(context); // Close loading dialog
-
-          final servers = result?.flatten() ?? [];
-
-          if (servers.isEmpty) {
-            _showSnack(context, "No servers found for this episode");
-            return;
-          }
-
-          if (servers.length == 1) {
-            selectedServer = servers.first;
-          } else {
-            selectedServer = await _showServerSelectionSheet(context, servers);
-            if (selectedServer == null) return; // User cancelled
-          }
-        } catch (e) {
-          if (context.mounted) {
-            Navigator.pop(context);
-            _showSnack(context, "Failed to load servers: $e");
-          }
-          return;
-        }
-      }
-
+      _showLoading(context);
+      final servers = await _getRawServers(ep);
       if (!context.mounted) return;
+      Navigator.pop(context);
+
+      if (servers.isEmpty) return _showSnack(context, "No servers found");
+      final selected = servers.length == 1
+          ? servers.first
+          : await _showServerSheet(context, servers);
+      if (selected == null || !context.mounted) return;
 
       await showModalBottomSheet(
         context: context,
@@ -291,10 +234,10 @@ class EpisodeData extends _$EpisodeData {
               ),
             ),
             child: DownloadSourceSelector(
-              animeTitle: _epState.animeTitle ?? 'Unknown',
+              animeTitle: _epList.animeTitle ?? 'Unknown',
               episode: ep,
-              server: selectedServer,
-              fetchSources: () => _fetchSourceData(ep, server: selectedServer),
+              server: selected,
+              fetchSources: () => _fetchSourceData(ep, server: selected),
               scrollController: controller,
             ),
           ),
@@ -307,32 +250,40 @@ class EpisodeData extends _$EpisodeData {
 
   void reset() => state = const EpisodeDataState();
 
-  bool _isValidEp(int idx) => idx >= 0 && idx < _episodes.length;
+  bool _isValidIdx(int i) => i >= 0 && i < _epList.episodes.length;
 
-  Future<void> _fetchServers(int epIdx) async {
-    if (_exp.useMangayomiExtensions) return;
+  Future<List<ServerData>> _getRawServers(EpisodeDataModel ep) async {
+    if (_exp.useMangayomiExtensions) {
+      return (await _srcNotifier.getServers(
+        _epList.animeId!,
+        (ep.id ?? ep.number)!.toString(),
+        ep.number.toString(),
+      )).cast<ServerData>();
+    }
+    return (await _provider?.getSupportedServers(
+          metadata: {
+            'id': _epList.animeId,
+            'epNumber': ep.number,
+            'epId': ep.id,
+          },
+        ))?.flatten() ??
+        [];
+  }
 
+  Future<void> _fetchServers(int idx) async {
     state = state.copyWith(
       addState: EpisodeStreamState.SERVER_LOADING,
-      error: null,
+      clearError: true,
     );
-
     try {
-      final ep = _episodes[epIdx];
-      final animeId = _epState.animeId;
-      final res = await _animeProvider?.getSupportedServers(
-        metadata: {'id': animeId, 'epNumber': ep.number, 'epId': ep.id},
-      );
-
-      final flat = res?.flatten() ?? [];
-      ServerData? selectedServer = flat.firstOrNull;
+      final list = await _getRawServers(_epList.episodes[idx]);
       final preferDub = ref.read(
         playerSettingsProvider.select((s) => s.preferDub),
       );
-      if (preferDub) {
-        selectedServer = flat.firstWhereOrNull((i) => i.isDub);
-      }
-      state = state.copyWith(servers: flat, selectedServer: selectedServer);
+      final selected =
+          (preferDub ? list.firstWhereOrNull((s) => s.isDub) : null) ??
+          list.firstOrNull;
+      state = state.copyWith(servers: list, selectedServer: selected);
     } catch (e) {
       AppLogger.e("Server fetch failed", e);
     } finally {
@@ -340,17 +291,16 @@ class EpisodeData extends _$EpisodeData {
     }
   }
 
-  Future<void> _playCurrentEpisode(Duration startAt) async {
-    final epIdx = state.selectedEpisodeIdx;
-    if (epIdx == null) return;
+  Future<void> _playCurrent(Duration startAt) async {
+    final idx = state.selectedEpisodeIdx;
+    if (idx == null) return;
 
     state = state.copyWith(
       addState: EpisodeStreamState.SOURCE_LOADING,
-      error: null,
+      clearError: true,
     );
-
     final data = await _fetchSourceData(
-      _episodes[epIdx],
+      _epList.episodes[idx],
       server: state.selectedServer,
     );
 
@@ -372,7 +322,6 @@ class EpisodeData extends _$EpisodeData {
     );
 
     await _loadSourceStream(state.selectedSourceIdx ?? 0, startAt: startAt);
-
     state = state.copyWith(removeState: EpisodeStreamState.SOURCE_LOADING);
   }
 
@@ -380,32 +329,25 @@ class EpisodeData extends _$EpisodeData {
     int sourceIdx, {
     required Duration startAt,
   }) async {
-    final source = state.sources[sourceIdx];
-
+    final src = state.sources[sourceIdx];
     state = state.copyWith(addState: EpisodeStreamState.QUALITY_LOADING);
 
-    final qualities = await _getQualitiesForSource(source, state.headers);
-
+    final qualities = await _getQualities(src, state.headers);
     final pref = ref.read(playerSettingsProvider).defaultQuality;
-    int qIdx = 0;
+    final qIdx = qualities
+        .indexWhere((q) => (q['quality'] as String).contains(pref))
+        .clamp(0, qualities.length - 1);
 
-    if (pref != 'Auto') {
-      final match = qualities.indexWhere(
-        (q) => (q['quality'] as String).contains(pref),
-      );
-      if (match != -1) qIdx = match;
-    }
+    _player.open(
+      qualities[qIdx]['url'] as String,
+      startAt,
+      headers: state.headers,
+    );
 
-    final url = qualities[qIdx]['url'] as String;
-
-    ref
-        .read(playerStateProvider.notifier)
-        .open(url, startAt, headers: state.headers);
-
-    final engSubIdx = state.subtitles.indexWhere(
+    final engIdx = state.subtitles.indexWhere(
       (s) => s.lang?.toLowerCase().contains('eng') ?? false,
     );
-    if (engSubIdx != -1) changeSubtitle(engSubIdx);
+    if (engIdx != -1) changeSubtitle(engIdx);
 
     state = state.copyWith(
       qualityOptions: qualities,
@@ -420,7 +362,13 @@ class EpisodeData extends _$EpisodeData {
     ServerData? server,
   }) async {
     if (_exp.useMangayomiExtensions && ep.url != null) {
-      final res = await _sourceNotifier.getSources(ep.url!);
+      final res = await _srcNotifier.getSources(
+        ep.url!,
+        _epList.animeId!,
+        ep.id ?? ep.number.toString(),
+        server?.id ?? '',
+        server?.isDub ?? false ? 'dub' : 'sub',
+      );
       return BaseSourcesModel(
         sources: res
             .map(
@@ -439,59 +387,42 @@ class EpisodeData extends _$EpisodeData {
             [],
       );
     }
-
-    AppLogger.d(
-      'Fetching sources for ${ep.id} from ${server?.id}, ${server?.isDub == true ? 'dub' : 'sub'}',
-    );
-
-    return _animeProvider?.getSources(
-      _epState.animeId ?? '',
+    return _provider?.getSources(
+      _epList.animeId ?? '',
       ep.id ?? '',
       server?.id,
       server?.isDub == true ? 'dub' : 'sub',
     );
   }
 
-  Future<List<Map<String, dynamic>>> _getQualitiesForSource(
-    Source source,
+  Future<List<Map<String, dynamic>>> _getQualities(
+    Source src,
     Map<String, String>? headers,
   ) async {
-    final url = source.url;
-    if (url == null) return [];
-
-    if (!source.isM3U8) {
+    if (src.url == null) return [];
+    if (!src.isM3U8) {
       return [
-        {'quality': source.quality ?? 'Default', 'url': url},
+        {'quality': src.quality ?? 'Default', 'url': src.url},
       ];
     }
-
     try {
-      return await extractor.extractQualities(
-        url,
-        headers ?? {},
-        source.isM3U8,
-      );
+      return await extractor.extractQualities(src.url!, headers ?? {}, true);
     } catch (e) {
-      AppLogger.e('Quality extraction failed', e);
       return [
-        {'quality': source.quality ?? 'Default', 'url': url},
+        {'quality': src.quality ?? 'Default', 'url': src.url},
       ];
     }
   }
 
-  void _showLoading(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-  }
+  void _showLoading(BuildContext context) => showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const Center(child: CircularProgressIndicator()),
+  );
+  void _showSnack(BuildContext context, String msg) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
-  void _showSnack(BuildContext context, String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
-  Future<ServerData?> _showServerSelectionSheet(
+  Future<ServerData?> _showServerSheet(
     BuildContext context,
     List<ServerData> servers,
   ) {
@@ -510,67 +441,33 @@ class EpisodeData extends _$EpisodeData {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  size.height * 0.015,
-                  16,
-                  size.height * 0.01,
-                ),
+                padding: const EdgeInsets.all(16),
                 child: Text(
                   'Select Server',
                   style: theme.textTheme.titleMedium,
                 ),
               ),
-              Divider(height: 1, color: theme.dividerColor),
+              const Divider(height: 1),
               Expanded(
                 child: ListView.separated(
                   itemCount: servers.length,
-                  separatorBuilder: (_, __) =>
-                      Divider(height: 1, color: theme.dividerColor),
-                  itemBuilder: (context, index) {
-                    final s = servers[index];
-                    final isDub = s.isDub;
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, i) {
+                    final s = servers[i];
                     return ListTile(
                       dense: true,
-                      visualDensity: VisualDensity.compact,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: size.width * 0.04,
-                        vertical: size.height * 0.005,
-                      ),
                       title: Text(
                         s.id ?? 'unknown',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      subtitle: (s.name == null || s.name!.isEmpty)
-                          ? null
-                          : Text(
-                              s.name!,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.hintColor,
-                              ),
-                            ),
-                      trailing: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: size.width * 0.02,
-                          vertical: size.height * 0.004,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDub
-                              ? theme.colorScheme.secondary.withOpacity(0.15)
-                              : theme.colorScheme.primary.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          isDub ? 'DUB' : 'SUB',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: isDub
-                                ? theme.colorScheme.secondary
-                                : theme.colorScheme.primary,
-                          ),
-                        ),
+                      subtitle: s.name?.isNotEmpty == true
+                          ? Text(s.name!)
+                          : null,
+                      trailing: Badge(
+                        label: Text(s.isDub ? 'DUB' : 'SUB'),
+                        backgroundColor: s.isDub
+                            ? theme.colorScheme.secondary
+                            : theme.colorScheme.primary,
                       ),
                       onTap: () => Navigator.pop(context, s),
                     );

@@ -11,6 +11,7 @@ import 'package:shonenx/core_mangayomi/eval/dart/bridge/m_source.dart';
 import 'package:shonenx/core_mangayomi/eval/dart/bridge/m_status.dart';
 import 'package:shonenx/core_mangayomi/eval/dart/bridge/m_track.dart';
 import 'package:shonenx/core_mangayomi/eval/dart/bridge/m_video.dart';
+import 'package:shonenx/core_mangayomi/eval/dart/bridge/m_server.dart';
 import 'package:shonenx/core_mangayomi/eval/dart/bridge/source_preference.dart';
 
 class RegistrerBridge {
@@ -23,6 +24,7 @@ class RegistrerBridge {
     MChapterBridge().registerBridgedClasses(interpreter);
     MPagesBridge().registerBridgedClasses(interpreter);
     MProviderBridged().registerBridgedClasses(interpreter);
+    MServerBridge().registerBridgedClasses(interpreter);
     MSourceBridge().registerBridgedClasses(interpreter);
     MStatusBridge().registerBridgedEnum(interpreter);
     MTrackBridge().registerBridgedClasses(interpreter);

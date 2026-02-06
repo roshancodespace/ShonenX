@@ -1,5 +1,8 @@
 import 'dart:convert';
 import 'package:flutter_qjs/flutter_qjs.dart';
+import 'package:shonenx/core/anilist/services/anilist_service.dart';
+import 'package:shonenx/core/models/anime/server_model.dart';
+import 'package:shonenx/core_mangayomi/eval/javascript/anilist.dart';
 import 'package:shonenx/core_mangayomi/eval/javascript/dom_selector.dart';
 import 'package:shonenx/core_mangayomi/eval/javascript/extractors.dart';
 import 'package:shonenx/core_mangayomi/eval/javascript/http.dart';
@@ -19,16 +22,22 @@ class JsExtensionService implements ExtensionService {
   late JavascriptRuntime runtime;
   @override
   late Source source;
+  final AnilistService? anilistService;
 
-  JsExtensionService(this.source);
+  JsExtensionService(this.source, {this.anilistService});
+
+  bool _isInitialized = false;
 
   void _init() {
+    if (_isInitialized) return;
+    _isInitialized = true;
     runtime = getJavascriptRuntime();
     JsHttpClient(runtime).init();
     JsDomSelector(runtime).init();
     JsVideosExtractors(runtime).init();
     JsUtils(runtime).init();
     JsPreferences(runtime, source).init();
+    JsAnilistService(runtime, anilistService).init();
 
     runtime.evaluate('''
 class MProvider {
@@ -70,6 +79,12 @@ class MProvider {
     }
     getSourcePreferences() {
         throw new Error("getSourcePreferences not implemented");
+    }
+    async getSupportedServers(animeId, episodeId, episodenNumber) {
+        throw new Error("getSupportedServers not implemented");
+    }
+    async getVideos(animeId, episodeId, episodenNumber, server) {
+        throw new Error("getVideos not implemented");
     }
 }
 async function jsonStringify(fn) {
@@ -207,6 +222,41 @@ var extention = new DefaultExtension();
     }
   }
 
+  // ShonenX
+
+  @override
+  Future<List<ServerData>> getSupportedServers(
+    String? animeId,
+    String? episodeId,
+    String? episodenNumber,
+  ) async {
+    return (await _extensionCallAsync<List>(
+          'getSupportedServers(`$animeId`, `$episodeId`, `$episodenNumber`)',
+        ))
+        .where((element) => element['id'] != null)
+        .map((e) => ServerData.fromJson(e))
+        .toList()
+        .toSet()
+        .toList();
+  }
+
+  @override
+  Future<List<Video>> getVideos(
+    String animeId,
+    String episodeId,
+    String server,
+    String? category,
+  ) async {
+    return (await _extensionCallAsync<List>(
+          'getVideos(`$animeId`, `$episodeId`, `$server`, `$category`)',
+        ))
+        .where((element) => element['url'] != null)
+        .map((e) => Video.fromJson(e))
+        .toList()
+        .toSet()
+        .toList();
+  }
+
   Future<T> _extensionCallAsync<T>(String call) async {
     _init();
 
@@ -218,6 +268,14 @@ var extention = new DefaultExtension();
       return jsonDecode(promised.stringResult) as T;
     } catch (e) {
       rethrow;
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_isInitialized) {
+      runtime.dispose();
+      _isInitialized = false;
     }
   }
 }

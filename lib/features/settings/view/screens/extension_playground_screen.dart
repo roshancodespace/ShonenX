@@ -8,8 +8,10 @@ import 'package:flutter_highlight/themes/monokai-sublime.dart';
 import 'package:flutter_highlight/themes/vs2015.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:highlight/languages/javascript.dart';
+import 'package:highlight/languages/dart.dart';
 import 'package:highlight/languages/json.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:shonenx/core/anilist/services/anilist_service_provider.dart';
 import 'package:shonenx/core_mangayomi/models/source.dart';
 import 'package:shonenx/core_mangayomi/models/manga.dart';
 import 'package:shonenx/features/settings/services/playground_service.dart';
@@ -29,32 +31,36 @@ class ExtensionPlaygroundScreen extends ConsumerStatefulWidget {
 class _ExtensionPlaygroundScreenState
     extends ConsumerState<ExtensionPlaygroundScreen> {
   // Code Editor
-  late CodeController _codeController;
+  late final CodeController _codeController;
 
   // Console Output
-  late CodeController _consoleController;
+  late final CodeController _consoleController;
 
   // Metadata Controllers
-  late TextEditingController _nameController;
-  late TextEditingController _baseUrlController;
-  late TextEditingController _langController;
-  late TextEditingController _apiUrlController;
-  late TextEditingController _iconUrlController;
-  late TextEditingController _versionController;
+  late final TextEditingController _nameController;
+  late final TextEditingController _baseUrlController;
+  late final TextEditingController _langController;
+  late final TextEditingController _apiUrlController;
+  late final TextEditingController _iconUrlController;
+  late final TextEditingController _versionController;
 
-  // State
-  bool _isLoading = false;
-  bool _isConsoleExpanded = true;
+  // Reactive State
+  final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _isConsoleExpandedNotifier = ValueNotifier(true);
+  final ValueNotifier<double> _consoleHeightNotifier = ValueNotifier(200);
+  final ValueNotifier<double> _consoleWidthNotifier = ValueNotifier(300);
+
+  // Normal State
+  bool _isForShonenx = true;
   int _selectedActivity = 0; // 0: Configuration, 1: Run
   PlaygroundService? _playgroundService;
   String? _lastSourceCode;
 
-  double _consoleHeight = 200;
-  double _consoleWidth = 300;
-  double _fontSize = 13.0;
+  final double _fontSize = 13.0;
   String _selectedThemeKey = 'Monokai Sublime';
-  String _selectedConsoleThemeKey = 'Dracula';
+  final String _selectedConsoleThemeKey = 'Dracula';
   ConsolePlacement _consolePlacement = ConsolePlacement.bottom;
+  SourceCodeLanguage _selectedLanguage = SourceCodeLanguage.javascript;
 
   static const double _minConsoleHeight = 38;
   static const double _maxConsoleHeight = 500;
@@ -75,19 +81,24 @@ class _ExtensionPlaygroundScreenState
   }
 
   void _initControllers() {
-    // Initialize Code Editor
+    _selectedLanguage =
+        widget.source?.sourceCodeLanguage ?? SourceCodeLanguage.javascript;
+    final defaultCode = _selectedLanguage == SourceCodeLanguage.javascript
+        ? _defaultCode
+        : _defaultDartCode;
+
     _codeController = CodeController(
-      text: widget.source?.sourceCode ?? _defaultCode,
-      language: javascript,
+      text: widget.source?.sourceCode ?? defaultCode,
+      language: _selectedLanguage == SourceCodeLanguage.javascript
+          ? javascript
+          : dart,
     );
 
-    // Initialize Console
     _consoleController = CodeController(
       text: 'Console output will appear here...',
       language: json,
     );
 
-    // Initialize Metadata
     _nameController = TextEditingController(
       text: widget.source?.name ?? 'My Extension',
     );
@@ -104,6 +115,7 @@ class _ExtensionPlaygroundScreenState
     _versionController = TextEditingController(
       text: widget.source?.version ?? '0.0.1',
     );
+    _isForShonenx = widget.source?.isForShonenx ?? _isForShonenx;
   }
 
   @override
@@ -116,6 +128,10 @@ class _ExtensionPlaygroundScreenState
     _apiUrlController.dispose();
     _iconUrlController.dispose();
     _versionController.dispose();
+    _isLoadingNotifier.dispose();
+    _isConsoleExpandedNotifier.dispose();
+    _consoleHeightNotifier.dispose();
+    _consoleWidthNotifier.dispose();
     _playgroundService?.dispose();
     super.dispose();
   }
@@ -136,23 +152,26 @@ class _ExtensionPlaygroundScreenState
       sourceCode: currentCode,
       apiUrl: _apiUrlController.text,
       iconUrl: _iconUrlController.text,
-    )..sourceCodeLanguage = SourceCodeLanguage.javascript;
-    _playgroundService = PlaygroundService(source);
+      isForShonenx: _isForShonenx,
+    )..sourceCodeLanguage = _selectedLanguage;
+    final anilistService = ref.read(anilistServiceProvider);
+    _playgroundService = PlaygroundService(
+      source,
+      anilistService: anilistService,
+    );
     _lastSourceCode = currentCode;
   }
 
   void _logToConsole(String message, {bool isError = false}) {
-    setState(() {
-      _consoleController.text = message;
-      _isConsoleExpanded = true;
-    });
+    _consoleController.text = message;
+    if (!_isConsoleExpandedNotifier.value) {
+      _isConsoleExpandedNotifier.value = true;
+    }
   }
 
-  void _runFunction(String functionName, [List<dynamic>? args]) async {
-    setState(() {
-      _isLoading = true;
-      _logToConsole('Running $functionName...');
-    });
+  Future<void> _runFunction(String functionName, [List<dynamic>? args]) async {
+    _isLoadingNotifier.value = true;
+    _logToConsole('Running $functionName...');
 
     try {
       _initServiceIfNeeded();
@@ -164,32 +183,60 @@ class _ExtensionPlaygroundScreenState
             'Enter Search Query',
             'Search...',
           );
-          if (query != null) {
-            result = await _playgroundService!.runFunction(functionName, [
-              query,
-              1,
-              [],
-            ]);
-          } else {
-            setState(() => _isLoading = false);
-            _logToConsole('Action Cancelled');
-            return;
-          }
+          if (query == null) throw 'Cancelled';
+          result = await _playgroundService!.runFunction(functionName, [
+            query,
+            1,
+            [],
+          ]);
         }
       } else if (functionName == 'getPopular' ||
           functionName == 'getLatestUpdates') {
         result = await _playgroundService!.runFunction(functionName, [1]);
-      } else if (functionName == 'getDetail' ||
-          functionName == 'getPageList' ||
-          functionName == 'getVideoList') {
+      } else if ([
+        'getDetail',
+        'getPageList',
+        'getVideoList',
+      ].contains(functionName)) {
         if (mounted) {
           final url = await _showInputDialog('Enter URL', 'https://...');
-          if (url != null) {
-            result = await _playgroundService!.runFunction(functionName, [url]);
-          } else {
-            setState(() => _isLoading = false);
-            _logToConsole('Action Cancelled');
-            return;
+          if (url == null) throw 'Cancelled';
+          result = await _playgroundService!.runFunction(functionName, [url]);
+        }
+      } else if (functionName == 'getSupportedServers') {
+        if (mounted) {
+          final id = await _showInputDialog('Enter Anime ID', 'ID...');
+          if (id != null) {
+            final epId = await _showInputDialog('Enter Ep ID', 'ID...');
+            if (epId != null) {
+              final epNum = await _showInputDialog('Enter Ep Num', 'Num...');
+              if (epNum != null) {
+                result = await _playgroundService!.runFunction(functionName, [
+                  id,
+                  epId,
+                  epNum,
+                ]);
+              }
+            }
+          }
+        }
+      } else if (functionName == 'getVideos') {
+        if (mounted) {
+          final id = await _showInputDialog('Enter Anime ID', 'ID...');
+          if (id != null) {
+            final epId = await _showInputDialog('Enter Ep ID', 'ID...');
+            if (epId != null) {
+              final srv = await _showInputDialog('Enter Server', 'ID...');
+              if (srv != null) {
+                final cat = await _showInputDialog('Category', 'Cat...');
+                result = await _playgroundService!.runFunction(functionName, [
+                  id,
+                  epId,
+                  srv,
+                  cat,
+                ]);
+              }
+            }
           }
         }
       } else {
@@ -202,14 +249,14 @@ class _ExtensionPlaygroundScreenState
         _logToConsole(result.toString());
       }
     } catch (e) {
-      if (mounted) {
+      if (e == 'Cancelled') {
+        _logToConsole('Action Cancelled');
+      } else if (mounted) {
         _logToConsole('Error: $e', isError: true);
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        _isLoadingNotifier.value = false;
       }
     }
   }
@@ -229,6 +276,10 @@ class _ExtensionPlaygroundScreenState
               border: const OutlineInputBorder(),
               hintText: hint,
             ),
+            onSubmitted: (val) {
+              value = val;
+              Navigator.pop(context);
+            },
           ),
           actions: [
             TextButton(
@@ -272,7 +323,8 @@ class _ExtensionPlaygroundScreenState
         isActive: true,
         itemType: widget.source?.itemType ?? ItemType.anime,
         lastUsed: true,
-      )..sourceCodeLanguage = SourceCodeLanguage.javascript;
+        isForShonenx: _isForShonenx,
+      )..sourceCodeLanguage = _selectedLanguage;
 
       await isar.writeTxn(() async {
         await isar.sources.put(source);
@@ -293,23 +345,20 @@ class _ExtensionPlaygroundScreenState
   }
 
   void _toggleConsole() {
-    setState(() {
-      _isConsoleExpanded = !_isConsoleExpanded;
-      if (_isConsoleExpanded) {
-        if (_consolePlacement == ConsolePlacement.bottom &&
-            _consoleHeight < _minConsoleHeight) {
-          _consoleHeight = 200;
-        } else if (_consolePlacement == ConsolePlacement.right &&
-            _consoleWidth < _minConsoleWidth) {
-          _consoleWidth = 300;
-        }
+    _isConsoleExpandedNotifier.value = !_isConsoleExpandedNotifier.value;
+    if (_isConsoleExpandedNotifier.value) {
+      if (_consolePlacement == ConsolePlacement.bottom &&
+          _consoleHeightNotifier.value < _minConsoleHeight) {
+        _consoleHeightNotifier.value = 200;
+      } else if (_consolePlacement == ConsolePlacement.right &&
+          _consoleWidthNotifier.value < _minConsoleWidth) {
+        _consoleWidthNotifier.value = 300;
       }
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Responsive Layout
     final isDesktop = MediaQuery.of(context).size.width > 600;
 
     return CallbackShortcuts(
@@ -324,38 +373,13 @@ class _ExtensionPlaygroundScreenState
       child: Focus(
         autofocus: true,
         child: Scaffold(
-          appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Iconsax.arrow_left_2),
-              onPressed: () => Navigator.pop(context),
-            ),
-            title: Text(
-              widget.source != null ? 'Edit Extension' : 'New Extension',
-            ),
-            actions: [
-              IconButton(
-                onPressed: _saveExtension,
-                icon: const Icon(Icons.save_rounded),
-                tooltip: 'Save (Ctrl+S)',
-              ),
-              IconButton(
-                onPressed: _toggleConsole,
-                icon: Icon(
-                  _isConsoleExpanded ? Icons.terminal : Icons.terminal_outlined,
-                ),
-                tooltip: 'Toggle Console (Ctrl+J)',
-              ),
-            ],
-          ),
+          appBar: _buildAppBar(),
           body: Column(
             children: [
               Expanded(
                 child: Row(
                   children: [
-                    // Activity Bar (Desktop Only)
                     if (isDesktop) _buildActivityBar(),
-
-                    // Sidebar Panel (Desktop Only)
                     if (isDesktop)
                       Container(
                         width: 250,
@@ -369,23 +393,45 @@ class _ExtensionPlaygroundScreenState
                         child: _buildSidePanelContent(),
                       ),
 
-                    // Main Content Area
+                    // Main Layout Logic
                     Expanded(
-                      child: _consolePlacement == ConsolePlacement.bottom
-                          ? Column(
-                              children: [
-                                Expanded(flex: 3, child: _buildEditor()),
-                                // Console
-                                if (_isConsoleExpanded) _buildConsole(),
-                              ],
-                            )
-                          : Row(
-                              children: [
-                                Expanded(child: _buildEditor()),
-                                // Console
-                                if (_isConsoleExpanded) _buildConsole(),
-                              ],
-                            ),
+                      child: ValueListenableBuilder<bool>(
+                        valueListenable: _isConsoleExpandedNotifier,
+                        builder: (context, isExpanded, child) {
+                          return _consolePlacement == ConsolePlacement.bottom
+                              ? Column(
+                                  children: [
+                                    Expanded(
+                                      flex: 3,
+                                      child: _buildEditor(context),
+                                    ),
+                                    if (isExpanded)
+                                      ValueListenableBuilder<double>(
+                                        valueListenable: _consoleHeightNotifier,
+                                        builder: (context, height, _) =>
+                                            SizedBox(
+                                              height: height,
+                                              child: _buildConsole(context),
+                                            ),
+                                      ),
+                                  ],
+                                )
+                              : Row(
+                                  children: [
+                                    Expanded(child: _buildEditor(context)),
+                                    if (isExpanded)
+                                      ValueListenableBuilder<double>(
+                                        valueListenable: _consoleWidthNotifier,
+                                        builder: (context, width, _) =>
+                                            SizedBox(
+                                              width: width,
+                                              child: _buildConsole(context),
+                                            ),
+                                      ),
+                                  ],
+                                );
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -393,13 +439,11 @@ class _ExtensionPlaygroundScreenState
               _buildStatusBar(),
             ],
           ),
-          // Mobile Bottom Bar
           bottomNavigationBar: !isDesktop
               ? NavigationBar(
                   selectedIndex: _selectedActivity,
                   onDestinationSelected: (idx) {
                     setState(() => _selectedActivity = idx);
-                    // Show bottom sheet for panel content on mobile
                     showModalBottomSheet(
                       context: context,
                       builder: (ctx) => _buildSidePanelContent(),
@@ -422,6 +466,33 @@ class _ExtensionPlaygroundScreenState
     );
   }
 
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Iconsax.arrow_left_2),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Text(widget.source != null ? 'Edit Extension' : 'New Extension'),
+      actions: [
+        IconButton(
+          onPressed: _saveExtension,
+          icon: const Icon(Icons.save_rounded),
+          tooltip: 'Save (Ctrl+S)',
+        ),
+        ValueListenableBuilder<bool>(
+          valueListenable: _isConsoleExpandedNotifier,
+          builder: (context, isExpanded, _) {
+            return IconButton(
+              onPressed: _toggleConsole,
+              icon: Icon(isExpanded ? Icons.terminal : Icons.terminal_outlined),
+              tooltip: 'Toggle Console (Ctrl+J)',
+            );
+          },
+        ),
+      ],
+    );
+  }
+
   Widget _buildStatusBar() {
     return Container(
       height: 24,
@@ -436,7 +507,9 @@ class _ExtensionPlaygroundScreenState
           ),
           const SizedBox(width: 8),
           Text(
-            'JavaScript',
+            _selectedLanguage == SourceCodeLanguage.javascript
+                ? 'JavaScript'
+                : 'Dart',
             style: TextStyle(
               color: Theme.of(context).colorScheme.onPrimary,
               fontSize: 12,
@@ -448,24 +521,29 @@ class _ExtensionPlaygroundScreenState
             onTap: _toggleConsole,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: [
-                  Icon(
-                    _isConsoleExpanded
-                        ? Icons.splitscreen_rounded
-                        : Icons.call_to_action_rounded,
-                    size: 12,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Console',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+              child: ValueListenableBuilder<bool>(
+                valueListenable: _isConsoleExpandedNotifier,
+                builder: (context, isExpanded, _) {
+                  return Row(
+                    children: [
+                      Icon(
+                        isExpanded
+                            ? Icons.splitscreen_rounded
+                            : Icons.call_to_action_rounded,
+                        size: 12,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Console',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -516,6 +594,20 @@ class _ExtensionPlaygroundScreenState
         padding: const EdgeInsets.all(16),
         children: [
           Text('METADATA', style: Theme.of(context).textTheme.labelSmall),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('ShonenX Only', style: TextStyle(fontSize: 14)),
+            subtitle: const Text(
+              'Only available in ShonenX',
+              style: TextStyle(fontSize: 12),
+            ),
+            value: _isForShonenx,
+            onChanged: (value) {
+              setState(() {
+                _isForShonenx = value!;
+              });
+            },
+          ),
           const SizedBox(height: 10),
           _buildSideInput(_nameController, "Name"),
           const SizedBox(height: 8),
@@ -533,19 +625,29 @@ class _ExtensionPlaygroundScreenState
         ],
       );
     } else {
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text('METHODS', style: Theme.of(context).textTheme.labelSmall),
-          const SizedBox(height: 10),
-          _buildRunButton('getPopular', 'Popular'),
-          _buildRunButton('getLatestUpdates', 'Latest'),
-          _buildRunButton('search', 'Search'),
-          _buildRunButton('getDetail', 'Details'),
-          _buildRunButton('getPageList', 'Pages'),
-          _buildRunButton('getVideoList', 'Videos'),
-          _buildRunButton('getSourcePreferences', 'Preferences'),
-        ],
+      return ValueListenableBuilder<bool>(
+        valueListenable: _isLoadingNotifier,
+        builder: (context, isLoading, child) {
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Text('METHODS', style: Theme.of(context).textTheme.labelSmall),
+              const SizedBox(height: 10),
+              _buildRunButton(isLoading, 'getPopular', 'Popular'),
+              _buildRunButton(isLoading, 'getLatestUpdates', 'Latest'),
+              _buildRunButton(isLoading, 'search', 'Search'),
+              _buildRunButton(isLoading, 'getDetail', 'Details'),
+              _buildRunButton(isLoading, 'getPageList', 'Pages'),
+              _buildRunButton(isLoading, 'getVideoList', 'Videos'),
+              _buildRunButton(isLoading, 'getSourcePreferences', 'Preferences'),
+              const SizedBox(height: 10),
+              Text('SHONENX', style: Theme.of(context).textTheme.labelSmall),
+              const SizedBox(height: 10),
+              _buildRunButton(isLoading, 'getSupportedServers', 'Servers'),
+              _buildRunButton(isLoading, 'getVideos', 'Videos'),
+            ],
+          );
+        },
       );
     }
   }
@@ -566,36 +668,47 @@ class _ExtensionPlaygroundScreenState
     );
   }
 
-  Widget _buildRunButton(String funcName, String label) {
+  Widget _buildRunButton(bool isLoading, String funcName, String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: ElevatedButton.icon(
-        onPressed: _isLoading ? null : () => _runFunction(funcName),
+        onPressed: isLoading ? null : () => _runFunction(funcName),
         style: ElevatedButton.styleFrom(
           alignment: Alignment.centerLeft,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         ),
-        icon: const Icon(Icons.play_arrow_rounded, size: 16),
+        icon: isLoading
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.play_arrow_rounded, size: 16),
         label: Text(label),
       ),
     );
   }
 
-  Widget _buildEditor() {
-    return SafeArea(
-      child: SingleChildScrollView(
+  Widget _buildEditor(BuildContext context) {
+    return RepaintBoundary(
+      child: SafeArea(
         child: CodeTheme(
           data: CodeThemeData(styles: _themes[_selectedThemeKey]!),
-          child: CodeField(
-            controller: _codeController,
-            textStyle: TextStyle(fontFamily: 'monospace', fontSize: _fontSize),
+          child: SingleChildScrollView(
+            child: CodeField(
+              controller: _codeController,
+              textStyle: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: _fontSize,
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildConsoleHeader() {
+  Widget _buildConsoleHeader(BuildContext context) {
     return MouseRegion(
       cursor: _consolePlacement == ConsolePlacement.bottom
           ? SystemMouseCursors.resizeUpDown
@@ -604,24 +717,22 @@ class _ExtensionPlaygroundScreenState
         behavior: HitTestBehavior.opaque,
         onVerticalDragUpdate: _consolePlacement == ConsolePlacement.bottom
             ? (details) {
-                setState(() {
-                  _consoleHeight -= details.delta.dy;
-                  _consoleHeight = _consoleHeight.clamp(
-                    _minConsoleHeight,
-                    _maxConsoleHeight,
-                  );
-                });
+                double newHeight =
+                    _consoleHeightNotifier.value - details.delta.dy;
+                _consoleHeightNotifier.value = newHeight.clamp(
+                  _minConsoleHeight,
+                  _maxConsoleHeight,
+                );
               }
             : null,
         onHorizontalDragUpdate: _consolePlacement == ConsolePlacement.right
             ? (details) {
-                setState(() {
-                  _consoleWidth -= details.delta.dx;
-                  _consoleWidth = _consoleWidth.clamp(
-                    _minConsoleWidth,
-                    _maxConsoleWidth,
-                  );
-                });
+                double newWidth =
+                    _consoleWidthNotifier.value - details.delta.dx;
+                _consoleWidthNotifier.value = newWidth.clamp(
+                  _minConsoleWidth,
+                  _maxConsoleWidth,
+                );
               }
             : null,
         child: Container(
@@ -635,23 +746,18 @@ class _ExtensionPlaygroundScreenState
                 style: TextStyle(color: Colors.white70, fontSize: 11),
               ),
               const Spacer(),
-
               IconButton(
                 padding: EdgeInsets.zero,
-                icon: Icon(
-                  _consoleHeight == _minConsoleHeight
-                      ? Icons.maximize_rounded
-                      : Icons.minimize_rounded,
+                icon: const Icon(
+                  Icons.minimize_rounded,
                   size: 14,
                   color: Colors.white70,
                 ),
-                onPressed: () => setState(() {
+                onPressed: () {
                   if (_consolePlacement == ConsolePlacement.bottom) {
-                    _consoleHeight = _consoleHeight == _minConsoleHeight
-                        ? _maxConsoleHeight * 0.6
-                        : _minConsoleHeight;
+                    _consoleHeightNotifier.value = _minConsoleHeight;
                   }
-                }),
+                },
               ),
               IconButton(
                 padding: EdgeInsets.zero,
@@ -660,11 +766,7 @@ class _ExtensionPlaygroundScreenState
                   size: 14,
                   color: Colors.white70,
                 ),
-                onPressed: () => setState(() {
-                  if (_consolePlacement == ConsolePlacement.bottom) {
-                    _isConsoleExpanded = false;
-                  }
-                }),
+                onPressed: () => _isConsoleExpandedNotifier.value = false,
               ),
             ],
           ),
@@ -673,29 +775,8 @@ class _ExtensionPlaygroundScreenState
     );
   }
 
-  Widget _buildConsoleBody() {
-    return CodeTheme(
-      data: CodeThemeData(styles: _themes[_selectedConsoleThemeKey]!),
-      child: SingleChildScrollView(
-        child: CodeField(
-          controller: _consoleController,
-          readOnly: true,
-          textStyle: TextStyle(
-            fontFamily: 'monospace',
-            fontSize: _fontSize - 1,
-          ),
-          background: Colors.transparent,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildConsole() {
+  Widget _buildConsole(BuildContext context) {
     return Container(
-      height: _consolePlacement == ConsolePlacement.bottom
-          ? _consoleHeight
-          : null,
-      width: _consolePlacement == ConsolePlacement.right ? _consoleWidth : null,
       decoration: BoxDecoration(
         border: _consolePlacement == ConsolePlacement.bottom
             ? Border(top: BorderSide(color: Theme.of(context).dividerColor))
@@ -705,8 +786,25 @@ class _ExtensionPlaygroundScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildConsoleHeader(),
-          Expanded(child: _buildConsoleBody()),
+          _buildConsoleHeader(context),
+          Expanded(
+            child: RepaintBoundary(
+              child: CodeTheme(
+                data: CodeThemeData(styles: _themes[_selectedConsoleThemeKey]!),
+                child: SingleChildScrollView(
+                  child: CodeField(
+                    controller: _consoleController,
+                    readOnly: true,
+                    textStyle: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: _fontSize - 1,
+                    ),
+                    background: Colors.transparent,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -761,34 +859,35 @@ class _ExtensionPlaygroundScreenState
                     },
                   ),
                   const SizedBox(height: 16),
-                  const Text('Console Theme'),
+                  const Text('Language'),
                   const SizedBox(height: 8),
-                  DropdownButton<String>(
-                    value: _selectedConsoleThemeKey,
+                  DropdownButton<SourceCodeLanguage>(
+                    value: _selectedLanguage,
                     isExpanded: true,
-                    items: _themes.keys.map((key) {
-                      return DropdownMenuItem(value: key, child: Text(key));
+                    items: SourceCodeLanguage.values.map((val) {
+                      return DropdownMenuItem(
+                        value: val,
+                        child: Text(val.name.toUpperCase()),
+                      );
                     }).toList(),
                     onChanged: (value) {
                       if (value != null) {
-                        setStateInternal(
-                          () => _selectedConsoleThemeKey = value,
-                        );
-                        setState(() => _selectedConsoleThemeKey = value);
+                        setStateInternal(() => _selectedLanguage = value);
+                        setState(() {
+                          _selectedLanguage = value;
+                          _codeController.language =
+                              value == SourceCodeLanguage.javascript
+                              ? javascript
+                              : dart;
+                          if (_codeController.text == _defaultCode ||
+                              _codeController.text == _defaultDartCode) {
+                            _codeController.text =
+                                value == SourceCodeLanguage.javascript
+                                ? _defaultCode
+                                : _defaultDartCode;
+                          }
+                        });
                       }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Font Size'),
-                  Slider(
-                    value: _fontSize,
-                    min: 10,
-                    max: 30,
-                    divisions: 20,
-                    label: _fontSize.round().toString(),
-                    onChanged: (value) {
-                      setStateInternal(() => _fontSize = value);
-                      setState(() => _fontSize = value);
                     },
                   ),
                 ],
@@ -806,19 +905,49 @@ class _ExtensionPlaygroundScreenState
     );
   }
 
-  // Clean Template Code
   final String _defaultCode = r'''class DefaultExtension extends MProvider {
-    /* 
-     * Core Functions
-     * Modify these to parse your desired website.
-     */
+    constructor() {
+      super();
+      this.client = new Client();
+    }
 
-    // Fetch popular manga/anime
-    getPopular(page) {
+    // -------------------------
+    // ShonenX Specific Methods
+    // -------------------------
+
+    // Get supported servers for an episode
+    // Returns: List of ServerData objects
+    getSupportedServers(animeId, episodeId, episodeNumber) {
+        // Example: Fetch servers from source
+        return [{
+            id: "server-1",
+            name: "Server 1",
+            isDub: false
+        }];
+    }
+
+    // Get videos for a server
+    // Returns: List of Video objects
+    getVideos(animeId, episodeId, serverId, category) {
+        // Example: Fetch video URL
+        return [{
+            url: "https://example.com/video.mp4",
+            quality: "1080p",
+            originalUrl: "https://example.com/video.mp4",
+            headers: {}
+        }];
+    }
+
+    // -------------------------
+    // Core Functions
+    // -------------------------
+
+    // Fetch popular anime
+    async getPopular(page) {
         return {
             list: [{
                 name: "Example Title " + page,
-                link: "/manga/" + page,
+                link: "/anime/" + page,
                 imageUrl: "https://via.placeholder.com/150"
             }],
             hasNextPage: true
@@ -826,13 +955,12 @@ class _ExtensionPlaygroundScreenState
     }
     
     // Fetch latest updates
-    getLatestUpdates(page) {
+    async getLatestUpdates(page) {
          return this.getPopular(page);
     }
 
     // Search for content
     async search(query, page, filters) {
-        // Example: const res = await this.client.get(this.source.baseUrl + "/search?q=" + query);
         return {
             list: [{
                 name: "Result for " + query,
@@ -843,7 +971,7 @@ class _ExtensionPlaygroundScreenState
         };
     }
 
-    // Get content details (chapters/episodes)
+    // Get anime details
     async getDetail(url) {
          return {
             name: "Title Details",
@@ -851,30 +979,100 @@ class _ExtensionPlaygroundScreenState
             author: "Author",
             description: "Description from " + url,
             genre: ["Action", "Fantasy"],
-            chapters: [{
-                name: "Chapter 1",
-                url: url + "/1",
-                dateUpload: new Date().getTime().toString(),
-                scanlator: "Group"
+            episodes: [{
+                name: "Episode 1",
+                url: "/episode/1",
+                dateUpload: new Date().getTime().toString() // milliseconds
             }]
         };
     }
+}
+''';
 
-    // Get pages (for Manga)
-    getPageList(url) {
-        return [
-            { url: "https://via.placeholder.com/800x1200" },
-        ];
-    }
-    
-    // Get video links (for Anime)
-    getVideoList(url) {
-        return [{
-            url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-            originalUrl: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-            quality: "720p"
-        }];
-    }
+  final String _defaultDartCode = r'''
+import 'package:mangayomi/bridge_lib.dart';
+import 'dart:convert';
+
+class DefaultExtension extends MProvider {
+  DefaultExtension();
+
+  // -------------------------
+  // ShonenX Specific Methods
+  // -------------------------
+
+  @override
+  Future<List<MServer>> getSupportedServers(
+      String animeId, String episodeId, String episodeNumber) async {
+    // Example: Fetch servers from source
+    return [
+      MServer(id: "server-1", name: "Server 1", isDub: false),
+    ];
+  }
+
+  @override
+  Future<List<MVideo>> getVideos(
+      String animeId, String episodeId, String server, String? category) async {
+    // Example: Fetch video URL
+    return [
+      MVideo(
+        "https://example.com/video.mp4",
+        "1080p",
+        "https://example.com/video.mp4",
+      ),
+    ];
+  }
+
+  // -------------------------
+  // Core Functions
+  // -------------------------
+
+  @override
+  bool get supportsLatest => true;
+
+  @override
+  Future<MPages> getPopular(int page) async {
+    return MPages([
+      MManga(
+        name: "Example Title $page",
+        link: "/anime/$page",
+        imageUrl: "https://via.placeholder.com/150",
+      ),
+    ], true);
+  }
+
+  @override
+  Future<MPages> getLatestUpdates(int page) async {
+    return getPopular(page);
+  }
+
+  @override
+  Future<MPages> search(String query, int page, List<dynamic> filters) async {
+    return MPages([
+      MManga(
+        name: "Result for $query",
+        link: "/search/$query",
+        imageUrl: "https://via.placeholder.com/150",
+      ),
+    ], false);
+  }
+
+  @override
+  Future<MManga> getDetail(String url) async {
+    return MManga(
+      name: "Title Details",
+      status: MStatus.ongoing,
+      author: "Author",
+      description: "Description from $url",
+      genre: ["Action", "Fantasy"],
+      chapters: [
+        MChapter(
+          name: "Episode 1",
+          url: "/episode/1",
+          dateUpload: DateTime.now().millisecondsSinceEpoch.toString(),
+        ),
+      ],
+    );
+  }
 }
 ''';
 }

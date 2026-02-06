@@ -149,7 +149,7 @@ class EpisodeListNotifier extends _$EpisodeListNotifier {
             title: ch.name,
             url: ch.url,
             isFiller: false,
-            number: int.tryParse(
+            number: ch.number ?? int.tryParse(
               RegExp(r'\d+').firstMatch(ch.name ?? '')?.group(0) ?? '',
             ),
           ),

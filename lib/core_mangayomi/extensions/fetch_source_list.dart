@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core_mangayomi/eval/dart/service.dart';
 import 'package:shonenx/core_mangayomi/eval/javascript/service.dart';
 import 'package:shonenx/core_mangayomi/models/manga.dart';
@@ -52,25 +53,25 @@ Future<void> fetchSourcesList({
                   ..version = source.version
                   ..versionLast = source.version
                   ..isManga = source.isManga
+                  ..isForShonenx = source.isForShonenx ?? false
                   ..isFullData = source.isFullData ?? false
                   ..appMinVerReq = source.appMinVerReq
                   ..sourceCodeLanguage = source.sourceCodeLanguage
                   ..additionalParams = source.additionalParams ?? "",
               );
             });
-            // log("successfully installed or updated");
+            AppLogger.i("successfully installed or updated");
           }
         } else if (isar.sources.getSync(source.id!) != null) {
-          // log("exist");
+          AppLogger.i("exist");
           final sourc = isar.sources.getSync(source.id!)!;
           if (sourc.isAdded!) {
             if (compareVersions(sourc.version!, source.version!) < 0) {
-              // log("update aivalable auto update");
+              AppLogger.i("update aivalable auto update");
               final autoUpdate =
                   sharedPrefs.getBool('auto_update_extensions') ?? false;
 
               if (autoUpdate) {
-                // auto Update
                 final req = await http.get(Uri.parse(source.sourceCodeUrl!));
                 final headers = getSourceHeaders(source..sourceCode = req.body);
                 isar.writeTxnSync(() {
@@ -95,6 +96,7 @@ Future<void> fetchSourcesList({
                       ..version = source.version
                       ..versionLast = source.version
                       ..isManga = source.isManga
+                      ..isForShonenx = source.isForShonenx ?? false
                       ..isFullData = source.isFullData ?? false
                       ..appMinVerReq = source.appMinVerReq
                       ..sourceCodeLanguage = source.sourceCodeLanguage
@@ -102,7 +104,7 @@ Future<void> fetchSourcesList({
                   );
                 });
               } else {
-                // log("update aivalable");
+                AppLogger.i("update aivalable");
                 isar.sources.putSync(sourc..versionLast = source.version);
               }
             }
@@ -127,11 +129,12 @@ Future<void> fetchSourcesList({
               ..itemType = source.itemType
               ..versionLast = source.version
               ..isManga = source.isManga
+              ..isForShonenx = source.isForShonenx ?? false
               ..sourceCodeLanguage = source.sourceCodeLanguage
               ..isFullData = source.isFullData ?? false
               ..appMinVerReq = source.appMinVerReq,
           );
-          // log("new source");
+          AppLogger.i("new source");
         }
       }
     }

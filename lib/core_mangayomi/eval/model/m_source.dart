@@ -21,6 +21,8 @@ class MSource {
 
   String? notes;
 
+  bool? isForShonenx;
+
   MSource({
     this.id,
     this.name,
@@ -33,6 +35,7 @@ class MSource {
     this.apiUrl,
     this.additionalParams,
     this.notes,
+    this.isForShonenx,
   });
 
   Map<String, dynamic> toJson() => {
@@ -47,5 +50,6 @@ class MSource {
     'name': name,
     'additionalParams': additionalParams,
     'notes': notes,
+    'isForShonenx': isForShonenx,
   };
 }

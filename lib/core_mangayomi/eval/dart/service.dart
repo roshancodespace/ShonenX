@@ -1,4 +1,5 @@
 import 'package:d4rt/d4rt.dart';
+import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core_mangayomi/eval/dart/bridge/registrer.dart';
 import 'package:shonenx/core_mangayomi/eval/model/filter.dart';
 import 'package:shonenx/core_mangayomi/eval/javascript/http.dart';
@@ -183,4 +184,53 @@ class DartExtensionService implements ExtensionService {
       return [];
     }
   }
+
+  @override
+  Future<List<ServerData>> getSupportedServers(
+    String? animeId,
+    String? episodeId,
+    String? episodenNumber,
+  ) async {
+    return (await _executeLib().invoke('getSupportedServers', [
+          animeId,
+          episodeId,
+          episodenNumber,
+        ]))
+        .where((element) => element != null)
+        .map((e) {
+          if (e is ServerData) return e;
+          return ServerData.fromJson(e);
+        })
+        .toList()
+        .cast<ServerData>()
+        .toSet()
+        .toList();
+  }
+
+  @override
+  Future<List<Video>> getVideos(
+    String animeId,
+    String episodeId,
+    String server,
+    String? category,
+  ) async {
+    return (await _executeLib().invoke('getVideos', [
+          animeId,
+          episodeId,
+          server,
+          category,
+        ]))
+        .where((element) => element != null)
+        .map((e) {
+          if (e is Video) return e;
+          return Video.fromJson(e);
+        })
+        .toList()
+        .cast<Video>()
+        .toSet()
+        .toList();
+  }
+
+  @override
+  void dispose() {}
 }

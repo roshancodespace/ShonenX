@@ -1,3 +1,4 @@
+import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core_mangayomi/models/page.dart';
 import 'package:shonenx/core_mangayomi/models/source.dart';
 import 'package:shonenx/core_mangayomi/models/video.dart';
@@ -36,4 +37,20 @@ abstract interface class ExtensionService {
   FilterList getFilterList();
 
   List<SourcePreference> getSourcePreferences();
+
+  // ShonenX
+  Future<List<ServerData>> getSupportedServers(
+    String? animeId,
+    String? episodeId,
+    String? episodenNumber,
+  );
+
+  Future<List<Video>> getVideos(
+    String animeId,
+    String episodeId,
+    String server,
+    String? category,
+  );
+
+  void dispose();
 }

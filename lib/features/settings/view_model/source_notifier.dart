@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shonenx/core/anilist/services/anilist_service_provider.dart';
+import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/repositories/source_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core_mangayomi/eval/lib.dart';
@@ -15,12 +17,34 @@ import 'package:shonenx/core_mangayomi/models/source.dart';
 import 'package:shonenx/core_mangayomi/models/video.dart';
 import 'package:shonenx/features/settings/model/source_model.dart';
 import 'package:collection/collection.dart';
+import 'package:shonenx/core_mangayomi/eval/interface.dart';
 
 part 'source_notifier.g.dart';
 
 @Riverpod(keepAlive: true)
 class SourceNotifier extends _$SourceNotifier {
   final SourceRepository _repo = SourceRepository();
+  ExtensionService? _cachedService;
+  Source? _cachedSource;
+
+  ExtensionService _getService(AnilistService? anilist) {
+    if (_cachedService != null &&
+        state.activeAnimeSource != null &&
+        _cachedSource?.id == state.activeAnimeSource?.id) {
+      return _cachedService!;
+    }
+
+    _cachedService?.dispose();
+
+    _cachedSource = state.activeAnimeSource;
+    if (_cachedSource == null) throw Exception("No active source");
+
+    _cachedService = getExtensionService(
+      _cachedSource!,
+      anilistService: anilist,
+    );
+    return _cachedService!;
+  }
 
   @override
   SourceState build() {
@@ -165,8 +189,9 @@ class SourceNotifier extends _$SourceNotifier {
   }) async {
     try {
       if (state.activeAnimeSource == null) return MPages(list: []);
-      final service = getExtensionService(state.activeAnimeSource!);
-      return service.search(query, page, filters);
+      final anilist = ref.read(anilistServiceProvider);
+      final service = _getService(anilist);
+      return await service.search(query, page, filters);
     } catch (err) {
       AppLogger.e(err);
       return MPages(list: []);
@@ -176,19 +201,47 @@ class SourceNotifier extends _$SourceNotifier {
   Future<MManga?> getDetails(String url) async {
     try {
       if (state.activeAnimeSource == null) return null;
-      final service = getExtensionService(state.activeAnimeSource!);
-      return service.getDetail(url);
+      final anilist = ref.read(anilistServiceProvider);
+      final service = _getService(anilist);
+      return await service.getDetail(url);
     } catch (err) {
       AppLogger.e(err);
       return null;
     }
   }
 
-  Future<List<Video?>> getSources(String url) async {
+  Future<List<Video?>> getSources(
+    String url,
+    String animeId,
+    String episodeId,
+    String server,
+    String category,
+  ) async {
     try {
       if (state.activeAnimeSource == null) return [];
-      final service = getExtensionService(state.activeAnimeSource!);
-      return service.getVideoList(url);
+      final anilist = ref.read(anilistServiceProvider);
+      final service = _getService(anilist);
+      return state.activeAnimeSource!.isForShonenx ?? false
+          ? await service.getVideos(animeId, episodeId, server, category)
+          : await service.getVideoList(url);
+    } catch (err) {
+      AppLogger.e(err);
+      return [];
+    }
+  }
+
+  Future<List<ServerData?>> getServers(
+    String animeId,
+    String episodeId,
+    String episodeNumber,
+  ) async {
+    try {
+      if (state.activeAnimeSource == null) return [];
+      final anilist = ref.read(anilistServiceProvider);
+      final service = _getService(anilist);
+      return state.activeAnimeSource!.isForShonenx ?? false
+          ? await service.getSupportedServers(animeId, episodeId, episodeNumber)
+          : [] as List<ServerData?>;
     } catch (err) {
       AppLogger.e(err);
       return [];

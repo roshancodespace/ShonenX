@@ -50,6 +50,8 @@ class Source {
   String? headers;
 
   bool? isManga;
+  
+  bool? isForShonenx;
 
   @enumerated
   late ItemType itemType;
@@ -94,6 +96,7 @@ class Source {
     this.sourceCode = '',
     this.headers = '',
     this.isManga,
+    this.isForShonenx = false,
     this.itemType = ItemType.manga,
     this.appMinVerReq = "",
     this.additionalParams = "",
@@ -118,6 +121,7 @@ class Source {
     isAdded = json['isAdded'];
     isFullData = json['isFullData'];
     isManga = json['isManga'];
+    isForShonenx = json['isForShonenx'] ?? false;
     itemType = ItemType.values[json['itemType'] ?? 0];
     isNsfw = json['isNsfw'];
     isPinned = json['isPinned'];
@@ -153,6 +157,7 @@ class Source {
     'isAdded': isAdded,
     'isFullData': isFullData,
     'isManga': isManga,
+    'isForShonenx': isForShonenx,
     'itemType': itemType.index,
     'isNsfw': isNsfw,
     'isPinned': isPinned,
@@ -187,6 +192,7 @@ class Source {
       dateFormat: dateFormat,
       dateFormatLocale: dateFormatLocale,
       additionalParams: additionalParams,
+      isForShonenx: isForShonenx,
     );
   }
 }

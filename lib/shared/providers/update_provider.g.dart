@@ -41,7 +41,7 @@ final class AutomaticUpdatesProvider
   }
 }
 
-String _$automaticUpdatesHash() => r'93f387689412801965fd1437066632c6a90083a3';
+String _$automaticUpdatesHash() => r'c76382a89f587ce5a658cb18872162518d6a95a8';
 
 abstract class _$AutomaticUpdates extends $Notifier<bool> {
   bool build();

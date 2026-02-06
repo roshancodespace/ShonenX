@@ -211,7 +211,13 @@ Contributions welcome! Fork the repo, create a feature branch, and submit a PR.
 
 ## 📄 License
 
-Apache 2.0 License - see [LICENSE](LICENSE) file.
+Apache 2.0 License - see [LICENSE](LICENSE.md) file.
+
+---
+
+## 📖 Documentation
+
+- [**Extension Development Guide**](EXTENSION_GUIDE.md) - Learn how to build extensions for ShonenX.
 
 ---
 

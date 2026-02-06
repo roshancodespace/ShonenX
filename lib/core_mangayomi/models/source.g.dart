@@ -48,71 +48,76 @@ const SourceSchema = CollectionSchema(
     r'iconUrl': PropertySchema(id: 8, name: r'iconUrl', type: IsarType.string),
     r'isActive': PropertySchema(id: 9, name: r'isActive', type: IsarType.bool),
     r'isAdded': PropertySchema(id: 10, name: r'isAdded', type: IsarType.bool),
-    r'isFullData': PropertySchema(
+    r'isForShonenx': PropertySchema(
       id: 11,
+      name: r'isForShonenx',
+      type: IsarType.bool,
+    ),
+    r'isFullData': PropertySchema(
+      id: 12,
       name: r'isFullData',
       type: IsarType.bool,
     ),
-    r'isLocal': PropertySchema(id: 12, name: r'isLocal', type: IsarType.bool),
-    r'isManga': PropertySchema(id: 13, name: r'isManga', type: IsarType.bool),
-    r'isNsfw': PropertySchema(id: 14, name: r'isNsfw', type: IsarType.bool),
+    r'isLocal': PropertySchema(id: 13, name: r'isLocal', type: IsarType.bool),
+    r'isManga': PropertySchema(id: 14, name: r'isManga', type: IsarType.bool),
+    r'isNsfw': PropertySchema(id: 15, name: r'isNsfw', type: IsarType.bool),
     r'isObsolete': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'isObsolete',
       type: IsarType.bool,
     ),
-    r'isPinned': PropertySchema(id: 16, name: r'isPinned', type: IsarType.bool),
+    r'isPinned': PropertySchema(id: 17, name: r'isPinned', type: IsarType.bool),
     r'isTorrent': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'isTorrent',
       type: IsarType.bool,
     ),
     r'itemType': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'itemType',
       type: IsarType.byte,
       enumMap: _SourceitemTypeEnumValueMap,
     ),
-    r'lang': PropertySchema(id: 19, name: r'lang', type: IsarType.string),
-    r'lastUsed': PropertySchema(id: 20, name: r'lastUsed', type: IsarType.bool),
-    r'name': PropertySchema(id: 21, name: r'name', type: IsarType.string),
-    r'notes': PropertySchema(id: 22, name: r'notes', type: IsarType.string),
+    r'lang': PropertySchema(id: 20, name: r'lang', type: IsarType.string),
+    r'lastUsed': PropertySchema(id: 21, name: r'lastUsed', type: IsarType.bool),
+    r'name': PropertySchema(id: 22, name: r'name', type: IsarType.string),
+    r'notes': PropertySchema(id: 23, name: r'notes', type: IsarType.string),
     r'repo': PropertySchema(
-      id: 23,
+      id: 24,
       name: r'repo',
       type: IsarType.object,
 
       target: r'Repo',
     ),
     r'sourceCode': PropertySchema(
-      id: 24,
+      id: 25,
       name: r'sourceCode',
       type: IsarType.string,
     ),
     r'sourceCodeLanguage': PropertySchema(
-      id: 25,
+      id: 26,
       name: r'sourceCodeLanguage',
       type: IsarType.byte,
       enumMap: _SourcesourceCodeLanguageEnumValueMap,
     ),
     r'sourceCodeUrl': PropertySchema(
-      id: 26,
+      id: 27,
       name: r'sourceCodeUrl',
       type: IsarType.string,
     ),
     r'typeSource': PropertySchema(
-      id: 27,
+      id: 28,
       name: r'typeSource',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 28,
+      id: 29,
       name: r'updatedAt',
       type: IsarType.long,
     ),
-    r'version': PropertySchema(id: 29, name: r'version', type: IsarType.string),
+    r'version': PropertySchema(id: 30, name: r'version', type: IsarType.string),
     r'versionLast': PropertySchema(
-      id: 30,
+      id: 31,
       name: r'versionLast',
       type: IsarType.string,
     ),
@@ -262,31 +267,32 @@ void _sourceSerialize(
   writer.writeString(offsets[8], object.iconUrl);
   writer.writeBool(offsets[9], object.isActive);
   writer.writeBool(offsets[10], object.isAdded);
-  writer.writeBool(offsets[11], object.isFullData);
-  writer.writeBool(offsets[12], object.isLocal);
-  writer.writeBool(offsets[13], object.isManga);
-  writer.writeBool(offsets[14], object.isNsfw);
-  writer.writeBool(offsets[15], object.isObsolete);
-  writer.writeBool(offsets[16], object.isPinned);
-  writer.writeBool(offsets[17], object.isTorrent);
-  writer.writeByte(offsets[18], object.itemType.index);
-  writer.writeString(offsets[19], object.lang);
-  writer.writeBool(offsets[20], object.lastUsed);
-  writer.writeString(offsets[21], object.name);
-  writer.writeString(offsets[22], object.notes);
+  writer.writeBool(offsets[11], object.isForShonenx);
+  writer.writeBool(offsets[12], object.isFullData);
+  writer.writeBool(offsets[13], object.isLocal);
+  writer.writeBool(offsets[14], object.isManga);
+  writer.writeBool(offsets[15], object.isNsfw);
+  writer.writeBool(offsets[16], object.isObsolete);
+  writer.writeBool(offsets[17], object.isPinned);
+  writer.writeBool(offsets[18], object.isTorrent);
+  writer.writeByte(offsets[19], object.itemType.index);
+  writer.writeString(offsets[20], object.lang);
+  writer.writeBool(offsets[21], object.lastUsed);
+  writer.writeString(offsets[22], object.name);
+  writer.writeString(offsets[23], object.notes);
   writer.writeObject<Repo>(
-    offsets[23],
+    offsets[24],
     allOffsets,
     RepoSchema.serialize,
     object.repo,
   );
-  writer.writeString(offsets[24], object.sourceCode);
-  writer.writeByte(offsets[25], object.sourceCodeLanguage.index);
-  writer.writeString(offsets[26], object.sourceCodeUrl);
-  writer.writeString(offsets[27], object.typeSource);
-  writer.writeLong(offsets[28], object.updatedAt);
-  writer.writeString(offsets[29], object.version);
-  writer.writeString(offsets[30], object.versionLast);
+  writer.writeString(offsets[25], object.sourceCode);
+  writer.writeByte(offsets[26], object.sourceCodeLanguage.index);
+  writer.writeString(offsets[27], object.sourceCodeUrl);
+  writer.writeString(offsets[28], object.typeSource);
+  writer.writeLong(offsets[29], object.updatedAt);
+  writer.writeString(offsets[30], object.version);
+  writer.writeString(offsets[31], object.versionLast);
 }
 
 Source _sourceDeserialize(
@@ -308,34 +314,35 @@ Source _sourceDeserialize(
     id: id,
     isActive: reader.readBoolOrNull(offsets[9]),
     isAdded: reader.readBoolOrNull(offsets[10]),
-    isFullData: reader.readBoolOrNull(offsets[11]),
-    isLocal: reader.readBoolOrNull(offsets[12]),
-    isManga: reader.readBoolOrNull(offsets[13]),
-    isNsfw: reader.readBoolOrNull(offsets[14]),
-    isObsolete: reader.readBoolOrNull(offsets[15]),
-    isPinned: reader.readBoolOrNull(offsets[16]),
+    isForShonenx: reader.readBoolOrNull(offsets[11]),
+    isFullData: reader.readBoolOrNull(offsets[12]),
+    isLocal: reader.readBoolOrNull(offsets[13]),
+    isManga: reader.readBoolOrNull(offsets[14]),
+    isNsfw: reader.readBoolOrNull(offsets[15]),
+    isObsolete: reader.readBoolOrNull(offsets[16]),
+    isPinned: reader.readBoolOrNull(offsets[17]),
     itemType:
-        _SourceitemTypeValueEnumMap[reader.readByteOrNull(offsets[18])] ??
+        _SourceitemTypeValueEnumMap[reader.readByteOrNull(offsets[19])] ??
         ItemType.manga,
-    lang: reader.readStringOrNull(offsets[19]),
-    lastUsed: reader.readBoolOrNull(offsets[20]),
-    name: reader.readStringOrNull(offsets[21]),
-    notes: reader.readStringOrNull(offsets[22]),
+    lang: reader.readStringOrNull(offsets[20]),
+    lastUsed: reader.readBoolOrNull(offsets[21]),
+    name: reader.readStringOrNull(offsets[22]),
+    notes: reader.readStringOrNull(offsets[23]),
     repo: reader.readObjectOrNull<Repo>(
-      offsets[23],
+      offsets[24],
       RepoSchema.deserialize,
       allOffsets,
     ),
-    sourceCode: reader.readStringOrNull(offsets[24]),
-    sourceCodeUrl: reader.readStringOrNull(offsets[26]),
-    typeSource: reader.readStringOrNull(offsets[27]),
-    updatedAt: reader.readLongOrNull(offsets[28]),
-    version: reader.readStringOrNull(offsets[29]),
-    versionLast: reader.readStringOrNull(offsets[30]),
+    sourceCode: reader.readStringOrNull(offsets[25]),
+    sourceCodeUrl: reader.readStringOrNull(offsets[27]),
+    typeSource: reader.readStringOrNull(offsets[28]),
+    updatedAt: reader.readLongOrNull(offsets[29]),
+    version: reader.readStringOrNull(offsets[30]),
+    versionLast: reader.readStringOrNull(offsets[31]),
   );
   object.sourceCodeLanguage =
       _SourcesourceCodeLanguageValueEnumMap[reader.readByteOrNull(
-        offsets[25],
+        offsets[26],
       )] ??
       SourceCodeLanguage.dart;
   return object;
@@ -383,43 +390,45 @@ P _sourceDeserializeProp<P>(
     case 16:
       return (reader.readBoolOrNull(offset)) as P;
     case 17:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset)) as P;
     case 18:
+      return (reader.readBool(offset)) as P;
+    case 19:
       return (_SourceitemTypeValueEnumMap[reader.readByteOrNull(offset)] ??
               ItemType.manga)
           as P;
-    case 19:
-      return (reader.readStringOrNull(offset)) as P;
     case 20:
-      return (reader.readBoolOrNull(offset)) as P;
-    case 21:
       return (reader.readStringOrNull(offset)) as P;
+    case 21:
+      return (reader.readBoolOrNull(offset)) as P;
     case 22:
       return (reader.readStringOrNull(offset)) as P;
     case 23:
+      return (reader.readStringOrNull(offset)) as P;
+    case 24:
       return (reader.readObjectOrNull<Repo>(
             offset,
             RepoSchema.deserialize,
             allOffsets,
           ))
           as P;
-    case 24:
-      return (reader.readStringOrNull(offset)) as P;
     case 25:
+      return (reader.readStringOrNull(offset)) as P;
+    case 26:
       return (_SourcesourceCodeLanguageValueEnumMap[reader.readByteOrNull(
                 offset,
               )] ??
               SourceCodeLanguage.dart)
           as P;
-    case 26:
-      return (reader.readStringOrNull(offset)) as P;
     case 27:
       return (reader.readStringOrNull(offset)) as P;
     case 28:
-      return (reader.readLongOrNull(offset)) as P;
-    case 29:
       return (reader.readStringOrNull(offset)) as P;
+    case 29:
+      return (reader.readLongOrNull(offset)) as P;
     case 30:
+      return (reader.readStringOrNull(offset)) as P;
+    case 31:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1976,6 +1985,32 @@ extension SourceQueryFilter on QueryBuilder<Source, Source, QFilterCondition> {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.equalTo(property: r'isAdded', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<Source, Source, QAfterFilterCondition> isForShonenxIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'isForShonenx'),
+      );
+    });
+  }
+
+  QueryBuilder<Source, Source, QAfterFilterCondition> isForShonenxIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'isForShonenx'),
+      );
+    });
+  }
+
+  QueryBuilder<Source, Source, QAfterFilterCondition> isForShonenxEqualTo(
+    bool? value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'isForShonenx', value: value),
       );
     });
   }
@@ -3823,6 +3858,18 @@ extension SourceQuerySortBy on QueryBuilder<Source, Source, QSortBy> {
     });
   }
 
+  QueryBuilder<Source, Source, QAfterSortBy> sortByIsForShonenx() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isForShonenx', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Source, Source, QAfterSortBy> sortByIsForShonenxDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isForShonenx', Sort.desc);
+    });
+  }
+
   QueryBuilder<Source, Source, QAfterSortBy> sortByIsFullData() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isFullData', Sort.asc);
@@ -4197,6 +4244,18 @@ extension SourceQuerySortThenBy on QueryBuilder<Source, Source, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Source, Source, QAfterSortBy> thenByIsForShonenx() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isForShonenx', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Source, Source, QAfterSortBy> thenByIsForShonenxDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isForShonenx', Sort.desc);
+    });
+  }
+
   QueryBuilder<Source, Source, QAfterSortBy> thenByIsFullData() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isFullData', Sort.asc);
@@ -4515,6 +4574,12 @@ extension SourceQueryWhereDistinct on QueryBuilder<Source, Source, QDistinct> {
     });
   }
 
+  QueryBuilder<Source, Source, QDistinct> distinctByIsForShonenx() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isForShonenx');
+    });
+  }
+
   QueryBuilder<Source, Source, QDistinct> distinctByIsFullData() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isFullData');
@@ -4719,6 +4784,12 @@ extension SourceQueryProperty on QueryBuilder<Source, Source, QQueryProperty> {
   QueryBuilder<Source, bool?, QQueryOperations> isAddedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isAdded');
+    });
+  }
+
+  QueryBuilder<Source, bool?, QQueryOperations> isForShonenxProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isForShonenx');
     });
   }
 

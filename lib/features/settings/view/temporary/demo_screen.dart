@@ -47,7 +47,8 @@ class _DemoScreenState extends ConsumerState<DemoScreen> {
             // Search bar
             Card(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               elevation: 2,
               child: TextField(
                 controller: searchController,
@@ -63,49 +64,50 @@ class _DemoScreenState extends ConsumerState<DemoScreen> {
             // Loading / Grid
             loading
                 ? const Expanded(
-                    child: Center(child: CircularProgressIndicator()))
+                    child: Center(child: CircularProgressIndicator()),
+                  )
                 : data.isEmpty
-                    ? const Expanded(
-                        child: Center(child: Text('No results found')))
-                    : Expanded(
-                        child: GridView.builder(
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
+                ? const Expanded(child: Center(child: Text('No results found')))
+                : Expanded(
+                    child: GridView.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             childAspectRatio: 0.7,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                           ),
-                          itemCount: data.length,
-                          itemBuilder: (context, index) {
-                            final anime = data[index];
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        DemoDetail(url: anime.link!),
-                                  ),
-                                );
-                              },
-                              child: AnimatedAnimeCard(
-                                anime: UniversalMedia(
-                                  id: 'demo',
-                                  title: UniversalTitle(
-                                      english: anime.name ?? '',
-                                      romaji: anime.name ?? ''),
-                                  coverImage: UniversalCoverImage(
-                                      large: anime.imageUrl ?? '',
-                                      medium: anime.imageUrl ?? ''),
-                                  format: anime.author,
-                                ),
-                                tag: anime.name ?? '',
+                      itemCount: data.length,
+                      itemBuilder: (context, index) {
+                        final anime = data[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => DemoDetail(url: anime.link!),
                               ),
                             );
                           },
-                        ),
-                      ),
+                          child: AnimatedAnimeCard(
+                            anime: UniversalMedia(
+                              id: 'demo',
+                              title: UniversalTitle(
+                                english: anime.name ?? '',
+                                romaji: anime.name ?? '',
+                              ),
+                              coverImage: UniversalCoverImage(
+                                large: anime.imageUrl ?? '',
+                                medium: anime.imageUrl ?? '',
+                              ),
+                              format: anime.author,
+                            ),
+                            tag: anime.name ?? '',
+                          ),
+                        );
+                      },
+                    ),
+                  ),
           ],
         ),
       ),
@@ -133,8 +135,9 @@ class _DemoDetailState extends ConsumerState<DemoDetail> {
 
   void fetch() async {
     try {
-      final data =
-          await ref.read(sourceProvider.notifier).getDetails(widget.url);
+      final data = await ref
+          .read(sourceProvider.notifier)
+          .getDetails(widget.url);
       setState(() => media = data);
       AppLogger.d(data?.toJson());
     } catch (err) {
@@ -151,7 +154,8 @@ class _DemoDetailState extends ConsumerState<DemoDetail> {
     }
     if (media == null) {
       return const Scaffold(
-          body: Center(child: Text("Failed to load details")));
+        body: Center(child: Text("Failed to load details")),
+      );
     }
 
     final chapters = media!.chapters?.reversed.toList() ?? [];
@@ -164,15 +168,17 @@ class _DemoDetailState extends ConsumerState<DemoDetail> {
           final ch = chapters[i];
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: ListTile(
               title: Text(ch.name ?? ''),
               subtitle: Text(ch.url ?? ''),
               onTap: () async {
                 if (ch.url == null) return;
-                final sources =
-                    await ref.read(sourceProvider.notifier).getSources(ch.url!);
+                final sources = await ref
+                    .read(sourceProvider.notifier)
+                    .getSources(ch.url!, "", "", "", "sub");
                 if (!context.mounted) return;
 
                 showModalBottomSheet(
@@ -181,30 +187,35 @@ class _DemoDetailState extends ConsumerState<DemoDetail> {
                     color: Colors.black,
                     child: ListView(
                       children: sources
-                          .map((s) => ListTile(
-                                title: Text(s?.quality ?? ''),
-                                subtitle: Text(s?.url ?? ''),
-                                onTap: () {
-                                  final episodes = media!.chapters!
-                                      .map((c) => EpisodeDataModel(
-                                            title: c.name,
-                                            url: c.url,
-                                            number: extractNumber(c.name),
-                                          ))
-                                      .toList();
+                          .map(
+                            (s) => ListTile(
+                              title: Text(s?.quality ?? ''),
+                              subtitle: Text(s?.url ?? ''),
+                              onTap: () {
+                                final episodes = media!.chapters!
+                                    .map(
+                                      (c) => EpisodeDataModel(
+                                        title: c.name,
+                                        url: c.url,
+                                        number: extractNumber(c.name),
+                                      ),
+                                    )
+                                    .toList();
 
-                                  navigateToWatch(
-                                      animeFormat: 'DEMO',
-                                      animeCover: media?.imageUrl ?? '',
-                                      context: context,
-                                      ref: ref,
-                                      mediaId: 'demo',
-                                      animeId: media!.name,
-                                      animeName: media!.name ?? 'demo',
-                                      episodes: episodes,
-                                      currentEpisode: 1);
-                                },
-                              ))
+                                navigateToWatch(
+                                  animeFormat: 'DEMO',
+                                  animeCover: media?.imageUrl ?? '',
+                                  context: context,
+                                  ref: ref,
+                                  mediaId: 'demo',
+                                  animeId: media!.name,
+                                  animeName: media!.name ?? 'demo',
+                                  episodes: episodes,
+                                  currentEpisode: 1,
+                                );
+                              },
+                            ),
+                          )
                           .toList(),
                     ),
                   ),

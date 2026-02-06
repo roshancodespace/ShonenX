@@ -513,8 +513,6 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     );
   }
 
-  // ... (Existing _showSourceSelectionDialog, _buildMangayomiSourceList, _buildLegacySourceList, _handleWrongMatch, _showEpisodeMenu, _buildFallbackContainer, _buildFallbackIcon methods remain unchanged)
-
   void _showSourceSelectionDialog(
     BuildContext context,
     WidgetRef ref,

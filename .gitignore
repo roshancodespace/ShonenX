@@ -70,3 +70,9 @@ scripts/upload_temp.dart
 
 # installer
 dist
+
+# VS Code
+.vscode/
+
+# Debug
+.debug_cache

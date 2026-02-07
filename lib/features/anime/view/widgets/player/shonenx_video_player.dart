@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -6,9 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:screen_brightness/screen_brightness.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
@@ -23,6 +20,7 @@ import 'package:shonenx/features/anime/view/widgets/player/subtitle_overlay.dart
 import 'package:shonenx/features/anime/view/widgets/player/volume_brightness_overlay.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
+import 'package:shonenx/features/anime/view_model/player_ui_controller.dart';
 import 'package:shonenx/features/settings/view_model/player_notifier.dart';
 import 'package:shonenx/helpers/ui.dart';
 import 'package:window_manager/window_manager.dart';
@@ -42,44 +40,30 @@ class ShonenXVideoPlayer extends ConsumerStatefulWidget {
 }
 
 class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
-  // UI State
-  bool _visible = true;
-  bool _locked = false;
   final FocusNode _focusNode = FocusNode();
 
-  // Volume & Brightness State
-  double _volume = 0.0;
-  double _brightness = 0.0;
+  // Local state for complex interactions that don't need to be global/persisted
   bool _isChangingVolume = false;
   bool _isChangingBrightness = false;
-  bool _allowBoost = false;
   bool _isDragLeft = false;
-
-  // Seek State
-  int _seekAccum = 0;
-  Timer? _seekResetTimer;
-
-  // Speed State
+  bool _allowBoost = false;
   bool _isSpeeding = false;
   double _lastSpeed = 1.0;
-
-  // Visibility Timer
-  Timer? _hideTimer;
 
   @override
   void initState() {
     super.initState();
-    _restartHide();
-    _initVolumeBrightness();
+    // Restart auto-hide timer on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focusNode.requestFocus();
+      if (mounted) {
+        _focusNode.requestFocus();
+        ref.read(playerUIControllerProvider.notifier).restartHideTimer();
+      }
     });
   }
 
   @override
   void dispose() {
-    _hideTimer?.cancel();
-    _seekResetTimer?.cancel();
     _focusNode.dispose();
     if (!(Platform.isAndroid || Platform.isIOS)) {
       windowManager.setFullScreen(false);
@@ -87,41 +71,38 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
     super.dispose();
   }
 
-  Future<void> _initVolumeBrightness() async {
-    try {
-      _volume = (await FlutterVolumeController.getVolume()) ?? 0.5;
-      _brightness = await ScreenBrightness().current;
-    } catch (_) {}
-  }
-
   void _onVerticalDragStart(DragStartDetails details) {
-    if (_locked) return;
+    if (ref.read(playerUIControllerProvider).isLocked) return;
     final w = MediaQuery.of(context).size.width;
     _isDragLeft = details.globalPosition.dx < w / 2;
 
     setState(() {
-      _visible = false;
       if (_isDragLeft) {
         _isChangingBrightness = true;
       } else {
         _isChangingVolume = true;
       }
     });
+
+    // Hide controls while dragging
+    ref
+        .read(playerUIControllerProvider.notifier)
+        .toggleVisibility(override: false);
   }
 
   void _onVerticalDragUpdate(DragUpdateDetails details) async {
-    if (_locked) return;
+    if (ref.read(playerUIControllerProvider).isLocked) return;
     final delta = -details.primaryDelta! / 300;
 
+    final controller = ref.read(playerUIControllerProvider.notifier);
+    final state = ref.read(playerUIControllerProvider);
+
     if (_isDragLeft) {
-      double newB = (_brightness + delta).clamp(0.0, 1.0);
-      try {
-        await ScreenBrightness().setScreenBrightness(newB);
-      } catch (_) {}
-      setState(() => _brightness = newB);
+      double newB = (state.brightness + delta).clamp(0.0, 1.0);
+      controller.setBrightness(newB);
     } else {
       double maxVol = _allowBoost ? 1.25 : 1.0;
-      double newV = _volume + delta;
+      double newV = state.volume + delta;
 
       if (newV > 1.0 && !_allowBoost) {
         newV = 1.0;
@@ -130,23 +111,24 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
 
       newV = newV.clamp(0.0, maxVol);
 
-      if (newV <= 1.0) {
-        FlutterVolumeController.setVolume(newV);
-        ref
-            .read(playerStateProvider.notifier)
-            .videoController
-            .player
-            .setVolume(100.0);
-      } else {
-        FlutterVolumeController.setVolume(1.0);
+      // Update system/player volume
+      controller.setVolume(newV);
+
+      // Update actual player gain if needed (boost)
+      if (newV > 1.0) {
         final gain = (newV * 100);
         ref
             .read(playerStateProvider.notifier)
             .videoController
             .player
             .setVolume(gain);
+      } else {
+        ref
+            .read(playerStateProvider.notifier)
+            .videoController
+            .player
+            .setVolume(100.0);
       }
-      setState(() => _volume = newV);
     }
   }
 
@@ -184,55 +166,27 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
     );
   }
 
-  // --- Visibility Logic ---
-
-  void _restartHide() {
-    _hideTimer?.cancel();
-    if (_locked || !_visible) return;
-    final settings = ref.read(playerSettingsProvider);
-    _hideTimer = Timer(Duration(seconds: settings.autoHideDuration), () {
-      if (mounted) setState(() => _visible = false);
-    });
-  }
-
-  void _toggleVisible({bool? override}) {
-    setState(() => _visible = override ?? !_visible);
-    _visible ? _restartHide() : _hideTimer?.cancel();
-  }
-
-  void _toggleLock() {
-    setState(() {
-      _locked = !_locked;
-      _visible = true;
-    });
-    _restartHide();
-  }
-
-  // --- Gesture Callbacks ---
-
   void _onDoubleTap(bool forward) {
-    if (_locked) return;
+    if (ref.read(playerUIControllerProvider).isLocked) return;
+
     final notifier = ref.read(playerStateProvider.notifier);
     final settings = ref.read(playerSettingsProvider);
     final jump = settings.seekDuration;
 
-    _seekResetTimer?.cancel();
-    setState(() {
-      _seekAccum += forward ? jump : -jump;
-    });
-
     forward ? notifier.forward(jump) : notifier.rewind(jump);
 
-    _seekResetTimer = Timer(const Duration(seconds: 1), () {
-      if (mounted) setState(() => _seekAccum = 0);
-    });
-    _restartHide();
+    ref
+        .read(playerUIControllerProvider.notifier)
+        .showSeekIndicator(forward, jump);
   }
 
   void _onLongPressStart() {
-    if (_locked) return;
+    if (ref.read(playerUIControllerProvider).isLocked) return;
+    ref
+        .read(playerUIControllerProvider.notifier)
+        .toggleVisibility(override: false);
+
     setState(() {
-      _visible = false;
       _isSpeeding = true;
       _lastSpeed = 2.0;
     });
@@ -262,17 +216,23 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
   // --- Sheet/Dialog Logic ---
 
   Future<void> _sheet(Widget child) async {
-    _hideTimer?.cancel(); // Pause auto-hide
+    final controller = ref.read(playerUIControllerProvider.notifier);
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface.withAlpha(240),
       builder: (_) => child,
     );
-    _restartHide(); // Resume auto-hide
+    controller.restartHideTimer();
   }
 
-  void _openSettings() => _sheet(SettingsSheetContent(onDismiss: _restartHide));
+  void _openSettings() => _sheet(
+    SettingsSheetContent(
+      onDismiss: () {
+        ref.read(playerUIControllerProvider.notifier).restartHideTimer();
+      },
+    ),
+  );
 
   void _openQuality() {
     final data = ref.read(episodeDataProvider);
@@ -367,6 +327,8 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
   Widget build(BuildContext context) {
     final notifier = ref.read(playerStateProvider.notifier);
     final state = ref.watch(playerStateProvider);
+    final uiState = ref.watch(playerUIControllerProvider);
+    final uiController = ref.watch(playerUIControllerProvider.notifier);
 
     Widget videoView = Video(
       controller: notifier.videoController,
@@ -387,13 +349,16 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
     }
 
     return MouseRegion(
-      cursor: !_visible ? SystemMouseCursors.none : SystemMouseCursors.click,
-      onHover: (event) => _toggleVisible(override: true),
+      cursor: !uiState.isVisible
+          ? SystemMouseCursors.none
+          : SystemMouseCursors.click,
+      onHover: (_) => uiController.toggleVisibility(override: true),
       child: CallbackShortcuts(
         bindings: {
           const SingleActivator(LogicalKeyboardKey.space): notifier.togglePlay,
           const SingleActivator(LogicalKeyboardKey.keyK): notifier.togglePlay,
-          const SingleActivator(LogicalKeyboardKey.keyL): () => _toggleLock(),
+          const SingleActivator(LogicalKeyboardKey.keyL):
+              uiController.toggleLock,
           const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
               notifier.rewind(10),
           const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
@@ -414,7 +379,7 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
               // Gesture Layer (Background)
               Positioned.fill(
                 child: PlayerGestureHandler(
-                  onTap: _toggleVisible,
+                  onTap: () => uiController.toggleVisibility(),
                   onDoubleTap: _onDoubleTap,
                   onLongPressStart: _onLongPressStart,
                   onLongPressUpdate: _onLongPressUpdate,
@@ -429,10 +394,10 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
 
               // Controls & UI Layer (Foreground)
               ControlsOverlay(
-                visible: _visible,
-                locked: _locked,
-                onLockPressed: _toggleLock,
-                onRestartHide: _restartHide,
+                visible: uiState.isVisible,
+                locked: uiState.isLocked,
+                onLockPressed: uiController.toggleLock,
+                onRestartHide: uiController.restartHideTimer,
                 onEpisodesPressed: widget.onEpisodesPressed,
                 onSettingsPressed: _openSettings,
                 onQualityPressed: _openQuality,
@@ -443,15 +408,15 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
               ),
 
               // Seek Indicator (Dynamic)
-              if (_seekAccum != 0)
+              if (uiState.seekAmount != 0)
                 Positioned.fill(
                   child: Align(
-                    alignment: _seekAccum > 0
+                    alignment: uiState.isSeekForward
                         ? Alignment.centerRight
                         : Alignment.centerLeft,
                     child: SeekIndicatorOverlay(
-                      isForward: _seekAccum > 0,
-                      seconds: _seekAccum.abs(),
+                      isForward: uiState.isSeekForward,
+                      seconds: uiState.seekAmount.abs(),
                     ),
                   ),
                 ),
@@ -466,7 +431,7 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
                     alignment: Alignment.centerLeft,
                     child: VolumeBrightnessOverlay(
                       isVolume: false,
-                      value: _brightness,
+                      value: uiState.brightness,
                     ),
                   ),
                 ),
@@ -476,7 +441,7 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
                     alignment: Alignment.centerRight,
                     child: VolumeBrightnessOverlay(
                       isVolume: true,
-                      value: _volume,
+                      value: uiState.volume,
                     ),
                   ),
                 ),
@@ -485,7 +450,7 @@ class _ShonenXVideoPlayerState extends ConsumerState<ShonenXVideoPlayer> {
               Positioned(
                 left: 8,
                 right: 8,
-                bottom: _visible ? 90 : 20,
+                bottom: uiState.isVisible ? 90 : 20,
                 child: const SubtitleOverlay(),
               ),
             ],

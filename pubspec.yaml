@@ -44,10 +44,8 @@ dependencies:
       url: https://github.com/juliansteenbakker/flutter_secure_storage.git
       ref: master
       path: flutter_secure_storage
-  flutter_staggered_animations: ^1.1.1
   flutter_volume_controller: ^1.3.4
   flutter_web_auth_2: ^4.1.0
-  glass_kit: ^4.0.2
   go_router: ^14.7.1
   google_fonts: ^6.2.1
   graphql: ^5.2.3

@@ -22,7 +22,7 @@ class AnimeInfoCard extends StatelessWidget {
       if (anime.averageScore != null)
         _StatData(
           icon: Iconsax.star1,
-          value: '${(anime.averageScore! / 10).toStringAsFixed(1)}',
+          value: (anime.averageScore! / 10).toStringAsFixed(1),
           label: 'Rating',
           color: Colors.amber,
         ),

@@ -274,7 +274,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   Widget _buildSeasonDropdown() {
     const seasons = ['WINTER', 'SPRING', 'SUMMER', 'FALL'];
     return DropdownButtonFormField<String>(
-      value: _filter.season,
+      initialValue: _filter.season,
       decoration: InputDecoration(
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -295,7 +295,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     final years = List.generate(60, (i) => currentYear - i);
 
     return DropdownButtonFormField<int>(
-      value: _filter.year,
+      initialValue: _filter.year,
       decoration: InputDecoration(
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'episode_stream_provider.dart';
+part of 'player_ui_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -9,52 +9,53 @@ part of 'episode_stream_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(EpisodeData)
-const episodeDataProvider = EpisodeDataProvider._();
+@ProviderFor(PlayerUIController)
+const playerUIControllerProvider = PlayerUIControllerProvider._();
 
-final class EpisodeDataProvider
-    extends $NotifierProvider<EpisodeData, EpisodeDataState> {
-  const EpisodeDataProvider._()
+final class PlayerUIControllerProvider
+    extends $NotifierProvider<PlayerUIController, PlayerUIState> {
+  const PlayerUIControllerProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'episodeDataProvider',
+        name: r'playerUIControllerProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$episodeDataHash();
+  String debugGetCreateSourceHash() => _$playerUIControllerHash();
 
   @$internal
   @override
-  EpisodeData create() => EpisodeData();
+  PlayerUIController create() => PlayerUIController();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(EpisodeDataState value) {
+  Override overrideWithValue(PlayerUIState value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<EpisodeDataState>(value),
+      providerOverride: $SyncValueProvider<PlayerUIState>(value),
     );
   }
 }
 
-String _$episodeDataHash() => r'443c7de89335dad12e67b4201ab2d048ce80f4f9';
+String _$playerUIControllerHash() =>
+    r'6c6bc5daddcf5c429e93b3b9b2e088621035e647';
 
-abstract class _$EpisodeData extends $Notifier<EpisodeDataState> {
-  EpisodeDataState build();
+abstract class _$PlayerUIController extends $Notifier<PlayerUIState> {
+  PlayerUIState build();
   @$mustCallSuper
   @override
   void runBuild() {
     final created = build();
-    final ref = this.ref as $Ref<EpisodeDataState, EpisodeDataState>;
+    final ref = this.ref as $Ref<PlayerUIState, PlayerUIState>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<EpisodeDataState, EpisodeDataState>,
-              EpisodeDataState,
+              AnyNotifier<PlayerUIState, PlayerUIState>,
+              PlayerUIState,
               Object?,
               Object?
             >;

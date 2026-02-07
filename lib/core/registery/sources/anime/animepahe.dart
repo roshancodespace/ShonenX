@@ -367,8 +367,9 @@ class AnimePaheProvider extends AnimeProvider {
         },
       );
       final mp4Url = r2.headers['location'];
-      if (mp4Url == null)
+      if (mp4Url == null) {
         throw Exception("Couldnt extract media link location");
+      }
       return mp4Url;
     } catch (err) {
       rethrow;

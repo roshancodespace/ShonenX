@@ -405,7 +405,7 @@ class _EditListBottomSheetState extends ConsumerState<EditListBottomSheet> {
 
   Widget _buildStatusDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedStatus,
+      initialValue: _selectedStatus,
       onChanged: _handleStatusChange,
       items: _statusOptions
           .map(

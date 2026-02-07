@@ -301,8 +301,9 @@ class _RendererDebugScreenState extends State<RendererDebugScreen> {
   }
 
   Widget _buildInfoRow(String label, dynamic value, {bool isError = false}) {
-    if (value == null || value == 'not set' || value == 'unknown')
+    if (value == null || value == 'not set' || value == 'unknown') {
       return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

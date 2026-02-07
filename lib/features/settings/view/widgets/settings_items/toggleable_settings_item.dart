@@ -52,7 +52,7 @@ class ToggleableSettingsItem extends BaseSettingsItem {
             child: Switch(
               value: value,
               onChanged: onChanged,
-              activeColor: colorScheme.onPrimary,
+              activeThumbColor: colorScheme.onPrimary,
               activeTrackColor: effectiveActiveColor,
               inactiveThumbColor: colorScheme.outline,
               inactiveTrackColor: colorScheme.surfaceContainerHighest,

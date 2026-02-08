@@ -3,12 +3,11 @@ targets:
     builders:
       isar_community_generator:
         generate_for:
-          - lib/core_mangayomi/**
           - lib/features/**/model/**
+          - lib/core/**
       riverpod_generator:
         generate_for:
           - lib/features/**/view_model/**
-          - lib/core_mangayomi/**
           - lib/shared/**
         
         

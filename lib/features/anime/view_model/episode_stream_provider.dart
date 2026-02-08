@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:collection/collection.dart';
+import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart'
+    hide Source;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
@@ -363,11 +365,7 @@ class EpisodeData extends _$EpisodeData {
   }) async {
     if (_exp.useMangayomiExtensions && ep.url != null) {
       final res = await _srcNotifier.getSources(
-        ep.url!,
-        _epList.animeId!,
-        ep.id ?? ep.number.toString(),
-        server?.id ?? '',
-        server?.isDub ?? false ? 'dub' : 'sub',
+        DEpisode(episodeNumber: ep.number.toString(), url: ep.url),
       );
       return BaseSourcesModel(
         sources: res
@@ -375,8 +373,8 @@ class EpisodeData extends _$EpisodeData {
               (s) => Source(
                 url: s?.url,
                 isM3U8: s?.url.contains('.m3u8') ?? false,
-                quality: s?.quality,
-                isDub: s?.originalUrl.toLowerCase().contains('dub') ?? false,
+                quality: s?.quality ?? s?.title,
+                isDub: s?.url.toLowerCase().contains('dub') ?? false,
               ),
             )
             .toList(),

@@ -1,14 +1,15 @@
+import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
+import 'package:shonenx/core/models/offline/manga.dart';
+import 'package:shonenx/core/models/offline/track.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
-import 'package:shonenx/core_mangayomi/models/manga.dart';
-import 'package:shonenx/core_mangayomi/models/track.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_state.dart';
-import 'package:shonenx/main.dart';
 import 'package:shonenx/shared/providers/anime_repo_provider.dart';
+import 'package:shonenx/core/models/offline/track.dart' as core;
 
 class WatchlistNotifier extends Notifier<WatchListState> {
   AnimeRepository get _repo => ref.read(animeRepositoryProvider);
@@ -336,7 +337,7 @@ class WatchlistNotifier extends Notifier<WatchListState> {
     );
   }
 
-  UniversalMediaListEntry _trackToEntry(Track track, Manga manga) {
+  UniversalMediaListEntry _trackToEntry(core.Track track, Manga manga) {
     return UniversalMediaListEntry(
       id: track.id.toString(),
       media: _mapMangaToUniversal(manga),

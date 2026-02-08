@@ -1,4 +1,5 @@
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
@@ -157,8 +158,8 @@ class DetailsPageNotifier extends _$DetailsPageNotifier {
             if (!ref.mounted) return;
 
             candidates = res.list
-                .where((r) => r.name != null && r.link != null)
-                .map((r) => {"id": r.link!, "name": r.name!})
+                .where((r) => r.title != null && r.url != null)
+                .map((r) => {"id": r.url!, "name": r.title!})
                 .toList();
           } else {
             final provider = ref.read(selectedAnimeProvider);
@@ -223,6 +224,13 @@ class DetailsPageNotifier extends _$DetailsPageNotifier {
             animeTitle: state.bestMatchName!,
             animeId: state.animeIdForSource,
             force: force,
+            media: DMedia(
+              title: state.bestMatchName,
+              url: state.animeIdForSource,
+              cover:
+                  state.details.value?.coverImage.large ??
+                  state.details.value?.coverImage.medium,
+            ),
           );
 
       if (!ref.mounted) return;

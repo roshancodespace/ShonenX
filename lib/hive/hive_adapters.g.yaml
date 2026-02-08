@@ -3,44 +3,6 @@
 # Check in to version control
 nextTypeId: 20
 types:
-  TrackSearch:
-    typeId: 0
-    nextIndex: 17
-    fields:
-      id:
-        index: 0
-      libraryId:
-        index: 1
-      mediaId:
-        index: 2
-      syncId:
-        index: 3
-      title:
-        index: 4
-      lastChapterRead:
-        index: 5
-      totalChapter:
-        index: 6
-      score:
-        index: 7
-      status:
-        index: 8
-      startedReadingDate:
-        index: 9
-      finishedReadingDate:
-        index: 10
-      trackingUrl:
-        index: 11
-      coverUrl:
-        index: 12
-      summary:
-        index: 13
-      publishingStatus:
-        index: 14
-      publishingType:
-        index: 15
-      startDate:
-        index: 16
   ThemeModel:
     typeId: 2
     nextIndex: 8

@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
+  dartotsu_extension_bridge
   desktop_webview_window
   dynamic_color
   flutter_inappwebview_windows
@@ -23,6 +24,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  fjs
   flutter_local_notifications_windows
 )
 

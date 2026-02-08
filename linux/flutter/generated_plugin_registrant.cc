@@ -6,8 +6,10 @@
 
 #include "generated_plugin_registrant.h"
 
+#include <dartotsu_extension_bridge/dartotsu_extension_bridge_plugin.h>
 #include <desktop_webview_window/desktop_webview_window_plugin.h>
 #include <dynamic_color/dynamic_color_plugin.h>
+#include <flutter_inappwebview_linux/flutter_inappwebview_linux_plugin.h>
 #include <flutter_qjs/flutter_qjs_plugin.h>
 #include <flutter_secure_storage_linux/flutter_secure_storage_linux_plugin.h>
 #include <flutter_volume_controller/flutter_volume_controller_plugin.h>
@@ -20,12 +22,18 @@
 #include <window_to_front/window_to_front_plugin.h>
 
 void fl_register_plugins(FlPluginRegistry* registry) {
+  g_autoptr(FlPluginRegistrar) dartotsu_extension_bridge_registrar =
+      fl_plugin_registry_get_registrar_for_plugin(registry, "DartotsuExtensionBridgePlugin");
+  dartotsu_extension_bridge_plugin_register_with_registrar(dartotsu_extension_bridge_registrar);
   g_autoptr(FlPluginRegistrar) desktop_webview_window_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "DesktopWebviewWindowPlugin");
   desktop_webview_window_plugin_register_with_registrar(desktop_webview_window_registrar);
   g_autoptr(FlPluginRegistrar) dynamic_color_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "DynamicColorPlugin");
   dynamic_color_plugin_register_with_registrar(dynamic_color_registrar);
+  g_autoptr(FlPluginRegistrar) flutter_inappwebview_linux_registrar =
+      fl_plugin_registry_get_registrar_for_plugin(registry, "FlutterInappwebviewLinuxPlugin");
+  flutter_inappwebview_linux_plugin_register_with_registrar(flutter_inappwebview_linux_registrar);
   g_autoptr(FlPluginRegistrar) flutter_qjs_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "FlutterQjsPlugin");
   flutter_qjs_plugin_register_with_registrar(flutter_qjs_registrar);

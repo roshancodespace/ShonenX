@@ -20,7 +20,6 @@ extension HiveRegistrar on HiveInterface {
     registerAdapter(SpotlightCardModeAdapter());
     registerAdapter(SubtitleAppearanceModelAdapter());
     registerAdapter(ThemeModelAdapter());
-    registerAdapter(TrackSearchAdapter());
     registerAdapter(UiSettingsAdapter());
     registerAdapter(UniversalNewsAdapter());
   }
@@ -41,7 +40,6 @@ extension IsolatedHiveRegistrar on IsolatedHiveInterface {
     registerAdapter(SpotlightCardModeAdapter());
     registerAdapter(SubtitleAppearanceModelAdapter());
     registerAdapter(ThemeModelAdapter());
-    registerAdapter(TrackSearchAdapter());
     registerAdapter(UiSettingsAdapter());
     registerAdapter(UniversalNewsAdapter());
   }

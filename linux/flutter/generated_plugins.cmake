@@ -3,8 +3,10 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  dartotsu_extension_bridge
   desktop_webview_window
   dynamic_color
+  flutter_inappwebview_linux
   flutter_qjs
   flutter_secure_storage_linux
   flutter_volume_controller
@@ -18,6 +20,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  fjs
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

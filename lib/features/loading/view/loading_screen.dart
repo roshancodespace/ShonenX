@@ -30,10 +30,20 @@ class LoadingScreen extends ConsumerStatefulWidget {
 }
 
 class _LoadingScreenState extends ConsumerState<LoadingScreen> {
+  late final ProviderSubscription<InitializationState>
+      _initializationListener;
+
   @override
   void initState() {
     super.initState();
     AppLogger.d('Initializing LoadingScreen UI');
+
+    _initializationListener = ref.listenManual(
+      initializationProvider,
+      (previous, next) {
+        // Reserved for initialization state transitions if needed.
+      },
+    );
 
     // Post-frame callback ensures context is available for checks
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -47,12 +57,13 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    ref.listen(initializationProvider, (previous, next) {
-      // if (next.status == InitializationStatus.success) {
-      // }
-    });
+  void dispose() {
+    _initializationListener.close();
+    super.dispose();
+  }
 
+  @override
+  Widget build(BuildContext context) {
     final initState = ref.watch(initializationProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;

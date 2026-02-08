@@ -31,8 +31,8 @@ class NeonCard extends StatelessWidget {
           color: isMobile
               ? neonColor
               : isHovered
-                  ? neonColor
-                  : neonColor.withOpacity(0.5),
+              ? neonColor
+              : neonColor.withOpacity(0.5),
           width: isMobile ? 1 : 2,
         ),
         boxShadow: isHovered
@@ -63,8 +63,10 @@ class NeonCard extends StatelessWidget {
                 top: 8,
                 right: 8,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.8),
                     borderRadius: BorderRadius.circular(8),
@@ -82,11 +84,7 @@ class NeonCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Iconsax.star1,
-                        size: 10,
-                        color: neonColor,
-                      ),
+                      Icon(Iconsax.star1, size: 10, color: neonColor),
                       const SizedBox(width: 4),
                       Text(
                         '${anime!.averageScore}',
@@ -94,12 +92,7 @@ class NeonCard extends StatelessWidget {
                           color: neonColor,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          shadows: [
-                            Shadow(
-                              color: neonColor,
-                              blurRadius: 4,
-                            ),
-                          ],
+                          shadows: [Shadow(color: neonColor, blurRadius: 4)],
                         ),
                       ),
                     ],
@@ -137,12 +130,7 @@ class NeonCard extends StatelessWidget {
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       shadows: isHovered
-                          ? [
-                              Shadow(
-                                color: neonColor,
-                                blurRadius: 12,
-                              ),
-                            ]
+                          ? [Shadow(color: neonColor, blurRadius: 12)]
                           : [],
                     ),
                   ),

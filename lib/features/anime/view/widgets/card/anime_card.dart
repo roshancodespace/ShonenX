@@ -1,51 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_mode.dart';
 
-class AnimatedAnimeCard extends StatefulWidget {
+class AnimeCard extends StatefulWidget {
   final UniversalMedia anime;
   final String tag;
   final AnimeCardMode mode;
 
-  const AnimatedAnimeCard({
+  const AnimeCard({
     super.key,
     required this.anime,
     required this.tag,
-    this.mode = AnimeCardMode.defaults,
+    required this.mode,
   });
 
   @override
-  State<AnimatedAnimeCard> createState() => _AnimatedAnimeCardState();
+  State<AnimeCard> createState() => _AnimeCardState();
 }
 
-class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
+class _AnimeCardState extends State<AnimeCard> {
   bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
-    final config = cardConfigs[widget.mode]!;
-
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 600;
-
-    final width = isSmallScreen
-        ? config.responsiveWidth.small
-        : config.responsiveWidth.large;
-    final height = isSmallScreen
-        ? config.responsiveHeight.small
-        : config.responsiveHeight.large;
+    final dimensions = widget.mode.getDimensions(context);
 
     return RepaintBoundary(
       child: LayoutBuilder(
         builder: (context, constraints) {
           final targetWidth = constraints.hasBoundedWidth && constraints.isTight
               ? constraints.maxWidth
-              : width;
+              : dimensions.width;
           final targetHeight =
               constraints.hasBoundedHeight && constraints.isTight
               ? constraints.maxHeight
-              : height;
+              : dimensions.height;
 
           return MouseRegion(
             cursor: SystemMouseCursors.click,
@@ -60,7 +49,7 @@ class _AnimatedAnimeCardState extends State<AnimatedAnimeCard> {
                 top: _isHovered ? 0 : 4,
                 bottom: _isHovered ? 4 : 0,
               ),
-              child: config.builder(
+              child: widget.mode.build(
                 anime: widget.anime.copyWith(
                   averageScore: widget.anime.averageScore == null
                       ? null

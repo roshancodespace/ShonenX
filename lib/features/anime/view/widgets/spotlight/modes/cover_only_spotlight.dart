@@ -31,10 +31,7 @@ class CoverOnlySpotlight extends StatelessWidget {
         children: [
           Hero(
             tag: heroTag,
-            child: CachedNetworkImage(
-              imageUrl: imageUrl,
-              fit: BoxFit.cover,
-            ),
+            child: CachedNetworkImage(imageUrl: imageUrl, fit: BoxFit.cover),
           ),
           if (anime!.averageScore != null)
             Positioned(

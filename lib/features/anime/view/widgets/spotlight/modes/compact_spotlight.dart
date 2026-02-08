@@ -32,20 +32,14 @@ class CompactSpotlight extends StatelessWidget {
         children: [
           Hero(
             tag: heroTag,
-            child: CachedNetworkImage(
-              imageUrl: imageUrl,
-              fit: BoxFit.cover,
-            ),
+            child: CachedNetworkImage(imageUrl: imageUrl, fit: BoxFit.cover),
           ),
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.9),
-                ],
+                colors: [Colors.transparent, Colors.black.withOpacity(0.9)],
                 stops: const [0.5, 1.0],
               ),
             ),

@@ -44,11 +44,7 @@ class CoverOnlyCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Iconsax.star1,
-                      size: 10,
-                      color: Colors.amber,
-                    ),
+                    const Icon(Iconsax.star1, size: 10, color: Colors.amber),
                     const SizedBox(width: 3),
                     Text(
                       '${anime!.averageScore}',
@@ -85,9 +81,7 @@ class CoverOnlyCard extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AnimeTitle(anime: anime, maxLines: 2),
-                  ],
+                  children: [AnimeTitle(anime: anime, maxLines: 2)],
                 ),
               ),
             ),

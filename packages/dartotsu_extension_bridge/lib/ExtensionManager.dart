@@ -20,6 +20,7 @@ class ExtensionManager extends GetxController {
   late final Rx<Extension> _currentManager;
 
   Extension get currentManager => _currentManager.value;
+  Rx<Extension> get currentManagerRx => _currentManager;
 
   void initialize() {
     final settings = isar.bridgeSettings.getSync(26)!;

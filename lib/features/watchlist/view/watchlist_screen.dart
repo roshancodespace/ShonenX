@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/misc.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
-import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/features/watchlist/view/widget/watchlist_grid_view.dart';
@@ -363,7 +362,7 @@ class _WatchlistTabView extends ConsumerWidget {
         }
         return false;
       },
-      crossAxisExtent: MediaQuery.of(context).size.width > 600 ? cardConfigs[mode]!.responsiveWidth.large : cardConfigs[mode]!.responsiveWidth.small,
+      crossAxisExtent: mode.getDimensions(context).width,
       itemBuilder: (context, index) {
         if (index == media.length) {
           return const WatchlistLoadingIndicator();
@@ -385,11 +384,7 @@ class _WatchlistTabView extends ConsumerWidget {
           },
           child: Stack(
             children: [
-              AnimatedAnimeCard(
-                anime: anime,
-                tag: tag,
-                mode: mode,
-              ),
+              AnimeCard(anime: anime, tag: tag, mode: mode),
               if (isSelected)
                 Positioned.fill(
                   child: Container(

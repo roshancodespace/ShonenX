@@ -367,7 +367,7 @@ class StyleSelectorState extends State<StyleSelector> {
                 (e) => e.name == styleName,
               ),
             )
-          : AnimatedAnimeCard(
+          : AnimeCard(
               anime: anime,
               tag: 'prev_$styleName',
               mode: AnimeCardMode.values.firstWhere((e) => e.name == styleName),

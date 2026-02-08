@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/jikan/jikan_service.dart';
@@ -76,6 +77,7 @@ class EpisodeListNotifier extends _$EpisodeListNotifier {
     String? animeId,
     required bool force,
     List<EpisodeDataModel> episodes = const [],
+    DMedia? media,
   }) async {
     if (!force && state.episodes.isNotEmpty && state.animeId == animeId) {
       AppLogger.d('Episode list cache hit');
@@ -95,7 +97,7 @@ class EpisodeListNotifier extends _$EpisodeListNotifier {
       return episodes;
     }
 
-    final fetched = await _fetchEpisodesInternal(animeId);
+    final fetched = await _fetchEpisodesInternal(animeId, media: media);
 
     if (fetched.isEmpty) {
       state = state.copyWith(isLoading: false, error: 'No episodes found');
@@ -118,10 +120,10 @@ class EpisodeListNotifier extends _$EpisodeListNotifier {
 
   void reset() => state = const EpisodeListState();
 
-  Future<List<EpisodeDataModel>> _fetchEpisodesInternal(String? animeId) async {
+  Future<List<EpisodeDataModel>> _fetchEpisodesInternal(String? animeId, {DMedia? media}) async {
     try {
       return _exp.useMangayomiExtensions
-          ? await _fetchMangayomiEpisodes(animeId)
+          ? await _fetchMangayomiEpisodes(media)
           : await _fetchLegacyEpisodes(animeId);
     } catch (e, st) {
       AppLogger.e('Episode fetch failed', e, st);
@@ -135,13 +137,11 @@ class EpisodeListNotifier extends _$EpisodeListNotifier {
     }
   }
 
-  Future<List<EpisodeDataModel>> _fetchMangayomiEpisodes(
-    String? animeId,
-  ) async {
-    if (animeId == null) return [];
+  Future<List<EpisodeDataModel>> _fetchMangayomiEpisodes(DMedia? media) async {
+    if (media == null) return [];
 
-    final details = await _sourceNotifier.getDetails(animeId);
-    final chapters = details?.chapters ?? [];
+    final details = await _sourceNotifier.getDetails(media);
+    final chapters = details?.episodes ?? [];
 
     final mapped = chapters
         .map(
@@ -149,8 +149,10 @@ class EpisodeListNotifier extends _$EpisodeListNotifier {
             title: ch.name,
             url: ch.url,
             isFiller: false,
-            number: ch.number ?? int.tryParse(
-              RegExp(r'\d+').firstMatch(ch.name ?? '')?.group(0) ?? '',
+            number: int.tryParse(
+              ch.episodeNumber.isNotEmpty
+                  ? ch.episodeNumber
+                  : RegExp(r'\d+').firstMatch(ch.name ?? '')?.group(0) ?? '',
             ),
           ),
         )

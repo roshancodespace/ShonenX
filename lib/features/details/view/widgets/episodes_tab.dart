@@ -609,7 +609,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     final activeId = sourceState.activeAnimeSource?.id;
 
     if (sources.isEmpty) {
-      return const Center(child: Text('No Mangayomi extensions installed.'));
+      return Center(child: const Text('No extensions installed.'));
     }
 
     return ListView.builder(

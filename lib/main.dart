@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
@@ -62,6 +63,11 @@ void main(List<String> args) async {
   );
 
   isar = await StorageProvider().initDB(null, inspector: kDebugMode);
+  final bridge = DartotsuExtensionBridge();
+  await bridge.init(
+    isar, // pass an Isar instance, or null to auto-create
+    'ShonenX', // desktop data dir hint
+  );
 
   runApp(const ProviderScope(child: MyApp()));
   unawaited(_postLaunchInit());

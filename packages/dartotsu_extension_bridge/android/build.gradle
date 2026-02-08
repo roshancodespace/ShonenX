@@ -1,0 +1,90 @@
+group = "com.aayush262.dartotsu_extension_bridge"
+version = "1.0-SNAPSHOT"
+
+
+buildscript {
+    ext.kotlin_version = "2.1.0"
+    repositories {
+        google()
+        mavenCentral()
+
+    }
+
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.12.1")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
+        classpath("org.jetbrains.kotlin:kotlin-serialization:$kotlin_version")
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        /*maven {
+            url 'http://download.flutter.io'
+            allowInsecureProtocol=true
+        }*/
+    }
+}
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+apply plugin: "org.jetbrains.kotlin.plugin.serialization"
+
+android {
+    namespace = "com.aayush262.dartotsu_extension_bridge"
+
+    compileSdk = 36
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17
+        freeCompilerArgs += "-Xcontext-receivers"
+    }
+
+    sourceSets {
+        main.java.srcDirs += "src/main/kotlin"
+        test.java.srcDirs += "src/test/kotlin"
+    }
+
+    defaultConfig {
+        minSdk = 21
+        consumerProguardFiles 'proguard-rules.pro'
+    }
+
+    dependencies {
+        testImplementation("org.jetbrains.kotlin:kotlin-test")
+        testImplementation("org.mockito:mockito-core:5.18.0")
+    }
+
+    testOptions {
+        unitTests.all {
+            useJUnitPlatform()
+            testLogging {
+                events "passed", "skipped", "failed", "standardOut", "standardError"
+                outputs.upToDateWhen { false }
+                showStandardStreams = true
+            }
+        }
+    }
+}
+dependencies {
+    implementation("uy.kohesive.injekt:injekt-core:1.16.1")
+    implementation("org.jsoup:jsoup:1.21.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-okio:1.9.0")
+    implementation 'com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.14'
+    implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.14'
+    implementation 'com.squareup.okio:okio:3.8.0'
+    implementation 'com.squareup.okhttp3:okhttp-brotli:5.0.0-alpha.14'
+    implementation("io.reactivex:rxjava:1.3.8")
+    implementation("io.reactivex:rxandroid:1.2.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("androidx.core:core-ktx:1.16.0")
+    implementation 'androidx.compose.runtime:runtime-android:1.8.3'
+    implementation 'androidx.preference:preference-ktx:1.2.1'
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    //api "io.flutter:flutter_embedding_debug:1.0.0-1d25906b4cf0076604a67360b21b1e092eb01b19"
+}

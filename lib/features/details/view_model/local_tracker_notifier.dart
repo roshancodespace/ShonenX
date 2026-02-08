@@ -1,11 +1,10 @@
+import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart' hide Track;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
+import 'package:shonenx/core/models/offline/manga.dart';
+import 'package:shonenx/core/models/offline/track.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
-import 'package:shonenx/core_mangayomi/models/manga.dart';
-import 'package:shonenx/core_mangayomi/models/track.dart';
-
-import 'package:shonenx/main.dart';
 
 class LocalTrackerNotifier extends Notifier<void> {
   @override

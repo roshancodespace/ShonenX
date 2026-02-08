@@ -1,12 +1,13 @@
+import 'package:dartotsu_extension_bridge/Models/Source.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/features/extensions/view/extension_preference_screen.dart';
 
 import 'package:shonenx/main.dart';
 
 // Core & Models
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/core_mangayomi/models/source.dart';
 
 // Features
 import 'package:shonenx/features/anime/view/watch_screen.dart';
@@ -17,6 +18,7 @@ import 'package:shonenx/features/error/view/error_screen.dart';
 import 'package:shonenx/features/home/view/watch_history_screen.dart';
 import 'package:shonenx/features/news/view/news_screen.dart';
 import 'package:shonenx/features/onboarding/view/onboarding_screen.dart';
+import 'package:shonenx/features/extensions/view/extensions_screen.dart';
 
 // Settings Features
 import 'package:shonenx/features/settings/view/screens/about_screen.dart';
@@ -24,18 +26,14 @@ import 'package:shonenx/features/settings/view/screens/account_settings_screen.d
 import 'package:shonenx/features/settings/view/screens/anime_sources_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/download_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/experimental_screen.dart';
-import 'package:shonenx/features/settings/view/screens/extension_preference_screen.dart';
-import 'package:shonenx/features/settings/view/screens/extensions_list_screen.dart';
 import 'package:shonenx/features/settings/view/screens/player_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/advanced_player_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/profile_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/subtitle_customization_screen.dart';
-import 'package:shonenx/features/settings/view/temporary/demo_screen.dart';
 import 'package:shonenx/features/settings/view/screens/theme_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/ui_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/tracking_settings_screen.dart';
-import 'package:shonenx/features/settings/view/screens/extension_playground_screen.dart';
 import 'package:shonenx/features/debug/view/debug_screen.dart';
 import 'package:shonenx/router/router_wrapper.dart';
 
@@ -73,6 +71,10 @@ final routerConfig = GoRouter(
           ],
         );
       }).toList(),
+    ),
+    GoRoute(
+      path: '/extensions',
+      builder: (context, state) => const ExtensionScreen(),
     ),
     GoRoute(path: '/news', builder: (context, state) => const NewsScreen()),
     GoRoute(
@@ -165,22 +167,22 @@ final routerConfig = GoRouter(
         ),
         GoRoute(
           path: 'extensions',
-          builder: (context, state) => const ExtensionsListScreen(),
+          builder: (context, state) => const ExtensionScreen(),
           routes: [
-            GoRoute(
-              path: 'demo',
-              builder: (context, state) => const DemoScreen(),
-            ),
+            // GoRoute(
+            //   path: 'demo',
+            //   builder: (context, state) => const DemoScreen(),
+            // ),
             GoRoute(
               path: 'extension-preference',
               builder: (context, state) =>
                   ExtensionPreferenceScreen(source: state.extra as Source),
             ),
-            GoRoute(
-              path: 'playground',
-              builder: (context, state) =>
-                  ExtensionPlaygroundScreen(source: state.extra as Source?),
-            ),
+            // GoRoute(
+            //   path: 'playground',
+            //   builder: (context, state) =>
+            //       ExtensionPlaygroundScreen(source: state.extra as Source?),
+            // ),
           ],
         ),
         GoRoute(

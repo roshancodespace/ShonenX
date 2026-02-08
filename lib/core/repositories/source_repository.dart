@@ -24,28 +24,9 @@ class SourceRepository {
   SourceRepository();
 
   // Helper for Int migration
-  int? _getInt(String prefKey, String hiveKey) {
+  String? _getString(String prefKey, String hiveKey) {
     if (sharedPrefs.containsKey(prefKey)) {
-      return sharedPrefs.getInt(prefKey);
-    }
-    // Migration
-    if (Hive.isBoxOpen(_boxName)) {
-      try {
-        final box = Hive.box(_boxName);
-        final val = box.get(hiveKey);
-        if (val is int) {
-          sharedPrefs.setInt(prefKey, val);
-          return val;
-        }
-      } catch (_) {}
-    }
-    return null;
-  }
-
-  // Helper for String migration
-  String _getString(String prefKey, String hiveKey, String def) {
-    if (sharedPrefs.containsKey(prefKey)) {
-      return sharedPrefs.getString(prefKey) ?? def;
+      return sharedPrefs.getString(prefKey);
     }
     // Migration
     if (Hive.isBoxOpen(_boxName)) {
@@ -58,33 +39,33 @@ class SourceRepository {
         }
       } catch (_) {}
     }
-    return def;
+    return null;
   }
 
   // --- Active Source IDs ---
-  int? getActiveAnimeSourceId() => _getInt(_keyAnimeId, _hiveAnimeId);
-  void saveActiveAnimeSourceId(int id) => sharedPrefs.setInt(_keyAnimeId, id);
+  String? getActiveAnimeSourceId() => _getString(_keyAnimeId, _hiveAnimeId);
+  void saveActiveAnimeSourceId(dynamic id) => sharedPrefs.setString(_keyAnimeId, id);
 
-  int? getActiveMangaSourceId() => _getInt(_keyMangaId, _hiveMangaId);
-  void saveActiveMangaSourceId(int id) => sharedPrefs.setInt(_keyMangaId, id);
+  String? getActiveMangaSourceId() => _getString(_keyMangaId, _hiveMangaId);
+  void saveActiveMangaSourceId(dynamic id) => sharedPrefs.setString(_keyMangaId, id);
 
-  int? getActiveNovelSourceId() => _getInt(_keyNovelId, _hiveNovelId);
-  void saveActiveNovelSourceId(int id) => sharedPrefs.setInt(_keyNovelId, id);
+  String? getActiveNovelSourceId() => _getString(_keyNovelId, _hiveNovelId);
+  void saveActiveNovelSourceId(dynamic id) => sharedPrefs.setString(_keyNovelId, id);
 
   // --- Active Repo URLs ---
-  String getActiveAnimeRepo() => _getString(_keyAnimeRepo, _hiveAnimeRepo, '');
+  String getActiveAnimeRepo() => _getString(_keyAnimeRepo, _hiveAnimeRepo) ?? '';
   void saveActiveAnimeRepo(String repo) {
     sharedPrefs.setString(_keyAnimeRepo, repo);
     AppLogger.d("Saved Anime Repo: $repo");
   }
 
-  String getActiveMangaRepo() => _getString(_keyMangaRepo, _hiveMangaRepo, '');
+  String getActiveMangaRepo() => _getString(_keyMangaRepo, _hiveMangaRepo) ?? '';
   void saveActiveMangaRepo(String repo) {
     sharedPrefs.setString(_keyMangaRepo, repo);
     AppLogger.d("Saved Manga Repo: $repo");
   }
 
-  String getActiveNovelRepo() => _getString(_keyNovelRepo, _hiveNovelRepo, '');
+  String getActiveNovelRepo() => _getString(_keyNovelRepo, _hiveNovelRepo) ?? '';
   void saveActiveNovelRepo(String repo) {
     sharedPrefs.setString(_keyNovelRepo, repo);
     AppLogger.d("Saved Novel Repo: $repo");

@@ -26,32 +26,14 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
+  late final ProviderSubscription<AsyncValue<List<UniversalNews>>>
+      _newsListener;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  // let background tasks know if we're actually looking at the app
-  Future<void> _setAppOpenStatus(bool isOpen) async {
-    await sharedPrefs.setBool('is_app_open', isOpen);
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    final isOpen = state == AppLifecycleState.resumed;
-    _setAppOpenStatus(isOpen);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    ref.listen(newsProvider, (previous, next) {
+    _newsListener = ref.listenManual(newsProvider, (previous, next) {
       if (previous is AsyncData && next is AsyncData) {
         final router = GoRouter.of(context);
         final String currentLocation =
@@ -60,7 +42,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
         if (!mainTabs.contains(currentLocation)) return;
 
-        final oldList = previous!.value ?? [];
+        final oldList = previous.value ?? [];
         final newList = next.value ?? [];
         final oldUrls = oldList.map((e) => e.url).toSet();
         final newItems = newList
@@ -86,7 +68,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         }
       }
     });
+  }
 
+  @override
+  void dispose() {
+    _newsListener.close();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // let background tasks know if we're actually looking at the app
+  Future<void> _setAppOpenStatus(bool isOpen) async {
+    await sharedPrefs.setBool('is_app_open', isOpen);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final isOpen = state == AppLifecycleState.resumed;
+    _setAppOpenStatus(isOpen);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(homepageProvider);
     final layout = ref.watch(homeLayoutProvider);
     final sections = layout.where((s) => s.enabled).toList();
@@ -179,28 +182,52 @@ class _HomeSectionRenderer extends StatelessWidget {
   }
 }
 
-class _WatchlistHomeSection extends ConsumerWidget {
+class _WatchlistHomeSection extends ConsumerStatefulWidget {
   final String title;
   final String status;
 
   const _WatchlistHomeSection({required this.title, required this.status});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_WatchlistHomeSection> createState() =>
+      _WatchlistHomeSectionState();
+}
+
+class _WatchlistHomeSectionState extends ConsumerState<_WatchlistHomeSection> {
+  @override
+  void initState() {
+    super.initState();
+    _fetchListIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant _WatchlistHomeSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.status != widget.status) {
+      _fetchListIfNeeded();
+    }
+  }
+
+  void _fetchListIfNeeded() {
+    final state = ref.read(watchlistProvider);
+    final list = state.listFor(widget.status);
+
+    if (list.isEmpty && !state.loadingStatuses.contains(widget.status)) {
+      ref.read(watchlistProvider.notifier).fetchListForStatus(widget.status);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(watchlistProvider);
-    final list = state.listFor(status);
+    final list = state.listFor(widget.status);
 
     if (list.isEmpty) {
-      if (!state.loadingStatuses.contains(status)) {
-        Future.microtask(
-          () => ref.read(watchlistProvider.notifier).fetchListForStatus(status),
-        );
-      }
       return const SizedBox.shrink();
     }
 
     return HomeSectionWidget(
-      title: title,
+      title: widget.title,
       mediaList: list.map((e) => e.media).toList(),
     );
   }

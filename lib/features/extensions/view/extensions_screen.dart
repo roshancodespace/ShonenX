@@ -182,7 +182,7 @@ class _ExtensionScreenState extends ExtensionManagerScreen<ExtensionScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<ItemType>(
-                    value: selectedType,
+                    initialValue: selectedType,
                     decoration: const InputDecoration(
                       labelText: 'Extension Type',
                     ),
@@ -256,8 +256,6 @@ class ExtensionListWidget extends StatefulWidget implements ExtensionConfig {
 }
 
 class _ExtensionListWidgetState extends ExtensionList<ExtensionListWidget> {
-  // We need access to the manager to install/uninstall
-  // Inherited from ExtensionList: manager
 
   @override
   Widget extensionItem(bool isHeader, String lang, Source? source) {

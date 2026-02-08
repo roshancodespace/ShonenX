@@ -125,7 +125,7 @@ class _SectionScreenState extends ConsumerState<SectionScreen> {
                 return GestureDetector(
                   onTap: () =>
                       navigateToDetail(context, media, 'section_${media.id}'),
-                  child: AnimatedAnimeCard(
+                  child: AnimeCard(
                     anime: media,
                     mode: mode,
                     tag: 'section_${media.id}',

@@ -1,6 +1,8 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/models/universal/universal_news.dart';
+import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 
 import 'package:shonenx/main.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
@@ -26,33 +28,20 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
+  late final ProviderSubscription<AsyncValue<List<UniversalNews>>>
+  _newsListener;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _setupNewsListener();
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  // let background tasks know if we're actually looking at the app
-  Future<void> _setAppOpenStatus(bool isOpen) async {
-    await sharedPrefs.setBool('is_app_open', isOpen);
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    final isOpen = state == AppLifecycleState.resumed;
-    _setAppOpenStatus(isOpen);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    ref.listen(newsProvider, (previous, next) {
+  void _setupNewsListener() {
+    _newsListener = ref.listenManual(newsProvider, (previous, next) {
       if (previous is AsyncData && next is AsyncData) {
+        if (!mounted) return;
         final router = GoRouter.of(context);
         final String currentLocation =
             router.routerDelegate.currentConfiguration.last.matchedLocation;
@@ -60,7 +49,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
         if (!mainTabs.contains(currentLocation)) return;
 
-        final oldList = previous!.value ?? [];
+        final oldList = previous?.value ?? [];
         final newList = next.value ?? [];
         final oldUrls = oldList.map((e) => e.url).toSet();
         final newItems = newList
@@ -86,7 +75,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         }
       }
     });
+  }
 
+  @override
+  void dispose() {
+    _newsListener.close();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // let background tasks know if we're actually looking at the app
+  Future<void> _setAppOpenStatus(bool isOpen) async {
+    await sharedPrefs.setBool('is_app_open', isOpen);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final isOpen = state == AppLifecycleState.resumed;
+    _setAppOpenStatus(isOpen);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(homepageProvider);
     final layout = ref.watch(homeLayoutProvider);
     final sections = layout.where((s) => s.enabled).toList();
@@ -179,32 +189,69 @@ class _HomeSectionRenderer extends StatelessWidget {
   }
 }
 
-class _WatchlistHomeSection extends ConsumerWidget {
+class _WatchlistHomeSection extends ConsumerStatefulWidget {
   final String title;
   final String status;
 
   const _WatchlistHomeSection({required this.title, required this.status});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(watchlistProvider);
-    final list = state.listFor(status);
+  ConsumerState<_WatchlistHomeSection> createState() =>
+      _WatchlistHomeSectionState();
+}
+
+class _WatchlistHomeSectionState extends ConsumerState<_WatchlistHomeSection> {
+  @override
+  void initState() {
+    super.initState();
+    _fetchListIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant _WatchlistHomeSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.status != widget.status) {
+      _fetchListIfNeeded();
+    }
+  }
+
+  void _fetchListIfNeeded() {
+    final state = ref.read(watchlistProvider);
+    final list = state.listFor(widget.status);
+
+    if (list.isEmpty && !state.loadingStatuses.contains(widget.status)) {
+      ref.read(watchlistProvider.notifier).fetchListForStatus(widget.status);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final list = ref.watch(
+      watchlistProvider.select((state) => state.listFor(widget.status)),
+    );
 
     if (list.isEmpty) {
-      if (!state.loadingStatuses.contains(status)) {
-        Future.microtask(
-          () => ref.read(watchlistProvider.notifier).fetchListForStatus(status),
-        );
-      }
       return const SizedBox.shrink();
     }
 
     return HomeSectionWidget(
-      title: title,
+      title: widget.title,
       mediaList: list.map((e) => e.media).toList(),
     );
   }
 }
+
+final sortedWatchProgressProvider =
+    Provider<AsyncValue<List<AnimeWatchProgressEntry>>>((ref) {
+      return ref.watch(watchProgressStreamProvider).whenData((list) {
+        if (list.isEmpty) return [];
+        return list.whereType<AnimeWatchProgressEntry>().toList()..sort(
+          (a, b) => (b.lastUpdated ?? DateTime(0)).compareTo(
+            a.lastUpdated ?? DateTime(0),
+          ),
+        );
+      });
+    });
 
 class _ContinueWatchingSection extends ConsumerWidget {
   const _ContinueWatchingSection();
@@ -212,19 +259,10 @@ class _ContinueWatchingSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ref
-        .watch(watchProgressStreamProvider)
+        .watch(sortedWatchProgressProvider)
         .when(
-          data: (allProgress) {
-            if (allProgress.isEmpty) return const SizedBox.shrink();
-
-            // sort by most recent because we're not animals
-            final sorted = [...allProgress]
-              ..sort(
-                (a, b) => (b.lastUpdated ?? DateTime(0)).compareTo(
-                  a.lastUpdated ?? DateTime(0),
-                ),
-              );
-
+          data: (sorted) {
+            if (sorted.isEmpty) return const SizedBox.shrink();
             return ContinueSection(allProgress: sorted.take(15).toList());
           },
           loading: () => const SizedBox.shrink(),

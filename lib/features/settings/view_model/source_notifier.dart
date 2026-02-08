@@ -17,43 +17,83 @@ class SourceNotifier extends _$SourceNotifier {
 
   @override
   SourceState build() {
+    ref.onDispose(() {
+      _managerSubscription?.cancel();
+      for (final sub in _extensionSubscriptions) {
+        sub.cancel();
+      }
+    });
     return const SourceState(isLoading: true);
   }
 
+  StreamSubscription? _managerSubscription;
+  final List<StreamSubscription> _extensionSubscriptions = [];
+
   Future<void> initialize() async {
     try {
-      final manager = Get.find<ExtensionManager>().currentManager;
+      final extensionManager = Get.find<ExtensionManager>();
 
-      fetchSources(ItemType.anime);
-
-      for (final type in [ItemType.anime]) {
-        List<Source> extensions = [];
-        switch (type) {
-          case ItemType.anime:
-            extensions = await manager.getInstalledAnimeExtensions();
-            break;
-          case ItemType.manga:
-            extensions = await manager.getInstalledMangaExtensions();
-            break;
-          case ItemType.novel:
-            extensions = await manager.getInstalledNovelExtensions();
-            break;
-        }
-        _updateExtensions(type, extensions);
-      }
-
-      state = state.copyWith(
-        activeAnimeRepo: _repo.getActiveAnimeRepo(),
-        activeMangaRepo: _repo.getActiveMangaRepo(),
-        activeNovelRepo: _repo.getActiveNovelRepo(),
-        isLoading: false,
+      // Listen for manager changes (e.g., swapping between Aniyomi/Mangayomi)
+      _managerSubscription?.cancel();
+      _managerSubscription = extensionManager.currentManagerRx.listen(
+        _onManagerChanged,
       );
 
-      _restoreActiveSources();
+      // Perform initial setup with the current manager
+      await _onManagerChanged(extensionManager.currentManager);
     } catch (e, st) {
       AppLogger.e('Error initializing extensions: $e\n$st');
       state = state.copyWith(isLoading: false);
     }
+  }
+
+  Future<void> _onManagerChanged(Extension manager) async {
+    // Clear old extension subscriptions
+    for (final sub in _extensionSubscriptions) {
+      sub.cancel();
+    }
+    _extensionSubscriptions.clear();
+
+    // Subscribe to installed extension changes
+    _extensionSubscriptions.addAll([
+      manager.installedAnimeExtensions.listen(
+        (extensions) => _updateExtensions(ItemType.anime, extensions),
+      ),
+      manager.installedMangaExtensions.listen(
+        (extensions) => _updateExtensions(ItemType.manga, extensions),
+      ),
+      manager.installedNovelExtensions.listen(
+        (extensions) => _updateExtensions(ItemType.novel, extensions),
+      ),
+    ]);
+
+    // Fetch initial data
+    fetchSources(ItemType.anime);
+
+    for (final type in [ItemType.anime]) {
+      List<Source> extensions = [];
+      switch (type) {
+        case ItemType.anime:
+          extensions = await manager.getInstalledAnimeExtensions();
+          break;
+        case ItemType.manga:
+          extensions = await manager.getInstalledMangaExtensions();
+          break;
+        case ItemType.novel:
+          extensions = await manager.getInstalledNovelExtensions();
+          break;
+      }
+      _updateExtensions(type, extensions);
+    }
+
+    state = state.copyWith(
+      activeAnimeRepo: _repo.getActiveAnimeRepo(),
+      activeMangaRepo: _repo.getActiveMangaRepo(),
+      activeNovelRepo: _repo.getActiveNovelRepo(),
+      isLoading: false,
+    );
+
+    _restoreActiveSources();
   }
 
   void _updateExtensions(ItemType type, List<Source> extensions) {

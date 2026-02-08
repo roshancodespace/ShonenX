@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
+
 
     <application
         android:label="ShonenX"
@@ -25,7 +27,7 @@
             android:launchMode="singleTop"
             android:taskAffinity=""
             android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|screenSize|locale|layoutDirection|uiMode"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|locale|layoutDirection|fontScale|keyboard|keyboardHidden|navigation|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize"
             android:screenOrientation="portrait"
@@ -48,7 +50,6 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="shonenx" android:host="callback" />
             </intent-filter>
-            
         </activity>
 
         <meta-data

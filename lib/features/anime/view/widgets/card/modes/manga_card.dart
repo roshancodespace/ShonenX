@@ -59,7 +59,8 @@ class MangaCard extends StatelessWidget {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(0),
                       child: CachedNetworkImage(
-                        imageUrl: anime?.coverImage.large ??
+                        imageUrl:
+                            anime?.coverImage.large ??
                             anime?.coverImage.medium ??
                             '',
                         fit: BoxFit.cover,
@@ -98,7 +99,9 @@ class MangaCard extends StatelessWidget {
                       right: 0,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black,
                           border: Border(
@@ -142,8 +145,10 @@ class MangaCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black,
                     borderRadius: BorderRadius.circular(2),

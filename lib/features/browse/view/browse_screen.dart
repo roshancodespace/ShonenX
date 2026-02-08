@@ -6,7 +6,6 @@ import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core/utils/misc.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
-import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
 
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/features/watchlist/view/widget/shonenx_gridview.dart';
@@ -470,7 +469,7 @@ class _ResultsGrid extends ConsumerWidget {
                     return GestureDetector(
                       onTap: () =>
                           navigateToDetail(context, anime, anime.id.toString()),
-                      child: AnimatedAnimeCard(
+                      child: AnimeCard(
                         anime: anime,
                         mode: mode,
                         tag: anime.id.toString(),
@@ -612,11 +611,7 @@ class _HorizontalSection extends ConsumerWidget {
     if (items.isEmpty) return const SizedBox.shrink();
 
     final mode = ref.watch(uiSettingsProvider).cardStyle;
-    final cardConfig = cardConfigs[mode]!;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final sectionHeight = screenWidth > 600
-        ? cardConfig.responsiveHeight.large
-        : cardConfig.responsiveHeight.small;
+    final sectionHeight = mode.getDimensions(context).height;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -681,7 +676,7 @@ class _HorizontalSection extends ConsumerWidget {
                 width: 155,
                 child: GestureDetector(
                   onTap: () => navigateToDetail(context, anime, tag),
-                  child: AnimatedAnimeCard(anime: anime, mode: mode, tag: tag),
+                  child: AnimeCard(anime: anime, mode: mode, tag: tag),
                 ),
               );
             },

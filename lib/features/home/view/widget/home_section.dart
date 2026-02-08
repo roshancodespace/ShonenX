@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/utils/misc.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
-import 'package:shonenx/features/anime/view/widgets/card/anime_card_config.dart';
 
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';
@@ -21,11 +20,9 @@ class HomeSectionWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final screenWidth = MediaQuery.of(context).size.width;
-    final small = screenWidth < 600;
 
     final mode = ref.watch(uiSettingsProvider).cardStyle;
-    final height = cardConfigs[mode]!.responsiveHeight;
+    final height = mode.getDimensions(context).height;
 
     if (mediaList.isEmpty) return const SizedBox.shrink();
 
@@ -38,7 +35,7 @@ class HomeSectionWidget extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: small ? height.small : height.large,
+          height: height,
           child: ListView.builder(
             addAutomaticKeepAlives: true,
             addRepaintBoundaries: true,
@@ -52,7 +49,7 @@ class HomeSectionWidget extends ConsumerWidget {
                 padding: const EdgeInsets.only(right: 12),
                 child: GestureDetector(
                   onTap: () => navigateToDetail(context, media, tag),
-                  child: AnimatedAnimeCard(anime: media, tag: tag, mode: mode),
+                  child: AnimeCard(anime: media, tag: tag, mode: mode),
                 ),
               );
             },

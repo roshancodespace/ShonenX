@@ -38,11 +38,7 @@ class CompactCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Iconsax.star1,
-                      size: 8,
-                      color: Colors.amber,
-                    ),
+                    const Icon(Iconsax.star1, size: 8, color: Colors.amber),
                     const SizedBox(width: 2),
                     Text(
                       '${anime!.averageScore}',
@@ -80,11 +76,7 @@ class CompactCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AnimeTitle(
-                  anime: anime,
-                  maxLines: 2,
-                  minimal: true,
-                ),
+                AnimeTitle(anime: anime, maxLines: 2, minimal: true),
                 if (anime?.episodes != null) ...[
                   const SizedBox(height: 2),
                   Row(

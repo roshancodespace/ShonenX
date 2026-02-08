@@ -37,9 +37,7 @@ class MinimalCard extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AnimeTitle(anime: anime, maxLines: 2),
-                ],
+                children: [AnimeTitle(anime: anime, maxLines: 2)],
               ),
             ),
           ),

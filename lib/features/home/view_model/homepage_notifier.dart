@@ -51,29 +51,31 @@ class HomepageNotifier extends Notifier<HomepageState> {
   }
 
   Future<HomepageState> initialize({bool forceRefresh = false}) async {
-    final shouldRefresh = forceRefresh ||
+    final shouldRefresh =
+        forceRefresh ||
         state.homePage == null ||
         state.homePage!.trendingAnime.isEmpty ||
         state.homePage!.popularAnime.isEmpty ||
         state.homePage!.upcomingAnime.isEmpty ||
         state.homePage!.recentlyUpdated.isEmpty ||
         state.homePage!.topRatedAnime.isEmpty ||
-        state.lastUpdated
-            .isBefore(DateTime.now().subtract(const Duration(hours: 6)));
+        state.lastUpdated.isBefore(
+          DateTime.now().subtract(const Duration(hours: 6)),
+        );
 
     return shouldRefresh ? await fetchHomePage() : state;
   }
 
   void clearCache() {
     Hive.box<HomePageModel>(_boxName).clear();
-    state = HomepageState(
-      lastUpdated: DateTime.now(),
-      isLoading: false,
-    );
+    state = HomepageState(lastUpdated: DateTime.now(), isLoading: false);
   }
 
   Future<HomepageState> fetchHomePage() async {
-    state = state.copyWith(isLoading: true, error: null);
+    // Only show loading if we don't have data yet
+    if (state.homePage == null) {
+      state = state.copyWith(isLoading: true, error: null);
+    }
     try {
       final trending = await _repo.getTrendingAnime();
       final popular = await _repo.getPopularAnime();

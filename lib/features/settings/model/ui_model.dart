@@ -8,12 +8,14 @@ class UiSettings {
   final SpotlightCardMode spotlightCardStyle;
   final bool immersiveMode;
   final String episodeViewMode;
+  final double scale;
 
   UiSettings({
     this.cardStyle = AnimeCardMode.defaults,
     this.immersiveMode = false,
     this.spotlightCardStyle = SpotlightCardMode.defaults,
     this.episodeViewMode = 'list',
+    this.scale = 1.0,
   });
 
   UiSettings copyWith({
@@ -21,12 +23,14 @@ class UiSettings {
     bool? immersiveMode,
     SpotlightCardMode? spotlightCardStyle,
     String? episodeViewMode,
+    double? scale,
   }) {
     return UiSettings(
       cardStyle: cardStyle ?? this.cardStyle,
       immersiveMode: immersiveMode ?? this.immersiveMode,
       spotlightCardStyle: spotlightCardStyle ?? this.spotlightCardStyle,
       episodeViewMode: episodeViewMode ?? this.episodeViewMode,
+      scale: scale ?? this.scale,
     );
   }
 
@@ -36,6 +40,7 @@ class UiSettings {
       'immersiveMode': immersiveMode,
       'spotlightCardStyle': spotlightCardStyle.index,
       'episodeViewMode': episodeViewMode,
+      'scale': scale,
     };
   }
 
@@ -46,6 +51,7 @@ class UiSettings {
       spotlightCardStyle:
           SpotlightCardMode.values[map['spotlightCardStyle'] ?? 0],
       episodeViewMode: map['episodeViewMode'] ?? 'list',
+      scale: map['scale'] ?? 1.0,
     );
   }
 

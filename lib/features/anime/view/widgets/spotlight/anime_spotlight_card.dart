@@ -19,13 +19,14 @@ class AnimeSpotlightCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final radius = mode.radius(context);
     return RepaintBoundary(
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: double.infinity,
         margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(mode.radius),
+          borderRadius: BorderRadius.circular(radius),
           boxShadow: [
             if (mode.hasHardShadow)
               const BoxShadow(
@@ -42,7 +43,7 @@ class AnimeSpotlightCard extends ConsumerWidget {
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(mode.radius),
+          borderRadius: BorderRadius.circular(radius),
           child: mode.build(anime: anime, heroTag: heroTag, onTap: onTap),
         ),
       ),

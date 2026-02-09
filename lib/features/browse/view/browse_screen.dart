@@ -611,12 +611,12 @@ class _HorizontalSection extends ConsumerWidget {
     if (items.isEmpty) return const SizedBox.shrink();
 
     final mode = ref.watch(uiSettingsProvider).cardStyle;
-    final sectionHeight = mode.getDimensions(context).height;
+    final size = mode.getDimensions(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -663,9 +663,9 @@ class _HorizontalSection extends ConsumerWidget {
           ),
         ),
         SizedBox(
-          height: sectionHeight,
+          height: size.height,
           child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             scrollDirection: Axis.horizontal,
             itemCount: items.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
@@ -673,7 +673,7 @@ class _HorizontalSection extends ConsumerWidget {
               final anime = items[index];
               final tag = randomId();
               return SizedBox(
-                width: 155,
+                width: size.width,
                 child: GestureDetector(
                   onTap: () => navigateToDetail(context, anime, tag),
                   child: AnimeCard(anime: anime, mode: mode, tag: tag),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/core/utils/ui.dart';
 import 'package:shonenx/features/anime/view/widgets/spotlight/modes/classic_spotlight.dart';
 import 'package:shonenx/features/anime/view/widgets/spotlight/modes/compact_spotlight.dart';
 import 'package:shonenx/features/anime/view/widgets/spotlight/modes/cover_only_spotlight.dart';
@@ -22,34 +23,86 @@ enum SpotlightCardMode {
   polaroid;
 
   Size getDimensions(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final isSmall = width < 600;
+    final scale = 1.0;
+    final bp = responsiveBreakpoint(context);
 
-    // Default height range for most cards
-    const defaultSmallHeight = 240.0;
-    const defaultLargeHeight = 400.0;
+    Size s(double w, double h) => Size(w * scale, h * scale);
 
-    // Default width is infinity (full width)
-
-    final height = switch (this) {
-      SpotlightCardMode.compact => isSmall ? 180.0 : 220.0,
-      _ => isSmall ? defaultSmallHeight : defaultLargeHeight,
+    double h({
+      required double compact,
+      required double medium,
+      required double expanded,
+      required double ultra,
+    }) => switch (bp) {
+      ResponsiveBreakpoint.compact => compact,
+      ResponsiveBreakpoint.medium => medium,
+      ResponsiveBreakpoint.expanded => expanded,
+      ResponsiveBreakpoint.ultra => ultra,
     };
 
-    return Size(double.infinity, height);
+    return switch (this) {
+      SpotlightCardMode.compact => s(
+        double.infinity,
+        h(compact: 180, medium: 200, expanded: 220, ultra: 240),
+      ),
+
+      SpotlightCardMode.defaults => s(
+        double.infinity,
+        h(compact: 240, medium: 280, expanded: 320, ultra: 360),
+      ),
+
+      SpotlightCardMode.minimal => s(
+        double.infinity,
+        h(compact: 220, medium: 260, expanded: 300, ultra: 340),
+      ),
+
+      SpotlightCardMode.classic => s(
+        double.infinity,
+        h(compact: 260, medium: 300, expanded: 340, ultra: 380),
+      ),
+
+      SpotlightCardMode.coverOnly => s(
+        double.infinity,
+        h(compact: 260, medium: 300, expanded: 340, ultra: 380),
+      ),
+
+      SpotlightCardMode.liquidGlass => s(
+        double.infinity,
+        h(compact: 260, medium: 300, expanded: 360, ultra: 400),
+      ),
+
+      SpotlightCardMode.neon => s(
+        double.infinity,
+        h(compact: 250, medium: 300, expanded: 340, ultra: 380),
+      ),
+
+      SpotlightCardMode.manga => s(
+        double.infinity,
+        h(compact: 260, medium: 300, expanded: 340, ultra: 380),
+      ),
+
+      SpotlightCardMode.polaroid => s(
+        double.infinity,
+        h(compact: 260, medium: 300, expanded: 330, ultra: 370),
+      ),
+    };
   }
 
-  double get radius {
+  double radius(BuildContext context) {
+    final scale = 1.0;
+
+    double r(double value) => value * scale;
+
     return switch (this) {
-      SpotlightCardMode.defaults => 16.0,
-      SpotlightCardMode.minimal => 12.0,
-      SpotlightCardMode.classic => 14.0,
-      SpotlightCardMode.coverOnly => 16.0,
-      SpotlightCardMode.liquidGlass => 20.0,
-      SpotlightCardMode.neon => 16.0,
-      SpotlightCardMode.manga => 0.0,
-      SpotlightCardMode.compact => 12.0,
-      SpotlightCardMode.polaroid => 4.0,
+      SpotlightCardMode.defaults => r(16),
+      SpotlightCardMode.minimal => r(12),
+      SpotlightCardMode.classic => r(14),
+      SpotlightCardMode.coverOnly => r(16),
+      SpotlightCardMode.liquidGlass => r(20),
+      SpotlightCardMode.neon => r(16),
+      SpotlightCardMode.manga => 0,
+      SpotlightCardMode.compact => r(12),
+      SpotlightCardMode.polaroid => r(4),
     };
   }
 

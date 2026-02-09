@@ -18,7 +18,7 @@ class UiSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-
+    final uiSettings = ref.watch(uiSettingsProvider);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton.filledTonal(
@@ -52,39 +52,49 @@ class UiSettingsScreen extends ConsumerWidget {
                     description: 'Customize spotlight/banner appearance',
                     onTap: () => _showStyleSelector(context, ref, true),
                   ),
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final currentMode = ref.watch(
-                        uiSettingsProvider.select((ui) => ui.episodeViewMode),
-                      );
-                      return DropdownSettingsItem(
-                        icon: Icon(Iconsax.task, color: colorScheme.primary),
-                        accent: colorScheme.primary,
-                        title: 'Episode View Mode',
-                        description: 'Choose how episodes are displayed',
-                        value: currentMode,
-                        items: const [
-                          DropdownMenuItem(value: 'list', child: Text('List')),
-                          DropdownMenuItem(
-                            value: 'compact',
-                            child: Text('Compact'),
-                          ),
-                          DropdownMenuItem(value: 'grid', child: Text('Grid')),
-                          DropdownMenuItem(
-                            value: 'block',
-                            child: Text('Block'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            ref
-                                .read(uiSettingsProvider.notifier)
-                                .updateSettings(
-                                  (s) => s.copyWith(episodeViewMode: value),
-                                );
-                          }
-                        },
-                      );
+                  DropdownSettingsItem(
+                    icon: Icon(Iconsax.task, color: colorScheme.primary),
+                    accent: colorScheme.primary,
+                    title: 'Episode View Mode',
+                    description: 'Choose how episodes are displayed',
+                    value: uiSettings.episodeViewMode,
+                    items: const [
+                      DropdownMenuItem(value: 'list', child: Text('List')),
+                      DropdownMenuItem(
+                        value: 'compact',
+                        child: Text('Compact'),
+                      ),
+                      DropdownMenuItem(value: 'grid', child: Text('Grid')),
+                      DropdownMenuItem(value: 'block', child: Text('Block')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        ref
+                            .read(uiSettingsProvider.notifier)
+                            .updateSettings(
+                              (s) => s.copyWith(episodeViewMode: value),
+                            );
+                      }
+                    },
+                  ),
+                ],
+              ),
+              SettingsSection(
+                title: "Responsive",
+                children: [
+                  SliderSettingsItem(
+                    icon: Icon(Iconsax.task, color: colorScheme.primary),
+                    accent: colorScheme.primary,
+                    title: 'Scale',
+                    description: "${uiSettings.scale.toStringAsFixed(1)}x",
+                    value: uiSettings.scale,
+                    min: 0.5,
+                    max: 1.5,
+                    divisions: 10,
+                    onChanged: (value) {
+                      ref
+                          .read(uiSettingsProvider.notifier)
+                          .updateSettings((s) => s.copyWith(scale: value));
                     },
                   ),
                 ],

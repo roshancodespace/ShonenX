@@ -19,6 +19,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shonenx/app_initializer.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
+import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/router/router_config.dart';
 import 'package:shonenx/storage_provider.dart';
 
@@ -84,7 +85,7 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeSettingsProvider);
-
+    final scale = ref.watch(uiSettingsProvider.select((s) => s.scale));
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
         final ColorScheme? lightScheme =
@@ -121,10 +122,10 @@ class MyApp extends ConsumerWidget {
           useMaterial3: theme.useMaterial3,
           textTheme: GoogleFonts.montserratTextTheme(),
           pageTransitionsTheme: const PageTransitionsTheme(
-            builders: <TargetPlatform, PageTransitionsBuilder>{
-              TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
-              TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
-              TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
+            builders: {
+              TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+              TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+              TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
             },
           ),
         );
@@ -139,6 +140,17 @@ class MyApp extends ConsumerWidget {
           debugShowCheckedModeBanner: false,
           scaffoldMessengerKey: scaffoldMessengerKey,
           routerConfig: routerConfig,
+          builder: (context, child) {
+            final mediaQuery = MediaQuery.of(context);
+            final scaledSize = mediaQuery.size / scale;
+            return MediaQuery(
+              data: mediaQuery.copyWith(
+                textScaler: TextScaler.linear(scale),
+                size: scaledSize,
+              ),
+              child: child!,
+            );
+          },
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: themeMode,

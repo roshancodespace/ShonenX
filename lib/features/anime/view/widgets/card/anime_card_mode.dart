@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/core/utils/ui.dart';
 import 'package:shonenx/features/anime/view/widgets/card/modes/classic_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/modes/compact_card.dart';
 import 'package:shonenx/features/anime/view/widgets/card/modes/cover_only_card.dart';
@@ -22,28 +23,86 @@ enum AnimeCardMode {
   polaroid;
 
   Size getDimensions(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final isSmall = width < 600;
+    final scale = 1.0;
+    final bp = responsiveBreakpoint(context);
+
+    Size s(double w, double h) => Size(w * scale, h * scale);
+
+    Size byBp({
+      required Size compact,
+      required Size medium,
+      required Size expanded,
+      required Size ultra,
+    }) => switch (bp) {
+      ResponsiveBreakpoint.compact => compact,
+      ResponsiveBreakpoint.medium => medium,
+      ResponsiveBreakpoint.expanded => expanded,
+      ResponsiveBreakpoint.ultra => ultra,
+    };
 
     return switch (this) {
-      AnimeCardMode.defaults =>
-        isSmall ? const Size(140.0, 200.0) : const Size(160.0, 240.0),
-      AnimeCardMode.minimal =>
-        isSmall ? const Size(130.0, 180.0) : const Size(150.0, 220.0),
-      AnimeCardMode.classic =>
-        isSmall ? const Size(140.0, 240.0) : const Size(160.0, 280.0),
-      AnimeCardMode.coverOnly =>
-        isSmall ? const Size(130.0, 190.0) : const Size(150.0, 230.0),
-      AnimeCardMode.liquidGlass =>
-        isSmall ? const Size(150.0, 220.0) : const Size(180.0, 260.0),
-      AnimeCardMode.neon =>
-        isSmall ? const Size(140.0, 200.0) : const Size(160.0, 240.0),
-      AnimeCardMode.manga =>
-        isSmall ? const Size(140.0, 210.0) : const Size(160.0, 250.0),
-      AnimeCardMode.compact =>
-        isSmall ? const Size(110.0, 160.0) : const Size(130.0, 190.0),
-      AnimeCardMode.polaroid =>
-        isSmall ? const Size(150.0, 220.0) : const Size(170.0, 250.0),
+      AnimeCardMode.defaults => byBp(
+        compact: s(130, 200),
+        medium: s(150, 220),
+        expanded: s(170, 250),
+        ultra: s(190, 270),
+      ),
+
+      AnimeCardMode.minimal => byBp(
+        compact: s(120, 180),
+        medium: s(140, 200),
+        expanded: s(160, 230),
+        ultra: s(180, 270),
+      ),
+
+      AnimeCardMode.classic => byBp(
+        compact: s(140, 240),
+        medium: s(150, 260),
+        expanded: s(180, 300),
+        ultra: s(200, 340),
+      ),
+
+      AnimeCardMode.coverOnly => byBp(
+        compact: s(130, 200),
+        medium: s(140, 210),
+        expanded: s(170, 250),
+        ultra: s(190, 270),
+      ),
+
+      AnimeCardMode.liquidGlass => byBp(
+        compact: s(150, 220),
+        medium: s(170, 240),
+        expanded: s(200, 280),
+        ultra: s(220, 320),
+      ),
+
+      AnimeCardMode.neon => byBp(
+        compact: s(130, 200),
+        medium: s(150, 220),
+        expanded: s(170, 250),
+        ultra: s(190, 270),
+      ),
+
+      AnimeCardMode.manga => byBp(
+        compact: s(140, 220),
+        medium: s(150, 235),
+        expanded: s(180, 270),
+        ultra: s(200, 320),
+      ),
+
+      AnimeCardMode.compact => byBp(
+        compact: s(110, 160),
+        medium: s(120, 175),
+        expanded: s(140, 200),
+        ultra: s(160, 250),
+      ),
+
+      AnimeCardMode.polaroid => byBp(
+        compact: s(140, 220),
+        medium: s(160, 235),
+        expanded: s(180, 270),
+        ultra: s(200, 320),
+      ),
     };
   }
 

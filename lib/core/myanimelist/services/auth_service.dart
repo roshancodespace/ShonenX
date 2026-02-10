@@ -37,13 +37,15 @@ class MyAnimeListAuthService {
       await _secureStorage.write(key: _codeVerifierKey, value: codeVerifier);
       await _secureStorage.write(key: _authStateKey, value: state);
 
-      final authUri = Uri.parse(_authUrl).replace(queryParameters: {
-        'response_type': 'code',
-        'client_id': clientId,
-        'redirect_uri': _redirectUri,
-        'code_challenge': codeChallenge,
-        'state': state,
-      });
+      final authUri = Uri.parse(_authUrl).replace(
+        queryParameters: {
+          'response_type': 'code',
+          'client_id': clientId,
+          'redirect_uri': _redirectUri,
+          'code_challenge': codeChallenge,
+          'state': state,
+        },
+      );
 
       AppLogger.i("Opening MAL auth URL: $authUri");
 
@@ -92,7 +94,7 @@ class MyAnimeListAuthService {
           'client_id': clientId,
           'client_secret': clientSecret,
           'redirect_uri': _redirectUri,
-          'code_verifier': await _secureStorage.read(key: _codeVerifierKey)
+          'code_verifier': await _secureStorage.read(key: _codeVerifierKey),
         },
       );
 
@@ -133,9 +135,13 @@ class MyAnimeListAuthService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         await _secureStorage.write(
-            key: _accessTokenKey, value: data['access_token']);
+          key: _accessTokenKey,
+          value: data['access_token'],
+        );
         await _secureStorage.write(
-            key: _refreshTokenKey, value: data['refresh_token']);
+          key: _refreshTokenKey,
+          value: data['refresh_token'],
+        );
 
         AppLogger.i("Token refresh successful.");
         return data;
@@ -186,8 +192,10 @@ class MyAnimeListAuthService {
     const chars =
         'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
     final random = Random.secure();
-    return List.generate(length, (_) => chars[random.nextInt(chars.length)])
-        .join();
+    return List.generate(
+      length,
+      (_) => chars[random.nextInt(chars.length)],
+    ).join();
   }
 
   String _generateCodeVerifier() {
@@ -195,8 +203,10 @@ class MyAnimeListAuthService {
     const chars =
         'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
     final random = Random.secure();
-    return List.generate(length, (_) => chars[random.nextInt(chars.length)])
-        .join();
+    return List.generate(
+      length,
+      (_) => chars[random.nextInt(chars.length)],
+    ).join();
   }
 
   String _generateCodeChallenge(String verifier) {

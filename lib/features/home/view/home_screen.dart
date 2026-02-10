@@ -105,7 +105,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       onRefresh: () => ref.read(homepageProvider.notifier).fetchHomePage(),
       child: ListView.builder(
         padding: const EdgeInsets.only(top: 10),
-        cacheExtent: 600,
         itemCount: sections.length + 2,
         itemBuilder: (context, index) {
           if (index == 0)

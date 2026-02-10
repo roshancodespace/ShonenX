@@ -19,6 +19,9 @@ import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/settings/view_model/player_notifier.dart';
 import 'package:shonenx/main.dart';
 
+import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/features/details/view_model/local_tracker_notifier.dart';
+
 part 'watch_controller.g.dart';
 
 @riverpod
@@ -282,56 +285,81 @@ class WatchController extends _$WatchController {
 
     final askToUpdate =
         sharedPrefs.getBool('tracking_ask_update_on_start') ?? false;
-    final syncAnilist = sharedPrefs.getBool('tracking_sync_anilist') ?? true;
-    final syncMal = sharedPrefs.getBool('tracking_sync_mal') ?? true;
-
-    final auth = ref.read(authProvider);
-    final canSyncAnilist = auth.isAniListAuthenticated && syncAnilist;
-    final canSyncMal = auth.isMalAuthenticated && syncMal;
-
-    if (!canSyncAnilist && !canSyncMal) {
-      return;
-    }
 
     if (!askToUpdate) {
-      updateTracking(
-        mediaId: mediaId,
-        episodeNum: episodeNum,
-        anilist: canSyncAnilist,
-        mal: canSyncMal,
-      );
-    } else {
-      // TODO: dialog request
+      updateTracking(mediaId: mediaId, episodeNum: episodeNum);
     }
   }
 
   Future<void> updateTracking({
     required String mediaId,
     required int episodeNum,
-    bool anilist = false,
-    bool mal = false,
   }) async {
     try {
+      final auth = ref.read(authProvider);
+      final syncAnilist = sharedPrefs.getBool('tracking_sync_anilist') ?? true;
+      final syncMal = sharedPrefs.getBool('tracking_sync_mal') ?? true;
+
+      final canSyncAnilist = auth.isAniListAuthenticated && syncAnilist;
+      final canSyncMal = auth.isMalAuthenticated && syncMal;
+
+      if (!canSyncAnilist && !canSyncMal) {
+        // Fallback to local
+        final repo = ref.read(watchProgressRepositoryProvider);
+        final entry = repo.getProgress(mediaId);
+
+        // Try to construct UniversalMedia from local progress if needed
+        final media = UniversalMedia(
+          id: mediaId,
+          title: UniversalTitle(english: entry?.animeTitle ?? 'Unknown'),
+          coverImage: UniversalCoverImage(large: entry?.animeCover),
+          status: 'UNKNOWN', // Placeholder
+          format: entry?.animeFormat,
+          episodes: entry?.totalEpisodes,
+        );
+
+        // Fetch existing local entry to preserve score/notes
+        final localEntry = await ref
+            .read(localTrackerProvider.notifier)
+            .getEntry(mediaId);
+
+        await ref
+            .read(localTrackerProvider.notifier)
+            .saveEntry(
+              media,
+              status: 'CURRENT',
+              progress: episodeNum,
+              score: localEntry?.score ?? 0.0,
+              repeat: localEntry?.repeat ?? 0,
+              notes: localEntry?.notes ?? '',
+              isPrivate: localEntry?.isPrivate ?? false,
+              startedAt: localEntry != null
+                  ? null
+                  : DateTime.now(), // Set start only if new
+            );
+        return;
+      }
+
       final List<Future> tasks = [];
 
-      if (anilist) {
+      if (canSyncAnilist) {
         tasks.add(
           ref
               .read(anilistServiceProvider)
               .updateUserAnimeList(
-                mediaId: int.parse(mediaId),
+                mediaId: int.tryParse(mediaId) ?? 0,
                 progress: episodeNum,
                 status: 'CURRENT',
               ),
         );
       }
 
-      if (mal) {
+      if (canSyncMal) {
         tasks.add(
           ref
               .read(malServiceProvider)
               .updateUserAnimeList(
-                mediaId: int.parse(mediaId),
+                mediaId: int.tryParse(mediaId) ?? 0,
                 progress: episodeNum,
                 status: 'CURRENT',
               ),

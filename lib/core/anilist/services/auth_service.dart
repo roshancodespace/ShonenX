@@ -16,7 +16,6 @@ class AniListAuthService {
         url:
             '$authUrl?client_id=$clientId&redirect_uri=$redirectUri&response_type=code',
         callbackUrlScheme: 'shonenx',
-        options: FlutterWebAuth2Options(),
       );
 
       final code = Uri.parse(result).queryParameters['code'];
@@ -33,14 +32,14 @@ class AniListAuthService {
         Uri.parse(tokenUrl),
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json"
+          "Accept": "application/json",
         },
         body: jsonEncode({
           "grant_type": "authorization_code",
           "client_id": clientId,
           "client_secret": clientSecret,
           'redirect_uri': redirectUri,
-          "code": code
+          "code": code,
         }),
       );
 

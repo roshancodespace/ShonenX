@@ -135,8 +135,8 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
         final matches = getBestMatches<BaseAnimeModel>(
           results: results,
           title: query,
-          nameSelector: (r) => r.name!,
-          idSelector: (r) => r.url!,
+          nameSelector: (r) => r.name,
+          idSelector: (r) => r.id,
         );
 
         if (matches.isNotEmpty && matches.first.similarity >= 0.8) {

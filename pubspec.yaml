@@ -18,12 +18,9 @@ dependencies:
   awesome_snackbar_content: ^0.1.7
   cached_network_image: ^3.4.1
   carousel_slider: ^5.1.1
-  code_text_field: ^1.1.0
   collection: ^1.19.1
   connectivity_plus: ^6.1.5
-  crypto: ^3.0.6
-  d4rt: ^0.1.9
-  desktop_webview_window: ^0.2.3
+
   device_info_plus: ^11.2.1
   dynamic_color: 1.7.0
   encrypt: ^5.0.3
@@ -33,21 +30,25 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_highlight: ^0.7.0
-  flutter_inappwebview: ^6.1.5
   flutter_local_notifications: ^20.0.0
   flutter_markdown: ^0.7.7+1
-  flutter_qjs:
-    git:
-      url: https://github.com/kodjodevf/flutter_qjs.git
-      ref: f3cef51
   flutter_riverpod: ^3.0.1
   flutter_secure_storage:
     git:
       url: https://github.com/juliansteenbakker/flutter_secure_storage.git
       ref: master
       path: flutter_secure_storage
+  flutter_inappwebview:
+    git:
+      url: https://github.com/roshancodespace/flutter_inappwebview.git
+      ref: master
+      path: flutter_inappwebview
   flutter_volume_controller: ^1.3.4
-  flutter_web_auth_2: ^5.0.1
+  flutter_web_auth_2:
+    git: 
+      url: https://github.com/aayush2622/flutter_web_auth.git
+      ref: master
+      path: flutter_web_auth_2
   go_router: ^14.7.1
   google_fonts: ^6.2.1
   graphql: ^5.2.3
@@ -65,9 +66,18 @@ dependencies:
   isar_community_flutter_libs: ^3.3.0
   js_packer: ^0.0.5
   logger: ^2.5.0
-  media_kit: ^1.2.6
-  media_kit_libs_video: ^1.0.7
-  media_kit_video: ^2.0.1
+  media_kit:
+    git:
+      url: https://github.com/Schnitzel5/media-kit.git
+      path: media_kit
+  media_kit_video:
+    git:
+      url: https://github.com/Schnitzel5/media-kit.git
+      path: media_kit_video
+  media_kit_libs_video:
+    git:
+      url: https://github.com/Schnitzel5/media-kit.git
+      path: libs/universal/media_kit_libs_video
   package_info_plus: ^8.0.0
   path: ^1.9.0
   path_provider: ^2.1.5
@@ -95,6 +105,7 @@ dev_dependencies:
   hive_ce_generator: ^1.8.1
   riverpod_generator: ^3.0.0
   isar_community_generator: ^3.3.0
+
 
 flutter:
   uses-material-design: true

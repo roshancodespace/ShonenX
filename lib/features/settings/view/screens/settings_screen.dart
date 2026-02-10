@@ -62,6 +62,13 @@ class SettingsScreen extends ConsumerWidget {
                   onTap: () => context.push('/settings/anime-sources'),
                 ),
                 NormalSettingsItem(
+                  icon: Icon(Iconsax.setting_2, color: colorScheme.primary),
+                  accent: colorScheme.primary,
+                  title: 'Content Settings',
+                  description: 'Adult content, smart source persistence',
+                  onTap: () => context.push('/settings/content'),
+                ),
+                NormalSettingsItem(
                   icon: Icon(Icons.sync_rounded, color: colorScheme.primary),
                   accent: colorScheme.primary,
                   title: 'Tracking & Sync (💀)',

@@ -34,6 +34,7 @@ import 'package:shonenx/features/settings/view/screens/subtitle_customization_sc
 import 'package:shonenx/features/settings/view/screens/theme_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/ui_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/tracking_settings_screen.dart';
+import 'package:shonenx/features/settings/view/screens/content_settings_screen.dart';
 import 'package:shonenx/features/debug/view/debug_screen.dart';
 import 'package:shonenx/router/router_wrapper.dart';
 
@@ -138,6 +139,10 @@ final routerConfig = GoRouter(
         GoRoute(
           path: 'ui',
           builder: (context, state) => const UiSettingsScreen(),
+        ),
+        GoRoute(
+          path: 'content',
+          builder: (context, state) => const ContentSettingsScreen(),
         ),
         GoRoute(
           path: 'about',

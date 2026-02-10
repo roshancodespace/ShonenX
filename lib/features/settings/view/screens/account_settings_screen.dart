@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/features/auth/view/auth_button.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/features/settings/view/widgets/content_settings_section.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});
@@ -42,11 +41,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             const AccountAuthenticationSection(),
-            const SizedBox(height: 32),
-            const ContentSettingsSection(),
-            const SizedBox(height: 32),
           ],
         ),
       ),

@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
+import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 
 import 'package:shonenx/core/utils/app_logger.dart';
 
@@ -50,6 +51,7 @@ class AppInitializer {
 
     await _initializeHive();
     await _initializeSharedPrefs();
+    await WatchProgressRepository().migrateFromHive();
     await _initializeWindowManager();
     await _initializeMediaKit();
     await NotificationService().initialize();

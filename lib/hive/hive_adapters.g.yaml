@@ -279,7 +279,7 @@ types:
         index: 8
   UiSettings:
     typeId: 19
-    nextIndex: 4
+    nextIndex: 5
     fields:
       cardStyle:
         index: 0
@@ -289,3 +289,5 @@ types:
         index: 2
       episodeViewMode:
         index: 3
+      scale:
+        index: 4

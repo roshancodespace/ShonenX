@@ -5,6 +5,7 @@ targets:
         generate_for:
           - lib/features/**/model/**
           - lib/core/**
+          - lib/data/isar/**
       riverpod_generator:
         generate_for:
           - lib/features/**/view_model/**

@@ -4,7 +4,7 @@ import 'package:shonenx/core/utils/misc.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
-import 'package:shonenx/features/watchlist/view/widget/watchlist_grid_view.dart';
+import 'package:shonenx/shared/ui/widgets/shonenx_gridview.dart';
 import 'package:shonenx/features/watchlist/view/widget/watchlist_states_widgets.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';
@@ -322,6 +322,7 @@ class _WatchlistTabView extends ConsumerWidget {
     final state = ref.watch(watchlistProvider);
     final notifier = ref.read(watchlistProvider.notifier);
     final mode = ref.watch(uiSettingsProvider).cardStyle;
+    final dim = mode.getDimensions(context);
 
     // Listen to selection changes to rebuild
     final selectedIds = ref.watch(watchlistSelectionProvider);
@@ -346,11 +347,8 @@ class _WatchlistTabView extends ConsumerWidget {
 
     if (media.isEmpty) return const WatchlistEmptyState();
 
-    return WatchlistGridView(
-      itemCount: media.length + (isLoading ? 1 : 0),
-      onRefresh: () async => notifier.fetchListForStatus(status, force: true),
-      onScrollNotification: (n) {
-        // Pagination only for Remote
+    return NotificationListener<ScrollNotification>(
+      onNotification: (n) {
         if (!state.isLocal) {
           final info = state.pageInfo[status];
           if (info != null &&
@@ -362,61 +360,73 @@ class _WatchlistTabView extends ConsumerWidget {
         }
         return false;
       },
-      crossAxisExtent: mode.getDimensions(context).width,
-      itemBuilder: (context, index) {
-        if (index == media.length) {
-          return const WatchlistLoadingIndicator();
-        }
-        final anime = media[index];
-        final tag = randomId();
-        final isSelected = selectedIds.contains(anime.id);
-
-        return GestureDetector(
-          onLongPress: () {
-            ref.read(watchlistSelectionProvider.notifier).toggle(anime.id);
-          },
-          onTap: () {
-            if (isSelectionMode) {
-              ref.read(watchlistSelectionProvider.notifier).toggle(anime.id);
-            } else {
-              navigateToDetail(context, anime, tag);
+      child: RefreshIndicator(
+        onRefresh: () async => notifier.fetchListForStatus(status, force: true),
+        child: ShonenXGridView(
+          itemCount: media.length + (isLoading ? 1 : 0),
+          crossAxisExtent: dim.width,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          physics: const BouncingScrollPhysics(),
+          childAspectRatio: dim.width / dim.height,
+          itemBuilder: (context, index) {
+            if (index == media.length) {
+              return const WatchlistLoadingIndicator();
             }
-          },
-          child: Stack(
-            children: [
-              AnimeCard(anime: anime, tag: tag, mode: mode),
-              if (isSelected)
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 4,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withOpacity(0.2),
-                    ),
-                    child: Center(
+            final anime = media[index];
+            final tag = randomId();
+            final isSelected = selectedIds.contains(anime.id);
+
+            return GestureDetector(
+              onLongPress: () {
+                ref.read(watchlistSelectionProvider.notifier).toggle(anime.id);
+              },
+              onTap: () {
+                if (isSelectionMode) {
+                  ref
+                      .read(watchlistSelectionProvider.notifier)
+                      .toggle(anime.id);
+                } else {
+                  navigateToDetail(context, anime, tag);
+                }
+              },
+              child: Stack(
+                children: [
+                  AnimeCard(anime: anime, tag: tag, mode: mode),
+                  if (isSelected)
+                    Positioned.fill(
                       child: Container(
-                        padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
-                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 4,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.2),
                         ),
-                        child: Icon(
-                          Icons.check,
-                          color: Theme.of(context).colorScheme.onPrimary,
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.check,
+                              color: Theme.of(context).colorScheme.onPrimary,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
+                ],
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

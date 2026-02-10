@@ -1,20 +1,16 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
-import 'package:desktop_webview_window/desktop_webview_window.dart';
+
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:isar_community/isar.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shonenx/app_initializer.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
@@ -25,23 +21,11 @@ import 'package:shonenx/storage_provider.dart';
 
 late Isar isar;
 late SharedPreferencesWithCache sharedPrefs;
-WebViewEnvironment? webViewEnvironment;
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (Platform.isLinux && runWebViewTitleBarWidget(args)) return;
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
-    final availableVersion = await WebViewEnvironment.getAvailableVersion();
-    if (availableVersion != null) {
-      final document = await getApplicationDocumentsDirectory();
-      webViewEnvironment = await WebViewEnvironment.create(
-        settings: WebViewEnvironmentSettings(
-          userDataFolder: p.join(document.path, 'flutter_inappwebview'),
-        ),
-      );
-    }
-  }
+
   try {
     AppLogger.i('Starting app initialization');
     await AppInitializer.initialize();
@@ -65,10 +49,7 @@ void main(List<String> args) async {
 
   isar = await StorageProvider().initDB(null, inspector: kDebugMode);
   final bridge = DartotsuExtensionBridge();
-  await bridge.init(
-    isar, // pass an Isar instance, or null to auto-create
-    'ShonenX', // desktop data dir hint
-  );
+  await bridge.init(isar, 'ShonenX');
 
   runApp(const ProviderScope(child: MyApp()));
   unawaited(_postLaunchInit());
@@ -106,9 +87,10 @@ class MyApp extends ConsumerWidget {
           textTheme: GoogleFonts.montserratTextTheme(),
           pageTransitionsTheme: const PageTransitionsTheme(
             builders: <TargetPlatform, PageTransitionsBuilder>{
-              TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
-              TargetPlatform.linux: ZoomPageTransitionsBuilder(),
-              TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+              TargetPlatform.android:
+                  PredictiveBackFullscreenPageTransitionsBuilder(),
+              TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+              TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
             },
           ),
         );
@@ -122,8 +104,9 @@ class MyApp extends ConsumerWidget {
           useMaterial3: theme.useMaterial3,
           textTheme: GoogleFonts.montserratTextTheme(),
           pageTransitionsTheme: const PageTransitionsTheme(
-            builders: {
-              TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            builders: <TargetPlatform, PageTransitionsBuilder>{
+              TargetPlatform.android:
+                  PredictiveBackFullscreenPageTransitionsBuilder(),
               TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
               TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
             },

@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   dartotsu_extension_bridge
-  desktop_webview_window
   dynamic_color
   flutter_inappwebview_linux
   flutter_qjs
@@ -15,6 +14,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   media_kit_video
   screen_retriever_linux
   url_launcher_linux
+  volume_controller
   window_manager
   window_to_front
 )

@@ -8,7 +8,7 @@ import 'package:shonenx/core/utils/misc.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
-import 'package:shonenx/features/watchlist/view/widget/shonenx_gridview.dart';
+import 'package:shonenx/shared/ui/widgets/shonenx_gridview.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 import 'package:shonenx/features/browse/model/search_filter.dart';
@@ -426,6 +426,7 @@ class _ResultsGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mode = ref.watch(uiSettingsProvider).cardStyle;
+    final size = mode.getDimensions(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -458,8 +459,8 @@ class _ResultsGrid extends ConsumerWidget {
                   padding: const EdgeInsets.fromLTRB(10, 0, 10, 100),
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
-                  childAspectRatio: 0.75,
-                  crossAxisCount: columnCount,
+                  crossAxisExtent: size.width,
+                  childAspectRatio: size.width / size.height,
                   itemCount: results.length + (isLoading ? 1 : 0),
                   itemBuilder: (context, index) {
                     if (index == results.length) {

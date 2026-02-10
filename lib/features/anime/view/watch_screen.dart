@@ -4,8 +4,11 @@ import 'package:screenshot/screenshot.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/features/anime/view/widgets/episodes_panel.dart';
 import 'package:shonenx/features/anime/view/widgets/player/shonenx_video_player.dart';
+import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
+import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/watch_controller.dart';
 import 'package:shonenx/helpers/ui.dart';
+import 'package:shonenx/main.dart';
 
 class WatchScreen extends ConsumerStatefulWidget {
   final String mediaId;
@@ -106,6 +109,57 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
   Widget build(BuildContext context) {
     // Keep controller alive to ensure listeners work
     ref.watch(watchControllerProvider);
+
+    // Listen for episode changes to trigger "Ask to update" dialog
+    ref.listen(episodeDataProvider.select((s) => s.selectedEpisodeIdx), (
+      prev,
+      next,
+    ) async {
+      if (next == null || next == prev) return;
+
+      final askToUpdate =
+          sharedPrefs.getBool('tracking_ask_update_on_start') ?? false;
+      if (!askToUpdate) return;
+
+      // Delay to ensure user is actually watching (matches controller delay)
+      await Future.delayed(const Duration(seconds: 5));
+      if (!context.mounted) return;
+
+      // Re-check index in case it changed quickly
+      final currentIdx = ref.read(episodeDataProvider).selectedEpisodeIdx;
+      if (currentIdx != next) return;
+
+      final episodes = ref.read(episodeListProvider).episodes;
+      if (next < 0 || next >= episodes.length) return;
+      final ep = episodes[next];
+      final episodeNum = ep.number?.toInt() ?? (next + 1);
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Update Progress?'),
+          content: Text(
+            'Do you want to update your list progress to Episode $episodeNum?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('No'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Yes'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true && context.mounted) {
+        ref
+            .read(watchControllerProvider.notifier)
+            .updateTracking(mediaId: widget.mediaId, episodeNum: episodeNum);
+      }
+    });
 
     return Scaffold(
       backgroundColor: Colors.black,

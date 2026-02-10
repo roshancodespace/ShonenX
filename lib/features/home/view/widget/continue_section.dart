@@ -64,6 +64,7 @@ class ContinueSection extends ConsumerWidget {
                       ref: ref,
                       animeMedia: media,
                       startAt: entry.currentEpisode,
+                      withAnimeMatch: true,
                     );
                   },
                   child: SizedBox(
@@ -225,18 +226,24 @@ class ContinueSection extends ConsumerWidget {
                               // Simple Progress Bar Visual
                               LinearProgressIndicator(
                                 value:
-                                    (entry
-                                                .episodesProgress[entry
-                                                    .currentEpisode]!
-                                                .progressInSeconds ??
-                                            0)
-                                        .toDouble() /
-                                    (entry
-                                                .episodesProgress[entry
-                                                    .currentEpisode]!
-                                                .durationInSeconds ??
-                                            0)
-                                        .toDouble(),
+                                    entry
+                                            .episodesProgress[entry
+                                                .currentEpisode]!
+                                            .durationInSeconds !=
+                                        null
+                                    ? ((entry
+                                                      .episodesProgress[entry
+                                                          .currentEpisode]!
+                                                      .progressInSeconds ??
+                                                  0)
+                                              .toDouble() /
+                                          (entry
+                                                      .episodesProgress[entry
+                                                          .currentEpisode]!
+                                                      .durationInSeconds ??
+                                                  0)
+                                              .toDouble())
+                                    : 1,
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   colorScheme.primary,
                                 ),

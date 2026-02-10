@@ -92,47 +92,51 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: scheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              _buildHandle(context),
-              _buildHeader(context),
-              const Divider(height: 1),
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 0),
-                  children: [
-                    const SizedBox(height: 16),
-                    _buildSectionPadding(_buildSortSection(theme)),
-                    _sectionGap,
-                    _buildSectionPadding(_buildSeasonYearRow(theme)),
-                    _sectionGap,
-                    _buildSectionPadding(_buildCommonFilters(theme)),
-                    _sectionGap,
-                    _buildExpansionCategory(
-                      context,
-                      title: 'Genres',
-                      count: _filter.genres.length,
-                      child: _buildGenreSelect(theme),
-                    ),
-                    _buildExpansionCategory(
-                      context,
-                      title: 'Tags',
-                      count: _filter.tags.length,
-                      child: _buildTagSelect(theme),
-                    ),
-                    const SizedBox(height: 100),
-                  ],
-                ),
+        return SafeArea(
+          child: Container(
+            decoration: BoxDecoration(
+              color: scheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
               ),
-              _buildFooter(context),
-            ],
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                _buildHandle(context),
+                _buildHeader(context),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 0),
+                    children: [
+                      const SizedBox(height: 16),
+                      _buildSectionPadding(_buildSortSection(theme)),
+                      _sectionGap,
+                      _buildSectionPadding(_buildSeasonYearRow(theme)),
+                      _sectionGap,
+                      _buildSectionPadding(_buildCommonFilters(theme)),
+                      _sectionGap,
+                      _buildExpansionCategory(
+                        context,
+                        title: 'Genres',
+                        count: _filter.genres.length,
+                        child: _buildGenreSelect(theme),
+                      ),
+                      _buildExpansionCategory(
+                        context,
+                        title: 'Tags',
+                        count: _filter.tags.length,
+                        child: _buildTagSelect(theme),
+                      ),
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
+                _buildFooter(context),
+              ],
+            ),
           ),
         );
       },

@@ -5,7 +5,7 @@ import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
-import 'package:shonenx/features/watchlist/view/widget/shonenx_gridview.dart';
+import 'package:shonenx/shared/ui/widgets/shonenx_gridview.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:go_router/go_router.dart';
 
@@ -82,17 +82,7 @@ class _SectionScreenState extends ConsumerState<SectionScreen> {
   @override
   Widget build(BuildContext context) {
     final mode = ref.watch(uiSettingsProvider).cardStyle;
-    final width = MediaQuery.sizeOf(context).width;
-    final columnCount = width >= 1400
-        ? 6
-        : width >= 1100
-        ? 5
-        : width >= 800
-        ? 4
-        : width >= 420
-        ? 3
-        : 2;
-
+    final size = mode.getDimensions(context);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -106,11 +96,11 @@ class _SectionScreenState extends ConsumerState<SectionScreen> {
           : ShonenXGridView(
               padding: const EdgeInsets.all(10),
               controller: _scrollController,
-              crossAxisCount: columnCount,
               physics: const BouncingScrollPhysics(),
               mainAxisSpacing: 10,
               crossAxisSpacing: 10,
-              childAspectRatio: 0.75,
+              crossAxisExtent: size.width,
+              childAspectRatio: size.width / size.height,
               itemCount: _items.length + (_isLoading ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == _items.length) {

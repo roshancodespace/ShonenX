@@ -8,6 +8,7 @@ import 'package:path/path.dart' as path;
 import 'package:shonenx/core/models/offline/chapter.dart';
 import 'package:shonenx/core/models/offline/manga.dart';
 import 'package:shonenx/core/models/offline/track.dart';
+import 'package:shonenx/data/isar/models/isar_anime_watch_progress.dart';
 
 class StorageProvider {
   static bool _hasPermission = false;
@@ -87,6 +88,7 @@ class StorageProvider {
         TrackSchema,
         SourcePreferenceStringValueSchema,
         BridgeSettingsSchema,
+        IsarAnimeWatchProgressSchema,
       ],
       directory: dir!.path,
       name: "shonenxDb",

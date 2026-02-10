@@ -28,6 +28,9 @@ void main(List<String> args) async {
 
   try {
     AppLogger.i('Starting app initialization');
+    isar = await StorageProvider().initDB(null, inspector: kDebugMode);
+    final bridge = DartotsuExtensionBridge();
+    await bridge.init(isar, 'ShonenX');
     await AppInitializer.initialize();
   } catch (e) {
     AppLogger.e('Error initializing app: $e');
@@ -46,10 +49,6 @@ void main(List<String> args) async {
       systemStatusBarContrastEnforced: false,
     ),
   );
-
-  isar = await StorageProvider().initDB(null, inspector: kDebugMode);
-  final bridge = DartotsuExtensionBridge();
-  await bridge.init(isar, 'ShonenX');
 
   runApp(const ProviderScope(child: MyApp()));
   unawaited(_postLaunchInit());

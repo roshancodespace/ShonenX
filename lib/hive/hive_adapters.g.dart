@@ -829,13 +829,14 @@ class UiSettingsAdapter extends TypeAdapter<UiSettings> {
           ? SpotlightCardMode.defaults
           : fields[1] as SpotlightCardMode,
       episodeViewMode: fields[3] == null ? 'list' : fields[3] as String,
+      scale: fields[4] == null ? 1.0 : (fields[4] as num).toDouble(),
     );
   }
 
   @override
   void write(BinaryWriter writer, UiSettings obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.cardStyle)
       ..writeByte(1)
@@ -843,7 +844,9 @@ class UiSettingsAdapter extends TypeAdapter<UiSettings> {
       ..writeByte(2)
       ..write(obj.immersiveMode)
       ..writeByte(3)
-      ..write(obj.episodeViewMode);
+      ..write(obj.episodeViewMode)
+      ..writeByte(4)
+      ..write(obj.scale);
   }
 
   @override

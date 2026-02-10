@@ -564,7 +564,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                       ),
                     ),
                     SwitchListTile(
-                      title: const Text('Use Mangayomi Extensions'),
+                      title: const Text('Use Extensions'),
                       value: useMangayomi,
                       onChanged: (value) {
                         ref

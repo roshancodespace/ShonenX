@@ -36,7 +36,7 @@ Track and manage your anime library with AniList and MyAnimeList integration. Bu
 - **Advanced Settings** - Personalize your experience
 
 ### 🔌 Extensions
-- **Mangayomi Extensions** - Anime-focused extension support *(Experimental)*
+- **Extensions** - Anime-focused extension support *(Experimental)*
 - **Built-in Sources** - Pre-configured providers
 - **Jikan Sync** - Episode metadata *(Experimental)*
 

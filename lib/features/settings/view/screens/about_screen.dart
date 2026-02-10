@@ -147,7 +147,7 @@ class AboutScreen extends StatelessWidget {
                   context,
                   icon: Iconsax.global,
                   title: 'Powered by',
-                  content: 'Consumet API & Mangayomi Extensions Core',
+                  content: 'Consumet API & Extensions Core',
                   subtitle:
                       'Multi-provider anime streaming API & Custom Extensions',
                 ),

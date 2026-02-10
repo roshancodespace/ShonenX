@@ -1,6 +1,6 @@
 {
   "wake.compiler.solc.remappings": [],
-  "dart.flutterSdkPath": ".fvm/versions/3.38.6",
+  "dart.flutterSdkPath": ".fvm/versions/3.35.7",
   "cmake.sourceDirectory": "C:/Coding/Flutter/ShonenX-Dev/windows",
   "java.configuration.updateBuildConfiguration": "interactive",
   "discord.enabled": true

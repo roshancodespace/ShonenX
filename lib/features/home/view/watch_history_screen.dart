@@ -22,6 +22,7 @@ class _WatchHistoryScreenState extends ConsumerState<WatchHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final history = ref.watch(watchProgressRepositoryProvider).getAllProgress()
+      ..removeWhere((e) => e.episodesProgress.isEmpty)
       ..sort(
         (a, b) => (b.lastUpdated ?? DateTime(0)).compareTo(
           a.lastUpdated ?? DateTime(0),

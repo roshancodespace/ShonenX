@@ -34,7 +34,6 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    // SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final id = widget.anime.id;

@@ -22,6 +22,8 @@ class IsarAnimeWatchProgress {
   int currentEpisode;
   String status;
 
+  IsarSourceSelection? sourceSelection;
+
   IsarAnimeWatchProgress({
     this.id,
     required this.animeId,
@@ -33,6 +35,7 @@ class IsarAnimeWatchProgress {
     this.lastUpdated,
     this.currentEpisode = 1,
     this.status = 'watching',
+    this.sourceSelection,
   });
 
   Media toMedia() {
@@ -75,5 +78,20 @@ class IsarEpisodeProgress {
     this.durationInSeconds,
     this.isCompleted = false,
     this.watchedAt,
+  });
+}
+
+@embedded
+class IsarSourceSelection {
+  String? sourceId;
+  String? sourceType; // 'legacy', 'mangayomi', 'aniyomi'
+  String? matchedAnimeId;
+  String? matchedAnimeTitle;
+
+  IsarSourceSelection({
+    this.sourceId,
+    this.sourceType,
+    this.matchedAnimeId,
+    this.matchedAnimeTitle,
   });
 }

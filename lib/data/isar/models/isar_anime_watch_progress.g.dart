@@ -51,9 +51,16 @@ const IsarAnimeWatchProgressSchema = CollectionSchema(
       name: r'lastUpdated',
       type: IsarType.dateTime,
     ),
-    r'status': PropertySchema(id: 7, name: r'status', type: IsarType.string),
+    r'sourceSelection': PropertySchema(
+      id: 7,
+      name: r'sourceSelection',
+      type: IsarType.object,
+
+      target: r'IsarSourceSelection',
+    ),
+    r'status': PropertySchema(id: 8, name: r'status', type: IsarType.string),
     r'totalEpisodes': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'totalEpisodes',
       type: IsarType.long,
     ),
@@ -80,7 +87,10 @@ const IsarAnimeWatchProgressSchema = CollectionSchema(
     ),
   },
   links: {},
-  embeddedSchemas: {r'IsarEpisodeProgress': IsarEpisodeProgressSchema},
+  embeddedSchemas: {
+    r'IsarEpisodeProgress': IsarEpisodeProgressSchema,
+    r'IsarSourceSelection': IsarSourceSelectionSchema,
+  },
 
   getId: _isarAnimeWatchProgressGetId,
   getLinks: _isarAnimeWatchProgressGetLinks,
@@ -110,6 +120,18 @@ int _isarAnimeWatchProgressEstimateSize(
       );
     }
   }
+  {
+    final value = object.sourceSelection;
+    if (value != null) {
+      bytesCount +=
+          3 +
+          IsarSourceSelectionSchema.estimateSize(
+            value,
+            allOffsets[IsarSourceSelection]!,
+            allOffsets,
+          );
+    }
+  }
   bytesCount += 3 + object.status.length * 3;
   return bytesCount;
 }
@@ -132,8 +154,14 @@ void _isarAnimeWatchProgressSerialize(
     object.episodesProgress,
   );
   writer.writeDateTime(offsets[6], object.lastUpdated);
-  writer.writeString(offsets[7], object.status);
-  writer.writeLong(offsets[8], object.totalEpisodes);
+  writer.writeObject<IsarSourceSelection>(
+    offsets[7],
+    allOffsets,
+    IsarSourceSelectionSchema.serialize,
+    object.sourceSelection,
+  );
+  writer.writeString(offsets[8], object.status);
+  writer.writeLong(offsets[9], object.totalEpisodes);
 }
 
 IsarAnimeWatchProgress _isarAnimeWatchProgressDeserialize(
@@ -158,8 +186,13 @@ IsarAnimeWatchProgress _isarAnimeWatchProgressDeserialize(
         const [],
     id: id,
     lastUpdated: reader.readDateTimeOrNull(offsets[6]),
-    status: reader.readStringOrNull(offsets[7]) ?? 'watching',
-    totalEpisodes: reader.readLong(offsets[8]),
+    sourceSelection: reader.readObjectOrNull<IsarSourceSelection>(
+      offsets[7],
+      IsarSourceSelectionSchema.deserialize,
+      allOffsets,
+    ),
+    status: reader.readStringOrNull(offsets[8]) ?? 'watching',
+    totalEpisodes: reader.readLong(offsets[9]),
   );
   return object;
 }
@@ -193,8 +226,15 @@ P _isarAnimeWatchProgressDeserializeProp<P>(
     case 6:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset) ?? 'watching') as P;
+      return (reader.readObjectOrNull<IsarSourceSelection>(
+            offset,
+            IsarSourceSelectionSchema.deserialize,
+            allOffsets,
+          ))
+          as P;
     case 8:
+      return (reader.readStringOrNull(offset) ?? 'watching') as P;
+    case 9:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1530,6 +1570,32 @@ extension IsarAnimeWatchProgressQueryFilter
     IsarAnimeWatchProgress,
     QAfterFilterCondition
   >
+  sourceSelectionIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'sourceSelection'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    IsarAnimeWatchProgress,
+    IsarAnimeWatchProgress,
+    QAfterFilterCondition
+  >
+  sourceSelectionIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'sourceSelection'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    IsarAnimeWatchProgress,
+    IsarAnimeWatchProgress,
+    QAfterFilterCondition
+  >
   statusEqualTo(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -1793,6 +1859,17 @@ extension IsarAnimeWatchProgressQueryObject
   episodesProgressElement(FilterQuery<IsarEpisodeProgress> q) {
     return QueryBuilder.apply(this, (query) {
       return query.object(q, r'episodesProgress');
+    });
+  }
+
+  QueryBuilder<
+    IsarAnimeWatchProgress,
+    IsarAnimeWatchProgress,
+    QAfterFilterCondition
+  >
+  sourceSelection(FilterQuery<IsarSourceSelection> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'sourceSelection');
     });
   }
 }
@@ -2176,6 +2253,13 @@ extension IsarAnimeWatchProgressQueryProperty
   lastUpdatedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastUpdated');
+    });
+  }
+
+  QueryBuilder<IsarAnimeWatchProgress, IsarSourceSelection?, QQueryOperations>
+  sourceSelectionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sourceSelection');
     });
   }
 
@@ -2919,5 +3003,772 @@ extension IsarEpisodeProgressQueryObject
         QueryBuilder<
           IsarEpisodeProgress,
           IsarEpisodeProgress,
+          QFilterCondition
+        > {}
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+const IsarSourceSelectionSchema = Schema(
+  name: r'IsarSourceSelection',
+  id: 5973140715962261930,
+  properties: {
+    r'matchedAnimeId': PropertySchema(
+      id: 0,
+      name: r'matchedAnimeId',
+      type: IsarType.string,
+    ),
+    r'matchedAnimeTitle': PropertySchema(
+      id: 1,
+      name: r'matchedAnimeTitle',
+      type: IsarType.string,
+    ),
+    r'sourceId': PropertySchema(
+      id: 2,
+      name: r'sourceId',
+      type: IsarType.string,
+    ),
+    r'sourceType': PropertySchema(
+      id: 3,
+      name: r'sourceType',
+      type: IsarType.string,
+    ),
+  },
+
+  estimateSize: _isarSourceSelectionEstimateSize,
+  serialize: _isarSourceSelectionSerialize,
+  deserialize: _isarSourceSelectionDeserialize,
+  deserializeProp: _isarSourceSelectionDeserializeProp,
+);
+
+int _isarSourceSelectionEstimateSize(
+  IsarSourceSelection object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  {
+    final value = object.matchedAnimeId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.matchedAnimeTitle;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.sourceId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.sourceType;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  return bytesCount;
+}
+
+void _isarSourceSelectionSerialize(
+  IsarSourceSelection object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeString(offsets[0], object.matchedAnimeId);
+  writer.writeString(offsets[1], object.matchedAnimeTitle);
+  writer.writeString(offsets[2], object.sourceId);
+  writer.writeString(offsets[3], object.sourceType);
+}
+
+IsarSourceSelection _isarSourceSelectionDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = IsarSourceSelection(
+    matchedAnimeId: reader.readStringOrNull(offsets[0]),
+    matchedAnimeTitle: reader.readStringOrNull(offsets[1]),
+    sourceId: reader.readStringOrNull(offsets[2]),
+    sourceType: reader.readStringOrNull(offsets[3]),
+  );
+  return object;
+}
+
+P _isarSourceSelectionDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readStringOrNull(offset)) as P;
+    case 1:
+      return (reader.readStringOrNull(offset)) as P;
+    case 2:
+      return (reader.readStringOrNull(offset)) as P;
+    case 3:
+      return (reader.readStringOrNull(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+extension IsarSourceSelectionQueryFilter
+    on
+        QueryBuilder<
+          IsarSourceSelection,
+          IsarSourceSelection,
+          QFilterCondition
+        > {
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'matchedAnimeId'),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'matchedAnimeId'),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeIdEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'matchedAnimeId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'matchedAnimeId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'matchedAnimeId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'matchedAnimeId',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeIdStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'matchedAnimeId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeIdEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'matchedAnimeId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'matchedAnimeId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'matchedAnimeId',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'matchedAnimeId', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'matchedAnimeId', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeTitleIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'matchedAnimeTitle'),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeTitleIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'matchedAnimeTitle'),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeTitleEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'matchedAnimeTitle',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeTitleGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'matchedAnimeTitle',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeTitleLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'matchedAnimeTitle',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeTitleBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'matchedAnimeTitle',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeTitleStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'matchedAnimeTitle',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeTitleEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'matchedAnimeTitle',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeTitleContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'matchedAnimeTitle',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeTitleMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'matchedAnimeTitle',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeTitleIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'matchedAnimeTitle', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  matchedAnimeTitleIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'matchedAnimeTitle', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'sourceId'),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'sourceId'),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceIdEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'sourceId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'sourceId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'sourceId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'sourceId',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceIdStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'sourceId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceIdEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'sourceId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'sourceId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'sourceId',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'sourceId', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'sourceId', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceTypeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'sourceType'),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceTypeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'sourceType'),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceTypeEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'sourceType',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceTypeGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'sourceType',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceTypeLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'sourceType',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceTypeBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'sourceType',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceTypeStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'sourceType',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceTypeEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'sourceType',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceTypeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'sourceType',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceTypeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'sourceType',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceTypeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'sourceType', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<IsarSourceSelection, IsarSourceSelection, QAfterFilterCondition>
+  sourceTypeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'sourceType', value: ''),
+      );
+    });
+  }
+}
+
+extension IsarSourceSelectionQueryObject
+    on
+        QueryBuilder<
+          IsarSourceSelection,
+          IsarSourceSelection,
           QFilterCondition
         > {}

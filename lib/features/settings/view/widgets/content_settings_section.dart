@@ -26,9 +26,7 @@ class ContentSettingsSection extends ConsumerWidget {
           accent: colorScheme.primary,
           value: settings.showAnilistAdult,
           onChanged: (val) {
-            notifier.updateSettings(
-              (s) => s.copyWith(showAnilistAdult: val),
-            );
+            notifier.updateSettings((s) => s.copyWith(showAnilistAdult: val));
             ref.read(homepageProvider.notifier).initialize(forceRefresh: true);
           },
         ),
@@ -39,11 +37,20 @@ class ContentSettingsSection extends ConsumerWidget {
           accent: colorScheme.secondary,
           value: settings.showMalAdult,
           onChanged: (val) {
-            notifier.updateSettings(
-              (s) => s.copyWith(showMalAdult: val),
-            );
+            notifier.updateSettings((s) => s.copyWith(showMalAdult: val));
             ref.read(homepageProvider.notifier).initialize(forceRefresh: true);
           },
+        ),
+        ToggleableSettingsItem(
+          title: 'Smart Source Persistence',
+          description:
+              'Remember and auto-apply the last used source for each anime',
+          icon: Icon(Iconsax.flash_1, color: colorScheme.tertiary),
+          accent: colorScheme.tertiary,
+          value: settings.smartSourceEnabled,
+          onChanged: (val) => notifier.updateSettings(
+            (s) => s.copyWith(smartSourceEnabled: val),
+          ),
         ),
       ],
     );

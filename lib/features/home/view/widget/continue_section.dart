@@ -16,6 +16,15 @@ class ContinueSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+
+    final validEntries = allProgress
+        .where((e) => e.episodesProgress.isNotEmpty)
+        .toList();
+
+    if (validEntries.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -35,10 +44,10 @@ class ContinueSection extends ConsumerWidget {
           height: 230,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: allProgress.length,
+            itemCount: validEntries.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
-              final entry = allProgress[index];
+              final entry = validEntries[index];
               final currentEp = entry.episodesProgress[entry.currentEpisode];
               final media = UniversalMedia(
                 id: entry.animeId,
@@ -64,7 +73,7 @@ class ContinueSection extends ConsumerWidget {
                       ref: ref,
                       animeMedia: media,
                       startAt: entry.currentEpisode,
-                      withAnimeMatch: true,
+                      withAnimeMatch: false,
                     );
                   },
                   child: SizedBox(
@@ -226,11 +235,12 @@ class ContinueSection extends ConsumerWidget {
                               // Simple Progress Bar Visual
                               LinearProgressIndicator(
                                 value:
-                                    entry
-                                            .episodesProgress[entry
-                                                .currentEpisode]!
-                                            .durationInSeconds !=
-                                        null
+                                    (entry.episodesProgress.isNotEmpty &&
+                                        entry
+                                                .episodesProgress[entry
+                                                    .currentEpisode]!
+                                                .durationInSeconds !=
+                                            null)
                                     ? ((entry
                                                       .episodesProgress[entry
                                                           .currentEpisode]!

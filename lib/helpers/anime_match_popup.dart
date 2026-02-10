@@ -8,10 +8,13 @@ import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/registery/sources/anime/anime_provider.dart';
+import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/data/isar/models/isar_anime_watch_progress.dart';
+import 'package:shonenx/features/anime/services/anime_match_service.dart';
+import 'package:shonenx/features/settings/view_model/content_settings_notifier.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
-import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/main.dart';
 
@@ -23,13 +26,39 @@ Future<BaseAnimeModel?> providerAnimeMatchSearch({
   required UniversalMedia animeMedia,
   bool withAnimeMatch = true,
   int? startAt,
+  bool showSnackbar = false,
 }) async {
   beforeSearchCallback?.call();
 
   try {
+    // Smart Source Persistence Check
+    final restoredAnime = await ref
+        .read(animeMatchServiceProvider)
+        .restoreSource(animeMedia.id.toString(), showSnackbar: showSnackbar);
+
+    if (restoredAnime != null) {
+      if (withAnimeMatch) {
+        AppLogger.d('Navigating to watch screen...');
+        if (context.mounted) {
+          navigateToWatch(
+            context: context,
+            ref: ref,
+            mediaId: animeMedia.id.toString(),
+            animeId: restoredAnime.id!,
+            animeName: restoredAnime.name ?? 'Unknown',
+            animeFormat: animeMedia.format ?? '',
+            animeCover: restoredAnime.poster ?? '',
+            episodes: const [],
+            currentEpisode: startAt ?? 1,
+          );
+        }
+        return restoredAnime;
+      }
+    }
+
     final animeProvider = ref.read(selectedAnimeProvider);
     if (animeProvider == null) throw Exception('Anime provider is missing.');
-
+    if (!context.mounted) return null;
     return await showDialog<BaseAnimeModel>(
       context: context,
       barrierColor: Colors.black54,
@@ -93,29 +122,23 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
 
   /// Tries English -> Romaji -> Native titles sequentially
   Future<void> _tryAutoResolve() async {
-    final titles = [
-      widget.media.title.english,
-      widget.media.title.romaji,
-      widget.media.title.native,
-    ].where((t) => t?.isNotEmpty ?? false).cast<String>().toList();
+    if (widget.autoMatch) {
+      final match = await ref
+          .read(animeMatchServiceProvider)
+          .findBestMatch(widget.media.title);
 
-    if (titles.isEmpty) {
-      if (mounted) setState(() => _isLoading = false);
-      return;
-    }
-
-    _searchController.text = titles.first;
-
-    for (final title in titles) {
       if (!mounted) return;
-      // Update text field if we switched languages
-      if (_searchController.text != title) _searchController.text = title;
 
-      // Stop if a match was found and handled
-      if (await _performSearch(title, autoMatch: widget.autoMatch)) return;
+      if (match != null) {
+        _handleSelection(match);
+        return;
+      }
     }
 
-    if (mounted) setState(() => _isLoading = false);
+    // Fallback: search for the first available title to show results
+    final title = widget.media.title.userPreferred;
+    _searchController.text = title;
+    await _performSearch(title, autoMatch: false);
   }
 
   Future<bool> _performSearch(String query, {bool autoMatch = false}) async {
@@ -125,31 +148,11 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
       final results = await _fetchFromSource(query);
       if (!mounted) return false;
 
-      if (results.isEmpty) {
-        if (!autoMatch) setState(() => _results = []);
-        return false;
-      }
-
-      // Handle Auto-Match logic
-      if (autoMatch) {
-        final matches = getBestMatches<BaseAnimeModel>(
-          results: results,
-          title: query,
-          nameSelector: (r) => r.name,
-          idSelector: (r) => r.id,
-        );
-
-        if (matches.isNotEmpty && matches.first.similarity >= 0.8) {
-          _handleSelection(matches.first.result);
-          return true;
-        }
-      }
-
       setState(() => _results = results);
       return true;
     } catch (e) {
       AppLogger.e('Search error', e);
-      if (!autoMatch) setState(() => _results = []);
+      setState(() => _results = []);
       return false;
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -157,23 +160,68 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
   }
 
   Future<List<BaseAnimeModel>> _fetchFromSource(String query) async {
-    final useMangayomi = ref.read(experimentalProvider).useMangayomiExtensions;
-
-    if (useMangayomi) {
-      final res = await ref.read(sourceProvider.notifier).search(query);
-      return res.list
-          .where((e) => e.title != null && e.url != null)
-          .map((e) => BaseAnimeModel(id: e.url, name: e.title, poster: e.cover))
-          .toList();
-    } else {
-      final res = await widget.animeProvider.getSearch(query.trim(), null, 1);
-      return res.results.where((e) => e.name != null && e.id != null).toList();
-    }
+    return ref.read(animeMatchServiceProvider).search(query);
   }
 
   void _handleSelection(BaseAnimeModel anime) {
     if (!mounted) return;
     Navigator.of(context).pop(anime);
+
+    // Save Smart Source Preference
+    try {
+      final settings = ref.read(contentSettingsProvider);
+      AppLogger.d(
+        'Saving Source Pref: Enabled = ${settings.smartSourceEnabled}',
+      );
+
+      if (settings.smartSourceEnabled) {
+        final useMangayomi = ref
+            .read(experimentalProvider)
+            .useMangayomiExtensions;
+        String? sourceId;
+        String? sourceType;
+
+        if (useMangayomi) {
+          AppLogger.d('Saving Source Pref: Mangayomi mode active');
+          final source = ref.read(sourceProvider).activeAnimeSource;
+          if (source != null) {
+            sourceId = source.id.toString();
+            sourceType = 'mangayomi';
+          } else {
+            AppLogger.w('Saving Source Pref: Active source is null');
+          }
+        } else {
+          AppLogger.d('Saving Source Pref: Legacy mode active');
+          final provider = ref.read(selectedAnimeProvider);
+          if (provider != null) {
+            sourceId = ref.read(selectedProviderKeyProvider);
+            sourceType = 'legacy';
+          } else {
+            AppLogger.w('Saving Source Pref: Selected provider is null');
+          }
+        }
+
+        AppLogger.d('Saving Source Pref: ID=$sourceId, Type=$sourceType');
+
+        if (sourceId != null && sourceType != null) {
+          final repo = ref.read(watchProgressRepositoryProvider);
+          repo.saveSourceSelection(
+            widget.media.id.toString(),
+            IsarSourceSelection(
+              sourceId: sourceId,
+              sourceType: sourceType,
+              matchedAnimeId: anime.id,
+              matchedAnimeTitle: anime.name,
+            ),
+          );
+          AppLogger.d(
+            'Saving Source Pref: Call to saveSourceSelection made for anime ${widget.media.id}',
+          );
+        }
+      }
+    } catch (e, st) {
+      AppLogger.e('Failed to save smart source preference', e, st);
+    }
 
     if (widget.autoMatch) {
       navigateToWatch(

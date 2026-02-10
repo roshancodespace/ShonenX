@@ -209,12 +209,14 @@ types:
         index: 5
   ContentSettingsModel:
     typeId: 15
-    nextIndex: 2
+    nextIndex: 3
     fields:
       showAnilistAdult:
         index: 0
       showMalAdult:
         index: 1
+      smartSourceEnabled:
+        index: 2
   UniversalNews:
     typeId: 16
     nextIndex: 7

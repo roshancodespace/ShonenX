@@ -40,4 +40,8 @@ class ExperimentalFeaturesNotifier extends Notifier<ExperimentalFeaturesModel> {
     state = updater(state);
     sharedPrefs.setString(_prefsKey, state.toJson());
   }
+
+  void toggleExtensions(bool value) {
+    updateSettings((s) => s.copyWith(useMangayomiExtensions: value));
+  }
 }

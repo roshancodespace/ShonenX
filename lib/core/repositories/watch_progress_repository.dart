@@ -122,6 +122,55 @@ class WatchProgressRepository {
     }
   }
 
+  Future<void> saveSourceSelection(
+    String animeId,
+    IsarSourceSelection selection,
+  ) async {
+    try {
+      final id = fastHash(animeId);
+      AppLogger.d('Saving source selection for ID: $animeId (Hash: $id)');
+      var entry = isar.isarAnimeWatchProgress.getSync(id);
+
+      if (entry != null) {
+        AppLogger.d('Entry found, updating source selection.');
+        entry.sourceSelection = selection;
+
+        await isar.writeTxn(() async {
+          await isar.isarAnimeWatchProgress.put(entry);
+        });
+        AppLogger.d('Saved source selection update successfully.');
+      } else {
+        AppLogger.d('Entry not found, creating new partial entry.');
+        // Create new entry if it doesn't exist
+        final newEntry = IsarAnimeWatchProgress(
+          id: id,
+          animeId: animeId,
+          animeTitle: selection.matchedAnimeTitle ?? 'Unknown',
+          animeFormat: 'TV',
+          animeCover: '',
+          totalEpisodes: 0,
+          sourceSelection: selection,
+        );
+        await isar.writeTxn(() async {
+          await isar.isarAnimeWatchProgress.put(newEntry);
+        });
+      }
+    } catch (e, st) {
+      AppLogger.e('Failed to save source selection', e, st);
+    }
+  }
+
+  IsarSourceSelection? getSourceSelection(String animeId) {
+    final id = fastHash(animeId);
+    AppLogger.d('Getting source selection for ID: $animeId (Hash: $id)');
+    final isarEntry = isar.isarAnimeWatchProgress.getSync(id);
+    final selection = isarEntry?.sourceSelection;
+    AppLogger.d(
+      'Entry found: ${isarEntry != null}, Selection: ${selection?.sourceId}',
+    );
+    return selection;
+  }
+
   AnimeWatchProgressEntry? getProgress(String animeId) {
     final isarEntry = isar.isarAnimeWatchProgress.getSync(fastHash(animeId));
     if (isarEntry == null) return null;

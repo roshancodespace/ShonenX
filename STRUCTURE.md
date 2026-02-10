@@ -20,7 +20,6 @@ lib/
 │   └── widgets/
 │       └── design/
 │           └── glass/
-├── core_mangayomi (mangayomi extension core)
 │ 
 ├── data/
 │   └── hive/

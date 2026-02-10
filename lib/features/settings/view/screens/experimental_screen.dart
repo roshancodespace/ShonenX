@@ -33,7 +33,7 @@ class ExperimentalScreen extends ConsumerWidget {
                     ? Icons.extension_outlined
                     : Icons.extension_off_outlined,
               ),
-              title: 'Mangayomi extension',
+              title: 'Extension',
               description: 'Enables the experimental extension support',
               value: experimentalSettings.useMangayomiExtensions,
               onChanged: (value) {

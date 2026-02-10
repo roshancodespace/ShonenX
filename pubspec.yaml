@@ -95,6 +95,12 @@ dependencies:
   xpath_selector_html_parser: ^3.0.1
   get: ^4.7.3
 
+dependency_overrides:
+  flutter_inappwebview:
+    git:
+      url: https://github.com/roshancodespace/flutter_inappwebview.git
+      ref: master
+      path: flutter_inappwebview
 
 dev_dependencies:
   build_runner: ^2.4.13

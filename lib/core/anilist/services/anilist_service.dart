@@ -196,20 +196,22 @@ class AnilistService {
     final auth = _getAuthContext();
     if (auth == null || !_validStatuses.contains(status)) return null;
 
+    final variables = {
+      'mediaId': mediaId,
+      'status': status,
+      'score': score,
+      'progress': progress,
+      'startedAt': startedAt?.toJson(),
+      'completedAt': completedAt?.toJson(),
+      'repeat': repeat,
+      'private': private,
+      'notes': notes,
+    }..removeWhere((key, value) => value == null);
+
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: auth.accessToken,
       query: AnilistQueries.updateAnimeMediaEntryMutation,
-      variables: {
-        'mediaId': mediaId,
-        'status': status,
-        'score': score,
-        'progress': progress,
-        'startedAt': startedAt?.toJson(),
-        'completedAt': completedAt?.toJson(),
-        'repeat': repeat,
-        'private': private,
-        'notes': notes,
-      },
+      variables: variables,
       operationName: 'UpdateUserAnimeList',
     );
 

@@ -521,10 +521,11 @@ packages:
   flutter_inappwebview:
     dependency: "direct main"
     description:
-      name: flutter_inappwebview
-      sha256: "3952d116ee93bad2946401377e7ade87b5ef200e95ecb5ba1affa1b6329a6867"
-      url: "https://pub.dev"
-    source: hosted
+      path: flutter_inappwebview
+      ref: master
+      resolved-ref: "6f81a62799678f2a12d75aeca774b00d3a7c7fa8"
+      url: "https://github.com/roshancodespace/flutter_inappwebview.git"
+    source: git
     version: "6.2.0-beta.3"
   flutter_inappwebview_android:
     dependency: transitive

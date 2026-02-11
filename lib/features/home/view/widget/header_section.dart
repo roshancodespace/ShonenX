@@ -47,42 +47,38 @@ class HeaderSection extends ConsumerWidget {
         ]
         // NEW UI
         else ...[
-          IntrinsicHeight(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 GestureDetector(
                   onTap: () => context.push('/settings/account/profile'),
-                  child: _UserAvatar(user: user),
+                  child: _UserAvatar(user: user, size: 48),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: VerticalDivider(
-                    color: colorScheme.primaryColor,
-                    thickness: 1,
-                    width: 15,
-                    indent: 2,
-                  ),
-                ),
+                const SizedBox(width: 14),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${getGreeting()},',
-                      style: TextStyle(color: colorScheme.primaryColor),
+                      getGreeting(),
+                      style: colorScheme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     Text(
                       user?.name ?? "Guest",
-                      style: const TextStyle(fontSize: 20),
+                      style: colorScheme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
                 const Spacer(),
-                _NewsActionBadge(),
-                const SizedBox(width: 10),
+                const _NewsActionBadge(),
+                const SizedBox(width: 8),
                 _ActionButton(
-                  icon: Icons.settings_rounded,
+                  icon: Icons.settings_outlined,
                   onTap: () => context.push('/settings'),
                 ),
               ],
@@ -246,7 +242,9 @@ class UserProfileCard extends StatelessWidget {
 
 class _UserAvatar extends StatelessWidget {
   final AuthUser? user;
-  const _UserAvatar({this.user});
+  final double size;
+
+  const _UserAvatar({this.user, this.size = 44});
 
   @override
   Widget build(BuildContext context) {
@@ -258,8 +256,8 @@ class _UserAvatar extends StatelessWidget {
 
     if (user == null) {
       return Container(
-        width: 44,
-        height: 44,
+        width: size,
+        height: size,
         decoration: decoration,
         child: Icon(Iconsax.user, color: theme.colorScheme.primary),
       );
@@ -271,8 +269,8 @@ class _UserAvatar extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: CachedNetworkImage(
           imageUrl: user!.avatarUrl ?? '',
-          width: 44,
-          height: 44,
+          width: size,
+          height: size,
           fit: BoxFit.cover,
           errorWidget: (_, __, ___) => Container(
             color: decoration.color,
@@ -303,7 +301,7 @@ class ActionPanel extends StatelessWidget {
       shortcuts: shortcuts,
       actions: {
         OpenSearchIntent: CallbackAction<OpenSearchIntent>(
-          onInvoke: (_) => showSearchModal(context),
+          onInvoke: (_) => showSearchModal(context, 'search_fab'),
         ),
       },
       child: Row(
@@ -312,7 +310,8 @@ class ActionPanel extends StatelessWidget {
           if (!isDesktop) ...[
             _ActionButton(
               icon: Iconsax.search_normal,
-              onTap: () => showSearchModal(context),
+              onTap: () => showSearchModal(context, 'search_fab'),
+              heroTag: 'search_fab',
             ),
             const SizedBox(width: 8),
           ],
@@ -327,13 +326,19 @@ class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String? route;
   final VoidCallback? onTap;
+  final String? heroTag;
 
-  const _ActionButton({required this.icon, this.route, this.onTap});
+  const _ActionButton({
+    required this.icon,
+    this.route,
+    this.onTap,
+    this.heroTag,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Material(
+    final button = Material(
       color: theme.colorScheme.secondaryContainer.withOpacity(0.5),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
@@ -349,6 +354,14 @@ class _ActionButton extends StatelessWidget {
         ),
       ),
     );
+
+    if (heroTag != null) {
+      return Hero(
+        tag: heroTag!,
+        child: Material(type: MaterialType.transparency, child: button),
+      );
+    }
+    return button;
   }
 }
 

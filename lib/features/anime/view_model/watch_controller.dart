@@ -15,9 +15,8 @@ import 'package:shonenx/features/anime/view_model/aniskip_notifier.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
-import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/settings/view_model/player_notifier.dart';
-import 'package:shonenx/main.dart';
+import 'package:shonenx/features/settings/view_model/sync_settings_notifier.dart';
 
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/details/view_model/local_tracker_notifier.dart';
@@ -266,7 +265,6 @@ class WatchController extends _$WatchController {
   }
 
   Future<void> _handleTrackingUpdate(String mediaId, int episodeIdx) async {
-    // Delay to ensure user is actually watching
     await Future.delayed(const Duration(seconds: 5));
 
     try {
@@ -275,18 +273,17 @@ class WatchController extends _$WatchController {
       return;
     }
 
+    final syncNotifier = ref.read(syncSettingsProvider.notifier);
+    if (syncNotifier.isManualSync) return;
+
     final episodes = ref.read(episodeListProvider).episodes;
-    if (episodeIdx < 0 || episodeIdx >= episodes.length) {
-      return;
-    }
+    if (episodeIdx < 0 || episodeIdx >= episodes.length) return;
 
     final ep = episodes[episodeIdx];
     final episodeNum = ep.number?.toInt() ?? (episodeIdx + 1);
 
-    final askToUpdate =
-        sharedPrefs.getBool('tracking_ask_update_on_start') ?? false;
-
-    if (!askToUpdate) {
+    final syncSettings = ref.read(syncSettingsProvider);
+    if (!syncSettings.askBeforeSync) {
       updateTracking(mediaId: mediaId, episodeNum: episodeNum);
     }
   }
@@ -296,53 +293,10 @@ class WatchController extends _$WatchController {
     required int episodeNum,
   }) async {
     try {
-      final auth = ref.read(authProvider);
-      final syncAnilist = sharedPrefs.getBool('tracking_sync_anilist') ?? true;
-      final syncMal = sharedPrefs.getBool('tracking_sync_mal') ?? true;
-
-      final canSyncAnilist = auth.isAniListAuthenticated && syncAnilist;
-      final canSyncMal = auth.isMalAuthenticated && syncMal;
-
-      if (!canSyncAnilist && !canSyncMal) {
-        // Fallback to local
-        final repo = ref.read(watchProgressRepositoryProvider);
-        final entry = repo.getProgress(mediaId);
-
-        // Try to construct UniversalMedia from local progress if needed
-        final media = UniversalMedia(
-          id: mediaId,
-          title: UniversalTitle(english: entry?.animeTitle ?? 'Unknown'),
-          coverImage: UniversalCoverImage(large: entry?.animeCover),
-          status: 'UNKNOWN', // Placeholder
-          format: entry?.animeFormat,
-          episodes: entry?.totalEpisodes,
-        );
-
-        // Fetch existing local entry to preserve score/notes
-        final localEntry = await ref
-            .read(localTrackerProvider.notifier)
-            .getEntry(mediaId);
-
-        await ref
-            .read(localTrackerProvider.notifier)
-            .saveEntry(
-              media,
-              status: 'CURRENT',
-              progress: episodeNum,
-              score: localEntry?.score ?? 0.0,
-              repeat: localEntry?.repeat ?? 0,
-              notes: localEntry?.notes ?? '',
-              isPrivate: localEntry?.isPrivate ?? false,
-              startedAt: localEntry != null
-                  ? null
-                  : DateTime.now(), // Set start only if new
-            );
-        return;
-      }
-
+      final syncNotifier = ref.read(syncSettingsProvider.notifier);
       final List<Future> tasks = [];
 
-      if (canSyncAnilist) {
+      if (syncNotifier.shouldSyncAnilist) {
         tasks.add(
           ref
               .read(anilistServiceProvider)
@@ -354,7 +308,7 @@ class WatchController extends _$WatchController {
         );
       }
 
-      if (canSyncMal) {
+      if (syncNotifier.shouldSyncMal) {
         tasks.add(
           ref
               .read(malServiceProvider)
@@ -364,6 +318,44 @@ class WatchController extends _$WatchController {
                 status: 'CURRENT',
               ),
         );
+      }
+
+      if (syncNotifier.shouldSyncLocal) {
+        final repo = ref.read(watchProgressRepositoryProvider);
+        final entry = repo.getProgress(mediaId);
+
+        final media = UniversalMedia(
+          id: mediaId,
+          title: UniversalTitle(english: entry?.animeTitle ?? 'Unknown'),
+          coverImage: UniversalCoverImage(large: entry?.animeCover),
+          status: 'UNKNOWN',
+          format: entry?.animeFormat,
+          episodes: entry?.totalEpisodes,
+        );
+
+        final localEntry = await ref
+            .read(localTrackerProvider.notifier)
+            .getEntry(mediaId);
+
+        tasks.add(
+          ref
+              .read(localTrackerProvider.notifier)
+              .saveEntry(
+                media,
+                status: 'CURRENT',
+                progress: episodeNum,
+                score: localEntry?.score ?? 0.0,
+                repeat: localEntry?.repeat ?? 0,
+                notes: localEntry?.notes ?? '',
+                isPrivate: localEntry?.isPrivate ?? false,
+                startedAt: localEntry != null ? null : DateTime.now(),
+              ),
+        );
+      }
+
+      if (tasks.isEmpty) {
+        AppLogger.w('No sync targets enabled, skipping tracking update');
+        return;
       }
 
       await Future.wait(tasks);

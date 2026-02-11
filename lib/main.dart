@@ -83,16 +83,7 @@ class MyApp extends ConsumerWidget {
           blendLevel: theme.blendLevel,
           scheme: lightScheme != null ? null : theme.flexSchemeEnum,
           useMaterial3: theme.useMaterial3,
-          textTheme: GoogleFonts.montserratTextTheme(),
-          pageTransitionsTheme: const PageTransitionsTheme(
-            builders: <TargetPlatform, PageTransitionsBuilder>{
-              TargetPlatform.android:
-                  PredictiveBackFullscreenPageTransitionsBuilder(),
-              TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
-              TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
-            },
-          ),
-        );
+          textTheme: GoogleFonts.montserratTextTheme()        );
 
         final darkTheme = FlexThemeData.dark(
           colorScheme: darkScheme,
@@ -102,14 +93,6 @@ class MyApp extends ConsumerWidget {
           darkIsTrueBlack: theme.amoled,
           useMaterial3: theme.useMaterial3,
           textTheme: GoogleFonts.montserratTextTheme(),
-          pageTransitionsTheme: const PageTransitionsTheme(
-            builders: <TargetPlatform, PageTransitionsBuilder>{
-              TargetPlatform.android:
-                  PredictiveBackFullscreenPageTransitionsBuilder(),
-              TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
-              TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
-            },
-          ),
         );
 
         final themeMode = theme.themeMode == 'light'

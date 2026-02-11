@@ -49,7 +49,11 @@ dependencies:
       url: https://github.com/aayush2622/flutter_web_auth.git
       ref: master
       path: flutter_web_auth_2
-  go_router: ^14.7.1
+  flutter_discord_rpc_fork:
+    git:
+      url: https://github.com/Schnitzel5/flutter-discord-rpc.git
+      ref: main
+  go_router: ^17.1.0
   google_fonts: ^6.2.1
   graphql: ^5.2.3
   highlight: ^0.7.0

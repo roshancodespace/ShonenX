@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/core/utils/misc.dart';
+
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
@@ -468,12 +468,15 @@ class _ResultsGrid extends ConsumerWidget {
                     }
                     final anime = results[index];
                     return GestureDetector(
-                      onTap: () =>
-                          navigateToDetail(context, anime, anime.id.toString()),
+                      onTap: () => navigateToDetail(
+                        context,
+                        anime,
+                        'browse_grid_${anime.id}',
+                      ),
                       child: AnimeCard(
                         anime: anime,
                         mode: mode,
-                        tag: anime.id.toString(),
+                        tag: 'browse_grid_${anime.id}',
                       ),
                     );
                   },
@@ -672,7 +675,7 @@ class _HorizontalSection extends ConsumerWidget {
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final anime = items[index];
-              final tag = randomId();
+              final tag = 'browse-$title-${anime.id}';
               return SizedBox(
                 width: size.width,
                 child: GestureDetector(

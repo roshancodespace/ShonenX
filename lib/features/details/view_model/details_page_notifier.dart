@@ -130,9 +130,11 @@ class DetailsPageNotifier extends _$DetailsPageNotifier {
         state = state.copyWith(isSearchingMatch: true);
 
         // Try to restore source first
-        final restored = await ref
-            .read(animeMatchServiceProvider)
-            .restoreSource(animeId, showSnackbar: true);
+        final restored = force
+            ? null
+            : await ref
+                  .read(animeMatchServiceProvider)
+                  .restoreSource(animeId, showSnackbar: true);
 
         if (!ref.mounted) return;
 

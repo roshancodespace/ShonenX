@@ -560,6 +560,9 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                               (state) =>
                                   state.copyWith(useMangayomiExtensions: value),
                             );
+                        ref
+                            .read(episodeListProvider.notifier)
+                            .refreshEpisodes();
                       },
                     ),
                     const Divider(height: 1),

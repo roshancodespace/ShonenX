@@ -38,13 +38,57 @@ final List<NavItem> navItems = [
   ),
 ];
 
-class AppRouterScreen extends ConsumerWidget {
+class AppRouterScreen extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
+  final List<Widget> children;
 
-  const AppRouterScreen({super.key, required this.navigationShell});
+  const AppRouterScreen({
+    super.key,
+    required this.navigationShell,
+    required this.children,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppRouterScreen> createState() => _AppRouterScreenState();
+}
+
+class _AppRouterScreenState extends ConsumerState<AppRouterScreen> {
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(
+      initialPage: widget.navigationShell.currentIndex,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant AppRouterScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.navigationShell.currentIndex != _pageController.page?.round()) {
+      _pageController.animateToPage(
+        widget.navigationShell.currentIndex,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onPageChanged(int index) {
+    if (index != widget.navigationShell.currentIndex) {
+      widget.navigationShell.goBranch(index);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final status = ref.watch(initializationProvider).status;
     if (status != InitializationStatus.success) return const LoadingScreen();
 
@@ -61,17 +105,24 @@ class AppRouterScreen extends ConsumerWidget {
         body: Stack(
           fit: StackFit.expand,
           children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                isWide ? 90 : 0,
-                isWide ? 15 : 0,
-                0,
-                isWide ? 15 : 0,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: navigationShell,
-              ),
+            PageView(
+              controller: _pageController,
+              onPageChanged: _onPageChanged,
+              physics: const BouncingScrollPhysics(),
+              children: widget.children.map((child) {
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    isWide ? 90 : 0,
+                    isWide ? 15 : 0,
+                    0,
+                    isWide ? 15 : 0,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: _KeepAliveWrapper(child: child),
+                  ),
+                );
+              }).toList(),
             ),
             Positioned(
               left: isWide ? 10 : 0,
@@ -80,8 +131,8 @@ class AppRouterScreen extends ConsumerWidget {
               bottom: 10,
               child: SafeArea(
                 child: isWide
-                    ? _SideNav(shell: navigationShell)
-                    : _BottomNav(shell: navigationShell),
+                    ? _SideNav(shell: widget.navigationShell)
+                    : _BottomNav(shell: widget.navigationShell),
               ),
             ),
           ],
@@ -235,4 +286,25 @@ void showExitConfirmationDialog(
       ],
     ),
   );
+}
+
+class _KeepAliveWrapper extends StatefulWidget {
+  final Widget child;
+
+  const _KeepAliveWrapper({required this.child});
+
+  @override
+  State<_KeepAliveWrapper> createState() => _KeepAliveWrapperState();
+}
+
+class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 }

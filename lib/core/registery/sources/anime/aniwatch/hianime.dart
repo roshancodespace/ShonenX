@@ -12,19 +12,17 @@ import 'package:html/parser.dart' show parse;
 
 class HiAnimeProvider extends AnimeProvider {
   HiAnimeProvider({String? customApiUrl})
-      : super(
-          apiUrl: customApiUrl != null
-              ? '$customApiUrl/anime/zoro'
-              : "$API_URL/anime/zoro",
-          baseUrl: 'https://hianime.to',
-          providerName: 'hianime',
-        );
+    : super(
+        apiUrl: customApiUrl ?? API_URL,
+        baseUrl: 'https://hianimez.to',
+        providerName: 'hianime',
+      );
 
   @override
   Map<String, String> get headers => {
-        'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-      };
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+  };
 
   @override
   Future<HomePage> getHome() async {
@@ -79,7 +77,7 @@ class HiAnimeProvider extends AnimeProvider {
   }) async {
     final response = await UniversalHttpClient.instance.get(
       Uri.parse(
-        "https://shonenx-aniwatch-instance.vercel.app/api/v2/hianime/anime/$animeId/episodes",
+        "https://shonenx-aniwatch-instance-mu.vercel.app/api/v2/hianime/anime/$animeId/episodes",
       ),
     );
     final data = jsonDecode(response.body)['data'];
@@ -114,27 +112,33 @@ class HiAnimeProvider extends AnimeProvider {
     String? serverName,
     String? category,
   ) async {
-    final actualAnimeId = episodeId.split('?').first;
-    final actualEpisodeId = episodeId.split('?').last.split('=').last;
+    final actualEpisodeId = "$animeId?$episodeId";
     final response = await UniversalHttpClient.instance.get(
       Uri.parse(
-        'https://yumaapi.vercel.app/watch?episodeId=$actualAnimeId\$episode\$$actualEpisodeId&type=dub&server=$serverName',
+        '$apiUrl/episode/sources?animeEpisodeId=$actualEpisodeId&server=$serverName&category=$category',
       ),
       cacheConfig: CacheConfig.veryLong,
     );
-    final data = jsonDecode(response.body);
-    final preview = (data['previews'] as List<dynamic>).first;
-    print(data);
+    final data = jsonDecode(response.body)['data'];
+    final tracks = (data['tracks'] as List?)
+        ?.map(
+          (t) => Subtitle(
+            url: t['url'],
+            lang: t['lang'],
+            isSub: t['lang'] != 'thumbnails',
+          ),
+        )
+        .toList();
     return BaseSourcesModel(
       headers: data['headers'],
-      preview: Subtitle(url: preview['url'], lang: preview['type']),
+      preview: tracks?.where((t) => t.isSub == null || t.isSub == false).first,
       intro: Intro(
         start: data['intro']['start'] as int,
         end: data['intro']['end'] as int,
       ),
       outro: Intro(
-        start: data['intro']['start'] as int,
-        end: data['intro']['end'] as int,
+        start: data['outro']['start'] as int,
+        end: data['outro']['end'] as int,
       ),
       sources: (data['sources'] as List<dynamic>)
           .map(
@@ -142,10 +146,14 @@ class HiAnimeProvider extends AnimeProvider {
               url: source['url'],
               isM3U8: source['isM3U8'],
               quality: source['quality'],
+              type: source['type'],
             ),
           )
           .toList(),
-      tracks: (data['subtitles'] as List<dynamic>?)
+      anilistID: data['anilistID'],
+      malID: data['malID'],
+      tracks:
+          (data['subtitles'] as List<dynamic>?)
               ?.map((track) => Subtitle(url: track['url'], lang: track['lang']))
               .toList() ??
           [],
@@ -156,7 +164,7 @@ class HiAnimeProvider extends AnimeProvider {
   //     String? serverName, String? category) async {
   //   final response = await UniversalHttpClient.instance.get(
   //     Uri.parse(
-  //         'https://shonenx-aniwatch-instance.vercel.app/api/v2/hianime/episode/sources?animeEpisodeId=$episodeId&server=$serverName&category=${category ?? 'sub'}'),
+  //         'https://shonenx-aniwatch-instance-mu..vercel.app/api/v2/hianime/episode/sources?animeEpisodeId=$episodeId&server=$serverName&category=${category ?? 'sub'}'),
   //   );
   //   final data = jsonDecode(response.body)['data'];
 
@@ -182,8 +190,9 @@ class HiAnimeProvider extends AnimeProvider {
 
   @override
   Future<SearchPage> getSearch(String keyword, String? type, int page) async {
-    final hianimeType =
-        type != null ? _mapTypeToHianimeType(type.toLowerCase()) : null;
+    final hianimeType = type != null
+        ? _mapTypeToHianimeType(type.toLowerCase())
+        : null;
     final url = hianimeType != null
         ? '$baseUrl/search?keyword=$keyword&type=$hianimeType&page=$page'
         : '$baseUrl/search?keyword=$keyword&page=$page';
@@ -218,17 +227,40 @@ class HiAnimeProvider extends AnimeProvider {
   }
 
   @override
-  Future<BaseServerModel> getSupportedServers({dynamic metadata}) {
+  Future<BaseServerModel> getSupportedServers({dynamic metadata}) async {
+    final animeId = metadata['id'];
+    final episodeId = metadata['epId'];
+    final res = await UniversalHttpClient.instance.get(
+      Uri.parse('$apiUrl/episode/servers?animeEpisodeId=$animeId?$episodeId'),
+      cacheConfig: CacheConfig.veryLong,
+    );
+    final data = jsonDecode(res.body);
+    final sub = data['data']['sub'] as List?;
+    final dub = data['data']['dub'] as List?;
     return Future(
       () => BaseServerModel(
-        sub: [
-          ServerData(name: 'Vidcloud', id: 'vidcloud', isDub: false),
-          ServerData(name: 'Megacloud', id: 'megacloud', isDub: false),
-        ],
-        dub: [
-          ServerData(name: 'Vidcloud', id: 'vidcloud', isDub: true),
-          ServerData(name: 'Megacloud', id: 'megacloud', isDub: true),
-        ],
+        sub:
+            sub
+                ?.map(
+                  (server) => ServerData(
+                    id: server['serverName'],
+                    name: server['serverId'].toString(),
+                    isDub: false,
+                  ),
+                )
+                .toList() ??
+            [],
+        dub:
+            dub
+                ?.map(
+                  (server) => ServerData(
+                    id: server['serverName'],
+                    name: server['serverId'].toString(),
+                    isDub: true,
+                  ),
+                )
+                .toList() ??
+            [],
       ),
     );
   }

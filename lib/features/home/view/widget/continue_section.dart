@@ -73,7 +73,7 @@ class ContinueSection extends ConsumerWidget {
                       ref: ref,
                       animeMedia: media,
                       startAt: entry.currentEpisode,
-                      withAnimeMatch: false,
+                      withAnimeMatch: true,
                     );
                   },
                   child: SizedBox(

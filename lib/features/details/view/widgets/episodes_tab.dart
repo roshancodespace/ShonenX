@@ -50,7 +50,6 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
   Widget build(BuildContext context) {
     super.build(context);
 
-    // Watch State
     final notifier = ref.read(detailsPageProvider(widget.mediaId).notifier);
     final state = ref.watch(detailsPageProvider(widget.mediaId));
     final uiSettings = ref.watch(uiSettingsProvider);
@@ -59,17 +58,14 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
       orElse: () => EpisodeViewMode.list,
     );
 
-    // Watch other providers
     final episodeListState = ref.watch(episodeListProvider);
     final episodes = episodeListState.episodes;
     final loading = episodeListState.isLoading;
     final error = episodeListState.error;
 
-    // UI state
     final exposedName = state.bestMatchName;
     final theme = Theme.of(context);
 
-    // Filtering logic
     List<EpisodeDataModel> visibleEpisodes = episodes;
     if (state.selectedRange != 'All') {
       final parts = state.selectedRange.split('–');
@@ -93,7 +89,6 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          // Header (Matched Source Info)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -148,7 +143,6 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
             ),
           ),
 
-          // Content States (Loading, Error, Empty, List)
           if (state.isSearchingMatch)
             const SliverFillRemaining(
               child: Center(
@@ -208,7 +202,6 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
               child: Center(child: Text('No episodes found')),
             )
           else ...[
-            // Toolbar
             SliverPersistentHeader(
               pinned: true,
               delegate: _SliverToolbarDelegate(
@@ -329,13 +322,12 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
               ),
             ),
 
-            // Episodes List/Grid
             _buildEpisodeSliver(
               context,
               ref,
               visibleEpisodes,
               episodeListState.animeTitle,
-              episodes, // all episodes for navigation context
+              episodes,
               state.animeIdForSource,
             ),
           ],
@@ -343,8 +335,6 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
       ),
     );
   }
-
-  // --- Sliver Builder Logic ---
 
   Widget _buildEpisodeSliver(
     BuildContext context,
@@ -354,20 +344,17 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     List<EpisodeDataModel> allEpisodes,
     String? animeIdForSource,
   ) {
-    // Determine view mode again locally (or pass it)
     final viewMode = EpisodeViewMode.values.firstWhere(
       (e) => e.name == ref.watch(uiSettingsProvider).episodeViewMode,
       orElse: () => EpisodeViewMode.list,
     );
 
-    // Shared Data Fetcher for individual items
     Widget buildItem(BuildContext context, int index) {
       final ep = visibleEpisodes[index];
-      final progress = ref.watch(
-        watchProgressRepositoryProvider.select(
-          (w) => w.getProgress(widget.mediaId),
-        ),
+      final progressAsync = ref.watch(
+        animeWatchProgressProvider(widget.mediaId),
       );
+      final progress = progressAsync.asData?.value;
 
       final epProgress = progress?.episodesProgress[ep.number ?? -1];
       final isWatched = epProgress?.isCompleted ?? false;
@@ -442,8 +429,8 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
         padding: const EdgeInsets.all(12),
         sliver: SliverGrid(
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 180, // Responsive grid item width
-            childAspectRatio: 0.75, // Aspect ratio (Card shape)
+            maxCrossAxisExtent: 180,
+            childAspectRatio: 0.75,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
           ),
@@ -458,8 +445,8 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
         padding: const EdgeInsets.all(12),
         sliver: SliverGrid(
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 80, // Smaller grid for blocks
-            childAspectRatio: 1.0, // Square
+            maxCrossAxisExtent: 80,
+            childAspectRatio: 1.0,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
           ),
@@ -764,10 +751,6 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                         isCompleted: !isWatched,
                       ),
                     );
-                    AppLogger.i(
-                      'Tapped Mark as Watched for Ep: ${episode.number}',
-                    );
-                    setState(() {});
                     Navigator.pop(sheetContext);
                   },
                 ),

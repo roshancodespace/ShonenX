@@ -20,6 +20,12 @@ final watchProgressStreamProvider =
       return repository.watchAllProgress();
     });
 
+final animeWatchProgressProvider = StreamProvider.autoDispose
+    .family<AnimeWatchProgressEntry?, String>((ref, animeId) {
+      final repository = ref.watch(watchProgressRepositoryProvider);
+      return repository.watchProgress(animeId);
+    });
+
 class WatchProgressRepository {
   WatchProgressRepository();
 
@@ -323,6 +329,15 @@ class WatchProgressRepository {
     yield getAllProgress();
     await for (final _ in isar.isarAnimeWatchProgress.where().watch()) {
       yield getAllProgress();
+    }
+  }
+
+  Stream<AnimeWatchProgressEntry?> watchProgress(String animeId) async* {
+    yield getProgress(animeId);
+    final id = fastHash(animeId);
+    await for (final _
+        in isar.isarAnimeWatchProgress.filter().idEqualTo(id).watch()) {
+      yield getProgress(animeId);
     }
   }
 }

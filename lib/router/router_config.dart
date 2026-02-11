@@ -73,9 +73,16 @@ final routerConfig = GoRouter(
     return null;
   },
   routes: [
-    StatefulShellRoute.indexedStack(
-      builder: (context, state, shell) =>
-          AppRouterScreen(navigationShell: shell),
+    StatefulShellRoute(
+      navigatorContainerBuilder: (context, navigationShell, children) {
+        return AppRouterScreen(
+          navigationShell: navigationShell,
+          children: children,
+        );
+      },
+      builder: (context, state, navigationShell) {
+        return navigationShell;
+      },
       branches: navItems.map((item) {
         return StatefulShellBranch(
           routes: [

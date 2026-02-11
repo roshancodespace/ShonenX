@@ -5,3 +5,4 @@ const ANILIST_CLIENT_ID = String.fromEnvironment('ANILIST_CLIENT_ID');
 const ANILIST_CLIENT_SECRET = String.fromEnvironment('ANILIST_CLIENT_SECRET');
 const MAL_CLIENT_ID = String.fromEnvironment('MAL_CLIENT_ID');
 const MAL_CLIENT_SECRET = String.fromEnvironment('MAL_CLIENT_SECRET');
+const COMMENTUM_API_URL = String.fromEnvironment('COMMENTUM_API_URL');

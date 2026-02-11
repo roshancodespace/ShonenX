@@ -36,7 +36,13 @@ class AnimeSourceRegistry {
     try {
       register('aniwatch', AniwatchProvider());
       register('kaido', KaidoProvider());
-      register('hianime', HiAnimeProvider());
+      register(
+        'hianime',
+        HiAnimeProvider(
+          customApiUrl:
+              "https://shonenx-aniwatch-instance-mu.vercel.app/api/v2/hianime",
+        ),
+      );
       register('animekai', AnimekaiProvider());
       register('animepahe', AnimePaheProvider());
       register('gojo', GojoProvider());

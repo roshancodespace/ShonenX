@@ -130,6 +130,7 @@ class WatchProgressRepository {
 
   Future<void> saveSourceSelection(
     String animeId,
+    String animeCover,
     IsarSourceSelection selection,
   ) async {
     try {
@@ -140,6 +141,8 @@ class WatchProgressRepository {
       if (entry != null) {
         AppLogger.d('Entry found, updating source selection.');
         entry.sourceSelection = selection;
+        entry.animeCover = animeCover;
+        entry.animeTitle = selection.matchedAnimeTitle ?? 'Unknown';
 
         await isar.writeTxn(() async {
           await isar.isarAnimeWatchProgress.put(entry);
@@ -152,8 +155,8 @@ class WatchProgressRepository {
           id: id,
           animeId: animeId,
           animeTitle: selection.matchedAnimeTitle ?? 'Unknown',
-          animeFormat: 'TV',
-          animeCover: '',
+          animeFormat: '',
+          animeCover: animeCover,
           totalEpisodes: 0,
           sourceSelection: selection,
         );

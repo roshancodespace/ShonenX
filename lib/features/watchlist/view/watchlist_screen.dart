@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/utils/misc.dart';
+
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
@@ -367,6 +367,7 @@ class _WatchlistTabView extends ConsumerWidget {
           crossAxisExtent: dim.width,
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
+          padding: EdgeInsets.fromLTRB(10, 10, 10, 100),
           physics: const BouncingScrollPhysics(),
           childAspectRatio: dim.width / dim.height,
           itemBuilder: (context, index) {
@@ -374,7 +375,7 @@ class _WatchlistTabView extends ConsumerWidget {
               return const WatchlistLoadingIndicator();
             }
             final anime = media[index];
-            final tag = randomId();
+            final tag = 'watchlist-$status-${anime.id}';
             final isSelected = selectedIds.contains(anime.id);
 
             return GestureDetector(

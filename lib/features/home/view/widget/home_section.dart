@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/core/utils/misc.dart';
+
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
@@ -44,7 +44,7 @@ class HomeSectionWidget extends ConsumerWidget {
             itemCount: mediaList.length,
             itemBuilder: (context, index) {
               final media = mediaList[index];
-              final tag = randomId();
+              final tag = 'home-$title-${media.id}';
               return Padding(
                 padding: const EdgeInsets.only(right: 12),
                 child: GestureDetector(

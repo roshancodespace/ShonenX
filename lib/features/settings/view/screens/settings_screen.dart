@@ -71,7 +71,7 @@ class SettingsScreen extends ConsumerWidget {
                 NormalSettingsItem(
                   icon: Icon(Icons.sync_rounded, color: colorScheme.primary),
                   accent: colorScheme.primary,
-                  title: 'Tracking & Sync (💀)',
+                  title: 'Tracking & Sync',
                   description: 'Manage tracking services and sync',
                   onTap: () => context.push('/settings/tracking'),
                 ),

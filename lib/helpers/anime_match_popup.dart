@@ -207,6 +207,7 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
           final repo = ref.read(watchProgressRepositoryProvider);
           repo.saveSourceSelection(
             widget.media.id.toString(),
+            (widget.media.coverImage.medium ?? widget.media.coverImage.large)!,
             IsarSourceSelection(
               sourceId: sourceId,
               sourceType: sourceType,

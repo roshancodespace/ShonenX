@@ -97,7 +97,12 @@ class _AppRouterScreenState extends ConsumerState<AppRouterScreen> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) showExitConfirmationDialog(context, isSystemExit: true);
+        if (didPop) return;
+        if (widget.navigationShell.currentIndex != 0) {
+          widget.navigationShell.goBranch(0);
+        } else {
+          showExitConfirmationDialog(context, isSystemExit: true);
+        }
       },
       child: Scaffold(
         extendBody: true,

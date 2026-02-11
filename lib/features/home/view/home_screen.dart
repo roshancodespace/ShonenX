@@ -17,6 +17,9 @@ import 'package:shonenx/features/home/view/widget/home_section.dart';
 import 'package:shonenx/features/home/view/widget/spotlight_section.dart';
 import 'package:shonenx/features/news/view_model/news_provider.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
+import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
+import 'package:shonenx/features/home/view/widget/search_model.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -101,34 +104,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final layout = ref.watch(homeLayoutProvider);
     final sections = layout.where((s) => s.enabled).toList();
 
-    return RefreshIndicator(
-      onRefresh: () => ref.read(homepageProvider.notifier).fetchHomePage(),
-      child: ListView.builder(
-        padding: const EdgeInsets.only(top: 10),
-        itemCount: sections.length + 2,
-        itemBuilder: (context, index) {
-          if (index == 0)
-            return const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10),
-              child: HeaderSection(isDesktop: false),
-            );
+    final useNewUI = ref.watch(experimentalProvider.select((s) => s.newUI));
 
-          if (state.isLoading)
-            return const SizedBox(
-              height: 200,
-              child: Center(child: CircularProgressIndicator()),
-            );
-          if (state.error != null)
-            return Center(child: Text('Error: ${state.error}'));
+    return Scaffold(
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(homepageProvider.notifier).fetchHomePage(),
+        child: Stack(
+          children: [
+            ListView.builder(
+              padding: const EdgeInsets.only(top: 10),
+              itemCount: sections.length + 2,
+              itemBuilder: (context, index) {
+                if (index == 0)
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: HeaderSection(isDesktop: false),
+                  );
 
-          final home = state.homePage;
-          if (home == null) return const SizedBox.shrink();
+                if (state.isLoading)
+                  return const SizedBox(
+                    height: 200,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                if (state.error != null)
+                  return Center(child: Text('Error: ${state.error}'));
 
-          // bottom spacer so the nav bar doesn't choke the content
-          if (index == sections.length + 1) return const SizedBox(height: 80);
+                final home = state.homePage;
+                if (home == null) return const SizedBox.shrink();
 
-          return _HomeSectionRenderer(section: sections[index - 1], home: home);
-        },
+                // bottom spacer so the nav bar doesn't choke the content
+                if (index == sections.length + 1)
+                  return const SizedBox(height: 80);
+
+                return _HomeSectionRenderer(
+                  section: sections[index - 1],
+                  home: home,
+                );
+              },
+            ),
+            if (useNewUI)
+              Positioned(
+                bottom: 100,
+                right: 30,
+                child: FloatingActionButton(
+                  heroTag: 'search_fab',
+                  onPressed: () => showSearchModal(context, 'search_fab'),
+                  child: const Icon(Iconsax.search_normal),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

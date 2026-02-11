@@ -120,7 +120,10 @@ class EpisodeListNotifier extends _$EpisodeListNotifier {
 
   void reset() => state = const EpisodeListState();
 
-  Future<List<EpisodeDataModel>> _fetchEpisodesInternal(String? animeId, {DMedia? media}) async {
+  Future<List<EpisodeDataModel>> _fetchEpisodesInternal(
+    String? animeId, {
+    DMedia? media,
+  }) async {
     try {
       return _exp.useMangayomiExtensions
           ? await _fetchMangayomiEpisodes(media)
@@ -138,7 +141,10 @@ class EpisodeListNotifier extends _$EpisodeListNotifier {
   }
 
   Future<List<EpisodeDataModel>> _fetchMangayomiEpisodes(DMedia? media) async {
-    if (media == null) return [];
+    if (media == null) {
+      state = state.copyWith(episodes: []);
+      return [];
+    }
 
     final details = await _sourceNotifier.getDetails(media);
     final chapters = details?.episodes ?? [];
@@ -168,6 +174,8 @@ class EpisodeListNotifier extends _$EpisodeListNotifier {
   Future<List<EpisodeDataModel>> _fetchLegacyEpisodes(String? animeId) async {
     final provider = _animeProvider;
     if (provider == null || animeId == null) return [];
+
+    AppLogger.d('[Legacy] Fetching episodes from $provider');
 
     return (await provider.getEpisodes(animeId)).episodes ?? [];
   }

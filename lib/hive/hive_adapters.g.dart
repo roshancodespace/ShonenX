@@ -363,7 +363,7 @@ class ExperimentalFeaturesModelAdapter
     };
     return ExperimentalFeaturesModel(
       episodeTitleSync: fields[0] == null ? false : fields[0] as bool,
-      useMangayomiExtensions: fields[1] == null ? false : fields[1] as bool,
+      useExtensions: fields[1] == null ? false : fields[1] as bool,
       useTestReleases: fields[2] == null ? false : fields[2] as bool,
       newUI: fields[3] == null ? false : fields[3] as bool,
       debugMode: fields[4] == null ? false : fields[4] as bool,
@@ -377,7 +377,7 @@ class ExperimentalFeaturesModelAdapter
       ..writeByte(0)
       ..write(obj.episodeTitleSync)
       ..writeByte(1)
-      ..write(obj.useMangayomiExtensions)
+      ..write(obj.useExtensions)
       ..writeByte(2)
       ..write(obj.useTestReleases)
       ..writeByte(3)

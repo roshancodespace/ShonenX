@@ -175,14 +175,12 @@ class _AnimeSearchDialogState extends ConsumerState<_AnimeSearchDialog> {
       );
 
       if (settings.smartSourceEnabled) {
-        final useMangayomi = ref
-            .read(experimentalProvider)
-            .useMangayomiExtensions;
+        final useExtensions = ref.read(experimentalProvider).useExtensions;
         String? sourceId;
         String? sourceType;
 
-        if (useMangayomi) {
-          AppLogger.d('Saving Source Pref: Mangayomi mode active');
+        if (useExtensions) {
+          AppLogger.d('Saving Source Pref: Extension mode active');
           final source = ref.read(sourceProvider).activeAnimeSource;
           if (source != null) {
             sourceId = source.id.toString();

@@ -2,14 +2,14 @@ import 'dart:convert';
 
 class ExperimentalFeaturesModel {
   bool episodeTitleSync;
-  bool useMangayomiExtensions;
+  bool useExtensions;
   bool useTestReleases;
   bool newUI;
   bool debugMode;
 
   ExperimentalFeaturesModel({
     this.episodeTitleSync = false,
-    this.useMangayomiExtensions = false,
+    this.useExtensions = false,
     this.useTestReleases = false,
     this.newUI = false,
     this.debugMode = false,
@@ -17,15 +17,14 @@ class ExperimentalFeaturesModel {
 
   ExperimentalFeaturesModel copyWith({
     bool? episodeTitleSync,
-    bool? useMangayomiExtensions,
+    bool? useExtensions,
     bool? useTestReleases,
     bool? newUI,
     bool? debugMode,
   }) {
     return ExperimentalFeaturesModel(
       episodeTitleSync: episodeTitleSync ?? this.episodeTitleSync,
-      useMangayomiExtensions:
-          useMangayomiExtensions ?? this.useMangayomiExtensions,
+      useExtensions: useExtensions ?? this.useExtensions,
       useTestReleases: useTestReleases ?? this.useTestReleases,
       newUI: newUI ?? this.newUI,
       debugMode: debugMode ?? this.debugMode,
@@ -35,7 +34,7 @@ class ExperimentalFeaturesModel {
   Map<String, dynamic> toMap() {
     return {
       'episodeTitleSync': episodeTitleSync,
-      'useMangayomiExtensions': useMangayomiExtensions,
+      'useMangayomiExtensions': useExtensions,
       'useTestReleases': useTestReleases,
       'newUI': newUI,
       'debugMode': debugMode,
@@ -45,7 +44,7 @@ class ExperimentalFeaturesModel {
   factory ExperimentalFeaturesModel.fromMap(Map<String, dynamic> map) {
     return ExperimentalFeaturesModel(
       episodeTitleSync: map['episodeTitleSync'] ?? false,
-      useMangayomiExtensions: map['useMangayomiExtensions'] ?? false,
+      useExtensions: map['useMangayomiExtensions'] ?? false,
       useTestReleases: map['useTestReleases'] ?? false,
       newUI: map['newUI'] ?? false,
       debugMode: map['debugMode'] ?? false,

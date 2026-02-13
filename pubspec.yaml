@@ -98,6 +98,7 @@ dependencies:
   workmanager: ^0.9.0+3
   xpath_selector_html_parser: ^3.0.1
   get: ^4.7.3
+  timeago: ^3.7.1
 
 dependency_overrides:
   flutter_inappwebview:

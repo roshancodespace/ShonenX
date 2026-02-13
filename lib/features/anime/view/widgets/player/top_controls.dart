@@ -194,11 +194,11 @@ class TopControls extends ConsumerWidget {
   String _getSourceName(WidgetRef ref) {
     final source = ref.watch(selectedAnimeProvider);
 
-    if (!ref.watch(experimentalProvider).useMangayomiExtensions) {
+    if (!ref.watch(experimentalProvider).useExtensions) {
       return source?.providerName.toUpperCase() ?? "LEGACY";
     } else {
       final sourceNotifier = ref.watch(sourceProvider);
-      return sourceNotifier.activeAnimeSource?.name ?? 'Mangayomi';
+      return sourceNotifier.activeAnimeSource?.name ?? 'Extension';
     }
   }
 }

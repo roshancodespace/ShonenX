@@ -2,6 +2,7 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/utils/permissions.dart';
 
 import 'package:shonenx/main.dart';
 import 'package:iconsax/iconsax.dart';
@@ -28,7 +29,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 7;
+  final int _totalPages = 8;
 
   @override
   void dispose() {
@@ -107,6 +108,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   _buildCardModeStep(context, ref),
                   _buildSpotlightModeStep(context, ref),
                   _buildHomeLayoutStep(context, ref),
+                  _buildPermissionsStep(context, ref),
                   _buildUpdatesStep(context, ref),
                 ],
               ),
@@ -442,6 +444,69 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             value: isAuto,
             onChanged: (val) =>
                 ref.read(automaticUpdatesProvider.notifier).toggle(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPermissionsStep(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(
+          context,
+          'Grant\nPermissions',
+          'Allow access to storage to download anime and support extensions.',
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: ToggleableSettingsItem(
+            icon: Icon(Iconsax.folder_open, color: colorScheme.primary),
+            accent: colorScheme.primary,
+            title: 'Storage Access',
+            description:
+                'Allow access to storage to download anime and support extensions.',
+            value: Permissions.storage,
+            onChanged: (val) async {
+              if (val == false) return;
+              await Permissions.requestStoragePermission();
+              setState(() {});
+            },
+          ),
+        ),
+        // Padding(
+        //   padding: const EdgeInsets.symmetric(horizontal: 16),
+        //   child: ToggleableSettingsItem(
+        //     icon: Icon(Iconsax.gallery, color: colorScheme.primary),
+        //     accent: colorScheme.primary,
+        //     title: 'Photos & Videos',
+        //     description:
+        //         'Allow access to photos and videos for media management.',
+        //     value: Permissions.photos && Permissions.videos,
+        //     onChanged: (val) async {
+        //       if (val == false) return;
+        //       await Permissions.requestMediaPermissions();
+        //       setState(() {});
+        //     },
+        //   ),
+        // ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: ToggleableSettingsItem(
+            icon: Icon(Iconsax.notification, color: colorScheme.primary),
+            accent: colorScheme.primary,
+            title: 'Notification Access',
+            description:
+                'Allow access to notifications to get notified about new anime news.',
+            value: Permissions.notification,
+            onChanged: (val) async {
+              if (val == false) return;
+              await Permissions.requestNotificationPermission();
+              setState(() {});
+            },
           ),
         ),
       ],

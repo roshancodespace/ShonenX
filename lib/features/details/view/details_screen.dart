@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
@@ -6,6 +7,7 @@ import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/features/details/view_model/details_page_notifier.dart';
 import 'package:shonenx/features/details/view/widgets/episodes_tab.dart';
 import 'package:shonenx/features/details/view/widgets/characters_tab.dart';
+import 'package:shonenx/features/details/view/widgets/comments_bottom_sheet.dart';
 import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
 import 'widgets/widgets.dart';
@@ -29,6 +31,8 @@ class AnimeDetailsScreen extends ConsumerStatefulWidget {
 class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  double _commentPullProgress = 0;
+  bool _commentSheetOpened = false;
 
   @override
   void initState() {
@@ -70,12 +74,87 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     );
   }
 
+  bool _isTopPull = false;
+
+  bool _handleScrollNotification(
+    ScrollNotification notification,
+    UniversalMedia anime,
+  ) {
+    // Block updates if sheet is already opening/open
+    if (_commentSheetOpened) return false;
+
+    // Determine the pull direction and magnitude
+    if (notification is OverscrollNotification) {
+      if (notification.overscroll > 0) {
+        // Bottom pull
+        if (_isTopPull) {
+          setState(() {
+            _isTopPull = false;
+            _commentPullProgress = 0;
+          });
+        }
+        final newProgress =
+            (_commentPullProgress + notification.overscroll / 250.0).clamp(
+              0.0,
+              1.2,
+            );
+        if (newProgress != _commentPullProgress) {
+          setState(() => _commentPullProgress = newProgress);
+        }
+      } else if (notification.overscroll < 0) {
+        // Top pull
+        if (!_isTopPull) {
+          setState(() {
+            _isTopPull = true;
+            _commentPullProgress = 0;
+          });
+        }
+        // Use absolute value for progress calculation
+        final newProgress =
+            (_commentPullProgress + (notification.overscroll.abs()) / 250.0)
+                .clamp(0.0, 1.2);
+        if (newProgress != _commentPullProgress) {
+          setState(() => _commentPullProgress = newProgress);
+        }
+      }
+
+      if (_commentPullProgress >= 1.0 && !_commentSheetOpened) {
+        _commentSheetOpened = true;
+        HapticFeedback.mediumImpact();
+        Future.delayed(const Duration(milliseconds: 150), () {
+          if (mounted) {
+            CommentsBottomSheet.show(context, anime).then((_) {
+              if (mounted) {
+                setState(() {
+                  _commentSheetOpened = false;
+                  _commentPullProgress = 0;
+                });
+              }
+            });
+
+            // Animate out the indicator after 1 second
+            Future.delayed(const Duration(seconds: 1), () {
+              if (mounted && _commentSheetOpened) {
+                setState(() => _commentPullProgress = 0);
+              }
+            });
+          }
+        });
+      }
+    } else if (notification is ScrollEndNotification) {
+      if (_commentPullProgress > 0 && !_commentSheetOpened) {
+        setState(() => _commentPullProgress = 0);
+      }
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final useMangayomi = ref.watch(
-      experimentalProvider.select((exp) => exp.useMangayomiExtensions),
+    final useExtensions = ref.watch(
+      experimentalProvider.select((exp) => exp.useExtensions),
     );
 
     final id = widget.anime.id;
@@ -85,50 +164,74 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
 
     return Scaffold(
       backgroundColor: colorScheme.surfaceContainerLowest,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            DetailsHeader(
-              anime: displayedAnime,
-              tag: widget.tag,
-              onEditPressed: () => _showEditListBottomSheet(displayedAnime),
-            ),
-          ];
-        },
-        body: ScrollConfiguration(
-          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _KeepAliveWrapper(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(0, 16, 0, 100),
-                  child: DetailsContent(
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (n) => _handleScrollNotification(n, displayedAnime),
+        child: Stack(
+          children: [
+            NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return [
+                  DetailsHeader(
                     anime: displayedAnime,
-                    isLoading: isLoading,
-                    onMediaTap: _onMediaTap,
+                    tag: widget.tag,
+                    onEditPressed: () =>
+                        _showEditListBottomSheet(displayedAnime),
                   ),
+                ];
+              },
+              body: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(
+                  context,
+                ).copyWith(scrollbars: false),
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _KeepAliveWrapper(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(0, 16, 0, 100),
+                        child: DetailsContent(
+                          anime: displayedAnime,
+                          isLoading: isLoading,
+                          onMediaTap: _onMediaTap,
+                        ),
+                      ),
+                    ),
+                    _KeepAliveWrapper(
+                      child: EpisodesTab(
+                        mediaId: displayedAnime.id.toString(),
+                        mediaTitle: displayedAnime.title,
+                        mediaFormat: displayedAnime.format ?? '',
+                        mediaCover:
+                            displayedAnime.coverImage.large ??
+                            displayedAnime.coverImage.medium ??
+                            '',
+                      ),
+                    ),
+                    _KeepAliveWrapper(
+                      child: CharactersTab(
+                        characters: displayedAnime.characters,
+                        isLoading: isLoading,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              _KeepAliveWrapper(
-                child: EpisodesTab(
-                  mediaId: displayedAnime.id.toString(),
-                  mediaTitle: displayedAnime.title,
-                  mediaFormat: displayedAnime.format ?? '',
-                  mediaCover:
-                      displayedAnime.coverImage.large ??
-                      displayedAnime.coverImage.medium ??
-                      '',
+            ),
+            // Comments overscroll indicator
+            Positioned(
+              bottom: _isTopPull ? null : 16,
+              top: _isTopPull ? MediaQuery.of(context).padding.top + 16 : null,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                ignoring: _commentPullProgress <= 0,
+                child: _CommentsRevealIndicator(
+                  progress: _commentPullProgress,
+                  isTop: _isTopPull,
                 ),
               ),
-              _KeepAliveWrapper(
-                child: CharactersTab(
-                  characters: displayedAnime.characters,
-                  isLoading: isLoading,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: Material(
@@ -140,7 +243,9 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
             child: TabBar(
               controller: _tabController,
               labelColor: colorScheme.primary,
-              unselectedLabelColor: colorScheme.onSurface.withOpacity(0.6),
+              unselectedLabelColor: colorScheme.onSurface.withValues(
+                alpha: 0.6,
+              ),
               indicatorColor: colorScheme.primary,
               indicatorSize: TabBarIndicatorSize.label,
               dividerColor: Colors.transparent,
@@ -153,7 +258,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
           ),
         ),
       ),
-      floatingActionButton: !useMangayomi
+      floatingActionButton: !useExtensions
           ? _WatchFab(anime: displayedAnime)
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -241,4 +346,99 @@ class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
 
   @override
   bool get wantKeepAlive => true;
+}
+
+// ─── Comments Overscroll Indicator ───────────────────────────────
+
+class _CommentsRevealIndicator extends StatelessWidget {
+  final double progress;
+  final bool isTop;
+
+  const _CommentsRevealIndicator({required this.progress, this.isTop = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final clamped = progress.clamp(0.0, 1.0);
+    final isTriggered = progress >= 1.0;
+
+    return Center(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: clamped),
+        duration: Duration(milliseconds: isTriggered ? 300 : 200),
+        curve: isTriggered ? Curves.elasticOut : Curves.easeOut,
+        builder: (context, value, child) {
+          return Transform.scale(
+            scale: isTriggered ? 1.15 : 0.7 + (value * 0.3),
+            child: Opacity(opacity: value.clamp(0.0, 1.0), child: child),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: isTriggered
+                ? colorScheme.primaryContainer
+                : colorScheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.shadow.withValues(alpha: 0.15),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 26,
+                height: 26,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      value: clamped,
+                      strokeWidth: 2.5,
+                      strokeCap: StrokeCap.round,
+                      color: isTriggered
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                      backgroundColor: colorScheme.outlineVariant.withValues(
+                        alpha: 0.4,
+                      ),
+                    ),
+                    Icon(
+                      isTriggered
+                          ? Icons.chat_bubble_rounded
+                          : Icons.chat_bubble_outline_rounded,
+                      size: 12,
+                      color: isTriggered
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                isTriggered
+                    ? 'Opening comments...'
+                    : isTop
+                    ? 'Pull down for comments'
+                    : 'Pull up for comments',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isTriggered
+                      ? colorScheme.onPrimaryContainer
+                      : colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

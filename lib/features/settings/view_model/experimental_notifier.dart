@@ -42,6 +42,6 @@ class ExperimentalFeaturesNotifier extends Notifier<ExperimentalFeaturesModel> {
   }
 
   void toggleExtensions(bool value) {
-    updateSettings((s) => s.copyWith(useMangayomiExtensions: value));
+    updateSettings((s) => s.copyWith(useExtensions: value));
   }
 }

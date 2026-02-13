@@ -1,11 +1,7 @@
-import 'dart:async';
-
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
-import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,7 +13,6 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/router/router_config.dart';
-import 'package:shonenx/storage_provider.dart';
 
 late Isar isar;
 late SharedPreferencesWithCache sharedPrefs;
@@ -28,9 +23,6 @@ void main(List<String> args) async {
 
   try {
     AppLogger.i('Starting app initialization');
-    isar = await StorageProvider().initDB(null, inspector: kDebugMode);
-    final bridge = DartotsuExtensionBridge();
-    await bridge.init(isar, 'ShonenX');
     await AppInitializer.initialize();
   } catch (e) {
     AppLogger.e('Error initializing app: $e');
@@ -51,12 +43,6 @@ void main(List<String> args) async {
   );
 
   runApp(const ProviderScope(child: MyApp()));
-  unawaited(_postLaunchInit());
-}
-
-Future<void> _postLaunchInit() async {
-  await StorageProvider().requestPermission();
-  await StorageProvider().deleteBtDirectory();
 }
 
 class MyApp extends ConsumerWidget {

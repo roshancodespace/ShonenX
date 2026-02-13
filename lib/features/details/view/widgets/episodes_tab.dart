@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
@@ -99,7 +100,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'MATCHED ( by ${ref.watch(experimentalProvider).useMangayomiExtensions ? ref.read(sourceProvider).activeAnimeSource?.name : ref.read(selectedAnimeProvider)?.providerName} )',
+                          'MATCHED ( by ${ref.watch(experimentalProvider).useExtensions ? ref.read(sourceProvider).activeAnimeSource?.name : ref.read(selectedAnimeProvider)?.providerName} )',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.bold,
@@ -516,70 +517,104 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
       ),
       builder: (context) {
         return DraggableScrollableSheet(
-          initialChildSize: 0.5,
-          minChildSize: 0.3,
-          maxChildSize: 0.8,
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
           expand: false,
           builder: (context, scrollController) {
-            return Consumer(
-              builder: (context, ref, _) {
-                final useMangayomi = ref
-                    .watch(experimentalProvider)
-                    .useMangayomiExtensions;
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      child: Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: theme.dividerColor.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(2),
+            String searchQuery = '';
+            return StatefulBuilder(
+              builder: (context, setState) {
+                return Consumer(
+                  builder: (context, ref, _) {
+                    final useExtensions = ref
+                        .watch(experimentalProvider)
+                        .useExtensions;
+
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          child: Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: theme.dividerColor.withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Text(
-                        'Select Source',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Select Source',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              TextField(
+                                decoration: InputDecoration(
+                                  hintText: 'Search extension...',
+                                  prefixIcon: const Icon(Icons.search),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  fillColor:
+                                      theme.colorScheme.surfaceContainerHighest,
+                                  filled: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                ),
+                                onChanged: (value) {
+                                  setState(() => searchQuery = value);
+                                },
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
-                    SwitchListTile(
-                      title: const Text('Use Extensions'),
-                      value: useMangayomi,
-                      onChanged: (value) {
-                        ref
-                            .read(experimentalProvider.notifier)
-                            .updateSettings(
-                              (state) =>
-                                  state.copyWith(useMangayomiExtensions: value),
-                            );
-                        ref
-                            .read(episodeListProvider.notifier)
-                            .refreshEpisodes();
-                      },
-                    ),
-                    const Divider(height: 1),
-                    Expanded(
-                      child: useMangayomi
-                          ? _buildMangayomiSourceList(
-                              ref,
-                              scrollController,
-                              notifier,
-                            )
-                          : _buildLegacySourceList(
-                              ref,
-                              scrollController,
-                              notifier,
-                            ),
-                    ),
-                  ],
+                        SwitchListTile(
+                          title: const Text('Use Extensions'),
+                          value: useExtensions,
+                          onChanged: (value) {
+                            ref
+                                .read(experimentalProvider.notifier)
+                                .updateSettings(
+                                  (state) =>
+                                      state.copyWith(useExtensions: value),
+                                );
+                            ref
+                                .read(episodeListProvider.notifier)
+                                .refreshEpisodes();
+                          },
+                        ),
+                        const Divider(height: 1),
+                        Expanded(
+                          child: useExtensions
+                              ? _buildExtensionSourceList(
+                                  ref,
+                                  scrollController,
+                                  notifier,
+                                  searchQuery,
+                                )
+                              : _buildLegacySourceList(
+                                  ref,
+                                  scrollController,
+                                  notifier,
+                                  searchQuery,
+                                ),
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
             );
@@ -589,17 +624,22 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     );
   }
 
-  Widget _buildMangayomiSourceList(
+  Widget _buildExtensionSourceList(
     WidgetRef ref,
     ScrollController scrollController,
     DetailsPageNotifier notifier,
+    String query,
   ) {
     final sourceState = ref.watch(sourceProvider);
-    final sources = sourceState.installedAnimeExtensions;
+    final sources = sourceState.installedAnimeExtensions.where((s) {
+      if (query.isEmpty) return true;
+      return (s.name ?? '').toLowerCase().contains(query.toLowerCase());
+    }).toList();
+
     final activeId = sourceState.activeAnimeSource?.id;
 
     if (sources.isEmpty) {
-      return Center(child: const Text('No extensions installed.'));
+      return const Center(child: Text('No extensions found.'));
     }
 
     return ListView.builder(
@@ -609,6 +649,23 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
         final source = sources[index];
         final isSelected = source.id == activeId;
         return ListTile(
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: source.iconUrl != null
+                ? CachedNetworkImage(
+                    imageUrl: source.iconUrl!,
+                    fit: BoxFit.cover,
+                    errorWidget: (_, __, ___) =>
+                        const Icon(Icons.extension, size: 20),
+                  )
+                : const Icon(Icons.extension, size: 20),
+          ),
           title: Text(source.name ?? 'Unknown'),
           subtitle: Text(source.lang ?? ''),
           trailing: isSelected
@@ -631,13 +688,17 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     WidgetRef ref,
     ScrollController scrollController,
     DetailsPageNotifier notifier,
+    String query,
   ) {
     final registry = ref.read(animeSourceRegistryProvider);
     final selectedAnimeSource = ref.watch(selectedAnimeProvider);
-    final sources = registry.keys;
+    final sources = registry.keys.where((s) {
+      if (query.isEmpty) return true;
+      return s.toLowerCase().contains(query.toLowerCase());
+    }).toList();
 
     if (sources.isEmpty) {
-      return const Center(child: Text('No legacy sources available.'));
+      return const Center(child: Text('No legacy sources found.'));
     }
 
     return ListView.builder(
@@ -648,6 +709,10 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
         final isSelected =
             source.toLowerCase() == selectedAnimeSource?.providerName;
         return ListTile(
+          leading: const CircleAvatar(
+            radius: 20,
+            child: Icon(Icons.public, size: 20),
+          ),
           title: Text(source),
           trailing: isSelected
               ? Icon(

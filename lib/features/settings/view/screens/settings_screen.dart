@@ -97,7 +97,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                if (experimental.useMangayomiExtensions)
+                if (experimental.useExtensions)
                   NormalSettingsItem(
                     icon: Icon(
                       Icons.extension_outlined,

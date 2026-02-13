@@ -29,16 +29,16 @@ class ExperimentalScreen extends ConsumerWidget {
             ToggleableSettingsItem(
               accent: colorScheme.primary,
               icon: Icon(
-                experimentalSettings.useMangayomiExtensions
+                experimentalSettings.useExtensions
                     ? Icons.extension_outlined
                     : Icons.extension_off_outlined,
               ),
               title: 'Extension',
               description: 'Enables the experimental extension support',
-              value: experimentalSettings.useMangayomiExtensions,
+              value: experimentalSettings.useExtensions,
               onChanged: (value) {
                 experimentalNotifier.updateSettings(
-                  (state) => state.copyWith(useMangayomiExtensions: value),
+                  (state) => state.copyWith(useExtensions: value),
                 );
               },
             ),

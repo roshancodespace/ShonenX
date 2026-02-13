@@ -69,12 +69,10 @@ class AnimeMatchService {
 
   /// Searches for anime using the configured source (Mangayomi or Legacy).
   Future<List<BaseAnimeModel>> search(String query) async {
-    final useMangayomi = _ref.read(experimentalProvider).useMangayomiExtensions;
+    final useExtensions = _ref.read(experimentalProvider).useExtensions;
 
-    if (useMangayomi) {
-      final res = await _ref
-          .read(sourceProvider.notifier)
-          .search(Uri.encodeComponent(query));
+    if (useExtensions) {
+      final res = await _ref.read(sourceProvider.notifier).search(query);
 
       return res.list
           .where((r) => r.title != null && r.url != null)

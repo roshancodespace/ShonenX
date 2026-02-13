@@ -61,7 +61,7 @@ class DownloadsScreen extends ConsumerWidget {
             ? FloatingActionButton(
                 onPressed: () async {
                   final path =
-                      (await StorageProvider().getDefaultDirectory())!.path;
+                      (await StorageProvider.getDefaultDirectory())!.path;
                   AppLogger.d(
                     "$path/Offline/One piece/1 - I am gonna be king of the pirates/Auto",
                   );

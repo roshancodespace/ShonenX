@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/features/details/view/widgets/comments_bottom_sheet.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/details/view_model/local_tracker_notifier.dart';
@@ -214,6 +215,15 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
         onPressed: () => context.pop(),
       ),
       actions: [
+        IconButton(
+          icon: const Icon(
+            Icons.comment_outlined,
+            color: Colors.white,
+            size: 30,
+          ),
+          onPressed: () => CommentsBottomSheet.show(context, widget.anime),
+        ),
+        const SizedBox(width: 8),
         isLoading
             ? const Padding(
                 padding: EdgeInsets.all(12.0),

@@ -32,6 +32,7 @@ class DetailsContent extends StatelessWidget {
             description: anime.description ?? '',
             isLoading: isLoading && (anime.description?.isEmpty ?? true),
           ),
+          const SizedBox(height: 16),
           if (anime.rankings.isNotEmpty) ...[
             const SizedBox(height: 24),
             AnimeRankings(rankings: anime.rankings),

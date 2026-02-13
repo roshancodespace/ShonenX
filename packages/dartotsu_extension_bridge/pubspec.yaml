@@ -22,11 +22,7 @@ dependencies:
   http_interceptor: ^2.0.0
   html: ^0.15.6
   intl: ^0.20.2
-  flutter_inappwebview:
-    git:
-      url: https://github.com/roshancodespace/flutter_inappwebview.git
-      ref: master
-      path: flutter_inappwebview
+  flutter_inappwebview: ^6.2.0-beta.3
   pseudom: ^1.0.1
   encrypt: ^5.0.3
   xpath_selector_html_parser: ^3.0.1

@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/core/utils/permissions.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
 import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/downloads/view_model/downloads_notifier.dart';
@@ -32,14 +33,14 @@ class DownloadService {
   Future<void> startDownload(DownloadItem item) async {
     // Check Permissions & Path
     if (!_settings.useCustomPath || _settings.customDownloadPath == null) {
-      if (!await StorageProvider().requestPermission()) {
+      if (!await Permissions.requestStoragePermission()) {
         return _fail(item, 'Permission denied');
       }
     }
 
     final basePath = _settings.useCustomPath
         ? _settings.customDownloadPath!
-        : (await StorageProvider().getDefaultDirectory())!.path;
+        : (await StorageProvider.getDefaultDirectory())!.path;
 
     final itemPath = item.filePath;
     final finalPath = p.isAbsolute(itemPath)

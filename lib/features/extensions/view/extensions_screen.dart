@@ -256,7 +256,6 @@ class ExtensionListWidget extends StatefulWidget implements ExtensionConfig {
 }
 
 class _ExtensionListWidgetState extends ExtensionList<ExtensionListWidget> {
-
   @override
   Widget extensionItem(bool isHeader, String lang, Source? source) {
     if (isHeader) {
@@ -277,9 +276,9 @@ class _ExtensionListWidgetState extends ExtensionList<ExtensionListWidget> {
     return ExtensionListItem(
       source: source,
       isInstalled: widget.isInstalled,
-      onInstall: () => manager.installSource(source),
-      onUninstall: () => manager.uninstallSource(source),
-      onUpdate: () => manager.updateSource(source),
+      onInstall: () => source.extensionType?.getManager().installSource(source),
+      onUninstall: () => source.extensionType?.getManager().uninstallSource(source),
+      onUpdate: () => source.extensionType?.getManager().updateSource(source),
       onTap: () {
         // Open details or settings if installed
         if (widget.isInstalled) {
@@ -323,13 +322,27 @@ class ExtensionListItem extends StatelessWidget {
         onTap: onTap,
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: CachedNetworkImage(
-            imageUrl: source.iconUrl ?? '',
-            width: 40,
-            height: 40,
-            fit: BoxFit.cover,
-            errorWidget: (context, url, error) => const Icon(Icons.add),
-          ),
+          child: source.iconUrl != null && source.iconUrl!.isNotEmpty
+              ? CachedNetworkImage(
+                  imageUrl: source.iconUrl!,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorWidget: (context, url, error) => Container(
+                    width: 40,
+                    height: 40,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    child: const Icon(Icons.extension, size: 20),
+                  ),
+                )
+              : Container(
+                  width: 40,
+                  height: 40,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: const Icon(Icons.extension, size: 20),
+                ),
         ),
         title: Text(source.name ?? 'Unknown'),
         subtitle: Text('v${source.version ?? "?"} • ${source.lang ?? "?"}'),

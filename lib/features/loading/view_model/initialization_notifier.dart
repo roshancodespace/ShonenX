@@ -1,13 +1,19 @@
 import 'dart:async';
+import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart'
+    hide isar;
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/core/utils/permissions.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/home/view_model/homepage_notifier.dart';
 import 'package:shonenx/features/settings/view_model/source_notifier.dart';
 import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
 import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
 import 'package:shonenx/helpers/ui.dart';
+import 'package:shonenx/main.dart';
+import 'package:shonenx/storage_provider.dart';
 
 part 'initialization_notifier.g.dart';
 
@@ -86,6 +92,7 @@ class Initialization extends _$Initialization {
 
     try {
       await _initializeCore();
+      await _initializeExtensions();
       await _initializeSources();
       await _authenticate();
       await _initializeHomepage();
@@ -184,6 +191,29 @@ class Initialization extends _$Initialization {
     _applyThemeSettings();
 
     AppLogger.success('Settings applied');
+  }
+
+  Future<void> _initializeExtensions() async {
+    AppLogger.section('EXTENSIONS');
+
+    _emit(
+      status: InitializationStatus.loadingSources,
+      message: 'Loading extensions…',
+      progress: 0.35,
+    );
+
+    if (!Permissions.storage) {
+      if (!await Permissions.requestStoragePermission()) {
+        AppLogger.fail("Storage permission denied");
+        throw StateError("Failed to get storage access");
+      }
+    }
+
+    isar = await StorageProvider.initDB(null, inspector: kDebugMode);
+    final bridge = DartotsuExtensionBridge();
+    await bridge.init(isar, 'ShonenX');
+
+    AppLogger.success('Extensions loaded');
   }
 
   // ---------------------------------------------------------------------------

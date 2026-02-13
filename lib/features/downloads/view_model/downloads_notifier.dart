@@ -61,7 +61,7 @@ class DownloadsNotifier extends _$DownloadsNotifier {
     if (settings.useCustomPath && settings.customDownloadPath != null) {
       baseDir = settings.customDownloadPath!;
     } else {
-      final defaultDir = await StorageProvider().getDefaultDirectory();
+      final defaultDir = await StorageProvider.getDefaultDirectory();
       if (defaultDir == null) {
         AppLogger.w("Cannot store download: No storage directory");
         return;

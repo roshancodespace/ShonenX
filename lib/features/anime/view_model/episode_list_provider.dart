@@ -125,8 +125,8 @@ class EpisodeListNotifier extends _$EpisodeListNotifier {
     DMedia? media,
   }) async {
     try {
-      return _exp.useMangayomiExtensions
-          ? await _fetchMangayomiEpisodes(media)
+      return _exp.useExtensions
+          ? await _fetchExtensionEpisodes(media)
           : await _fetchLegacyEpisodes(animeId);
     } catch (e, st) {
       AppLogger.e('Episode fetch failed', e, st);
@@ -140,7 +140,7 @@ class EpisodeListNotifier extends _$EpisodeListNotifier {
     }
   }
 
-  Future<List<EpisodeDataModel>> _fetchMangayomiEpisodes(DMedia? media) async {
+  Future<List<EpisodeDataModel>> _fetchExtensionEpisodes(DMedia? media) async {
     if (media == null) {
       state = state.copyWith(episodes: []);
       return [];

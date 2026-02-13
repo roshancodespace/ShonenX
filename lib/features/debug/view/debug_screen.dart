@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/services/notification_service.dart';
+import 'package:shonenx/features/debug/view/commentum_debug_screen.dart';
 import 'package:shonenx/features/debug/view/inappwebview_debug_screen.dart';
 import 'package:shonenx/features/debug/view/renderer_debug_screen.dart';
 import 'package:shonenx/features/news/view/news_screen.dart';
@@ -99,6 +100,17 @@ class DebugScreen extends ConsumerWidget {
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => const RendererDebugScreen(),
+                  ),
+                ),
+              ),
+              NormalSettingsItem(
+                title: 'Debug Commentum',
+                icon: Icon(Icons.code, color: colorScheme.primary),
+                accent: colorScheme.primary,
+                description: 'Debugger for Commentum',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CommentumDebugScreen(),
                   ),
                 ),
               ),

@@ -255,7 +255,7 @@ class EpisodeData extends _$EpisodeData {
   bool _isValidIdx(int i) => i >= 0 && i < _epList.episodes.length;
 
   Future<List<ServerData>> _getRawServers(EpisodeDataModel ep) async {
-    if (_exp.useMangayomiExtensions) {
+    if (_exp.useExtensions) {
       return (await _srcNotifier.getServers(
         _epList.animeId!,
         (ep.id ?? ep.number)!.toString(),
@@ -363,7 +363,7 @@ class EpisodeData extends _$EpisodeData {
     EpisodeDataModel ep, {
     ServerData? server,
   }) async {
-    if (_exp.useMangayomiExtensions && ep.url != null) {
+    if (_exp.useExtensions && ep.url != null) {
       final res = await _srcNotifier.getSources(
         DEpisode(episodeNumber: ep.number.toString(), url: ep.url),
       );
@@ -373,7 +373,7 @@ class EpisodeData extends _$EpisodeData {
               (s) => Source(
                 url: s?.url,
                 isM3U8: s?.url.contains('.m3u8') ?? false,
-                quality: s?.quality ?? s?.title,
+                quality: "${s?.title}-${s?.quality ?? ''}",
                 isDub: s?.url.toLowerCase().contains('dub') ?? false,
               ),
             )

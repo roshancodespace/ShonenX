@@ -191,11 +191,7 @@ class SourceNotifier extends _$SourceNotifier {
   }) async {
     try {
       if (state.activeAnimeSource == null) return Pages(list: []);
-      return await state.activeAnimeSource!.methods.search(
-        query,
-        page,
-        filters,
-      );
+      return await state.activeAnimeSource!.methods.search(query, page, filters);
     } catch (err) {
       AppLogger.e(err);
       return Pages(list: []);

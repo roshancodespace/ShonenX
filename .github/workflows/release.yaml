@@ -35,6 +35,12 @@ jobs:
         with:
           distribution: "temurin"
           java-version: "21"
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.35.7"
@@ -74,6 +80,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
       - run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libwebkit2gtk-4.1-dev libsecret-1-dev libasound2-dev libmpv-dev
@@ -106,6 +116,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
       - run: git config --system core.longpaths true
       - uses: subosito/flutter-action@v2
         with:

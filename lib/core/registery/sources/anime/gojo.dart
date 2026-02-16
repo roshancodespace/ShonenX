@@ -13,7 +13,7 @@ class GojoProvider implements AnimeProvider {
   @override
   String get apiUrl => "https://b.animetsu.live";
 
-  String get proxyUrl => "https://ani.metsu.site";
+  String get proxyUrl => "https://ani.metsu.site/proxy";
 
   @override
   String get baseUrl => "https://animetsu.live";
@@ -22,7 +22,7 @@ class GojoProvider implements AnimeProvider {
   Map<String, String> get headers => {
     'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-    'Referer': baseUrl,
+    'Referer': "$baseUrl/",
     'Origin': baseUrl,
   };
 
@@ -65,7 +65,7 @@ class GojoProvider implements AnimeProvider {
             id: "$animeId/$epNum",
             number: epNum,
             title: item['name'] ?? 'Episode $epNum',
-            thumbnail: "$proxyUrl/proxy${item['img'] ?? ''}",
+            thumbnail: "$proxyUrl/${item['img'] ?? ''}",
             isFiller: item['isFiller'] ?? false,
             description: item['description'],
             date: formattedDate,
@@ -181,7 +181,6 @@ class GojoProvider implements AnimeProvider {
           [];
 
       final currentServer = serverName ?? 'Gojo';
-      print(json);
 
       final sources =
           (json['sources'] as List?)?.map((item) {
@@ -189,9 +188,8 @@ class GojoProvider implements AnimeProvider {
             final type = item['type']?.trim() ?? 'm3u8';
             final needProxy = item['need_proxy'] == true;
             final sourceUrl = needProxy
-                ? "$apiUrl/proxy${item['url']}"
+                ? "$proxyUrl${item['url']}"
                 : item['url'];
-
             if (quality == 'master') quality = 'Auto';
 
             return Source(

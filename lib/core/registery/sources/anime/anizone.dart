@@ -30,6 +30,7 @@ class AnizoneProvider implements AnimeProvider {
     final res = await UniversalHttpClient.instance.get(
       Uri.parse(url),
       headers: headers,
+      cacheConfig: CacheConfig.medium,
     );
 
     if (res.statusCode != 200) {
@@ -69,11 +70,11 @@ class AnizoneProvider implements AnimeProvider {
     String? anilistId,
     String? malId,
   }) async {
-    final url = animeId.startsWith("http") ? animeId : "$baseUrl$animeId";
-
+    final url = "$baseUrl/anime/${animeId.split('/').last}/1";
+    print(url);
     final res = await UniversalHttpClient.instance.get(
       Uri.parse(url),
-      headers: headers,
+      cacheConfig: CacheConfig.medium,
     );
 
     if (res.statusCode != 200) {
@@ -81,23 +82,14 @@ class AnizoneProvider implements AnimeProvider {
     }
 
     final doc = parse(res.body);
-    final list = doc.querySelector("ul.grid.grid-cols-1")?.children;
-
-    if (list == null) {
-      return BaseEpisodeModel(episodes: [], totalEpisodes: 0);
-    }
+    final list = doc.querySelectorAll("a.block");
 
     final List<EpisodeDataModel> episodes = [];
     int i = 1;
 
     for (final item in list) {
-      final aTag = item.querySelector("a");
-      final imgTag = item.querySelector("img");
-      final h3 = item.querySelector("h3");
-
-      final epLink = aTag?.attributes['href'];
-      final epImg = imgTag?.attributes['src'];
-      final title = h3?.text.trim().split(':').last.trim();
+      final epLink = item.attributes['href'];
+      final title = item.querySelector('div')?.children.last.text;
 
       if (epLink != null) {
         episodes.add(
@@ -105,7 +97,6 @@ class AnizoneProvider implements AnimeProvider {
             id: epLink,
             number: i,
             title: title ?? "Episode $i",
-            thumbnail: epImg,
             isFiller: false,
           ),
         );
@@ -174,6 +165,30 @@ class AnizoneProvider implements AnimeProvider {
       sources: [Source(url: src, quality: "$serverLabel - Multi")],
       tracks: subtitles,
     );
+  }
+
+  Map<String, String> extractCookiesFromHeaders(Map<String, String> headers) {
+    final Map<String, String> cookies = {};
+
+    final rawCookie = headers['set-cookie'];
+    if (rawCookie == null) return cookies;
+
+    final cookieHeaders = rawCookie.split(RegExp(r',(?! )'));
+
+    for (var cookie in cookieHeaders) {
+      final parts = cookie.split(';');
+      if (parts.isEmpty) continue;
+
+      final keyValue = parts.first.split('=');
+      if (keyValue.length < 2) continue;
+
+      final key = keyValue[0].trim();
+      final value = keyValue.sublist(1).join('=').trim();
+
+      cookies[key] = value;
+    }
+
+    return cookies;
   }
 
   @override

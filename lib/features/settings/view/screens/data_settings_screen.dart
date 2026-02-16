@@ -45,7 +45,7 @@ class _DataSettingsScreenState extends ConsumerState<DataSettingsScreen> {
                   await CachedNetworkImage.evictFromCache('');
                   imageCache.clear();
                   imageCache.clearLiveImages();
-                  if (mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Image cache cleared')),
                     );
@@ -152,7 +152,7 @@ class _DataSettingsScreenState extends ConsumerState<DataSettingsScreen> {
       await ref
           .read(backupServiceProvider)
           .exportData(includeWatchlist: watchlist, includeSettings: settings);
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Export completed successfully')),
         );
@@ -172,7 +172,7 @@ class _DataSettingsScreenState extends ConsumerState<DataSettingsScreen> {
   Future<void> _importData(BuildContext context) async {
     try {
       await ref.read(backupServiceProvider).importData();
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Import completed. Please restart app.'),
@@ -180,7 +180,7 @@ class _DataSettingsScreenState extends ConsumerState<DataSettingsScreen> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Import failed: ${e.toString()}'),

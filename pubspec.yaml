@@ -20,13 +20,13 @@ dependencies:
   carousel_slider: ^5.1.1
   collection: ^1.19.1
   connectivity_plus: ^6.1.5
-  # commentum_client:
-  #   git: 
-  #     url: https://github.com/commentum/commentum_flutter.git
-  #     ref: main
-  #     path: ./
   commentum_client:
-    path: packages/commentum_client
+    git: 
+      url: https://github.com/commentum/commentum_flutter.git
+      ref: main
+      path: ./
+  # commentum_client:
+  #   path: packages/commentum_client
 
   device_info_plus: ^11.2.1
   dynamic_color: 1.7.0

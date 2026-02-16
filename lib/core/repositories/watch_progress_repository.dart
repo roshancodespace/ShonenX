@@ -5,7 +5,7 @@ import 'package:isar_community/isar.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core/utils/app_utils.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
-import 'package:shonenx/data/isar/models/isar_anime_watch_progress.dart';
+import 'package:shonenx/data/isar/isar_anime_watch_progress.dart';
 import 'package:shonenx/main.dart';
 
 final watchProgressRepositoryProvider = Provider<WatchProgressRepository>((

@@ -1,4 +1,4 @@
-import 'package:shonenx/core/anilist/services/anilist_service.dart';
+import 'package:shonenx/core/services/anilist/anilist_service.dart';
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
@@ -161,8 +161,8 @@ class AniListRepository implements AnimeRepository {
     String? status,
     double? score,
     int? progress,
-    FuzzyDateInput? startedAt,
-    FuzzyDateInput? completedAt,
+    FuzzyDate? startedAt,
+    FuzzyDate? completedAt,
     int? repeat,
     String? notes,
     bool? private,

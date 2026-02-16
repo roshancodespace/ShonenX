@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shonenx/core/anilist/services/anilist_service_provider.dart';
+import 'package:shonenx/core/services/anilist/anilist_service_provider.dart';
 import 'package:shonenx/core/jikan/jikan_service.dart';
 import 'package:shonenx/core/models/aniskip/aniskip_result.dart';
 import 'package:shonenx/core/services/aniskip_service.dart';

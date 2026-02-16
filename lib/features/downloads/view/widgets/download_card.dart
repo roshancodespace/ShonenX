@@ -6,7 +6,7 @@ import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
 import 'package:shonenx/features/downloads/view/local_player_screen.dart';
 import 'package:shonenx/features/downloads/view_model/downloads_notifier.dart';
-import 'package:shonenx/utils/formatter.dart';
+import 'package:shonenx/core/utils/formatter.dart';
 
 class DownloadCard extends ConsumerWidget {
   final DownloadItem item;

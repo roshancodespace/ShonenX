@@ -8,7 +8,7 @@ import 'package:shonenx/features/details/view_model/details_page_notifier.dart';
 import 'package:shonenx/features/details/view/widgets/episodes_tab.dart';
 import 'package:shonenx/features/details/view/widgets/characters_tab.dart';
 import 'package:shonenx/features/details/view/widgets/comments_bottom_sheet.dart';
-import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
+import 'package:shonenx/core/providers/settings/experimental_notifier.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
 import 'widgets/widgets.dart';
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/core/widgets/design/glass/shonenx_glass_shard.dart';
-import 'package:shonenx/core/widgets/design/glass/shonenx_glass_gradient.dart';
+import 'package:shonenx/core/ui/glass/shonenx_glass_shard.dart';
+import 'package:shonenx/core/ui/glass/shonenx_glass_gradient.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_components.dart';
 
 class LiquidGlassCard extends StatelessWidget {

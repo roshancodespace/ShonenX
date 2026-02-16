@@ -7,7 +7,7 @@ import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
 import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/downloads/view_model/downloads_notifier.dart';
-import 'package:shonenx/utils/extractors.dart' as extractor;
+import 'package:shonenx/core/utils/extractors.dart' as extractor;
 
 class DownloadSourceSelector extends StatefulWidget {
   final String animeTitle;

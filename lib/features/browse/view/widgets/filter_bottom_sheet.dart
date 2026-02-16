@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shonenx/features/browse/model/search_filter.dart';
-import 'package:shonenx/shared/providers/anime_repo_provider.dart';
+import 'package:shonenx/core/providers/anime_repo_provider.dart';
 
 class FilterBottomSheet extends ConsumerStatefulWidget {
   final SearchFilter initialFilter;

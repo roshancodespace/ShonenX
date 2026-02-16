@@ -7,7 +7,7 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
 import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/downloads/repository/downloads_repository.dart';
-import 'package:shonenx/features/settings/view_model/download_settings_notifier.dart';
+import 'package:shonenx/core/providers/settings/download_settings_notifier.dart';
 import 'package:shonenx/storage_provider.dart';
 
 part 'downloads_notifier.g.dart';

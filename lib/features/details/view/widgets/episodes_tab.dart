@@ -7,8 +7,8 @@ import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
-import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
-import 'package:shonenx/features/settings/view_model/source_notifier.dart';
+import 'package:shonenx/core/providers/settings/experimental_notifier.dart';
+import 'package:shonenx/core/providers/settings/source_notifier.dart';
 import 'package:shonenx/helpers/anime_match_popup.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
@@ -20,7 +20,7 @@ import 'package:shonenx/features/details/view/widgets/episodes/episode_block_ite
 import 'package:shonenx/features/details/view/widgets/episodes/episode_compact_item.dart';
 import 'package:shonenx/features/details/view/widgets/episodes/episode_grid_item.dart';
 import 'package:shonenx/features/details/view/widgets/episodes/episode_list_item.dart';
-import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
+import 'package:shonenx/core/providers/settings/ui_notifier.dart';
 
 enum EpisodeViewMode { list, compact, grid, block }
 

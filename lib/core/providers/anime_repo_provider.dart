@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/anilist/services/anilist_service_provider.dart';
-import 'package:shonenx/core/myanimelist/services/mal_service_provider.dart';
+import 'package:shonenx/core/services/anilist/anilist_service_provider.dart';
+import 'package:shonenx/core/services/myanimelist/mal_service_provider.dart';
 import 'package:shonenx/core/repositories/anilist_repository.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
 

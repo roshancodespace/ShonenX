@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/anilist/services/anilist_service_provider.dart';
-import 'package:shonenx/core/myanimelist/services/mal_service_provider.dart';
+import 'package:shonenx/core/services/anilist/anilist_service_provider.dart';
+import 'package:shonenx/core/services/myanimelist/mal_service_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
-import 'package:shonenx/features/settings/view_model/sync_settings_notifier.dart';
+import 'package:shonenx/core/providers/settings/sync_settings_notifier.dart';
 
 class TrackingSettingsScreen extends ConsumerStatefulWidget {
   const TrackingSettingsScreen({super.key});

@@ -4,7 +4,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/settings/model/subtitle_appearance_model.dart';
 import 'package:shonenx/features/settings/utils/subtitle_utils.dart';
-import 'package:shonenx/features/settings/view_model/subtitle_notifier.dart';
+import 'package:shonenx/core/providers/settings/subtitle_notifier.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 import 'package:shonenx/features/settings/view/widgets/color_picker_item.dart';

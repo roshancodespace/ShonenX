@@ -1,8 +1,8 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 
 import 'package:graphql/client.dart';
-import 'package:shonenx/core/anilist/graphql_client.dart';
-import 'package:shonenx/core/anilist/queries.dart';
+import 'package:shonenx/core/services/anilist/graphql_client.dart';
+import 'package:shonenx/core/services/anilist/queries.dart';
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
 import 'package:shonenx/core/models/anilist/media_list_entry.dart';
@@ -103,7 +103,7 @@ class AnilistService {
   List<Media> _parseMediaList(List<dynamic>? media) =>
       media?.map((json) => Media.fromJson(json)).toList() ?? [];
 
-  /// Fetch the logged-in user's profile
+  // Fetch the logged-in user's profile
   Future<Map<String, dynamic>> getUserProfile(String accessToken) async {
     final data = await _executeGraphQLOperation<Map<String, dynamic>>(
       accessToken: accessToken,
@@ -117,7 +117,6 @@ class AnilistService {
   /// Update the logged-in user's profile
   Future<Map<String, dynamic>> updateUser({
     required String about,
-    // Add other fields here if needed e.g. titleLanguage etc.
   }) async {
     final auth = _getAuthContext();
     if (auth == null) return {};
@@ -187,8 +186,8 @@ class AnilistService {
     String? status,
     double? score,
     int? progress,
-    FuzzyDateInput? startedAt,
-    FuzzyDateInput? completedAt,
+    FuzzyDate? startedAt,
+    FuzzyDate? completedAt,
     int? repeat,
     String? notes,
     bool? private,
@@ -276,7 +275,7 @@ class AnilistService {
       data?['data']?['ToggleFavourite']?['anime']?['nodes'],
     );
   }
-
+  
   Future<List<Media>> searchAnime(
     String title, {
     int page = 1,
@@ -476,5 +475,9 @@ class AnilistService {
     );
 
     return data?['DeleteMediaListEntry']?['deleted'] ?? false;
+  }
+
+  Future<List<String>> getSupportedStatuses() async {
+    return _validStatuses.toList();
   }
 }

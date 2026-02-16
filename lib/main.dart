@@ -10,8 +10,8 @@ import 'package:isar_community/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shonenx/app_initializer.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
-import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
+import 'package:shonenx/core/providers/settings/theme_notifier.dart';
+import 'package:shonenx/core/providers/settings/ui_notifier.dart';
 import 'package:shonenx/router/router_config.dart';
 
 late Isar isar;

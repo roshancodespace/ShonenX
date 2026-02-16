@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/registery/anime_source_registery.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/utils/extractors.dart' as extractor;
+import 'package:shonenx/core/utils/extractors.dart' as extractor;
 
 // ==========================================
 // 🔧 CONFIGURATION

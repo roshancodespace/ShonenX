@@ -9,8 +9,8 @@ import 'package:shonenx/features/auth/model/user.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
 import 'package:shonenx/features/home/view/widget/search_model.dart';
 import 'package:shonenx/features/news/view_model/news_provider.dart';
-import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
-import 'package:shonenx/utils/greeting_methods.dart';
+import 'package:shonenx/core/providers/settings/experimental_notifier.dart';
+import 'package:shonenx/core/utils/greeting_methods.dart';
 
 class HeaderSection extends ConsumerWidget {
   final bool isDesktop;

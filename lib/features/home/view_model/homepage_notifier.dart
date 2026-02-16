@@ -4,7 +4,7 @@ import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/home/model/home_page.dart';
-import 'package:shonenx/shared/providers/anime_repo_provider.dart';
+import 'package:shonenx/core/providers/anime_repo_provider.dart';
 
 class HomepageState {
   final HomePage? homePage;

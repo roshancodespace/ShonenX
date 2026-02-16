@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/myanimelist/services/mal_service.dart';
-export 'package:shonenx/core/myanimelist/services/mal_service.dart';
+import 'package:shonenx/core/services/myanimelist/mal_service.dart';
+export 'package:shonenx/core/services/myanimelist/mal_service.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
-import 'package:shonenx/features/settings/view_model/content_settings_notifier.dart';
-import 'package:shonenx/shared/providers/auth_provider.dart';
+import 'package:shonenx/core/providers/settings/content_settings_notifier.dart';
+import 'package:shonenx/core/providers/auth_provider.dart';
 
 final malServiceProvider = Provider<MyAnimeListService>((ref) {
   final authService = ref.read(malAuthServiceProvider);

@@ -8,7 +8,6 @@ import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:commentum_client/commentum_client.dart';
 import 'package:shonenx/core/commentum/commentum_provider.dart';
 import 'package:shonenx/features/auth/model/user.dart';
-import 'package:shonenx/core/providers/auth_provider.dart';
 
 part 'auth_notifier.g.dart';
 
@@ -81,10 +80,8 @@ class AuthState {
 class Auth extends _$Auth {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
-  AniListAuthService get _anilistAuthService =>
-      ref.read(anilistAuthServiceProvider);
-  MyAnimeListAuthService get _malAuthService =>
-      ref.read(malAuthServiceProvider);
+  AniListAuthService get _anilistAuthService => AniListAuthService();
+  MyAnimeListAuthService get _malAuthService => MyAnimeListAuthService();
 
   @override
   AuthState build() {

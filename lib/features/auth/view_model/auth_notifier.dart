@@ -5,6 +5,8 @@ import 'package:shonenx/core/anilist/services/anilist_service_provider.dart';
 import 'package:shonenx/core/anilist/services/auth_service.dart';
 import 'package:shonenx/core/myanimelist/services/auth_service.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
+import 'package:commentum_client/commentum_client.dart';
+import 'package:shonenx/core/commentum/commentum_provider.dart';
 import 'package:shonenx/features/auth/model/user.dart';
 import 'package:shonenx/shared/providers/auth_provider.dart';
 
@@ -92,6 +94,12 @@ class Auth extends _$Auth {
 
   Future<void> _init() async {
     await Future.wait([_loadAnilistToken(), _loadMalToken()]);
+    await commentumClient.init();
+    commentumClient.setActiveProvider(
+      state.activePlatform == AuthPlatform.anilist
+          ? CommentumProvider.anilist
+          : CommentumProvider.myanimelist,
+    );
   }
 
   AuthUser _buildAnilistUser(Map<String, dynamic> data) =>
@@ -158,6 +166,13 @@ class Auth extends _$Auth {
           .read(anilistServiceProvider)
           .getUserProfile(token);
 
+      // Login to Commentum
+      try {
+        await commentumClient.login(CommentumProvider.anilist, token);
+      } catch (e) {
+        debugPrint('Failed to login to Commentum with AniList: $e');
+      }
+
       state = state.copyWith(
         anilistAccessToken: token,
         anilistUser: _buildAnilistUser(userData),
@@ -198,10 +213,9 @@ class Auth extends _$Auth {
       final tokenData = await _malAuthService.getAccessToken(code);
       if (tokenData == null) return;
 
-      await _secureStorage.write(
-        key: 'mal-token',
-        value: tokenData['access_token'],
-      );
+      final accesToken = tokenData['access_token'];
+
+      await _secureStorage.write(key: 'mal-token', value: accesToken);
       await _secureStorage.write(
         key: 'mal-refresh-token',
         value: tokenData['refresh_token'],
@@ -209,14 +223,38 @@ class Auth extends _$Auth {
 
       final profile = await _malAuthService.getUserProfile();
       if (profile != null) {
+        // Login to Commentum
+        try {
+          await commentumClient.login(
+            CommentumProvider.myanimelist,
+            accesToken,
+          );
+        } catch (e) {
+          debugPrint('Failed to login to Commentum with MAL: $e');
+        }
+
         state = state.copyWith(
-          malAccessToken: tokenData['access_token'],
+          malAccessToken: accesToken,
           malUser: _buildMalUser(profile),
           activePlatform: AuthPlatform.mal,
         );
       }
     } finally {
       state = state.copyWith(malLoading: false);
+    }
+  }
+
+  Future<void> reLoginCommentum(AuthPlatform platform) async {
+    if (platform == AuthPlatform.anilist) {
+      commentumClient.login(
+        CommentumProvider.anilist,
+        state.anilistAccessToken!,
+      );
+    } else if (platform == AuthPlatform.mal) {
+      commentumClient.login(
+        CommentumProvider.myanimelist,
+        state.malAccessToken!,
+      );
     }
   }
 
@@ -231,11 +269,13 @@ class Auth extends _$Auth {
     switch (platform) {
       case AuthPlatform.anilist:
         await _secureStorage.delete(key: 'anilist-token');
+        await commentumClient.logout(CommentumProvider.anilist);
         state = state.copyWith(anilistAccessToken: null, anilistUser: null);
         break;
       case AuthPlatform.mal:
         await _secureStorage.delete(key: 'mal-token');
         await _secureStorage.delete(key: 'mal-refresh-token');
+        await commentumClient.logout(CommentumProvider.myanimelist);
         state = state.copyWith(malAccessToken: null, malUser: null);
         break;
     }
@@ -262,5 +302,10 @@ class Auth extends _$Auth {
 
   void changePlatform(AuthPlatform platform) {
     state = state.copyWith(activePlatform: platform);
+    commentumClient.setActiveProvider(
+      platform == AuthPlatform.anilist
+          ? CommentumProvider.anilist
+          : CommentumProvider.myanimelist,
+    );
   }
 }

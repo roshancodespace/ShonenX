@@ -3,7 +3,7 @@ import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
 import 'package:shonenx/core/models/universal/universal_page_response.dart';
-import 'package:shonenx/core/network/universal_client.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
 import 'package:shonenx/core/myanimelist/services/auth_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';

@@ -83,6 +83,9 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     // Block updates if sheet is already opening/open
     if (_commentSheetOpened) return false;
 
+    // Remove overscroll for Episodes tab (index 1)
+    if (_tabController.index == 1) return false;
+
     // Determine the pull direction and magnitude
     if (notification is OverscrollNotification) {
       if (notification.overscroll > 0) {

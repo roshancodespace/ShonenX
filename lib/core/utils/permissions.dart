@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:permission_handler/permission_handler.dart';
 
 class Permissions {
@@ -19,20 +21,21 @@ class Permissions {
   }
 
   static Future<bool> requestNotificationPermission() async {
-    if (notification) return true;
+    if (notification || !Platform.isAndroid) return true;
     final granted = await _request(Permission.notification);
     notification = granted;
     return granted;
   }
 
   static Future<bool> requestStoragePermission() async {
-    if (storage) return true;
+    if (storage || !Platform.isAndroid) return true;
     final granted = await _request(Permission.manageExternalStorage);
     storage = granted;
     return granted;
   }
 
   static Future<bool> requestMediaPermissions() async {
+    if (photos || videos || !Platform.isAndroid) return true;
     final photosGranted = await _request(Permission.photos);
     final videosGranted = await _request(Permission.videos);
     photos = photosGranted;
@@ -41,7 +44,7 @@ class Permissions {
   }
 
   static Future<bool> _request(Permission permission) async {
-    if (await permission.isGranted) {
+    if (await permission.isGranted || !Platform.isAndroid) {
       return true;
     } else {
       final result = await permission.request();

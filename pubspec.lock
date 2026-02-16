@@ -249,6 +249,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
+  commentum_client:
+    dependency: "direct main"
+    description:
+      path: "packages/commentum_client"
+      relative: true
+    source: path
+    version: "1.0.3"
   connectivity_plus:
     dependency: "direct main"
     description:

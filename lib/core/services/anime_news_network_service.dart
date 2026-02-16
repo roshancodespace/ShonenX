@@ -1,5 +1,5 @@
 import 'package:html/parser.dart' as html;
-import 'package:shonenx/core/network/universal_client.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/models/universal/universal_news.dart';
 
 class AnimeNewsNetworkService {

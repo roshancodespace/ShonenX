@@ -1,5 +1,5 @@
 import 'package:path/path.dart' as p;
-import 'package:shonenx/core/network/universal_client.dart';
+import 'package:shonenx/core/network/http_client.dart';
 
 class VideoUtils {
   static const List<String> _commonVideoExtensions = [

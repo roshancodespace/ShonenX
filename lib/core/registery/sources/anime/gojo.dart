@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
-import 'package:shonenx/core/network/universal_client.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/anime/server_model.dart';
@@ -11,16 +11,19 @@ import 'package:shonenx/core/utils/app_logger.dart';
 
 class GojoProvider implements AnimeProvider {
   @override
-  String get apiUrl => "https://ani.metsu.site";
+  String get apiUrl => "https://b.animetsu.live";
+
+  String get proxyUrl => "https://ani.metsu.site";
 
   @override
-  String get baseUrl => "https://animetsu.net";
+  String get baseUrl => "https://animetsu.live";
 
   @override
   Map<String, String> get headers => {
     'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-    'Referer': 'https://animetsu.live/',
+    'Referer': baseUrl,
+    'Origin': baseUrl,
   };
 
   @override
@@ -62,7 +65,7 @@ class GojoProvider implements AnimeProvider {
             id: "$animeId/$epNum",
             number: epNum,
             title: item['name'] ?? 'Episode $epNum',
-            thumbnail: "$apiUrl/proxy${item['img'] ?? ''}",
+            thumbnail: "$proxyUrl/proxy${item['img'] ?? ''}",
             isFiller: item['isFiller'] ?? false,
             description: item['description'],
             date: formattedDate,
@@ -178,6 +181,7 @@ class GojoProvider implements AnimeProvider {
           [];
 
       final currentServer = serverName ?? 'Gojo';
+      print(json);
 
       final sources =
           (json['sources'] as List?)?.map((item) {

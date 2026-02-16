@@ -5,7 +5,7 @@ import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
 import 'package:shonenx/core/models/universal/universal_page_response.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
-import 'package:shonenx/core/myanimelist/services/auth_service.dart';
+import 'package:shonenx/core/services/myanimelist/auth_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/browse/model/search_filter.dart';
 
@@ -323,8 +323,8 @@ class MyAnimeListService implements AnimeRepository {
     String? status,
     double? score,
     int? progress,
-    FuzzyDateInput? startedAt,
-    FuzzyDateInput? completedAt,
+    FuzzyDate? startedAt,
+    FuzzyDate? completedAt,
     int? repeat,
     String? notes,
     bool? private,

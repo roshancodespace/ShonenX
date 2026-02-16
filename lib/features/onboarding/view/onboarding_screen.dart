@@ -17,9 +17,9 @@ import 'package:shonenx/features/settings/view/screens/home_settings_screen.dart
 import 'package:shonenx/features/settings/view/screens/ui_settings_screen.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
-import 'package:shonenx/features/settings/view_model/theme_notifier.dart';
-import 'package:shonenx/features/settings/view_model/ui_notifier.dart';
-import 'package:shonenx/shared/providers/update_provider.dart';
+import 'package:shonenx/core/providers/settings/theme_notifier.dart';
+import 'package:shonenx/core/providers/settings/ui_notifier.dart';
+import 'package:shonenx/core/providers/update_provider.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});

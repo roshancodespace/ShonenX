@@ -5,13 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/features/settings/view/screens/data_settings_screen.dart';
-import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
+import 'package:shonenx/core/providers/settings/experimental_notifier.dart';
 import 'package:shonenx/features/settings/view/screens/home_settings_screen.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/shared/providers/update_provider.dart';
-import 'package:shonenx/utils/updater.dart';
+import 'package:shonenx/core/providers/update_provider.dart';
+import 'package:shonenx/core/utils/updater.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerWidget {

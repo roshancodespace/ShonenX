@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shonenx/utils/html_parser.dart';
+import 'package:shonenx/core/utils/html_parser.dart';
 
 class AnimeSynopsis extends StatefulWidget {
   final String description;

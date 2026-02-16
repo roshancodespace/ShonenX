@@ -51,17 +51,3 @@ class FuzzyDate {
     );
   }
 }
-
-class FuzzyDateInput {
-  final int? year;
-  final int? month;
-  final int? day;
-
-  FuzzyDateInput({this.year, this.month, this.day});
-
-  Map<String, dynamic> toJson() => {
-        'year': year,
-        'month': month,
-        'day': day,
-      };
-}

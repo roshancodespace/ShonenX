@@ -1,6 +1,6 @@
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:isar_community/isar.dart';
-import 'package:shonenx/core/models/offline/chapter.dart';
+import 'package:shonenx/data/isar/chapter.dart';
 part 'manga.g.dart';
 
 @collection

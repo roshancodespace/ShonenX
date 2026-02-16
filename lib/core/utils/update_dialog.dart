@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:install_plugin/install_plugin.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:shonenx/utils/updater.dart';
+import 'package:shonenx/core/utils/updater.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class UpdateDialog extends StatefulWidget {

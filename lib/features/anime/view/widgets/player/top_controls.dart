@@ -4,8 +4,8 @@ import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
-import 'package:shonenx/features/settings/view_model/source_notifier.dart';
+import 'package:shonenx/core/providers/settings/experimental_notifier.dart';
+import 'package:shonenx/core/providers/settings/source_notifier.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 

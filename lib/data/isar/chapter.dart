@@ -1,5 +1,5 @@
 import 'package:isar_community/isar.dart';
-import 'package:shonenx/core/models/offline/manga.dart';
+import 'package:shonenx/data/isar/manga.dart';
 part 'chapter.g.dart';
 
 @collection

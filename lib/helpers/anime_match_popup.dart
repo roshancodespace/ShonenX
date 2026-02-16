@@ -10,11 +10,11 @@ import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/registery/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/data/isar/models/isar_anime_watch_progress.dart';
+import 'package:shonenx/data/isar/isar_anime_watch_progress.dart';
 import 'package:shonenx/features/anime/services/anime_match_service.dart';
-import 'package:shonenx/features/settings/view_model/content_settings_notifier.dart';
-import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
-import 'package:shonenx/features/settings/view_model/source_notifier.dart';
+import 'package:shonenx/core/providers/settings/content_settings_notifier.dart';
+import 'package:shonenx/core/providers/settings/experimental_notifier.dart';
+import 'package:shonenx/core/providers/settings/source_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/main.dart';
 

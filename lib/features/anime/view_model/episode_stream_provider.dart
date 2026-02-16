@@ -17,10 +17,10 @@ import 'package:shonenx/features/anime/view/widgets/download_source_selector.dar
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 import 'package:shonenx/features/settings/model/experimental_model.dart';
-import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
-import 'package:shonenx/features/settings/view_model/player_notifier.dart';
-import 'package:shonenx/features/settings/view_model/source_notifier.dart';
-import 'package:shonenx/utils/extractors.dart' as extractor;
+import 'package:shonenx/core/providers/settings/experimental_notifier.dart';
+import 'package:shonenx/core/providers/settings/player_notifier.dart';
+import 'package:shonenx/core/providers/settings/source_notifier.dart';
+import 'package:shonenx/core/utils/extractors.dart' as extractor;
 
 part 'episode_stream_provider.g.dart';
 

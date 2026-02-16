@@ -4,7 +4,7 @@ import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 
-import 'package:shonenx/features/settings/view_model/player_notifier.dart';
+import 'package:shonenx/core/providers/settings/player_notifier.dart';
 import 'package:iconsax/iconsax.dart';
 
 class CenterControls extends ConsumerWidget {

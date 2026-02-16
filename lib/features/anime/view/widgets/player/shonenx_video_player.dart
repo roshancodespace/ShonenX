@@ -21,7 +21,7 @@ import 'package:shonenx/features/anime/view/widgets/player/volume_brightness_ove
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_ui_controller.dart';
-import 'package:shonenx/features/settings/view_model/player_notifier.dart';
+import 'package:shonenx/core/providers/settings/player_notifier.dart';
 import 'package:shonenx/helpers/ui.dart';
 import 'package:window_manager/window_manager.dart';
 

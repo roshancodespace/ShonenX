@@ -5,7 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
-import 'package:shonenx/shared/providers/anime_repo_provider.dart';
+import 'package:shonenx/core/providers/anime_repo_provider.dart';
 import 'package:shonenx/features/anime/services/anime_match_service.dart';
 
 part 'details_page_notifier.g.dart';

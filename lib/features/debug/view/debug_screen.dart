@@ -9,8 +9,8 @@ import 'package:shonenx/features/debug/view/renderer_debug_screen.dart';
 import 'package:shonenx/features/news/view/news_screen.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
-import 'package:shonenx/features/settings/view_model/experimental_notifier.dart';
-import 'package:shonenx/utils/updater.dart';
+import 'package:shonenx/core/providers/settings/experimental_notifier.dart';
+import 'package:shonenx/core/utils/updater.dart';
 
 class DebugScreen extends ConsumerWidget {
   const DebugScreen({super.key});

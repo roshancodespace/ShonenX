@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/network/universal_client.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
@@ -58,8 +58,8 @@ class _DataSettingsScreenState extends ConsumerState<DataSettingsScreen> {
                 title: 'Clear API Cache',
                 description: 'Clear cached network responses',
                 onTap: () async {
-                  await UniversalHttpClient.instance.clearCache();
-                  if (mounted) {
+                  await UniversalHttpClient.instance.wipeCache();
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('API cache cleared')),
                     );

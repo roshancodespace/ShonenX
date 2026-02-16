@@ -3,9 +3,13 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:shonenx/core/registery/anime_source_registery.dart';
 import 'package:shonenx/core/registery/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/main.dart';
 
+// Hive (Depecrated)
 const selectedProviderBox = 'selected_provider';
 const selectedProviderKey = 'selected_key';
+// SharedPreferences
+const selectedProvider = 'selected_provider';
 
 final animeSourceRegistryProvider = Provider<AnimeSourceRegistry>((ref) {
   return AnimeSourceRegistry();
@@ -13,29 +17,30 @@ final animeSourceRegistryProvider = Provider<AnimeSourceRegistry>((ref) {
 
 final selectedProviderKeyProvider =
     NotifierProvider<SelectedProviderKeyNotifier, String?>(
-  SelectedProviderKeyNotifier.new,
-);
+      SelectedProviderKeyNotifier.new,
+    );
 
 class SelectedProviderKeyNotifier extends Notifier<String?> {
-  late Box<String> _box;
-
   @override
   String? build() {
+    // Migration
     if (!Hive.isBoxOpen(selectedProviderBox)) {
-      Hive.openBox<String>(selectedProviderBox);
+      final box = Hive.box<String>(selectedProviderBox);
+      final key = box.get(selectedProviderKey);
+      if (box.isNotEmpty && key != null && key.isNotEmpty) select(key);
+      box.delete(selectedProviderKey);
     }
-    _box = Hive.box<String>(selectedProviderBox);
-    AppLogger.d('Selected provider key: ${_box.get(selectedProviderKey)}');
-    return _box.get(selectedProviderKey);
+    final selectedKey = sharedPrefs.getString(selectedProvider);
+    AppLogger.w("[Registery] Selected $selectedKey");
+    return selectedKey;
   }
 
   void select(String key) {
-    _box.put(selectedProviderKey, key);
+    sharedPrefs.setString(selectedProvider, key);
     state = key;
   }
 
   void clear() {
-    _box.delete(selectedProviderKey);
     state = null;
   }
 }

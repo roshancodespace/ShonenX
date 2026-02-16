@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:html/dom.dart';
-import 'package:shonenx/core/network/universal_client.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/anime/server_model.dart';

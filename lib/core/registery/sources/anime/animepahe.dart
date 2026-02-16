@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
-import 'package:shonenx/core/network/universal_client.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:html/parser.dart' as html;
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
@@ -147,6 +147,18 @@ class AnimePaheProvider extends AnimeProvider {
       );
     }
     episodes.sort((a, b) => a.number!.compareTo(b.number!));
+    if (episodes.isNotEmpty) {
+      final int offset = (episodes.first.number ?? 1) - 1;
+
+      if (offset > 0) {
+        for (int i = 0; i < episodes.length; i++) {
+          episodes[i] = episodes[i].copyWith(
+            number: episodes[i].number! - offset,
+          );
+        } 
+      }
+    }
+
     return BaseEpisodeModel(episodes: episodes, totalEpisodes: episodes.length);
   }
 

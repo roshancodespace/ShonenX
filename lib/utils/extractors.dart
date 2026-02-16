@@ -1,4 +1,4 @@
-import 'package:shonenx/core/network/universal_client.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 Future<List<Map<String, dynamic>>> extractQualities(

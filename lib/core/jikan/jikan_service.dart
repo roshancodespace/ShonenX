@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:shonenx/core/jikan/models/jikan_media.dart';
-import 'package:shonenx/core/network/universal_client.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 class JikanEpisode {

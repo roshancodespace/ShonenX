@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,7 +31,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 8;
+  final int _totalPages = Platform.isAndroid ? 8 : 7;
 
   @override
   void dispose() {
@@ -108,7 +110,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   _buildCardModeStep(context, ref),
                   _buildSpotlightModeStep(context, ref),
                   _buildHomeLayoutStep(context, ref),
-                  _buildPermissionsStep(context, ref),
+                  if (Platform.isAndroid) _buildPermissionsStep(context, ref),
                   _buildUpdatesStep(context, ref),
                 ],
               ),

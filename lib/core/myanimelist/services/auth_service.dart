@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
-import 'package:shonenx/core/network/universal_client.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core/utils/env_loader.dart';
 

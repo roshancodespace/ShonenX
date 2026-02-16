@@ -3,6 +3,7 @@ import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart'
     hide isar;
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core/utils/permissions.dart';
@@ -97,7 +98,7 @@ class Initialization extends _$Initialization {
       await _authenticate();
       await _initializeHomepage();
       await _applySettings();
-
+      await UniversalHttpClient.instance.cleanUp();
       _complete();
     } catch (e, st) {
       _fail(e, st);

@@ -14,15 +14,15 @@ import 'package:shonenx/core/utils/app_logger.dart';
 
 import 'package:shonenx/features/home/model/home_page.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
-import 'package:shonenx/features/settings/model/experimental_model.dart';
-import 'package:shonenx/features/settings/model/player_model.dart';
-import 'package:shonenx/features/settings/model/subtitle_appearance_model.dart';
-import 'package:shonenx/features/settings/model/theme_model.dart';
-import 'package:shonenx/features/settings/model/download_settings_model.dart';
-import 'package:shonenx/features/settings/model/content_settings_model.dart';
+import 'package:shonenx/core/models/settings/experimental_model.dart';
+import 'package:shonenx/core/models/settings/player_model.dart';
+import 'package:shonenx/core/models/settings/subtitle_appearance_model.dart';
+import 'package:shonenx/core/models/settings/theme_model.dart';
+import 'package:shonenx/core/models/settings/download_settings_model.dart';
+import 'package:shonenx/core/models/settings/content_settings_model.dart';
 import 'package:shonenx/core/models/universal/universal_news.dart';
 import 'package:shonenx/core/services/notification_service.dart';
-import 'package:shonenx/features/settings/model/ui_model.dart';
+import 'package:shonenx/core/models/settings/ui_model.dart';
 import 'package:shonenx/helpers/ui.dart';
 import 'package:shonenx/hive/hive_registrar.g.dart';
 

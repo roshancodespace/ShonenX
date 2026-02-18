@@ -13,8 +13,8 @@ import 'package:shonenx/core/utils/permissions.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
 import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/downloads/view_model/downloads_notifier.dart';
-import 'package:shonenx/features/settings/model/download_settings_model.dart';
-import 'package:shonenx/core/providers/settings/download_settings_notifier.dart';
+import 'package:shonenx/core/models/settings/download_settings_model.dart';
+import 'package:shonenx/shared/providers/settings/download_settings_notifier.dart';
 import 'package:shonenx/storage_provider.dart';
 
 class DownloadService {

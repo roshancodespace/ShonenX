@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
-import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
-import 'package:shonenx/core/providers/settings/ui_notifier.dart';
-import 'package:shonenx/core/ui/shonenx_gridview.dart';
+import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
+import 'package:shonenx/shared/providers/settings/ui_notifier.dart';
+import 'package:shonenx/shared/ui/shonenx_gridview.dart';
 import 'package:shonenx/features/watchlist/view/widget/watchlist_states_widgets.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';
-import 'package:shonenx/core/providers/anime_repo_provider.dart';
+import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/services/anilist/anilist_service_provider.dart';
+import 'package:shonenx/shared/providers/anilist_service_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/details/view_model/local_tracker_notifier.dart';
 

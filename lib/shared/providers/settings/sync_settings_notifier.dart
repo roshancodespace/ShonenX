@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
-import 'package:shonenx/features/settings/model/sync_settings_model.dart';
+import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
+import 'package:shonenx/core/models/settings/sync_settings_model.dart';
 import 'package:shonenx/main.dart';
 
 final syncSettingsProvider =

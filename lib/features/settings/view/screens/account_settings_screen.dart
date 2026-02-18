@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/features/auth/view/auth_button.dart';
+import 'package:shonenx/shared/auth/widgets/auth_button.dart';
 import 'package:go_router/go_router.dart';
 
 class AccountSettingsScreen extends StatefulWidget {

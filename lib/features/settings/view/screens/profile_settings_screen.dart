@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
-import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
+import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
 
 class ProfileSettingsScreen extends ConsumerWidget {
   const ProfileSettingsScreen({super.key});

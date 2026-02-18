@@ -9,12 +9,12 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core/utils/permissions.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
-import 'package:shonenx/features/settings/model/content_settings_model.dart';
-import 'package:shonenx/features/settings/model/download_settings_model.dart';
-import 'package:shonenx/features/settings/model/experimental_model.dart';
-import 'package:shonenx/features/settings/model/player_model.dart';
-import 'package:shonenx/features/settings/model/theme_model.dart';
-import 'package:shonenx/features/settings/model/ui_model.dart';
+import 'package:shonenx/core/models/settings/content_settings_model.dart';
+import 'package:shonenx/core/models/settings/download_settings_model.dart';
+import 'package:shonenx/core/models/settings/experimental_model.dart';
+import 'package:shonenx/core/models/settings/player_model.dart';
+import 'package:shonenx/core/models/settings/theme_model.dart';
+import 'package:shonenx/core/models/settings/ui_model.dart';
 import 'package:shonenx/main.dart';
 import 'package:shonenx/storage_provider.dart';
 

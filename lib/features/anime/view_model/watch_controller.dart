@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:screenshot/screenshot.dart';
 
-import 'package:shonenx/core/services/anilist/anilist_service_provider.dart';
+import 'package:shonenx/shared/providers/anilist_service_provider.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
-import 'package:shonenx/core/services/myanimelist/mal_service_provider.dart';
+import 'package:shonenx/shared/providers/mal_service_provider.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
@@ -15,8 +15,8 @@ import 'package:shonenx/features/anime/view_model/aniskip_notifier.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
-import 'package:shonenx/core/providers/settings/player_notifier.dart';
-import 'package:shonenx/core/providers/settings/sync_settings_notifier.dart';
+import 'package:shonenx/shared/providers/settings/player_notifier.dart';
+import 'package:shonenx/shared/providers/settings/sync_settings_notifier.dart';
 
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/details/view_model/local_tracker_notifier.dart';

@@ -6,8 +6,8 @@ import 'package:shonenx/core/models/aniskip/aniskip_result.dart';
 import 'package:shonenx/features/anime/view_model/aniskip_notifier.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
-import 'package:shonenx/features/settings/model/player_model.dart';
-import 'package:shonenx/core/providers/settings/player_notifier.dart';
+import 'package:shonenx/core/models/settings/player_model.dart';
+import 'package:shonenx/shared/providers/settings/player_notifier.dart';
 import 'package:shonenx/core/utils/formatter.dart';
 
 class BottomControls extends ConsumerStatefulWidget {

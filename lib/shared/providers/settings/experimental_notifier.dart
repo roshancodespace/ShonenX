@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:shonenx/features/settings/model/experimental_model.dart';
+import 'package:shonenx/core/models/settings/experimental_model.dart';
 import 'package:shonenx/main.dart';
 
 final experimentalProvider =

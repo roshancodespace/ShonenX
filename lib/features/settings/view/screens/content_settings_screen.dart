@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/home/view_model/homepage_notifier.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
-import 'package:shonenx/core/providers/settings/content_settings_notifier.dart';
+import 'package:shonenx/shared/providers/settings/content_settings_notifier.dart';
 
 class ContentSettingsScreen extends ConsumerWidget {
   const ContentSettingsScreen({super.key});

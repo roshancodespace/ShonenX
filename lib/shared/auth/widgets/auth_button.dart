@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
-import '../view_model/auth_notifier.dart';
+import '../providers/auth_notifier.dart';
 
 class AccountAuthenticationSection extends ConsumerWidget {
   const AccountAuthenticationSection({super.key});

@@ -65,7 +65,7 @@ class GojoProvider implements AnimeProvider {
             id: "$animeId/$epNum",
             number: epNum,
             title: item['name'] ?? 'Episode $epNum',
-            thumbnail: "$proxyUrl/${item['img'] ?? ''}",
+            thumbnail: "$proxyUrl${item['img'] ?? ''}",
             isFiller: item['isFiller'] ?? false,
             description: item['description'],
             date: formattedDate,
@@ -292,3 +292,4 @@ class GojoProvider implements AnimeProvider {
   @override
   String get providerName => 'gojo';
 }
+

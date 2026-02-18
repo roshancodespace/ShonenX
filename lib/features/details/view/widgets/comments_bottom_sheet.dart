@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:commentum_client/commentum_client.dart';
-import 'package:shonenx/core/commentum/commentum_provider.dart';
+import 'package:shonenx/core/commentum/commentum_client.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/features/auth/model/user.dart';
-import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
+import 'package:shonenx/core/models/auth/user.dart';
+import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
 
 class CommentsBottomSheet extends ConsumerStatefulWidget {
   final UniversalMedia anime;

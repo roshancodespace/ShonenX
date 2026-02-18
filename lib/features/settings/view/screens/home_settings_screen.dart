@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/features/home/model/home_section.dart';
-import 'package:shonenx/core/providers/settings/home_layout_notifier.dart';
-import 'package:shonenx/core/providers/anime_repo_provider.dart';
+import 'package:shonenx/shared/providers/settings/home_layout_notifier.dart';
+import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 
 class HomeSettingsScreen extends ConsumerWidget {
   final bool noAppBar;

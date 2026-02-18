@@ -1,13 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shonenx/core/services/anilist/anilist_service_provider.dart';
+import 'package:shonenx/shared/providers/anilist_service_provider.dart';
 import 'package:shonenx/core/services/anilist/auth_service.dart';
 import 'package:shonenx/core/services/myanimelist/auth_service.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:commentum_client/commentum_client.dart';
-import 'package:shonenx/core/commentum/commentum_provider.dart';
-import 'package:shonenx/features/auth/model/user.dart';
+import 'package:shonenx/core/commentum/commentum_client.dart';
+import 'package:shonenx/core/models/auth/user.dart';
 
 part 'auth_notifier.g.dart';
 

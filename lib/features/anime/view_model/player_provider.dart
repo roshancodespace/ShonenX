@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:shonenx/core/providers/settings/player_notifier.dart';
+import 'package:shonenx/shared/providers/settings/player_notifier.dart';
 
 part 'player_provider.g.dart';
 

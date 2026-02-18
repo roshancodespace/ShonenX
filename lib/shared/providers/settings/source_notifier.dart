@@ -7,7 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/repositories/source_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/features/settings/model/source_model.dart';
+import 'package:shonenx/core/models/settings/source_model.dart';
 
 part 'source_notifier.g.dart';
 

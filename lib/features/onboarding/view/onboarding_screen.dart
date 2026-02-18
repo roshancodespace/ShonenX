@@ -8,18 +8,18 @@ import 'package:shonenx/core/utils/permissions.dart';
 
 import 'package:shonenx/main.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
+import 'package:shonenx/shared/providers/anime_source_provider.dart';
 import 'package:shonenx/features/anime/view/widgets/card/anime_card_mode.dart';
 import 'package:shonenx/features/anime/view/widgets/spotlight/spotlight_card_mode.dart';
-import 'package:shonenx/features/auth/view/auth_button.dart';
+import 'package:shonenx/shared/auth/widgets/auth_button.dart';
 import 'package:shonenx/features/settings/view/screens/anime_sources_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/home_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/ui_settings_screen.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
-import 'package:shonenx/core/providers/settings/theme_notifier.dart';
-import 'package:shonenx/core/providers/settings/ui_notifier.dart';
-import 'package:shonenx/core/providers/update_provider.dart';
+import 'package:shonenx/shared/providers/settings/theme_notifier.dart';
+import 'package:shonenx/shared/providers/settings/ui_notifier.dart';
+import 'package:shonenx/shared/providers/update_provider.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});

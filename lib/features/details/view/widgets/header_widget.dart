@@ -6,7 +6,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/details/view/widgets/comments_bottom_sheet.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
-import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
+import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
 import 'package:shonenx/features/details/view_model/local_tracker_notifier.dart';
 
 class DetailsHeader extends ConsumerStatefulWidget {

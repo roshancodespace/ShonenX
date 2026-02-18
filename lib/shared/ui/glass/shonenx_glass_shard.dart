@@ -1,7 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shonenx/core/ui/glass/shonenx_glass_painter.dart';
+import 'package:shonenx/shared/ui/glass/shonenx_glass_painter.dart';
 
 class ShonenXGlassShard extends StatelessWidget {
   final Widget child;

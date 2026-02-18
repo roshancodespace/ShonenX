@@ -1,13 +1,13 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
+import 'package:shonenx/shared/providers/anime_source_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/core/providers/settings/experimental_notifier.dart';
-import 'package:shonenx/core/providers/settings/content_settings_notifier.dart';
+import 'package:shonenx/shared/providers/settings/experimental_notifier.dart';
+import 'package:shonenx/shared/providers/settings/content_settings_notifier.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:collection/collection.dart';
-import 'package:shonenx/core/providers/settings/source_notifier.dart';
+import 'package:shonenx/shared/providers/settings/source_notifier.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/main.dart';
 

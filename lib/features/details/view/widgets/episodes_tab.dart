@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
-import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
+import 'package:shonenx/shared/providers/anime_source_provider.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
-import 'package:shonenx/core/providers/settings/experimental_notifier.dart';
-import 'package:shonenx/core/providers/settings/source_notifier.dart';
-import 'package:shonenx/helpers/anime_match_popup.dart';
+import 'package:shonenx/shared/providers/settings/experimental_notifier.dart';
+import 'package:shonenx/shared/providers/settings/source_notifier.dart';
+import 'package:shonenx/helpers/anime_match_search.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
@@ -20,7 +20,7 @@ import 'package:shonenx/features/details/view/widgets/episodes/episode_block_ite
 import 'package:shonenx/features/details/view/widgets/episodes/episode_compact_item.dart';
 import 'package:shonenx/features/details/view/widgets/episodes/episode_grid_item.dart';
 import 'package:shonenx/features/details/view/widgets/episodes/episode_list_item.dart';
-import 'package:shonenx/core/providers/settings/ui_notifier.dart';
+import 'package:shonenx/shared/providers/settings/ui_notifier.dart';
 import 'package:go_router/go_router.dart';
 
 enum EpisodeViewMode { list, compact, grid, block }

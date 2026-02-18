@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:screen_brightness/screen_brightness.dart';
-import 'package:shonenx/core/providers/settings/player_notifier.dart';
+import 'package:shonenx/shared/providers/settings/player_notifier.dart';
 
 part 'player_ui_controller.g.dart';
 

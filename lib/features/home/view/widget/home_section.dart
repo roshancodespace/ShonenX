@@ -4,7 +4,7 @@ import 'package:shonenx/core/models/universal/universal_media.dart';
 
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 
-import 'package:shonenx/core/providers/settings/ui_notifier.dart';
+import 'package:shonenx/shared/providers/settings/ui_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';
 
 class HomeSectionWidget extends ConsumerWidget {

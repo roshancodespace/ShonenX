@@ -7,10 +7,10 @@ import 'package:shonenx/core/utils/app_logger.dart';
 
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
 
-import 'package:shonenx/core/providers/settings/ui_notifier.dart';
-import 'package:shonenx/core/ui/shonenx_gridview.dart';
+import 'package:shonenx/shared/providers/settings/ui_notifier.dart';
+import 'package:shonenx/shared/ui/shonenx_gridview.dart';
 import 'package:shonenx/helpers/navigation.dart';
-import 'package:shonenx/core/providers/anime_repo_provider.dart';
+import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 import 'package:shonenx/features/browse/model/search_filter.dart';
 import 'package:shonenx/features/browse/view/widgets/filter_bottom_sheet.dart';
 import 'package:shonenx/features/browse/view/section_screen.dart';

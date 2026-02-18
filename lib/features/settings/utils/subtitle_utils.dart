@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shonenx/features/settings/model/subtitle_appearance_model.dart';
+import 'package:shonenx/core/models/settings/subtitle_appearance_model.dart';
 
 class SubtitleUtils {
   static const List<String> availableFonts = [

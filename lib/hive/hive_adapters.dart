@@ -6,13 +6,13 @@ import 'package:shonenx/features/anime/view/widgets/spotlight/spotlight_card_mod
 import 'package:shonenx/features/downloads/model/download_item.dart';
 import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/home/model/home_page.dart';
-import 'package:shonenx/features/settings/model/content_settings_model.dart';
-import 'package:shonenx/features/settings/model/download_settings_model.dart';
-import 'package:shonenx/features/settings/model/experimental_model.dart';
-import 'package:shonenx/features/settings/model/player_model.dart';
-import 'package:shonenx/features/settings/model/subtitle_appearance_model.dart';
-import 'package:shonenx/features/settings/model/theme_model.dart';
-import 'package:shonenx/features/settings/model/ui_model.dart';
+import 'package:shonenx/core/models/settings/content_settings_model.dart';
+import 'package:shonenx/core/models/settings/download_settings_model.dart';
+import 'package:shonenx/core/models/settings/experimental_model.dart';
+import 'package:shonenx/core/models/settings/player_model.dart';
+import 'package:shonenx/core/models/settings/subtitle_appearance_model.dart';
+import 'package:shonenx/core/models/settings/theme_model.dart';
+import 'package:shonenx/core/models/settings/ui_model.dart';
 
 @GenerateAdapters([
   AdapterSpec<ThemeModel>(),

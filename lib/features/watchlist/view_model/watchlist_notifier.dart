@@ -6,9 +6,9 @@ import 'package:shonenx/data/isar/track.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
-import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
+import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_state.dart';
-import 'package:shonenx/core/providers/anime_repo_provider.dart';
+import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 import 'package:shonenx/data/isar/track.dart' as core;
 
 class WatchlistNotifier extends Notifier<WatchListState> {

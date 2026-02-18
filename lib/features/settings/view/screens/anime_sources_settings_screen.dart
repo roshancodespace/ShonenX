@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/registery/anime_source_registery_provider.dart';
+import 'package:shonenx/shared/providers/anime_source_provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:iconsax/iconsax.dart';

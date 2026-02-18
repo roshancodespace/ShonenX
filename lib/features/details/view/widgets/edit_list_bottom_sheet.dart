@@ -4,16 +4,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
-import 'package:shonenx/core/services/anilist/anilist_service_provider.dart';
+import 'package:shonenx/shared/providers/anilist_service_provider.dart';
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/features/auth/view_model/auth_notifier.dart';
+import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
 import 'package:collection/collection.dart';
 import 'package:shonenx/features/details/view_model/local_tracker_notifier.dart';
-import 'package:shonenx/core/providers/anime_repo_provider.dart';
+import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 
 /// Bottom sheet for editing anime list entry
 class EditListBottomSheet extends ConsumerStatefulWidget {

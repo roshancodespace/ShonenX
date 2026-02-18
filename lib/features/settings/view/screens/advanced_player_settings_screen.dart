@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
-import 'package:shonenx/core/providers/settings/player_notifier.dart';
+import 'package:shonenx/shared/providers/settings/player_notifier.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 
 class AdvancedPlayerSettingsScreen extends ConsumerStatefulWidget {

@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/loading/view_model/initialization_notifier.dart';
-import 'package:shonenx/core/providers/settings/experimental_notifier.dart';
-import 'package:shonenx/core/providers/update_provider.dart';
+import 'package:shonenx/shared/providers/settings/experimental_notifier.dart';
+import 'package:shonenx/shared/providers/update_provider.dart';
 import 'package:shonenx/core/utils/updater.dart';
 
 const List<String> _kAnimeQuotes = [

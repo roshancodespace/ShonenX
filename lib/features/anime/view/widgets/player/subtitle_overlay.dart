@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 import 'package:shonenx/features/settings/utils/subtitle_utils.dart';
-import 'package:shonenx/core/providers/settings/subtitle_notifier.dart';
+import 'package:shonenx/shared/providers/settings/subtitle_notifier.dart';
 
 class SubtitleOverlay extends ConsumerWidget {
   const SubtitleOverlay({super.key});

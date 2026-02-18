@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
-import 'package:shonenx/helpers/anime_match_popup.dart';
+import 'package:shonenx/helpers/anime_match_search.dart';
 import 'package:go_router/go_router.dart';
 
 class WatchHistoryScreen extends ConsumerStatefulWidget {

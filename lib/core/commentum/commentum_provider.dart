@@ -8,7 +8,7 @@ final commentumClient = CommentumClient(
     baseUrl: COMMENTUM_API_URL,
     appClient: "ShonenX",
     enableLogging: kDebugMode,
-    verboseLogging: kDebugMode,
+    verboseLogging: false,
   ),
   preferredProvider: CommentumProvider.anilist,
   storage: CommentumTokenStorage(),

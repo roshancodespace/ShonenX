@@ -66,6 +66,7 @@ jobs:
             "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
             "API_URL": "${{ secrets.API_URL }}"
+            "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}"
           }
           EOF
       - run: flutter pub get
@@ -99,6 +100,7 @@ jobs:
             "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
             "API_URL": "${{ secrets.API_URL }}"
+            "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}"
           }
           EOF
       - run: flutter pub get
@@ -134,6 +136,7 @@ jobs:
             "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
             "API_URL": "${{ secrets.API_URL }}"
+            "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}"
           }
           EOF
       - run: flutter pub get

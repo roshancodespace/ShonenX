@@ -21,6 +21,7 @@ import 'package:shonenx/features/details/view/widgets/episodes/episode_compact_i
 import 'package:shonenx/features/details/view/widgets/episodes/episode_grid_item.dart';
 import 'package:shonenx/features/details/view/widgets/episodes/episode_list_item.dart';
 import 'package:shonenx/core/providers/settings/ui_notifier.dart';
+import 'package:go_router/go_router.dart';
 
 enum EpisodeViewMode { list, compact, grid, block }
 
@@ -668,12 +669,18 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
           ),
           title: Text(source.name ?? 'Unknown'),
           subtitle: Text(source.lang ?? ''),
+          selected: isSelected,
           trailing: isSelected
-              ? Icon(
-                  Icons.check_circle,
+              ? IconButton(
+                  icon: Icon(Icons.settings_rounded),
                   color: Theme.of(context).colorScheme.primary,
+                  onPressed: () => context.push(
+                    '/settings/extensions/extension-preference',
+                    extra: source,
+                  ),
                 )
               : null,
+
           onTap: () {
             ref.read(sourceProvider.notifier).setActiveSource(source);
             Navigator.pop(context);

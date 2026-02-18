@@ -6,8 +6,10 @@ import 'package:shonenx/core/utils/env_loader.dart';
 final commentumClient = CommentumClient(
   config: CommentumConfig(
     baseUrl: COMMENTUM_API_URL,
+    appClient: "ShonenX",
     enableLogging: kDebugMode,
     verboseLogging: kDebugMode,
   ),
+  preferredProvider: CommentumProvider.anilist,
   storage: CommentumTokenStorage(),
 );

@@ -132,14 +132,13 @@ class _CommentsBottomSheetState extends ConsumerState<CommentsBottomSheet> {
         await commentumClient.createReply(
           _replyingTo!.id,
           text,
-          client: "ShonenX",
         );
         if (mounted) setState(() => _replyingTo = null);
       } else {
         await commentumClient.createComment(
           widget.anime.id.toString(),
+          "anilist",
           text,
-          client: "ShonenX",
         );
       }
 

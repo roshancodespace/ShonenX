@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart'
@@ -40,7 +42,7 @@ class EpisodeDataState {
   final List<ServerData> servers;
   final int? selectedQualityIdx;
   final int? selectedSourceIdx;
-  final int? selectedEpisodeIdx;
+  final int? selectedEpisode;
   final int selectedSubtitleIdx;
   final ServerData? selectedServer;
   final Set<EpisodeStreamState> states;
@@ -54,7 +56,7 @@ class EpisodeDataState {
     this.servers = const [],
     this.selectedQualityIdx,
     this.selectedSourceIdx,
-    this.selectedEpisodeIdx,
+    this.selectedEpisode,
     this.selectedSubtitleIdx = 0,
     this.selectedServer,
     this.states = const {},
@@ -71,7 +73,7 @@ class EpisodeDataState {
     List<ServerData>? servers,
     int? selectedQualityIdx,
     int? selectedSourceIdx,
-    int? selectedEpisodeIdx,
+    int? selectedEpisode,
     int? selectedSubtitleIdx,
     ServerData? selectedServer,
     EpisodeStreamState? addState,
@@ -91,7 +93,7 @@ class EpisodeDataState {
       servers: servers ?? this.servers,
       selectedQualityIdx: selectedQualityIdx ?? this.selectedQualityIdx,
       selectedSourceIdx: selectedSourceIdx ?? this.selectedSourceIdx,
-      selectedEpisodeIdx: selectedEpisodeIdx ?? this.selectedEpisodeIdx,
+      selectedEpisode: selectedEpisode ?? this.selectedEpisode,
       selectedSubtitleIdx: selectedSubtitleIdx ?? this.selectedSubtitleIdx,
       selectedServer: selectedServer ?? this.selectedServer,
       states: newStates,
@@ -112,24 +114,24 @@ class EpisodeData extends _$EpisodeData {
   EpisodeDataState build() => const EpisodeDataState();
 
   Future<void> loadEpisode({
-    required int epIdx,
+    required int ep,
     bool play = true,
     Duration startAt = Duration.zero,
   }) async {
-    if (!_isValidIdx(epIdx)) return;
-    await _fetchServers(epIdx);
-    if (play) await changeEpisode(epIdx, startAt: startAt);
+    if (!_isValidEp(ep)) return;
+    await _fetchServers(ep);
+    if (play) await changeEpisode(ep, startAt: startAt);
   }
 
   Future<void> changeEpisode(
-    int? epIdx, {
+    int? ep, {
     Duration startAt = Duration.zero,
     int by = 0,
   }) async {
-    final target = by != 0 ? (state.selectedEpisodeIdx ?? 0) + by : epIdx;
-    if (target == null || !_isValidIdx(target)) return;
+    final target = by != 0 ? (state.selectedEpisode ?? 1) + by : ep;
+    if (target == null || !_isValidEp(target)) return;
 
-    state = state.copyWith(selectedEpisodeIdx: target, clearError: true);
+    state = state.copyWith(selectedEpisode: target, clearError: true);
     await _playCurrent(startAt);
   }
 
@@ -200,11 +202,10 @@ class EpisodeData extends _$EpisodeData {
     await changeSubtitle(state.subtitles.length - 1);
   }
 
-  Future<void> downloadEpisode(BuildContext context, int epNumber) async {
-    final idx = epNumber - 1;
-    if (!_isValidIdx(idx) || _epList.animeId == null) return;
+  Future<void> downloadEpisode(BuildContext context, int epNum) async {;
+    if (!_isValidEp(epNum) || _epList.animeId == null) return;
 
-    final ep = _epList.episodes[idx];
+    final ep = _epList.episodes.firstWhere((i) => i.number == epNum);
     final link = ref.keepAlive();
 
     try {
@@ -252,7 +253,9 @@ class EpisodeData extends _$EpisodeData {
 
   void reset() => state = const EpisodeDataState();
 
-  bool _isValidIdx(int i) => i >= 0 && i < _epList.episodes.length;
+  bool _isValidEp(int ep) {
+    return _epList.episodes.any((i) => i.number == ep);
+  }
 
   Future<List<ServerData>> _getRawServers(EpisodeDataModel ep) async {
     if (_exp.useExtensions) {
@@ -294,15 +297,15 @@ class EpisodeData extends _$EpisodeData {
   }
 
   Future<void> _playCurrent(Duration startAt) async {
-    final idx = state.selectedEpisodeIdx;
-    if (idx == null) return;
+    final ep = state.selectedEpisode;
+    if (ep == null) return;
 
     state = state.copyWith(
       addState: EpisodeStreamState.SOURCE_LOADING,
       clearError: true,
     );
     final data = await _fetchSourceData(
-      _epList.episodes[idx],
+      _epList.episodes.firstWhere((item) => item.number == ep),
       server: state.selectedServer,
     );
 

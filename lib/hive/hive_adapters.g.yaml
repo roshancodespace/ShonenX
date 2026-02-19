@@ -123,18 +123,18 @@ types:
         index: 13
   ExperimentalFeaturesModel:
     typeId: 11
-    nextIndex: 5
+    nextIndex: 6
     fields:
       episodeTitleSync:
         index: 0
-      useMangayomiExtensions:
-        index: 1
       useTestReleases:
         index: 2
       newUI:
         index: 3
       debugMode:
         index: 4
+      useExtensions:
+        index: 5
   DownloadItem:
     typeId: 12
     nextIndex: 18

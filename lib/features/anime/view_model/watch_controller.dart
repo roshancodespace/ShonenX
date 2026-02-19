@@ -45,13 +45,11 @@ class WatchController extends _$WatchController {
     required String animeName,
     required String? animeId,
     required List<EpisodeDataModel> episodes,
-    required int initialEpisodeIndex,
-    required Duration startAt,
+    required int initialEpisode,
     required String mediaId,
-    required String animeFormat,
+    required String? animeFormat,
     required String animeCover,
   }) async {
-    // 1. Fetch Episodes
     await ref
         .read(episodeListProvider.notifier)
         .fetchEpisodes(
@@ -60,26 +58,34 @@ class WatchController extends _$WatchController {
           episodes: episodes,
           force: false,
         );
+    
+    final startAt = (await _getEpisodeProgress(animeId!, initialEpisode))?.progressInSeconds ?? 0;
 
-    // 2. Load Initial Episode
     await ref
         .read(episodeDataProvider.notifier)
-        .loadEpisode(epIdx: initialEpisodeIndex, startAt: startAt);
+        .loadEpisode(ep: initialEpisode, startAt: Duration(seconds: startAt));
 
-    // 3. Start Progress Tracking
     _startProgressTimer(mediaId, animeName, animeFormat, animeCover);
 
-    // 4. Attach Listeners (only once)
     if (!_playbackListenerAttached) {
       _attachPlaybackListeners(mediaId, animeName);
       _playbackListenerAttached = true;
     }
   }
 
+  Future<EpisodeProgress?> _getEpisodeProgress(
+    String animeId,
+    int episodeNumber,
+  ) async {
+    return ref
+        .read(watchProgressRepositoryProvider)
+        .getEpisodeProgress(animeId, episodeNumber);
+  }
+
   void _startProgressTimer(
     String mediaId,
     String animeName,
-    String animeFormat,
+    String? animeFormat,
     String animeCover,
   ) {
     _progressTimer?.cancel();
@@ -105,7 +111,7 @@ class WatchController extends _$WatchController {
   Future<void> saveProgress({
     required String mediaId,
     required String animeName,
-    required String animeFormat,
+    String? animeFormat,
     required String animeCover,
     bool takeScreenshot = false,
   }) async {
@@ -115,12 +121,12 @@ class WatchController extends _$WatchController {
       final episodes = ref.read(episodeListProvider).episodes;
       final repo = ref.read(watchProgressRepositoryProvider);
 
-      final idx = episodeData.selectedEpisodeIdx;
-      if (idx == null || idx < 0 || idx >= episodes.length) {
+      final selectedEp = episodeData.selectedEpisode;
+      if (selectedEp == null || selectedEp < 1 || selectedEp > episodes.length) {
         return;
       }
 
-      final ep = episodes[idx];
+      final ep = episodes.firstWhere((i) => i.number == selectedEp);
       final pos = player.position.inSeconds;
       final dur = player.duration.inSeconds;
       if (dur <= 0) {
@@ -137,17 +143,17 @@ class WatchController extends _$WatchController {
       }
 
       thumbnail ??= repo
-          .getEpisodeProgress(mediaId, ep.number ?? idx + 1)
+          .getEpisodeProgress(mediaId, ep.number ?? selectedEp)
           ?.episodeThumbnail;
       thumbnail ??= ep.thumbnail;
 
       final progress = EpisodeProgress(
-        episodeNumber: ep.number ?? idx + 1,
-        episodeTitle: ep.title ?? 'Episode ${idx + 1}',
+        episodeNumber: ep.number ?? selectedEp,
+        episodeTitle: ep.title ?? 'Episode $selectedEp',
         episodeThumbnail: thumbnail,
         progressInSeconds: pos,
         durationInSeconds: dur,
-        isCompleted: pos / dur > 0.9,
+        isCompleted: pos / dur > 0.85,
         watchedAt: DateTime.now(),
       );
 
@@ -182,7 +188,7 @@ class WatchController extends _$WatchController {
     });
 
     // Tracking Update Listener
-    ref.listen(episodeDataProvider.select((p) => p.selectedEpisodeIdx), (
+    ref.listen(episodeDataProvider.select((p) => p.selectedEpisode), (
       prev,
       next,
     ) {
@@ -201,16 +207,16 @@ class WatchController extends _$WatchController {
 
   void _checkAniSkip(String mediaId, String animeName, Duration duration) {
     final episodes = ref.read(episodeListProvider).episodes;
-    final currentIndex = ref.read(episodeDataProvider).selectedEpisodeIdx;
+    final currentEpisode = ref.read(episodeDataProvider).selectedEpisode;
 
-    if (currentIndex == null ||
-        currentIndex < 0 ||
-        currentIndex >= episodes.length) {
+    if (currentEpisode == null ||
+        currentEpisode < 1 ||
+        currentEpisode > episodes.length) {
       return;
     }
 
     AppLogger.d(
-      'Checking AniSkip for episode ${episodes[currentIndex].number}',
+      'Checking AniSkip for episode $currentEpisode',
     );
 
     final settings = ref.read(playerSettingsProvider);
@@ -219,7 +225,7 @@ class WatchController extends _$WatchController {
       return;
     }
 
-    final ep = episodes[currentIndex];
+    final ep = episodes.firstWhere((i) => i.number == currentEpisode);
     if (ep.number == null) {
       return;
     }
@@ -264,7 +270,7 @@ class WatchController extends _$WatchController {
     }
   }
 
-  Future<void> _handleTrackingUpdate(String mediaId, int episodeIdx) async {
+  Future<void> _handleTrackingUpdate(String mediaId, int epNum) async {
     await Future.delayed(const Duration(seconds: 5));
 
     try {
@@ -277,14 +283,11 @@ class WatchController extends _$WatchController {
     if (syncNotifier.isManualSync) return;
 
     final episodes = ref.read(episodeListProvider).episodes;
-    if (episodeIdx < 0 || episodeIdx >= episodes.length) return;
-
-    final ep = episodes[episodeIdx];
-    final episodeNum = ep.number?.toInt() ?? (episodeIdx + 1);
+    if (epNum < 1 || epNum > episodes.length) return;
 
     final syncSettings = ref.read(syncSettingsProvider);
     if (!syncSettings.askBeforeSync) {
-      updateTracking(mediaId: mediaId, episodeNum: episodeNum);
+      updateTracking(mediaId: mediaId, episodeNum: epNum);
     }
   }
 

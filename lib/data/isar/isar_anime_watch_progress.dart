@@ -12,7 +12,7 @@ class IsarAnimeWatchProgress {
   late String animeId;
 
   late String animeTitle;
-  late String animeFormat;
+  late String? animeFormat;
   late String animeCover;
   late int totalEpisodes;
 
@@ -28,7 +28,7 @@ class IsarAnimeWatchProgress {
     this.id,
     required this.animeId,
     required this.animeTitle,
-    required this.animeFormat,
+    this.animeFormat,
     required this.animeCover,
     required this.totalEpisodes,
     this.episodesProgress = const [],

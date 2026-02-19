@@ -105,7 +105,12 @@ int _isarAnimeWatchProgressEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.animeCover.length * 3;
-  bytesCount += 3 + object.animeFormat.length * 3;
+  {
+    final value = object.animeFormat;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.animeId.length * 3;
   bytesCount += 3 + object.animeTitle.length * 3;
   bytesCount += 3 + object.episodesProgress.length * 3;
@@ -172,7 +177,7 @@ IsarAnimeWatchProgress _isarAnimeWatchProgressDeserialize(
 ) {
   final object = IsarAnimeWatchProgress(
     animeCover: reader.readString(offsets[0]),
-    animeFormat: reader.readString(offsets[1]),
+    animeFormat: reader.readStringOrNull(offsets[1]),
     animeId: reader.readString(offsets[2]),
     animeTitle: reader.readString(offsets[3]),
     currentEpisode: reader.readLongOrNull(offsets[4]) ?? 1,
@@ -207,7 +212,7 @@ P _isarAnimeWatchProgressDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
@@ -679,7 +684,33 @@ extension IsarAnimeWatchProgressQueryFilter
     IsarAnimeWatchProgress,
     QAfterFilterCondition
   >
-  animeFormatEqualTo(String value, {bool caseSensitive = true}) {
+  animeFormatIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'animeFormat'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    IsarAnimeWatchProgress,
+    IsarAnimeWatchProgress,
+    QAfterFilterCondition
+  >
+  animeFormatIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'animeFormat'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    IsarAnimeWatchProgress,
+    IsarAnimeWatchProgress,
+    QAfterFilterCondition
+  >
+  animeFormatEqualTo(String? value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.equalTo(
@@ -697,7 +728,7 @@ extension IsarAnimeWatchProgressQueryFilter
     QAfterFilterCondition
   >
   animeFormatGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -719,7 +750,7 @@ extension IsarAnimeWatchProgressQueryFilter
     QAfterFilterCondition
   >
   animeFormatLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -741,8 +772,8 @@ extension IsarAnimeWatchProgressQueryFilter
     QAfterFilterCondition
   >
   animeFormatBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -2210,7 +2241,7 @@ extension IsarAnimeWatchProgressQueryProperty
     });
   }
 
-  QueryBuilder<IsarAnimeWatchProgress, String, QQueryOperations>
+  QueryBuilder<IsarAnimeWatchProgress, String?, QQueryOperations>
   animeFormatProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'animeFormat');

@@ -171,7 +171,7 @@ class AnimeWatchProgressEntryAdapter
     return AnimeWatchProgressEntry(
       animeId: fields[0] as String,
       animeTitle: fields[1] as String,
-      animeFormat: fields[2] as String,
+      animeFormat: fields[2] as String?,
       animeCover: fields[3] as String,
       totalEpisodes: (fields[4] as num).toInt(),
       episodesProgress: fields[5] == null
@@ -363,7 +363,7 @@ class ExperimentalFeaturesModelAdapter
     };
     return ExperimentalFeaturesModel(
       episodeTitleSync: fields[0] == null ? false : fields[0] as bool,
-      useExtensions: fields[1] == null ? false : fields[1] as bool,
+      useExtensions: fields[5] == null ? false : fields[5] as bool,
       useTestReleases: fields[2] == null ? false : fields[2] as bool,
       newUI: fields[3] == null ? false : fields[3] as bool,
       debugMode: fields[4] == null ? false : fields[4] as bool,
@@ -376,14 +376,14 @@ class ExperimentalFeaturesModelAdapter
       ..writeByte(5)
       ..writeByte(0)
       ..write(obj.episodeTitleSync)
-      ..writeByte(1)
-      ..write(obj.useExtensions)
       ..writeByte(2)
       ..write(obj.useTestReleases)
       ..writeByte(3)
       ..write(obj.newUI)
       ..writeByte(4)
-      ..write(obj.debugMode);
+      ..write(obj.debugMode)
+      ..writeByte(5)
+      ..write(obj.useExtensions);
   }
 
   @override

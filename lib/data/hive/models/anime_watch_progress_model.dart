@@ -1,11 +1,10 @@
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/anilist/media.dart';
 
-
 class AnimeWatchProgressEntry {
   final String animeId;
   final String animeTitle;
-  final String animeFormat;
+  final String? animeFormat;
   final String animeCover;
   final int totalEpisodes;
   final Map<int, EpisodeProgress> episodesProgress;
@@ -16,7 +15,7 @@ class AnimeWatchProgressEntry {
   AnimeWatchProgressEntry({
     required this.animeId,
     required this.animeTitle,
-    required this.animeFormat,
+    this.animeFormat,
     required this.animeCover,
     required this.totalEpisodes,
     this.episodesProgress = const {},

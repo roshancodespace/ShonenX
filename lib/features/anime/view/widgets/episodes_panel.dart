@@ -92,8 +92,8 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
     final theme = Theme.of(context);
 
     final episodes = ref.watch(episodeListProvider.select((s) => s.episodes));
-    final selectedIdx = ref.watch(
-      episodeDataProvider.select((s) => s.selectedEpisodeIdx),
+    final selectedEp = ref.watch(
+      episodeDataProvider.select((s) => s.selectedEpisode),
     );
 
     final episodeNotifier = ref.read(episodeDataProvider.notifier);
@@ -155,10 +155,6 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                       },
                     ),
                   IconButton(
-                    icon: const Icon(Iconsax.refresh, size: 20),
-                    onPressed: episodeListNotifier.refreshEpisodes,
-                  ),
-                  IconButton(
                     icon: const Icon(Iconsax.setting_2, size: 20),
                     onPressed: () =>
                         _showRangeSizeDialog(context, episodeListNotifier),
@@ -192,7 +188,7 @@ class _EpisodesPanelState extends ConsumerState<EpisodesPanel> {
                       episodeNumber: episode.number?.toString() ?? "?",
                       episodeTitle:
                           episode.title ?? "Episode ${episode.number}",
-                      isSelected: selectedIdx == actualIndex,
+                      isSelected: episode.number == selectedEp,
                       download: download,
                       onTap: () => episodeNotifier.changeEpisode(actualIndex),
                     );

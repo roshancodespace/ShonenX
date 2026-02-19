@@ -14,20 +14,18 @@ class WatchScreen extends ConsumerStatefulWidget {
   final String mediaId;
   final String? animeId;
   final String animeName;
-  final String animeFormat;
+  final String? animeFormat;
   final String animeCover;
   final int episode;
-  final Duration startAt;
   final List<EpisodeDataModel>? episodes;
 
   const WatchScreen({
     super.key,
     required this.mediaId,
     required this.animeName,
-    required this.animeFormat,
+    this.animeFormat,
     required this.animeCover,
     this.animeId,
-    this.startAt = Duration.zero,
     this.episode = 1,
     this.episodes = const [],
   });
@@ -66,8 +64,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
             animeName: widget.animeName,
             animeId: widget.animeId,
             episodes: widget.episodes ?? [],
-            initialEpisodeIndex: widget.episode - 1,
-            startAt: widget.startAt,
+            initialEpisode: widget.episode,
             mediaId: widget.mediaId,
             animeFormat: widget.animeFormat,
             animeCover: widget.animeCover,
@@ -111,7 +108,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     ref.watch(watchControllerProvider);
 
     // Listen for episode changes to trigger "Ask to update" dialog
-    ref.listen(episodeDataProvider.select((s) => s.selectedEpisodeIdx), (
+    ref.listen(episodeDataProvider.select((s) => s.selectedEpisode), (
       prev,
       next,
     ) async {
@@ -126,8 +123,8 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       if (!context.mounted) return;
 
       // Re-check index in case it changed quickly
-      final currentIdx = ref.read(episodeDataProvider).selectedEpisodeIdx;
-      if (currentIdx != next) return;
+      final currentEp = ref.read(episodeDataProvider).selectedEpisode;
+      if (currentEp != next) return;
 
       final episodes = ref.read(episodeListProvider).episodes;
       if (next < 0 || next >= episodes.length) return;

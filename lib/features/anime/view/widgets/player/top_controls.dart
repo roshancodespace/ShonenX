@@ -37,12 +37,11 @@ class TopControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedEpisodeIdx = watchEpisode(ref, (e) => e.selectedEpisodeIdx);
+    final selectedEp = watchEpisode(ref, (e) => e.selectedEpisode);
     final episodeTitle = ref.watch(
       episodeListProvider.select((s) {
-        final idx = selectedEpisodeIdx;
-        if (idx == null || idx >= s.episodes.length) return null;
-        return s.episodes[idx].title;
+        if (selectedEp == null || selectedEp > s.episodes.length) return null;
+        return s.episodes.firstWhere((i) => i.number == selectedEp).title;
       }),
     );
     final sources = watchEpisode(ref, (e) => e.sources);
@@ -97,9 +96,9 @@ class TopControls extends ConsumerWidget {
                       const SizedBox(height: 2),
 
                       // Episode title
-                      if (selectedEpisodeIdx != null && sources.isNotEmpty)
+                      if (selectedEp != null && sources.isNotEmpty)
                         Text(
-                          episodeTitle ?? 'Episode: ${selectedEpisodeIdx + 1}',
+                          episodeTitle ?? 'Episode: $selectedEp',
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
                                 color: Colors.white,

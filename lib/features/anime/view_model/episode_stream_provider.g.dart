@@ -41,7 +41,7 @@ final class EpisodeDataProvider
   }
 }
 
-String _$episodeDataHash() => r'ca17d512947ee38d9987dddfaa45c407418e306f';
+String _$episodeDataHash() => r'1c0f24af00775728a98fed2d36c332c02bf8df2e';
 
 abstract class _$EpisodeData extends $Notifier<EpisodeDataState> {
   EpisodeDataState build();

@@ -42,7 +42,7 @@ final class EpisodeListNotifierProvider
 }
 
 String _$episodeListNotifierHash() =>
-    r'852a1edf049e0a77c3b5ff63731845867b1bb5af';
+    r'd38db51351454c0a9c67b3a16e67666f072c5759';
 
 abstract class _$EpisodeListNotifier extends $Notifier<EpisodeListState> {
   EpisodeListState build();

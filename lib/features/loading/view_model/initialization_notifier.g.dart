@@ -41,7 +41,7 @@ final class InitializationProvider
   }
 }
 
-String _$initializationHash() => r'1c5d18634e0da1b0b613af0920e2531c1a87fac4';
+String _$initializationHash() => r'2e7537a3c72bdd65caad2706d5f7a0e79eeb7e0d';
 
 abstract class _$Initialization extends $Notifier<InitializationState> {
   InitializationState build();

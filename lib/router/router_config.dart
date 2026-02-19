@@ -126,13 +126,9 @@ final routerConfig = GoRouter(
         mediaId: state.pathParameters['id']!,
         animeId: state.uri.queryParameters['animeId'],
         animeName: state.uri.queryParameters['animeName']!,
-        animeFormat: state.uri.queryParameters['animeFormat']!,
+        animeFormat: state.uri.queryParameters['animeFormat'],
         animeCover: state.uri.queryParameters['animeCover']!,
         episode: int.tryParse(state.uri.queryParameters['episode'] ?? '1') ?? 1,
-        startAt: Duration(
-          seconds:
-              int.tryParse(state.uri.queryParameters['startAt'] ?? '0') ?? 0,
-        ),
         episodes: state.extra as List<EpisodeDataModel>,
       ),
     ),

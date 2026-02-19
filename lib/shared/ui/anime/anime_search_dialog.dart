@@ -1,18 +1,20 @@
 import 'dart:async';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:iconsax/iconsax.dart';
+
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/core/registery/sources/anime/anime_provider.dart';
+import 'package:shonenx/core/repositories/watch_progress_repository.dart';
+import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/data/isar/isar_anime_watch_progress.dart';
+import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/shared/providers/anime_match_service.dart';
 import 'package:shonenx/shared/providers/anime_source_provider.dart';
 import 'package:shonenx/shared/providers/settings/content_settings_notifier.dart';
-import 'package:shonenx/core/repositories/watch_progress_repository.dart';
-import 'package:shonenx/helpers/navigation.dart';
-import 'package:shonenx/data/isar/isar_anime_watch_progress.dart';
-import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/core/registery/sources/anime/anime_provider.dart';
 
 class AnimeSearchDialog extends ConsumerStatefulWidget {
   final AnimeProvider animeProvider;
@@ -21,6 +23,7 @@ class AnimeSearchDialog extends ConsumerStatefulWidget {
   final int? startAt;
 
   const AnimeSearchDialog({
+    super.key,
     required this.animeProvider,
     required this.media,
     required this.autoMatch,
@@ -111,12 +114,12 @@ class _AnimeSearchDialogState extends ConsumerState<AnimeSearchDialog> {
     if (widget.autoMatch) {
       navigateToWatch(
         context: context,
-        ref: ref,
         mediaId: widget.media.id.toString(),
         animeId: anime.id!,
         animeName: anime.name ?? 'Unknown',
         animeFormat: widget.media.format ?? '',
-        animeCover: anime.poster ??
+        animeCover:
+            anime.poster ??
             widget.media.coverImage.large ??
             widget.media.coverImage.medium ??
             '',
@@ -202,7 +205,10 @@ class _AnimeSearchDialogState extends ConsumerState<AnimeSearchDialog> {
       itemBuilder: (context, index) {
         final anime = _results[index];
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: 4,
+          ),
           onTap: () => _handleSelection(anime),
           leading: _buildPoster(anime),
           title: Text(
@@ -212,7 +218,10 @@ class _AnimeSearchDialogState extends ConsumerState<AnimeSearchDialog> {
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           subtitle: anime.releaseDate != null ? Text(anime.releaseDate!) : null,
-          trailing: Icon(Iconsax.arrow_circle_right, color: theme.colorScheme.primary),
+          trailing: Icon(
+            Iconsax.arrow_circle_right,
+            color: theme.colorScheme.primary,
+          ),
         );
       },
     );

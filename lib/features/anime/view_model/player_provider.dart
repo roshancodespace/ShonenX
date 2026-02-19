@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -77,10 +78,12 @@ class PlayerStateNotifier extends _$PlayerStateNotifier {
     final settings = ref.read(playerSettingsProvider);
     final mpvSettings = settings.mpvSettings;
     final vo = mpvSettings['vo'];
-
+    final bufferSize = ref.read(
+      playerSettingsProvider.select((s) => s.bufferSize),
+    );
     _player = Player(
       configuration: PlayerConfiguration(
-        bufferSize: 64 * 1024 * 1024,
+        bufferSize: bufferSize.toInt() * 1024 * 1024,
         logLevel: MPVLogLevel.v,
         vo: vo,
       ),

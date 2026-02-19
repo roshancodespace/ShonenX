@@ -6,7 +6,6 @@ import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/shared/providers/settings/experimental_notifier.dart';
 import 'package:shonenx/shared/providers/settings/source_notifier.dart';
-import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
 
 class TopControls extends ConsumerWidget {
@@ -14,6 +13,7 @@ class TopControls extends ConsumerWidget {
   final VoidCallback? onEpisodesPressed;
   final VoidCallback? onQualityPressed;
   final VoidCallback? onSettingsPressed;
+  final VoidCallback? onSubtitlePressed;
 
   const TopControls({
     super.key,
@@ -21,6 +21,7 @@ class TopControls extends ConsumerWidget {
     this.onEpisodesPressed,
     this.onQualityPressed,
     this.onSettingsPressed,
+    this.onSubtitlePressed,
   });
 
   VoidCallback? _wrap(VoidCallback? action) {
@@ -31,173 +32,173 @@ class TopControls extends ConsumerWidget {
     };
   }
 
-  T watchEpisode<T>(WidgetRef ref, T Function(EpisodeDataState s) selector) {
-    return ref.watch(episodeDataProvider.select(selector));
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedEp = watchEpisode(ref, (e) => e.selectedEpisode);
+    final selectedEp = ref.watch(
+      episodeDataProvider.select((e) => e.selectedEpisode),
+    );
+    final sources = ref.watch(episodeDataProvider.select((e) => e.sources));
+    final qualityOptions = ref.watch(
+      episodeDataProvider.select((e) => e.qualityOptions),
+    );
+    final hasSubtitles = ref.watch(
+      episodeDataProvider.select((e) => e.selectedSubtitleIdx != 0),
+    );
+
     final episodeTitle = ref.watch(
       episodeListProvider.select((s) {
         if (selectedEp == null || selectedEp > s.episodes.length) return null;
         return s.episodes.firstWhere((i) => i.number == selectedEp).title;
       }),
     );
-    final sources = watchEpisode(ref, (e) => e.sources);
-    final qualityOptions = watchEpisode(ref, (e) => e.qualityOptions);
 
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withOpacity(0.85),
-            Colors.black.withOpacity(0.35),
-            Colors.transparent,
-          ],
-          stops: const [0.0, 0.7, 1.0],
+          colors: [Colors.black87, Colors.black54, Colors.transparent],
+          stops: [0.0, 0.5, 1.0],
         ),
       ),
       child: SafeArea(
         bottom: false,
-        child: GestureDetector(
-          onTap: onInteraction,
-          behavior: HitTestBehavior.deferToChild,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-            child: Row(
-              children: [
-                // Back button
-                _buildControlButton(
-                  icon: Icons.arrow_back_ios_new_rounded,
-                  onPressed: _wrap(() => context.pop()),
-                  color: Colors.white,
-                ),
-
-                const SizedBox(width: 16),
-
-                // Title section
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Source name
-                      Text(
-                        _getSourceName(ref),
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.white.withOpacity(0.7),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-
-                      const SizedBox(height: 2),
-
-                      // Episode title
-                      if (selectedEp != null && sources.isNotEmpty)
-                        Text(
-                          episodeTitle ?? 'Episode: $selectedEp',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                    ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _wrap(() => context.pop()),
+                  customBorder: const CircleBorder(),
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                      size: 26,
+                    ),
                   ),
                 ),
+              ),
+              const SizedBox(width: 12),
 
-                const SizedBox(width: 16),
-
-                // Action buttons
-                Row(
+              Expanded(
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (qualityOptions.length > 1) ...[
-                      _buildControlButton(
-                        icon: Icons.hd_outlined,
-                        onPressed: _wrap(onQualityPressed),
-                        color: Colors.white,
+                    Text(
+                      _getSourceName(ref).toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.0,
                       ),
-                      const SizedBox(width: 8),
-                    ],
-                    // if (onEpisodesPressed != null) ...[
-                    //   _buildControlButton(
-                    //     icon: Icons.,
-                    //     onPressed: _wrap(onEpisodesPressed),
-                    //     color: scheme.onSurface,
-                    //   ),
-                    //   const SizedBox(width: 8),
-                    // ],
-                    (() {
+                    ),
+                    if (selectedEp != null && sources.isNotEmpty)
+                      Text(
+                        episodeTitle ?? 'Episode $selectedEp',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (onSubtitlePressed != null)
+                    _TopIconButton(
+                      icon: hasSubtitles
+                          ? Icons.closed_caption_rounded
+                          : Icons.closed_caption_off_rounded,
+                      onTap: _wrap(onSubtitlePressed),
+                      color: hasSubtitles
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.white,
+                    ),
+
+                  if (qualityOptions.length > 1)
+                    _TopIconButton(
+                      icon: Icons.high_quality_rounded,
+                      onTap: _wrap(onQualityPressed),
+                    ),
+
+                  _TopIconButton(
+                    icon: Icons.aspect_ratio_rounded,
+                    onTap: () {
                       const fitModes = [
                         BoxFit.contain,
                         BoxFit.cover,
                         BoxFit.fill,
                       ];
-
-                      return _buildControlButton(
-                        icon: Iconsax.crop,
-                        color: Colors.white,
-                        onPressed: () {
-                          final notifier = ref.read(
-                            playerStateProvider.notifier,
-                          );
-                          final currentFit = ref.read(playerStateProvider).fit;
-
-                          final index = fitModes.indexOf(currentFit);
-                          final nextFit =
-                              fitModes[(index + 1) % fitModes.length];
-
-                          notifier.setFit(nextFit);
-                        },
+                      final notifier = ref.read(playerStateProvider.notifier);
+                      final currentFit = ref.read(playerStateProvider).fit;
+                      notifier.setFit(
+                        fitModes[(fitModes.indexOf(currentFit) + 1) %
+                            fitModes.length],
                       );
-                    })(),
-                    _buildControlButton(
-                      icon: Iconsax.menu_1,
-                      color: Colors.white,
-                      onPressed: _wrap(onSettingsPressed),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                      onInteraction();
+                    },
+                  ),
+
+                  _TopIconButton(
+                    icon: Icons.settings_rounded,
+                    onTap: _wrap(onSettingsPressed),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildControlButton({
-    required IconData icon,
-    required VoidCallback? onPressed,
-    required Color color,
-  }) {
+  String _getSourceName(WidgetRef ref) {
+    if (!ref.watch(experimentalProvider).useExtensions) {
+      return ref.watch(selectedAnimeProvider)?.providerName ?? "Legacy";
+    } else {
+      return ref.watch(sourceProvider).activeAnimeSource?.name ?? 'Extension';
+    }
+  }
+}
+
+class _TopIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  final Color color;
+
+  const _TopIconButton({
+    required this.icon,
+    this.onTap,
+    this.color = Colors.white,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          padding: const EdgeInsets.all(8),
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Icon(icon, color: color, size: 24),
         ),
       ),
     );
-  }
-
-  String _getSourceName(WidgetRef ref) {
-    final source = ref.watch(selectedAnimeProvider);
-
-    if (!ref.watch(experimentalProvider).useExtensions) {
-      return source?.providerName.toUpperCase() ?? "LEGACY";
-    } else {
-      final sourceNotifier = ref.watch(sourceProvider);
-      return sourceNotifier.activeAnimeSource?.name ?? 'Extension';
-    }
   }
 }

@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:screenshot/screenshot.dart';
 
-import 'package:shonenx/shared/providers/anilist_service_provider.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
-import 'package:shonenx/shared/providers/mal_service_provider.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
@@ -15,31 +15,54 @@ import 'package:shonenx/features/anime/view_model/aniskip_notifier.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
+import 'package:shonenx/features/details/view_model/local_tracker_notifier.dart';
+import 'package:shonenx/shared/providers/anilist_service_provider.dart';
+import 'package:shonenx/shared/providers/mal_service_provider.dart';
 import 'package:shonenx/shared/providers/settings/player_notifier.dart';
 import 'package:shonenx/shared/providers/settings/sync_settings_notifier.dart';
-
-import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/features/details/view_model/local_tracker_notifier.dart';
 
 part 'watch_controller.g.dart';
 
 @riverpod
-class WatchController extends _$WatchController {
-  Timer? _progressTimer;
+class WatchController extends _$WatchController with WidgetsBindingObserver {
   ScreenshotController? _screenshotController;
   int? _lastAniSkipEpisode;
-  bool _playbackListenerAttached = false;
+  bool _isDisposed = false;
+
+  WatchProgressRepository? _repo;
+  String? _mediaId, _animeName, _animeFormat, _animeCover;
+  int _pos = 0, _dur = 0, _totalEps = 0;
+  int? _epNum;
+  String? _epTitle, _epThumb;
+
+  int _lastSavedPos = -1;
+
+  Timer? _progressTimer;
+  int _timerTickCount = 0;
 
   @override
   void build() {
+    _repo = ref.read(watchProgressRepositoryProvider);
+    WidgetsBinding.instance.addObserver(this);
+
     ref.onDispose(() {
+      _isDisposed = true;
       _progressTimer?.cancel();
+      WidgetsBinding.instance.removeObserver(this);
+      _saveProgressSync();
     });
   }
 
-  void setScreenshotController(ScreenshotController controller) {
-    _screenshotController = controller;
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _saveProgressSync();
+    }
   }
+
+  void setScreenshotController(ScreenshotController controller) =>
+      _screenshotController = controller;
 
   Future<void> initialize({
     required String animeName,
@@ -50,243 +73,200 @@ class WatchController extends _$WatchController {
     required String? animeFormat,
     required String animeCover,
   }) async {
-    await ref
-        .read(episodeListProvider.notifier)
-        .fetchEpisodes(
-          animeTitle: animeName,
-          animeId: animeId,
-          episodes: episodes,
-          force: false,
+    if (_isDisposed) return;
+
+    _mediaId = mediaId;
+    _animeName = animeName;
+    _animeFormat = animeFormat;
+    _animeCover = animeCover;
+    _totalEps = episodes.length;
+
+    await Future.wait([
+      ref.read(episodeListProvider.notifier).fetchEpisodes(
+            animeTitle: animeName,
+            animeId: animeId,
+            episodes: episodes,
+            force: false,
+          ),
+      _initEpisode(animeId, initialEpisode),
+    ]);
+
+    _attachPlaybackListeners(mediaId, animeName, episodes);
+    _startProgressTimer();
+  }
+
+  Future<void> _initEpisode(String? animeId, int initialEpisode) async {
+    if (animeId == null || _repo == null) return;
+    final progress = _repo!.getEpisodeProgress(animeId, initialEpisode);
+
+    _epNum = initialEpisode;
+    _pos = progress?.progressInSeconds ?? 0;
+    _dur = progress?.durationInSeconds ?? 0;
+
+    await ref.read(episodeDataProvider.notifier).loadEpisode(
+          ep: initialEpisode,
+          startAt: Duration(seconds: _pos),
         );
-    
-    final startAt = (await _getEpisodeProgress(animeId!, initialEpisode))?.progressInSeconds ?? 0;
-
-    await ref
-        .read(episodeDataProvider.notifier)
-        .loadEpisode(ep: initialEpisode, startAt: Duration(seconds: startAt));
-
-    _startProgressTimer(mediaId, animeName, animeFormat, animeCover);
-
-    if (!_playbackListenerAttached) {
-      _attachPlaybackListeners(mediaId, animeName);
-      _playbackListenerAttached = true;
-    }
   }
 
-  Future<EpisodeProgress?> _getEpisodeProgress(
-    String animeId,
-    int episodeNumber,
-  ) async {
-    return ref
-        .read(watchProgressRepositoryProvider)
-        .getEpisodeProgress(animeId, episodeNumber);
-  }
-
-  void _startProgressTimer(
-    String mediaId,
-    String animeName,
-    String? animeFormat,
-    String animeCover,
-  ) {
+  void _startProgressTimer() {
     _progressTimer?.cancel();
-    int ticks = 0;
+    _timerTickCount = 0;
 
-    _progressTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      final isPlaying = ref.read(playerStateProvider).isPlaying;
-      if (!isPlaying) {
+    _progressTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      if (_isDisposed) {
+        timer.cancel();
         return;
       }
 
-      ticks++;
-      saveProgress(
-        mediaId: mediaId,
-        animeName: animeName,
-        animeFormat: animeFormat,
-        animeCover: animeCover,
-        takeScreenshot: ticks % 12 == 0,
-      );
+      if (_pos == _lastSavedPos) return;
+
+      _timerTickCount++;
+
+      if (_timerTickCount % 2 != 0) {
+        final thumb = await _captureScreenshot();
+        if (thumb != null) _epThumb = thumb;
+      }
+
+      _saveProgressSync();
     });
   }
 
-  Future<void> saveProgress({
-    required String mediaId,
-    required String animeName,
-    String? animeFormat,
-    required String animeCover,
-    bool takeScreenshot = false,
-  }) async {
+  void _saveProgressSync() {
+    if (_repo == null || _mediaId == null || _epNum == null) return;
+    if (_pos == _lastSavedPos) return;
+
     try {
-      final player = ref.read(playerStateProvider);
-      final episodeData = ref.read(episodeDataProvider);
-      final episodes = ref.read(episodeListProvider).episodes;
-      final repo = ref.read(watchProgressRepositoryProvider);
-
-      final selectedEp = episodeData.selectedEpisode;
-      if (selectedEp == null || selectedEp < 1 || selectedEp > episodes.length) {
-        return;
-      }
-
-      final ep = episodes.firstWhere((i) => i.number == selectedEp);
-      final pos = player.position.inSeconds;
-      final dur = player.duration.inSeconds;
-      if (dur <= 0) {
-        return;
-      }
-
-      String? thumbnail;
-
-      if (takeScreenshot && _screenshotController != null) {
-        try {
-          final bytes = await _screenshotController!.capture(pixelRatio: 1);
-          if (bytes != null) thumbnail = base64Encode(bytes);
-        } catch (_) {}
-      }
-
-      thumbnail ??= repo
-          .getEpisodeProgress(mediaId, ep.number ?? selectedEp)
-          ?.episodeThumbnail;
-      thumbnail ??= ep.thumbnail;
+      final entry = _repo!.getProgress(_mediaId!) ??
+          AnimeWatchProgressEntry(
+            animeId: _mediaId!,
+            animeTitle: _animeName!,
+            animeFormat: _animeFormat,
+            animeCover: _animeCover!,
+            totalEpisodes: _totalEps,
+          );
 
       final progress = EpisodeProgress(
-        episodeNumber: ep.number ?? selectedEp,
-        episodeTitle: ep.title ?? 'Episode $selectedEp',
-        episodeThumbnail: thumbnail,
-        progressInSeconds: pos,
-        durationInSeconds: dur,
-        isCompleted: pos / dur > 0.85,
+        episodeNumber: _epNum!,
+        episodeTitle: _epTitle ?? 'Episode $_epNum',
+        episodeThumbnail: _epThumb,
+        progressInSeconds: _pos,
+        durationInSeconds: _dur,
+        isCompleted: _dur > 0 ? (_pos / _dur > 0.85) : false,
         watchedAt: DateTime.now(),
       );
 
-      var entry = repo.getProgress(mediaId);
-      entry ??= AnimeWatchProgressEntry(
-        animeId: mediaId,
-        animeTitle: animeName,
-        animeFormat: animeFormat,
-        animeCover: animeCover,
-        totalEpisodes: episodes.length,
-      );
+      _repo!.saveProgress(entry);
+      _repo!.updateEpisodeProgress(_mediaId!, progress);
 
-      await repo.saveProgress(entry);
-      await repo.updateEpisodeProgress(mediaId, progress);
+      _lastSavedPos = _pos;
+      AppLogger.d("Progress Timer Saved: Ep $_epNum at $_pos seconds");
     } catch (e) {
-      AppLogger.e('Failed to save progress', e);
+      AppLogger.e('WatchController: Save failed', e);
     }
   }
 
-  void _attachPlaybackListeners(String mediaId, String animeName) {
-    // AniSkip Listener
-    ref.listen(playerStateProvider.select((p) => p.duration), (_, duration) {
-      if (duration.inSeconds <= 120) {
-        return;
+  Future<void> saveProgressManual({bool takeScreenshot = false}) async {
+    if (_isDisposed || _mediaId == null || _repo == null || _epNum == null) {
+      return;
+    }
+
+    try {
+      if (takeScreenshot) {
+        final thumb = await _captureScreenshot();
+        if (thumb != null) _epThumb = thumb;
       }
-      _checkAniSkip(mediaId, animeName, duration);
+      _saveProgressSync();
+    } catch (e) {
+      AppLogger.e('Manual save failed', e);
+    }
+  }
+
+  Future<String?> _captureScreenshot() async {
+    if (_screenshotController == null) return null;
+    try {
+      final bytes = await _screenshotController!.capture(pixelRatio: 0.5);
+      return bytes != null ? base64Encode(bytes) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _attachPlaybackListeners(
+    String mediaId,
+    String animeName,
+    List<EpisodeDataModel> episodes,
+  ) {
+    ref.listen(playerStateProvider, (prev, next) {
+      _pos = next.position.inSeconds;
+      _dur = next.duration.inSeconds;
+
+      if (_dur > 120) _checkAniSkip(mediaId, animeName, next.duration);
+      if (ref.read(playerSettingsProvider).enableAutoSkip) {
+        _checkAutoSkip(next.position);
+      }
     });
 
-    // Auto-Skip Listener
-    ref.listen(playerStateProvider.select((p) => p.position), (_, position) {
-      _checkAutoSkip(position);
-    });
-
-    // Tracking Update Listener
     ref.listen(episodeDataProvider.select((p) => p.selectedEpisode), (
       prev,
       next,
     ) {
-      if (next != null && next != prev) {
-        _handleTrackingUpdate(mediaId, next);
+      if (next != null) {
+        _epNum = next;
+        try {
+          final epInfo = episodes.firstWhere((e) => e.number == next);
+          _epTitle = epInfo.title;
+          _epThumb = epInfo.thumbnail;
+        } catch (_) {}
       }
-    });
 
-    // Paused Listener (Save progress when paused)
-    ref.listen(playerStateProvider.select((p) => p.isPlaying), (prev, next) {
-      if (prev == true && next == false) {
-        // pause logic
+      if (prev != null && prev != next) {
+        saveProgressManual(takeScreenshot: true);
+        _timerTickCount = 0;
       }
+
+      if (next != null && next != prev) _handleTrackingUpdate(mediaId, next);
     });
   }
 
   void _checkAniSkip(String mediaId, String animeName, Duration duration) {
-    final episodes = ref.read(episodeListProvider).episodes;
-    final currentEpisode = ref.read(episodeDataProvider).selectedEpisode;
-
-    if (currentEpisode == null ||
-        currentEpisode < 1 ||
-        currentEpisode > episodes.length) {
-      return;
-    }
-
-    AppLogger.d(
-      'Checking AniSkip for episode $currentEpisode',
-    );
-
-    final settings = ref.read(playerSettingsProvider);
-    if (!settings.enableAniSkip) {
+    if (!ref.read(playerSettingsProvider).enableAniSkip) {
       ref.read(aniSkipProvider.notifier).clear();
       return;
     }
-
-    final ep = episodes.firstWhere((i) => i.number == currentEpisode);
-    if (ep.number == null) {
-      return;
-    }
-    if (ep.number == _lastAniSkipEpisode) {
-      return;
-    }
-
-    _lastAniSkipEpisode = ep.number;
-
-    ref
-        .read(aniSkipProvider.notifier)
-        .fetchSkipTimes(
+    final epNum = _epNum;
+    if (epNum == null || epNum == _lastAniSkipEpisode) return;
+    _lastAniSkipEpisode = epNum;
+    ref.read(aniSkipProvider.notifier).fetchSkipTimes(
           mediaId: mediaId,
           animeTitle: animeName,
-          episodeNumber: ep.number!.toInt(),
+          episodeNumber: epNum,
           episodeLength: duration.inSeconds,
         );
   }
 
   void _checkAutoSkip(Duration position) {
     final skips = ref.read(aniSkipProvider);
-    if (skips.isEmpty) {
-      return;
-    }
-
-    final settings = ref.read(playerSettingsProvider);
-    if (!settings.enableAutoSkip) {
-      return;
-    }
-
     for (final skip in skips) {
-      if (skip.interval == null) {
-        continue;
-      }
+      if (skip.interval == null) continue;
       final start = Duration(seconds: skip.interval!.startTime.toInt());
       final end = Duration(seconds: skip.interval!.endTime.toInt());
-
       if (position >= start && position < end) {
         ref.read(playerStateProvider.notifier).seek(end);
-        break;
+        return;
       }
     }
   }
 
   Future<void> _handleTrackingUpdate(String mediaId, int epNum) async {
     await Future.delayed(const Duration(seconds: 5));
-
-    try {
-      final _ = state;
-    } catch (_) {
+    if (_isDisposed) return;
+    final syncNotifier = ref.read(syncSettingsProvider.notifier);
+    if (syncNotifier.isManualSync ||
+        ref.read(syncSettingsProvider).askBeforeSync) {
       return;
     }
-
-    final syncNotifier = ref.read(syncSettingsProvider.notifier);
-    if (syncNotifier.isManualSync) return;
-
-    final episodes = ref.read(episodeListProvider).episodes;
-    if (epNum < 1 || epNum > episodes.length) return;
-
-    final syncSettings = ref.read(syncSettingsProvider);
-    if (!syncSettings.askBeforeSync) {
+    if (epNum > 0 && epNum <= _totalEps) {
       updateTracking(mediaId: mediaId, episodeNum: epNum);
     }
   }
@@ -297,73 +277,60 @@ class WatchController extends _$WatchController {
   }) async {
     try {
       final syncNotifier = ref.read(syncSettingsProvider.notifier);
+      final mediaIdInt = int.tryParse(mediaId) ?? 0;
       final List<Future> tasks = [];
 
       if (syncNotifier.shouldSyncAnilist) {
         tasks.add(
-          ref
-              .read(anilistServiceProvider)
-              .updateUserAnimeList(
-                mediaId: int.tryParse(mediaId) ?? 0,
+          ref.read(anilistServiceProvider).updateUserAnimeList(
+                mediaId: mediaIdInt,
                 progress: episodeNum,
                 status: 'CURRENT',
               ),
         );
       }
-
       if (syncNotifier.shouldSyncMal) {
         tasks.add(
-          ref
-              .read(malServiceProvider)
-              .updateUserAnimeList(
-                mediaId: int.tryParse(mediaId) ?? 0,
+          ref.read(malServiceProvider).updateUserAnimeList(
+                mediaId: mediaIdInt,
                 progress: episodeNum,
                 status: 'CURRENT',
               ),
         );
       }
 
-      if (syncNotifier.shouldSyncLocal) {
-        final repo = ref.read(watchProgressRepositoryProvider);
-        final entry = repo.getProgress(mediaId);
-
-        final media = UniversalMedia(
-          id: mediaId,
-          title: UniversalTitle(english: entry?.animeTitle ?? 'Unknown'),
-          coverImage: UniversalCoverImage(large: entry?.animeCover),
-          status: 'UNKNOWN',
-          format: entry?.animeFormat,
-          episodes: entry?.totalEpisodes,
-        );
-
+      if (syncNotifier.shouldSyncLocal && _repo != null) {
+        final entry = _repo!.getProgress(mediaId);
         final localEntry = await ref
             .read(localTrackerProvider.notifier)
             .getEntry(mediaId);
 
         tasks.add(
-          ref
-              .read(localTrackerProvider.notifier)
-              .saveEntry(
-                media,
+          ref.read(localTrackerProvider.notifier).saveEntry(
+                UniversalMedia(
+                  id: mediaId,
+                  title: UniversalTitle(
+                    english: entry?.animeTitle ?? 'Unknown',
+                  ),
+                  coverImage: UniversalCoverImage(large: entry?.animeCover),
+                  status: 'UNKNOWN',
+                  format: entry?.animeFormat,
+                  episodes: entry?.totalEpisodes,
+                ),
                 status: 'CURRENT',
                 progress: episodeNum,
                 score: localEntry?.score ?? 0.0,
                 repeat: localEntry?.repeat ?? 0,
                 notes: localEntry?.notes ?? '',
                 isPrivate: localEntry?.isPrivate ?? false,
-                startedAt: localEntry != null ? null : DateTime.now(),
+                startedAt: DateTime.now(),
               ),
         );
       }
 
-      if (tasks.isEmpty) {
-        AppLogger.w('No sync targets enabled, skipping tracking update');
-        return;
-      }
-
-      await Future.wait(tasks);
+      if (tasks.isNotEmpty) await Future.wait(tasks);
     } catch (e) {
-      AppLogger.e('Failed to update tracking', e);
+      AppLogger.e('Tracking update failed', e);
     }
   }
 }

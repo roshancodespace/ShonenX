@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
-
 import 'package:shonenx/shared/providers/settings/player_notifier.dart';
-import 'package:iconsax/iconsax.dart';
 
 class CenterControls extends ConsumerWidget {
   final VoidCallback onInteraction;
@@ -14,7 +12,6 @@ class CenterControls extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     final (isPlaying, isBuffering) = ref.watch(
       playerStateProvider.select((p) => (p.isPlaying, p.isBuffering)),
@@ -28,81 +25,122 @@ class CenterControls extends ConsumerWidget {
     );
 
     final playerNotifier = ref.read(playerStateProvider.notifier);
+    final settings = ref.watch(playerSettingsProvider);
 
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 35),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (ref.watch(playerSettingsProvider).showNextPrevButtons) ...[
-              _icon(
-                Iconsax.previous,
-                () => ref
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (settings.showNextPrevButtons) ...[
+            _ShadowIconButton(
+              icon: Icons.skip_previous_rounded,
+              size: 56,
+              onTap: () {
+                onInteraction();
+                ref
                     .read(episodeDataProvider.notifier)
-                    .changeEpisode(null, by: -1),
-              ),
-              const SizedBox(width: 24),
-            ],
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
+                    .changeEpisode(null, by: -1);
+              },
+            ),
+            const SizedBox(width: 48),
+          ],
+
+          // Core Center Action (Buffer or Play/Pause)
+          SizedBox(
+            width: 80,
+            height: 80,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeOutBack,
+              switchOutCurve: Curves.easeInBack,
+              transitionBuilder: (child, animation) {
+                return ScaleTransition(
+                  scale: animation,
+                  child: FadeTransition(opacity: animation, child: child),
+                );
+              },
               child: isBuffering
-                  ? _LoadingState(
+                  ? _BorderlessLoading(
+                      key: const ValueKey('loading'),
                       scheme: scheme,
-                      textTheme: textTheme,
                       sourceLoading: episodeStreamState.contains(
                         EpisodeStreamState.SOURCE_LOADING,
                       ),
                       episodesLoading: episodesLoading,
                     )
-                  : _PlayPauseButton(
-                      isPlaying: isPlaying,
-                      onPressed: () {
+                  : _ShadowIconButton(
+                      key: ValueKey(isPlaying ? 'pause' : 'play'),
+                      icon: isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      size: 80,
+                      onTap: () {
                         onInteraction();
                         playerNotifier.togglePlay();
                       },
                     ),
             ),
-            if (ref.watch(playerSettingsProvider).showNextPrevButtons) ...[
-              const SizedBox(width: 24),
-              _icon(
-                Iconsax.next,
-                () => ref
-                    .read(episodeDataProvider.notifier)
-                    .changeEpisode(null, by: 1),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
+          ),
 
-  Widget _icon(IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.black.withOpacity(0.35),
-        ),
-        child: Icon(icon, color: Colors.white, size: 24),
+          if (settings.showNextPrevButtons) ...[
+            const SizedBox(width: 48),
+            _ShadowIconButton(
+              icon: Icons.skip_next_rounded,
+              size: 56,
+              onTap: () {
+                onInteraction();
+                ref
+                    .read(episodeDataProvider.notifier)
+                    .changeEpisode(null, by: 1);
+              },
+            ),
+          ],
+        ],
       ),
     );
   }
 }
 
-class _LoadingState extends StatelessWidget {
+// --- Borderless Premium Components ---
+
+class _ShadowIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final double size;
+
+  const _ShadowIconButton({
+    super.key,
+    required this.icon,
+    required this.onTap,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Icon(
+        icon,
+        color: Colors.white,
+        size: size,
+        shadows: const [
+          Shadow(color: Colors.black26, blurRadius: 12, offset: Offset(0, 4)),
+          Shadow(color: Colors.black26, blurRadius: 24, offset: Offset(0, 2)),
+        ],
+      ),
+    );
+  }
+}
+
+class _BorderlessLoading extends StatelessWidget {
   final ColorScheme scheme;
-  final TextTheme textTheme;
   final bool sourceLoading;
   final bool episodesLoading;
 
-  const _LoadingState({
+  const _BorderlessLoading({
+    super.key,
     required this.scheme,
-    required this.textTheme,
     required this.sourceLoading,
     required this.episodesLoading,
   });
@@ -112,23 +150,33 @@ class _LoadingState extends StatelessWidget {
     final text = _text();
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         SizedBox(
-          width: 42,
-          height: 42,
+          width: 48,
+          height: 48,
           child: CircularProgressIndicator(
-            strokeWidth: 2.5,
+            strokeWidth: 3.5,
             color: scheme.primary,
+            strokeCap: StrokeCap.round,
           ),
         ),
         if (text != null) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           Text(
             text,
-            style: textTheme.bodySmall?.copyWith(
-              color: scheme.onSurface.withOpacity(0.65),
-              fontWeight: FontWeight.w500,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              shadows: [
+                Shadow(
+                  color: Colors.black87,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
             ),
           ),
         ],
@@ -137,36 +185,9 @@ class _LoadingState extends StatelessWidget {
   }
 
   String? _text() {
-    if (sourceLoading && episodesLoading) return 'Loading source & episodes';
-    if (sourceLoading) return 'Loading source';
-    if (episodesLoading) return 'Loading episodes';
-    return 'Buffering';
-  }
-}
-
-class _PlayPauseButton extends StatelessWidget {
-  final bool isPlaying;
-  final VoidCallback onPressed;
-
-  const _PlayPauseButton({required this.isPlaying, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.black.withOpacity(0.35),
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: onPressed,
-        customBorder: const CircleBorder(),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Icon(
-            isPlaying ? Iconsax.pause5 : Iconsax.play5,
-            color: Colors.white,
-            size: 56,
-          ),
-        ),
-      ),
-    );
+    if (sourceLoading && episodesLoading) return 'Fetching...';
+    if (sourceLoading) return 'Source...';
+    if (episodesLoading) return 'Episodes...';
+    return null;
   }
 }

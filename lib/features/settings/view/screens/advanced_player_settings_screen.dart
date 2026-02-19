@@ -93,7 +93,8 @@ class _AdvancedPlayerSettingsScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
+    final settings = ref.watch(playerSettingsProvider);
+    final notifier = ref.read(playerSettingsProvider.notifier);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton.filledTonal(
@@ -119,6 +120,15 @@ class _AdvancedPlayerSettingsScreenState
               title: 'Common Configuration',
               titleColor: colorScheme.primary,
               children: [
+                SliderSettingsItem(
+                  title: "Buffer Size",
+                  icon: Icon(Icons.cached_rounded),
+                  description: '${settings.bufferSize.toInt()} MB',
+                  value: settings.bufferSize,
+                  onChanged: (value) => notifier.updateSettings(
+                    (s) => s.copyWith(bufferSize: value),
+                  ),
+                ),
                 DropdownSettingsItem(
                   title: 'Hardware Decoding',
                   description: 'hwdec',

@@ -23,7 +23,7 @@ types:
         index: 6
   PlayerModel:
     typeId: 4
-    nextIndex: 8
+    nextIndex: 9
     fields:
       defaultQuality:
         index: 0
@@ -41,6 +41,8 @@ types:
         index: 6
       mpvSettings:
         index: 7
+      bufferSize:
+        index: 8
   HomePageModel:
     typeId: 5
     nextIndex: 2

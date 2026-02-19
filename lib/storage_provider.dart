@@ -5,6 +5,7 @@ import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:shonenx/data/isar/chapter.dart';
+import 'package:shonenx/data/isar/external_track_binding.dart';
 import 'package:shonenx/data/isar/manga.dart';
 import 'package:shonenx/data/isar/track.dart';
 import 'package:shonenx/data/isar/isar_anime_watch_progress.dart';
@@ -69,6 +70,7 @@ class StorageProvider {
         SourcePreferenceStringValueSchema,
         BridgeSettingsSchema,
         IsarAnimeWatchProgressSchema,
+        ExternalTrackBindingSchema,
       ],
       directory: dir!.path,
       name: "shonenxDb",

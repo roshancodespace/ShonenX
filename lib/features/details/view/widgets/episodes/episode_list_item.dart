@@ -127,11 +127,14 @@ class EpisodeListItem extends StatelessWidget {
             CachedNetworkImage(
               imageUrl: fallbackUrl,
               fit: BoxFit.cover,
+              httpHeaders: {
+                "User-Agent":
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+              },
               errorWidget: (_, __, ___) => _buildFallbackIcon(theme),
             )
           else
             Container(color: theme.colorScheme.surfaceContainer),
-
           // Ep Number Overlay
           Positioned(
             left: 4,

@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/details/view/widgets/comments_bottom_sheet.dart';
+import 'package:shonenx/features/details/view/widgets/tracker/tracker_selection_sheet.dart';
+import 'package:shonenx/features/details/view_model/external_tracker_notifier.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
 import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
 import 'package:shonenx/features/details/view_model/local_tracker_notifier.dart';
@@ -223,7 +225,10 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
           ),
           onPressed: () => CommentsBottomSheet.show(context, widget.anime),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
+        // ─── Track Button ───
+        _TrackButton(anime: widget.anime),
+        const SizedBox(width: 4),
         isLoading
             ? const Padding(
                 padding: EdgeInsets.all(12.0),
@@ -247,7 +252,7 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                     : 'Add to favourites',
                 onPressed: toggleFavorite,
               ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
         IconButton(
           icon: const Icon(Iconsax.add_circle, color: Colors.white, size: 30),
           tooltip: 'Add or Edit in your list',
@@ -256,6 +261,54 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
         const SizedBox(width: 8),
       ],
     );
+  }
+}
+
+/// Button that opens the tracker selection sheet.
+/// Shows current tracking status if already tracked.
+class _TrackButton extends ConsumerWidget {
+  final UniversalMedia anime;
+
+  const _TrackButton({required this.anime});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final trackerState = ref.watch(externalTrackerProvider(anime.id));
+    final statusSummary = trackerState.combinedStatusSummary;
+    final hasBinding = trackerState.hasAnyBinding && statusSummary != null;
+
+    return hasBinding
+        ? InkWell(
+            onTap: () => TrackerSelectionSheet.show(context, anime),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Iconsax.chart, color: Colors.white, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    statusSummary,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        : IconButton(
+            icon: const Icon(Iconsax.chart, color: Colors.white, size: 28),
+            tooltip: 'Track on AniList / MAL',
+            onPressed: () => TrackerSelectionSheet.show(context, anime),
+          );
   }
 }
 

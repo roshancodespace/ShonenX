@@ -5,6 +5,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/features/details/view_model/details_page_notifier.dart';
+import 'package:shonenx/features/details/view_model/external_tracker_notifier.dart';
 import 'package:shonenx/features/details/view/widgets/episodes_tab.dart';
 import 'package:shonenx/features/details/view/widgets/characters_tab.dart';
 import 'package:shonenx/features/details/view/widgets/comments_bottom_sheet.dart';
@@ -42,6 +43,8 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final id = widget.anime.id;
       ref.read(detailsPageProvider(id).notifier).init(widget.anime);
+      // Initialize external tracker state
+      ref.read(externalTrackerProvider(id).notifier).init(widget.anime);
     });
   }
 

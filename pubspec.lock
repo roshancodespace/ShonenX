@@ -369,6 +369,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.12"
+  desktop_webview_window:
+    dependency: transitive
+    description:
+      name: desktop_webview_window
+      sha256: "57cf20d81689d5cbb1adfd0017e96b669398a669d927906073b0e42fc64111c0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.3"
   device_apps:
     dependency: transitive
     description:
@@ -759,11 +767,10 @@ packages:
   flutter_web_auth_2:
     dependency: "direct main"
     description:
-      path: flutter_web_auth_2
-      ref: master
-      resolved-ref: c693b72513aae96b47ebdcc4a4ed97e851b45507
-      url: "https://github.com/aayush2622/flutter_web_auth.git"
-    source: git
+      name: flutter_web_auth_2
+      sha256: "432ff8c7b2834eaeec3378d99e24a0210b9ac2f453b3f7a7d739a5c09069fba3"
+      url: "https://pub.dev"
+    source: hosted
     version: "5.0.1"
   flutter_web_auth_2_platform_interface:
     dependency: transitive

@@ -40,6 +40,10 @@ class EpisodeThumbnail extends StatelessWidget {
             else if (fallbackUrl != null && fallbackUrl!.isNotEmpty)
               CachedNetworkImage(
                 imageUrl: fallbackUrl!,
+                httpHeaders: {
+                  "User-Agent":
+                      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+                },
                 fit: BoxFit.cover,
                 errorWidget: (_, __, ___) => _buildFallbackIcon(theme),
               )

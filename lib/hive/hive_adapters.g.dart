@@ -73,6 +73,7 @@ class PlayerModelAdapter extends TypeAdapter<PlayerModel> {
       enableAniSkip: fields[1] == null ? true : fields[1] as bool,
       enableAutoSkip: fields[2] == null ? false : fields[2] as bool,
       preferDub: fields[3] == null ? false : fields[3] as bool,
+      bufferSize: fields[8] == null ? 32 : (fields[8] as num).toDouble(),
       seekDuration: fields[4] == null ? 10 : (fields[4] as num).toInt(),
       autoHideDuration: fields[5] == null ? 4 : (fields[5] as num).toInt(),
       showNextPrevButtons: fields[6] == null ? true : fields[6] as bool,
@@ -85,7 +86,7 @@ class PlayerModelAdapter extends TypeAdapter<PlayerModel> {
   @override
   void write(BinaryWriter writer, PlayerModel obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.defaultQuality)
       ..writeByte(1)
@@ -101,7 +102,9 @@ class PlayerModelAdapter extends TypeAdapter<PlayerModel> {
       ..writeByte(6)
       ..write(obj.showNextPrevButtons)
       ..writeByte(7)
-      ..write(obj.mpvSettings);
+      ..write(obj.mpvSettings)
+      ..writeByte(8)
+      ..write(obj.bufferSize);
   }
 
   @override

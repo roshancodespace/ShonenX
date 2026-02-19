@@ -13,9 +13,9 @@ class AniListAuthService {
   Future<String?> authenticate() async {
     try {
       final result = await FlutterWebAuth2.authenticate(
-        url:
-            '$authUrl?client_id=$clientId&redirect_uri=$redirectUri&response_type=code',
-        callbackUrlScheme: 'shonenx',
+        url: '$authUrl?client_id=$clientId&response_type=code',
+        callbackUrlScheme: 'shonenx://callback',
+        options: FlutterWebAuth2Options(useWebview: true),
       );
 
       final code = Uri.parse(result).queryParameters['code'];

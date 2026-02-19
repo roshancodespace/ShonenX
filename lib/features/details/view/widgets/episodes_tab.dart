@@ -495,7 +495,6 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
           widget.mediaTitle.native)!,
       animeFormat: widget.mediaFormat,
       animeCover: widget.mediaCover,
-      ref: ref,
       context: context,
       episodes: episodes,
       currentEpisode: ep.number ?? 1,

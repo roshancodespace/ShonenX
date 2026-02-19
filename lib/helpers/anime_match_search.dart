@@ -1,5 +1,4 @@
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
@@ -34,7 +33,6 @@ Future<BaseAnimeModel?> providerAnimeMatchSearch({
       if (context.mounted) {
         navigateToWatch(
           context: context,
-          ref: ref,
           mediaId: animeMedia.id.toString(),
           animeId: restoredAnime.id!,
           animeName: restoredAnime.name ?? 'Unknown',

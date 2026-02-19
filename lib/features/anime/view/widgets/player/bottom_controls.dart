@@ -1,14 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:iconsax/iconsax.dart';
-import 'package:go_router/go_router.dart';
+
 import 'package:shonenx/core/models/aniskip/aniskip_result.dart';
+import 'package:shonenx/core/utils/formatter.dart';
 import 'package:shonenx/features/anime/view_model/aniskip_notifier.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/player_provider.dart';
-import 'package:shonenx/core/models/settings/player_model.dart';
+import 'package:shonenx/helpers/show_subtitle_sidebar.dart';
 import 'package:shonenx/shared/providers/settings/player_notifier.dart';
-import 'package:shonenx/core/utils/formatter.dart';
 
 class BottomControls extends ConsumerStatefulWidget {
   final VoidCallback onInteraction;
@@ -38,176 +39,142 @@ class BottomControls extends ConsumerStatefulWidget {
 
 class _BottomControlsState extends ConsumerState<BottomControls> {
   double? _draggedValue;
+  double _dragPositionX = 0.0;
 
-  VoidCallback _wrap(VoidCallback? cb) {
-    return () {
-      cb?.call();
-      widget.onInteraction();
-    };
-  }
-
-  T _watch<T>(WidgetRef ref, T Function(EpisodeDataState s) sel) {
-    return ref.watch(episodeDataProvider.select(sel));
-  }
-
-  PlayerModel _watchSettings(WidgetRef ref) {
-    return ref.watch(playerSettingsProvider);
-  }
+  // VoidCallback _wrap(VoidCallback? cb) {
+  //   return () {
+  //     cb?.call();
+  //     widget.onInteraction();
+  //   };
+  // }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    // final settings = ref.watch(playerSettingsProvider);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
-          colors: [
-            Colors.black.withOpacity(0.9),
-            Colors.black.withOpacity(0.5),
-            Colors.transparent,
-          ],
-          stops: const [0.0, 0.6, 1.0],
+          colors: [Colors.black, Colors.black87, Colors.transparent],
+          stops: [0.0, 0.6, 1.0],
         ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              _buildAniSkip(scheme),
-              if (_watch(ref, (s) => s.sources.isNotEmpty))
-                Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: _pill(
-                    rounded: true,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    fontSize: 14,
-                    text: '+85s',
-                    onTap: widget.onForwardPressed,
-                    color: scheme.primary,
-                    textColor: Colors.black,
-                    icon: Iconsax.forward,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          _buildProgressBar(context, scheme),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (_watchSettings(ref).showNextPrevButtons) ...[
-                    _icon(
-                      Iconsax.previous,
-                      () => ref
-                          .read(episodeDataProvider.notifier)
-                          .changeEpisode(null, by: -1),
-                    ),
+                  _buildAniSkip(scheme),
+                  if (ref.watch(
+                    episodeDataProvider.select((s) => s.sources.isNotEmpty),
+                  )) ...[
                     const SizedBox(width: 8),
-                  ],
-                  _buildPlayPause(ref),
-                  if (_watchSettings(ref).showNextPrevButtons) ...[
-                    const SizedBox(width: 8),
-                    _icon(
-                      Iconsax.next,
-                      () => ref
-                          .read(episodeDataProvider.notifier)
-                          .changeEpisode(null, by: 1),
+                    _FlatActionBtn(
+                      text: '+85s',
+                      icon: Icons.fast_forward_rounded,
+                      onTap: widget.onForwardPressed,
+                      color: Colors.white24,
+                      textColor: Colors.white,
                     ),
                   ],
-                  const SizedBox(width: 16),
-                  _buildTime(ref),
                 ],
               ),
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  reverse: true,
-                  child: Row(
-                    children: [
-                      if (_watch(ref, (s) => s.servers.isNotEmpty)) ...[
-                        _pill(
-                          fontSize: 12,
-                          text: _watch(
-                            ref,
-                            (s) =>
-                                s.selectedServer?.isDub == true ? 'DUB' : 'SUB',
+            ),
+
+            _buildEdgeScrubber(context, scheme),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 4, 10, 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildTimeDisplay(),
+
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      reverse: true,
+                      physics: const ClampingScrollPhysics(),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _FlatTextBtn(
+                            text: ref.watch(
+                              episodeDataProvider.select(
+                                (s) => s.selectedServer?.isDub == true
+                                    ? 'DUB'
+                                    : 'SUB',
+                              ),
+                            ),
+                            onTap: () => ref
+                                .read(episodeDataProvider.notifier)
+                                .toggleDubSub(),
+                            isAccent: true,
+                            scheme: scheme,
                           ),
-                          onTap: () => ref
-                              .read(episodeDataProvider.notifier)
-                              .toggleDubSub(),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                      if (_watch(
-                        ref,
-                        (s) =>
-                            s.servers.isNotEmpty &&
-                            s.servers.any((e) => e.id != s.servers.first.id),
-                      ))
-                        _pill(
-                          fontSize: 12,
-                          icon: Iconsax.cloud,
-                          text: _watch(
-                            ref,
-                            (s) =>
-                                s.selectedServer?.id?.toUpperCase() ?? 'SERVER',
+                          _FlatTextBtn(
+                            text: ref.watch(
+                              episodeDataProvider.select(
+                                (s) =>
+                                    s.selectedServer?.id?.toUpperCase() ??
+                                    'SERVER',
+                              ),
+                            ),
+                            onTap: widget.onServerPressed,
                           ),
-                          onTap: widget.onServerPressed,
-                        ),
-                      if (_watch(ref, (s) => s.sources.length) > 1)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: _pill(
-                            fontSize: 12,
-                            icon: Icons.source_rounded,
-                            text: _watch(ref, (s) {
-                              final idx = s.selectedSourceIdx ?? 0;
-                              return (idx >= 0 && idx < s.sources.length)
-                                  ? s.sources[idx].quality ?? 'Auto'
-                                  : 'Auto';
-                            }),
+                          _FlatTextBtn(
+                            text: ref.watch(
+                              episodeDataProvider.select(
+                                (s) => s.selectedSourceIdx != null
+                                    ? (s.sources[s.selectedSourceIdx!].quality
+                                              ?.toUpperCase() ??
+                                          'SOURCE')
+                                    : 'SOURCE',
+                              ),
+                            ),
                             onTap: widget.onSourcePressed,
                           ),
-                        ),
-                      const SizedBox(width: 4),
-                      _icon(
-                        _watch(ref, (s) => s.selectedSubtitleIdx != 0)
-                            ? Iconsax.subtitle5
-                            : Iconsax.subtitle,
-                        widget.onSubtitlePressed,
-                        onLong: () =>
-                            context.push('/settings/player/subtitles'),
+                          _ToolbarIcon(
+                            icon: Icons.lock_outline_rounded,
+                            onTap: widget.onLockPressed,
+                          ),
+                          _ToolbarIcon(
+                            icon: Icons.subtitles_rounded,
+                            onTap: widget.onSubtitlePressed,
+                            onHold: () => showSubtitleSettings(context),
+                          ),
+                          _ToolbarIcon(
+                            icon: Icons.view_list_rounded,
+                            onTap: widget.onEpisodePressed,
+                          ),
+                          if (!(Platform.isAndroid || Platform.isIOS))
+                            _ToolbarIcon(
+                              icon: Icons.fullscreen_rounded,
+                              onTap: widget.onFullScreenPressed,
+                            ),
+                        ],
                       ),
-                      _icon(Icons.lock_rounded, widget.onLockPressed),
-                      _icon(
-                        Icons.fullscreen_rounded,
-                        widget.onFullScreenPressed,
-                      ),
-                      _icon(Icons.view_list_rounded, widget.onEpisodePressed),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildProgressBar(BuildContext context, ColorScheme scheme) {
+  Widget _buildEdgeScrubber(BuildContext context, ColorScheme scheme) {
     final (pos, dur, buf) = ref.watch(
       playerStateProvider.select((p) => (p.position, p.duration, p.buffer)),
     );
@@ -217,89 +184,98 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
       max,
     );
     final buffer = buf.inMilliseconds.toDouble().clamp(0, max);
+    final isDragging = _draggedValue != null;
 
-    return SizedBox(
-      height: 20,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          LayoutBuilder(
-            builder: (context, box) {
-              return Stack(
-                alignment: Alignment.centerLeft,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  Container(
-                    width: box.maxWidth * (buffer / max),
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  ..._buildHighlights(scheme, max, box.maxWidth),
-                ],
-              );
-            },
-          ),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              trackShape: const _NoPaddingTrackShape(),
-              thumbShape: SliderComponentShape.noThumb,
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-              trackHeight: 4,
-              activeTrackColor: scheme.primary,
-              inactiveTrackColor: Colors.transparent,
-            ),
-            child: Slider(
-              value: value.toDouble(),
-              max: max,
-              onChanged: (val) {
-                setState(() => _draggedValue = val);
-                widget.onInteraction();
-              },
-              onChangeEnd: (val) {
-                ref
-                    .read(playerStateProvider.notifier)
-                    .seek(Duration(milliseconds: val.round()));
-                setState(() => _draggedValue = null);
-                widget.onInteraction();
-              },
-            ),
-          ),
-
-          Positioned.fill(
-            child: LayoutBuilder(
-              builder: (_, constraints) {
-                final dx = constraints.maxWidth * (value / max);
-                return IgnorePointer(
-                  child: Align(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragStart: (details) => widget.onInteraction(),
+          onHorizontalDragUpdate: (details) {
+            final percent = (details.localPosition.dx / constraints.maxWidth)
+                .clamp(0.0, 1.0);
+            setState(() {
+              _draggedValue = percent * max;
+              _dragPositionX = details.localPosition.dx;
+            });
+            widget.onInteraction();
+          },
+          onHorizontalDragEnd: (details) {
+            if (_draggedValue != null) {
+              ref
+                  .read(playerStateProvider.notifier)
+                  .seek(Duration(milliseconds: _draggedValue!.round()));
+              setState(() => _draggedValue = null);
+              widget.onInteraction();
+            }
+          },
+          onTapDown: (details) {
+            final percent = (details.localPosition.dx / constraints.maxWidth)
+                .clamp(0.0, 1.0);
+            ref
+                .read(playerStateProvider.notifier)
+                .seek(Duration(milliseconds: (percent * max).round()));
+            widget.onInteraction();
+          },
+          child: SizedBox(
+            height: 10,
+            child: Stack(
+              alignment: Alignment.centerLeft,
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  height: isDragging ? 6 : 3,
+                  width: double.infinity,
+                  color: Colors.white24,
+                  child: Stack(
                     alignment: Alignment.centerLeft,
-                    child: Transform.translate(
-                      offset: Offset(dx - 3, 0),
-                      child: Container(
-                        width: 6,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: scheme.primary,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
+                    children: [
+                      FractionallySizedBox(
+                        widthFactor: buffer / max,
+                        child: Container(color: Colors.white38),
+                      ),
+                      ..._buildHighlights(scheme, max, constraints.maxWidth),
+                      FractionallySizedBox(
+                        widthFactor: value / max,
+                        child: Container(color: scheme.primary),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isDragging)
+                  Positioned(
+                    left: (value / max) * constraints.maxWidth - 6,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: scheme.primary,
+                        shape: BoxShape.circle,
                       ),
                     ),
                   ),
-                );
-              },
+                if (isDragging)
+                  Positioned(
+                    left: (_dragPositionX - 25).clamp(
+                      10.0,
+                      constraints.maxWidth - 50.0,
+                    ),
+                    top: -20,
+                    child: Text(
+                      formatDuration(Duration(milliseconds: value.round())),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -310,7 +286,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
   ) {
     final skips = ref.watch(aniSkipProvider);
     final settings = ref.watch(playerSettingsProvider);
-
     if (!settings.enableAniSkip || skips.isEmpty || total <= 0) return [];
 
     return skips.map((skip) {
@@ -319,182 +294,224 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
       final end = (skip.interval!.endTime * 1000).clamp(0, total);
       if (end <= start) return const SizedBox.shrink();
 
-      final left = (start / total) * maxWidth;
-      final width = ((end - start) / total) * maxWidth;
-
       return Positioned(
-        left: left,
+        left: (start / total) * maxWidth,
+        width: ((end - start) / total) * maxWidth,
+        top: 0,
+        bottom: 0,
         child: Container(
-          width: width,
-          height: 4,
-          decoration: BoxDecoration(
-            color: skip.skipType == SkipType.op
-                ? Colors.greenAccent
-                : Colors.blueAccent,
-            borderRadius: BorderRadius.circular(2),
-          ),
+          color: skip.skipType == SkipType.op
+              ? scheme.tertiary
+              : scheme.secondary,
         ),
       );
     }).toList();
   }
 
-  Widget _buildTime(WidgetRef ref) {
+  // Widget _buildPlayPauseButton(ColorScheme scheme) {
+  //   final isPlaying = ref.watch(playerStateProvider.select((p) => p.isPlaying));
+  //   return Material(
+  //     color: Colors.transparent,
+  //     child: InkWell(
+  //       onTap: _wrap(ref.read(playerStateProvider.notifier).togglePlay),
+  //       borderRadius: BorderRadius.circular(30),
+  //       child: Padding(
+  //         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  //         child: Icon(
+  //           isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+  //           color: Colors.white,
+  //           size: 36,
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildTimeDisplay() {
     final (pos, dur) = ref.watch(
       playerStateProvider.select((p) => (p.position, p.duration)),
     );
-    return Text(
-      '${formatDuration(pos)} / ${formatDuration(dur)}',
+
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: formatDuration(pos),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const TextSpan(
+            text: '  /  ',
+            style: TextStyle(
+              color: Colors.white38,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          TextSpan(
+            text: formatDuration(dur),
+            style: const TextStyle(
+              color: Colors.white60,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
       style: const TextStyle(
-        color: Colors.white,
-        fontSize: 13,
-        fontWeight: FontWeight.w500,
+        fontSize: 12,
+        letterSpacing: 0.5,
+        // tabularFigures ensures the text width doesn't jump around as seconds tick
         fontFeatures: [FontFeature.tabularFigures()],
       ),
     );
   }
 
-  Widget _buildPlayPause(WidgetRef ref) {
-    final isPlaying = ref.watch(playerStateProvider.select((p) => p.isPlaying));
-    return InkWell(
-      onTap: _wrap(ref.read(playerStateProvider.notifier).togglePlay),
-      borderRadius: BorderRadius.circular(30),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          isPlaying ? Iconsax.pause5 : Iconsax.play5,
-          color: Colors.white,
-          size: 24,
-        ),
-      ),
-    );
-  }
-
-  Widget _icon(IconData icon, VoidCallback? onTap, {VoidCallback? onLong}) {
-    return InkWell(
-      onTap: _wrap(onTap),
-      onLongPress: _wrap(onLong),
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Icon(icon, color: Colors.white, size: 24),
-      ),
-    );
-  }
-
-  Widget _pill({
-    required String text,
-    required VoidCallback onTap,
-    bool rounded = false,
-    double fontSize = 11,
-    EdgeInsets padding = const EdgeInsets.symmetric(
-      horizontal: 12,
-      vertical: 6,
-    ),
-    Color? color,
-    Color? textColor,
-    IconData? icon,
-  }) {
-    return InkWell(
-      onTap: _wrap(onTap),
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        padding: padding,
-        decoration: BoxDecoration(
-          color: color ?? Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(rounded ? 20 : 6),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              text,
-              style: TextStyle(
-                color: textColor ?? Colors.white,
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (icon != null) ...[
-              const SizedBox(width: 4),
-              Icon(
-                icon,
-                size: fontSize * 1.4,
-                color: textColor ?? Colors.white,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildAniSkip(ColorScheme scheme) {
-    return Consumer(
-      builder: (context, ref, _) {
-        final skips = ref.watch(aniSkipProvider);
-        final settings = ref.watch(playerSettingsProvider);
-        if (!settings.enableAniSkip || skips.isEmpty) {
-          return const SizedBox.shrink();
-        }
+    final skips = ref.watch(aniSkipProvider);
+    final settings = ref.watch(playerSettingsProvider);
+    if (!settings.enableAniSkip || skips.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
-        final pos = ref.watch(playerStateProvider.select((p) => p.position));
-        final currentSkip = skips.firstWhere(
-          (s) =>
-              s.interval != null &&
-              pos >= Duration(seconds: s.interval!.startTime.toInt()) &&
-              pos < Duration(seconds: s.interval!.endTime.toInt()),
-          orElse: () => const AniSkipResultItem(
-            skipType: SkipType.unknown,
-            action: '',
-            episodeLength: 0,
-          ),
-        );
+    final pos = ref.watch(playerStateProvider.select((p) => p.position));
+    final currentSkip = skips.firstWhere(
+      (s) =>
+          s.interval != null &&
+          pos >= Duration(seconds: s.interval!.startTime.toInt()) &&
+          pos < Duration(seconds: s.interval!.endTime.toInt()),
+      orElse: () => const AniSkipResultItem(
+        skipType: SkipType.unknown,
+        action: '',
+        episodeLength: 0,
+      ),
+    );
 
-        if (currentSkip.interval == null) return const SizedBox.shrink();
+    if (currentSkip.interval == null) return const SizedBox.shrink();
 
-        return _pill(
-          rounded: true,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          fontSize: 14,
-          text: 'Skip ${currentSkip.skipType.name.toUpperCase()}',
-          onTap: () {
-            ref
-                .read(playerStateProvider.notifier)
-                .seek(
-                  Duration(seconds: currentSkip.interval!.endTime.toInt() + 1),
-                );
-            widget.onInteraction();
-          },
-          color: Colors.white,
-          textColor: Colors.black,
-          icon: Icons.skip_next,
-        );
+    return _FlatActionBtn(
+      text: 'Skip ${currentSkip.skipType.name.toUpperCase()}',
+      icon: Icons.fast_forward_rounded,
+      onTap: () {
+        ref
+            .read(playerStateProvider.notifier)
+            .seek(Duration(seconds: currentSkip.interval!.endTime.toInt() + 1));
+        widget.onInteraction();
       },
+      color: scheme.primary,
+      textColor: scheme.onPrimary,
     );
   }
 }
 
-class _NoPaddingTrackShape extends RoundedRectSliderTrackShape {
-  const _NoPaddingTrackShape();
+class _ToolbarIcon extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  final VoidCallback? onHold;
+
+  const _ToolbarIcon({required this.icon, this.onTap, this.onHold});
 
   @override
-  Rect getPreferredRect({
-    required RenderBox parentBox,
-    Offset offset = Offset.zero,
-    required SliderThemeData sliderTheme,
-    bool isEnabled = false,
-    bool isDiscrete = false,
-  }) {
-    final double trackHeight = sliderTheme.trackHeight!;
-    final double trackLeft = offset.dx;
-    final double trackTop =
-        offset.dy + (parentBox.size.height - trackHeight) / 2;
-    final double trackWidth = parentBox.size.width;
-    return Rect.fromLTWH(trackLeft, trackTop, trackWidth, trackHeight);
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onHold,
+        customBorder: const CircleBorder(),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Icon(icon, color: Colors.white, size: 24),
+        ),
+      ),
+    );
+  }
+}
+
+class _FlatTextBtn extends StatelessWidget {
+  final String text;
+  final VoidCallback onTap;
+  final bool isAccent;
+  final ColorScheme? scheme;
+
+  const _FlatTextBtn({
+    required this.text,
+    required this.onTap,
+    this.isAccent = false,
+    this.scheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: Material(
+        color: isAccent
+            ? scheme?.primary.withOpacity(0.15)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(4),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Text(
+              text,
+              style: TextStyle(
+                color: isAccent ? scheme?.primary : Colors.white70,
+                fontSize: 12,
+                fontWeight: isAccent ? FontWeight.w900 : FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FlatActionBtn extends StatelessWidget {
+  final String text;
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color color;
+  final Color textColor;
+
+  const _FlatActionBtn({
+    required this.text,
+    required this.icon,
+    required this.onTap,
+    required this.color,
+    required this.textColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color,
+      borderRadius: BorderRadius.circular(6),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: textColor, size: 16),
+              const SizedBox(width: 4),
+              Text(
+                text,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

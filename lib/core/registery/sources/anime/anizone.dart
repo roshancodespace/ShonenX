@@ -71,7 +71,6 @@ class AnizoneProvider implements AnimeProvider {
     String? malId,
   }) async {
     final url = "$baseUrl/anime/${animeId.split('/').last}/1";
-    print(url);
     final res = await UniversalHttpClient.instance.get(
       Uri.parse(url),
       cacheConfig: CacheConfig.medium,

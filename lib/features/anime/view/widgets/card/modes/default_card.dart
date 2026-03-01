@@ -48,8 +48,8 @@ class DefaultCard extends StatelessWidget {
                 colors: [
                   Colors.transparent,
                   Colors.transparent,
-                  Colors.black.withOpacity(0.4),
-                  Colors.black.withOpacity(0.95),
+                  Colors.black.withValues(alpha: 0.4),
+                  Colors.black.withValues(alpha: 0.95),
                 ],
                 stops: const [0.0, 0.4, 0.7, 1.0],
               ),
@@ -90,15 +90,15 @@ class DefaultCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withOpacity(0.9),
+        color: colorScheme.primaryContainer.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: colorScheme.onPrimaryContainer.withOpacity(0.1),
+          color: colorScheme.onPrimaryContainer.withValues(alpha: 0.1),
           width: 0.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

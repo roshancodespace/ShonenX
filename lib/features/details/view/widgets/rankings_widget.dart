@@ -6,10 +6,7 @@ import 'package:shonenx/core/models/universal/universal_media.dart';
 class AnimeRankings extends StatelessWidget {
   final List<UniversalMediaRanking> rankings;
 
-  const AnimeRankings({
-    super.key,
-    required this.rankings,
-  });
+  const AnimeRankings({super.key, required this.rankings});
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +20,9 @@ class AnimeRankings extends StatelessWidget {
           child: Text(
             'Achievements', // Renamed from Rankings for flair
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -60,12 +57,12 @@ class RankingPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: isTop100
             ? colorScheme.primaryContainer
-            : colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isTop100
-              ? colorScheme.primary.withOpacity(0.5)
-              : colorScheme.outline.withOpacity(0.1),
+              ? colorScheme.primary.withValues(alpha: 0.5)
+              : colorScheme.outline.withValues(alpha: 0.1),
         ),
       ),
       child: Row(

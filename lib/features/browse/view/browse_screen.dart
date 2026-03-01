@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/core/models/universal/universal_page_response.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
@@ -97,9 +98,9 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
 
       if (mounted) {
         setState(() {
-          _trending = results[0];
-          _popular = results[1];
-          _upcoming = results[2];
+          _trending = results[0].data;
+          _popular = results[1].data;
+          _upcoming = results[2].data;
           _isExploreLoading = false;
         });
       }
@@ -298,7 +299,7 @@ class _Header extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(0.7),
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -350,7 +351,7 @@ class _SearchBar extends StatelessWidget {
         border: Border.all(
           color: isSearchFocused
               ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
           width: isSearchFocused ? 2 : 1,
         ),
       ),
@@ -363,13 +364,17 @@ class _SearchBar extends StatelessWidget {
           decoration: InputDecoration(
             hintText: 'Search anime titles...',
             hintStyle: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
             ),
             prefixIcon: Icon(
               Iconsax.search_normal,
               color: isSearchFocused
                   ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                  : Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.5),
             ),
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
@@ -389,7 +394,7 @@ class _SearchBar extends StatelessWidget {
                         ? Theme.of(context).colorScheme.primary
                         : Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.5),
+                          ).colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                   onPressed: onFilter,
                 ),
@@ -502,7 +507,9 @@ class _EmptyState extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -522,7 +529,9 @@ class _EmptyState extends StatelessWidget {
             Text(
               'Enter an anime title to discover amazing series',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
               textAlign: TextAlign.center,
             ),
@@ -562,7 +571,9 @@ class _LoadingIndicator extends StatelessWidget {
           Text(
             'Loading more...',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -638,7 +649,7 @@ class _HorizontalSection extends ConsumerWidget {
                 ),
                 onPressed: () {
                   final repo = ref.read(animeRepositoryProvider);
-                  Future<List<UniversalMedia>> Function({
+                  Future<UniversalPageResponse<UniversalMedia>> Function({
                     int page,
                     int perPage,
                   })?
@@ -672,7 +683,7 @@ class _HorizontalSection extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10),
             scrollDirection: Axis.horizontal,
             itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final anime = items[index];
               final tag = 'browse-$title-${anime.id}';

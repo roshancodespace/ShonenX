@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/services/anilist/anilist_service.dart';
 export 'package:shonenx/core/services/anilist/anilist_service.dart';
-import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
 import 'package:shonenx/shared/providers/settings/content_settings_notifier.dart';
@@ -11,8 +10,7 @@ final anilistServiceProvider = Provider<AnilistService>((ref) {
     getAuthContext: () {
       final authState = ref.read(authProvider);
 
-      if (!authState.isAniListAuthenticated ||
-          authState.activePlatform != AuthPlatform.anilist) {
+      if (!authState.isAniListAuthenticated) {
         AppLogger.w('Anilist operation requires a logged-in Anilist user.');
         return null;
       }
@@ -22,7 +20,8 @@ final anilistServiceProvider = Provider<AnilistService>((ref) {
 
       if (userId == null || accessToken == null || accessToken.isEmpty) {
         AppLogger.w(
-            'Invalid user ID or access token for authenticated operation.');
+          'Invalid user ID or access token for authenticated operation.',
+        );
         return null;
       }
       return (userId: userId.toString(), accessToken: accessToken);

@@ -5,31 +5,21 @@ import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
 import 'package:shonenx/core/models/universal/universal_page_response.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
-import 'package:shonenx/core/services/myanimelist/auth_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/browse/model/search_filter.dart';
+import 'package:shonenx/shared/providers/tracker/tracker_service.dart';
+import 'package:shonenx/core/models/tracker/tracker_type.dart';
+import 'package:shonenx/core/models/tracker/tracker_exception.dart';
 
-class MyAnimeListServiceException implements Exception {
-  final String message;
-  final dynamic error;
-  MyAnimeListServiceException(this.message, [this.error]);
-
-  @override
-  String toString() =>
-      'MyAnimeListServiceException: $message${error != null ? ' ($error)' : ''}';
-}
-
-class MyAnimeListService implements AnimeRepository {
-  final MyAnimeListAuthService _authService;
+class MyAnimeListService implements AnimeRepository, TrackerService {
   final String? Function() _getAccessTokenCallback;
   final bool Function() _getShowAdultCallback;
-  final Future<void> Function() _onTokenRefreshCallback;
+  final Future<bool> Function() _onTokenRefreshCallback;
 
-  MyAnimeListService(
-    this._authService, {
+  MyAnimeListService({
     required String? Function() getAccessToken,
     required bool Function() getShowAdult,
-    required Future<void> Function() onTokenRefresh,
+    required Future<bool> Function() onTokenRefresh,
   }) : _getAccessTokenCallback = getAccessToken,
        _getShowAdultCallback = getShowAdult,
        _onTokenRefreshCallback = onTokenRefresh;
@@ -37,74 +27,110 @@ class MyAnimeListService implements AnimeRepository {
   @override
   String get name => 'MyAnimeList';
 
+  @override
+  TrackerType get type => TrackerType.mal;
+
   String? _getAccessToken() => _getAccessTokenCallback();
 
   bool _getShowAdult() => _getShowAdultCallback();
 
+  List<UniversalMedia> _parseMediaList(List<dynamic>? media) {
+    if (media == null) return [];
+    return media
+        .map((e) => UniversalMedia.fromMal(e['node'] as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<Map<String, dynamic>> _get(
     String url, {
     Map<String, String>? headers,
+    String operationName = 'GET',
   }) async {
-    final token = _getAccessToken();
-    if (token == null) throw Exception('User not authenticated');
+    try {
+      final token = _getAccessToken();
+      if (token == null) throw TrackerException('User not authenticated');
+      final endpoint = Uri.parse(url).pathSegments.last;
 
-    final res = await UniversalHttpClient.instance.get(
-      Uri.parse(url),
-      headers: {'Authorization': 'Bearer $token', ...?headers},
-    );
+      final res = await UniversalHttpClient.instance.get(
+        Uri.parse(url),
+        headers: {'Authorization': 'Bearer $token', ...?headers},
+      );
 
-    if (res.statusCode == 401) {
-      // token expired, refresh
-      final refreshed = await _authService.refreshToken();
-      if (refreshed != null) {
-        // update state
-        await _onTokenRefreshCallback();
-        return _get(url, headers: headers);
+      if (res.statusCode == 401) {
+        // token expired, refresh
+        AppLogger.i('[MAL] Token expired, refreshing for $operationName...');
+        final refreshed = await _onTokenRefreshCallback();
+        if (refreshed) {
+          return _get(url, headers: headers, operationName: operationName);
+        } else {
+          throw TrackerException(
+            'Authentication failed: Refresh token expired.',
+          );
+        }
       }
-    }
 
-    if (res.statusCode != 200) {
-      throw MyAnimeListServiceException('GET request failed: ${res.body}');
-    }
+      if (res.statusCode != 200) {
+        throw TrackerException('$operationName request failed: ${res.body}');
+      }
 
-    return jsonDecode(res.body) as Map<String, dynamic>;
+      AppLogger.success('[MAL] $operationName $endpoint ✓');
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } catch (e, st) {
+      AppLogger.e('[MAL] $operationName error', e, st);
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> _put(
     String url,
-    Map<String, String> body,
-  ) async {
-    final token = _getAccessToken();
-    if (token == null) throw Exception('User not authenticated');
+    Map<String, String> body, {
+    String operationName = 'PATCH',
+  }) async {
+    try {
+      final token = _getAccessToken();
+      if (token == null) throw TrackerException('User not authenticated');
+      final endpoint = Uri.parse(url).pathSegments.last;
+      AppLogger.i('[MAL] $operationName $endpoint | $body');
 
-    final res = await UniversalHttpClient.instance.put(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: body,
-    );
+      final res = await UniversalHttpClient.instance.patch(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: body,
+      );
 
-    if (res.statusCode == 401) {
-      final refreshed = await _authService.refreshToken();
-      if (refreshed != null) {
-        await _onTokenRefreshCallback();
-        return _put(url, body);
+      if (res.statusCode == 401) {
+        AppLogger.i('[MAL] Token expired, refreshing for $operationName...');
+        final refreshed = await _onTokenRefreshCallback();
+        if (refreshed) {
+          return _put(url, body, operationName: operationName);
+        } else {
+          throw TrackerException(
+            'Authentication failed: Refresh token expired.',
+          );
+        }
       }
-    }
 
-    if (res.statusCode != 200) {
-      throw MyAnimeListServiceException('PUT request failed: ${res.body}');
-    }
+      if (res.statusCode != 200) {
+        throw TrackerException('$operationName request failed: ${res.body}');
+      }
 
-    return jsonDecode(res.body) as Map<String, dynamic>;
+      AppLogger.success('[MAL] $operationName $endpoint ✓');
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } catch (e, st) {
+      AppLogger.e('[MAL] $operationName error', e, st);
+      rethrow;
+    }
   }
 
   // ---------------------- USER PROFILE ----------------------
   Future<Map<String, dynamic>> getUserProfile() async {
-    final data = await _get('https://api.myanimelist.net/v2/users/@me');
-    return data;
+    return await _get(
+      'https://api.myanimelist.net/v2/users/@me',
+      operationName: 'GetUserProfile',
+    );
   }
 
   // ---------------------- USER ANIME LIST ----------------------
@@ -115,37 +141,60 @@ class MyAnimeListService implements AnimeRepository {
     required int page,
     required int perPage,
   }) async {
-    final endpoint = type == "MANGA" ? "mangalist" : "animelist";
-    final url =
-        'https://api.myanimelist.net/v2/users/@me/$endpoint?status=$status&limit=$perPage&offset=${(page - 1) * perPage}&fields=list_status,num_episodes,start_season,average_mean_score';
-    final data = await _get(url);
+    try {
+      final endpoint = type == "MANGA" ? "mangalist" : "animelist";
+      final offset = (page - 1) * perPage;
+      final url =
+          'https://api.myanimelist.net/v2/users/@me/$endpoint?status=$status&limit=$perPage&offset=$offset&fields=list_status,num_episodes,start_season,average_mean_score';
 
-    final list = (data['data'] as List<dynamic>? ?? [])
-        .map((e) => UniversalMediaListEntry.fromMal(e as Map<String, dynamic>))
-        .toList();
+      final data = await _get(url, operationName: 'GetUserAnimeList');
 
-    final hasNextPage = data['paging']?['next'] != null;
+      final list = (data['data'] as List<dynamic>? ?? [])
+          .map(
+            (e) => UniversalMediaListEntry.fromMal(e as Map<String, dynamic>),
+          )
+          .toList();
 
-    return UniversalPageResponse(
-      pageInfo: UniversalPageInfo(
-        total: -1,
-        currentPage: page,
-        lastPage: hasNextPage ? page + 1 : page,
-        hasNextPage: hasNextPage,
-        perPage: perPage,
-      ),
-      data: list,
-    );
+      final hasNextPage = data['paging']?['next'] != null;
+
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: -1,
+          currentPage: page,
+          lastPage: hasNextPage ? page + 1 : page,
+          hasNextPage: hasNextPage,
+          perPage: perPage,
+        ),
+        data: list,
+      );
+    } catch (e) {
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: 0,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage,
+        ),
+        data: [],
+      );
+    }
   }
 
   // ---------------------- ANIME DETAILS ----------------------
   @override
   Future<UniversalMedia?> getAnimeDetails(int animeId) async {
-    const fields =
-        'id,title,main_picture,alternative_titles,start_date,end_date,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,nsfw,created_at,updated_at,media_type,status,genres,my_list_status,num_episodes,start_season,broadcast,source,average_episode_duration,rating,pictures,background,related_anime,related_manga,recommendations,studios,statistics';
-    final url = 'https://api.myanimelist.net/v2/anime/$animeId?fields=$fields';
-    final data = await _get(url);
-    return UniversalMedia.fromMal(data);
+    try {
+      const fields =
+          'id,title,main_picture,alternative_titles,start_date,end_date,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,nsfw,created_at,updated_at,media_type,status,genres,my_list_status,num_episodes,start_season,broadcast,source,average_episode_duration,rating,pictures,background,related_anime,related_manga,recommendations,studios,statistics';
+      final url =
+          'https://api.myanimelist.net/v2/anime/$animeId?fields=$fields';
+
+      final data = await _get(url, operationName: 'GetAnimeDetails');
+      return UniversalMedia.fromMal(data);
+    } catch (e) {
+      return null;
+    }
   }
 
   // ---------------------- FAVORITES ----------------------
@@ -154,36 +203,47 @@ class MyAnimeListService implements AnimeRepository {
     int page = 1,
     int perPage = 25,
   }) async {
-    final url =
-        'https://api.myanimelist.net/v2/users/@me/favorites'
-        '?limit=$perPage'
-        '&offset=${(page - 1) * perPage}'
-        '&fields=list_status,num_episodes,start_season,average_mean_score';
+    try {
+      final offset = (page - 1) * perPage;
+      final url =
+          'https://api.myanimelist.net/v2/users/@me/favorites'
+          '?limit=$perPage'
+          '&offset=$offset'
+          '&fields=list_status,num_episodes,start_season,average_mean_score';
 
-    final data = await _get(url);
+      final data = await _get(url, operationName: 'GetFavorites');
+      final list = _parseMediaList(data['data'] as List<dynamic>?);
 
-    final list = (data['data'] as List<dynamic>? ?? [])
-        .map((e) => UniversalMedia.fromMal(e['node'] as Map<String, dynamic>))
-        .toList();
+      final paging = data['paging'] as Map<String, dynamic>?;
+      final hasNextPage = paging?['next'] != null;
 
-    final paging = data['paging'] as Map<String, dynamic>?;
-    final hasNextPage = paging?['next'] != null;
-
-    return UniversalPageResponse(
-      pageInfo: UniversalPageInfo(
-        total: -1,
-        currentPage: page,
-        lastPage: hasNextPage ? page + 1 : page,
-        hasNextPage: hasNextPage,
-        perPage: perPage,
-      ),
-      data: list,
-    );
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: -1,
+          currentPage: page,
+          lastPage: hasNextPage ? page + 1 : page,
+          hasNextPage: hasNextPage,
+          perPage: perPage,
+        ),
+        data: list,
+      );
+    } catch (e) {
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: 0,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage,
+        ),
+        data: [],
+      );
+    }
   }
 
   @override
   Future<List<UniversalMedia>> toggleFavorite(int animeId) async {
-    throw UnimplementedError();
+    throw UnimplementedError("MAL API doesn't support toggling favorites yet.");
   }
 
   // ---------------------- SEARCH ----------------------
@@ -194,16 +254,18 @@ class MyAnimeListService implements AnimeRepository {
     int perPage = 10,
     SearchFilter? filter,
   }) async {
-    final offset = (page - 1) * perPage;
-    final nsfwStub = _getShowAdult() ? '&nsfw=true' : '';
+    try {
+      final offset = (page - 1) * perPage;
+      final nsfwStub = _getShowAdult() ? '&nsfw=true' : '';
 
-    final url =
-        'https://api.myanimelist.net/v2/anime?q=$title&limit=$perPage&offset=$offset&fields=num_episodes,status,mean,media_type$nsfwStub';
-    final data = await _get(url);
+      final url =
+          'https://api.myanimelist.net/v2/anime?q=$title&limit=$perPage&offset=$offset&fields=num_episodes,status,mean,media_type$nsfwStub';
 
-    return (data['data'] as List<dynamic>? ?? [])
-        .map((e) => UniversalMedia.fromMal(e['node'] as Map<String, dynamic>))
-        .toList();
+      final data = await _get(url, operationName: 'SearchAnime');
+      return _parseMediaList(data['data'] as List<dynamic>?);
+    } catch (e) {
+      return [];
+    }
   }
 
   @override
@@ -232,40 +294,77 @@ class MyAnimeListService implements AnimeRepository {
   // ---------------------- SINGLE ENTRY ----------------------
   @override
   Future<UniversalMediaListEntry?> getAnimeEntry(int animeId) async {
-    // Only works if the anime is in the user's list
-    final url =
-        'https://api.myanimelist.net/v2/users/@me/animelist/$animeId?fields=list_status';
     try {
-      final data = await _get(url);
-      return UniversalMediaListEntry.fromMal({'node': data});
-    } catch (e) {
-      if (e is MyAnimeListServiceException && e.message.contains('404')) {
+      final url =
+          'https://api.myanimelist.net/v2/anime/$animeId?fields=my_list_status,num_episodes,main_picture,title,alternative_titles,synopsis,media_type,status,genres,start_date,end_date,mean';
+
+      final data = await _get(url, operationName: 'GetAnimeEntry');
+
+      final myListStatus = data['my_list_status'];
+      if (myListStatus == null) {
         return null;
       }
-      AppLogger.e('Failed to fetch anime entry', e);
+      final adapted = {
+        'node': {...data, 'list_status': myListStatus},
+      };
+      return UniversalMediaListEntry.fromMal(adapted);
+    } catch (e) {
+      if (e is TrackerException &&
+          (e.message.contains('404') || e.message.contains('not_found'))) {
+        return null;
+      }
       return null;
     }
   }
 
   // ---------------------- RANKING & LISTS ----------------------
 
-  Future<List<UniversalMedia>> _getRankedAnime(
+  Future<UniversalPageResponse<UniversalMedia>> _getRankedAnime(
     String rankingType,
     int page,
     int perPage,
   ) async {
-    final offset = (page - 1) * perPage;
-    final nsfwStub = _getShowAdult() ? '&nsfw=true' : '';
-    final url =
-        'https://api.myanimelist.net/v2/anime/ranking?ranking_type=$rankingType&limit=$perPage&offset=$offset&fields=num_episodes,status,mean,media_type$nsfwStub';
-    final data = await _get(url);
-    return (data['data'] as List<dynamic>? ?? [])
-        .map((e) => UniversalMedia.fromMal(e['node'] as Map<String, dynamic>))
-        .toList();
+    try {
+      final offset = (page - 1) * perPage;
+      final nsfwStub = _getShowAdult() ? '&nsfw=true' : '';
+
+      final url =
+          'https://api.myanimelist.net/v2/anime/ranking?ranking_type=$rankingType&limit=$perPage&offset=$offset&fields=num_episodes,status,mean,media_type$nsfwStub';
+
+      final data = await _get(
+        url,
+        operationName: 'GetRankedAnime-$rankingType',
+      );
+
+      final list = _parseMediaList(data['data'] as List<dynamic>?);
+      final hasNextPage = data['paging']?['next'] != null;
+
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: -1, // MAL doesn't provide total size for API ranks easily
+          currentPage: page,
+          lastPage: hasNextPage ? page + 1 : page,
+          hasNextPage: hasNextPage,
+          perPage: perPage,
+        ),
+        data: list,
+      );
+    } catch (e) {
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: 0,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage,
+        ),
+        data: [],
+      );
+    }
   }
 
   @override
-  Future<List<UniversalMedia>> getPopularAnime({
+  Future<UniversalPageResponse<UniversalMedia>> getPopularAnime({
     int page = 1,
     int perPage = 25,
   }) async {
@@ -273,7 +372,7 @@ class MyAnimeListService implements AnimeRepository {
   }
 
   @override
-  Future<List<UniversalMedia>> getRecentlyUpdatedAnime({
+  Future<UniversalPageResponse<UniversalMedia>> getRecentlyUpdatedAnime({
     int page = 1,
     int perPage = 25,
   }) async {
@@ -281,7 +380,7 @@ class MyAnimeListService implements AnimeRepository {
   }
 
   @override
-  Future<List<UniversalMedia>> getTopRatedAnime({
+  Future<UniversalPageResponse<UniversalMedia>> getTopRatedAnime({
     int page = 1,
     int perPage = 25,
   }) async {
@@ -289,7 +388,7 @@ class MyAnimeListService implements AnimeRepository {
   }
 
   @override
-  Future<List<UniversalMedia>> getTrendingAnime({
+  Future<UniversalPageResponse<UniversalMedia>> getTrendingAnime({
     int page = 1,
     int perPage = 25,
   }) async {
@@ -297,7 +396,7 @@ class MyAnimeListService implements AnimeRepository {
   }
 
   @override
-  Future<List<UniversalMedia>> getUpcomingAnime({
+  Future<UniversalPageResponse<UniversalMedia>> getUpcomingAnime({
     int page = 1,
     int perPage = 25,
   }) async {
@@ -305,7 +404,7 @@ class MyAnimeListService implements AnimeRepository {
   }
 
   @override
-  Future<List<UniversalMedia>> getMostFavoriteAnime({
+  Future<UniversalPageResponse<UniversalMedia>> getMostFavoriteAnime({
     int page = 1,
     int perPage = 25,
   }) async {
@@ -314,7 +413,7 @@ class MyAnimeListService implements AnimeRepository {
 
   @override
   Future<List<String>> getSupportedStatuses() async {
-    return ['watching', 'completed', 'on_hold', 'dropped', 'plan_to_watch'];
+    return ['CURRENT', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'];
   }
 
   @override
@@ -329,28 +428,34 @@ class MyAnimeListService implements AnimeRepository {
     String? notes,
     bool? private,
   }) async {
-    final url = 'https://api.myanimelist.net/v2/anime/$mediaId/my_list_status';
-    final body = <String, String>{};
+    try {
+      final url =
+          'https://api.myanimelist.net/v2/anime/$mediaId/my_list_status';
+      final body = <String, String>{};
 
-    if (status != null) body['status'] = _mapStatusToMal(status);
-    if (score != null) body['score'] = score.toInt().toString();
-    if (progress != null) body['num_watched_episodes'] = progress.toString();
-    await _put(url, body);
+      if (status != null) body['status'] = _mapStatusToMal(status);
+      if (score != null) body['score'] = score.toInt().toString();
+      if (progress != null) body['num_watched_episodes'] = progress.toString();
 
-    return UniversalMediaListEntry(
-      id: mediaId.toString(),
-      status: status ?? 'UNKNOWN',
-      score: score ?? 0,
-      progress: progress ?? 0,
-      media: UniversalMedia(
+      await _put(url, body, operationName: 'UpdateUserAnimeList');
+
+      return UniversalMediaListEntry(
         id: mediaId.toString(),
-        title: const UniversalTitle(),
-        coverImage: const UniversalCoverImage(),
-      ),
-      repeat: repeat ?? 0,
-      isPrivate: private ?? false,
-      notes: notes ?? '',
-    );
+        status: status ?? 'UNKNOWN',
+        score: score ?? 0,
+        progress: progress ?? 0,
+        media: UniversalMedia(
+          id: mediaId.toString(),
+          title: const UniversalTitle(),
+          coverImage: const UniversalCoverImage(),
+        ),
+        repeat: repeat ?? 0,
+        isPrivate: private ?? false,
+        notes: notes ?? '',
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
   String _mapStatusToMal(String status) {
@@ -368,5 +473,28 @@ class MyAnimeListService implements AnimeRepository {
       default:
         return 'plan_to_watch';
     }
+  }
+
+  @override
+  Future<void> updateEntry({
+    required String remoteId,
+    String? status,
+    int? progress,
+    double? score,
+    int? repeat,
+    String? notes,
+    bool? isPrivate,
+  }) async {
+    final mediaId = int.tryParse(remoteId);
+    if (mediaId == null) return;
+    await updateUserAnimeList(
+      mediaId: mediaId,
+      status: status,
+      progress: progress,
+      score: score,
+      repeat: repeat,
+      notes: notes,
+      private: isPrivate,
+    );
   }
 }

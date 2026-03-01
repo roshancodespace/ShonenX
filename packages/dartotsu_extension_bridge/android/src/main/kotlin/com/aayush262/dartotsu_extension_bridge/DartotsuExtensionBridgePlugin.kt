@@ -11,26 +11,45 @@ import io.flutter.plugin.common.MethodChannel
 import kotlinx.serialization.json.Json
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.addSingletonFactory
+import uy.kohesive.injekt.api.get
+
 /** DartotsuExtensionBridgePlugin */
 class DartotsuExtensionBridgePlugin : FlutterPlugin {
-    private lateinit var context: Context
-    private lateinit var aniyomiChannel: MethodChannel
+
+    private lateinit var aniyomiBridge: AniyomiBridge
+    private val flutterBridge = FlutterKotlinBridge()
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        Log.d("PluginDebug", "Plugin attached to engine")
-        context = binding.applicationContext
 
-        Injekt.addSingletonFactory<Application> { context as Application }
-        Injekt.addSingletonFactory { NetworkHelper(context) }
-        Injekt.addSingletonFactory { NetworkHelper(context).client }
-        Injekt.addSingletonFactory { Json { ignoreUnknownKeys = true ;explicitNulls = false }}
-        Injekt.addSingletonFactory { AniyomiExtensionManager(context) }
-        aniyomiChannel = MethodChannel(binding.binaryMessenger, "aniyomiExtensionBridge")
-        aniyomiChannel.setMethodCallHandler(AniyomiBridge(context))
+        val application = binding.applicationContext as? Application
+            ?: error("Application context is not an Application")
+
+        initInjekt(application)
+        
+        flutterBridge.attach(binding)
+
+        aniyomiBridge = AniyomiBridge(application).apply {
+            attach(binding)
+        }
+        Logger.log("Plugin attached to engine", LogLevel.INFO)
+        println("Plugin attached to engine")
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        aniyomiChannel.setMethodCallHandler(null)
+        flutterBridge.detach()
+        aniyomiBridge.detach()
     }
 
+    private fun initInjekt(application: Application) {
+        Injekt.addSingletonFactory<Application> { application }
+        Injekt.addSingletonFactory { NetworkHelper(application) }
+        Injekt.addSingletonFactory { Injekt.get<NetworkHelper>().client }
+        Injekt.addSingletonFactory {
+            Json {
+                ignoreUnknownKeys = true
+                explicitNulls = false
+            }
+        }
+        Injekt.addSingletonFactory { AniyomiExtensionManager(application) }
+    }
 }

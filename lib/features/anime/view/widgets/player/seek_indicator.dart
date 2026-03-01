@@ -18,8 +18,8 @@ class SeekIndicatorOverlay extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.black.withOpacity(0.0),
-            Colors.black.withOpacity(0.5),
+            Colors.black.withValues(alpha: 0.0),
+            Colors.black.withValues(alpha: 0.5),
           ],
           begin: isForward ? Alignment.centerLeft : Alignment.centerRight,
           end: isForward ? Alignment.centerRight : Alignment.centerLeft,

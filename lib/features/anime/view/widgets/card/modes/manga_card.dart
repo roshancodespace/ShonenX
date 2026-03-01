@@ -65,9 +65,9 @@ class MangaCard extends StatelessWidget {
                             '',
                         fit: BoxFit.cover,
                         memCacheHeight: 400,
-                        placeholder: (_, __) =>
+                        placeholder: (_, _) =>
                             const AnimeCardShimmer(height: double.infinity),
-                        errorWidget: (_, __, ___) =>
+                        errorWidget: (_, _, _) =>
                             const AnimeCardShimmer(height: double.infinity),
                         imageBuilder: (context, imageProvider) {
                           if (isHovered) {

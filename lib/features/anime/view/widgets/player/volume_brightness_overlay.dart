@@ -64,7 +64,7 @@ class _VolumeBrightnessOverlayState extends State<VolumeBrightnessOverlay> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.6),
+            color: Colors.black.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -90,7 +90,7 @@ class _VolumeBrightnessOverlayState extends State<VolumeBrightnessOverlay> {
                   children: [
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),

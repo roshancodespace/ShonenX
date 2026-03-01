@@ -1,9 +1,8 @@
 import 'dart:convert';
 
-import 'package:dartotsu_extension_bridge/Models/Source.dart';
-import 'package:dartotsu_extension_bridge/Services/Mangayomi/http/m_client.dart';
-
 import '../../Extensions/Extensions.dart';
+import '../../Models/Source.dart';
+import '../Mangayomi/http/m_client.dart';
 
 class SoraExtensions extends Extension {
   @override

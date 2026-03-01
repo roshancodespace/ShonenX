@@ -39,13 +39,13 @@ class NeonSpotlight extends StatelessWidget {
             color: isMobile
                 ? neonColor
                 : isHovered
-                    ? neonColor
-                    : neonColor.withOpacity(0.5),
+                ? neonColor
+                : neonColor.withValues(alpha: 0.5),
             width: isMobile ? 1 : 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: neonColor.withOpacity(0.2),
+              color: neonColor.withValues(alpha: 0.2),
               blurRadius: 12,
               spreadRadius: 1,
             ),
@@ -72,7 +72,7 @@ class NeonSpotlight extends StatelessWidget {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withOpacity(0.8),
+                      Colors.black.withValues(alpha: 0.8),
                     ],
                     stops: const [0.5, 1.0],
                   ),
@@ -95,26 +95,25 @@ class NeonSpotlight extends StatelessWidget {
                         style: theme.textTheme.headlineSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          shadows: [
-                            Shadow(
-                              color: neonColor,
-                              blurRadius: 8,
-                            ),
-                          ],
+                          shadows: [Shadow(color: neonColor, blurRadius: 8)],
                         ),
                       ),
                     ),
                     if (anime!.averageScore != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.8),
+                          color: Colors.black.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: neonColor.withOpacity(0.6)),
+                          border: Border.all(
+                            color: neonColor.withValues(alpha: 0.6),
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: neonColor.withOpacity(0.3),
+                              color: neonColor.withValues(alpha: 0.3),
                               blurRadius: 6,
                             ),
                           ],

@@ -13,7 +13,7 @@ import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/shared/providers/anilist_service_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/features/details/view_model/local_tracker_notifier.dart';
+import 'package:shonenx/core/repositories/local_media_repository.dart';
 
 class WatchlistSelectionNotifier extends Notifier<Set<String>> {
   @override
@@ -137,7 +137,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen>
               .deleteUserAnimeList(id);
           if (success) successCount++;
         } else if (isLocal) {
-          await ref.read(localTrackerProvider.notifier).deleteEntry(idStr);
+          await ref.read(localMediaRepoProvider).deleteEntry(idStr);
           successCount++;
         }
       }
@@ -329,7 +329,7 @@ class _WatchlistTabView extends ConsumerWidget {
     final isSelectionMode = selectedIds.isNotEmpty;
 
     final media = status == 'favorites'
-        ? state.favorites.map((e) => e.media).toList()
+        ? state.favorites
         : state.listFor(status).map((e) => e.media).toList();
 
     final isLoading = state.loadingStatuses.contains(status);
@@ -405,7 +405,7 @@ class _WatchlistTabView extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                           color: Theme.of(
                             context,
-                          ).colorScheme.primary.withOpacity(0.2),
+                          ).colorScheme.primary.withValues(alpha: 0.2),
                         ),
                         child: Center(
                           child: Container(

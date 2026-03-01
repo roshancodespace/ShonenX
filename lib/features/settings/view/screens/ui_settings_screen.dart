@@ -236,7 +236,7 @@ class StyleSelectorState extends State<StyleSelector> {
                 height: 4,
                 margin: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

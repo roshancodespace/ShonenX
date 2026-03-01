@@ -32,8 +32,7 @@ class AniSkipNotifier extends _$AniSkipNotifier {
     final now = DateTime.now();
 
     // Check rate limit
-    if (_lastFetch != null &&
-        now.difference(_lastFetch!) < _minInterval) {
+    if (_lastFetch != null && now.difference(_lastFetch!) < _minInterval) {
       AppLogger.w('Fetch skipped due to rate limiting.');
       return;
     }
@@ -49,7 +48,7 @@ class AniSkipNotifier extends _$AniSkipNotifier {
         final media = await ref
             .read(anilistServiceProvider)
             .getAnimeDetails(anilistId);
-        malId = media?.idMal;
+        malId = int.tryParse(media?.idMal ?? '');
       }
 
       // If not found, search via Jikan

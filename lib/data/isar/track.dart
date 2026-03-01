@@ -1,5 +1,7 @@
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:isar_community/isar.dart';
+import 'package:shonenx/core/models/tracker/tracker_binding.dart';
+
 part 'track.g.dart';
 
 @collection
@@ -7,94 +9,76 @@ part 'track.g.dart';
 class Track {
   Id? id;
 
-  int? libraryId;
-
-  int? mediaId;
-
-  int? mangaId;
-
-  int? syncId;
+  String? mediaId;
 
   String? title;
 
-  int? lastChapterRead;
+  int? progress;
 
-  int? totalChapter;
+  int? total;
 
   int? score;
 
   @enumerated
   late TrackStatus status;
 
-  int? startedReadingDate;
+  int? startedAt;
 
-  int? finishedReadingDate;
-
-  String? trackingUrl;
-
-  bool? isManga;
+  int? completedAt;
 
   @enumerated
   late ItemType itemType;
 
   int? updatedAt;
 
+  List<TrackerBinding>? bindings;
+
   Track({
     this.id = Isar.autoIncrement,
-    this.libraryId,
     this.mediaId,
-    this.mangaId,
-    this.syncId,
     this.title,
-    this.lastChapterRead,
-    this.totalChapter,
+    this.progress,
+    this.total,
     this.score,
     required this.status,
-    this.startedReadingDate,
-    this.finishedReadingDate,
-    this.trackingUrl,
-    this.isManga,
-    this.itemType = ItemType.manga,
+    this.startedAt,
+    this.completedAt,
+    this.itemType = ItemType.anime,
     this.updatedAt = 0,
+    this.bindings,
   });
   Track.fromJson(Map<String, dynamic> json) {
-    finishedReadingDate = json['finishedReadingDate'];
     id = json['id'];
-    lastChapterRead = json['lastChapterRead'];
-    libraryId = json['libraryId'];
-    mangaId = json['mangaId'];
     mediaId = json['mediaId'];
     score = json['score'];
-    startedReadingDate = json['startedReadingDate'];
+    startedAt = json['startedAt'];
+    completedAt = json['completedAt'];
+    progress = json['progress'];
     status = TrackStatus.values[json['status']];
-    syncId = json['syncId'];
     title = json['title'];
-    totalChapter = json['totalChapter'];
-    trackingUrl = json['trackingUrl'];
-    isManga = json['isManga'];
-    if (json['itemType'] != null || isManga != null) {
-      itemType = ItemType.values[json['itemType'] ?? (isManga! ? 0 : 1)];
-    }
+    total = json['total'];
+    itemType = ItemType.values[json['itemType']];
     updatedAt = json['updatedAt'];
+    if (json['bindings'] != null) {
+      bindings = (json['bindings'] as List)
+          .map((e) => TrackerBinding.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
   }
 
   Map<String, dynamic> toJson() => {
-    'finishedReadingDate': finishedReadingDate,
     'id': id,
-    'lastChapterRead': lastChapterRead,
-    'libraryId': libraryId,
-    'mangaId': mangaId,
     'mediaId': mediaId,
     'score': score,
-    'startedReadingDate': startedReadingDate,
+    'completedAt': completedAt,
+    'progress': progress,
+    'startedAt': startedAt,
     'status': status.index,
-    'syncId': syncId,
     'title': title,
-    'totalChapter': totalChapter,
-    'trackingUrl': trackingUrl,
-    'isManga': isManga,
+    'total': total,
     'itemType': itemType.index,
     'updatedAt': updatedAt ?? 0,
+    'bindings': bindings?.map((e) => e.toJson()).toList(),
   };
 }
 

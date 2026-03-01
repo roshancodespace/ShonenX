@@ -71,7 +71,7 @@ class ColorPickerSettingsItem extends BaseSettingsItem {
               border: Border.all(color: colorScheme.outlineVariant, width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: Color(selectedColor).withOpacity(0.4),
+                  color: Color(selectedColor).withValues(alpha: 0.4),
                   blurRadius: 10,
                   spreadRadius: 1,
                 ),

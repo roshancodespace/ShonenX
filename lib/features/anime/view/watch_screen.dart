@@ -4,11 +4,10 @@ import 'package:screenshot/screenshot.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/features/anime/view/widgets/episodes_panel.dart';
 import 'package:shonenx/features/anime/view/widgets/player/shonenx_video_player.dart';
-import 'package:shonenx/features/anime/view_model/episode_list_provider.dart';
 import 'package:shonenx/features/anime/view_model/episode_stream_provider.dart';
 import 'package:shonenx/features/anime/view_model/watch_controller.dart';
 import 'package:shonenx/helpers/ui.dart';
-import 'package:shonenx/main.dart';
+import 'package:shonenx/shared/providers/settings/sync_settings_notifier.dart';
 
 class WatchScreen extends ConsumerStatefulWidget {
   final String mediaId;
@@ -107,16 +106,15 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
     // Keep controller alive to ensure listeners work
     ref.watch(watchControllerProvider);
 
-    // Listen for episode changes to trigger "Ask to update" dialog
+    // Listen for episode changes — if askBeforeSync is on, show confirmation dialog
     ref.listen(episodeDataProvider.select((s) => s.selectedEpisode), (
       prev,
       next,
     ) async {
       if (next == null || next == prev) return;
 
-      final askToUpdate =
-          sharedPrefs.getBool('tracking_ask_update_on_start') ?? false;
-      if (!askToUpdate) return;
+      final syncSettings = ref.read(syncSettingsProvider);
+      if (!syncSettings.askBeforeSync) return;
 
       // Delay to ensure user is actually watching (matches controller delay)
       await Future.delayed(const Duration(seconds: 5));
@@ -126,13 +124,11 @@ class _WatchScreenState extends ConsumerState<WatchScreen>
       final currentEp = ref.read(episodeDataProvider).selectedEpisode;
       if (currentEp != next) return;
 
-      final episodes = ref.read(episodeListProvider).episodes;
-      if (next < 0 || next >= episodes.length) return;
-      final ep = episodes[next];
-      final episodeNum = ep.number?.toInt() ?? (next + 1);
+      final episodeNum = next;
 
       final confirmed = await showDialog<bool>(
         context: context,
+        barrierDismissible: false,
         builder: (context) => AlertDialog(
           title: const Text('Update Progress?'),
           content: Text(

@@ -4,24 +4,17 @@ import 'package:graphql/client.dart';
 import 'package:shonenx/core/services/anilist/graphql_client.dart';
 import 'package:shonenx/core/services/anilist/queries.dart';
 import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
-import 'package:shonenx/core/models/anilist/media_list_entry.dart';
-import 'package:shonenx/core/models/anilist/page_response.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
+import 'package:shonenx/core/models/universal/universal_page_response.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/browse/model/search_filter.dart';
+import 'package:shonenx/shared/providers/tracker/tracker_service.dart';
+import 'package:shonenx/core/models/tracker/tracker_type.dart';
+import 'package:shonenx/core/repositories/anime_repository.dart';
+import 'package:shonenx/core/models/tracker/tracker_exception.dart';
 
-class AnilistServiceException implements Exception {
-  final String message;
-  final dynamic error;
-
-  AnilistServiceException(this.message, [this.error]);
-
-  @override
-  String toString() =>
-      'AnilistServiceException: $message${error != null ? ' ($error)' : ''}';
-}
-
-class AnilistService {
+class AnilistService implements AnimeRepository, TrackerService {
   final ({String userId, String accessToken})? Function()
   _getAuthContextCallback;
   final bool? Function() _getAdultParamCallback;
@@ -32,7 +25,11 @@ class AnilistService {
   }) : _getAuthContextCallback = getAuthContext,
        _getAdultParamCallback = getAdultParam;
 
+  @override
   String get name => 'Anilist';
+
+  @override
+  TrackerType get type => TrackerType.anilist;
 
   static const _validStatuses = {
     'CURRENT',
@@ -55,11 +52,10 @@ class AnilistService {
     required String query,
     Map<String, dynamic>? variables,
     bool isMutation = false,
-    String operationName = '',
+    String operationName = 'GraphQL',
   }) async {
     try {
-      AppLogger.d('Executing $operationName with variables: $variables');
-
+      AppLogger.i('[AniList] $operationName starting...');
       _client = await AnilistClient.getClient(accessToken: accessToken);
 
       final document = gql(query);
@@ -81,107 +77,146 @@ class AnilistService {
             );
 
       if (result.hasException) {
-        AppLogger.e(
-          'GraphQL Error in $operationName',
-          result.exception?.graphqlErrors,
-          StackTrace.current,
-        );
-        throw AnilistServiceException(
-          'GraphQL operation failed',
-          result.exception,
-        );
+        throw TrackerException('GraphQL operation failed', result.exception);
       }
 
-      AppLogger.i('$operationName completed successfully');
+      AppLogger.success('[AniList] $operationName ✓');
       return result.data as T?;
     } catch (e, stackTrace) {
-      AppLogger.e('Operation $operationName failed', e, stackTrace);
+      AppLogger.e('[AniList] $operationName error', e, stackTrace);
       rethrow;
     }
   }
 
-  List<Media> _parseMediaList(List<dynamic>? media) =>
-      media?.map((json) => Media.fromJson(json)).toList() ?? [];
+  List<UniversalMedia> _parseMediaList(List<dynamic>? media) =>
+      media
+          ?.map(
+            (json) =>
+                UniversalMedia.fromAnilist(Map<String, dynamic>.from(json)),
+          )
+          .toList() ??
+      [];
 
   // Fetch the logged-in user's profile
   Future<Map<String, dynamic>> getUserProfile(String accessToken) async {
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: accessToken,
-      query: AnilistQueries.userProfileQuery,
-      operationName: 'GetUserProfile',
-    );
+    try {
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: accessToken,
+        query: AnilistQueries.userProfileQuery,
+        operationName: 'GetUserProfile',
+      );
 
-    return data?['Viewer'] ?? {};
+      return data?['Viewer'] ?? {};
+    } catch (e) {
+      return {};
+    }
   }
 
   /// Update the logged-in user's profile
-  Future<Map<String, dynamic>> updateUser({
-    required String about,
-  }) async {
-    final auth = _getAuthContext();
-    if (auth == null) return {};
+  Future<Map<String, dynamic>> updateUser({required String about}) async {
+    try {
+      final auth = _getAuthContext();
+      if (auth == null) return {};
 
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: auth.accessToken,
-      query: AnilistQueries.updateUserMutation,
-      variables: {'about': about},
-      isMutation: true,
-      operationName: 'UpdateUser',
-    );
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: auth.accessToken,
+        query: AnilistQueries.updateUserMutation,
+        variables: {'about': about},
+        isMutation: true,
+        operationName: 'UpdateUser',
+      );
 
-    return data?['UpdateUser'] ?? {};
+      return data?['UpdateUser'] ?? {};
+    } catch (e) {
+      return {};
+    }
   }
 
   // ---------------- OVERRIDES ----------------
 
-  Future<PageResponse> getUserAnimeList({
+  @override
+  Future<UniversalPageResponse<UniversalMediaListEntry>> getUserAnimeList({
     required String type,
     required String status,
     required int page,
     required int perPage,
   }) async {
-    final auth = _getAuthContext();
-    if (auth == null || !_validStatuses.contains(status)) {
-      return PageResponse(
-        pageInfo: PageInfo(
+    try {
+      final auth = _getAuthContext();
+      if (auth == null || !_validStatuses.contains(status)) {
+        return UniversalPageResponse(
+          pageInfo: UniversalPageInfo(
+            total: 0,
+            currentPage: 1,
+            lastPage: 1,
+            hasNextPage: false,
+            perPage: perPage,
+          ),
+          data: [],
+        );
+      }
+
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: auth.accessToken,
+        query: AnilistQueries.userAnimeListQuery,
+        variables: {
+          'page': page,
+          'perPage': perPage,
+          'userId': auth.userId,
+          'type': type,
+          'status': status,
+        },
+        operationName: 'GetUserAnimeList',
+      );
+
+      if (data == null) {
+        return UniversalPageResponse(
+          pageInfo: UniversalPageInfo(
+            total: 0,
+            currentPage: 1,
+            lastPage: 1,
+            hasNextPage: false,
+            perPage: perPage,
+          ),
+          data: [],
+        );
+      }
+
+      final pageData = data['Page'];
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: pageData['pageInfo']['total'] ?? 0,
+          currentPage: pageData['pageInfo']['currentPage'] ?? 1,
+          lastPage: pageData['pageInfo']['lastPage'] ?? 1,
+          hasNextPage: pageData['pageInfo']['hasNextPage'] ?? false,
+          perPage: pageData['pageInfo']['perPage'] ?? perPage,
+        ),
+        data:
+            (pageData['mediaList'] as List<dynamic>?)
+                ?.map(
+                  (e) => UniversalMediaListEntry.fromAnilist(
+                    Map<String, dynamic>.from(e),
+                  ),
+                )
+                .toList() ??
+            [],
+      );
+    } catch (e) {
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
           total: 0,
           currentPage: 1,
           lastPage: 1,
           hasNextPage: false,
           perPage: perPage,
         ),
-        mediaList: [],
+        data: [],
       );
     }
-
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: auth.accessToken,
-      query: AnilistQueries.userAnimeListQuery,
-      variables: {
-        'page': page,
-        'perPage': perPage,
-        'userId': auth.userId,
-        'type': type,
-        'status': status,
-      },
-      operationName: 'GetUserAnimeList',
-    );
-
-    return data != null
-        ? PageResponse.fromJson(data)
-        : PageResponse(
-            pageInfo: PageInfo(
-              total: 0,
-              currentPage: 1,
-              lastPage: 1,
-              hasNextPage: false,
-              perPage: perPage,
-            ),
-            mediaList: [],
-          );
   }
 
-  Future<MediaListEntry?> updateUserAnimeList({
+  @override
+  Future<UniversalMediaListEntry?> updateUserAnimeList({
     required int mediaId,
     String? status,
     double? score,
@@ -192,292 +227,566 @@ class AnilistService {
     String? notes,
     bool? private,
   }) async {
-    final auth = _getAuthContext();
-    if (auth == null || !_validStatuses.contains(status)) return null;
+    try {
+      final auth = _getAuthContext();
+      if (auth == null) return null;
+      if (status != null && !_validStatuses.contains(status)) return null;
 
-    final variables = {
-      'mediaId': mediaId,
-      'status': status,
-      'score': score,
-      'progress': progress,
-      'startedAt': startedAt?.toJson(),
-      'completedAt': completedAt?.toJson(),
-      'repeat': repeat,
-      'private': private,
-      'notes': notes,
-    }..removeWhere((key, value) => value == null);
+      final variables = {
+        'mediaId': mediaId,
+        'status': status,
+        'score': score,
+        'progress': progress,
+        'startedAt': startedAt?.toJson(),
+        'completedAt': completedAt?.toJson(),
+        'repeat': repeat,
+        'private': private,
+        'notes': notes,
+      }..removeWhere((key, value) => value == null);
 
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: auth.accessToken,
-      query: AnilistQueries.updateAnimeMediaEntryMutation,
-      variables: variables,
-      operationName: 'UpdateUserAnimeList',
-    );
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: auth.accessToken,
+        query: AnilistQueries.updateAnimeMediaEntryMutation,
+        variables: variables,
+        isMutation: true,
+        operationName: 'UpdateUserAnimeList',
+      );
 
-    final rawEntry = data?['SaveMediaListEntry'];
-    if (rawEntry == null) return null;
+      final rawEntry = data?['SaveMediaListEntry'];
+      if (rawEntry == null) return null;
 
-    return MediaListEntry.fromJson(rawEntry as Map<String, dynamic>);
-  }
-
-  Future<MediaListEntry?> getAnimeEntry(int animeId) async {
-    final auth = _getAuthContext();
-    if (auth == null) return null;
-
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: auth.accessToken,
-      query: AnilistQueries.mediaListEntryByAnimeIdQuery,
-      variables: {'userId': auth.userId, 'animeId': animeId},
-      operationName: 'GetAnimeEntry',
-    );
-
-    final rawEntry = data?['MediaList'];
-    if (rawEntry == null) return null;
-
-    return MediaListEntry.fromJson(rawEntry as Map<String, dynamic>);
-  }
-
-  Future<PageResponse> getFavorites({int page = 1, int perPage = 10}) async {
-    final auth = _getAuthContext();
-    if (auth == null) {
-      return PageResponse();
+      return UniversalMediaListEntry.fromAnilist(
+        rawEntry as Map<String, dynamic>,
+      );
+    } catch (e) {
+      return null;
     }
+  }
 
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: auth.accessToken,
-      query: AnilistQueries.userFavoritesQuery,
-      variables: {'userId': auth.userId, 'page': page, 'perPage': perPage},
-      operationName: 'GetFavorites',
-    );
+  @override
+  Future<UniversalMediaListEntry?> getAnimeEntry(int animeId) async {
+    try {
+      final auth = _getAuthContext();
+      if (auth == null) return null;
 
-    final anime = data?['User']?['favourites']?['anime'];
-    if (anime == null) {
-      return PageResponse();
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: auth.accessToken,
+        query: AnilistQueries.mediaListEntryByAnimeIdQuery,
+        variables: {'userId': auth.userId, 'animeId': animeId},
+        operationName: 'GetAnimeEntry',
+      );
+
+      final rawEntry = data?['MediaList'];
+      if (rawEntry == null) return null;
+
+      return UniversalMediaListEntry.fromAnilist(
+        rawEntry as Map<String, dynamic>,
+      );
+    } catch (e) {
+      if (e is TrackerException && e.toString().contains('Not Found')) {
+        return null;
+      }
+      return null;
     }
-
-    return PageResponse.fromJson({
-      'pageInfo': anime['pageInfo'],
-      'items': anime['nodes'],
-    });
   }
 
-  Future<List<Media>> toggleFavorite(int animeId) async {
-    final auth = _getAuthContext();
-    if (auth == null) return [];
+  @override
+  Future<UniversalPageResponse<UniversalMedia>> getFavorites({
+    int page = 1,
+    int perPage = 10,
+  }) async {
+    try {
+      final auth = _getAuthContext();
+      if (auth == null) {
+        return UniversalPageResponse(
+          pageInfo: UniversalPageInfo(
+            total: 0,
+            currentPage: 1,
+            lastPage: 1,
+            hasNextPage: false,
+            perPage: perPage,
+          ),
+          data: [],
+        );
+      }
 
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: auth.accessToken,
-      query: AnilistQueries.toggleFavoriteQuery,
-      variables: {'animeId': animeId},
-      operationName: 'ToggleFavourite',
-    );
-    return _parseMediaList(
-      data?['data']?['ToggleFavourite']?['anime']?['nodes'],
-    );
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: auth.accessToken,
+        query: AnilistQueries.userFavoritesQuery,
+        variables: {'userId': auth.userId, 'page': page, 'perPage': perPage},
+        operationName: 'GetFavorites',
+      );
+
+      final anime = data?['User']?['favourites']?['anime'];
+      if (anime == null) {
+        return UniversalPageResponse(
+          pageInfo: UniversalPageInfo(
+            total: 0,
+            currentPage: 1,
+            lastPage: 1,
+            hasNextPage: false,
+            perPage: perPage,
+          ),
+          data: [],
+        );
+      }
+
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: anime['pageInfo']['total'] ?? 0,
+          currentPage: anime['pageInfo']['currentPage'] ?? 1,
+          lastPage: anime['pageInfo']['lastPage'] ?? 1,
+          hasNextPage: anime['pageInfo']['hasNextPage'] ?? false,
+          perPage: anime['pageInfo']['perPage'] ?? perPage,
+        ),
+        data: _parseMediaList(anime['nodes'] as List<dynamic>?),
+      );
+    } catch (e) {
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: 0,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage,
+        ),
+        data: [],
+      );
+    }
   }
-  
-  Future<List<Media>> searchAnime(
+
+  @override
+  Future<List<UniversalMedia>> toggleFavorite(int animeId) async {
+    try {
+      final auth = _getAuthContext();
+      if (auth == null) return [];
+
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: auth.accessToken,
+        query: AnilistQueries.toggleFavoriteQuery,
+        variables: {'animeId': animeId},
+        isMutation: true,
+        operationName: 'ToggleFavourite',
+      );
+      return _parseMediaList(data?['ToggleFavourite']?['anime']?['nodes']);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  @override
+  Future<List<UniversalMedia>> searchAnime(
     String title, {
     int page = 1,
     int perPage = 25,
     SearchFilter? filter,
   }) async {
-    final adultParam = _getAdultParam();
-    final useAdult = adultParam != null;
+    try {
+      final adultParam = _getAdultParam();
+      final useAdult = adultParam != null;
 
-    final hasSearch = title.trim().isNotEmpty;
+      final hasSearch = title.trim().isNotEmpty;
 
-    final variables = <String, dynamic>{
-      if (hasSearch) 'search': title,
-      'page': page,
-      'perPage': perPage,
-    };
+      final variables = <String, dynamic>{
+        if (hasSearch) 'search': title,
+        'page': page,
+        'perPage': perPage,
+      };
 
-    if (useAdult) variables['isAdult'] = adultParam;
-    if (filter != null) {
-      if (filter.genres.isNotEmpty) variables['genre'] = filter.genres;
-      if (filter.season != null) variables['season'] = filter.season;
-      if (filter.year != null) variables['year'] = filter.year;
-      if (filter.format != null) variables['format'] = filter.format;
-      if (filter.status != null) variables['status'] = filter.status;
-      if (filter.sort != null) variables['sort'] = filter.sort!.toUpperCase();
-      if (filter.tags.isNotEmpty) variables['tag'] = filter.tags;
+      if (useAdult) variables['isAdult'] = adultParam;
+      if (filter != null) {
+        if (filter.genres.isNotEmpty) variables['genre'] = filter.genres;
+        if (filter.season != null) variables['season'] = filter.season;
+        if (filter.year != null) variables['year'] = filter.year;
+        if (filter.format != null) variables['format'] = filter.format;
+        if (filter.status != null) variables['status'] = filter.status;
+        if (filter.sort != null) variables['sort'] = filter.sort!.toUpperCase();
+        if (filter.tags.isNotEmpty) variables['tag'] = filter.tags;
+      }
+
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: null,
+        query: AnilistQueries.searchAnimeQuery(
+          includeAdult: useAdult,
+          hasGenre: filter?.genres.isNotEmpty ?? false,
+          hasSeason: filter?.season != null,
+          hasYear: filter?.year != null,
+          hasFormat: filter?.format != null,
+          hasStatus: filter?.status != null,
+          hasSort: filter?.sort != null,
+          hasTag: filter?.tags.isNotEmpty ?? false,
+          hasSearch: hasSearch,
+        ),
+        variables: variables,
+        operationName: 'SearchAnime',
+      );
+      return _parseMediaList(data?['Page']?['media']);
+    } catch (e) {
+      return [];
     }
-
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: null,
-      query: AnilistQueries.searchAnimeQuery(
-        includeAdult: useAdult,
-        hasGenre: filter?.genres.isNotEmpty ?? false,
-        hasSeason: filter?.season != null,
-        hasYear: filter?.year != null,
-        hasFormat: filter?.format != null,
-        hasStatus: filter?.status != null,
-        hasSort: filter?.sort != null,
-        hasTag: filter?.tags.isNotEmpty ?? false,
-        hasSearch: hasSearch,
-      ),
-      variables: variables,
-      operationName: 'SearchAnime',
-    );
-    return _parseMediaList(data?['Page']?['media']);
   }
 
+  @override
   Future<List<String>> getGenres() async {
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: null,
-      query: AnilistQueries.getGenresQuery,
-      operationName: 'GetGenres',
-    );
-    return (data?['GenreCollection'] as List<dynamic>?)
-            ?.map((e) => e.toString())
-            .toList() ??
-        [];
+    try {
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: null,
+        query: AnilistQueries.getGenresQuery,
+        operationName: 'GetGenres',
+      );
+      return (data?['GenreCollection'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [];
+    } catch (e) {
+      return [];
+    }
   }
 
+  @override
   Future<List<String>> getTags() async {
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: null,
-      query: AnilistQueries.getTagsQuery,
-      operationName: 'GetTags',
-    );
-    return (data?['MediaTagCollection'] as List<dynamic>?)
-            ?.map((e) => e['name'].toString())
-            .toList() ??
-        [];
+    try {
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: null,
+        query: AnilistQueries.getTagsQuery,
+        operationName: 'GetTags',
+      );
+      return (data?['MediaTagCollection'] as List<dynamic>?)
+              ?.map((e) => e['name'].toString())
+              .toList() ??
+          [];
+    } catch (e) {
+      return [];
+    }
   }
 
-  Future<Media?> getAnimeDetails(int animeId) async {
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: null,
-      query: AnilistQueries.animeDetailsQuery,
-      variables: {'id': animeId},
-      operationName: 'GetAnimeDetails',
-    );
-    return Media.fromJson(data!['Media']);
+  @override
+  Future<UniversalMedia?> getAnimeDetails(int animeId) async {
+    try {
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: null,
+        query: AnilistQueries.animeDetailsQuery,
+        variables: {'id': animeId},
+        operationName: 'GetAnimeDetails',
+      );
+      if (data == null || data['Media'] == null) return null;
+      return UniversalMedia.fromAnilist(data['Media']);
+    } catch (e) {
+      return null;
+    }
   }
 
-  Future<List<Media>> getTrendingAnime({int page = 1, int perPage = 25}) async {
-    final adultParam = _getAdultParam();
-    final useAdult = adultParam != null;
-
-    final variables = <String, dynamic>{'page': page, 'perPage': perPage};
-    if (useAdult) variables['isAdult'] = adultParam;
-
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: null,
-      query: AnilistQueries.trendingAnimeQuery(useAdult),
-      variables: variables,
-      operationName: 'GetTrendingAnime',
-    );
-    return _parseMediaList(data?['Page']?['media']);
-  }
-
-  Future<List<Media>> getPopularAnime({int page = 1, int perPage = 15}) async {
-    final adultParam = _getAdultParam();
-    final useAdult = adultParam != null;
-
-    final variables = <String, dynamic>{'page': page, 'perPage': perPage};
-    if (useAdult) variables['isAdult'] = adultParam;
-
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: null,
-      query: AnilistQueries.popularAnimeQuery(useAdult),
-      variables: variables,
-      operationName: 'GetPopularAnime',
-    );
-    return _parseMediaList(data?['Page']?['media']);
-  }
-
-  Future<List<Media>> getTopRatedAnime({int page = 1, int perPage = 15}) async {
-    final adultParam = _getAdultParam();
-    final useAdult = adultParam != null;
-
-    final variables = <String, dynamic>{'page': page, 'perPage': perPage};
-    if (useAdult) variables['isAdult'] = adultParam;
-
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: null,
-      query: AnilistQueries.topRatedAnimeQuery(useAdult),
-      variables: variables,
-      operationName: 'GetTopRatedAnime',
-    );
-    return _parseMediaList(data?['Page']?['media']);
-  }
-
-  Future<List<Media>> getRecentlyUpdatedAnime({
+  @override
+  Future<UniversalPageResponse<UniversalMedia>> getTrendingAnime({
     int page = 1,
     int perPage = 25,
   }) async {
-    final adultParam = _getAdultParam();
-    final useAdult = adultParam != null;
+    try {
+      final adultParam = _getAdultParam();
+      final useAdult = adultParam != null;
 
-    final variables = <String, dynamic>{'page': page, 'perPage': perPage};
-    if (useAdult) variables['isAdult'] = adultParam;
+      final variables = <String, dynamic>{'page': page, 'perPage': perPage};
+      if (useAdult) variables['isAdult'] = adultParam;
 
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: null,
-      query: AnilistQueries.recentlyUpdatedAnimeQuery(useAdult),
-      variables: variables,
-      operationName: 'GetRecentlyUpdatedAnime',
-    );
-    return _parseMediaList(data?['Page']?['media']);
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: null,
+        query: AnilistQueries.trendingAnimeQuery(useAdult),
+        variables: variables,
+        operationName: 'GetTrendingAnime',
+      );
+
+      final pageData = data?['Page'];
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: pageData?['pageInfo']?['total'] ?? 0,
+          currentPage: pageData?['pageInfo']?['currentPage'] ?? 1,
+          lastPage: pageData?['pageInfo']?['lastPage'] ?? 1,
+          hasNextPage: pageData?['pageInfo']?['hasNextPage'] ?? false,
+          perPage: pageData?['pageInfo']?['perPage'] ?? perPage,
+        ),
+        data: _parseMediaList(pageData?['media']),
+      );
+    } catch (e) {
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: 0,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage,
+        ),
+        data: [],
+      );
+    }
   }
 
-  Future<List<Media>> getUpcomingAnime({int page = 1, int perPage = 15}) async {
-    final adultParam = _getAdultParam();
-    final useAdult = adultParam != null;
+  @override
+  Future<UniversalPageResponse<UniversalMedia>> getPopularAnime({
+    int page = 1,
+    int perPage = 15,
+  }) async {
+    try {
+      final adultParam = _getAdultParam();
+      final useAdult = adultParam != null;
 
-    final variables = <String, dynamic>{'page': page, 'perPage': perPage};
-    if (useAdult) variables['isAdult'] = adultParam;
+      final variables = <String, dynamic>{'page': page, 'perPage': perPage};
+      if (useAdult) variables['isAdult'] = adultParam;
 
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: null,
-      query: AnilistQueries.upcomingAnimeQuery(useAdult),
-      variables: variables,
-      operationName: 'GetUpcomingAnime',
-    );
-    return _parseMediaList(data?['Page']?['media']);
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: null,
+        query: AnilistQueries.popularAnimeQuery(useAdult),
+        variables: variables,
+        operationName: 'GetPopularAnime',
+      );
+
+      final pageData = data?['Page'];
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: pageData?['pageInfo']?['total'] ?? 0,
+          currentPage: pageData?['pageInfo']?['currentPage'] ?? 1,
+          lastPage: pageData?['pageInfo']?['lastPage'] ?? 1,
+          hasNextPage: pageData?['pageInfo']?['hasNextPage'] ?? false,
+          perPage: pageData?['pageInfo']?['perPage'] ?? perPage,
+        ),
+        data: _parseMediaList(pageData?['media']),
+      );
+    } catch (e) {
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: 0,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage,
+        ),
+        data: [],
+      );
+    }
   }
 
-  Future<List<Media>> getMostFavoriteAnime({
+  @override
+  Future<UniversalPageResponse<UniversalMedia>> getTopRatedAnime({
+    int page = 1,
+    int perPage = 15,
+  }) async {
+    try {
+      final adultParam = _getAdultParam();
+      final useAdult = adultParam != null;
+
+      final variables = <String, dynamic>{'page': page, 'perPage': perPage};
+      if (useAdult) variables['isAdult'] = adultParam;
+
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: null,
+        query: AnilistQueries.topRatedAnimeQuery(useAdult),
+        variables: variables,
+        operationName: 'GetTopRatedAnime',
+      );
+
+      final pageData = data?['Page'];
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: pageData?['pageInfo']?['total'] ?? 0,
+          currentPage: pageData?['pageInfo']?['currentPage'] ?? 1,
+          lastPage: pageData?['pageInfo']?['lastPage'] ?? 1,
+          hasNextPage: pageData?['pageInfo']?['hasNextPage'] ?? false,
+          perPage: pageData?['pageInfo']?['perPage'] ?? perPage,
+        ),
+        data: _parseMediaList(pageData?['media']),
+      );
+    } catch (e) {
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: 0,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage,
+        ),
+        data: [],
+      );
+    }
+  }
+
+  @override
+  Future<UniversalPageResponse<UniversalMedia>> getRecentlyUpdatedAnime({
     int page = 1,
     int perPage = 25,
   }) async {
-    final adultParam = _getAdultParam();
-    final useAdult = adultParam != null;
+    try {
+      final adultParam = _getAdultParam();
+      final useAdult = adultParam != null;
 
-    final variables = <String, dynamic>{'page': page, 'perPage': perPage};
-    if (useAdult) variables['isAdult'] = adultParam;
+      final variables = <String, dynamic>{'page': page, 'perPage': perPage};
+      if (useAdult) variables['isAdult'] = adultParam;
 
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: null,
-      query: AnilistQueries.mostFavoriteAnimeQuery(useAdult),
-      variables: variables,
-      operationName: 'GetMostFavoriteAnime',
-    );
-    return _parseMediaList(data?['Page']?['media']);
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: null,
+        query: AnilistQueries.recentlyUpdatedAnimeQuery(useAdult),
+        variables: variables,
+        operationName: 'GetRecentlyUpdatedAnime',
+      );
+
+      final pageData = data?['Page'];
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: pageData?['pageInfo']?['total'] ?? 0,
+          currentPage: pageData?['pageInfo']?['currentPage'] ?? 1,
+          lastPage: pageData?['pageInfo']?['lastPage'] ?? 1,
+          hasNextPage: pageData?['pageInfo']?['hasNextPage'] ?? false,
+          perPage: pageData?['pageInfo']?['perPage'] ?? perPage,
+        ),
+        data: _parseMediaList(pageData?['media']),
+      );
+    } catch (e) {
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: 0,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage,
+        ),
+        data: [],
+      );
+    }
+  }
+
+  @override
+  Future<UniversalPageResponse<UniversalMedia>> getUpcomingAnime({
+    int page = 1,
+    int perPage = 15,
+  }) async {
+    try {
+      final adultParam = _getAdultParam();
+      final useAdult = adultParam != null;
+
+      final variables = <String, dynamic>{'page': page, 'perPage': perPage};
+      if (useAdult) variables['isAdult'] = adultParam;
+
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: null,
+        query: AnilistQueries.upcomingAnimeQuery(useAdult),
+        variables: variables,
+        operationName: 'GetUpcomingAnime',
+      );
+
+      final pageData = data?['Page'];
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: pageData?['pageInfo']?['total'] ?? 0,
+          currentPage: pageData?['pageInfo']?['currentPage'] ?? 1,
+          lastPage: pageData?['pageInfo']?['lastPage'] ?? 1,
+          hasNextPage: pageData?['pageInfo']?['hasNextPage'] ?? false,
+          perPage: pageData?['pageInfo']?['perPage'] ?? perPage,
+        ),
+        data: _parseMediaList(pageData?['media']),
+      );
+    } catch (e) {
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: 0,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage,
+        ),
+        data: [],
+      );
+    }
+  }
+
+  @override
+  Future<UniversalPageResponse<UniversalMedia>> getMostFavoriteAnime({
+    int page = 1,
+    int perPage = 25,
+  }) async {
+    try {
+      final adultParam = _getAdultParam();
+      final useAdult = adultParam != null;
+
+      final variables = <String, dynamic>{'page': page, 'perPage': perPage};
+      if (useAdult) variables['isAdult'] = adultParam;
+
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: null,
+        query: AnilistQueries.mostFavoriteAnimeQuery(useAdult),
+        variables: variables,
+        operationName: 'GetMostFavoriteAnime',
+      );
+
+      final pageData = data?['Page'];
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: pageData?['pageInfo']?['total'] ?? 0,
+          currentPage: pageData?['pageInfo']?['currentPage'] ?? 1,
+          lastPage: pageData?['pageInfo']?['lastPage'] ?? 1,
+          hasNextPage: pageData?['pageInfo']?['hasNextPage'] ?? false,
+          perPage: pageData?['pageInfo']?['perPage'] ?? perPage,
+        ),
+        data: _parseMediaList(pageData?['media']),
+      );
+    } catch (e) {
+      return UniversalPageResponse(
+        pageInfo: UniversalPageInfo(
+          total: 0,
+          currentPage: 1,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: perPage,
+        ),
+        data: [],
+      );
+    }
   }
 
   Future<bool> deleteUserAnimeList(int mediaId) async {
-    final auth = _getAuthContext();
-    if (auth == null) return false;
+    try {
+      final auth = _getAuthContext();
+      if (auth == null) return false;
 
-    final entry = await getAnimeEntry(mediaId);
-    if (entry == null) return false;
+      final entry = await getAnimeEntry(mediaId);
+      if (entry == null) return false;
 
-    final data = await _executeGraphQLOperation<Map<String, dynamic>>(
-      accessToken: auth.accessToken,
-      query: AnilistQueries.deleteMediaListEntryMutation,
-      variables: {'id': entry.id},
-      isMutation: true,
-      operationName: 'DeleteMediaListEntry',
-    );
+      final data = await _executeGraphQLOperation<Map<String, dynamic>>(
+        accessToken: auth.accessToken,
+        query: AnilistQueries.deleteMediaListEntryMutation,
+        variables: {'id': entry.id},
+        isMutation: true,
+        operationName: 'DeleteMediaListEntry',
+      );
 
-    return data?['DeleteMediaListEntry']?['deleted'] ?? false;
+      return data?['DeleteMediaListEntry']?['deleted'] ?? false;
+    } catch (e) {
+      return false;
+    }
   }
 
+  @override
   Future<List<String>> getSupportedStatuses() async {
     return _validStatuses.toList();
+  }
+
+  @override
+  Future<void> updateEntry({
+    required String remoteId,
+    String? status,
+    int? progress,
+    double? score,
+    int? repeat,
+    String? notes,
+    bool? isPrivate,
+  }) async {
+    final mediaId = int.tryParse(remoteId);
+    if (mediaId == null) return;
+    await updateUserAnimeList(
+      mediaId: mediaId,
+      status: status,
+      score: score,
+      progress: progress,
+      repeat: repeat,
+      notes: notes,
+      private: isPrivate,
+    );
   }
 }

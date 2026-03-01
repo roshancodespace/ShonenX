@@ -18,27 +18,29 @@ class SubtitleUtils {
     'Ubuntu',
   ];
 
-  static TextStyle getSubtitleTextStyle(SubtitleAppearanceModel style,
-      {bool stroke = false}) {
+  static TextStyle getSubtitleTextStyle(
+    SubtitleAppearanceModel style, {
+    bool stroke = false,
+  }) {
     TextStyle baseStyle = TextStyle(
       fontSize: style.fontSize,
       fontWeight: style.boldText ? FontWeight.bold : FontWeight.normal,
       color: stroke ? null : Color(style.textColor),
       foreground: stroke
           ? (Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = style.outlineWidth
-            ..strokeCap = StrokeCap.round
-            ..strokeJoin = StrokeJoin.round
-            ..color = Color(style.outlineColor))
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = style.outlineWidth
+              ..strokeCap = StrokeCap.round
+              ..strokeJoin = StrokeJoin.round
+              ..color = Color(style.outlineColor))
           : null,
       shadows: !stroke && style.hasShadow
           ? [
               Shadow(
-                color: Colors.black.withOpacity(style.shadowOpacity),
+                color: Colors.black.withValues(alpha: style.shadowOpacity),
                 offset: const Offset(0, 0),
                 blurRadius: style.shadowBlur,
-              )
+              ),
             ]
           : [],
     );
@@ -48,10 +50,7 @@ class SubtitleUtils {
     }
 
     try {
-      return GoogleFonts.getFont(
-        style.fontFamily!,
-        textStyle: baseStyle,
-      );
+      return GoogleFonts.getFont(style.fontFamily!, textStyle: baseStyle);
     } catch (e) {
       // Fallback if font fails to load
       return baseStyle;

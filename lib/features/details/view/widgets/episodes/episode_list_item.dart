@@ -86,8 +86,8 @@ class EpisodeListItem extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10.0),
               child: LinearProgressIndicator(
                 value: watchProgress,
-                backgroundColor: theme.colorScheme.primaryContainer.withOpacity(
-                  0.2,
+                backgroundColor: theme.colorScheme.primaryContainer.withValues(
+                  alpha: 0.2,
                 ),
                 color: isWatched
                     ? theme.colorScheme.tertiaryContainer
@@ -116,22 +116,26 @@ class EpisodeListItem extends StatelessWidget {
                 ? CachedNetworkImage(
                     imageUrl: thumbnail,
                     fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => _buildFallbackIcon(theme),
+                    errorWidget: (_, _, _) => _buildFallbackIcon(theme),
                   )
                 : Image.memory(
                     base64Decode(thumbnail),
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _buildFallbackIcon(theme),
+                    errorBuilder: (_, _, _) => _buildFallbackIcon(theme),
                   )
           else if (fallbackUrl.isNotEmpty)
             CachedNetworkImage(
               imageUrl: fallbackUrl,
               fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => _buildFallbackIcon(theme),
+              httpHeaders: {
+                "Referer": fallbackUrl.split('#').last,
+                "User-Agent":
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+              },
+              errorWidget: (_, _, _) => _buildFallbackIcon(theme),
             )
           else
             Container(color: theme.colorScheme.surfaceContainer),
-
           // Ep Number Overlay
           Positioned(
             left: 4,
@@ -139,7 +143,7 @@ class EpisodeListItem extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
+                color: Colors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -154,11 +158,11 @@ class EpisodeListItem extends StatelessWidget {
           ),
           if (isWatched)
             Container(
-              color: Colors.black.withOpacity(0.6),
+              color: Colors.black.withValues(alpha: 0.6),
               child: Center(
                 child: Icon(
                   Icons.check_circle_outline_rounded,
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   size: 30,
                 ),
               ),

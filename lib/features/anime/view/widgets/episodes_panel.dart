@@ -240,7 +240,7 @@ class EpisodeTile extends StatelessWidget {
         : isFiller
         ? theme.colorScheme.errorContainer
         : isCompleted
-        ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.5)
+        ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
         : theme.colorScheme.surfaceContainerHighest;
 
     return InkWell(

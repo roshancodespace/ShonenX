@@ -9,9 +9,14 @@ import 'package:shonenx/shared/ui/shonenx_gridview.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:shonenx/core/models/universal/universal_page_response.dart';
+
 class SectionScreen extends ConsumerStatefulWidget {
   final String title;
-  final Future<List<UniversalMedia>> Function({int page, int perPage})
+  final Future<UniversalPageResponse<UniversalMedia>> Function({
+    int page,
+    int perPage,
+  })
   fetchItems;
 
   const SectionScreen({
@@ -59,7 +64,8 @@ class _SectionScreenState extends ConsumerState<SectionScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final newItems = await widget.fetchItems(page: _currentPage, perPage: 20);
+      final response = await widget.fetchItems(page: _currentPage, perPage: 20);
+      final newItems = response.data;
       if (mounted) {
         setState(() {
           if (newItems.isEmpty) {

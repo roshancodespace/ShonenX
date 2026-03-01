@@ -193,7 +193,9 @@ class _SearchBar extends StatelessWidget {
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.4,
+          ),
           borderRadius: BorderRadius.circular(12),
         ),
         child: TextField(

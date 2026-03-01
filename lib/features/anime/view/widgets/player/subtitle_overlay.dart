@@ -10,8 +10,9 @@ class SubtitleOverlay extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final subtitleStyle = ref.watch(subtitleAppearanceProvider);
-    final subtitleText =
-        ref.watch(playerStateProvider.select((s) => s.subtitle.firstOrNull));
+    final subtitleText = ref.watch(
+      playerStateProvider.select((s) => s.subtitle.firstOrNull),
+    );
     final margin = subtitleStyle.bottomMargin;
     if (subtitleText == null || subtitleText.isEmpty) {
       return const SizedBox.shrink();
@@ -28,12 +29,13 @@ class SubtitleOverlay extends ConsumerWidget {
         alignment: subtitleStyle.position == 1
             ? Alignment.bottomCenter
             : subtitleStyle.position == 2
-                ? Alignment.center
-                : Alignment.topCenter,
+            ? Alignment.center
+            : Alignment.topCenter,
         child: Container(
           decoration: BoxDecoration(
-            color: Color(subtitleStyle.backgroundColor)
-                .withOpacity(subtitleStyle.backgroundOpacity),
+            color: Color(
+              subtitleStyle.backgroundColor,
+            ).withValues(alpha: subtitleStyle.backgroundOpacity),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Stack(
@@ -44,8 +46,10 @@ class SubtitleOverlay extends ConsumerWidget {
                       ? subtitleText.toUpperCase()
                       : subtitleText,
                   textAlign: TextAlign.center,
-                  style: SubtitleUtils.getSubtitleTextStyle(subtitleStyle,
-                      stroke: true),
+                  style: SubtitleUtils.getSubtitleTextStyle(
+                    subtitleStyle,
+                    stroke: true,
+                  ),
                 ),
               Text(
                 subtitleStyle.forceUppercase

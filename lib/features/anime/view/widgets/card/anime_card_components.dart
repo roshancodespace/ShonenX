@@ -21,13 +21,13 @@ class EpisodesInfo extends StatelessWidget {
         Icon(
           Iconsax.play_circle,
           size: 14,
-          color: Colors.white.withOpacity(0.9),
+          color: Colors.white.withValues(alpha: 0.9),
         ),
         const SizedBox(width: 4),
         Text(
           compact ? '${anime!.episodes}ep' : '${anime!.episodes} episodes',
           style: theme.textTheme.labelSmall?.copyWith(
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
             fontWeight: FontWeight.w500,
             letterSpacing: 0.2,
           ),
@@ -70,7 +70,7 @@ class Tag extends StatelessWidget {
         boxShadow: hasShadow
             ? [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -148,7 +148,7 @@ class AnimeTitle extends StatelessWidget {
               color: Colors.white,
               shadows: [
                 Shadow(
-                  color: Colors.black.withOpacity(0.7),
+                  color: Colors.black.withValues(alpha: 0.7),
                   offset: const Offset(0, 1),
                   blurRadius: 3,
                 ),
@@ -169,7 +169,7 @@ class AnimeTitle extends StatelessWidget {
             color: Colors.white,
             shadows: [
               Shadow(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withValues(alpha: 0.5),
                 offset: const Offset(0, 1),
                 blurRadius: 2,
               ),
@@ -202,8 +202,8 @@ class AnimeImage extends StatelessWidget {
           imageUrl: anime?.coverImage.large ?? anime?.coverImage.medium ?? '',
           fit: BoxFit.cover,
           fadeInDuration: const Duration(milliseconds: 300),
-          placeholder: (_, __) => AnimeCardShimmer(height: height),
-          errorWidget: (_, __, ___) => AnimeCardShimmer(height: height),
+          placeholder: (_, _) => AnimeCardShimmer(height: height),
+          errorWidget: (_, _, _) => AnimeCardShimmer(height: height),
           filterQuality: FilterQuality.medium,
           useOldImageOnUrlChange: true,
         ),
@@ -224,7 +224,7 @@ class AnimeCardShimmer extends StatelessWidget {
     return Container(
       height: height,
       width: width,
-      color: theme.colorScheme.surfaceContainer.withOpacity(0.5),
+      color: theme.colorScheme.surfaceContainer.withValues(alpha: 0.5),
     );
   }
 }

@@ -32,18 +32,18 @@ class NeonCard extends StatelessWidget {
               ? neonColor
               : isHovered
               ? neonColor
-              : neonColor.withOpacity(0.5),
+              : neonColor.withValues(alpha: 0.5),
           width: isMobile ? 1 : 2,
         ),
         boxShadow: isHovered
             ? [
                 BoxShadow(
-                  color: neonColor.withOpacity(0.8),
+                  color: neonColor.withValues(alpha: 0.8),
                   blurRadius: 16,
                   spreadRadius: 2,
                 ),
                 BoxShadow(
-                  color: neonColor.withOpacity(0.4),
+                  color: neonColor.withValues(alpha: 0.4),
                   blurRadius: 32,
                   spreadRadius: 8,
                 ),
@@ -68,15 +68,15 @@ class NeonCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.8),
+                    color: Colors.black.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: neonColor.withOpacity(0.8),
+                      color: neonColor.withValues(alpha: 0.8),
                       width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: neonColor.withOpacity(0.4),
+                        color: neonColor.withValues(alpha: 0.4),
                         blurRadius: 8,
                       ),
                     ],
@@ -108,7 +108,7 @@ class NeonCard extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.8),
+                    Colors.black.withValues(alpha: 0.8),
                     Colors.black,
                   ],
                   stops: const [0.5, 0.85, 1.0],

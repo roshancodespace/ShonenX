@@ -41,7 +41,7 @@ class GenericSelectionSheet<T> extends StatelessWidget {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20, top: 8),
                   decoration: BoxDecoration(
-                    color: scheme.onSurface.withOpacity(0.2),
+                    color: scheme.onSurface.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -62,7 +62,7 @@ class GenericSelectionSheet<T> extends StatelessWidget {
                     onPressed: () => context.pop(),
                     icon: Icon(
                       Icons.close_rounded,
-                      color: scheme.onSurface.withOpacity(0.5),
+                      color: scheme.onSurface.withValues(alpha: 0.5),
                     ),
                     visualDensity: VisualDensity.compact,
                   ),
@@ -77,7 +77,9 @@ class GenericSelectionSheet<T> extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Text(
                     "No options available",
-                    style: TextStyle(color: scheme.onSurface.withOpacity(0.5)),
+                    style: TextStyle(
+                      color: scheme.onSurface.withValues(alpha: 0.5),
+                    ),
                   ),
                 )
               else
@@ -89,7 +91,7 @@ class GenericSelectionSheet<T> extends StatelessWidget {
                     child: ListView.separated(
                       shrinkWrap: true,
                       itemCount: items.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final item = items[index];
                         final isSelected = selectedIndex == index;
@@ -140,8 +142,8 @@ class _SelectionItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: isSelected
-                ? scheme.primary.withOpacity(0.15)
-                : scheme.surfaceContainerHighest.withOpacity(0.5),
+                ? scheme.primary.withValues(alpha: 0.15)
+                : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected ? scheme.primary : Colors.transparent,

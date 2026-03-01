@@ -51,14 +51,14 @@ class HorizontalMediaSection<T> extends StatelessWidget {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   itemCount: 4,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (_, __) => const _ShimmerItem(),
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  itemBuilder: (_, _) => const _ShimmerItem(),
                 )
               : ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
                   itemBuilder: (context, index) {
                     final item = items[index];
                     return itemBuilder(context, item);
@@ -117,12 +117,14 @@ class MediaCard extends StatelessWidget {
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: theme.colorScheme.primary.withOpacity(0.5),
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.5,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                      errorWidget: (_, __, ___) => Container(
+                      errorWidget: (_, _, _) => Container(
                         color: theme.colorScheme.surfaceContainer,
                         child: Icon(
                           Icons.image_not_supported_outlined,
@@ -162,7 +164,7 @@ class MediaCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withValues(alpha: 0.6),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -185,7 +187,7 @@ class MediaCard extends StatelessWidget {
                   fontSize: 13,
                   height: 1.3,
                   color: isManga
-                      ? theme.textTheme.bodySmall?.color?.withOpacity(0.5)
+                      ? theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5)
                       : null,
                 ),
                 maxLines: 2,
@@ -215,7 +217,9 @@ class _ShimmerItem extends StatelessWidget {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withOpacity(0.6),
+                color: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.6,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
@@ -230,7 +234,9 @@ class _ShimmerItem extends StatelessWidget {
                   height: 12,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withOpacity(0.6),
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.6,
+                    ),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -239,7 +245,9 @@ class _ShimmerItem extends StatelessWidget {
                   height: 12,
                   width: 80,
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withOpacity(0.6),
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.6,
+                    ),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -282,7 +290,7 @@ class StaffCard extends StatelessWidget {
                   height: double.infinity,
                   placeholder: (context, url) =>
                       Container(color: theme.colorScheme.surfaceContainer),
-                  errorWidget: (_, __, ___) => Container(
+                  errorWidget: (_, _, _) => Container(
                     color: theme.colorScheme.surfaceContainer,
                     child: Icon(
                       Icons.person,

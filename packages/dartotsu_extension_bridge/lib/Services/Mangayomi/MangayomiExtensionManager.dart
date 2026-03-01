@@ -1,58 +1,28 @@
 import 'dart:convert';
-import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
 import 'package:isar_community/isar.dart';
 
+import '../../Logger.dart';
 import '../../dartotsu_extension_bridge.dart';
 import 'http/m_client.dart';
 import 'lib.dart';
 
-class MangayomiExtensionManager {
-  final installedAnimeExtensions = ValueNotifier<List<MSource>>([]);
-  final availableAnimeExtensions = ValueNotifier<List<MSource>>([]);
-  final installedMangaExtensions = ValueNotifier<List<MSource>>([]);
-  final availableMangaExtensions = ValueNotifier<List<MSource>>([]);
-  final installedNovelExtensions = ValueNotifier<List<MSource>>([]);
-  final availableNovelExtensions = ValueNotifier<List<MSource>>([]);
+class MangayomiExtensionManager extends GetxController {
+  final installedAnimeExtensions = Rx<List<MSource>>([]);
+  final availableAnimeExtensions = Rx<List<MSource>>([]);
+  final installedMangaExtensions = Rx<List<MSource>>([]);
+  final availableMangaExtensions = Rx<List<MSource>>([]);
+  final installedNovelExtensions = Rx<List<MSource>>([]);
+  final availableNovelExtensions = Rx<List<MSource>>([]);
   final http = MClient.init(reqcopyWith: {'useDartHttpClient': true});
 
-  final List<StreamSubscription> _subscriptions = [];
-
-  MangayomiExtensionManager() {
-    _init();
-  }
-
-  void _init() {
-    _subscriptions.add(
-      getExtensionsStream(ItemType.anime).listen((data) {
-        installedAnimeExtensions.value = data;
-      }),
-    );
-    _subscriptions.add(
-      getExtensionsStream(ItemType.manga).listen((data) {
-        installedMangaExtensions.value = data;
-      }),
-    );
-    _subscriptions.add(
-      getExtensionsStream(ItemType.novel).listen((data) {
-        installedNovelExtensions.value = data;
-      }),
-    );
-  }
-
-  void dispose() {
-    for (var sub in _subscriptions) {
-      sub.cancel();
-    }
-    _subscriptions.clear();
-    installedAnimeExtensions.dispose();
-    availableAnimeExtensions.dispose();
-    installedMangaExtensions.dispose();
-    availableMangaExtensions.dispose();
-    installedNovelExtensions.dispose();
-    availableNovelExtensions.dispose();
+  @override
+  void onInit() {
+    super.onInit();
+    installedAnimeExtensions.bindStream(getExtensionsStream(ItemType.anime));
+    installedMangaExtensions.bindStream(getExtensionsStream(ItemType.manga));
+    installedNovelExtensions.bindStream(getExtensionsStream(ItemType.novel));
   }
 
   Stream<List<MSource>> getExtensionsStream(ItemType itemType) async* {
@@ -76,7 +46,7 @@ class MangayomiExtensionManager {
       if (repo.trim().isEmpty) continue;
       final req = await http.get(Uri.parse(repo.trim()));
       if (req.statusCode != 200) {
-        debugPrint("Failed to fetch sources from $repo: ${req.statusCode}");
+        Logger.log("Failed to fetch sources from $repo: ${req.statusCode}");
         continue;
       }
       final sourceList = (jsonDecode(req.body) as List)
@@ -211,7 +181,7 @@ class MangayomiExtensionManager {
 
       await isar.writeTxnSync(() async => isar.mSources.putSync(s));
     } catch (e) {
-      debugPrint("Error installing source: $e");
+      Logger.log("Error installing source: $e");
       return Future.error(e);
     }
   }
@@ -223,7 +193,7 @@ class MangayomiExtensionManager {
         () async => isar.mSources.deleteSync(mSource.id!),
       );
     } catch (e) {
-      debugPrint("Error uninstalling source: $e");
+      Logger.log("Error uninstalling source: $e");
       return Future.error(e);
     }
   }
@@ -243,7 +213,7 @@ class MangayomiExtensionManager {
 
       await isar.writeTxnSync(() async => isar.mSources.putSync(s));
     } catch (e) {
-      debugPrint("Error updating source: $e");
+      Logger.log("Error updating source: $e");
       return Future.error(e);
     }
   }

@@ -202,7 +202,7 @@ class EpisodeData extends _$EpisodeData {
     await changeSubtitle(state.subtitles.length - 1);
   }
 
-  Future<void> downloadEpisode(BuildContext context, int epNum) async {;
+  Future<void> downloadEpisode(BuildContext context, int epNum) async {
     if (!_isValidEp(epNum) || _epList.animeId == null) return;
 
     final ep = _epList.episodes.firstWhere((i) => i.number == epNum);
@@ -214,10 +214,15 @@ class EpisodeData extends _$EpisodeData {
       if (!context.mounted) return;
       Navigator.pop(context);
 
-      if (servers.isEmpty) return _showSnack(context, "No servers found");
-      final selected = servers.length == 1
-          ? servers.first
-          : await _showServerSheet(context, servers);
+      ServerData? selected;
+      if (_exp.useExtensions) {
+        selected = ServerData(name: 'Extension', id: 'ext', isDub: false);
+      } else {
+        if (servers.isEmpty) return _showSnack(context, "No servers found");
+        selected = servers.length == 1
+            ? servers.first
+            : await _showServerSheet(context, servers);
+      }
       if (selected == null || !context.mounted) return;
 
       await showModalBottomSheet(
@@ -452,7 +457,7 @@ class EpisodeData extends _$EpisodeData {
               Expanded(
                 child: ListView.separated(
                   itemCount: servers.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, i) {
                     final s = servers[i];
                     return ListTile(

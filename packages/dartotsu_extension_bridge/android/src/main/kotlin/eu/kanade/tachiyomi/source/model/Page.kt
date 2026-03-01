@@ -4,14 +4,16 @@ import android.net.Uri
 import eu.kanade.tachiyomi.network.ProgressListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.io.Serializable
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
+@Serializable
 open class Page(
     val index: Int,
     val url: String = "",
     var imageUrl: String? = null,
     @Transient var uri: Uri? = null, // Deprecated but can't be deleted due to extensions
-) : Serializable, ProgressListener {
+) : ProgressListener {
 
     val number: Int
         get() = index + 1

@@ -1,23 +1,23 @@
-import 'package:dartotsu_extension_bridge/Models/DEpisode.dart';
-import 'package:dartotsu_extension_bridge/Models/DMedia.dart';
-import 'package:dartotsu_extension_bridge/Models/Page.dart';
-import 'package:dartotsu_extension_bridge/Models/Pages.dart';
-import 'package:dartotsu_extension_bridge/Models/Source.dart';
-import 'package:dartotsu_extension_bridge/Models/SourcePreference.dart' as s;
-import 'package:dartotsu_extension_bridge/Models/Video.dart';
-import 'package:dartotsu_extension_bridge/Services/Mangayomi/Eval/dart/model/source_preference.dart';
-import 'package:dartotsu_extension_bridge/Services/Mangayomi/string_extensions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../../Extensions/SourceMethods.dart';
+import '../../Models/DEpisode.dart';
+import '../../Models/DMedia.dart';
+import '../../Models/Page.dart';
+import '../../Models/Pages.dart';
+import '../../Models/Source.dart';
+import '../../Models/SourcePreference.dart' as s;
+import '../../Models/Video.dart';
 import 'ChapterRecognition.dart';
 import 'Eval/dart/model/m_manga.dart';
+import 'Eval/dart/model/source_preference.dart';
 import 'MangayomiExtensionManager.dart';
 import 'Models/Source.dart';
 import 'extension_preferences_providers.dart';
 import 'get_source_preference.dart';
 import 'lib.dart';
+import 'string_extensions.dart';
 
 class MangayomiSourceMethods implements SourceMethods {
   @override

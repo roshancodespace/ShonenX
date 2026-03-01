@@ -54,11 +54,11 @@ class HomepageNotifier extends Notifier<HomepageState> {
     final shouldRefresh =
         forceRefresh ||
         state.homePage == null ||
-        state.homePage!.trendingAnime.isEmpty ||
-        state.homePage!.popularAnime.isEmpty ||
-        state.homePage!.upcomingAnime.isEmpty ||
-        state.homePage!.recentlyUpdated.isEmpty ||
-        state.homePage!.topRatedAnime.isEmpty ||
+        state.homePage!.trendingAnime.data.isEmpty ||
+        state.homePage!.popularAnime.data.isEmpty ||
+        state.homePage!.upcomingAnime.data.isEmpty ||
+        state.homePage!.recentlyUpdated.data.isEmpty ||
+        state.homePage!.topRatedAnime.data.isEmpty ||
         state.lastUpdated.isBefore(
           DateTime.now().subtract(const Duration(hours: 6)),
         );
@@ -77,23 +77,23 @@ class HomepageNotifier extends Notifier<HomepageState> {
       state = state.copyWith(isLoading: true, error: null);
     }
     try {
-      final trending = await _repo.getTrendingAnime();
-      final popular = await _repo.getPopularAnime();
-      final upcoming = await _repo.getUpcomingAnime();
-      final recentlyUpdated = await _repo.getRecentlyUpdatedAnime();
-      final topRated = await _repo.getTopRatedAnime();
+      final futures = await Future.wait([
+        _repo.getTrendingAnime(),
+        _repo.getPopularAnime(),
+        _repo.getUpcomingAnime(),
+        _repo.getRecentlyUpdatedAnime(),
+        _repo.getTopRatedAnime(),
+      ]);
 
       final homePage = HomePage(
-        trendingAnime: trending,
-        popularAnime: popular,
-        recentlyUpdated: recentlyUpdated,
-        topRatedAnime: topRated,
-        upcomingAnime: upcoming,
-        mostFavoriteAnime: [],
-        mostWatchedAnime: [],
+        trendingAnime: futures[0],
+        popularAnime: futures[1],
+        upcomingAnime: futures[2],
+        recentlyUpdated: futures[3],
+        topRatedAnime: futures[4],
       );
 
-      AppLogger.d('✅ Successfully fetched homepage data');
+      AppLogger.d('✅ Successfully fetched homepage data concurrently');
       _saveToHive(homePage);
       return state.copyWith(homePage: homePage, isLoading: false);
     } catch (err, stackTrace) {

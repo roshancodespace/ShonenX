@@ -30,7 +30,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
         name: 'Standard',
         previewText: 'Aa',
         textColor: Colors.white,
-        backgroundColor: Colors.black.withOpacity(0.0),
+        backgroundColor: Colors.black.withValues(alpha: 0.0),
         borderColor: Colors.black,
         borderWidth: 2.0,
         model: SubtitleAppearanceModel(
@@ -47,7 +47,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
         name: 'Boxed',
         previewText: 'Aa',
         textColor: Colors.white,
-        backgroundColor: Colors.black.withOpacity(0.6),
+        backgroundColor: Colors.black.withValues(alpha: 0.6),
         borderColor: Colors.transparent,
         borderWidth: 0,
         model: SubtitleAppearanceModel(
@@ -155,7 +155,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
         name: 'Paper',
         previewText: 'Aa',
         textColor: Colors.black,
-        backgroundColor: Colors.white.withOpacity(0.8),
+        backgroundColor: Colors.white.withValues(alpha: 0.8),
         borderColor: Colors.transparent,
         borderWidth: 0,
         model: SubtitleAppearanceModel(
@@ -193,7 +193,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
         name: 'Terminal',
         previewText: '>_',
         textColor: Color(0xFF00FF00),
-        backgroundColor: Colors.black.withOpacity(0.8),
+        backgroundColor: Colors.black.withValues(alpha: 0.8),
         borderColor: Colors.transparent,
         borderWidth: 0,
         model: SubtitleAppearanceModel(
@@ -230,7 +230,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
         previewText: 'Aa',
         textColor: Color(0xFFE0E0E0),
         backgroundColor: Colors.transparent,
-        borderColor: Colors.black.withOpacity(0.5),
+        borderColor: Colors.black.withValues(alpha: 0.5),
         borderWidth: 1.0,
         model: SubtitleAppearanceModel(
           fontSize: 16,
@@ -247,7 +247,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
         name: 'Warning',
         previewText: '!!',
         textColor: Color(0xFFFF3333),
-        backgroundColor: Colors.black.withOpacity(0.7),
+        backgroundColor: Colors.black.withValues(alpha: 0.7),
         borderColor: Colors.white,
         borderWidth: 1.0,
         model: SubtitleAppearanceModel(
@@ -264,7 +264,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
       _SubtitlePreset(
         name: 'Ghost',
         previewText: 'Oo',
-        textColor: Colors.white.withOpacity(0.9),
+        textColor: Colors.white.withValues(alpha: 0.9),
         backgroundColor: Colors.transparent,
         borderColor: Colors.transparent,
         borderWidth: 0,
@@ -323,7 +323,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       blurRadius: 10,
                       offset: const Offset(0, 5),
                     ),
@@ -338,7 +338,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.transparent,
-                            Colors.black.withOpacity(0.6),
+                            Colors.black.withValues(alpha: 0.6),
                           ],
                         ),
                       ),
@@ -783,7 +783,7 @@ class SubtitleCustomizationScreen extends ConsumerWidget {
           decoration: BoxDecoration(
             color: Color(
               subtitleStyle.backgroundColor,
-            ).withOpacity(subtitleStyle.backgroundOpacity),
+            ).withValues(alpha: subtitleStyle.backgroundOpacity),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Stack(
@@ -853,7 +853,7 @@ class _PresetCard extends StatelessWidget {
         width: 100,
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.transparent),
         ),

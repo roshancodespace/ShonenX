@@ -52,7 +52,9 @@ class _DefaultSpotlightState extends State<DefaultSpotlight> {
             borderRadius: borderRadius,
             boxShadow: [
               BoxShadow(
-                color: colorScheme.shadow.withOpacity(_isHovered ? 0.25 : 0.15),
+                color: colorScheme.shadow.withValues(
+                  alpha: _isHovered ? 0.25 : 0.15,
+                ),
                 blurRadius: _isHovered ? 30 : 20,
                 offset: Offset(0, _isHovered ? 12 : 8),
               ),
@@ -83,8 +85,8 @@ class _DefaultSpotlightState extends State<DefaultSpotlight> {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.black.withOpacity(0.2),
-                        Colors.black.withOpacity(0.8),
+                        Colors.black.withValues(alpha: 0.2),
+                        Colors.black.withValues(alpha: 0.8),
                         Colors.black,
                       ],
                       stops: const [0.0, 0.4, 0.8, 1.0],
@@ -136,7 +138,7 @@ class _DefaultSpotlightState extends State<DefaultSpotlight> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodyLarge?.copyWith(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                               height: 1.5,
                             ),
                           ),
@@ -182,14 +184,14 @@ class _DefaultSpotlightState extends State<DefaultSpotlight> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withOpacity(0.9),
+        color: colorScheme.primaryContainer.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: colorScheme.onPrimaryContainer.withOpacity(0.1),
+          color: colorScheme.onPrimaryContainer.withValues(alpha: 0.1),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -226,9 +228,12 @@ class _SpotlightChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.2),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

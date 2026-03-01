@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/server_model.dart';
@@ -199,50 +200,106 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
       );
     }
 
-    return ListView.builder(
-      controller: widget.scrollController,
-      padding: const EdgeInsets.all(10),
-      itemCount: _sources.length,
-      itemBuilder: (context, index) {
-        final source = _sources[index];
-        final isExpanded = _expandedIndex == index;
-        final cachedQualities = _extractedCache[index] ?? [];
-        final isExtracting = _extractingIndices.contains(index);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            'Select Source',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: ListView.separated(
+            controller: widget.scrollController,
+            itemCount: _sources.length,
+            separatorBuilder: (_, _) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final source = _sources[index];
+              final isExpanded = _expandedIndex == index;
+              final cachedQualities = _extractedCache[index] ?? [];
+              final isExtracting = _extractingIndices.contains(index);
 
-        return Card(
-          key: ValueKey('source_$index'),
-          margin: const EdgeInsets.only(bottom: 12),
-          clipBehavior: Clip.antiAlias,
-          child: ExpansionTile(
-            maintainState: true,
-            initiallyExpanded: isExpanded,
-            onExpansionChanged: (val) => _expandSource(index, source),
-            title: Text(
-              source.quality ?? 'Source ${index + 1}',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(source.isDub ? 'Dubbed' : 'Subtitled'),
-            trailing: isExtracting
-                ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : null,
-            children: [
-              if (cachedQualities.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: cachedQualities.map((q) {
+              return Theme(
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  maintainState: true,
+                  initiallyExpanded: isExpanded,
+                  onExpansionChanged: (val) => _expandSource(index, source),
+                  title: Row(
+                    children: [
+                      Text(
+                        source.quality ?? 'Source ${index + 1}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      Badge(
+                        label: Text(source.isDub ? 'DUB' : 'SUB'),
+                        backgroundColor: source.isDub
+                            ? colorScheme.secondary
+                            : colorScheme.primary,
+                      ),
+                    ],
+                  ),
+                  trailing: isExtracting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : null,
+                  children: [
+                    if (cachedQualities.isNotEmpty)
+                      ...cachedQualities.map((q) {
                         final isErr = q['quality'].toString().contains('Error');
-                        return ActionChip(
-                          label: Text(q['quality']),
-                          onPressed: isErr
+                        return ListTile(
+                          dense: true,
+                          contentPadding: const EdgeInsets.only(
+                            left: 32,
+                            right: 16,
+                          ),
+                          title: Text(q['quality']),
+                          trailing: isErr
+                              ? null
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.copy, size: 20),
+                                      onPressed: () {
+                                        Clipboard.setData(
+                                          ClipboardData(text: q['url']),
+                                        );
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'URL copied to clipboard',
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.download,
+                                        size: 20,
+                                      ),
+                                      onPressed: () => _triggerDownload(
+                                        q['url'],
+                                        q['quality'],
+                                        source.headers,
+                                        source.isM3U8,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                          onTap: isErr
                               ? null
                               : () => _triggerDownload(
                                   q['url'],
@@ -250,23 +307,20 @@ class _DownloadSourceSelectorState extends State<DownloadSourceSelector> {
                                   source.headers,
                                   source.isM3U8,
                                 ),
-                          backgroundColor: isErr
-                              ? colorScheme.errorContainer
-                              : colorScheme.secondaryContainer,
                         );
-                      }).toList(),
-                    ),
-                  ),
-                )
-              else if (!isExtracting)
-                Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Text("Loading quality options..."),
+                      }).toList()
+                    else if (!isExtracting)
+                      const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text("Loading quality options..."),
+                      ),
+                  ],
                 ),
-            ],
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }

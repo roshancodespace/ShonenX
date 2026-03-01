@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:dartotsu_extension_bridge/Services/Sora/FetchV2.dart';
 import 'package:fjs/fjs.dart';
 import 'package:flutter/services.dart';
 
+import 'FetchV2.dart';
 import 'SoraExtensions.dart';
 
 late JsEngine engine;
@@ -27,16 +27,15 @@ Future<void> initJsEngine() async {
       return const JsResult.err(JsError.cancelled('Unknown bridge call'));
     },
   );
-  fetch.inject();
   await runtime.setMemoryLimit(limit: BigInt.from(32 * 1024 * 1024));
   await runtime.setGcThreshold(threshold: BigInt.from(8 * 1024 * 1024));
+  await fetch.inject();
 }
 
 Future<void> loadExtensionJs() async {
   final jsSource = await rootBundle.loadString('assets/hianime.js');
 
-  final wrapped =
-      '''
+  final wrapped = '''
 $jsSource
 
 export {

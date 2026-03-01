@@ -1,6 +1,5 @@
 import 'package:isar_community/isar.dart';
-import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
-import 'package:shonenx/core/models/anilist/media.dart';
+import 'package:shonenx/core/models/universal/universal_media.dart';
 
 part 'isar_anime_watch_progress.g.dart';
 
@@ -38,20 +37,24 @@ class IsarAnimeWatchProgress {
     this.sourceSelection,
   });
 
-  Media toMedia() {
-    return Media(
+  UniversalMedia toUniversalMedia() {
+    return UniversalMedia(
       id: animeId,
-      title: Title(native: animeTitle, romaji: animeTitle, english: animeTitle),
+      title: UniversalTitle(
+        native: animeTitle,
+        romaji: animeTitle,
+        english: animeTitle,
+      ),
       format: animeFormat,
-      coverImage: CoverImage(large: animeCover, medium: animeCover),
+      coverImage: UniversalCoverImage(large: animeCover, medium: animeCover),
       episodes: totalEpisodes,
       status: status,
-      startDate: FuzzyDate(
+      startDate: UniversalFuzzyDate(
         year: DateTime.now().year,
         month: DateTime.now().month,
         day: DateTime.now().day,
       ),
-      endDate: FuzzyDate(
+      endDate: UniversalFuzzyDate(
         year: DateTime.now().year,
         month: DateTime.now().month,
         day: DateTime.now().day,

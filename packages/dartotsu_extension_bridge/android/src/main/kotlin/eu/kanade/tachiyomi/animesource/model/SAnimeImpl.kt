@@ -1,6 +1,6 @@
-package eu.kanade.tachiyomi.animesource.model
+@file:Suppress("PropertyName")
 
-import eu.kanade.tachiyomi.source.model.UpdateStrategy
+package eu.kanade.tachiyomi.animesource.model
 
 class SAnimeImpl : SAnime {
 
@@ -20,7 +20,13 @@ class SAnimeImpl : SAnime {
 
     override var thumbnail_url: String? = null
 
+    override var background_url: String? = null
+
     override var initialized: Boolean = false
 
-    override var update_strategy: UpdateStrategy = UpdateStrategy.ALWAYS_UPDATE
+    override var update_strategy: AnimeUpdateStrategy = AnimeUpdateStrategy.ALWAYS_UPDATE
+
+    override var fetch_type: FetchType = FetchType.Episodes
+
+    override var season_number: Double = -1.0
 }

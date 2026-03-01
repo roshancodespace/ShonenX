@@ -33,7 +33,7 @@ class PolaroidSpotlight extends StatelessWidget {
           borderRadius: BorderRadius.circular(2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -62,7 +62,7 @@ class PolaroidSpotlight extends StatelessWidget {
                         child: Tag(
                           text: '${anime!.averageScore}',
                           icon: Iconsax.star1,
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           textColor: Colors.black87,
                           hasShadow: true,
                         ),

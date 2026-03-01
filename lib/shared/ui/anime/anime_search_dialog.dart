@@ -201,7 +201,7 @@ class _AnimeSearchDialogState extends ConsumerState<AnimeSearchDialog> {
 
     return ListView.separated(
       itemCount: _results.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final anime = _results[index];
         return ListTile(
@@ -235,7 +235,7 @@ class _AnimeSearchDialogState extends ConsumerState<AnimeSearchDialog> {
         width: 50,
         height: 70,
         fit: BoxFit.cover,
-        errorWidget: (_, __, ___) => Container(
+        errorWidget: (_, _, _) => Container(
           width: 50,
           height: 70,
           color: Colors.grey[800],

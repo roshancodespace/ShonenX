@@ -252,7 +252,9 @@ class _AdvancedPlayerSettingsScreenState
               children: [
                 Container(
                   padding: const EdgeInsets.all(16),
-                  color: theme.colorScheme.errorContainer.withOpacity(0.5),
+                  color: theme.colorScheme.errorContainer.withValues(
+                    alpha: 0.5,
+                  ),
                   child: Row(
                     children: [
                       Icon(
@@ -282,7 +284,7 @@ class _AdvancedPlayerSettingsScreenState
                       border: const OutlineInputBorder(),
                       filled: true,
                       fillColor: theme.colorScheme.surfaceContainerHighest
-                          .withOpacity(0.3),
+                          .withValues(alpha: 0.3),
                     ),
                     style: const TextStyle(fontFamily: 'monospace'),
                     onChanged: (value) {

@@ -120,9 +120,9 @@ class SliderSettingsItem extends BaseSettingsItem {
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
         activeTrackColor: effectiveColor,
-        inactiveTrackColor: effectiveColor.withOpacity(0.12),
+        inactiveTrackColor: effectiveColor.withValues(alpha: 0.12),
         thumbColor: effectiveColor,
-        overlayColor: effectiveColor.withOpacity(0.12),
+        overlayColor: effectiveColor.withValues(alpha: 0.12),
         trackHeight: effectiveCompact ? 2 : 4,
         thumbShape: RoundSliderThumbShape(
           enabledThumbRadius: effectiveCompact ? 6 : 8,

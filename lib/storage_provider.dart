@@ -4,8 +4,7 @@ import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
-import 'package:shonenx/data/isar/chapter.dart';
-import 'package:shonenx/data/isar/manga.dart';
+import 'package:shonenx/data/isar/media.dart';
 import 'package:shonenx/data/isar/track.dart';
 import 'package:shonenx/data/isar/isar_anime_watch_progress.dart';
 
@@ -61,9 +60,8 @@ class StorageProvider {
 
     final isar = await Isar.open(
       [
-        MangaSchema,
+        MediaSchema,
         MSourceSchema,
-        ChapterSchema,
         SourcePreferenceSchema,
         TrackSchema,
         SourcePreferenceStringValueSchema,

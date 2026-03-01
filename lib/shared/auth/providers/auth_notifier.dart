@@ -83,6 +83,8 @@ class Auth extends _$Auth {
   AniListAuthService get _anilistAuthService => AniListAuthService();
   MyAnimeListAuthService get _malAuthService => MyAnimeListAuthService();
 
+  Future<bool>? _malRefreshFuture;
+
   @override
   AuthState build() {
     _init();
@@ -155,7 +157,10 @@ class Auth extends _$Auth {
       final code = await _anilistAuthService.authenticate();
       if (code == null) return;
 
-      final token = await _anilistAuthService.getAccessToken(code);
+      final tokenData = await _anilistAuthService.getAccessToken(code);
+      if (tokenData == null) return;
+
+      final token = tokenData['access_token'] as String?;
       if (token == null) return;
 
       await _secureStorage.write(key: 'anilist-token', value: token);
@@ -186,16 +191,30 @@ class Auth extends _$Auth {
 
     state = state.copyWith(malLoading: true);
     try {
-      final profile = await _malAuthService.getUserProfile();
+      final profile = await _malAuthService.getUserProfile(token!);
       if (profile != null) {
         state = state.copyWith(
           malAccessToken: token,
           malUser: _buildMalUser(profile),
         );
+      } else {
+        // Token might be expired, attempt refresh
+        final refreshed = await refreshMalToken();
+        if (refreshed && state.malAccessToken != null) {
+          final retryProfile = await _malAuthService.getUserProfile(
+            state.malAccessToken!,
+          );
+          if (retryProfile != null) {
+            state = state.copyWith(malUser: _buildMalUser(retryProfile));
+          } else {
+            await logout(AuthPlatform.mal);
+          }
+        } else {
+          await logout(AuthPlatform.mal);
+        }
       }
     } catch (_) {
-      await _secureStorage.delete(key: 'mal-token');
-      await _secureStorage.delete(key: 'mal-refresh-token');
+      await logout(AuthPlatform.mal);
     } finally {
       state = state.copyWith(malLoading: false);
     }
@@ -218,7 +237,7 @@ class Auth extends _$Auth {
         value: tokenData['refresh_token'],
       );
 
-      final profile = await _malAuthService.getUserProfile();
+      final profile = await _malAuthService.getUserProfile(accesToken);
       if (profile != null) {
         // Login to Commentum
         try {
@@ -282,18 +301,47 @@ class Auth extends _$Auth {
     }
   }
 
-  Future<void> refreshMalToken() async {
-    final tokenData = await _malAuthService.refreshToken();
-    if (tokenData != null) {
-      state = state.copyWith(malAccessToken: tokenData['access_token']);
-      await _secureStorage.write(
-        key: 'mal-token',
-        value: tokenData['access_token'],
-      );
-      await _secureStorage.write(
-        key: 'mal-refresh-token',
-        value: tokenData['refresh_token'],
-      );
+  Future<bool> refreshMalToken() async {
+    if (_malRefreshFuture != null) {
+      return _malRefreshFuture!;
+    }
+
+    _malRefreshFuture = _performMalTokenRefresh();
+    try {
+      final result = await _malRefreshFuture!;
+      return result;
+    } finally {
+      _malRefreshFuture = null;
+    }
+  }
+
+  Future<bool> _performMalTokenRefresh() async {
+    try {
+      final refreshToken = await _secureStorage.read(key: 'mal-refresh-token');
+      if (refreshToken == null) {
+        await logout(AuthPlatform.mal);
+        return false;
+      }
+
+      final tokenData = await _malAuthService.refreshToken(refreshToken);
+      if (tokenData != null) {
+        state = state.copyWith(malAccessToken: tokenData['access_token']);
+        await _secureStorage.write(
+          key: 'mal-token',
+          value: tokenData['access_token'],
+        );
+        await _secureStorage.write(
+          key: 'mal-refresh-token',
+          value: tokenData['refresh_token'],
+        );
+        return true;
+      } else {
+        await logout(AuthPlatform.mal);
+        return false;
+      }
+    } catch (e) {
+      await logout(AuthPlatform.mal);
+      return false;
     }
   }
 

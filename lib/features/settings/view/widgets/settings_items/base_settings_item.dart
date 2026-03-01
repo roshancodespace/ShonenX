@@ -14,12 +14,12 @@ abstract class BaseSettingsItem extends StatelessWidget {
   final String title;
   final String description;
   final VoidCallback? onTap;
-  
+
   // M3 Expressive Params
-  final bool isExpressive; 
+  final bool isExpressive;
   final double? roundness;
   final Color? containerColor;
-  
+
   final bool isCompact;
   final List<Widget>? trailingWidgets;
   final SettingsItemLayout layoutType;
@@ -48,9 +48,7 @@ abstract class BaseSettingsItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(radius * 2.5),
       );
     }
-    return RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(radius),
-    );
+    return RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
   }
 
   @override
@@ -59,8 +57,9 @@ abstract class BaseSettingsItem extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isSmallScreen = screenWidth < 600;
-    
-    final double effectiveRadius = roundness ?? 
+
+    final double effectiveRadius =
+        roundness ??
         (isExpressive ? kM3ExpressiveRadiusMedium : kM3ExpressiveRadiusSmall);
 
     final effectiveCompact = isCompact || isSmallScreen;
@@ -71,10 +70,9 @@ abstract class BaseSettingsItem extends StatelessWidget {
       isSmallScreen,
     );
 
-    final effectiveContainerColor = containerColor ?? 
-        (isExpressive 
-            ? colorScheme.surfaceContainerLow 
-            : colorScheme.surface);
+    final effectiveContainerColor =
+        containerColor ??
+        (isExpressive ? colorScheme.surfaceContainerLow : colorScheme.surface);
 
     return Material(
       color: effectiveContainerColor,
@@ -142,7 +140,7 @@ abstract class BaseSettingsItem extends StatelessWidget {
     ResponsiveDimensions dimensions,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     final effectiveAccent = accent ?? colorScheme.primary;
     final effectiveIconColor = iconColor ?? effectiveAccent;
 
@@ -150,13 +148,13 @@ abstract class BaseSettingsItem extends StatelessWidget {
       width: dimensions.iconContainerSize,
       height: dimensions.iconContainerSize,
       decoration: BoxDecoration(
-        color: isExpressive 
-            ? effectiveAccent.withOpacity(0.12)
-            : Colors.transparent, 
+        color: isExpressive
+            ? effectiveAccent.withValues(alpha: 0.12)
+            : Colors.transparent,
         borderRadius: isExpressive
-             ? BorderRadius.circular(12)
-             : BorderRadius.circular(effectiveCompact ? 8 : 10),
-        shape: isExpressive ? BoxShape.rectangle : BoxShape.rectangle, 
+            ? BorderRadius.circular(12)
+            : BorderRadius.circular(effectiveCompact ? 8 : 10),
+        shape: isExpressive ? BoxShape.rectangle : BoxShape.rectangle,
       ),
       child: Center(
         child: (icon != null)
@@ -168,8 +166,8 @@ abstract class BaseSettingsItem extends StatelessWidget {
                 child: icon!,
               )
             : (leading != null)
-                ? leading
-                : const SizedBox.shrink(),
+            ? leading
+            : const SizedBox.shrink(),
       ),
     );
   }

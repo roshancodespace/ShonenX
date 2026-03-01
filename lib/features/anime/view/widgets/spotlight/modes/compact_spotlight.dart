@@ -39,7 +39,10 @@ class CompactSpotlight extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black.withOpacity(0.9)],
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.9),
+                ],
                 stops: const [0.5, 1.0],
               ),
             ),
@@ -69,7 +72,7 @@ class CompactSpotlight extends StatelessWidget {
                       Tag(
                         text: '${anime!.averageScore}',
                         icon: Iconsax.star1,
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                         textColor: Colors.white,
                       ),
                   ],

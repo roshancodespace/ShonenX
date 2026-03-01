@@ -30,20 +30,19 @@ class LoadingScreen extends ConsumerStatefulWidget {
 }
 
 class _LoadingScreenState extends ConsumerState<LoadingScreen> {
-  late final ProviderSubscription<InitializationState>
-      _initializationListener;
+  late final ProviderSubscription<InitializationState> _initializationListener;
 
   @override
   void initState() {
     super.initState();
     AppLogger.d('Initializing LoadingScreen UI');
 
-    _initializationListener = ref.listenManual(
-      initializationProvider,
-      (previous, next) {
-        // Reserved for initialization state transitions if needed.
-      },
-    );
+    _initializationListener = ref.listenManual(initializationProvider, (
+      previous,
+      next,
+    ) {
+      // Reserved for initialization state transitions if needed.
+    });
 
     // Post-frame callback ensures context is available for checks
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -160,18 +159,17 @@ class _PulsingLogoState extends State<_PulsingLogo>
               borderRadius: BorderRadius.circular(32),
               boxShadow: [
                 BoxShadow(
-                  color: colorScheme.primaryContainer.withOpacity(0.15),
+                  color: colorScheme.primaryContainer.withValues(alpha: 0.15),
                   blurRadius: 30,
                   spreadRadius: 5,
                   offset: const Offset(0, 8),
                 ),
               ],
             ),
-            child: child, // Using the pre-built child for performance
+            child: child,
           ),
         );
       },
-      // The image is static, pass it as 'child' so it isn't rebuilt every frame
       child: Center(
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
@@ -179,7 +177,7 @@ class _PulsingLogoState extends State<_PulsingLogo>
             'assets/icons/app_icon-modified-2.png',
             width: 90,
             height: 90,
-            errorBuilder: (_, __, ___) => Icon(
+            errorBuilder: (_, _, _) => Icon(
               Icons.play_circle_filled,
               size: 90,
               color: colorScheme.primaryContainer,
@@ -228,7 +226,7 @@ class _QuoteRotatorState extends State<_QuoteRotator> {
         _kAnimeQuotes[_index],
         key: ValueKey<int>(_index),
         style: TextStyle(
-          color: widget.colorScheme.onSurface.withOpacity(0.8),
+          color: widget.colorScheme.onSurface.withValues(alpha: 0.8),
           fontSize: 14,
           fontStyle: FontStyle.italic,
           letterSpacing: 0.3,
@@ -281,7 +279,9 @@ class _AnimatedProgressBar extends StatelessWidget {
                             gradient: LinearGradient(
                               colors: [
                                 colorScheme.primaryContainer,
-                                colorScheme.primaryContainer.withOpacity(0.8),
+                                colorScheme.primaryContainer.withValues(
+                                  alpha: 0.8,
+                                ),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(3),
@@ -300,7 +300,7 @@ class _AnimatedProgressBar extends StatelessWidget {
             style: TextStyle(
               color: hasError
                   ? colorScheme.error
-                  : colorScheme.onSurface.withOpacity(0.8),
+                  : colorScheme.onSurface.withValues(alpha: 0.8),
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -309,7 +309,7 @@ class _AnimatedProgressBar extends StatelessWidget {
           Text(
             '${(progress * 100).toInt()}%',
             style: TextStyle(
-              color: colorScheme.onSurface.withOpacity(0.5),
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
               fontSize: 12,
             ),
           ),
@@ -357,7 +357,7 @@ class _AppTitle extends StatelessWidget {
         Text(
           'Premium Anime Experience',
           style: TextStyle(
-            color: colorScheme.onSurface.withOpacity(0.7),
+            color: colorScheme.onSurface.withValues(alpha: 0.7),
             fontSize: 18,
             fontWeight: FontWeight.w500,
             letterSpacing: 0.2,
@@ -368,15 +368,13 @@ class _AppTitle extends StatelessWidget {
   }
 }
 
-/// Totally static background.
-/// Extracted to ensure it is only built once and never repainted during updates.
 class _BackgroundDecoration extends StatelessWidget {
   const _BackgroundDecoration();
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final size = MediaQuery.sizeOf(context); // Faster than MediaQuery.of
+    final size = MediaQuery.sizeOf(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -430,9 +428,9 @@ class _BackgroundDecoration extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: RadialGradient(
             colors: [
-              color.withOpacity(0.08),
-              color.withOpacity(0.03),
-              color.withOpacity(0.0),
+              color.withValues(alpha: 0.08),
+              color.withValues(alpha: 0.03),
+              color.withValues(alpha: 0.0),
             ],
           ),
           shape: BoxShape.circle,
@@ -454,7 +452,7 @@ class _ErrorOverlay extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Container(
-      color: Colors.black.withOpacity(0.8),
+      color: Colors.black.withValues(alpha: 0.8),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(32),
@@ -462,7 +460,7 @@ class _ErrorOverlay extends StatelessWidget {
           decoration: BoxDecoration(
             color: colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: colorScheme.error.withOpacity(0.3)),
+            border: Border.all(color: colorScheme.error.withValues(alpha: 0.3)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -480,7 +478,7 @@ class _ErrorOverlay extends StatelessWidget {
               Text(
                 errorMessage,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.8),
+                  color: colorScheme.onSurface.withValues(alpha: 0.8),
                 ),
                 textAlign: TextAlign.center,
               ),

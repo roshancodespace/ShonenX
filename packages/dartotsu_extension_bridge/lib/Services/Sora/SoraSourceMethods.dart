@@ -1,12 +1,11 @@
-import 'package:dartotsu_extension_bridge/Models/DEpisode.dart';
-import 'package:dartotsu_extension_bridge/Models/DMedia.dart';
-import 'package:dartotsu_extension_bridge/Models/Page.dart';
-import 'package:dartotsu_extension_bridge/Models/Pages.dart';
-import 'package:dartotsu_extension_bridge/Models/SourcePreference.dart';
-import 'package:dartotsu_extension_bridge/Models/Video.dart';
-
 import '../../Extensions/SourceMethods.dart';
+import '../../Models/DEpisode.dart';
+import '../../Models/DMedia.dart';
+import '../../Models/Page.dart';
+import '../../Models/Pages.dart';
 import '../../Models/Source.dart';
+import '../../Models/SourcePreference.dart';
+import '../../Models/Video.dart';
 
 class SoraSourceMethods extends SourceMethods {
   @override

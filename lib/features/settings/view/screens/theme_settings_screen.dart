@@ -227,7 +227,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: Theme.of(
                         context,
-                      ).colorScheme.outline.withOpacity(0.4),
+                      ).colorScheme.outline.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
@@ -243,7 +243,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                   Divider(
                     color: Theme.of(
                       context,
-                    ).colorScheme.outlineVariant.withOpacity(0.5),
+                    ).colorScheme.outlineVariant.withValues(alpha: 0.5),
                   ),
 
                   Expanded(
@@ -300,7 +300,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: colors.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.outline.withOpacity(0.1)),
+        border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
@@ -370,7 +370,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
       height: 48,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.outline.withOpacity(0.2)),
+        border: Border.all(color: colors.outline.withValues(alpha: 0.2)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(11),

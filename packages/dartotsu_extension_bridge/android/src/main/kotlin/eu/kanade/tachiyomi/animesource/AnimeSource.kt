@@ -4,7 +4,7 @@ import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
-import eu.kanade.tachiyomi.util.lang.awaitSingle
+import eu.kanade.tachiyomi.util.awaitSingle
 import rx.Observable
 
 /**
@@ -48,6 +48,15 @@ interface AnimeSource {
     suspend fun getEpisodeList(anime: SAnime): List<SEpisode> {
         return fetchEpisodeList(anime).awaitSingle()
     }
+
+    /**
+     * Get all the available seasons for an anime
+     *
+     * @since extensions-lib 16
+     * @param anime the anime to fetch seasons for.
+     * @return the anime list for the anime.
+     */
+    suspend fun getSeasonList(anime: SAnime): List<SAnime>
 
     /**
      * Get the list of hoster for an episode. The first hoster in the list should

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
 import 'package:get/get.dart';
 
 import 'Extensions/Extensions.dart';
@@ -10,6 +9,7 @@ import 'Services/Aniyomi/AniyomiExtensions.dart';
 import 'Services/Aniyomi/AniyomiSourceMethods.dart';
 import 'Services/Mangayomi/MangayomiExtensions.dart';
 import 'Services/Mangayomi/MangayomiSourceMethods.dart';
+import 'Settings/Settings.dart';
 import 'extension_bridge.dart';
 
 class ExtensionManager extends GetxController {
@@ -19,8 +19,9 @@ class ExtensionManager extends GetxController {
 
   late final Rx<Extension> _currentManager;
 
-  Extension get currentManager => _currentManager.value;
   Rx<Extension> get currentManagerRx => _currentManager;
+
+  Extension get currentManager => _currentManager.value;
 
   void initialize() {
     final settings = isar.bridgeSettings.getSync(26)!;

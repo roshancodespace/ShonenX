@@ -540,7 +540,9 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                               width: 40,
                               height: 4,
                               decoration: BoxDecoration(
-                                color: theme.dividerColor.withOpacity(0.5),
+                                color: theme.dividerColor.withValues(
+                                  alpha: 0.5,
+                                ),
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),
@@ -661,7 +663,7 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
                 ? CachedNetworkImage(
                     imageUrl: source.iconUrl!,
                     fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) =>
+                    errorWidget: (_, _, _) =>
                         const Icon(Icons.extension, size: 20),
                   )
                 : const Icon(Icons.extension, size: 20),

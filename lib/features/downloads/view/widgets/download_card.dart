@@ -30,7 +30,7 @@ class DownloadCard extends ConsumerWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
         ),
       ),
       clipBehavior: Clip.antiAlias,
@@ -86,9 +86,9 @@ class DownloadCard extends ConsumerWidget {
             height: 64,
             width: 64,
             fit: BoxFit.cover,
-            placeholder: (_, __) =>
+            placeholder: (_, _) =>
                 Container(color: theme.colorScheme.surfaceContainerHigh),
-            errorWidget: (_, __, ___) => const Icon(Iconsax.image),
+            errorWidget: (_, _, _) => const Icon(Iconsax.image),
           ),
         ),
         if (isCompleted)

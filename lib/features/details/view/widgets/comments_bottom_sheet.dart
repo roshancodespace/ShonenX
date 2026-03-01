@@ -378,7 +378,7 @@ class _CommentsBottomSheetState extends ConsumerState<CommentsBottomSheet> {
         controller: scrollController,
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: _comments.length,
-        separatorBuilder: (_, __) => Divider(
+        separatorBuilder: (_, _) => Divider(
           height: 1,
           indent: 16,
           endIndent: 16,

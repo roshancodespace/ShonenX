@@ -32,7 +32,7 @@ class AboutScreen extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: [
                   colorScheme.primaryContainer,
-                  colorScheme.primaryContainer.withOpacity(0.8),
+                  colorScheme.primaryContainer.withValues(alpha: 0.8),
                 ],
               ),
             ),
@@ -43,7 +43,7 @@ class AboutScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: colorScheme.surface.withOpacity(0.1),
+                    color: colorScheme.surface.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: Image.asset(
@@ -64,7 +64,9 @@ class AboutScreen extends StatelessWidget {
                 Text(
                   'Your Gateway to Anime Streaming',
                   style: textTheme.bodyLarge?.copyWith(
-                    color: colorScheme.onPrimaryContainer.withOpacity(0.8),
+                    color: colorScheme.onPrimaryContainer.withValues(
+                      alpha: 0.8,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -78,7 +80,7 @@ class AboutScreen extends StatelessWidget {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: colorScheme.surface.withOpacity(0.2),
+                        color: colorScheme.surface.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -114,7 +116,7 @@ class AboutScreen extends StatelessWidget {
                 Text(
                   'ShonenX is a passion project built with Flutter, designed to provide anime enthusiasts with a seamless streaming experience. The app leverages various providers through the Consumet API to bring you the latest and greatest anime content.',
                   style: textTheme.bodyLarge?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.8),
+                    color: colorScheme.onSurface.withValues(alpha: 0.8),
                     height: 1.6,
                   ),
                 ),
@@ -247,7 +249,9 @@ class AboutScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.3,
+                    ),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -274,7 +278,9 @@ class AboutScreen extends StatelessWidget {
                       Text(
                         'ShonenX does not host any content. All anime content is provided by third-party sources through the Consumet API & Custom Extensions . Please respect copyright laws and support official anime distributors.',
                         style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                          color: colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.8,
+                          ),
                           height: 1.5,
                         ),
                       ),
@@ -290,7 +296,7 @@ class AboutScreen extends StatelessWidget {
                     'Made with ❤️ by Roshan\n© 2025 ShonenX',
                     textAlign: TextAlign.center,
                     style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.6),
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
                       height: 1.5,
                     ),
                   ),
@@ -318,16 +324,16 @@ class AboutScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.1),
+              color: colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: colorScheme.primary, size: 24),
@@ -340,7 +346,7 @@ class AboutScreen extends StatelessWidget {
                 Text(
                   title,
                   style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.6),
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -356,7 +362,7 @@ class AboutScreen extends StatelessWidget {
                 Text(
                   subtitle,
                   style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.7),
+                    color: colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -384,7 +390,7 @@ class AboutScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.1),
+              color: colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: colorScheme.primary, size: 20),
@@ -405,7 +411,7 @@ class AboutScreen extends StatelessWidget {
                 Text(
                   description,
                   style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.7),
+                    color: colorScheme.onSurface.withValues(alpha: 0.7),
                     height: 1.4,
                   ),
                 ),
@@ -427,7 +433,7 @@ class AboutScreen extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Material(
-      color: colorScheme.primary.withOpacity(0.1),
+      color: colorScheme.primary.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,

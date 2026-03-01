@@ -55,9 +55,9 @@ class MangaSpotlight extends StatelessWidget {
                         imageUrl: imageUrl,
                         fit: BoxFit.cover,
                         memCacheWidth: 800,
-                        placeholder: (_, __) =>
+                        placeholder: (_, _) =>
                             const AnimeCardShimmer(height: double.infinity),
-                        errorWidget: (_, __, ___) =>
+                        errorWidget: (_, _, _) =>
                             const AnimeCardShimmer(height: double.infinity),
                         imageBuilder: (context, imageProvider) => ColorFiltered(
                           colorFilter: const ColorFilter.mode(

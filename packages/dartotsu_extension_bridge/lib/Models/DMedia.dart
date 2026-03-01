@@ -1,4 +1,4 @@
-import 'package:dartotsu_extension_bridge/Models/DEpisode.dart';
+import 'DEpisode.dart';
 
 class DMedia {
   String? title;
@@ -32,8 +32,8 @@ class DMedia {
       genre: json['genre'] != null ? List<String>.from(json['genre']) : [],
       episodes: json['episodes'] != null
           ? (json['episodes'] as List)
-              .map((e) => DEpisode.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
+                .map((e) => DEpisode.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : [],
     );
   }
@@ -52,13 +52,13 @@ class DMedia {
   }
 
   Map<String, dynamic> toJson() => {
-        'title': title,
-        'url': url,
-        'cover': cover,
-        'description': description,
-        'author': author,
-        'artist': artist,
-        'genre': genre,
-        'episodes': episodes?.map((e) => e.toJson()).toList(),
-      };
+    'title': title,
+    'url': url,
+    'cover': cover,
+    'description': description,
+    'author': author,
+    'artist': artist,
+    'genre': genre,
+    'episodes': episodes?.map((e) => e.toJson()).toList(),
+  };
 }

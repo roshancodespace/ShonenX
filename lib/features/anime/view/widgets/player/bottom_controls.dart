@@ -447,7 +447,7 @@ class _FlatTextBtn extends StatelessWidget {
       padding: const EdgeInsets.only(right: 6),
       child: Material(
         color: isAccent
-            ? scheme?.primary.withOpacity(0.15)
+            ? scheme?.primary.withValues(alpha: 0.15)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(4),
         child: InkWell(

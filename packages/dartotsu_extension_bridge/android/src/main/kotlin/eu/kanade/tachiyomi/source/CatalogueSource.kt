@@ -2,8 +2,8 @@ package eu.kanade.tachiyomi.source
 
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.util.lang.awaitSingle
 import rx.Observable
+import tachiyomi.core.util.lang.awaitSingle
 
 interface CatalogueSource : MangaSource {
 

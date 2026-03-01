@@ -1,11 +1,12 @@
 package eu.kanade.tachiyomi.source.model
 
 /**
- * Define the update strategy for a single [SManga].
+ * Define the update strategy for a single SManga or SAnime.
  * The strategy used will only take effect on the library update.
  *
  * @since extensions-lib 1.4
  */
+@Suppress("UNUSED")
 enum class UpdateStrategy {
     /**
      * Series marked as always update will be included in the library

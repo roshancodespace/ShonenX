@@ -29,11 +29,12 @@ class UniversalHttpClient {
     Object? body,
   }) async {
     final bool useCache = cacheConfig != null && cacheConfig.duration != null;
-    final String key = cacheConfig?.customKey ?? _generateKey(method, url, body: body);
+    final String key =
+        cacheConfig?.customKey ?? _generateKey(method, url, body: body);
 
     if (useCache && !cacheConfig.forceRefresh) {
       final cachedData = await _cacheStorage.get(key);
-      
+
       if (cachedData != null) {
         final int timestamp = cachedData['ts'];
         final int durationMs = cachedData['duration'];
@@ -49,7 +50,7 @@ class UniversalHttpClient {
           );
         } else {
           AppLogger.w('[CACHE EXPIRED] $method $url');
-          _cacheStorage.delete(key); 
+          _cacheStorage.delete(key);
         }
       }
     }
@@ -60,8 +61,8 @@ class UniversalHttpClient {
       if (useCache && response.statusCode >= 200 && response.statusCode < 300) {
         AppLogger.w('[CACHE MISS] Saving $method $url');
         _cacheStorage.put(
-          key: key, 
-          response: response, 
+          key: key,
+          response: response,
           duration: cacheConfig.duration!,
         );
       }
@@ -99,12 +100,8 @@ class UniversalHttpClient {
       url: url,
       body: body,
       cacheConfig: cacheConfig,
-      networkRequest: () => _client.post(
-        url, 
-        headers: headers, 
-        body: body, 
-        encoding: encoding
-      ),
+      networkRequest: () =>
+          _client.post(url, headers: headers, body: body, encoding: encoding),
     );
   }
 
@@ -120,12 +117,25 @@ class UniversalHttpClient {
       url: url,
       body: body,
       cacheConfig: cacheConfig,
-      networkRequest: () => _client.put(
-        url, 
-        headers: headers, 
-        body: body, 
-        encoding: encoding
-      ),
+      networkRequest: () =>
+          _client.put(url, headers: headers, body: body, encoding: encoding),
+    );
+  }
+
+  Future<http.Response> patch(
+    Uri url, {
+    Map<String, String>? headers,
+    Object? body,
+    Encoding? encoding,
+    CacheConfig? cacheConfig,
+  }) {
+    return _request(
+      method: 'PATCH',
+      url: url,
+      body: body,
+      cacheConfig: cacheConfig,
+      networkRequest: () =>
+          _client.patch(url, headers: headers, body: body, encoding: encoding),
     );
   }
 

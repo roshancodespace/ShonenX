@@ -36,27 +36,27 @@ abstract class AnimeRepository {
     SearchFilter? filter,
   });
   Future<UniversalMedia?> getAnimeDetails(int animeId);
-  Future<List<UniversalMedia>> getTrendingAnime({
+  Future<UniversalPageResponse<UniversalMedia>> getTrendingAnime({
     int page = 1,
     int perPage = 25,
   });
-  Future<List<UniversalMedia>> getPopularAnime({
+  Future<UniversalPageResponse<UniversalMedia>> getPopularAnime({
     int page = 1,
     int perPage = 25,
   });
-  Future<List<UniversalMedia>> getTopRatedAnime({
+  Future<UniversalPageResponse<UniversalMedia>> getTopRatedAnime({
     int page = 1,
     int perPage = 25,
   });
-  Future<List<UniversalMedia>> getRecentlyUpdatedAnime({
+  Future<UniversalPageResponse<UniversalMedia>> getRecentlyUpdatedAnime({
     int page = 1,
     int perPage = 25,
   });
-  Future<List<UniversalMedia>> getUpcomingAnime({
+  Future<UniversalPageResponse<UniversalMedia>> getUpcomingAnime({
     int page = 1,
     int perPage = 25,
   });
-  Future<List<UniversalMedia>> getMostFavoriteAnime({
+  Future<UniversalPageResponse<UniversalMedia>> getMostFavoriteAnime({
     int page = 1,
     int perPage = 25,
   });

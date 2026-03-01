@@ -128,11 +128,11 @@ class ShonenXGlassShard extends StatelessWidget {
 
             if (isDark)
               Positioned.fill(
-                child: ColoredBox(color: Colors.black.withOpacity(0.6)),
+                child: ColoredBox(color: Colors.black.withValues(alpha: 0.6)),
               )
             else
               Positioned.fill(
-                child: ColoredBox(color: Colors.black.withOpacity(0.4)),
+                child: ColoredBox(color: Colors.black.withValues(alpha: 0.4)),
               ),
 
             Container(
@@ -142,8 +142,8 @@ class ShonenXGlassShard extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.white.withOpacity(isDark ? 0.15 : 0.25),
-                    Colors.white.withOpacity(0.02),
+                    Colors.white.withValues(alpha: isDark ? 0.15 : 0.25),
+                    Colors.white.withValues(alpha: 0.02),
                   ],
                 ),
               ),

@@ -51,19 +51,6 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
     super.dispose();
   }
 
-  void _showEditListBottomSheet(UniversalMedia anime) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => EditListBottomSheet(anime: anime),
-    );
-  }
-
   void _onMediaTap(UniversalMedia media) {
     Navigator.push(
       context,
@@ -173,14 +160,7 @@ class _AnimeDetailsScreenState extends ConsumerState<AnimeDetailsScreen>
           children: [
             NestedScrollView(
               headerSliverBuilder: (context, innerBoxIsScrolled) {
-                return [
-                  DetailsHeader(
-                    anime: displayedAnime,
-                    tag: widget.tag,
-                    onEditPressed: () =>
-                        _showEditListBottomSheet(displayedAnime),
-                  ),
-                ];
+                return [DetailsHeader(anime: displayedAnime, tag: widget.tag)];
               },
               body: ScrollConfiguration(
                 behavior: ScrollConfiguration.of(

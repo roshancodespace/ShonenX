@@ -41,7 +41,7 @@ final class WatchControllerProvider
   }
 }
 
-String _$watchControllerHash() => r'fdcf10b908ca61ab0a1e2892279ff2f497967847';
+String _$watchControllerHash() => r'3320c64841c71049121065ce35d7fffe09273081';
 
 abstract class _$WatchController extends $Notifier<void> {
   void build();

@@ -21,10 +21,10 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        /*maven {
-            url 'http://download.flutter.io'
-            allowInsecureProtocol=true
-        }*/
+        maven {
+           url 'http://download.flutter.io'
+           allowInsecureProtocol=true
+       }
     }
 }
 
@@ -78,6 +78,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.14'
     implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.14'
     implementation 'com.squareup.okio:okio:3.8.0'
+    implementation 'com.squareup.okhttp3:okhttp-dnsoverhttps:5.0.0-alpha.14'
     implementation 'com.squareup.okhttp3:okhttp-brotli:5.0.0-alpha.14'
     implementation("io.reactivex:rxjava:1.3.8")
     implementation("io.reactivex:rxandroid:1.2.1")
@@ -86,5 +87,5 @@ dependencies {
     implementation 'androidx.compose.runtime:runtime-android:1.8.3'
     implementation 'androidx.preference:preference-ktx:1.2.1'
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
-    //api "io.flutter:flutter_embedding_debug:1.0.0-1d25906b4cf0076604a67360b21b1e092eb01b19"
+    compileOnly "io.flutter:flutter_embedding_debug:1.0.0-1d25906b4cf0076604a67360b21b1e092eb01b19"
 }

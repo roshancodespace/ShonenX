@@ -8,7 +8,7 @@ void showSubtitleSettings(BuildContext context) {
       barrierLabel: 'Close Settings',
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 250),
-      pageBuilder: (context, _, __) {
+      pageBuilder: (context, _, _) {
         return Align(
           alignment: Alignment.centerRight,
           child: Material(

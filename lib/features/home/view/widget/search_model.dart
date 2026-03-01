@@ -10,7 +10,7 @@ void showSearchModal(BuildContext context, String heroTag) {
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 300),
       reverseTransitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (_, animation, __) {
+      pageBuilder: (_, animation, _) {
         final theme = Theme.of(context);
         return FadeTransition(
           opacity: animation,
@@ -58,8 +58,8 @@ void showSearchModal(BuildContext context, String heroTag) {
                         hintText: 'Search anime...',
                         hintStyle: WidgetStatePropertyAll(
                           TextStyle(
-                            color: theme.colorScheme.onSurface.withOpacity(
-                              0.7,
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.7,
                             ),
                           ),
                         ),

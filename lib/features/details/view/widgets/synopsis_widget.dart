@@ -45,7 +45,9 @@ class _AnimeSynopsisState extends State<AnimeSynopsis>
                 width: double.infinity,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh.withOpacity(0.5),
+                  color: colorScheme.surfaceContainerHigh.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -54,7 +56,9 @@ class _AnimeSynopsisState extends State<AnimeSynopsis>
                 width: double.infinity,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh.withOpacity(0.5),
+                  color: colorScheme.surfaceContainerHigh.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -63,7 +67,9 @@ class _AnimeSynopsisState extends State<AnimeSynopsis>
                 width: MediaQuery.of(context).size.width * 0.6,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh.withOpacity(0.5),
+                  color: colorScheme.surfaceContainerHigh.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),

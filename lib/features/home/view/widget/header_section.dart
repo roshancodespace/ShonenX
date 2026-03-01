@@ -102,8 +102,8 @@ class _DiscoverCard extends StatelessWidget {
       onTap: () => context.go('/browse'),
       gradient: LinearGradient(
         colors: [
-          theme.colorScheme.primary.withOpacity(0.15),
-          theme.colorScheme.primary.withOpacity(0.02),
+          theme.colorScheme.primary.withValues(alpha: 0.15),
+          theme.colorScheme.primary.withValues(alpha: 0.02),
         ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
@@ -160,7 +160,7 @@ class _DiscoverTextContent extends StatelessWidget {
         Text(
           'Find your next favorite series',
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
       ],
@@ -220,7 +220,7 @@ class UserProfileCard extends StatelessWidget {
                 Text(
                   user != null ? getGreeting() : 'Welcome!',
                   style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
                 Text(
@@ -272,11 +272,11 @@ class _UserAvatar extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.cover,
-          errorWidget: (_, __, ___) => Container(
+          errorWidget: (_, _, _) => Container(
             color: decoration.color,
             child: const Icon(Icons.person),
           ),
-          placeholder: (_, __) => Container(color: decoration.color),
+          placeholder: (_, _) => Container(color: decoration.color),
         ),
       ),
     );
@@ -339,7 +339,7 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final button = Material(
-      color: theme.colorScheme.secondaryContainer.withOpacity(0.5),
+      color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap ?? (route != null ? () => context.push(route!) : null),
@@ -387,7 +387,7 @@ class _HeaderBaseCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: radius,
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: ClipRRect(

@@ -1,3 +1,5 @@
+@file:Suppress("PropertyName")
+
 package eu.kanade.tachiyomi.source.model
 
 import java.io.Serializable
@@ -29,36 +31,6 @@ interface SManga : Serializable {
         return genre?.split(", ")?.map { it.trim() }?.filterNot { it.isBlank() }?.distinct()
     }
 
-    fun copyFrom(other: SManga) {
-        if (other.author != null) {
-            author = other.author
-        }
-
-        if (other.artist != null) {
-            artist = other.artist
-        }
-
-        if (other.description != null) {
-            description = other.description
-        }
-
-        if (other.genre != null) {
-            genre = other.genre
-        }
-
-        if (other.thumbnail_url != null) {
-            thumbnail_url = other.thumbnail_url
-        }
-
-        status = other.status
-
-        update_strategy = other.update_strategy
-
-        if (!initialized) {
-            initialized = other.initialized
-        }
-    }
-
     fun copy() = create().also {
         it.url = url
         it.title = title
@@ -84,7 +56,5 @@ interface SManga : Serializable {
         fun create(): SManga {
             return SMangaImpl()
         }
-
-        private const val serialVersionUID = 1L
     }
 }

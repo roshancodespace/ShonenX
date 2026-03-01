@@ -165,7 +165,7 @@ class _SideNav extends StatelessWidget {
         border: Border.all(color: colorScheme.primary),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -184,7 +184,7 @@ class _SideNav extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(30),
                     color: isSelected
-                        ? colorScheme.primary.withOpacity(0.2)
+                        ? colorScheme.primary.withValues(alpha: 0.2)
                         : null,
                   ),
                   alignment: Alignment.center,
@@ -224,9 +224,11 @@ class _BottomNav extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: colorScheme.surface.withOpacity(0.5),
+              color: colorScheme.surface.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(100),
-              border: Border.all(color: colorScheme.primary.withOpacity(0.8)),
+              border: Border.all(
+                color: colorScheme.primary.withValues(alpha: 0.8),
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -240,7 +242,7 @@ class _BottomNav extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? colorScheme.primary.withOpacity(0.2)
+                            ? colorScheme.primary.withValues(alpha: 0.2)
                             : null,
                         borderRadius: BorderRadius.circular(100),
                       ),

@@ -32,10 +32,6 @@ class AccountAuthenticationSection extends ConsumerWidget {
           brandColor: const Color(0xFF2E51A2),
           state: state,
         ),
-        if (state.isAniListAuthenticated || state.isMalAuthenticated) ...[
-          const SizedBox(height: 24),
-          _PrimaryPlatformInfo(activePlatform: state.activePlatform),
-        ],
       ],
     );
   }
@@ -70,7 +66,7 @@ class _ServiceCard extends ConsumerWidget {
 
     return Material(
       color: isAuthenticated
-          ? colorScheme.surfaceContainerHighest.withOpacity(0.4)
+          ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.4)
           : colorScheme.surfaceContainer,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
@@ -107,7 +103,7 @@ class _ServiceCard extends ConsumerWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: brandColor.withOpacity(0.1),
+                              color: brandColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -167,7 +163,7 @@ class _ServiceCard extends ConsumerWidget {
                   onPressed: () =>
                       ref.read(authProvider.notifier).login(platform),
                   style: FilledButton.styleFrom(
-                    backgroundColor: brandColor.withOpacity(0.1),
+                    backgroundColor: brandColor.withValues(alpha: 0.1),
                     foregroundColor: brandColor,
                     textStyle: const TextStyle(fontWeight: FontWeight.bold),
                   ),
@@ -234,66 +230,15 @@ class _ServiceLogo extends StatelessWidget {
       height: size,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: CachedNetworkImage(
           imageUrl: url,
-          errorWidget: (_, __, ___) => Icon(Iconsax.image, color: color),
+          errorWidget: (_, _, _) => Icon(Iconsax.image, color: color),
         ),
-      ),
-    );
-  }
-}
-
-class _PrimaryPlatformInfo extends StatelessWidget {
-  final AuthPlatform activePlatform;
-
-  const _PrimaryPlatformInfo({required this.activePlatform});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final name = activePlatform == AuthPlatform.anilist
-        ? 'AniList'
-        : 'MyAnimeList';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: colorScheme.secondaryContainer.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.secondary.withOpacity(0.1)),
-      ),
-      child: Row(
-        children: [
-          Icon(Iconsax.info_circle, size: 20, color: colorScheme.secondary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text.rich(
-              TextSpan(
-                text: 'Syncing to ',
-                children: [
-                  TextSpan(
-                    text: name,
-                    style: TextStyle(
-                      color: colorScheme.secondary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const TextSpan(text: ' by default.'),
-                ],
-              ),
-              style: TextStyle(
-                color: colorScheme.secondary,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

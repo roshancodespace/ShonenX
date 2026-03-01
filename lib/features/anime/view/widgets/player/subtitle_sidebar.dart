@@ -222,7 +222,7 @@ class SubtitleSettingsSidebar extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Color(
             style.backgroundColor,
-          ).withOpacity(style.backgroundOpacity),
+          ).withValues(alpha: style.backgroundOpacity),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Stack(

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart';
@@ -9,10 +9,12 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'ExtensionManager.dart';
+import 'Logger.dart';
 import 'Services/Aniyomi/AniyomiExtensions.dart';
 import 'Services/Mangayomi/Eval/dart/model/source_preference.dart';
 import 'Services/Mangayomi/MangayomiExtensions.dart';
 import 'Services/Mangayomi/Models/Source.dart';
+import 'Settings/Settings.dart';
 
 late Isar isar;
 WebViewEnvironment? webViewEnvironment;
@@ -20,7 +22,9 @@ Client? httpClient;
 
 class DartotsuExtensionBridge {
   Future<void> init(Isar? isarInstance, String dirName, {Client? http}) async {
+    Logger.init();
     httpClient = http;
+
     if (isarInstance == null) {
       var document = await getDatabaseDirectory(dirName);
       isar = Isar.openSync(
@@ -30,10 +34,8 @@ class DartotsuExtensionBridge {
     } else {
       isar = isarInstance;
     }
-    final settings = await isar.bridgeSettings
-        .filter()
-        .idEqualTo(26)
-        .findFirst();
+    final settings =
+        await isar.bridgeSettings.filter().idEqualTo(26).findFirst();
     if (settings == null) {
       isar.writeTxnSync(
         () => isar.bridgeSettings.putSync(BridgeSettings()..id = 26),
@@ -65,6 +67,11 @@ class DartotsuExtensionBridge {
     SourcePreferenceStringValueSchema,
     BridgeSettingsSchema,
   ];
+
+  // every bridge logs goes through this function (i think, it should lmao)
+  static void Function(String log) onLog = (log) {
+    debugPrint('DartotsuExtensionBridge: $log');
+  };
 }
 
 Future<Directory> getDatabaseDirectory(String dirName) async {

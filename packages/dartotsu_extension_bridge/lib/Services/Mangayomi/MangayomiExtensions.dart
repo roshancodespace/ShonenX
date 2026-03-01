@@ -1,6 +1,6 @@
-import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:get/get.dart';
 
+import '../../dartotsu_extension_bridge.dart';
 import 'MangayomiExtensionManager.dart';
 
 class MangayomiExtensions extends Extension {

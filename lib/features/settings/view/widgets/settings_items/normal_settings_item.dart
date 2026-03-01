@@ -44,7 +44,7 @@ class NormalSettingsItem extends BaseSettingsItem {
           Icon(
             Iconsax.arrow_right_3,
             size: effectiveCompact ? 16 : 20,
-            color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
           )
         else
           ...buildCustomTrailingWidgets(effectiveCompact),

@@ -148,14 +148,8 @@ class AnimePaheProvider extends AnimeProvider {
     }
     episodes.sort((a, b) => a.number!.compareTo(b.number!));
     if (episodes.isNotEmpty) {
-      final int offset = (episodes.first.number ?? 1) - 1;
-
-      if (offset > 0) {
-        for (int i = 0; i < episodes.length; i++) {
-          episodes[i] = episodes[i].copyWith(
-            number: episodes[i].number! - offset,
-          );
-        } 
+      for (int i = 0; i < episodes.length; i++) {
+        episodes[i] = episodes[i].copyWith(number: i + 1);
       }
     }
 

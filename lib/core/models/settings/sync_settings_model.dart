@@ -7,6 +7,7 @@ class SyncSettingsModel {
   String syncMode;
   int backgroundIntervalMinutes;
   bool askBeforeSync;
+  int syncPercentage;
 
   SyncSettingsModel({
     this.syncAnilist = true,
@@ -14,7 +15,8 @@ class SyncSettingsModel {
     this.localSync = true,
     this.syncMode = 'realtime',
     this.backgroundIntervalMinutes = 15,
-    this.askBeforeSync = false,
+    this.askBeforeSync = true,
+    this.syncPercentage = 80,
   });
 
   SyncSettingsModel copyWith({
@@ -24,6 +26,7 @@ class SyncSettingsModel {
     String? syncMode,
     int? backgroundIntervalMinutes,
     bool? askBeforeSync,
+    int? syncPercentage,
   }) {
     return SyncSettingsModel(
       syncAnilist: syncAnilist ?? this.syncAnilist,
@@ -33,6 +36,7 @@ class SyncSettingsModel {
       backgroundIntervalMinutes:
           backgroundIntervalMinutes ?? this.backgroundIntervalMinutes,
       askBeforeSync: askBeforeSync ?? this.askBeforeSync,
+      syncPercentage: syncPercentage ?? this.syncPercentage,
     );
   }
 
@@ -44,6 +48,7 @@ class SyncSettingsModel {
       'syncMode': syncMode,
       'backgroundIntervalMinutes': backgroundIntervalMinutes,
       'askBeforeSync': askBeforeSync,
+      'syncPercentage': syncPercentage,
     };
   }
 
@@ -54,7 +59,8 @@ class SyncSettingsModel {
       localSync: map['localSync'] ?? true,
       syncMode: map['syncMode'] ?? 'realtime',
       backgroundIntervalMinutes: map['backgroundIntervalMinutes'] ?? 15,
-      askBeforeSync: map['askBeforeSync'] ?? false,
+      askBeforeSync: map['askBeforeSync'] ?? true,
+      syncPercentage: map['syncPercentage'] ?? 80,
     );
   }
 

@@ -134,7 +134,7 @@ final routerConfig = GoRouter(
     ),
     AnimatedGoRoute(
       path: '/settings',
-      contentBuilder: (_, __) => const SettingsScreen(),
+      contentBuilder: (_, _) => const SettingsScreen(),
       routes: [
         AnimatedGoRoute(
           path: 'debug',

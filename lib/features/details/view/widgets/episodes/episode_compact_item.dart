@@ -85,7 +85,7 @@ class EpisodeCompactItem extends StatelessWidget {
           LinearProgressIndicator(
             value: watchProgress,
             backgroundColor: Colors.transparent,
-            color: theme.colorScheme.primary.withOpacity(0.5),
+            color: theme.colorScheme.primary.withValues(alpha: 0.5),
             minHeight: 1,
           ),
         const Divider(height: 1),

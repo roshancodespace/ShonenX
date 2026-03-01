@@ -1,4 +1,3 @@
-import 'package:shonenx/core/models/anilist/media_list_entry.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 
 class UniversalMediaListEntry {
@@ -22,16 +21,16 @@ class UniversalMediaListEntry {
     required this.notes,
   });
 
-  factory UniversalMediaListEntry.fromAnilist(MediaListEntry entry) {
+  factory UniversalMediaListEntry.fromAnilist(Map<String, dynamic> json) {
     return UniversalMediaListEntry(
-      id: entry.id.toString(),
-      media: UniversalMedia.fromAnilist(entry.media),
-      status: entry.status,
-      score: entry.score,
-      progress: entry.progress,
-      repeat: entry.repeat,
-      isPrivate: entry.isPrivate,
-      notes: entry.notes,
+      id: json['id']?.toString() ?? '0',
+      media: UniversalMedia.fromAnilist(json['media'] ?? {}),
+      status: json['status'] ?? 'UNKNOWN',
+      score: (json['score'] as num?)?.toDouble() ?? 0.0,
+      progress: json['progress'] ?? 0,
+      repeat: json['repeat'] ?? 0,
+      isPrivate: json['private'] ?? false,
+      notes: json['notes'] ?? '',
     );
   }
 
@@ -40,7 +39,7 @@ class UniversalMediaListEntry {
     return UniversalMediaListEntry(
       id: node['id']?.toString() ?? '0',
       media: UniversalMedia.fromMal(node),
-      status: node['list_status']?['status'] ?? 'UNKNOWN',
+      status: _normalizeMalStatus(node['list_status']?['status']),
       score: (node['list_status']?['score'] as num?)?.toDouble() ?? 0.0,
       progress: node['list_status']?['num_episodes_watched'] as int? ?? 0,
       repeat: node['list_status']?['num_times_rewatched'] as int? ?? 0,
@@ -69,5 +68,23 @@ class UniversalMediaListEntry {
       isPrivate: isPrivate ?? this.isPrivate,
       notes: notes ?? this.notes,
     );
+  }
+}
+
+String _normalizeMalStatus(String? status) {
+  if (status == null) return 'UNKNOWN';
+  switch (status) {
+    case 'watching':
+      return 'CURRENT';
+    case 'completed':
+      return 'COMPLETED';
+    case 'on_hold':
+      return 'PAUSED';
+    case 'dropped':
+      return 'DROPPED';
+    case 'plan_to_watch':
+      return 'PLANNING';
+    default:
+      return status.toUpperCase();
   }
 }

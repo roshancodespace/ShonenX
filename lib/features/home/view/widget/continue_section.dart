@@ -54,7 +54,7 @@ class ContinueSection extends ConsumerWidget {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: validEntries.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 16),
+            separatorBuilder: (_, _) => const SizedBox(width: 16),
             itemBuilder: (context, index) {
               final entry = validEntries[index];
               final currentEp = entry.episodesProgress[entry.currentEpisode];
@@ -73,14 +73,14 @@ class ContinueSection extends ConsumerWidget {
                 imageWidget = CachedNetworkImage(
                   imageUrl: thumb,
                   fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => _buildFallback(colorScheme),
+                  errorWidget: (_, _, _) => _buildFallback(colorScheme),
                 );
               } else if (thumb != null) {
                 try {
                   imageWidget = Image.memory(
                     base64Decode(thumb),
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _buildFallback(colorScheme),
+                    errorBuilder: (_, _, _) => _buildFallback(colorScheme),
                   );
                 } catch (_) {
                   imageWidget = _buildFallback(colorScheme);
@@ -89,124 +89,146 @@ class ContinueSection extends ConsumerWidget {
                 imageWidget = Image.network(
                   entry.animeCover,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _buildFallback(colorScheme),
+                  errorBuilder: (_, _, _) => _buildFallback(colorScheme),
                 );
               } else {
                 imageWidget = _buildFallback(colorScheme);
               }
 
-              return RepaintBoundary(
-                child: SizedBox(
-                  width: itemWidth,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () => providerAnimeMatchSearch(
-                      context: context,
-                      ref: ref,
-                      animeMedia: UniversalMedia(
-                        id: entry.animeId,
-                        title: UniversalTitle(
-                          romaji: entry.animeTitle,
-                          english: entry.animeTitle,
-                          native: entry.animeTitle,
-                        ),
-                        coverImage: UniversalCoverImage(
-                          large: entry.animeCover,
-                          medium: entry.animeCover,
+              bool isLoading = false;
+              return StatefulBuilder(
+                builder: (context, setState) {
+                  return RepaintBoundary(
+                    child: SizedBox(
+                      width: itemWidth,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () async {
+                          if (isLoading) return;
+                          setState(() => isLoading = true);
+                          await providerAnimeMatchSearch(
+                            context: context,
+                            ref: ref,
+                            animeMedia: UniversalMedia(
+                              id: entry.animeId,
+                              title: UniversalTitle(
+                                romaji: entry.animeTitle,
+                                english: entry.animeTitle,
+                                native: entry.animeTitle,
+                              ),
+                              coverImage: UniversalCoverImage(
+                                large: entry.animeCover,
+                                medium: entry.animeCover,
+                              ),
+                            ),
+                            startAt: entry.currentEpisode,
+                            withAnimeMatch: true,
+                          );
+                          if (context.mounted) {
+                            setState(() => isLoading = false);
+                          }
+                        },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: AspectRatio(
+                                aspectRatio: 16 / 9,
+                                child: Stack(
+                                  children: [
+                                    Positioned.fill(child: imageWidget),
+                                    Positioned.fill(
+                                      child: Center(
+                                        child: isLoading
+                                            ? const CircularProgressIndicator()
+                                            : Container(
+                                                padding: const EdgeInsets.all(
+                                                  8,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: colorScheme
+                                                      .primaryContainer
+                                                      .withValues(alpha: 0.5),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(
+                                                  Iconsax.play5,
+                                                  color: colorScheme
+                                                      .onPrimaryContainer,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.primaryContainer,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'EP ${currentEp?.episodeNumber ?? entry.currentEpisode}',
+                                          style: TextStyle(
+                                            color:
+                                                colorScheme.onPrimaryContainer,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 0,
+                                      left: 0,
+                                      right: 0,
+                                      child: LinearProgressIndicator(
+                                        value: progressValue,
+                                        minHeight: 3,
+                                        backgroundColor: Colors.transparent,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              colorScheme.primary,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              entry.animeTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              currentEp?.episodeTitle ?? 'Continue Watching',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      startAt: entry.currentEpisode,
-                      withAnimeMatch: true,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: AspectRatio(
-                            aspectRatio: 16 / 9,
-                            child: Stack(
-                              children: [
-                                Positioned.fill(child: imageWidget),
-                                Positioned.fill(
-                                  child: Center(
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.primaryContainer
-                                            .withOpacity(0.5),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        Iconsax.play5,
-                                        color: colorScheme.onPrimaryContainer,
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.primaryContainer,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      'EP ${currentEp?.episodeNumber ?? entry.currentEpisode}',
-                                      style: TextStyle(
-                                        color: colorScheme.onPrimaryContainer,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: 0,
-                                  left: 0,
-                                  right: 0,
-                                  child: LinearProgressIndicator(
-                                    value: progressValue,
-                                    minHeight: 3,
-                                    backgroundColor: Colors.transparent,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      colorScheme.primary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          entry.animeTitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          currentEp?.episodeTitle ?? 'Continue Watching',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                  );
+                },
               );
             },
           ),
@@ -223,7 +245,7 @@ class ContinueSection extends ConsumerWidget {
         child: Icon(
           Iconsax.video_play,
           size: 28,
-          color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
         ),
       ),
     );

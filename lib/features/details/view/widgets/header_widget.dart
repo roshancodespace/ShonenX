@@ -5,21 +5,16 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/features/details/view/widgets/comments_bottom_sheet.dart';
+import 'package:shonenx/features/details/view/widgets/tracker/track_bottom_sheet.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
 import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
-import 'package:shonenx/features/details/view_model/local_tracker_notifier.dart';
+import 'package:shonenx/shared/providers/tracker/media_tracker_notifier.dart';
 
 class DetailsHeader extends ConsumerStatefulWidget {
   final UniversalMedia anime;
   final String tag;
-  final VoidCallback onEditPressed;
 
-  const DetailsHeader({
-    super.key,
-    required this.anime,
-    required this.tag,
-    required this.onEditPressed,
-  });
+  const DetailsHeader({super.key, required this.anime, required this.tag});
 
   @override
   ConsumerState<DetailsHeader> createState() => _DetailsHeaderState();
@@ -42,8 +37,9 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
         final watchlist = ref.read(watchlistProvider.notifier);
         isFavorite = await watchlist.ensureFavorite(widget.anime.id);
       } else {
-        final localTracker = ref.read(localTrackerProvider.notifier);
-        isFavorite = await localTracker.isFavorite(widget.anime.id);
+        isFavorite = await ref
+            .read(mediaTrackerProvider(widget.anime.id).notifier)
+            .isFavorite(widget.anime.id);
       }
       if (mounted) setState(() {});
     });
@@ -59,8 +55,9 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
         await ref.read(watchlistProvider.notifier).toggleFavorite(widget.anime);
         setState(() => isFavorite = !isFavorite);
       } else {
-        final localTracker = ref.read(localTrackerProvider.notifier);
-        final newStatus = await localTracker.toggleFavorite(widget.anime);
+        final newStatus = await ref
+            .read(mediaTrackerProvider(widget.anime.id).notifier)
+            .toggleFavorite(widget.anime);
         setState(() => isFavorite = newStatus);
       }
     } catch (_) {
@@ -93,7 +90,7 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                         widget.anime.coverImage.medium ??
                         '',
               fit: BoxFit.cover,
-              placeholder: (_, __) =>
+              placeholder: (_, _) =>
                   Container(color: colorScheme.surfaceContainer),
             ),
             Container(
@@ -102,7 +99,7 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.3),
+                    Colors.black.withValues(alpha: 0.3),
                     colorScheme.surfaceContainerLowest,
                   ],
                   stops: const [0.0, 1.0],
@@ -189,8 +186,8 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                                 widget.anime.status,
                               ].whereType<String>().join(' • '),
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(
-                                  0.8,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.8,
                                 ),
                                 fontWeight: FontWeight.w500,
                               ),
@@ -223,7 +220,34 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
           ),
           onPressed: () => CommentsBottomSheet.show(context, widget.anime),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
+        // ─── Track Button with Badge ───
+        Consumer(
+          builder: (context, ref, child) {
+            final trackerState = ref.watch(
+              mediaTrackerProvider(widget.anime.id),
+            );
+
+            final count = trackerState.bindings.length;
+            final hasMultiple = count > 1;
+
+            return Badge(
+              isLabelVisible: hasMultiple,
+              label: Text('$count'),
+              backgroundColor: theme.colorScheme.primary,
+              offset: const Offset(-4, 4),
+              child: IconButton(
+                icon: const Icon(
+                  Iconsax.bookmark_2,
+                  color: Colors.white,
+                  size: 30,
+                ),
+                onPressed: () => TrackBottomSheet.show(context, widget.anime),
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 4),
         isLoading
             ? const Padding(
                 padding: EdgeInsets.all(12.0),
@@ -247,12 +271,6 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
                     : 'Add to favourites',
                 onPressed: toggleFavorite,
               ),
-        const SizedBox(width: 8),
-        IconButton(
-          icon: const Icon(Iconsax.add_circle, color: Colors.white, size: 30),
-          tooltip: 'Add or Edit in your list',
-          onPressed: widget.onEditPressed,
-        ),
         const SizedBox(width: 8),
       ],
     );
@@ -301,13 +319,15 @@ class GenreTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color?.withOpacity(0.2) ?? Colors.white.withOpacity(0.1),
+        color:
+            color?.withValues(alpha: 0.2) ??
+            Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
         text,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: color ?? Colors.white.withOpacity(0.9),
+          color: color ?? Colors.white.withValues(alpha: 0.9),
           fontWeight: isStatus ? FontWeight.w600 : FontWeight.w500,
         ),
       ),

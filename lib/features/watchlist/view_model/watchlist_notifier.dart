@@ -1,37 +1,21 @@
-import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:isar_community/isar.dart';
-import 'package:shonenx/data/isar/manga.dart';
 import 'package:shonenx/data/isar/track.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
+import 'package:shonenx/core/repositories/local_media_repository.dart';
 import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_state.dart';
 import 'package:shonenx/shared/providers/anime_repo_provider.dart';
 import 'package:shonenx/data/isar/track.dart' as core;
+import 'package:shonenx/data/isar/media.dart';
 
 class WatchlistNotifier extends Notifier<WatchListState> {
   AnimeRepository get _repo => ref.read(animeRepositoryProvider);
+  LocalMediaRepository get _localRepo => ref.read(localMediaRepoProvider);
 
   @override
   WatchListState build() {
-    final trackStream = isar.tracks.watchLazy();
-    final mangaStream = isar.mangas.watchLazy();
-
-    final sub1 = trackStream.listen((_) {
-      if (state.isLocal) _refreshActiveLists();
-    });
-
-    final sub2 = mangaStream.listen((_) {
-      if (state.isLocal) _refreshActiveLists();
-    });
-
-    ref.onDispose(() {
-      sub1.cancel();
-      sub2.cancel();
-    });
-
     final auth = ref.read(authProvider);
     return WatchListState(isLocal: !auth.isAniListAuthenticated);
   }
@@ -45,16 +29,6 @@ class WatchlistNotifier extends Notifier<WatchListState> {
     if (state.isLocal == isLocal) return;
     state = const WatchListState().copyWith(isLocal: isLocal);
     fetchAll(force: true);
-  }
-
-  Future<void> _refreshActiveLists() async {
-    final loadedStatuses = state.lists.keys.toList();
-    for (final status in loadedStatuses) {
-      await fetchListForStatus(status, force: true);
-    }
-    if (state.favorites.isNotEmpty) {
-      await fetchListForStatus('favorites', force: true);
-    }
   }
 
   Future<bool> ensureFavorite(String id) async {
@@ -87,8 +61,8 @@ class WatchlistNotifier extends Notifier<WatchListState> {
       await _repo.toggleFavorite(id);
 
       final updated = wasFav
-          ? state.favorites.where((m) => m.media.id != anime.id).toList()
-          : [...state.favorites, _createDummyEntry(anime)];
+          ? state.favorites.where((m) => m.id != anime.id).toList()
+          : [...state.favorites, anime];
 
       state = state.copyWith(favorites: updated);
     } catch (e) {
@@ -99,45 +73,7 @@ class WatchlistNotifier extends Notifier<WatchListState> {
   }
 
   Future<void> _toggleLocalFavorite(UniversalMedia anime) async {
-    final int id = int.tryParse(anime.id) ?? 0;
-    if (id == 0) return;
-
-    Manga? manga = await isar.mangas.get(id);
-    if (manga == null) {
-      // Must ensure it exists
-      final newManga = Manga(
-        id: id,
-        source: 'LOCAL',
-        author: anime.staff.isNotEmpty
-            ? anime.staff.first.name?.full
-            : 'Unknown',
-        artist: '',
-        genre: anime.genres,
-        imageUrl: anime.coverImage.large ?? anime.coverImage.medium ?? '',
-        lang: '',
-        link: anime.siteUrl ?? '',
-        name:
-            anime.title.english ??
-            anime.title.romaji ??
-            anime.title.native ??
-            'Unknown',
-        status: _mapMediaStatus(anime.status), // Reuse helper
-        description: anime.description ?? '',
-        itemType: ItemType.anime,
-        dateAdded: DateTime.now().millisecondsSinceEpoch,
-      );
-      await isar.writeTxn(() async {
-        await isar.mangas.put(newManga);
-      });
-      manga = newManga;
-    }
-
-    final newFavStatus = !(manga.favorite ?? false);
-
-    await isar.writeTxn(() async {
-      manga!.favorite = newFavStatus;
-      await isar.mangas.put(manga);
-    });
+    await _localRepo.toggleFavorite(anime);
   }
 
   Future<WatchListState> fetchListForStatus(
@@ -175,11 +111,9 @@ class WatchlistNotifier extends Notifier<WatchListState> {
   ) async {
     if (status == 'favorites') {
       final data = await _repo.getFavorites(page: page, perPage: perPage);
-      final entries = data.data.map((m) => _createDummyEntry(m)).toList();
+      final entries = data.data;
 
-      final existing = page == 1
-          ? <UniversalMediaListEntry>[]
-          : state.favorites;
+      final existing = page == 1 ? <UniversalMedia>[] : state.favorites;
 
       state = state.copyWith(
         favorites: [...existing, ...entries],
@@ -213,10 +147,8 @@ class WatchlistNotifier extends Notifier<WatchListState> {
     if (page > 1) return state;
 
     if (status == 'favorites') {
-      final mangas = await isar.mangas.filter().favoriteEqualTo(true).findAll();
-
-      final entries = mangas.map((m) => _mangaToEntry(m, 'CURRENT')).toList();
-
+      final medias = await _localRepo.getFavoriteMedias();
+      final entries = medias.map((m) => _mapMediaToUniversal(m)).toList();
       state = state.copyWith(favorites: entries);
     } else {
       TrackStatus? trackStatus = _mapStatus(status);
@@ -225,17 +157,25 @@ class WatchlistNotifier extends Notifier<WatchListState> {
         return state;
       }
 
-      final tracks = await isar.tracks
-          .filter()
-          .statusEqualTo(trackStatus)
-          .findAll();
-
+      final tracks = await _localRepo.getTracksByStatus(trackStatus);
       final entries = <UniversalMediaListEntry>[];
 
+      final mediaIds = tracks
+          .map((t) => int.tryParse(t.mediaId ?? '') ?? 0)
+          .where((id) => id != 0)
+          .toList();
+
+      final medias = await _localRepo.getMedias(mediaIds);
+      final mediaMap = {
+        for (var m in medias)
+          m?.id: ?m,
+      };
+
       for (final track in tracks) {
-        final manga = await isar.mangas.get(track.mangaId ?? -1);
-        if (manga != null) {
-          entries.add(_trackToEntry(track, manga));
+        final int mediaId = int.tryParse(track.mediaId ?? '') ?? 0;
+        final media = mediaMap[mediaId];
+        if (media != null) {
+          entries.add(_trackToEntry(track, media));
         }
       }
 
@@ -277,19 +217,6 @@ class WatchlistNotifier extends Notifier<WatchListState> {
 
   // Helpers
 
-  UniversalMediaListEntry _createDummyEntry(UniversalMedia anime) {
-    return UniversalMediaListEntry(
-      id: 'fav_${anime.id}',
-      media: anime,
-      status: 'CURRENT',
-      score: 0,
-      progress: 0,
-      repeat: 0,
-      isPrivate: false,
-      notes: '',
-    );
-  }
-
   TrackStatus? _mapStatus(String status) {
     switch (status.toLowerCase()) {
       case 'watching':
@@ -310,63 +237,21 @@ class WatchlistNotifier extends Notifier<WatchListState> {
     }
   }
 
-  Status _mapMediaStatus(String? status) {
-    if (status == null) return Status.unknown;
-    switch (status.toUpperCase()) {
-      case 'FINISHED':
-        return Status.completed;
-      case 'RELEASING':
-        return Status.ongoing;
-      case 'CANCELLED':
-        return Status.canceled;
-      default:
-        return Status.unknown;
-    }
-  }
-
-  UniversalMediaListEntry _mangaToEntry(Manga manga, String status) {
-    return UniversalMediaListEntry(
-      id: manga.id.toString(),
-      media: _mapMangaToUniversal(manga),
-      status: status,
-      score: 0,
-      progress: manga.lastRead ?? 0,
-      repeat: 0,
-      isPrivate: false,
-      notes: '',
-    );
-  }
-
-  UniversalMediaListEntry _trackToEntry(core.Track track, Manga manga) {
+  UniversalMediaListEntry _trackToEntry(core.Track track, Media media) {
     return UniversalMediaListEntry(
       id: track.id.toString(),
-      media: _mapMangaToUniversal(manga),
+      media: _mapMediaToUniversal(media),
       status: track.status.name.toUpperCase(),
       score: (track.score ?? 0).toDouble(),
-      progress: track.lastChapterRead ?? 0,
+      progress: track.progress ?? 0,
       repeat: 0,
       isPrivate: false,
       notes: '',
     );
   }
 
-  UniversalMedia _mapMangaToUniversal(Manga manga) {
-    return UniversalMedia(
-      id: manga.id.toString(),
-      title: UniversalTitle(
-        romaji: manga.name,
-        english: manga.name,
-        native: manga.name,
-      ),
-      coverImage: UniversalCoverImage(
-        large: manga.imageUrl,
-        medium: manga.imageUrl,
-      ),
-      description: manga.description,
-      status: manga.status.name.toUpperCase(),
-      source: manga.source,
-    );
-  }
+  UniversalMedia _mapMediaToUniversal(Media media) =>
+      _localRepo.mapMediaToUniversal(media);
 }
 
 final watchlistProvider = NotifierProvider<WatchlistNotifier, WatchListState>(

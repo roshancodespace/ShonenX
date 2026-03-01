@@ -15,7 +15,7 @@ class NetworkHelper(
     context: Context
 ) {
     val cookieJar = AndroidCookieJar()
-    val client: OkHttpClient = run {
+    var client: OkHttpClient = run {
         val builder = OkHttpClient.Builder()
             .cookieJar(cookieJar)
             .connectTimeout(30, TimeUnit.SECONDS)

@@ -32,7 +32,7 @@ class LiquidGlassSpotlight extends StatelessWidget {
         : (anime!.coverImage.large ?? anime!.coverImage.medium ?? '');
 
     final textShadow = Shadow(
-      color: Colors.black.withOpacity(0.3),
+      color: Colors.black.withValues(alpha: 0.3),
       offset: const Offset(0, 1),
       blurRadius: 2,
     );
@@ -56,9 +56,9 @@ class LiquidGlassSpotlight extends StatelessWidget {
                         child: CachedNetworkImage(
                           imageUrl: imageUrl,
                           fit: BoxFit.cover,
-                          placeholder: (_, __) =>
+                          placeholder: (_, _) =>
                               const AnimeCardShimmer(height: double.infinity),
-                          errorWidget: (_, __, ___) =>
+                          errorWidget: (_, _, _) =>
                               const AnimeCardShimmer(height: double.infinity),
                         ),
                       ),
@@ -147,7 +147,9 @@ class LiquidGlassSpotlight extends StatelessWidget {
                                   child: Text(
                                     anime!.format!.toUpperCase(),
                                     style: theme.textTheme.labelSmall?.copyWith(
-                                      color: Colors.white.withOpacity(0.9),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
                                       fontWeight: FontWeight.w900,
                                       shadows: [textShadow],
                                     ),
@@ -168,7 +170,9 @@ class LiquidGlassSpotlight extends StatelessWidget {
                                   child: Text(
                                     '${anime!.episodes} EPISODES',
                                     style: theme.textTheme.labelSmall?.copyWith(
-                                      color: Colors.white.withOpacity(0.9),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
                                       fontWeight: FontWeight.w900,
                                       shadows: [textShadow],
                                     ),
@@ -204,7 +208,7 @@ class LiquidGlassSpotlight extends StatelessWidget {
                                 fontSize: isMobile ? 20 : 26,
                                 shadows: [
                                   Shadow(
-                                    color: Colors.black.withOpacity(0.5),
+                                    color: Colors.black.withValues(alpha: 0.5),
                                     offset: const Offset(0, 2),
                                     blurRadius: 8,
                                   ),

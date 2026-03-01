@@ -1,6 +1,3 @@
-import 'package:shonenx/core/models/anilist/media.dart';
-import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
-
 class UniversalMedia {
   final String id;
   final String? idMal;
@@ -66,63 +63,117 @@ class UniversalMedia {
     this.siteUrl,
   });
 
-  /// Factory to convert from AniList [Media]
-  factory UniversalMedia.fromAnilist(Media media) {
+  factory UniversalMedia.fromAnilist(Map<String, dynamic> node) {
     return UniversalMedia(
-      id: media.id.toString(),
-      idMal: media.idMal?.toString(),
+      id: node['id'].toString(),
+      idMal: node['idMal']?.toString(),
       title: UniversalTitle(
-        romaji: media.title?.romaji,
-        english: media.title?.english,
-        native: media.title?.native,
+        romaji: node['title']?['romaji'],
+        english: node['title']?['english'],
+        native: node['title']?['native'],
       ),
       coverImage: UniversalCoverImage(
-        large: media.coverImage?.large,
-        medium: media.coverImage?.medium,
+        large: node['coverImage']?['large'],
+        medium: node['coverImage']?['medium'],
       ),
-      bannerImage: media.bannerImage,
-      format: media.format,
-      status: media.status,
-      description: media.description,
-      episodes: media.episodes,
-      duration: media.duration,
-      averageScore: media.averageScore,
-      popularity: media.popularity,
-      isAdult: media.isAdult,
-      season: media.season,
-      seasonYear: media.seasonYear,
-      startDate: media.startDate != null
-          ? UniversalFuzzyDate.fromAnilist(media.startDate!)
-          : null,
-      endDate: media.endDate != null
-          ? UniversalFuzzyDate.fromAnilist(media.endDate!)
-          : null,
-      genres: media.genres,
-      synonyms: media.synonyms,
-      source: media.source,
-      tags: media.tags
-          .map((e) => e.name ?? '')
-          .where((e) => e.isNotEmpty)
-          .toList(),
-      nextAiringEpisode: media.nextAiringEpisode != null
-          ? UniversalNextAiringEpisode(
-              episode: media.nextAiringEpisode!.episode,
-              airingAt: media.nextAiringEpisode!.airingAt,
-              timeUntilAiring: media.nextAiringEpisode!.timeUntilAiring,
+      bannerImage: node['bannerImage'],
+      format: node['format'],
+      status: node['status'],
+      description: node['description'],
+      episodes: node['episodes'],
+      duration: node['duration'],
+      averageScore: (node['averageScore'] as num?)?.toDouble(),
+      popularity: node['popularity'],
+      isAdult: node['isAdult'] ?? false,
+      season: node['season'],
+      seasonYear: node['seasonYear'],
+      startDate: node['startDate'] != null
+          ? UniversalFuzzyDate.fromJson(
+              Map<String, dynamic>.from(node['startDate']),
             )
           : null,
-      rankings: media.rankings.map(UniversalMediaRanking.fromAnilist).toList(),
-      characters: media.characters.map(UniversalCharacter.fromAnilist).toList(),
-      staff: media.staff.map(UniversalStaff.fromAnilist).toList(),
-      relations:
-          media.relations.map(UniversalMediaRelation.fromAnilist).toList(),
-      recommendations:
-          media.recommendations.map(UniversalMedia.fromAnilist).toList(),
-      studios: media.studios.map(UniversalStudio.fromAnilist).toList(),
-      trailer: media.trailer != null
-          ? UniversalTrailer.fromAnilist(media.trailer!)
+      endDate: node['endDate'] != null
+          ? UniversalFuzzyDate.fromJson(
+              Map<String, dynamic>.from(node['endDate']),
+            )
           : null,
-      siteUrl: media.siteUrl,
+      genres:
+          (node['genres'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      synonyms:
+          (node['synonyms'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      source: node['source'],
+      tags:
+          (node['tags'] as List?)
+              ?.map((e) => e['name']?.toString() ?? '')
+              .where((e) => e.isNotEmpty)
+              .toList() ??
+          [],
+      nextAiringEpisode: node['nextAiringEpisode'] != null
+          ? UniversalNextAiringEpisode.fromJson(
+              Map<String, dynamic>.from(node['nextAiringEpisode']),
+            )
+          : null,
+      rankings:
+          (node['rankings'] as List?)
+              ?.map(
+                (e) => UniversalMediaRanking.fromAnilist(
+                  Map<String, dynamic>.from(e),
+                ),
+              )
+              .toList() ??
+          [],
+      characters:
+          (node['characters']?['edges'] as List?)
+              ?.map(
+                (e) => UniversalCharacter.fromAnilist(
+                  Map<String, dynamic>.from(e),
+                ),
+              )
+              .toList() ??
+          [],
+      staff:
+          (node['staff']?['edges'] as List?)
+              ?.map(
+                (e) => UniversalStaff.fromAnilist(Map<String, dynamic>.from(e)),
+              )
+              .toList() ??
+          [],
+      relations:
+          (node['relations']?['edges'] as List?)
+              ?.map(
+                (e) => UniversalMediaRelation.fromAnilist(
+                  Map<String, dynamic>.from(e),
+                ),
+              )
+              .toList() ??
+          [],
+      recommendations:
+          (node['recommendations']?['nodes'] as List?)
+              ?.map((e) {
+                final recNode = e['mediaRecommendation'];
+                return recNode != null
+                    ? UniversalMedia.fromAnilist(
+                        Map<String, dynamic>.from(recNode),
+                      )
+                    : null;
+              })
+              .whereType<UniversalMedia>()
+              .toList() ??
+          [],
+      studios:
+          (node['studios']?['nodes'] as List?)
+              ?.map(
+                (e) =>
+                    UniversalStudio.fromAnilist(Map<String, dynamic>.from(e)),
+              )
+              .toList() ??
+          [],
+      trailer: node['trailer'] != null
+          ? UniversalTrailer.fromAnilist(
+              Map<String, dynamic>.from(node['trailer']),
+            )
+          : null,
+      siteUrl: node['siteUrl'],
     );
   }
 
@@ -156,7 +207,7 @@ class UniversalMedia {
           : null,
       genres:
           (node['genres'] as List?)?.map((e) => e['name'] as String).toList() ??
-              [],
+          [],
       source: node['source'],
     );
   }
@@ -166,9 +217,11 @@ class UniversalMedia {
       id: json['id'],
       idMal: json['idMal'],
       title: UniversalTitle.fromJson(
-          Map<String, dynamic>.from(json['title'] ?? {})),
+        Map<String, dynamic>.from(json['title'] ?? {}),
+      ),
       coverImage: UniversalCoverImage.fromJson(
-          Map<String, dynamic>.from(json['coverImage'] ?? {})),
+        Map<String, dynamic>.from(json['coverImage'] ?? {}),
+      ),
       bannerImage: json['bannerImage'],
       format: json['format'],
       status: json['status'],
@@ -182,11 +235,13 @@ class UniversalMedia {
       seasonYear: json['seasonYear'],
       startDate: json['startDate'] != null
           ? UniversalFuzzyDate.fromJson(
-              Map<String, dynamic>.from(json['startDate']))
+              Map<String, dynamic>.from(json['startDate']),
+            )
           : null,
       endDate: json['endDate'] != null
           ? UniversalFuzzyDate.fromJson(
-              Map<String, dynamic>.from(json['endDate']))
+              Map<String, dynamic>.from(json['endDate']),
+            )
           : null,
       genres:
           (json['genres'] as List?)?.map((e) => e.toString()).toList() ?? [],
@@ -196,41 +251,60 @@ class UniversalMedia {
       tags: (json['tags'] as List?)?.map((e) => e.toString()).toList() ?? [],
       nextAiringEpisode: json['nextAiringEpisode'] != null
           ? UniversalNextAiringEpisode.fromJson(
-              Map<String, dynamic>.from(json['nextAiringEpisode']))
+              Map<String, dynamic>.from(json['nextAiringEpisode']),
+            )
           : null,
-      rankings: (json['rankings'] as List?)
-              ?.map((e) =>
-                  UniversalMediaRanking.fromJson(Map<String, dynamic>.from(e)))
-              .toList() ??
-          [],
-      characters: (json['characters'] as List?)
-              ?.map((e) =>
-                  UniversalCharacter.fromJson(Map<String, dynamic>.from(e)))
-              .toList() ??
-          [],
-      staff: (json['staff'] as List?)
+      rankings:
+          (json['rankings'] as List?)
               ?.map(
-                  (e) => UniversalStaff.fromJson(Map<String, dynamic>.from(e)))
+                (e) => UniversalMediaRanking.fromJson(
+                  Map<String, dynamic>.from(e),
+                ),
+              )
               .toList() ??
           [],
-      relations: (json['relations'] as List?)
-              ?.map((e) =>
-                  UniversalMediaRelation.fromJson(Map<String, dynamic>.from(e)))
-              .toList() ??
-          [],
-      recommendations: (json['recommendations'] as List?)
+      characters:
+          (json['characters'] as List?)
               ?.map(
-                  (e) => UniversalMedia.fromJson(Map<String, dynamic>.from(e)))
+                (e) =>
+                    UniversalCharacter.fromJson(Map<String, dynamic>.from(e)),
+              )
               .toList() ??
           [],
-      studios: (json['studios'] as List?)
+      staff:
+          (json['staff'] as List?)
               ?.map(
-                  (e) => UniversalStudio.fromJson(Map<String, dynamic>.from(e)))
+                (e) => UniversalStaff.fromJson(Map<String, dynamic>.from(e)),
+              )
+              .toList() ??
+          [],
+      relations:
+          (json['relations'] as List?)
+              ?.map(
+                (e) => UniversalMediaRelation.fromJson(
+                  Map<String, dynamic>.from(e),
+                ),
+              )
+              .toList() ??
+          [],
+      recommendations:
+          (json['recommendations'] as List?)
+              ?.map(
+                (e) => UniversalMedia.fromJson(Map<String, dynamic>.from(e)),
+              )
+              .toList() ??
+          [],
+      studios:
+          (json['studios'] as List?)
+              ?.map(
+                (e) => UniversalStudio.fromJson(Map<String, dynamic>.from(e)),
+              )
               .toList() ??
           [],
       trailer: json['trailer'] != null
           ? UniversalTrailer.fromJson(
-              Map<String, dynamic>.from(json['trailer']))
+              Map<String, dynamic>.from(json['trailer']),
+            )
           : null,
       siteUrl: json['siteUrl'],
     );
@@ -356,11 +430,11 @@ class UniversalTitle {
   }
 
   Map<String, dynamic> toJson() => {
-        'romaji': romaji,
-        'english': english,
-        'native': native,
-      };
-  
+    'romaji': romaji,
+    'english': english,
+    'native': native,
+  };
+
   String get available => english ?? romaji ?? native ?? 'Unknown';
 }
 
@@ -371,16 +445,10 @@ class UniversalCoverImage {
   const UniversalCoverImage({this.large, this.medium});
 
   factory UniversalCoverImage.fromJson(Map<String, dynamic> json) {
-    return UniversalCoverImage(
-      large: json['large'],
-      medium: json['medium'],
-    );
+    return UniversalCoverImage(large: json['large'], medium: json['medium']);
   }
 
-  Map<String, dynamic> toJson() => {
-        'large': large,
-        'medium': medium,
-      };
+  Map<String, dynamic> toJson() => {'large': large, 'medium': medium};
 }
 
 class UniversalNextAiringEpisode {
@@ -403,10 +471,10 @@ class UniversalNextAiringEpisode {
   }
 
   Map<String, dynamic> toJson() => {
-        'episode': episode,
-        'airingAt': airingAt,
-        'timeUntilAiring': timeUntilAiring,
-      };
+    'episode': episode,
+    'airingAt': airingAt,
+    'timeUntilAiring': timeUntilAiring,
+  };
 }
 
 class UniversalMediaRanking {
@@ -426,14 +494,14 @@ class UniversalMediaRanking {
     required this.allTime,
   });
 
-  factory UniversalMediaRanking.fromAnilist(MediaRanking rank) {
+  factory UniversalMediaRanking.fromAnilist(Map<String, dynamic> rank) {
     return UniversalMediaRanking(
-      rank: rank.rank,
-      type: rank.type,
-      context: rank.context,
-      season: rank.season,
-      year: rank.year,
-      allTime: rank.allTime,
+      rank: rank['rank'],
+      type: rank['type'] ?? '',
+      context: rank['context'] ?? '',
+      season: rank['season'],
+      year: rank['year'],
+      allTime: rank['allTime'] ?? false,
     );
   }
 
@@ -449,13 +517,13 @@ class UniversalMediaRanking {
   }
 
   Map<String, dynamic> toJson() => {
-        'rank': rank,
-        'type': type,
-        'context': context,
-        'season': season,
-        'year': year,
-        'allTime': allTime,
-      };
+    'rank': rank,
+    'type': type,
+    'context': context,
+    'season': season,
+    'year': year,
+    'allTime': allTime,
+  };
 }
 
 class UniversalCharacter {
@@ -471,12 +539,13 @@ class UniversalCharacter {
     this.role,
   });
 
-  factory UniversalCharacter.fromAnilist(Character char) {
+  factory UniversalCharacter.fromAnilist(Map<String, dynamic> edge) {
+    final charNode = edge['node'] ?? {};
     return UniversalCharacter(
-      id: char.id,
-      name: char.name,
-      image: char.image,
-      role: char.role,
+      id: charNode['id'] ?? 0,
+      name: charNode['name']?['full'] ?? 'Unknown',
+      image: charNode['image']?['large'],
+      role: edge['role'],
     );
   }
 
@@ -490,11 +559,11 @@ class UniversalCharacter {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'image': image,
-        'role': role,
-      };
+    'id': id,
+    'name': name,
+    'image': image,
+    'role': role,
+  };
 }
 
 class UniversalStaff {
@@ -503,23 +572,19 @@ class UniversalStaff {
   final UniversalStaffImage? image;
   final String? role;
 
-  const UniversalStaff({
-    this.id,
-    this.name,
-    this.image,
-    this.role,
-  });
+  const UniversalStaff({this.id, this.name, this.image, this.role});
 
-  factory UniversalStaff.fromAnilist(Staff staff) {
+  factory UniversalStaff.fromAnilist(Map<String, dynamic> edge) {
+    final staffNode = edge['node'] ?? {};
     return UniversalStaff(
-      id: staff.id,
-      name: staff.name != null
-          ? UniversalStaffName.fromAnilist(staff.name!)
+      id: staffNode['id'],
+      name: staffNode['name'] != null
+          ? UniversalStaffName.fromAnilist(staffNode['name'])
           : null,
-      image: staff.image != null
-          ? UniversalStaffImage.fromAnilist(staff.image!)
+      image: staffNode['image'] != null
+          ? UniversalStaffImage.fromAnilist(staffNode['image'])
           : null,
-      role: staff.role,
+      role: edge['role'],
     );
   }
 
@@ -531,18 +596,19 @@ class UniversalStaff {
           : null,
       image: json['image'] != null
           ? UniversalStaffImage.fromJson(
-              Map<String, dynamic>.from(json['image']))
+              Map<String, dynamic>.from(json['image']),
+            )
           : null,
       role: json['role'],
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name?.toJson(),
-        'image': image?.toJson(),
-        'role': role,
-      };
+    'id': id,
+    'name': name?.toJson(),
+    'image': image?.toJson(),
+    'role': role,
+  };
 }
 
 class UniversalStaffName {
@@ -551,21 +617,15 @@ class UniversalStaffName {
 
   const UniversalStaffName({this.full, this.native});
 
-  factory UniversalStaffName.fromAnilist(StaffName name) {
-    return UniversalStaffName(full: name.full, native: name.native);
+  factory UniversalStaffName.fromAnilist(Map<String, dynamic> name) {
+    return UniversalStaffName(full: name['full'], native: name['native']);
   }
 
   factory UniversalStaffName.fromJson(Map<String, dynamic> json) {
-    return UniversalStaffName(
-      full: json['full'],
-      native: json['native'],
-    );
+    return UniversalStaffName(full: json['full'], native: json['native']);
   }
 
-  Map<String, dynamic> toJson() => {
-        'full': full,
-        'native': native,
-      };
+  Map<String, dynamic> toJson() => {'full': full, 'native': native};
 }
 
 class UniversalStaffImage {
@@ -574,34 +634,31 @@ class UniversalStaffImage {
 
   const UniversalStaffImage({this.large, this.medium});
 
-  factory UniversalStaffImage.fromAnilist(StaffImage image) {
-    return UniversalStaffImage(large: image.large, medium: image.medium);
+  factory UniversalStaffImage.fromAnilist(Map<String, dynamic> image) {
+    return UniversalStaffImage(large: image['large'], medium: image['medium']);
   }
 
   factory UniversalStaffImage.fromJson(Map<String, dynamic> json) {
-    return UniversalStaffImage(
-      large: json['large'],
-      medium: json['medium'],
-    );
+    return UniversalStaffImage(large: json['large'], medium: json['medium']);
   }
 
-  Map<String, dynamic> toJson() => {
-        'large': large,
-        'medium': medium,
-      };
+  Map<String, dynamic> toJson() => {'large': large, 'medium': medium};
 }
 
 class UniversalMediaRelation {
   final String relationType;
   final UniversalMedia media;
 
-  const UniversalMediaRelation(
-      {required this.relationType, required this.media});
+  const UniversalMediaRelation({
+    required this.relationType,
+    required this.media,
+  });
 
-  factory UniversalMediaRelation.fromAnilist(MediaRelation rel) {
+  factory UniversalMediaRelation.fromAnilist(Map<String, dynamic> edge) {
+    final relNode = edge['node'] ?? {};
     return UniversalMediaRelation(
-      relationType: rel.relationType,
-      media: UniversalMedia.fromAnilist(rel.media),
+      relationType: edge['relationType'] ?? 'UNKNOWN',
+      media: UniversalMedia.fromAnilist(relNode),
     );
   }
 
@@ -609,14 +666,15 @@ class UniversalMediaRelation {
     return UniversalMediaRelation(
       relationType: json['relationType'] ?? 'UNKNOWN',
       media: UniversalMedia.fromJson(
-          Map<String, dynamic>.from(json['media'] ?? {})),
+        Map<String, dynamic>.from(json['media'] ?? {}),
+      ),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'relationType': relationType,
-        'media': media.toJson(),
-      };
+    'relationType': relationType,
+    'media': media.toJson(),
+  };
 }
 
 class UniversalStudio {
@@ -625,8 +683,11 @@ class UniversalStudio {
 
   const UniversalStudio({required this.name, required this.isMain});
 
-  factory UniversalStudio.fromAnilist(Studio studio) {
-    return UniversalStudio(name: studio.name, isMain: studio.isMain);
+  factory UniversalStudio.fromAnilist(Map<String, dynamic> studioEdge) {
+    return UniversalStudio(
+      name: studioEdge['name'] ?? '',
+      isMain: studioEdge['isMain'] ?? false,
+    );
   }
 
   factory UniversalStudio.fromJson(Map<String, dynamic> json) {
@@ -636,10 +697,7 @@ class UniversalStudio {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'isMain': isMain,
-      };
+  Map<String, dynamic> toJson() => {'name': name, 'isMain': isMain};
 }
 
 class UniversalTrailer {
@@ -649,11 +707,11 @@ class UniversalTrailer {
 
   const UniversalTrailer({required this.id, this.site, this.thumbnail});
 
-  factory UniversalTrailer.fromAnilist(Trailer trailer) {
+  factory UniversalTrailer.fromAnilist(Map<String, dynamic> trailer) {
     return UniversalTrailer(
-      id: trailer.id,
-      site: trailer.site,
-      thumbnail: trailer.thumbnail,
+      id: trailer['id'] ?? '',
+      site: trailer['site'],
+      thumbnail: trailer['thumbnail'],
     );
   }
 
@@ -666,10 +724,10 @@ class UniversalTrailer {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'site': site,
-        'thumbnail': thumbnail,
-      };
+    'id': id,
+    'site': site,
+    'thumbnail': thumbnail,
+  };
 }
 
 class UniversalFuzzyDate {
@@ -679,11 +737,11 @@ class UniversalFuzzyDate {
 
   const UniversalFuzzyDate({this.year, this.month, this.day});
 
-  factory UniversalFuzzyDate.fromAnilist(FuzzyDate date) {
+  factory UniversalFuzzyDate.fromAnilist(Map<String, dynamic> date) {
     return UniversalFuzzyDate(
-      year: date.year,
-      month: date.month,
-      day: date.day,
+      year: date['year'],
+      month: date['month'],
+      day: date['day'],
     );
   }
 
@@ -704,9 +762,5 @@ class UniversalFuzzyDate {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'year': year,
-        'month': month,
-        'day': day,
-      };
+  Map<String, dynamic> toJson() => {'year': year, 'month': month, 'day': day};
 }

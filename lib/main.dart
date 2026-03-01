@@ -69,7 +69,8 @@ class MyApp extends ConsumerWidget {
           blendLevel: theme.blendLevel,
           scheme: lightScheme != null ? null : theme.flexSchemeEnum,
           useMaterial3: theme.useMaterial3,
-          textTheme: GoogleFonts.montserratTextTheme()        );
+          textTheme: GoogleFonts.montserratTextTheme(),
+        );
 
         final darkTheme = FlexThemeData.dark(
           colorScheme: darkScheme,

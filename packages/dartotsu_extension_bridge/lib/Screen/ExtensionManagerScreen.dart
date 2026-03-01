@@ -67,20 +67,9 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
           PointerDeviceKind.trackpad,
         },
       ),
-      child: Obx(() {
-        final manager = Get.find<ExtensionManager>().currentManager;
-        var totalTabs = 0;
-        if (manager.supportsAnime) totalTabs += 2;
-        if (manager.supportsManga) totalTabs += 2;
-        if (manager.supportsNovel) totalTabs += 2;
-
-        if (_tabBarController.length != totalTabs) {
-          _tabBarController.dispose();
-          _tabBarController = TabController(length: totalTabs, vsync: this);
-          _tabBarController.animateTo(0);
-        }
-
-        return Scaffold(
+      child: DefaultTabController(
+        length: 6,
+        child: Scaffold(
           appBar: AppBar(
             elevation: 0,
             backgroundColor: Colors.transparent,
@@ -92,33 +81,43 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
                 _tabBarController,
                 _selectedLanguage.value,
                 manager.onRepoSaved,
-                (lang) => _selectedLanguage.value = lang,
+                (lang) => setState(() => _selectedLanguage.value = lang),
               ),
               const SizedBox(width: 8),
             ],
           ),
           body: Column(
             children: [
-              TabBar(
-                controller: _tabBarController,
-                isScrollable: true,
-                indicatorSize: TabBarIndicatorSize.label,
-                dragStartBehavior: DragStartBehavior.start,
-                tabs: _buildTabs(context),
+              Obx(
+                () => TabBar(
+                  controller: _tabBarController,
+                  isScrollable: true,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  dragStartBehavior: DragStartBehavior.start,
+                  tabs: _buildTabs(context),
+                ),
               ),
               const SizedBox(height: 8),
-              searchBar(context, _textEditingController, () => setState(() {})),
+              searchBar(
+                context,
+                _textEditingController,
+                () => setState(
+                  () {},
+                ), // Trigger rebuild on search change _textEditingController handles the text input
+              ),
               const SizedBox(height: 8),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabBarController,
-                  children: _buildTabViews(theme, extensionScreenBuilder),
+              Obx(
+                () => Expanded(
+                  child: TabBarView(
+                    controller: _tabBarController,
+                    children: _buildTabViews(theme, extensionScreenBuilder),
+                  ),
                 ),
               ),
             ],
           ),
-        );
-      }),
+        ),
+      ),
     );
   }
 

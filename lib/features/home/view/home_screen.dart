@@ -7,6 +7,7 @@ import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/main.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/core/models/universal/universal_page_response.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/features/home/model/home_section.dart';
 import 'package:shonenx/shared/providers/settings/home_layout_notifier.dart';
@@ -170,8 +171,8 @@ class _HomeSectionRenderer extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (section.type) {
       case HomeSectionType.spotlight:
-        if (home.trendingAnime.isEmpty) return const SizedBox.shrink();
-        return SpotlightSection(spotlightAnime: home.trendingAnime);
+        if (home.trendingAnime.data.isEmpty) return const SizedBox.shrink();
+        return SpotlightSection(spotlightAnime: home.trendingAnime.data);
 
       case HomeSectionType.continueWatching:
         return const Padding(
@@ -180,11 +181,15 @@ class _HomeSectionRenderer extends StatelessWidget {
         );
 
       case HomeSectionType.standard:
-        final media = _getStandardMedia(section.dataId, home);
-        if (media.isEmpty) return const SizedBox.shrink();
+        final mediaResponse = _getStandardMedia(section.dataId, home);
+        if (mediaResponse == null || mediaResponse.data.isEmpty)
+          return const SizedBox.shrink();
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: HomeSectionWidget(title: section.title, mediaList: media),
+          child: HomeSectionWidget(
+            title: section.title,
+            mediaList: mediaResponse.data,
+          ),
         );
 
       case HomeSectionType.watchlist:
@@ -199,7 +204,10 @@ class _HomeSectionRenderer extends StatelessWidget {
   }
 
   // mapping the dynamic data IDs to the actual home page lists
-  List<UniversalMedia> _getStandardMedia(String? id, HomePage home) {
+  UniversalPageResponse<UniversalMedia>? _getStandardMedia(
+    String? id,
+    HomePage home,
+  ) {
     return switch (id) {
       'trending' => home.trendingAnime,
       'popular' => home.popularAnime,
@@ -208,7 +216,7 @@ class _HomeSectionRenderer extends StatelessWidget {
       'top_rated' => home.topRatedAnime,
       'recently_updated' => home.recentlyUpdated,
       'upcoming' => home.upcomingAnime,
-      _ => [],
+      _ => null,
     };
   }
 }
@@ -290,7 +298,7 @@ class _ContinueWatchingSection extends ConsumerWidget {
             return ContinueSection(allProgress: sorted.take(15).toList());
           },
           loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
         );
   }
 }

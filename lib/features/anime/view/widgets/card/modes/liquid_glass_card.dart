@@ -37,7 +37,7 @@ class LiquidGlassCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isHovered ? 0.4 : 0.2),
+                color: Colors.black.withValues(alpha: isHovered ? 0.4 : 0.2),
                 blurRadius: isHovered ? 40 : 20,
                 offset: Offset(0, isHovered ? 20 : 10),
                 spreadRadius: -12,
@@ -169,7 +169,7 @@ class LiquidGlassCard extends StatelessWidget {
                             letterSpacing: -0.4,
                             shadows: [
                               Shadow(
-                                color: Colors.black.withOpacity(0.3),
+                                color: Colors.black.withValues(alpha: 0.3),
                                 offset: const Offset(0, 2),
                                 blurRadius: 4,
                               ),

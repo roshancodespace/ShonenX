@@ -4,7 +4,6 @@ import '../Models/Source.dart';
 
 abstract class Extension extends GetxController {
   var isInitialized = false.obs;
-
   bool get supportsAnime => true;
   bool get supportsManga => true;
   bool get supportsNovel => true;

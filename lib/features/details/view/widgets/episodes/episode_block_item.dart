@@ -35,7 +35,7 @@ class EpisodeBlockItem extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: isWatched
-              ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.5)
+              ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
               : theme.colorScheme.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(8),
           border: episode.isFiller == true
@@ -50,8 +50,9 @@ class EpisodeBlockItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color:
-                      isWatched ? theme.hintColor : theme.colorScheme.onSurface,
+                  color: isWatched
+                      ? theme.hintColor
+                      : theme.colorScheme.onSurface,
                 ),
               ),
             ),
@@ -93,7 +94,7 @@ class EpisodeBlockItem extends StatelessWidget {
                 bottom: 4,
                 right: 4,
                 child: Icon(Icons.check, size: 14, color: theme.hintColor),
-              )
+              ),
           ],
         ),
       ),

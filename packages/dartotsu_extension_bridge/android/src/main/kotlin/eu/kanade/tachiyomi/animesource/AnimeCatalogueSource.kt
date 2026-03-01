@@ -2,8 +2,8 @@ package eu.kanade.tachiyomi.animesource
 
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
-import eu.kanade.tachiyomi.util.lang.awaitSingle
 import rx.Observable
+import tachiyomi.core.util.lang.awaitSingle
 
 interface AnimeCatalogueSource : AnimeSource {
 

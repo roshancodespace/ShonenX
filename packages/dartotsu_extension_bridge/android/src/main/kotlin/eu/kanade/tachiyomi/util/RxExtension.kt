@@ -1,3 +1,6 @@
 package eu.kanade.tachiyomi.util
 
-//expect suspend fun <T> Observable<T>.awaitSingle(): T
+import rx.Observable
+import tachiyomi.core.util.lang.awaitSingle
+
+suspend fun <T> Observable<T>.awaitSingle(): T = awaitSingle()

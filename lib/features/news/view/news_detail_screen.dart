@@ -54,7 +54,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Iconsax.arrow_left_2),
               style: IconButton.styleFrom(
-                backgroundColor: scheme.surface.withOpacity(0.5),
+                backgroundColor: scheme.surface.withValues(alpha: 0.5),
                 foregroundColor: scheme.onSurface,
               ),
             ),
@@ -87,7 +87,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                         colors: [
                           Colors.transparent,
                           Colors.transparent,
-                          scheme.surface.withOpacity(0.8),
+                          scheme.surface.withValues(alpha: 0.8),
                           scheme.surface,
                         ],
                         stops: const [0, 0.4, 0.8, 1],
@@ -165,8 +165,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                         return Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: scheme.surfaceContainerHighest.withOpacity(
-                              0.5,
+                            color: scheme.surfaceContainerHighest.withValues(
+                              alpha: 0.5,
                             ),
                             borderRadius: BorderRadius.circular(16),
                           ),

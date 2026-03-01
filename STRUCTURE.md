@@ -14,7 +14,7 @@ lib/
 │   ├── registery/
 │   │   └── sources/
 │   ├── repositories/
-│   ├── services/
+│   ├── services
 │   ├── tasks/
 │   ├── utils/
 │   └── widgets/

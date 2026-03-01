@@ -1,11 +1,10 @@
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:isar_community/isar.dart';
-import 'package:shonenx/data/isar/chapter.dart';
-part 'manga.g.dart';
+part 'media.g.dart';
 
 @collection
-@Name("Manga")
-class Manga {
+@Name("Media")
+class Media {
   Id? id;
 
   String? name;
@@ -16,14 +15,8 @@ class Manga {
 
   String? description;
 
-  String? author;
-
-  String? artist;
-
   @enumerated
   late Status status;
-
-  bool? isManga;
 
   @enumerated
   late ItemType itemType;
@@ -40,11 +33,9 @@ class Manga {
 
   int? lastUpdate;
 
-  int? lastRead;
+  int? progress;
 
   List<int>? categories;
-
-  bool? isLocalArchive;
 
   List<byte>? customCoverImage;
 
@@ -52,14 +43,9 @@ class Manga {
 
   int? updatedAt;
 
-  @Backlink(to: "manga")
-  final chapters = IsarLinks<Chapter>();
-
-  Manga({
+  Media({
     this.id = Isar.autoIncrement,
     required this.source,
-    required this.author,
-    required this.artist,
     this.favorite = false,
     required this.genre,
     required this.imageUrl,
@@ -68,21 +54,17 @@ class Manga {
     required this.name,
     required this.status,
     required this.description,
-    this.isManga,
     this.itemType = ItemType.manga,
     this.dateAdded,
     this.lastUpdate,
+    this.progress,
     this.categories,
-    this.lastRead = 0,
-    this.isLocalArchive = false,
     this.customCoverImage,
     this.customCoverFromTracker,
     this.updatedAt = 0,
   });
 
-  Manga.fromJson(Map<String, dynamic> json) {
-    author = json['author'];
-    artist = json['artist'];
+  Media.fromJson(Map<String, dynamic> json) {
     categories = json['categories']?.cast<int>();
     customCoverImage = json['customCoverImage']?.cast<int>();
     dateAdded = json['dateAdded'];
@@ -91,23 +73,19 @@ class Manga {
     genre = json['genre']?.cast<String>();
     id = json['id'];
     imageUrl = json['imageUrl'];
-    isLocalArchive = json['isLocalArchive'];
-    isManga = json['isManga'];
     itemType = ItemType.values[json['itemType'] ?? 0];
     lang = json['lang'];
-    lastRead = json['lastRead'];
     lastUpdate = json['lastUpdate'];
     link = json['link'];
     name = json['name'];
     source = json['source'];
     status = Status.values[json['status']];
+    progress = json['progress'];
     customCoverFromTracker = json['customCoverFromTracker'];
     updatedAt = json['updatedAt'];
   }
 
   Map<String, dynamic> toJson() => {
-    'author': author,
-    'artist': artist,
     'categories': categories,
     'customCoverImage': customCoverImage,
     'dateAdded': dateAdded,
@@ -116,13 +94,12 @@ class Manga {
     'genre': genre,
     'id': id,
     'imageUrl': imageUrl,
-    'isLocalArchive': isLocalArchive,
     'itemType': itemType.index,
     'lang': lang,
-    'lastRead': lastRead,
     'lastUpdate': lastUpdate,
     'link': link,
     'name': name,
+    'progress': progress,
     'source': source,
     'status': status.index,
     'customCoverFromTracker': customCoverFromTracker,

@@ -1,13 +1,16 @@
 import 'dart:io';
 
-import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:http/http.dart' as http;
 import 'package:install_plugin/install_plugin.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+
+import '../../Logger.dart';
+import '../../dartotsu_extension_bridge.dart';
 
 class AniyomiExtensions extends Extension {
   AniyomiExtensions() {
@@ -15,12 +18,9 @@ class AniyomiExtensions extends Extension {
   }
 
   static const platform = MethodChannel('aniyomiExtensionBridge');
-  final ValueNotifier<List<Source>> availableAnimeExtensionsUnmodified =
-      ValueNotifier([]);
-  final ValueNotifier<List<Source>> availableMangaExtensionsUnmodified =
-      ValueNotifier([]);
-  final ValueNotifier<List<Source>> availableNovelExtensionsUnmodified =
-      ValueNotifier([]);
+  final Rx<List<Source>> availableAnimeExtensionsUnmodified = Rx([]);
+  final Rx<List<Source>> availableMangaExtensionsUnmodified = Rx([]);
+  final Rx<List<Source>> availableNovelExtensionsUnmodified = Rx([]);
 
   @override
   bool get supportsNovel => false;
@@ -71,9 +71,8 @@ class AniyomiExtensions extends Extension {
       map['extensionType'] = 1;
       return Source.fromJson(map);
     }).toList();
-    final list = unmodifiedList
-        .where((s) => !installedIds.contains(s.id))
-        .toList();
+    final list =
+        unmodifiedList.where((s) => !installedIds.contains(s.id)).toList();
     getAvailableRx(type).value = list;
     getAvailableUnmodified(type).value = unmodifiedList;
     checkForUpdates(type);
@@ -171,11 +170,9 @@ class AniyomiExtensions extends Extension {
         default:
           throw Exception('Unsupported item type: ${source.itemType}');
       }
-      debugPrint('Successfully installed package: $packageName');
+      Logger.log('Successfully installed package: $packageName');
     } catch (e) {
-      if (kDebugMode) {
-        print('Error installing source: $e');
-      }
+      Logger.log('Error installing source: $e');
       rethrow;
     }
   }
@@ -219,14 +216,13 @@ class AniyomiExtensions extends Extension {
       if (itemType != null) {
         final availableList = getAvailableUnmodified(itemType).value;
         if (availableList.any((s) => s.id == packageName)) {
-          final notifier = getAvailableRx(itemType);
-          notifier.value = [...notifier.value, source];
+          getAvailableRx(itemType).update((list) => list?..add(source));
         }
       }
 
-      debugPrint('Successfully uninstalled package: $packageName');
+      Logger.log('Successfully uninstalled package: $packageName');
     } catch (e) {
-      debugPrint('Error uninstalling $packageName: $e');
+      Logger.log('Error uninstalling $packageName: $e');
       rethrow;
     }
   }
@@ -257,7 +253,7 @@ class AniyomiExtensions extends Extension {
         appId: packageName,
       );
       if (result['isSuccess'] != true) {
-        debugPrint(
+        Logger.log(
           'Installation failed: ${result['errorMessage'] ?? 'Unknown error'}',
         );
       }
@@ -277,7 +273,7 @@ class AniyomiExtensions extends Extension {
         default:
           throw Exception('Unsupported item type: ${source.itemType}');
       }
-      debugPrint('Successfully update package: $packageName');
+      Logger.log('Successfully update package: $packageName');
     } catch (e) {
       if (kDebugMode) {
         print('Error installing source: $e');
@@ -308,7 +304,7 @@ class AniyomiExtensions extends Extension {
     }
   }
 
-  ValueNotifier<List<Source>> getAvailableUnmodified(ItemType type) {
+  Rx<List<Source>> getAvailableUnmodified(ItemType type) {
     switch (type) {
       case ItemType.anime:
         return availableAnimeExtensionsUnmodified;

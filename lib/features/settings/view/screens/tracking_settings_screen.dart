@@ -67,8 +67,8 @@ class _TrackingSettingsScreenState
                 },
               ),
               ToggleableSettingsItem(
-                icon: Icon(Iconsax.book, color: colorScheme.secondary),
-                accent: colorScheme.secondary,
+                icon: Icon(Iconsax.book, color: colorScheme.primary),
+                accent: colorScheme.primary,
                 title: 'MyAnimeList',
                 description: isMalLoggedIn
                     ? 'Sync progress with MyAnimeList'
@@ -82,8 +82,8 @@ class _TrackingSettingsScreenState
                 },
               ),
               ToggleableSettingsItem(
-                icon: Icon(Iconsax.mobile, color: colorScheme.tertiary),
-                accent: colorScheme.tertiary,
+                icon: Icon(Iconsax.mobile, color: colorScheme.primary),
+                accent: colorScheme.primary,
                 title: 'Local Sync',
                 description: 'Store watchlist & progress on device',
                 value: syncSettings.localSync,
@@ -138,9 +138,8 @@ class _TrackingSettingsScreenState
                 description: _syncModeDescription(syncSettings.syncMode),
                 selectedValue: syncSettings.syncMode,
                 children: const {
-                  'realtime': Text('Real-Time'),
+                  'realtime': Text('Real-Time (Recommended)'),
                   'background': Text('Background'),
-                  'manual': Text('Manual'),
                 },
                 onValueChanged: (dynamic val) {
                   ref
@@ -175,26 +174,47 @@ class _TrackingSettingsScreenState
             ],
           ),
 
-          const SizedBox(height: 20),
-          SettingsSection(
-            title: 'Preferences',
-            titleColor: colorScheme.primary,
-            children: [
-              ToggleableSettingsItem(
-                icon: Icon(
-                  Iconsax.message_question,
-                  color: colorScheme.primary,
+          if (syncSettings.syncMode == 'realtime') ...[
+            const SizedBox(height: 20),
+            SettingsSection(
+              title: 'Preferences',
+              titleColor: colorScheme.primary,
+              children: [
+                ToggleableSettingsItem(
+                  icon: Icon(
+                    Iconsax.message_question,
+                    color: colorScheme.primary,
+                  ),
+                  accent: colorScheme.primary,
+                  title: 'Update prompt',
+                  description: 'Always ask before syncing progress',
+                  value: syncSettings.askBeforeSync,
+                  onChanged: (val) => ref
+                      .read(syncSettingsProvider.notifier)
+                      .updateSettings((s) => s.copyWith(askBeforeSync: val)),
                 ),
-                accent: colorScheme.primary,
-                title: 'Update prompt',
-                description: 'Always ask before syncing progress',
-                value: syncSettings.askBeforeSync,
-                onChanged: (val) => ref
-                    .read(syncSettingsProvider.notifier)
-                    .updateSettings((s) => s.copyWith(askBeforeSync: val)),
-              ),
-            ],
-          ),
+                const SizedBox(height: 16),
+                SliderSettingsItem(
+                  icon: Icon(Icons.percent_rounded, color: colorScheme.primary),
+                  accent: colorScheme.primary,
+                  title: 'Sync Threshold (${syncSettings.syncPercentage}%)',
+                  description:
+                      'Update tracker when you reach this percentage of the episode',
+                  value: syncSettings.syncPercentage.toDouble(),
+                  min: 10,
+                  max: 100,
+                  divisions: 18,
+                  onChanged: (val) {
+                    ref
+                        .read(syncSettingsProvider.notifier)
+                        .updateSettings(
+                          (s) => s.copyWith(syncPercentage: val.toInt()),
+                        );
+                  },
+                ),
+              ],
+            ),
+          ],
 
           const SizedBox(height: 20),
           SettingsSection(
@@ -213,74 +233,8 @@ class _TrackingSettingsScreenState
               ),
             ],
           ),
-
-          const SizedBox(height: 20),
-          SettingsSection(
-            title: 'Sync Scope',
-            titleColor: colorScheme.primary,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'What gets synced',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildScopeRow(
-                        theme,
-                        Icons.list_alt,
-                        'Watchlist entries',
-                      ),
-                      const SizedBox(height: 8),
-                      _buildScopeRow(
-                        theme,
-                        Icons.play_arrow_rounded,
-                        'Episode progress',
-                      ),
-                      const SizedBox(height: 8),
-                      _buildScopeRow(
-                        theme,
-                        Icons.label_outline,
-                        'Status updates',
-                      ),
-                      const SizedBox(height: 8),
-                      _buildScopeRow(
-                        theme,
-                        Icons.star_border_rounded,
-                        'Scores & ratings',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildScopeRow(ThemeData theme, IconData icon, String label) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: theme.colorScheme.primary),
-        const SizedBox(width: 10),
-        Text(label, style: theme.textTheme.bodyMedium),
-      ],
     );
   }
 
@@ -290,8 +244,6 @@ class _TrackingSettingsScreenState
         return 'Sync immediately on every change';
       case 'background':
         return 'Sync at defined intervals';
-      case 'manual':
-        return 'Only sync when manually triggered';
       default:
         return '';
     }

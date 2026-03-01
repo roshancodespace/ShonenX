@@ -1,6 +1,8 @@
 package com.aayush262.dartotsu_extension_bridge.aniyomi
 
 import android.content.Context
+import com.aayush262.dartotsu_extension_bridge.LogLevel
+import com.aayush262.dartotsu_extension_bridge.Logger
 import com.aayush262.dartotsu_extension_bridge.aniyomi.models.ExtensionJsonObject
 import com.aayush262.dartotsu_extension_bridge.aniyomi.models.toAnimeExtensions
 import com.aayush262.dartotsu_extension_bridge.aniyomi.models.toMangaExtensions
@@ -21,18 +23,18 @@ import uy.kohesive.injekt.injectLazy
 class AniyomiExtensionManager(var context: Context) {
     lateinit var installedAnimeExtensions: List<AnimeExtension.Installed>
     lateinit var availableAnimeExtensions: List<AnimeExtension.Available>
-    lateinit var installedMangaExtensions : List<MangaExtension.Installed>
+    lateinit var installedMangaExtensions: List<MangaExtension.Installed>
     lateinit var availableMangaExtensions: List<MangaExtension.Available>
     private val json: Json by injectLazy()
 
-    fun fetchInstalledAnimeExtensions(): List<AnimeExtension.Installed>? {
-        val sources = ExtensionLoader.loadAnimeExtensions(context)
+    suspend fun fetchInstalledAnimeExtensions(): List<AnimeExtension.Installed> {
+        val sources = AnimeExtensionLoader.loadExtensions(context)
         installedAnimeExtensions =
             sources.filterIsInstance<AnimeLoadResult.Success>().map { it.extension }
         return installedAnimeExtensions
     }
 
-    fun fetchInstalledMangaExtensions(): List<MangaExtension.Installed>? {
+    fun fetchInstalledMangaExtensions(): List<MangaExtension.Installed> {
         val sources = ExtensionLoader.loadMangaExtensions(context)
         installedMangaExtensions =
             sources.filterIsInstance<MangaLoadResult.Success>().map { it.extension }
@@ -51,13 +53,20 @@ class AniyomiExtensionManager(var context: Context) {
             val response = try {
                 client.newCall(GET(indexUrl)).awaitSuccess()
             } catch (e: Throwable) {
-                e.printStackTrace()
+                Logger.log(
+                    "Failed to fetch from $indexUrl: ${e.message}\n${e.stackTraceToString()} ",
+                    LogLevel.ERROR
+                )
                 try {
                     val fallbackUrl = "${fallbackRepoUrl(repo)?.trimEnd('/')}/index.min.json"
                     client.newCall(GET(fallbackUrl)).awaitSuccess()
                 } catch (e2: Throwable) {
-                    e2.printStackTrace()
+                    Logger.log(
+                        "Failed to fetch from fallback URL for $repo: ${e2.message}\n${e.stackTraceToString()}",
+                        LogLevel.ERROR
+                    )
                     null
+
                 }
             }
 
@@ -68,7 +77,10 @@ class AniyomiExtensionManager(var context: Context) {
                             .toAnimeExtensions(repo)
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Logger.log(
+                        "Failed to fetch from $indexUrl: ${e.message}\n${e.stackTraceToString()} ",
+                        LogLevel.ERROR
+                    )
                     null
                 }
             }
@@ -90,12 +102,18 @@ class AniyomiExtensionManager(var context: Context) {
             val response = try {
                 client.newCall(GET(indexUrl)).awaitSuccess()
             } catch (e: Throwable) {
-                e.printStackTrace()
+                Logger.log(
+                    "Failed to fetch from $indexUrl: ${e.message}\n${e.stackTraceToString()} ",
+                    LogLevel.ERROR
+                )
                 try {
                     val fallbackUrl = "${fallbackRepoUrl(repo)?.trimEnd('/')}/index.min.json"
                     client.newCall(GET(fallbackUrl)).awaitSuccess()
                 } catch (e2: Throwable) {
-                    e2.printStackTrace()
+                    Logger.log(
+                        "Failed to fetch from fallback URL for $repo: ${e2.message}\n${e.stackTraceToString()}",
+                        LogLevel.ERROR
+                    )
                     null
                 }
             }
@@ -107,7 +125,10 @@ class AniyomiExtensionManager(var context: Context) {
                             .toMangaExtensions(repo)
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Logger.log(
+                        "Failed to fetch from $indexUrl: ${e.message}\n${e.stackTraceToString()} ",
+                        LogLevel.ERROR
+                    )
                     null
                 }
             }
@@ -115,21 +136,6 @@ class AniyomiExtensionManager(var context: Context) {
 
         return extensions.filter { it.pkgName.isNotEmpty() }
             .also { availableMangaExtensions = it }
-    }
-
-    fun registerNewExtension(extension: AnimeExtension.Installed) {
-        installedAnimeExtensions += extension
-    }
-
-    fun unregisterExtension(extension: AnimeExtension.Installed) {
-        installedAnimeExtensions =
-            installedAnimeExtensions.filter { it.pkgName != extension.pkgName }
-    }
-
-    fun updateExtension(extension: AnimeExtension.Installed) {
-        installedAnimeExtensions = installedAnimeExtensions.map {
-            if (it.pkgName == extension.pkgName) extension else it
-        }
     }
 
     private fun fallbackRepoUrl(repoUrl: String): String? {

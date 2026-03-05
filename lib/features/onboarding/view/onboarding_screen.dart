@@ -461,7 +461,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         _buildHeader(
           context,
           'Grant\nPermissions',
-          'Allow access to storage to download anime and support extensions.',
+          'Allow access to storage to download anime.',
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),

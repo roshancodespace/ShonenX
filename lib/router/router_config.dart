@@ -35,6 +35,7 @@ import 'package:shonenx/features/settings/view/screens/ui_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/tracking_settings_screen.dart';
 import 'package:shonenx/features/settings/view/screens/content_settings_screen.dart';
 import 'package:shonenx/features/debug/view/debug_screen.dart';
+import 'package:shonenx/features/settings/view/screens/permissions_settings_screen.dart';
 import 'package:shonenx/router/router_wrapper.dart';
 
 class AnimatedGoRoute extends GoRoute {
@@ -210,6 +211,10 @@ final routerConfig = GoRouter(
         AnimatedGoRoute(
           path: 'experimental',
           contentBuilder: (_, _) => ExperimentalScreen(),
+        ),
+        AnimatedGoRoute(
+          path: 'permissions',
+          contentBuilder: (_, _) => const PermissionsSettingsScreen(),
         ),
       ],
     ),

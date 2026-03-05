@@ -1,15 +1,15 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/shared/providers/anime_source_provider.dart';
+import 'package:shonenx/core/repositories/source_preference_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/shared/providers/settings/experimental_notifier.dart';
-import 'package:shonenx/shared/providers/settings/content_settings_notifier.dart';
-import 'package:shonenx/core/repositories/watch_progress_repository.dart';
-import 'package:collection/collection.dart';
-import 'package:shonenx/shared/providers/settings/source_notifier.dart';
 import 'package:shonenx/helpers/matcher.dart';
 import 'package:shonenx/main.dart';
+import 'package:shonenx/shared/providers/anime_source_provider.dart';
+import 'package:shonenx/shared/providers/settings/experimental_notifier.dart';
+import 'package:shonenx/shared/providers/settings/content_settings_notifier.dart';
+import 'package:collection/collection.dart';
+import 'package:shonenx/shared/providers/settings/source_notifier.dart';
 
 part 'anime_match_service.g.dart';
 
@@ -84,7 +84,10 @@ class AnimeMatchService {
 
       final res = await provider.getSearch(query, null, 1);
 
-      return res.results.where((r) => r.id != null && r.name != null).toList();
+      return res.results
+          .where((r) => r.id != null && r.name != null)
+          .map((r) => BaseAnimeModel(id: r.id, name: r.name, poster: r.poster))
+          .toList();
     }
   }
 
@@ -98,14 +101,14 @@ class AnimeMatchService {
     bool showSnackbar = false,
   }) async {
     try {
-      // Smart Source Persistence Check
+      final repo = _ref.read(sourcePreferenceRepositoryProvider);
       final settings = _ref.read(contentSettingsProvider);
-      AppLogger.d('Auto-Restore: Check enabled=${settings.smartSourceEnabled}');
 
+      // Smart Source Persistence Check
+      AppLogger.d('Auto-Restore: Check enabled=${settings.smartSourceEnabled}');
       if (!settings.smartSourceEnabled) return null;
 
-      final repo = _ref.read(watchProgressRepositoryProvider);
-      final selection = repo.getSourceSelection(animeId);
+      final selection = repo.getSourcePreference(animeId);
       AppLogger.d('Auto-Restore: Selection found=${selection != null}');
 
       if (selection != null) {

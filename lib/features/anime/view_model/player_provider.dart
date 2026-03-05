@@ -163,7 +163,7 @@ class PlayerStateNotifier extends _$PlayerStateNotifier {
     Duration? startAt, {
     Map<String, String>? headers,
   }) async {
-    await _player.open(Media(url, httpHeaders: headers));
+    await _player.open(Media(url, httpHeaders: headers, start: startAt));
 
     if (startAt == null || startAt == Duration.zero) return;
 

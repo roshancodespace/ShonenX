@@ -295,7 +295,7 @@ class AnilistQueries {
           hasNextPage
           perPage
         }
-        mediaList(userId: \$userId, type: \$type, status: \$status) {
+        mediaList(userId: \$userId, type: \$type, status: \$status, sort: [UPDATED_TIME_DESC]) {
           id
           status
           score
@@ -320,7 +320,7 @@ class AnilistQueries {
           hasNextPage
           perPage
         }
-        mediaList(userName: \$userName, type: ANIME) {
+        mediaList(userName: \$userName, type: ANIME, sort: [UPDATED_TIME_DESC]) {
           id
           status
           score

@@ -7,6 +7,7 @@ import 'package:path/path.dart' as path;
 import 'package:shonenx/data/isar/media.dart';
 import 'package:shonenx/data/isar/track.dart';
 import 'package:shonenx/data/isar/isar_anime_watch_progress.dart';
+import 'package:shonenx/data/isar/isar_source_preference.dart';
 
 class StorageProvider {
   static Future<void> deleteBtDirectory() async {
@@ -67,6 +68,7 @@ class StorageProvider {
         SourcePreferenceStringValueSchema,
         BridgeSettingsSchema,
         IsarAnimeWatchProgressSchema,
+        IsarSourcePreferenceSchema,
       ],
       directory: dir!.path,
       name: "shonenxDb",

@@ -37,10 +37,8 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
   String? _epTitle, _epThumb;
 
   int _lastSavedPos = -1;
+  int _screenshotTick = 0;
   bool _trackingTriggered = false;
-
-  Timer? _progressTimer;
-  int _timerTickCount = 0;
 
   @override
   void build() {
@@ -49,7 +47,6 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
 
     ref.onDispose(() {
       _isDisposed = true;
-      _progressTimer?.cancel();
       WidgetsBinding.instance.removeObserver(this);
       _saveProgressSync();
     });
@@ -83,65 +80,105 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
     _animeCover = animeCover;
     _totalEps = episodes.length;
 
-    await Future.wait([
-      ref
-          .read(episodeListProvider.notifier)
-          .fetchEpisodes(
-            animeTitle: animeName,
-            animeId: animeId,
-            episodes: episodes,
-            force: false,
-          ),
-      _initEpisode(animeId, initialEpisode),
-    ]);
+    await ref
+        .read(episodeListProvider.notifier)
+        .fetchEpisodes(
+          animeTitle: animeName,
+          animeId: animeId,
+          episodes: episodes,
+          force: false,
+        );
 
+    await _initEpisode(mediaId, initialEpisode);
     _attachPlaybackListeners(mediaId, animeName, episodes);
-    _startProgressTimer();
   }
 
-  Future<void> _initEpisode(String? animeId, int initialEpisode) async {
-    if (animeId == null || _repo == null) return;
-    final progress = _repo!.getEpisodeProgress(animeId, initialEpisode);
+  Future<void> _initEpisode(String? mediaId, int initialEpisode) async {
+    if (mediaId == null) return;
 
+    final progress = _repo!.getEpisodeProgress(mediaId, initialEpisode);
     _epNum = initialEpisode;
     _pos = progress?.progressInSeconds ?? 0;
     _dur = progress?.durationInSeconds ?? 0;
+    _lastSavedPos = _pos;
 
     await ref
         .read(episodeDataProvider.notifier)
         .loadEpisode(
-          ep: initialEpisode,
+          ep: _epNum!,
           startAt: Duration(seconds: _pos),
         );
   }
 
-  void _startProgressTimer() {
-    _progressTimer?.cancel();
-    _timerTickCount = 0;
+  void _attachPlaybackListeners(
+    String mediaId,
+    String animeName,
+    List<EpisodeDataModel> episodes,
+  ) {
+    ref.listen(playerStateProvider, (prev, next) {
+      if (_isDisposed) return;
 
-    _progressTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
-      if (_isDisposed) {
-        timer.cancel();
-        return;
+      _pos = next.position.inSeconds;
+      _dur = next.duration.inSeconds;
+
+      if (_dur > 120) _checkAniSkip(mediaId, animeName, next.duration);
+      _checkAutoSkip(next.position);
+
+      final syncPercentage = ref.read(syncSettingsProvider).syncPercentage;
+      if (!_trackingTriggered &&
+          _dur > 0 &&
+          (_pos / _dur * 100) >= syncPercentage) {
+        _trackingTriggered = true;
+        if ((_epNum ?? 0) > 0) _handleTrackingUpdate(mediaId, _epNum!);
       }
 
-      if (_pos == _lastSavedPos) return;
+      // Delta-based save: Triggers every 10 seconds of playback/seeking
+      if (_dur > 0 && (_pos - _lastSavedPos).abs() >= 10) {
+        _handlePeriodicSave();
+      }
+    });
 
-      _timerTickCount++;
-
-      if (_timerTickCount % 2 != 0) {
-        final thumb = await _captureScreenshot();
-        if (thumb != null) _epThumb = thumb;
+    ref.listen(episodeDataProvider.select((p) => p.selectedEpisode), (
+      prev,
+      next,
+    ) {
+      if (prev != null && prev != next && _epNum == prev) {
+        saveProgressManual(takeScreenshot: true);
       }
 
-      _saveProgressSync();
+      if (next != null) {
+        _epNum = next;
+        _pos = 0;
+        _dur = 0;
+        _lastSavedPos = -1;
+        _trackingTriggered = false;
+        try {
+          final epInfo = episodes.firstWhere((e) => e.number == next);
+          _epTitle = epInfo.title;
+          _epThumb = epInfo.thumbnail;
+        } catch (_) {}
+      }
     });
   }
 
-  void _saveProgressSync() {
-    if (_repo == null || _mediaId == null || _epNum == null) return;
-    if (_pos == _lastSavedPos) return;
-    if ((_pos - _lastSavedPos).abs() < 5 && _dur > 0) return;
+  Future<void> _handlePeriodicSave() async {
+    _screenshotTick++;
+    if (_screenshotTick % 2 == 0) {
+      final thumb = await _captureScreenshot();
+      if (thumb != null) _epThumb = thumb;
+    }
+    _saveProgressSync();
+  }
+
+  void _saveProgressSync() async {
+    if (_repo == null ||
+        _mediaId == null ||
+        _epNum == null ||
+        _dur == 0 ||
+        _pos == 0 ||
+        _pos == _lastSavedPos) {
+      return;
+    }
 
     try {
       final entry =
@@ -164,11 +201,10 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
         watchedAt: DateTime.now(),
       );
 
-      _repo!.saveProgress(entry);
-      _repo!.updateEpisodeProgress(_mediaId!, progress);
+      await _repo!.saveProgress(entry);
+      await _repo!.updateEpisodeProgress(_mediaId!, progress);
 
       _lastSavedPos = _pos;
-      AppLogger.d("Progress Timer Saved: Ep $_epNum at $_pos seconds");
     } catch (e) {
       AppLogger.e('WatchController: Save failed', e);
     }
@@ -200,59 +236,15 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
     }
   }
 
-  void _attachPlaybackListeners(
-    String mediaId,
-    String animeName,
-    List<EpisodeDataModel> episodes,
-  ) {
-    ref.listen(playerStateProvider, (prev, next) {
-      _pos = next.position.inSeconds;
-      _dur = next.duration.inSeconds;
-
-      if (_dur > 120) _checkAniSkip(mediaId, animeName, next.duration);
-      if (ref.read(playerSettingsProvider).enableAutoSkip) {
-        _checkAutoSkip(next.position);
-      }
-
-      final syncPercentage = ref.read(syncSettingsProvider).syncPercentage;
-      if (!_trackingTriggered &&
-          _dur > 0 &&
-          (_pos / _dur * 100) >= syncPercentage) {
-        _trackingTriggered = true;
-        if (_epNum != null && _epNum! > 0) {
-          _handleTrackingUpdate(mediaId, _epNum!);
-        }
-      }
-    });
-
-    ref.listen(episodeDataProvider.select((p) => p.selectedEpisode), (
-      prev,
-      next,
-    ) {
-      if (next != null) {
-        _epNum = next;
-        _trackingTriggered = false;
-        try {
-          final epInfo = episodes.firstWhere((e) => e.number == next);
-          _epTitle = epInfo.title;
-          _epThumb = epInfo.thumbnail;
-        } catch (_) {}
-      }
-
-      if (prev != null && prev != next) {
-        saveProgressManual(takeScreenshot: true);
-        _timerTickCount = 0;
-      }
-    });
-  }
-
   void _checkAniSkip(String mediaId, String animeName, Duration duration) {
     if (!ref.read(playerSettingsProvider).enableAniSkip) {
       ref.read(aniSkipProvider.notifier).clear();
       return;
     }
+
     final epNum = _epNum;
     if (epNum == null || epNum == _lastAniSkipEpisode) return;
+
     _lastAniSkipEpisode = epNum;
     ref
         .read(aniSkipProvider.notifier)
@@ -265,11 +257,16 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
   }
 
   void _checkAutoSkip(Duration position) {
+    if (!ref.read(playerSettingsProvider).enableAutoSkip) return;
+
     final skips = ref.read(aniSkipProvider);
+    if (skips.isEmpty) return;
+
     for (final skip in skips) {
       if (skip.interval == null) continue;
       final start = Duration(seconds: skip.interval!.startTime.toInt());
       final end = Duration(seconds: skip.interval!.endTime.toInt());
+
       if (position >= start && position < end) {
         ref.read(playerStateProvider.notifier).seek(end);
         return;
@@ -279,12 +276,12 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
 
   Future<void> _handleTrackingUpdate(String mediaId, int epNum) async {
     if (_isDisposed) return;
+
+    final syncSettings = ref.read(syncSettingsProvider);
     final syncNotifier = ref.read(syncSettingsProvider.notifier);
-    if (syncNotifier.isManualSync) return;
-    if (ref.read(syncSettingsProvider).askBeforeSync) return;
-    if (epNum > 0) {
-      updateTracking(mediaId: mediaId, episodeNum: epNum);
-    }
+
+    if (syncNotifier.isManualSync || syncSettings.askBeforeSync) return;
+    updateTracking(mediaId: mediaId, episodeNum: epNum);
   }
 
   Future<void> updateTracking({
@@ -299,13 +296,14 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
 
       final bindings = await repo.getBindings(mediaId);
 
-      final activeBindings = bindings.where((b) {
-        if (b.type == TrackerType.anilist) {
-          return syncNotifier.shouldSyncAnilist;
-        }
-        if (b.type == TrackerType.mal) return syncNotifier.shouldSyncMal;
-        return false;
-      }).toList();
+      final activeBindings = bindings
+          .where(
+            (b) =>
+                (b.type == TrackerType.anilist &&
+                    syncNotifier.shouldSyncAnilist) ||
+                (b.type == TrackerType.mal && syncNotifier.shouldSyncMal),
+          )
+          .toList();
 
       if (syncSettings.syncMode == 'background') {
         final inputData = <String, dynamic>{'progress': episodeNum};

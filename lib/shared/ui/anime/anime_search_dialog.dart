@@ -8,9 +8,9 @@ import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/anime/anime_model.dep.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/registery/sources/anime/anime_provider.dart';
-import 'package:shonenx/core/repositories/watch_progress_repository.dart';
+import 'package:shonenx/core/repositories/source_preference_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/data/isar/isar_anime_watch_progress.dart';
+import 'package:shonenx/data/isar/isar_source_preference.dart';
 import 'package:shonenx/helpers/navigation.dart';
 import 'package:shonenx/shared/providers/anime_match_service.dart';
 import 'package:shonenx/shared/providers/anime_source_provider.dart';
@@ -53,39 +53,43 @@ class _AnimeSearchDialogState extends ConsumerState<AnimeSearchDialog> {
     super.dispose();
   }
 
+  // --- Search & Selection Logic ---
+
   Future<void> _tryAutoResolve() async {
-    if (!widget.autoMatch) return;
-
-    final match = await ref
-        .read(animeMatchServiceProvider)
-        .findBestMatch(widget.media.title);
-
-    if (!mounted) return;
-
-    if (match != null) {
-      _handleSelection(match);
-      return;
-    }
-
     final title = widget.media.title.userPreferred;
     _searchController.text = title;
-    await _performSearch(title, autoMatch: false);
+    _performSearch(title);
+    if (widget.autoMatch) {
+      final match = await ref
+          .read(animeMatchServiceProvider)
+          .findBestMatch(widget.media.title);
+
+      if (!mounted) return;
+      if (match != null) _handleSelection(match);
+    }
   }
 
-  Future<bool> _performSearch(String query, {bool autoMatch = false}) async {
+  Future<void> _performSearch(String query) async {
     setState(() => _isLoading = true);
     try {
       final results = await ref.read(animeMatchServiceProvider).search(query);
-      if (!mounted) return false;
+      if (!mounted) return;
       setState(() => _results = results);
-      return true;
     } catch (e) {
       AppLogger.e('Search error', e);
-      setState(() => _results = []);
-      return false;
+      if (mounted) setState(() => _results = []);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _onSearchChanged(String query) {
+    _debounce?.cancel();
+    if (query.trim().length < 2) return;
+
+    _debounce = Timer(const Duration(milliseconds: 600), () {
+      _performSearch(query);
+    });
   }
 
   void _handleSelection(BaseAnimeModel anime) {
@@ -93,22 +97,26 @@ class _AnimeSearchDialogState extends ConsumerState<AnimeSearchDialog> {
     Navigator.of(context).pop(anime);
 
     // Save smart source preference
-    final settings = ref.read(contentSettingsProvider);
-    if (!settings.smartSourceEnabled) return;
-
-    final repo = ref.read(watchProgressRepositoryProvider);
-    final sourceId = ref.read(selectedProviderKeyProvider);
-    if (sourceId != null) {
-      repo.saveSourceSelection(
-        widget.media.id.toString(),
-        (widget.media.coverImage.medium ?? widget.media.coverImage.large)!,
-        IsarSourceSelection(
+    if (ref.read(contentSettingsProvider).smartSourceEnabled) {
+      final sourceId = ref.read(selectedProviderKeyProvider);
+      if (sourceId != null) {
+        final selection = IsarSourcePreference(
+          animeId: widget.media.id.toString(),
           sourceId: sourceId,
           sourceType: 'legacy',
           matchedAnimeId: anime.id,
           matchedAnimeTitle: anime.name,
-        ),
-      );
+        );
+
+        ref
+            .read(sourcePreferenceRepositoryProvider)
+            .saveSourcePreference(
+              widget.media.id.toString(),
+              (widget.media.coverImage.medium ??
+                  widget.media.coverImage.large)!,
+              selection,
+            );
+      }
     }
 
     if (widget.autoMatch) {
@@ -129,13 +137,7 @@ class _AnimeSearchDialogState extends ConsumerState<AnimeSearchDialog> {
     }
   }
 
-  void _onSearchChanged(String query) {
-    _debounce?.cancel();
-    if (query.trim().length < 2) return;
-    _debounce = Timer(const Duration(milliseconds: 600), () {
-      _performSearch(query, autoMatch: false);
-    });
-  }
+  // --- UI Building ---
 
   @override
   Widget build(BuildContext context) {
@@ -154,7 +156,8 @@ class _AnimeSearchDialogState extends ConsumerState<AnimeSearchDialog> {
             const SizedBox(height: 16),
             _buildSearchInput(),
             const SizedBox(height: 12),
-            _buildResults(theme),
+            // FIX: Wrapped the results section in an Expanded widget
+            Expanded(child: _buildResults(theme)),
           ],
         ),
       ),

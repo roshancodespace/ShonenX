@@ -11,13 +11,17 @@ class CacheStorageService {
   Box? _box;
 
   Future<void> init() async {
-    if (_box != null && _box!.isOpen) return;
+    if (_box?.isOpen ?? false) return;
     _box = await Hive.openBox(_boxName);
   }
 
+  Future<void> _ensureOpen() async {
+    if (_box == null || !_box!.isOpen) await init();
+  }
+
   Future<Map<dynamic, dynamic>?> get(String key) async {
-    await _initIfNeeded();
-    return _box!.get(key);
+    await _ensureOpen();
+    return _box!.get(key) as Map<dynamic, dynamic>?;
   }
 
   Future<void> put({
@@ -25,67 +29,53 @@ class CacheStorageService {
     required http.Response response,
     required Duration duration,
   }) async {
-    await _initIfNeeded();
-    
-    final entry = {
+    await _ensureOpen();
+    await _box!.put(key, {
       'body': response.body,
       'statusCode': response.statusCode,
       'headers': response.headers,
       'ts': DateTime.now().millisecondsSinceEpoch,
       'duration': duration.inMilliseconds,
-    };
-    
-    await _box!.put(key, entry);
+    });
   }
 
   Future<void> delete(String key) async {
-    await _initIfNeeded();
+    await _ensureOpen();
     await _box!.delete(key);
   }
 
   Future<void> clearAll() async {
-    await _initIfNeeded();
+    await _ensureOpen();
     await _box!.clear();
   }
 
-  /// Removes all entries where the duration has passed
   Future<void> clearExpired() async {
-    await _initIfNeeded();
+    await _ensureOpen();
     final now = DateTime.now().millisecondsSinceEpoch;
     final keysToDelete = <dynamic>[];
 
-    for (final key in _box!.keys) {
-      final cachedData = _box!.get(key);
-      if (cachedData == null) continue;
-
-      final int? timestamp = cachedData['ts'];
-      final int? durationMs = cachedData['duration'];
-
-      if (timestamp == null || durationMs == null) {
-        keysToDelete.add(key);
+    for (final entry in _box!.toMap().entries) {
+      final data = entry.value as Map<dynamic, dynamic>?;
+      
+      if (data == null || data['ts'] == null || data['duration'] == null) {
+        keysToDelete.add(entry.key);
         continue;
       }
 
-      if ((now - timestamp) > durationMs) {
-        keysToDelete.add(key);
+      if ((now - (data['ts'] as int)) > (data['duration'] as int)) {
+        keysToDelete.add(entry.key);
       }
     }
 
     if (keysToDelete.isNotEmpty) {
       await _box!.deleteAll(keysToDelete);
-      AppLogger.w('[CACHE CLEANUP] Removed ${keysToDelete.length} expired entries');
+      AppLogger.d('[CACHE CLEANUP] Removed ${keysToDelete.length} expired entries');
     }
   }
 
   Future<void> close() async {
-    if (_box != null && _box!.isOpen) {
+    if (_box?.isOpen ?? false) {
       await _box!.close();
-    }
-  }
-
-  Future<void> _initIfNeeded() async {
-    if (_box == null || !_box!.isOpen) {
-      await init();
     }
   }
 }

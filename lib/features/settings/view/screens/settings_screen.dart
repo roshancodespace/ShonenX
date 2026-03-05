@@ -188,6 +188,13 @@ class SettingsScreen extends ConsumerWidget {
                   onTap: () => context.push('/settings/experimental'),
                 ),
                 NormalSettingsItem(
+                  icon: Icon(Iconsax.key, color: colorScheme.primary),
+                  accent: colorScheme.primary,
+                  title: 'Permissions',
+                  description: 'Manage app permissions',
+                  onTap: () => context.push('/settings/permissions'),
+                ),
+                NormalSettingsItem(
                   icon: Icon(Iconsax.info_circle, color: colorScheme.primary),
                   accent: colorScheme.primary,
                   title: 'Check for updates',

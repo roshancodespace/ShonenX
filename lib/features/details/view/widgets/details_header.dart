@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:shonenx/core/models/tracker/tracker_type.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/features/details/view/widgets/comments_bottom_sheet.dart';
 import 'package:shonenx/features/details/view/widgets/tracker/track_bottom_sheet.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
 import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
 import 'package:shonenx/shared/providers/tracker/media_tracker_notifier.dart';
-import 'package:shonenx/core/services/auth_provider_enum.dart';
-import 'package:shonenx/core/models/tracker/tracker_type.dart';
+
 
 class DetailsHeader extends ConsumerStatefulWidget {
   final UniversalMedia anime;
@@ -410,3 +411,47 @@ class TrackerStatusWidget extends ConsumerWidget {
     );
   }
 }
+
+
+/// Floating watch button widget
+class WatchButton extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback onPressed;
+
+  const WatchButton({
+    super.key,
+    required this.isLoading,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final navHeight = MediaQuery.of(context).padding.bottom;
+    return Positioned(
+      bottom: 16 + navHeight,
+      left: 16,
+      right: 16,
+      child: FloatingActionButton.extended(
+        onPressed: onPressed,
+        label: Text(
+          'Watch Now',
+          style: Theme.of(context)
+              .textTheme
+              .labelLarge
+              ?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        icon: isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: Colors.white,
+                ),
+              )
+            : const Icon(Iconsax.play_circle),
+      ),
+    );
+  }
+}
+

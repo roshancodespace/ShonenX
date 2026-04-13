@@ -1,7 +1,2 @@
-// Barrel file for details screen widgets
-export 'header_widget.dart';
-export 'info_card_widget.dart';
-export 'synopsis_widget.dart';
-export 'rankings_widget.dart';
-export 'watch_button_widget.dart';
-export 'content_widget.dart';
+export 'details_header.dart';
+export 'about_tab.dart';

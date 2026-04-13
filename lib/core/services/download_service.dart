@@ -9,11 +9,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/core/utils/permissions.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
 import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/downloads/view_model/downloads_notifier.dart';
 import 'package:shonenx/core/models/settings/download_settings_model.dart';
+import 'package:shonenx/shared/providers/permissions_provider.dart';
 import 'package:shonenx/shared/providers/settings/download_settings_notifier.dart';
 import 'package:shonenx/storage_provider.dart';
 
@@ -31,9 +31,8 @@ class DownloadService {
   DownloadSettingsModel get _settings => ref.read(downloadSettingsProvider);
 
   Future<void> startDownload(DownloadItem item) async {
-    // Check Permissions & Path
     if (!_settings.useCustomPath || _settings.customDownloadPath == null) {
-      if (!await Permissions.requestStoragePermission()) {
+      if (!await ref.read(permissionsProvider.notifier).requestStoragePermission()) {
         return _fail(item, 'Permission denied');
       }
     }
@@ -76,7 +75,6 @@ class DownloadService {
       final file = File(item.filePath);
       if (await file.exists()) await file.delete();
 
-      // Cleanup parent folder if empty
       if (await file.parent.exists() && file.parent.listSync().isEmpty) {
         await file.parent.delete();
       }
@@ -183,7 +181,6 @@ Future<DownloadItem> _processFile(
   final file = File(task.item.filePath);
   await file.parent.create(recursive: true);
 
-  // Resume Logic
   final existing = await file.exists() ? await file.length() : 0;
   final req = http.Request('GET', Uri.parse(task.item.downloadUrl));
   req.headers.addAll(task.item.headers.cast());
@@ -192,7 +189,6 @@ Future<DownloadItem> _processFile(
   final res = await client.send(req);
   if (res.statusCode >= 400) throw Exception('HTTP ${res.statusCode}');
 
-  // Calc Total Size
   int total = existing;
   if (res.statusCode == 200) {
     total = int.tryParse(res.headers['content-length'] ?? '0') ?? 0;
@@ -213,7 +209,6 @@ Future<DownloadItem> _processFile(
     current += chunk.length;
     await throttler.throttle(chunk.length);
 
-    // Update UI every 500ms
     if (DateTime.now().difference(lastLog).inMilliseconds > 500) {
       task.port.send(
         task.item.copyWith(
@@ -244,7 +239,6 @@ Future<DownloadItem> _processM3U8(
   );
   await tempDir.create(recursive: true);
 
-  // Parse Playlist
   final segments = await _parsePlaylist(
     task.item.downloadUrl,
     task.item.headers,
@@ -260,14 +254,12 @@ Future<DownloadItem> _processM3U8(
   );
   task.port.send(currentItem);
 
-  // Download Segments (Batched)
   final batchSize = task.settings.parallelDownloads > 0
       ? task.settings.parallelDownloads
       : 3;
   int completed = 0;
   DateTime lastLog = DateTime.now();
 
-  // Count already downloaded
   for (var s in segments) {
     if (File(p.join(tempDir.path, '${s.index}.ts')).existsSync()) completed++;
   }
@@ -308,7 +300,6 @@ Future<DownloadItem> _processM3U8(
 
   if (isCancelled()) throw Exception("Cancelled");
 
-  // Stitch Files
   final output = File(task.item.filePath);
   final sink = output.openWrite();
   int totalSize = 0;
@@ -343,7 +334,6 @@ Future<List<_Segment>> _parsePlaylist(
   final baseUri = Uri.parse(url);
   final segments = <_Segment>[];
 
-  // Recursively handle Master Playlist
   if (lines.any((l) => l.contains('#EXT-X-STREAM-INF'))) {
     for (int i = 0; i < lines.length; i++) {
       if (lines[i].startsWith('#EXT-X-STREAM-INF') && i + 1 < lines.length) {
@@ -445,14 +435,10 @@ class _Throttler {
     final elapsedMs = DateTime.now().difference(_startTime).inMilliseconds;
     if (elapsedMs == 0) return;
 
-    // Expected milliseconds to transfer these bytes at the limit speed
-    // limitKBps is KB/s. 1 KB = 1024 bytes.
-    // Bytes / (KB/s * 1024) = seconds. * 1000 = ms.
     final expectedMs = (_bytesTransferred / (limitKBps * 1024)) * 1000;
 
     if (expectedMs > elapsedMs) {
       final waitMs = (expectedMs - elapsedMs).toInt();
-      // Don't sleep for too tiny intervals, but ensure aggregated sleep.
       if (waitMs > 10) {
         await Future.delayed(Duration(milliseconds: waitMs));
       }

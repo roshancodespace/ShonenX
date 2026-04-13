@@ -29,6 +29,7 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
   ScreenshotController? _screenshotController;
   int? _lastAniSkipEpisode;
   bool _isDisposed = false;
+  bool _isPlayerReady = false;
 
   WatchProgressRepository? _repo;
   String? _mediaId, _animeName, _animeFormat, _animeCover;
@@ -96,6 +97,7 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
   Future<void> _initEpisode(String? mediaId, int initialEpisode) async {
     if (mediaId == null) return;
 
+    _isPlayerReady = false;
     final progress = _repo!.getEpisodeProgress(mediaId, initialEpisode);
     _epNum = initialEpisode;
     _pos = progress?.progressInSeconds ?? 0;
@@ -121,6 +123,12 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
       _pos = next.position.inSeconds;
       _dur = next.duration.inSeconds;
 
+      if (!_isPlayerReady) {
+        if (_dur == 0) return;
+        if (_lastSavedPos > 0 && _pos == 0) return;
+        _isPlayerReady = true;
+      }
+
       if (_dur > 120) _checkAniSkip(mediaId, animeName, next.duration);
       _checkAutoSkip(next.position);
 
@@ -132,7 +140,6 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
         if ((_epNum ?? 0) > 0) _handleTrackingUpdate(mediaId, _epNum!);
       }
 
-      // Delta-based save: Triggers every 10 seconds of playback/seeking
       if (_dur > 0 && (_pos - _lastSavedPos).abs() >= 10) {
         _handlePeriodicSave();
       }
@@ -152,6 +159,7 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
         _dur = 0;
         _lastSavedPos = -1;
         _trackingTriggered = false;
+        _isPlayerReady = false;
         try {
           final epInfo = episodes.firstWhere((e) => e.number == next);
           _epTitle = epInfo.title;
@@ -174,8 +182,8 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
     if (_repo == null ||
         _mediaId == null ||
         _epNum == null ||
-        _dur == 0 ||
-        _pos == 0 ||
+        _dur <= 0 ||
+        _pos <= 0 ||
         _pos == _lastSavedPos) {
       return;
     }

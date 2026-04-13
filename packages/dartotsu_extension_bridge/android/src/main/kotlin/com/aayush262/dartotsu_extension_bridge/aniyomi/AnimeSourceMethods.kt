@@ -20,7 +20,7 @@ class AnimeSourceMethods(sourceID: String, langIndex: Int = 0) : AniyomiSourceMe
     init {
         val manager = Injekt.get<AniyomiExtensionManager>()
         val extension = manager.installedAnimeExtensions
-            .find { it.sources.first().id.toString() == sourceID }
+            .find { it.pkgName == sourceID }
             ?: throw IllegalArgumentException("Anime source with ID '$sourceID' not found.")
 
         val src = extension.sources.getOrNull(langIndex) ?: extension.sources.firstOrNull()

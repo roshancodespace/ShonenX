@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:dartotsu_extension_bridge/Services/Mangayomi/Eval/dart/model/source_preference.dart';
+import 'package:dartotsu_extension_bridge/Mangayomi/Eval/dart/model/source_preference.dart';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
@@ -16,13 +16,9 @@ class StorageProvider {
   }
 
   static Future<Directory?> getDefaultDirectory() async {
-    Directory? directory;
-    if (Platform.isAndroid) {
-      directory = Directory("/storage/emulated/0/ShonenX/");
-    } else {
-      final dir = await getApplicationDocumentsDirectory();
-      directory = Directory(path.join(dir.path, 'ShonenX'));
-    }
+    final dir = await getApplicationSupportDirectory();
+    final directory = Directory(path.join(dir.path, 'ShonenX'));
+    await directory.create(recursive: true);
     return directory;
   }
 
@@ -41,14 +37,8 @@ class StorageProvider {
   }
 
   static Future<Directory?> getDatabaseDirectory() async {
-    final dir = await getApplicationDocumentsDirectory();
-    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
-      return dir;
-    } else {
-      String dbDir = path.join(dir.path, 'ShonenX', 'databases');
-      await Directory(dbDir).create(recursive: true);
-      return Directory(dbDir);
-    }
+    final dir = await getApplicationSupportDirectory();
+    return dir;
   }
 
   static Future<Isar> initDB(String? path, {bool? inspector = false}) async {

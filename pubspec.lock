@@ -97,14 +97,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.0"
-  build_cli_annotations:
-    dependency: transitive
-    description:
-      name: build_cli_annotations
-      sha256: e563c2e01de8974566a1998410d3f6f03521788160a02503b0b1f1a46c7b3d95
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.1"
   build_config:
     dependency: transitive
     description:
@@ -352,7 +344,7 @@ packages:
       path: "packages/dartotsu_extension_bridge"
       relative: true
     source: path
-    version: "0.0.5"
+    version: "0.0.4"
   dartx:
     dependency: transitive
     description:
@@ -474,14 +466,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
-  fjs:
-    dependency: transitive
-    description:
-      name: fjs
-      sha256: ff2d6e72a7aec24a4464bb3bc2382bec6d8157e26370fa914a277f3133664207
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.1"
   flex_color_picker:
     dependency: "direct main"
     description:
@@ -685,14 +669,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.3"
-  flutter_rust_bridge:
-    dependency: transitive
-    description:
-      name: flutter_rust_bridge
-      sha256: "37ef40bc6f863652e865f0b2563ea07f0d3c58d8efad803cc01933a4b2ee067e"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.11.1"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -746,10 +722,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_svg
-      sha256: "87fbd7c534435b6c5d9d98b01e1fd527812b82e68ddd8bd35fc45ed0fa8f0a95"
+      sha256: "1ded017b39c8e15c8948ea855070a5ff8ff8b3d5e83f3446e02d6bb12add7ad9"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.3"
+    version: "2.2.4"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -2049,10 +2025,10 @@ packages:
     dependency: transitive
     description:
       name: vector_graphics
-      sha256: a4f059dc26fc8295b5921376600a194c4ec7d55e72f2fe4c7d2831e103d461e6
+      sha256: "7076216a10d5c390315fbe536a30f1254c341e7543e6c4c8a815e591307772b1"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.19"
+    version: "1.1.20"
   vector_graphics_codec:
     dependency: transitive
     description:

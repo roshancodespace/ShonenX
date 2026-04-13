@@ -68,9 +68,6 @@ class LocalAnimeSource(
         return emptyList()
     }
 
-    override suspend fun getSeasonList(anime: SAnime): List<SAnime> = getSeasonList(anime)
-
-
     // Filters
     override fun getFilterList() = AnimeFilterList(AnimeOrderBy.Popular())
 

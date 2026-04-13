@@ -1,5 +1,3 @@
-@file:Suppress("PropertyName")
-
 package eu.kanade.tachiyomi.source.model
 
 import java.io.Serializable

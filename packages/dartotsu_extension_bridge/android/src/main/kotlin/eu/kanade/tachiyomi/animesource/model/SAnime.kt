@@ -1,7 +1,6 @@
-@file:Suppress("PropertyName")
-
 package eu.kanade.tachiyomi.animesource.model
 
+import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import java.io.Serializable
 
 interface SAnime : Serializable {
@@ -22,19 +21,43 @@ interface SAnime : Serializable {
 
     var thumbnail_url: String?
 
-    var background_url: String?
-
-    var update_strategy: AnimeUpdateStrategy
-
-    var fetch_type: FetchType
-
-    var season_number: Double
+    var update_strategy: UpdateStrategy
 
     var initialized: Boolean
 
     fun getGenres(): List<String>? {
         if (genre.isNullOrBlank()) return null
         return genre?.split(", ")?.map { it.trim() }?.filterNot { it.isBlank() }?.distinct()
+    }
+
+    fun copyFrom(other: SAnime) {
+        if (other.author != null) {
+            author = other.author
+        }
+
+        if (other.artist != null) {
+            artist = other.artist
+        }
+
+        if (other.description != null) {
+            description = other.description
+        }
+
+        if (other.genre != null) {
+            genre = other.genre
+        }
+
+        if (other.thumbnail_url != null) {
+            thumbnail_url = other.thumbnail_url
+        }
+
+        status = other.status
+
+        update_strategy = other.update_strategy
+
+        if (!initialized) {
+            initialized = other.initialized
+        }
     }
 
     fun copy() = create().also {
@@ -46,10 +69,7 @@ interface SAnime : Serializable {
         it.genre = genre
         it.status = status
         it.thumbnail_url = thumbnail_url
-        it.background_url = background_url
         it.update_strategy = update_strategy
-        it.fetch_type = fetch_type
-        it.season_number = season_number
         it.initialized = initialized
     }
 
@@ -65,5 +85,7 @@ interface SAnime : Serializable {
         fun create(): SAnime {
             return SAnimeImpl()
         }
+
+        private const val serialVersionUID = 1L
     }
 }

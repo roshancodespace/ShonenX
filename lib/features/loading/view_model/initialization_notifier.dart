@@ -6,7 +6,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/shared/providers/anime_source_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/core/utils/permissions.dart';
 import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
 import 'package:shonenx/features/home/view_model/homepage_notifier.dart';
 import 'package:shonenx/shared/providers/settings/source_notifier.dart';
@@ -202,13 +201,6 @@ class Initialization extends _$Initialization {
       message: 'Loading extensions…',
       progress: 0.35,
     );
-
-    if (!Permissions.storage) {
-      if (!await Permissions.requestStoragePermission()) {
-        AppLogger.fail("Storage permission denied");
-        throw StateError("Failed to get storage access");
-      }
-    }
 
     isar = await StorageProvider.initDB(null, inspector: kDebugMode);
     final bridge = DartotsuExtensionBridge();

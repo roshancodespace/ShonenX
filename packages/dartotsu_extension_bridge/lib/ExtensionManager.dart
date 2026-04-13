@@ -1,15 +1,15 @@
 import 'dart:io';
 
+import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
 import 'package:get/get.dart';
 
+import 'Aniyomi/AniyomiExtensions.dart';
+import 'Aniyomi/AniyomiSourceMethods.dart';
 import 'Extensions/Extensions.dart';
 import 'Extensions/SourceMethods.dart';
+import 'Mangayomi/MangayomiExtensions.dart';
+import 'Mangayomi/MangayomiSourceMethods.dart';
 import 'Models/Source.dart';
-import 'Services/Aniyomi/AniyomiExtensions.dart';
-import 'Services/Aniyomi/AniyomiSourceMethods.dart';
-import 'Services/Mangayomi/MangayomiExtensions.dart';
-import 'Services/Mangayomi/MangayomiSourceMethods.dart';
-import 'Settings/Settings.dart';
 import 'extension_bridge.dart';
 
 class ExtensionManager extends GetxController {
@@ -19,9 +19,9 @@ class ExtensionManager extends GetxController {
 
   late final Rx<Extension> _currentManager;
 
-  Rx<Extension> get currentManagerRx => _currentManager;
-
   Extension get currentManager => _currentManager.value;
+
+  Rx<Extension> get currentManagerRx => _currentManager;
 
   void initialize() {
     final settings = isar.bridgeSettings.getSync(26)!;
@@ -47,7 +47,9 @@ extension SourceMethodsExtension on Source {
 }
 
 SourceMethods currentSourceMethods(Source source) {
-  if (source is HasSourceMethods) return source.methods;
+  if (source is HasSourceMethods) {
+    return (source as HasSourceMethods).methods;
+  }
 
   final type = source.extensionType;
   return type == ExtensionType.mangayomi

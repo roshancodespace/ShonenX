@@ -1,4 +1,5 @@
-import '../ExtensionManager.dart' show ExtensionType;
+import 'package:dartotsu_extension_bridge/ExtensionManager.dart'
+    show ExtensionType;
 
 class Source {
   String? id;
@@ -68,22 +69,22 @@ class Source {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'baseUrl': baseUrl,
-        'apkUrl': apkUrl,
-        'apkName': apkName,
-        'lang': lang,
-        'iconUrl': iconUrl,
-        'isNsfw': isNsfw,
-        'version': version,
-        'versionLast': versionLast,
-        'itemType': itemType?.index ?? 0,
-        'isObsolete': isObsolete,
-        'repo': repo,
-        'hasUpdate': hasUpdate,
-        'extensionType': extensionType?.index ?? 0,
-      };
+    'id': id,
+    'name': name,
+    'baseUrl': baseUrl,
+    'apkUrl': apkUrl,
+    'apkName': apkName,
+    'lang': lang,
+    'iconUrl': iconUrl,
+    'isNsfw': isNsfw,
+    'version': version,
+    'versionLast': versionLast,
+    'itemType': itemType?.index ?? 0,
+    'isObsolete': isObsolete,
+    'repo': repo,
+    'hasUpdate': hasUpdate,
+    'extensionType': extensionType?.index ?? 0,
+  };
 }
 
 enum ItemType {

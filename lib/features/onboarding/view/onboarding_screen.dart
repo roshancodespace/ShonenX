@@ -4,7 +4,6 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/core/utils/permissions.dart';
 
 import 'package:shonenx/main.dart';
 import 'package:iconsax/iconsax.dart';
@@ -17,6 +16,7 @@ import 'package:shonenx/features/settings/view/screens/home_settings_screen.dart
 import 'package:shonenx/features/settings/view/screens/ui_settings_screen.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_item.dart';
 import 'package:shonenx/features/settings/view/widgets/settings_section.dart';
+import 'package:shonenx/shared/providers/permissions_provider.dart';
 import 'package:shonenx/shared/providers/settings/theme_notifier.dart';
 import 'package:shonenx/shared/providers/settings/ui_notifier.dart';
 import 'package:shonenx/shared/providers/update_provider.dart';
@@ -74,7 +74,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Progress Indicator
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
               child: Row(
@@ -97,7 +96,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 }),
               ),
             ),
-
             Expanded(
               child: PageView(
                 controller: _pageController,
@@ -115,8 +113,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ],
               ),
             ),
-
-            // Navigation
             Padding(
               padding: const EdgeInsets.all(24),
               child: Row(
@@ -244,14 +240,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       selectedValue: theme.themeMode == 'light'
                           ? 1
                           : theme.themeMode == 'dark'
-                          ? 2
-                          : 0,
+                              ? 2
+                              : 0,
                       onValueChanged: (index) {
                         final mode = index == 0
                             ? 'system'
                             : index == 1
-                            ? 'light'
-                            : 'dark';
+                                ? 'light'
+                                : 'dark';
                         themeNotifier.updateSettings(
                           (p) => p.copyWith(themeMode: mode),
                         );
@@ -367,9 +363,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               uiSettingsProvider.select((s) => s.cardStyle.name),
             ),
             onChanged: (val) {
-              ref
-                  .read(uiSettingsProvider.notifier)
-                  .updateSettings(
+              ref.read(uiSettingsProvider.notifier).updateSettings(
                     (s) =>
                         s.copyWith(cardStyle: AnimeCardMode.values.byName(val)),
                   );
@@ -396,9 +390,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               uiSettingsProvider.select((s) => s.spotlightCardStyle.name),
             ),
             onChanged: (val) {
-              ref
-                  .read(uiSettingsProvider.notifier)
-                  .updateSettings(
+              ref.read(uiSettingsProvider.notifier).updateSettings(
                     (s) => s.copyWith(
                       spotlightCardStyle: SpotlightCardMode.values.byName(val),
                     ),
@@ -454,6 +446,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildPermissionsStep(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final permissionsState = ref.watch(permissionsProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -471,30 +464,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             title: 'Storage Access',
             description:
                 'Allow access to storage to download anime and support extensions.',
-            value: Permissions.storage,
+            value: permissionsState.storage,
             onChanged: (val) async {
               if (val == false) return;
-              await Permissions.requestStoragePermission();
-              setState(() {});
+              await ref.read(permissionsProvider.notifier).requestStoragePermission();
             },
           ),
         ),
-        // Padding(
-        //   padding: const EdgeInsets.symmetric(horizontal: 16),
-        //   child: ToggleableSettingsItem(
-        //     icon: Icon(Iconsax.gallery, color: colorScheme.primary),
-        //     accent: colorScheme.primary,
-        //     title: 'Photos & Videos',
-        //     description:
-        //         'Allow access to photos and videos for media management.',
-        //     value: Permissions.photos && Permissions.videos,
-        //     onChanged: (val) async {
-        //       if (val == false) return;
-        //       await Permissions.requestMediaPermissions();
-        //       setState(() {});
-        //     },
-        //   ),
-        // ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: ToggleableSettingsItem(
@@ -503,11 +479,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             title: 'Notification Access',
             description:
                 'Allow access to notifications to get notified about new anime news.',
-            value: Permissions.notification,
+            value: permissionsState.notification,
             onChanged: (val) async {
               if (val == false) return;
-              await Permissions.requestNotificationPermission();
-              setState(() {});
+              await ref.read(permissionsProvider.notifier).requestNotificationPermission();
             },
           ),
         ),
@@ -632,12 +607,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Color _getStatusColor(String? status) => status?.toLowerCase() == 'online'
       ? Colors.green
       : status?.toLowerCase() == 'offline'
-      ? Colors.red
-      : Colors.orange;
+          ? Colors.red
+          : Colors.orange;
 
   IconData _getStatusIcon(String? status) => status?.toLowerCase() == 'online'
       ? Iconsax.health
       : status?.toLowerCase() == 'offline'
-      ? Iconsax.danger
-      : Iconsax.warning_2;
+          ? Iconsax.danger
+          : Iconsax.warning_2;
 }

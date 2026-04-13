@@ -1,77 +1,60 @@
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
+import 'package:dartotsu_extension_bridge/Settings/Settings.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'Aniyomi/AniyomiExtensions.dart';
 import 'ExtensionManager.dart';
-import 'Logger.dart';
-import 'Services/Aniyomi/AniyomiExtensions.dart';
-import 'Services/Mangayomi/Eval/dart/model/source_preference.dart';
-import 'Services/Mangayomi/MangayomiExtensions.dart';
-import 'Services/Mangayomi/Models/Source.dart';
-import 'Settings/Settings.dart';
+import 'Mangayomi/Eval/dart/model/source_preference.dart';
+import 'Mangayomi/MangayomiExtensions.dart';
+import 'Mangayomi/Models/Source.dart';
 
 late Isar isar;
 WebViewEnvironment? webViewEnvironment;
-Client? httpClient;
 
 class DartotsuExtensionBridge {
-  Future<void> init(Isar? isarInstance, String dirName, {Client? http}) async {
-    Logger.init();
-    httpClient = http;
-
+  Future<void> init(Isar? isarInstance, String dirName) async {
+    var document = await getDatabaseDirectory(dirName);
     if (isarInstance == null) {
-      var document = await getDatabaseDirectory(dirName);
-      isar = Isar.openSync(
-        isarSchema,
-        directory: p.join(document.path, 'isar'),
-      );
+      isar = Isar.openSync([
+        MSourceSchema,
+        SourcePreferenceSchema,
+        SourcePreferenceStringValueSchema,
+        BridgeSettingsSchema,
+      ], directory: p.join(document.path, 'isar'));
     } else {
       isar = isarInstance;
     }
-    final settings =
-        await isar.bridgeSettings.filter().idEqualTo(26).findFirst();
+    final settings = await isar.bridgeSettings
+        .filter()
+        .idEqualTo(26)
+        .findFirst();
     if (settings == null) {
       isar.writeTxnSync(
         () => isar.bridgeSettings.putSync(BridgeSettings()..id = 26),
       );
     }
+
     if (Platform.isAndroid) {
-      Get.lazyPut(() => AniyomiExtensions(), tag: 'AniyomiExtensions');
+      Get.put(AniyomiExtensions(), tag: 'AniyomiExtensions');
     }
-    Get.lazyPut(() => MangayomiExtensions(), tag: 'MangayomiExtensions');
-    Get.lazyPut(() => ExtensionManager());
+    Get.put(MangayomiExtensions(), tag: 'MangayomiExtensions');
+    Get.put(ExtensionManager());
     if (Platform.isWindows) {
       final availableVersion = await WebViewEnvironment.getAvailableVersion();
       if (availableVersion != null) {
         webViewEnvironment = await WebViewEnvironment.create(
           settings: WebViewEnvironmentSettings(
-            userDataFolder: p.join(
-              (await getDatabaseDirectory(dirName)).path,
-              'flutter_inappwebview',
-            ),
+            userDataFolder: p.join(document.path, 'flutter_inappwebview'),
           ),
         );
       }
     }
   }
-
-  static var isarSchema = [
-    MSourceSchema,
-    SourcePreferenceSchema,
-    SourcePreferenceStringValueSchema,
-    BridgeSettingsSchema,
-  ];
-
-  // every bridge logs goes through this function (i think, it should lmao)
-  static void Function(String log) onLog = (log) {
-    debugPrint('DartotsuExtensionBridge: $log');
-  };
 }
 
 Future<Directory> getDatabaseDirectory(String dirName) async {

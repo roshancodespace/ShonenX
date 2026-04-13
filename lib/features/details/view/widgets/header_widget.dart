@@ -9,6 +9,8 @@ import 'package:shonenx/features/details/view/widgets/tracker/track_bottom_sheet
 import 'package:shonenx/features/watchlist/view_model/watchlist_notifier.dart';
 import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
 import 'package:shonenx/shared/providers/tracker/media_tracker_notifier.dart';
+import 'package:shonenx/core/services/auth_provider_enum.dart';
+import 'package:shonenx/core/models/tracker/tracker_type.dart';
 
 class DetailsHeader extends ConsumerStatefulWidget {
   final UniversalMedia anime;
@@ -221,32 +223,8 @@ class _DetailsHeaderState extends ConsumerState<DetailsHeader> {
           onPressed: () => CommentsBottomSheet.show(context, widget.anime),
         ),
         const SizedBox(width: 4),
-        // ─── Track Button with Badge ───
-        Consumer(
-          builder: (context, ref, child) {
-            final trackerState = ref.watch(
-              mediaTrackerProvider(widget.anime.id),
-            );
-
-            final count = trackerState.bindings.length;
-            final hasMultiple = count > 1;
-
-            return Badge(
-              isLabelVisible: hasMultiple,
-              label: Text('$count'),
-              backgroundColor: theme.colorScheme.primary,
-              offset: const Offset(-4, 4),
-              child: IconButton(
-                icon: const Icon(
-                  Iconsax.bookmark_2,
-                  color: Colors.white,
-                  size: 30,
-                ),
-                onPressed: () => TrackBottomSheet.show(context, widget.anime),
-              ),
-            );
-          },
-        ),
+        const SizedBox(width: 4),
+        TrackerStatusWidget(anime: widget.anime),
         const SizedBox(width: 4),
         isLoading
             ? const Padding(
@@ -329,6 +307,104 @@ class GenreTag extends StatelessWidget {
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
           color: color ?? Colors.white.withValues(alpha: 0.9),
           fontWeight: isStatus ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+class TrackerStatusWidget extends ConsumerWidget {
+  final UniversalMedia anime;
+
+  const TrackerStatusWidget({super.key, required this.anime});
+
+  String _formatStatus(String status) {
+    final clean = status.replaceAll('_', ' ').toLowerCase();
+    return clean[0].toUpperCase() + clean.substring(1);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final trackerState = ref.watch(mediaTrackerProvider(anime.id));
+    final authState = ref.watch(authProvider);
+    final theme = Theme.of(context);
+
+    final activePlatform = authState.activePlatform;
+    final trackerType = activePlatform == AuthPlatform.anilist
+        ? TrackerType.anilist
+        : TrackerType.mal;
+
+    final entry = trackerState.entries[trackerType];
+
+    Widget content;
+    bool isActive = false;
+
+    if (trackerState.isLoading && !trackerState.remoteLoaded) {
+      content = const SizedBox(
+        width: 16,
+        height: 16,
+        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+      );
+    } else if (entry != null) {
+      isActive = true;
+      final statusText = _formatStatus(entry.status);
+      final progressText = entry.progress > 0 ? ' ${entry.progress}' : '';
+      final totalEps = anime.episodes != null ? '/${anime.episodes}' : '';
+      final displayProgress = entry.progress > 0
+          ? '$progressText$totalEps'
+          : '';
+
+      content = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Iconsax.bookmark_25, size: 14, color: theme.colorScheme.primary),
+          const SizedBox(width: 4),
+          Text(
+            '$statusText$displayProgress',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      );
+    } else {
+      content = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Iconsax.add, size: 16, color: Colors.white),
+          const SizedBox(width: 2),
+          Text(
+            'Track',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: InkWell(
+        onTap: () => TrackBottomSheet.show(context, anime),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isActive
+                ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                : Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isActive
+                  ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: Center(child: content),
         ),
       ),
     );

@@ -4,7 +4,11 @@ import 'package:shonenx/core/models/tracker/tracker_type.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
 import 'package:shonenx/core/repositories/local_media_repository.dart';
+import 'package:shonenx/core/repositories/watch_progress_repository.dart';
+import 'package:shonenx/core/services/auth_provider_enum.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
+import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
 import 'package:shonenx/shared/providers/anilist_service_provider.dart';
 import 'package:shonenx/shared/providers/mal_service_provider.dart';
 import 'package:shonenx/shared/providers/tracker/tracker_service.dart';
@@ -19,11 +23,23 @@ class TrackerState {
   final Map<TrackerType, List<String>> supportedStatuses;
   final bool remoteLoaded;
 
+  static const Map<TrackerType, List<String>> _defaultStatuses = {
+    TrackerType.anilist: [
+      'CURRENT',
+      'COMPLETED',
+      'PAUSED',
+      'DROPPED',
+      'PLANNING',
+      'REPEATING',
+    ],
+    TrackerType.mal: ['CURRENT', 'COMPLETED', 'PAUSED', 'DROPPED', 'PLANNING'],
+  };
+
   const TrackerState({
     this.isLoading = false,
     this.bindings = const [],
     this.entries = const {},
-    this.supportedStatuses = const {},
+    this.supportedStatuses = _defaultStatuses,
     this.remoteLoaded = false,
   });
 
@@ -55,6 +71,7 @@ class MediaTracker extends _$MediaTracker {
   Future<void> _loadLocalBindings() async {
     final bindings = await _repo.getBindings(mediaId);
     state = state.copyWith(bindings: bindings);
+    await fetchRemoteEntries();
   }
 
   Future<void> fetchRemoteEntries() async {
@@ -69,16 +86,6 @@ class MediaTracker extends _$MediaTracker {
     state = currentState.copyWith(isLoading: true);
 
     try {
-      final Map<TrackerType, List<String>> supportedStatuses = {};
-      try {
-        final results = await Future.wait([
-          ref.read(anilistServiceProvider).getSupportedStatuses(),
-          ref.read(malServiceProvider).getSupportedStatuses(),
-        ]);
-        supportedStatuses[TrackerType.anilist] = results[0];
-        supportedStatuses[TrackerType.mal] = results[1];
-      } catch (_) {}
-
       final entries = <TrackerType, UniversalMediaListEntry>{};
 
       await Future.wait(
@@ -109,9 +116,10 @@ class MediaTracker extends _$MediaTracker {
       state = state.copyWith(
         isLoading: false,
         entries: entries,
-        supportedStatuses: supportedStatuses,
         remoteLoaded: true,
       );
+
+      await _syncProgressFromActiveTracker(entries);
     } catch (e) {
       state = state.copyWith(isLoading: false, remoteLoaded: true);
     }
@@ -134,16 +142,16 @@ class MediaTracker extends _$MediaTracker {
             final anilist = ref.read(anilistServiceProvider);
             newEntry = await anilist.getAnimeEntry(id);
             newEntry ??= await anilist.updateUserAnimeList(
-                mediaId: id,
-                status: 'CURRENT',
-              );
+              mediaId: id,
+              status: 'CURRENT',
+            );
           } else if (type == TrackerType.mal) {
             final mal = ref.read(malServiceProvider);
             newEntry = await mal.getAnimeEntry(id);
             newEntry ??= await mal.updateUserAnimeList(
-                mediaId: id,
-                status: 'CURRENT',
-              );
+              mediaId: id,
+              status: 'CURRENT',
+            );
           }
         } catch (e) {
           AppLogger.e(
@@ -153,7 +161,6 @@ class MediaTracker extends _$MediaTracker {
         }
       }
 
-      // Always update state with the new binding
       final updatedBindings = List<TrackerBinding>.from(currentState.bindings)
         ..removeWhere((b) => b.type == type)
         ..add(newBinding);
@@ -170,13 +177,15 @@ class MediaTracker extends _$MediaTracker {
         bindings: updatedBindings,
         entries: updatedEntries,
       );
+
+      await _syncProgressFromActiveTracker(updatedEntries);
     } catch (e) {
       state = currentState.copyWith(isLoading: false);
       throw Exception('Failed to bind tracker: $e');
     }
   }
 
-  /// Sync specific trackers directly
+  ///Sync specific trackers directly
   Future<void> syncTrackers({
     required List<TrackerBinding> bindings,
     String? status,
@@ -210,17 +219,25 @@ class MediaTracker extends _$MediaTracker {
               notes: notes,
               isPrivate: isPrivate,
             )
+            .then((value) {
+              state.entries[binding.type] = state.entries[binding.type]!
+                  .copyWith(
+                    status: status,
+                    progress: progress,
+                    score: score,
+                    repeat: repeat,
+                    notes: notes,
+                    isPrivate: isPrivate,
+                  );
+            })
             .catchError((e) {
               AppLogger.e(
                 'Failed to update tracker entry for ${binding.type}',
                 e,
               );
+              return;
             }),
       );
-    }
-
-    if (tasks.isNotEmpty) {
-      await Future.wait(tasks);
     }
   }
 
@@ -271,6 +288,56 @@ class MediaTracker extends _$MediaTracker {
   }
 
   LocalMediaRepository get _repo => ref.read(localMediaRepoProvider);
+
+  Future<void> _syncProgressFromActiveTracker(
+    Map<TrackerType, UniversalMediaListEntry> entries,
+  ) async {
+    try {
+      final authState = ref.read(authProvider);
+      final activeType = authState.activePlatform == AuthPlatform.anilist
+          ? TrackerType.anilist
+          : TrackerType.mal;
+
+      final entry = entries[activeType];
+      if (entry == null || entry.progress <= 0) return;
+
+      final repo = ref.read(watchProgressRepositoryProvider);
+      final local = repo.getProgress(mediaId);
+
+      if (local != null && local.currentEpisode >= entry.progress) return;
+
+      final media = entry.media;
+      final updated =
+          (local ??
+                  AnimeWatchProgressEntry(
+                    animeId: mediaId,
+                    animeTitle:
+                        media.title.english ??
+                        media.title.romaji ??
+                        media.title.native ??
+                        '',
+                    animeFormat: media.format,
+                    animeCover:
+                        media.coverImage.large ?? media.coverImage.medium ?? '',
+                    totalEpisodes: media.episodes ?? 0,
+                    episodesProgress: const {},
+                    lastUpdated: DateTime.now(),
+                    currentEpisode: entry.progress,
+                    status: 'watching',
+                  ))
+              .copyWith(
+                currentEpisode: entry.progress,
+                lastUpdated: DateTime.now(),
+              );
+
+      await repo.saveProgress(updated);
+      AppLogger.d(
+        'Synced local progress from ${activeType.name}: ep ${entry.progress}',
+      );
+    } catch (e) {
+      AppLogger.e('Failed to sync local progress from tracker', e);
+    }
+  }
 
   Future<bool> toggleFavorite(UniversalMedia media) =>
       _repo.toggleFavorite(media);

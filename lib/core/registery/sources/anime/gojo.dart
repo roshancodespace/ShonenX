@@ -11,7 +11,7 @@ import 'package:shonenx/core/utils/app_logger.dart';
 
 class GojoProvider implements AnimeProvider {
   @override
-  String get apiUrl => "https://b.animetsu.live";
+  String get apiUrl => "https://animetsu.net/v2";
 
   String get proxyUrl => "https://ani.metsu.site/proxy";
 
@@ -57,16 +57,24 @@ class GojoProvider implements AnimeProvider {
           String? formattedDate;
           final airedAt = item['aired_at'];
           if (airedAt is String && airedAt.isNotEmpty) {
-            formattedDate = DateFormat(
-              "d MMM y",
-            ).format(DateTime.parse(airedAt).toLocal());
+            try {
+              formattedDate = DateFormat(
+                "d MMM y",
+              ).format(DateTime.parse(airedAt).toLocal());
+            } catch (_) {}
           }
+
+          String imgUrl = item['img']?.toString() ?? '';
+          if (imgUrl.startsWith('/')) {
+            imgUrl = "$proxyUrl$imgUrl";
+          }
+
           return EpisodeDataModel(
             id: "$animeId/$epNum",
             number: epNum,
             title: item['name'] ?? 'Episode $epNum',
-            thumbnail: "$proxyUrl${item['img'] ?? ''}#$baseUrl",
-            isFiller: item['isFiller'] ?? false,
+            thumbnail: imgUrl.isNotEmpty ? "$imgUrl#$baseUrl" : "",
+            isFiller: item['is_filler'] ?? false,
             description: item['description'],
             date: formattedDate,
           );
@@ -173,12 +181,32 @@ class GojoProvider implements AnimeProvider {
 
       final tracks =
           (json['subs'] as List?)
-              ?.map(
-                (sub) =>
-                    Subtitle(url: sub['url'], lang: sub['lang'], isSub: true),
-              )
+              ?.map((sub) {
+                String subUrl = sub['url']?.toString() ?? '';
+                if (subUrl.isEmpty) return null;
+
+                if (subUrl.startsWith('/')) {
+                  subUrl = "$proxyUrl$subUrl";
+                }
+
+                String lang = sub['lang']?.toString() ?? 'English';
+
+                if (lang.toLowerCase().contains('thumb') ||
+                    subUrl.contains('thumb')) {
+                  return null;
+                }
+
+                return Subtitle(url: subUrl, lang: lang, isSub: true);
+              })
+              .whereType<Subtitle>()
               .toList() ??
           [];
+
+      tracks.sort((a, b) {
+        if (a.lang?.toLowerCase() == 'english') return -1;
+        if (b.lang?.toLowerCase() == 'english') return 1;
+        return 0;
+      });
 
       final currentServer = serverName ?? 'Gojo';
 
@@ -186,10 +214,15 @@ class GojoProvider implements AnimeProvider {
           (json['sources'] as List?)?.map((item) {
             var quality = item['quality']?.trim() ?? 'default';
             final type = item['type']?.trim() ?? 'm3u8';
-            final needProxy = item['need_proxy'] == true;
-            final sourceUrl = needProxy
-                ? "$proxyUrl${item['url']}"
-                : item['url'];
+
+            String sourceUrl = item['url']?.toString() ?? '';
+            final needProxy =
+                item['need_proxy'] == true || sourceUrl.startsWith('/');
+
+            if (needProxy && sourceUrl.startsWith('/')) {
+              sourceUrl = "$proxyUrl$sourceUrl";
+            }
+
             if (quality == 'master') quality = 'Auto';
 
             return Source(

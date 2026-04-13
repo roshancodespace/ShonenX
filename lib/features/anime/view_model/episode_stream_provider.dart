@@ -1,5 +1,6 @@
 // ignore_for_file: constant_identifier_names
 
+import 'dart:async';
 import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart'
@@ -113,8 +114,6 @@ class EpisodeData extends _$EpisodeData {
   @override
   EpisodeDataState build() => const EpisodeDataState();
 
-  // --- Core Episode Management ---
-
   Future<void> loadEpisode({
     required int ep,
     bool play = true,
@@ -126,9 +125,25 @@ class EpisodeData extends _$EpisodeData {
     }
 
     AppLogger.section('Loading Episode $ep');
+    state = state.copyWith(selectedEpisode: ep, clearError: true);
     await _fetchServers(ep);
 
-    if (play) await changeEpisode(ep, startAt: startAt);
+    if (play) {
+      Duration resumeAt = startAt ?? Duration.zero;
+      if (startAt == null) {
+        try {
+          final repo = ref.read(watchProgressRepositoryProvider);
+          final mediaId = _epList.animeId;
+          if (mediaId != null) {
+            final progress = repo.getEpisodeProgress(mediaId, ep);
+            if (progress != null && (progress.durationInSeconds ?? 0) > 0) {
+              resumeAt = Duration(seconds: progress.progressInSeconds ?? 0);
+            }
+          }
+        } catch (_) {}
+      }
+      await _playCurrent(resumeAt);
+    }
   }
 
   Future<void> changeEpisode(int? ep, {Duration? startAt, int by = 0}) async {
@@ -136,23 +151,7 @@ class EpisodeData extends _$EpisodeData {
     if (target == null || !_isValidEp(target)) return;
 
     AppLogger.i('Changing to episode: $target');
-    state = state.copyWith(selectedEpisode: target, clearError: true);
-
-    Duration resumeAt = startAt ?? Duration.zero;
-    if (startAt == null) {
-      try {
-        final repo = ref.read(watchProgressRepositoryProvider);
-        final mediaId = _epList.animeId;
-        if (mediaId != null) {
-          final progress = repo.getEpisodeProgress(mediaId, target);
-          if (progress != null && (progress.durationInSeconds ?? 0) > 0) {
-            resumeAt = Duration(seconds: progress.progressInSeconds ?? 0);
-          }
-        }
-      } catch (_) {}
-    }
-
-    await _playCurrent(resumeAt);
+    await loadEpisode(ep: target, play: true, startAt: startAt);
   }
 
   Future<void> changeServer(ServerData server) async {
@@ -174,8 +173,6 @@ class EpisodeData extends _$EpisodeData {
     }
   }
 
-  // --- Source & Quality Controls ---
-
   Future<void> changeSource(int idx) async {
     if (idx < 0 || idx >= state.sources.length) return;
     AppLogger.infoPair('Changing Source Index', idx);
@@ -196,7 +193,6 @@ class EpisodeData extends _$EpisodeData {
       state.qualityOptions[idx]['quality'],
     );
     state = state.copyWith(selectedQualityIdx: idx);
-
     _player.open(
       url,
       ref.read(playerStateProvider).position,
@@ -204,15 +200,13 @@ class EpisodeData extends _$EpisodeData {
     );
   }
 
-  // --- Subtitles ---
-
   Future<void> changeSubtitle(int idx) async {
     state = state.copyWith(
       addState: EpisodeStreamState.SUBTITLE_LOADING,
       clearError: true,
     );
 
-    if (idx == 0 || idx < 0 || idx >= state.subtitles.length) {
+    if (idx <= 0 || idx >= state.subtitles.length) {
       AppLogger.d('Disabling Subtitles');
       await _player.setSubtitle(SubtitleTrack.no());
       state = state.copyWith(
@@ -226,6 +220,7 @@ class EpisodeData extends _$EpisodeData {
     AppLogger.infoPair('Applying Subtitle', sub.lang);
 
     if (sub.url != null) await _player.setSubtitle(SubtitleTrack.uri(sub.url!));
+
     state = state.copyWith(
       selectedSubtitleIdx: idx,
       removeState: EpisodeStreamState.SUBTITLE_LOADING,
@@ -242,8 +237,6 @@ class EpisodeData extends _$EpisodeData {
     state = state.copyWith(subtitles: [...state.subtitles, sub]);
     await changeSubtitle(state.subtitles.length - 1);
   }
-
-  // --- Downloading ---
 
   Future<void> downloadEpisode(BuildContext context, int epNum) async {
     if (!_isValidEp(epNum) || _epList.animeId == null) return;
@@ -308,8 +301,6 @@ class EpisodeData extends _$EpisodeData {
 
   void reset() => state = const EpisodeDataState();
 
-  // --- Internal Helpers ---
-
   bool _isValidEp(int ep) => _epList.episodes.any((i) => i.number == ep);
 
   Future<List<ServerData>> _getRawServers(EpisodeDataModel ep) async {
@@ -339,12 +330,10 @@ class EpisodeData extends _$EpisodeData {
 
     try {
       final ep = _epList.episodes.firstWhereOrNull((e) => e.number == epNum);
-      if (ep == null) throw Exception("Episode $epNum not found in list");
+      if (ep == null) return;
 
       final list = await _getRawServers(ep);
       final preferDub = ref.read(playerSettingsProvider).preferDub;
-
-      // Actively look for matching preference, otherwise fallback to first
       final selected =
           list.firstWhereOrNull((s) => s.isDub == preferDub) ??
           list.firstOrNull;
@@ -395,7 +384,7 @@ class EpisodeData extends _$EpisodeData {
     AppLogger.success(
       'Extracted ${data.sources.length} sources and ${data.tracks.length} subtitles',
     );
-    await _loadSourceStream(state.selectedSourceIdx ?? 0, startAt: startAt);
+    await _loadSourceStream(0, startAt: startAt);
 
     state = state.copyWith(removeState: EpisodeStreamState.SOURCE_LOADING);
   }
@@ -404,15 +393,22 @@ class EpisodeData extends _$EpisodeData {
     int sourceIdx, {
     required Duration startAt,
   }) async {
+    if (sourceIdx < 0 || sourceIdx >= state.sources.length) return;
+
     final src = state.sources[sourceIdx];
     state = state.copyWith(addState: EpisodeStreamState.QUALITY_LOADING);
 
     final qualities = await _getQualities(src, state.headers);
-    final prefQuality = ref.read(playerSettingsProvider).defaultQuality;
+    if (qualities.isEmpty) {
+      state = state.copyWith(removeState: EpisodeStreamState.QUALITY_LOADING);
+      return;
+    }
 
-    final qIdx = qualities
-        .indexWhere((q) => (q['quality'] as String).contains(prefQuality))
-        .clamp(0, qualities.length - 1);
+    final prefQuality = ref.read(playerSettingsProvider).defaultQuality;
+    int qIdx = qualities.indexWhere(
+      (q) => (q['quality'] as String).contains(prefQuality),
+    );
+    if (qIdx == -1) qIdx = 0;
 
     AppLogger.d('Opening stream: ${qualities[qIdx]['quality']}');
     _player.open(
@@ -421,7 +417,17 @@ class EpisodeData extends _$EpisodeData {
       headers: state.headers,
     );
 
-    // Auto-select English sub if available
+    if (startAt > Duration.zero) {
+      Timer.periodic(const Duration(milliseconds: 200), (timer) {
+        if (ref.read(playerStateProvider).duration > Duration.zero) {
+          _player.seek(startAt);
+          timer.cancel();
+        } else if (timer.tick >= 25) {
+          timer.cancel();
+        }
+      });
+    }
+
     final engIdx = state.subtitles.indexWhere(
       (s) => s.lang?.toLowerCase().contains('eng') ?? false,
     );
@@ -440,7 +446,6 @@ class EpisodeData extends _$EpisodeData {
     ServerData? server,
   }) async {
     AppLogger.d('Fetching source data via ${server?.name ?? "Extension"}');
-
     if (_exp.useExtensions && ep.url != null) {
       final res = await _srcNotifier.getSources(
         DEpisode(episodeNumber: ep.number.toString(), url: ep.url),
@@ -496,8 +501,6 @@ class EpisodeData extends _$EpisodeData {
       ];
     }
   }
-
-  // --- UI Helpers ---
 
   void _showLoading(BuildContext context) => showDialog(
     context: context,

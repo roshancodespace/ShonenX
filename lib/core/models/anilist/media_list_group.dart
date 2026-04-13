@@ -1,4 +1,5 @@
 import 'package:shonenx/core/models/anilist/media_list_entry.dart';
+import 'package:shonenx/core/services/mappers/list_entry_mapper.dart';
 
 class MediaListGroup {
   final String name;
@@ -14,7 +15,7 @@ class MediaListGroup {
     return MediaListGroup(
       name: json['name'] as String? ?? 'Unknown',
       entries: entriesJson
-          .map((e) => MediaListEntry.fromJson(e as Map<String, dynamic>))
+          .map((e) => MediaListEntryMapper.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }

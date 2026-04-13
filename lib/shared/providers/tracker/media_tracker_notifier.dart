@@ -3,6 +3,7 @@ import 'package:shonenx/core/models/tracker/tracker_binding.dart';
 import 'package:shonenx/core/models/tracker/tracker_type.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
+import 'package:shonenx/core/repositories/interfaces/local_media_repository_interface.dart';
 import 'package:shonenx/core/repositories/local_media_repository.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/core/services/auth_provider_enum.dart';
@@ -287,7 +288,7 @@ class MediaTracker extends _$MediaTracker {
     }
   }
 
-  LocalMediaRepository get _repo => ref.read(localMediaRepoProvider);
+  LocalMediaRepositoryInterface get _repo => ref.read(localMediaRepoProvider);
 
   Future<void> _syncProgressFromActiveTracker(
     Map<TrackerType, UniversalMediaListEntry> entries,

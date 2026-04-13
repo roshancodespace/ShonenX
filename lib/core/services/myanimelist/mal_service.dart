@@ -5,6 +5,8 @@ import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
 import 'package:shonenx/core/models/universal/universal_page_response.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
+import 'package:shonenx/core/services/mappers/universal_media_mapper.dart';
+import 'package:shonenx/core/services/mappers/list_entry_mapper.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/browse/model/search_filter.dart';
 import 'package:shonenx/shared/providers/tracker/tracker_service.dart';
@@ -37,7 +39,7 @@ class MyAnimeListService implements AnimeRepository, TrackerService {
   List<UniversalMedia> _parseMediaList(List<dynamic>? media) {
     if (media == null) return [];
     return media
-        .map((e) => UniversalMedia.fromMal(e['node'] as Map<String, dynamic>))
+        .map((e) => UniversalMediaMapper.fromMal(e['node'] as Map<String, dynamic>))
         .toList();
   }
 
@@ -151,7 +153,7 @@ class MyAnimeListService implements AnimeRepository, TrackerService {
 
       final list = (data['data'] as List<dynamic>? ?? [])
           .map(
-            (e) => UniversalMediaListEntry.fromMal(e as Map<String, dynamic>),
+            (e) => UniversalMediaListEntryMapper.fromMal(e as Map<String, dynamic>),
           )
           .toList();
 
@@ -191,7 +193,7 @@ class MyAnimeListService implements AnimeRepository, TrackerService {
           'https://api.myanimelist.net/v2/anime/$animeId?fields=$fields';
 
       final data = await _get(url, operationName: 'GetAnimeDetails');
-      return UniversalMedia.fromMal(data);
+      return UniversalMediaMapper.fromMal(data);
     } catch (e) {
       return null;
     }
@@ -307,7 +309,7 @@ class MyAnimeListService implements AnimeRepository, TrackerService {
       final adapted = {
         'node': {...data, 'list_status': myListStatus},
       };
-      return UniversalMediaListEntry.fromMal(adapted);
+      return UniversalMediaListEntryMapper.fromMal(adapted);
     } catch (e) {
       if (e is TrackerException &&
           (e.message.contains('404') || e.message.contains('not_found'))) {

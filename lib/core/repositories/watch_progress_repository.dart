@@ -7,8 +7,9 @@ import 'package:shonenx/core/utils/app_utils.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/data/isar/isar_anime_watch_progress.dart';
 import 'package:shonenx/main.dart';
+import 'package:shonenx/core/repositories/interfaces/watch_progress_repository_interface.dart';
 
-final watchProgressRepositoryProvider = Provider<WatchProgressRepository>((
+final watchProgressRepositoryProvider = Provider<WatchProgressRepositoryInterface>((
   ref,
 ) {
   return WatchProgressRepository();
@@ -24,7 +25,7 @@ final animeWatchProgressProvider = StreamProvider.autoDispose
       return ref.watch(watchProgressRepositoryProvider).watchProgress(animeId);
     });
 
-class WatchProgressRepository {
+class WatchProgressRepository implements WatchProgressRepositoryInterface {
   WatchProgressRepository();
 
   // --- Migration ---

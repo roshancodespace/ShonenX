@@ -6,13 +6,24 @@ import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
 import 'package:shonenx/core/network/http_client.dart';
-import 'package:shonenx/core/registery/sources/anime/aniwatch/parser.dart';
+import 'package:shonenx/core/registery/sources/anime/aniwatch/extractors.dart';
 import 'package:shonenx/core/registery/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/env_loader.dart';
 import 'package:html/parser.dart' show parse;
 
 class KaidoProvider extends AnimeProvider {
-  KaidoProvider({String? customApiUrl})
+  final HomeExtractor homeExtractor;
+  final DetailExtractor detailExtractor;
+  final WatchExtractor watchExtractor;
+  final SearchExtractor searchExtractor;
+
+  KaidoProvider({
+    String? customApiUrl,
+    this.homeExtractor = const HomeExtractor(),
+    this.detailExtractor = const DetailExtractor(),
+    this.watchExtractor = const WatchExtractor(),
+    this.searchExtractor = const SearchExtractor(),
+  })
       : super(
             apiUrl: customApiUrl != null
                 ? '$customApiUrl/anime/zoro'
@@ -64,7 +75,7 @@ class KaidoProvider extends AnimeProvider {
     if (document == null) {
       throw Exception("Failed to fetch DetailPage for $animeId");
     }
-    return parseDetail(document, baseUrl, animeId: animeId);
+    return detailExtractor.parseDetail(document, baseUrl, animeId: animeId);
   }
 
   @override
@@ -73,7 +84,7 @@ class KaidoProvider extends AnimeProvider {
     if (document == null) {
       throw Exception("Failed to fetch WatchPage for $animeId");
     }
-    return parseWatch(document, baseUrl, animeId: animeId);
+    return watchExtractor.parseWatch(document, baseUrl, animeId: animeId);
   }
 
   @override
@@ -85,7 +96,7 @@ class KaidoProvider extends AnimeProvider {
 
     if (response.statusCode == 200) {
       final document = parse(json.decode(response.body)['html']);
-      return parseEpisodes(document, episodeUrl, animeId: animeId);
+      return watchExtractor.parseEpisodes(document, episodeUrl, animeId: animeId);
     } else {
       throw Exception("Failed to fetch episodes for $animeId");
     }
@@ -144,7 +155,7 @@ class KaidoProvider extends AnimeProvider {
     if (document == null) {
       throw Exception("Failed to fetch search results for $keyword");
     }
-    return parseSearch(document, baseUrl, keyword: keyword, page: page);
+    return searchExtractor.parseSearch(document, baseUrl, keyword: keyword, page: page);
   }
 
   @override
@@ -154,7 +165,7 @@ class KaidoProvider extends AnimeProvider {
     if (document == null) {
       throw Exception("Failed to fetch page $page for route $route");
     }
-    return parsePage(document, baseUrl, route: route, page: page);
+    return searchExtractor.parsePage(document, baseUrl, route: route, page: page);
   }
 
   @override

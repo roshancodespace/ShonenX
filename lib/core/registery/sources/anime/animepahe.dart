@@ -146,11 +146,16 @@ class AnimePaheProvider extends AnimeProvider {
         ),
       );
     }
-    episodes.sort((a, b) => a.number!.compareTo(b.number!));
-    if (episodes.isNotEmpty) {
-      for (int i = 0; i < episodes.length; i++) {
-        episodes[i] = episodes[i].copyWith(number: i + 1);
-      }
+
+    episodes.sort((a, b) => (a.number ?? 0).compareTo(b.number ?? 0));
+
+    for (int i = 0; i < episodes.length; i++) {
+      episodes[i] = episodes[i].copyWith(
+        number: i + 1,
+        title: episodes[i].title!.startsWith('Episode ')
+            ? 'Episode ${i + 1}'
+            : episodes[i].title,
+      );
     }
 
     return BaseEpisodeModel(episodes: episodes, totalEpisodes: episodes.length);

@@ -22,6 +22,7 @@ import 'package:shonenx/features/details/view/widgets/episodes/episode_grid_item
 import 'package:shonenx/features/details/view/widgets/episodes/episode_list_item.dart';
 import 'package:shonenx/shared/providers/settings/ui_notifier.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 
 enum EpisodeViewMode { list, compact, grid, block }
 
@@ -61,9 +62,42 @@ class _EpisodesTabState extends ConsumerState<EpisodesTab>
     );
 
     final episodeListState = ref.watch(episodeListProvider);
-    final episodes = episodeListState.episodes;
-    final loading = episodeListState.isLoading;
-    final error = episodeListState.error;
+
+    final isMatchingAnime = episodeListState.animeId == state.animeIdForSource;
+    final hasSourceMatch = state.animeIdForSource != null;
+
+    if (!isMatchingAnime &&
+        hasSourceMatch &&
+        !state.isSearchingMatch &&
+        !episodeListState.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final titleForSearch =
+            state.bestMatchName ??
+            widget.mediaTitle.english ??
+            widget.mediaTitle.romaji ??
+            '';
+        ref
+            .read(episodeListProvider.notifier)
+            .fetchEpisodes(
+              animeTitle: titleForSearch,
+              animeId: state.animeIdForSource,
+              force: false,
+              media: DMedia(
+                title: titleForSearch,
+                url: state.animeIdForSource,
+                cover: widget.mediaCover,
+              ),
+            );
+      });
+    }
+
+    final episodes = isMatchingAnime
+        ? episodeListState.episodes
+        : <EpisodeDataModel>[];
+    final loading =
+        episodeListState.isLoading || (!isMatchingAnime && hasSourceMatch);
+    final error = isMatchingAnime ? episodeListState.error : null;
 
     final exposedName = state.bestMatchName;
     final theme = Theme.of(context);

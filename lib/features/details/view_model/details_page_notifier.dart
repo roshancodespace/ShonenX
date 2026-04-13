@@ -128,6 +128,9 @@ class DetailsPageNotifier extends _$DetailsPageNotifier {
     try {
       if (state.animeIdForSource == null) {
         state = state.copyWith(isSearchingMatch: true);
+        
+        // Reset old episodes to avoid bleeding from previously opened anime
+        ref.read(episodeListProvider.notifier).reset();
 
         // Try to restore source first
         final restored = force

@@ -5,36 +5,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/core/repositories/watch_progress_repository.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
+import 'package:shonenx/features/home/view_model/watch_history_notifier.dart';
 import 'package:shonenx/helpers/anime_match_search.dart';
 import 'package:go_router/go_router.dart';
 
-class WatchHistoryScreen extends ConsumerStatefulWidget {
+class WatchHistoryScreen extends ConsumerWidget {
   const WatchHistoryScreen({super.key});
   @override
-  ConsumerState<WatchHistoryScreen> createState() => _WatchHistoryScreenState();
-}
-
-class _WatchHistoryScreenState extends ConsumerState<WatchHistoryScreen> {
-  String _searchQuery = "";
-
-  @override
-  Widget build(BuildContext context) {
-    final history = ref.watch(watchProgressRepositoryProvider).getAllProgress()
-      ..removeWhere((e) => e.episodesProgress.isEmpty)
-      ..sort(
-        (a, b) => (b.lastUpdated ?? DateTime(0)).compareTo(
-          a.lastUpdated ?? DateTime(0),
-        ),
-      );
-
-    final filtered = history
-        .where(
-          (e) =>
-              e.animeTitle.toLowerCase().contains(_searchQuery.toLowerCase()),
-        )
-        .toList();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(watchHistoryProvider);
+    final notifier = ref.read(watchHistoryProvider.notifier);
+    final filtered = state.filteredHistory;
 
     return Scaffold(
       appBar: AppBar(
@@ -52,13 +34,13 @@ class _WatchHistoryScreenState extends ConsumerState<WatchHistoryScreen> {
         children: [
           _SearchBar(
             hint: "Search history...",
-            onChanged: (v) => setState(() => _searchQuery = v),
+            onChanged: notifier.setSearchQuery,
           ),
           Expanded(
             child: filtered.isEmpty
                 ? Center(
                     child: Text(
-                      _searchQuery.isEmpty
+                      state.searchQuery.isEmpty
                           ? "No history yet"
                           : "No matches found",
                     ),
@@ -68,12 +50,8 @@ class _WatchHistoryScreenState extends ConsumerState<WatchHistoryScreen> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) => _HistoryTile(
                       entry: filtered[index],
-                      onDelete: () async {
-                        await ref
-                            .read(watchProgressRepositoryProvider)
-                            .deleteProgress(filtered[index].animeId);
-                        setState(() {});
-                      },
+                      onDelete: () =>
+                          notifier.deleteProgress(filtered[index].animeId),
                     ),
                   ),
           ),
@@ -83,19 +61,16 @@ class _WatchHistoryScreenState extends ConsumerState<WatchHistoryScreen> {
   }
 }
 
-class AnimeHistoryDetailScreen extends ConsumerStatefulWidget {
+class AnimeHistoryDetailScreen extends ConsumerWidget {
   final String animeId;
   const AnimeHistoryDetailScreen({super.key, required this.animeId});
-  @override
-  ConsumerState<AnimeHistoryDetailScreen> createState() =>
-      _AnimeHistoryDetailScreenState();
-}
 
-class _AnimeHistoryDetailScreenState
-    extends ConsumerState<AnimeHistoryDetailScreen> {
-  String _epQuery = "";
-
-  void _play(AnimeWatchProgressEntry entry, int ep) {
+  void _play(
+    BuildContext context,
+    WidgetRef ref,
+    AnimeWatchProgressEntry entry,
+    int ep,
+  ) {
     providerAnimeMatchSearch(
       context: context,
       ref: ref,
@@ -112,25 +87,14 @@ class _AnimeHistoryDetailScreenState
   }
 
   @override
-  Widget build(BuildContext context) {
-    final entry = ref
-        .watch(watchProgressRepositoryProvider)
-        .getProgress(widget.animeId);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(animeHistoryDetailProvider(animeId));
+    final notifier = ref.read(animeHistoryDetailProvider(animeId).notifier);
+
+    final entry = state.entry;
     if (entry == null) return const Scaffold();
 
-    final episodes = entry.episodesProgress.values.toList()
-      ..sort(
-        (a, b) =>
-            (b.watchedAt ?? DateTime(0)).compareTo(a.watchedAt ?? DateTime(0)),
-      );
-
-    final filtered = episodes
-        .where(
-          (e) =>
-              e.episodeNumber.toString().contains(_epQuery) ||
-              (e.episodeTitle.toLowerCase().contains(_epQuery.toLowerCase())),
-        )
-        .toList();
+    final filtered = state.filteredEpisodes;
 
     return Scaffold(
       appBar: AppBar(
@@ -147,13 +111,23 @@ class _AnimeHistoryDetailScreenState
         children: [
           _DetailHeader(
             entry: entry,
-            currentEp: episodes.first.episodeNumber,
-            onResume: () => _play(entry, episodes.first.episodeNumber),
-            onNext: () => _play(entry, episodes.first.episodeNumber + 1),
+            currentEp: filtered.isNotEmpty ? filtered.first.episodeNumber : 1,
+            onResume: () => _play(
+              context,
+              ref,
+              entry,
+              filtered.isNotEmpty ? filtered.first.episodeNumber : 1,
+            ),
+            onNext: () => _play(
+              context,
+              ref,
+              entry,
+              (filtered.isNotEmpty ? filtered.first.episodeNumber : 0) + 1,
+            ),
           ),
           _SearchBar(
             hint: "Search episode number or title...",
-            onChanged: (v) => setState(() => _epQuery = v),
+            onChanged: notifier.setSearchQuery,
           ),
           Expanded(
             child: ListView.builder(
@@ -161,16 +135,11 @@ class _AnimeHistoryDetailScreenState
               itemCount: filtered.length,
               itemBuilder: (context, index) => _EpisodeRow(
                 episode: filtered[index],
-                onPlay: () => _play(entry, filtered[index].episodeNumber),
-                onDelete: () async {
-                  await ref
-                      .read(watchProgressRepositoryProvider)
-                      .deleteEpisodeProgress(
-                        entry.animeId,
-                        filtered[index].episodeNumber,
-                      );
-                  setState(() {});
-                },
+                onPlay: () =>
+                    _play(context, ref, entry, filtered[index].episodeNumber),
+                onDelete: () => notifier.deleteEpisodeProgress(
+                  filtered[index].episodeNumber,
+                ),
               ),
             ),
           ),

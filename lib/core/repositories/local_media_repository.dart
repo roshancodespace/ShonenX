@@ -9,14 +9,16 @@ import 'package:shonenx/core/models/tracker/tracker_type.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
 import 'package:shonenx/main.dart';
+import 'package:shonenx/core/repositories/interfaces/local_media_repository_interface.dart';
 
 /// Centralized repository for all local Isar operations on Track and Media.
-class LocalMediaRepository {
+class LocalMediaRepository implements LocalMediaRepositoryInterface {
   int _parseIntId(String idString) =>
       int.tryParse(idString) ?? (idString.isNotEmpty ? idString.hashCode : 0);
 
   // ─── Bindings ───
 
+  @override
   Future<List<TrackerBinding>> getBindings(String mediaId) async {
     final track = await isar.tracks
         .filter()
@@ -25,6 +27,7 @@ class LocalMediaRepository {
     return track?.bindings?.toList() ?? [];
   }
 
+  @override
   Future<void> addBinding(
     String mediaId,
     TrackerType type,
@@ -43,6 +46,7 @@ class LocalMediaRepository {
     });
   }
 
+  @override
   Future<void> removeBinding(String mediaId, TrackerType type) async {
     await isar.writeTxn(() async {
       final track = await isar.tracks
@@ -59,22 +63,26 @@ class LocalMediaRepository {
 
   // ─── Track CRUD ───
 
+  @override
   Future<Track?> getTrack(String mediaId) async {
     return isar.tracks.filter().mediaIdEqualTo(mediaId).findFirst();
   }
 
+  @override
   Future<void> saveTrack(Track track) async {
     await isar.writeTxn(() async {
       await isar.tracks.put(track);
     });
   }
 
+  @override
   Future<List<Track>> getTracksByStatus(TrackStatus status) async {
     return isar.tracks.filter().statusEqualTo(status).findAll();
   }
 
   // ─── Entry (Track + Media combined) ───
 
+  @override
   Future<UniversalMediaListEntry?> getEntry(String mediaId) async {
     final int id = _parseIntId(mediaId);
     if (id == 0) return null;
@@ -100,6 +108,7 @@ class LocalMediaRepository {
     );
   }
 
+  @override
   Future<void> saveEntry(
     UniversalMedia media, {
     required String status,
@@ -149,6 +158,7 @@ class LocalMediaRepository {
     });
   }
 
+  @override
   Future<void> deleteEntry(String mediaId) async {
     final int id = _parseIntId(mediaId);
     if (id == 0) return;
@@ -166,6 +176,7 @@ class LocalMediaRepository {
 
   // ─── Favorites ───
 
+  @override
   Future<bool> toggleFavorite(UniversalMedia media) async {
     final int id = _parseIntId(media.id);
     if (id == 0) return false;
@@ -181,6 +192,7 @@ class LocalMediaRepository {
     return newFavStatus;
   }
 
+  @override
   Future<bool> isFavorite(String mediaId) async {
     final int id = _parseIntId(mediaId);
     if (id == 0) return false;
@@ -188,12 +200,14 @@ class LocalMediaRepository {
     return localMedia?.favorite ?? false;
   }
 
+  @override
   Future<List<Media>> getFavoriteMedias() async {
     return isar.medias.filter().favoriteEqualTo(true).findAll();
   }
 
   // ─── Media helpers ───
 
+  @override
   Future<Media> ensureMediaExists(UniversalMedia media) async {
     final int id = _parseIntId(media.id);
 
@@ -225,16 +239,19 @@ class LocalMediaRepository {
     return newMedia;
   }
 
+  @override
   Future<Media?> getMedia(int id) async {
     return isar.medias.get(id);
   }
 
+  @override
   Future<List<Media?>> getMedias(List<int> ids) async {
     return isar.medias.getAll(ids);
   }
 
   // ─── Mappers ───
 
+  @override
   UniversalMedia mapMediaToUniversal(Media media) {
     return UniversalMedia(
       id: media.id.toString(),
@@ -291,6 +308,6 @@ class LocalMediaRepository {
   }
 }
 
-final localMediaRepoProvider = Provider<LocalMediaRepository>((ref) {
+final localMediaRepoProvider = Provider<LocalMediaRepositoryInterface>((ref) {
   return LocalMediaRepository();
 });

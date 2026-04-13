@@ -3,6 +3,7 @@ import 'package:shonenx/data/isar/track.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
 import 'package:shonenx/core/repositories/anime_repository.dart';
+import 'package:shonenx/core/repositories/interfaces/local_media_repository_interface.dart';
 import 'package:shonenx/core/repositories/local_media_repository.dart';
 import 'package:shonenx/shared/auth/providers/auth_notifier.dart';
 import 'package:shonenx/features/watchlist/view_model/watchlist_state.dart';
@@ -12,7 +13,7 @@ import 'package:shonenx/data/isar/media.dart';
 
 class WatchlistNotifier extends Notifier<WatchListState> {
   AnimeRepository get _repo => ref.read(animeRepositoryProvider);
-  LocalMediaRepository get _localRepo => ref.read(localMediaRepoProvider);
+  LocalMediaRepositoryInterface get _localRepo => ref.read(localMediaRepoProvider);
 
   @override
   WatchListState build() {

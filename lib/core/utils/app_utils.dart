@@ -1,4 +1,5 @@
 import 'package:shonenx/core/models/universal/universal_media.dart';
+import 'package:shonenx/core/services/mappers/universal_media_mapper.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 List<UniversalMedia> safeParse(String label, List list) {
@@ -19,7 +20,7 @@ List<UniversalMedia> safeParse(String label, List list) {
 
     return list
         .whereType<Map>()
-        .map((item) => UniversalMedia.fromJson(convertToStringKeys(item)))
+        .map((item) => UniversalMediaMapper.fromJson(convertToStringKeys(item)))
         .toList();
   } catch (e, st) {
     AppLogger.e("⚠️ Failed to parse $label: $e\n$st");

@@ -7,6 +7,8 @@ import 'package:shonenx/core/models/anilist/fuzzy_date.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_media_list_entry.dart';
 import 'package:shonenx/core/models/universal/universal_page_response.dart';
+import 'package:shonenx/core/services/mappers/universal_media_mapper.dart';
+import 'package:shonenx/core/services/mappers/list_entry_mapper.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/browse/model/search_filter.dart';
 import 'package:shonenx/shared/providers/tracker/tracker_service.dart';
@@ -92,7 +94,7 @@ class AnilistService implements AnimeRepository, TrackerService {
       media
           ?.map(
             (json) =>
-                UniversalMedia.fromAnilist(Map<String, dynamic>.from(json)),
+                UniversalMediaMapper.fromAnilist(Map<String, dynamic>.from(json)),
           )
           .toList() ??
       [];
@@ -194,7 +196,7 @@ class AnilistService implements AnimeRepository, TrackerService {
         data:
             (pageData['mediaList'] as List<dynamic>?)
                 ?.map(
-                  (e) => UniversalMediaListEntry.fromAnilist(
+                  (e) => UniversalMediaListEntryMapper.fromAnilist(
                     Map<String, dynamic>.from(e),
                   ),
                 )
@@ -255,7 +257,7 @@ class AnilistService implements AnimeRepository, TrackerService {
       final rawEntry = data?['SaveMediaListEntry'];
       if (rawEntry == null) return null;
 
-      return UniversalMediaListEntry.fromAnilist(
+      return UniversalMediaListEntryMapper.fromAnilist(
         rawEntry as Map<String, dynamic>,
       );
     } catch (e) {
@@ -279,7 +281,7 @@ class AnilistService implements AnimeRepository, TrackerService {
       final rawEntry = data?['MediaList'];
       if (rawEntry == null) return null;
 
-      return UniversalMediaListEntry.fromAnilist(
+      return UniversalMediaListEntryMapper.fromAnilist(
         rawEntry as Map<String, dynamic>,
       );
     } catch (e) {
@@ -470,7 +472,7 @@ class AnilistService implements AnimeRepository, TrackerService {
         operationName: 'GetAnimeDetails',
       );
       if (data == null || data['Media'] == null) return null;
-      return UniversalMedia.fromAnilist(data['Media']);
+      return UniversalMediaMapper.fromAnilist(data['Media']);
     } catch (e) {
       return null;
     }

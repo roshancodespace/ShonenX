@@ -122,6 +122,60 @@ class _TrackerListItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    void editBinding() async {
+      TrackerSearchSheet.show(
+        context,
+        type: type,
+        initialQuery: anime.title.english ?? anime.title.romaji ?? '',
+        onSelected: (mediaItem) async {
+          await ref
+              .read(mediaTrackerProvider(anime.id).notifier)
+              .addTrackerBinding(type, mediaItem.id.toString());
+        },
+      );
+    }
+
+    void updateStatus() async {
+      if (entry == null) return;
+      final newStatus = await TrackerUpdateDialogs.showStatusUpdateDialog(
+        context,
+        entry!.status,
+        statuses,
+      );
+      if (newStatus != null && newStatus != entry!.status) {
+        ref
+            .read(mediaTrackerProvider(anime.id).notifier)
+            .syncForTracker(type, status: newStatus);
+      }
+    }
+
+    void updateProgress() async {
+      if (entry == null) return;
+      final newProgress = await TrackerUpdateDialogs.showProgressUpdateDialog(
+        context,
+        entry!.progress,
+        anime.episodes,
+      );
+      if (newProgress != null && newProgress != entry!.progress) {
+        ref
+            .read(mediaTrackerProvider(anime.id).notifier)
+            .syncForTracker(type, progress: newProgress);
+      }
+    }
+
+    void updateScore() async {
+      if (entry == null) return;
+      final newScore = await TrackerUpdateDialogs.showScoreUpdateDialog(
+        context,
+        entry!.score,
+      );
+      if (newScore != null && newScore != entry!.score) {
+        ref
+            .read(mediaTrackerProvider(anime.id).notifier)
+            .syncForTracker(type, score: newScore);
+      }
+    }
+
     return Column(
       children: [
         Row(
@@ -163,12 +217,12 @@ class _TrackerListItem extends ConsumerWidget {
                         ),
                         IconButton(
                           icon: const Icon(Icons.more_vert),
-                          onPressed: () => _editBinding(context, ref),
+                          onPressed: () => editBinding(),
                         ),
                       ],
                     )
                   : InkWell(
-                      onTap: () => _editBinding(context, ref),
+                      onTap: () => editBinding(),
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
                         height: 48,
@@ -202,20 +256,7 @@ class _TrackerListItem extends ConsumerWidget {
                         flex: 3,
                         child: _StatCell(
                           value: _formatStatus(entry!.status),
-                          onTap: () async {
-                            final newStatus =
-                                await TrackerUpdateDialogs.showStatusUpdateDialog(
-                                  context,
-                                  entry!.status,
-                                  statuses,
-                                );
-                            if (newStatus != null &&
-                                newStatus != entry!.status) {
-                              ref
-                                  .read(mediaTrackerProvider(anime.id).notifier)
-                                  .syncForTracker(type, status: newStatus);
-                            }
-                          },
+                          onTap: () => updateStatus(),
                         ),
                       ),
                       _buildDivider(colorScheme.outlineVariant),
@@ -223,20 +264,7 @@ class _TrackerListItem extends ConsumerWidget {
                         flex: 2,
                         child: _StatCell(
                           value: entry!.progress.toString(),
-                          onTap: () async {
-                            final newProgress =
-                                await TrackerUpdateDialogs.showProgressUpdateDialog(
-                                  context,
-                                  entry!.progress,
-                                  anime.episodes,
-                                );
-                            if (newProgress != null &&
-                                newProgress != entry!.progress) {
-                              ref
-                                  .read(mediaTrackerProvider(anime.id).notifier)
-                                  .syncForTracker(type, progress: newProgress);
-                            }
-                          },
+                          onTap: () => updateProgress(),
                         ),
                       ),
                       _buildDivider(colorScheme.outlineVariant),
@@ -246,18 +274,7 @@ class _TrackerListItem extends ConsumerWidget {
                           value: entry!.score > 0
                               ? entry!.score.toString()
                               : '-',
-                          onTap: () async {
-                            final newScore =
-                                await TrackerUpdateDialogs.showScoreUpdateDialog(
-                                  context,
-                                  entry!.score,
-                                );
-                            if (newScore != null && newScore != entry!.score) {
-                              ref
-                                  .read(mediaTrackerProvider(anime.id).notifier)
-                                  .syncForTracker(type, score: newScore);
-                            }
-                          },
+                          onTap: () => updateScore(),
                         ),
                       ),
                     ],
@@ -294,19 +311,6 @@ class _TrackerListItem extends ConsumerWidget {
       width: 1,
       thickness: 1,
       color: color.withOpacity(0.3),
-    );
-  }
-
-  void _editBinding(BuildContext context, WidgetRef ref) {
-    TrackerSearchSheet.show(
-      context,
-      type: type,
-      initialQuery: anime.title.english ?? anime.title.romaji ?? '',
-      onSelected: (media) async {
-        await ref
-            .read(mediaTrackerProvider(anime.id).notifier)
-            .addTrackerBinding(type, media.id.toString());
-      },
     );
   }
 

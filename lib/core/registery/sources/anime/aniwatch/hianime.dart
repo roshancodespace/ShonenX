@@ -5,14 +5,24 @@ import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/anime/page_model.dart';
 import 'package:shonenx/core/models/anime/server_model.dart';
 import 'package:shonenx/core/models/anime/source_model.dart';
-import 'package:shonenx/core/registery/sources/anime/aniwatch/parser.dart';
+import 'package:shonenx/core/registery/sources/anime/aniwatch/extractors.dart';
 import 'package:shonenx/core/registery/sources/anime/anime_provider.dart';
 import 'package:shonenx/core/utils/env_loader.dart';
 import 'package:html/parser.dart' show parse;
 
 class HiAnimeProvider extends AnimeProvider {
-  HiAnimeProvider({String? customApiUrl})
-    : super(
+  final HomeExtractor homeExtractor;
+  final DetailExtractor detailExtractor;
+  final WatchExtractor watchExtractor;
+  final SearchExtractor searchExtractor;
+
+  HiAnimeProvider({
+    String? customApiUrl,
+    this.homeExtractor = const HomeExtractor(),
+    this.detailExtractor = const DetailExtractor(),
+    this.watchExtractor = const WatchExtractor(),
+    this.searchExtractor = const SearchExtractor(),
+  }) : super(
         apiUrl: customApiUrl ?? API_URL,
         baseUrl: 'https://hianimez.to',
         providerName: 'hianime',
@@ -45,7 +55,7 @@ class HiAnimeProvider extends AnimeProvider {
       headers: headers,
     );
     final document = parse(response.body);
-    return parseDetail(document, baseUrl, animeId: animeId);
+    return detailExtractor.parseDetail(document, baseUrl, animeId: animeId);
   }
 
   @override
@@ -55,7 +65,7 @@ class HiAnimeProvider extends AnimeProvider {
       headers: headers,
     );
     final document = parse(response.body);
-    return parseWatch(document, baseUrl, animeId: animeId);
+    return watchExtractor.parseWatch(document, baseUrl, animeId: animeId);
   }
 
   // @override
@@ -201,7 +211,7 @@ class HiAnimeProvider extends AnimeProvider {
       headers: headers,
     );
     final document = parse(response.body);
-    return parseSearch(document, baseUrl, keyword: keyword, page: page);
+    return searchExtractor.parseSearch(document, baseUrl, keyword: keyword, page: page);
   }
 
   @override
@@ -211,7 +221,7 @@ class HiAnimeProvider extends AnimeProvider {
       headers: headers,
     );
     final document = parse(response.body);
-    return parsePage(document, baseUrl, route: route, page: page);
+    return searchExtractor.parsePage(document, baseUrl, route: route, page: page);
   }
 
   int? _mapTypeToHianimeType(String type) {

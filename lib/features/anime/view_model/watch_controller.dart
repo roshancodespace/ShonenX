@@ -9,8 +9,9 @@ import 'package:screenshot/screenshot.dart';
 
 import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/core/repositories/local_media_repository.dart';
+import 'package:shonenx/core/repositories/interfaces/watch_progress_repository_interface.dart';
 import 'package:shonenx/core/repositories/watch_progress_repository.dart';
+import 'package:shonenx/core/repositories/local_media_repository.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
 import 'package:shonenx/features/anime/view_model/aniskip_notifier.dart';
@@ -31,7 +32,7 @@ class WatchController extends _$WatchController with WidgetsBindingObserver {
   bool _isDisposed = false;
   bool _isPlayerReady = false;
 
-  WatchProgressRepository? _repo;
+  WatchProgressRepositoryInterface? _repo;
   String? _mediaId, _animeName, _animeFormat, _animeCover;
   int _pos = 0, _dur = 0, _totalEps = 0;
   int? _epNum;

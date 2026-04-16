@@ -13,12 +13,27 @@ import 'package:shonenx/data/isar/media.dart';
 
 class WatchlistNotifier extends Notifier<WatchListState> {
   AnimeRepository get _repo => ref.read(animeRepositoryProvider);
-  LocalMediaRepositoryInterface get _localRepo => ref.read(localMediaRepoProvider);
+  LocalMediaRepositoryInterface get _localRepo =>
+      ref.read(localMediaRepoProvider);
 
   @override
   WatchListState build() {
     final auth = ref.read(authProvider);
-    return WatchListState(isLocal: !auth.isAniListAuthenticated);
+    final hasCloud = auth.isAniListAuthenticated || auth.isMalAuthenticated;
+
+    ref.listen(authProvider, (prev, next) {
+      final prevCloud =
+          prev?.isAniListAuthenticated == true ||
+          prev?.isMalAuthenticated == true;
+      final nextCloud = next.isAniListAuthenticated || next.isMalAuthenticated;
+
+      if (prevCloud != nextCloud) {
+        state = state.copyWith(isLocal: !nextCloud);
+        Future.microtask(() => fetchAll(force: true));
+      }
+    });
+
+    return WatchListState(isLocal: !hasCloud);
   }
 
   void toggleMode() {
@@ -167,10 +182,7 @@ class WatchlistNotifier extends Notifier<WatchListState> {
           .toList();
 
       final medias = await _localRepo.getMedias(mediaIds);
-      final mediaMap = {
-        for (var m in medias)
-          m?.id: ?m,
-      };
+      final mediaMap = {for (var m in medias) m?.id: ?m};
 
       for (final track in tracks) {
         final int mediaId = int.tryParse(track.mediaId ?? '') ?? 0;

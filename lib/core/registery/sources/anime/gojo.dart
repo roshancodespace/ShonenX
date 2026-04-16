@@ -13,7 +13,7 @@ class GojoProvider implements AnimeProvider {
   @override
   String get apiUrl => "https://animetsu.net/v2";
 
-  String get proxyUrl => "https://ani.metsu.site/proxy";
+  String get proxyUrl => "https://mega-cloud.top/proxy";
 
   @override
   String get baseUrl => "https://animetsu.live";

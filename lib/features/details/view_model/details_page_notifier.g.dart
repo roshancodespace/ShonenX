@@ -59,7 +59,7 @@ final class DetailsPageNotifierProvider
 }
 
 String _$detailsPageNotifierHash() =>
-    r'c2a43355f042a7d33b253ffcf88f716b6aee8151';
+    r'29c58d701dd2ac3cd3d179c1fc37d5ace535e3f2';
 
 final class DetailsPageNotifierFamily extends $Family
     with

@@ -6,7 +6,7 @@ import 'package:shonenx/core/models/universal/universal_media.dart';
 import 'package:shonenx/core/models/universal/universal_page_response.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
-import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
+import 'package:shonenx/shared/ui/cards/anime/anime_card.dart';
 
 import 'package:shonenx/shared/providers/settings/ui_notifier.dart';
 import 'package:shonenx/shared/ui/shonenx_gridview.dart';

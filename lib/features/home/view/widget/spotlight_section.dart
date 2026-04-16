@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
-import 'package:shonenx/features/anime/view/widgets/spotlight/anime_spotlight_card.dart';
+import 'package:shonenx/shared/ui/cards/spotlight/anime_spotlight_card.dart';
 
 import 'package:shonenx/shared/providers/settings/ui_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';

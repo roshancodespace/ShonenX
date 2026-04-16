@@ -8,8 +8,5 @@ targets:
           - lib/data/isar/**
       riverpod_generator:
         generate_for:
-          - lib/features/**/view_model/**
-          - lib/features/**/services/**
+          - lib/features/**
           - lib/shared/**
-        
-        

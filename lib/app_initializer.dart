@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
@@ -94,9 +95,8 @@ class AppInitializer {
     AppLogger.section('Hive Database');
 
     try {
-      final appDocDir = await getApplicationDocumentsDirectory();
-      final customPath =
-          '${appDocDir.path}${Platform.pathSeparator}ShonenX/appdata';
+      final appSupportDir = await getApplicationSupportDirectory();
+      final customPath = p.join(appSupportDir.path, 'ShonenX', 'appdata');
 
       AppLogger.infoPair('Hive Path', customPath);
 

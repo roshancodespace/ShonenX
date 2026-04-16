@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 
-import 'package:shonenx/features/anime/view/widgets/card/anime_card.dart';
+import 'package:shonenx/shared/ui/cards/anime/anime_card.dart';
 
 import 'package:shonenx/shared/providers/settings/ui_notifier.dart';
 import 'package:shonenx/helpers/navigation.dart';

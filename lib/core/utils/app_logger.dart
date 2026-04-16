@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 class AppLogger {
   // Config
@@ -36,8 +37,8 @@ class AppLogger {
     // if (!kDebugMode) return;
 
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final path = '${dir.path}/ShonenX/app_logs.txt';
+      final dir = await getApplicationCacheDirectory();
+      final path = p.join(dir.path, 'ShonenX', 'app_logs.txt');
 
       _logFile = File(path);
       _clearLogFile(force: true);

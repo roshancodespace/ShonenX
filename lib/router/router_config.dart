@@ -9,7 +9,7 @@ import 'package:shonenx/core/models/anime/episode_model.dart';
 import 'package:shonenx/core/models/universal/universal_media.dart';
 
 // Features
-import 'package:shonenx/features/anime/view/watch_screen.dart';
+import 'package:shonenx/features/watch/view/watch_screen.dart';
 import 'package:shonenx/features/browse/view/browse_screen.dart';
 import 'package:shonenx/features/browse/model/search_filter.dart';
 import 'package:shonenx/features/details/view/details_screen.dart';

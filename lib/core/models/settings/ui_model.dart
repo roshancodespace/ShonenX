@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:shonenx/features/anime/view/widgets/card/anime_card_mode.dart';
-import 'package:shonenx/features/anime/view/widgets/spotlight/spotlight_card_mode.dart';
+import 'package:shonenx/shared/ui/cards/anime/anime_card_mode.dart';
+import 'package:shonenx/shared/ui/cards/spotlight/spotlight_card_mode.dart';
 
 class UiSettings {
   final AnimeCardMode cardStyle;

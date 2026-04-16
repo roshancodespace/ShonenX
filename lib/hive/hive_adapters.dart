@@ -1,8 +1,8 @@
 import 'package:hive_ce/hive.dart';
 import 'package:shonenx/core/models/universal/universal_news.dart';
 import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
-import 'package:shonenx/features/anime/view/widgets/card/anime_card_mode.dart';
-import 'package:shonenx/features/anime/view/widgets/spotlight/spotlight_card_mode.dart';
+import 'package:shonenx/shared/ui/cards/anime/anime_card_mode.dart';
+import 'package:shonenx/shared/ui/cards/spotlight/spotlight_card_mode.dart';
 import 'package:shonenx/features/downloads/model/download_item.dart';
 import 'package:shonenx/features/downloads/model/download_status.dart';
 import 'package:shonenx/features/home/model/home_page.dart';

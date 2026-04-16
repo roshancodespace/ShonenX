@@ -1,5 +1,6 @@
 import 'package:hive_ce/hive.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:shonenx/core/models/universal/universal_news.dart';
 import 'package:shonenx/core/services/anime_news_network_service.dart';
 import 'package:shonenx/core/services/notification_service.dart';
@@ -8,8 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class NewsBackgroundTask {
   static Future<bool> performUpdate() async {
     try {
-      final appDir = await getApplicationDocumentsDirectory();
-      Hive.init(appDir.path);
+      final appDir = await getApplicationSupportDirectory();
+      Hive.init(p.join(appDir.path, 'ShonenX', 'appdata'));
 
       final cacheBox = await Hive.openBox<UniversalNews>('news_cache');
       final readBox = await Hive.openBox<String>('news_read_status');

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shonenx/features/anime/view/widgets/player/subtitle_sidebar.dart';
+import 'package:shonenx/features/watch/view/widgets/player/subtitle_sidebar.dart';
 
 void showSubtitleSettings(BuildContext context) {
     showGeneralDialog(

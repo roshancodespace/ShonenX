@@ -19,6 +19,23 @@ Track and manage your anime library with AniList and MyAnimeList integration. Bu
 
 </div>
 
+## ☕ Supporters
+
+<table>
+  <tr>
+    <td align="center">
+        <img src="https://cdn.buymeacoffee.com/uploads/profile_pictures/default/v2/DEBBB9/IZ.png" width="80px;" />
+        <br />
+        <sub><b>Izan</b></sub>
+    </td>
+    <td align="center">
+        <img src="https://cdn.buymeacoffee.com/uploads/profile_pictures/default/v2/E3CBF4/EK.png" width="80px;" />
+        <br />
+        <sub><b>EVEE KNOA</b></sub>
+    </td>
+  </tr>
+</table>
+
 ---
 
 ## ✨ Features

@@ -89,8 +89,9 @@ jobs:
 
       - name: Install dependencies
         run: |
+          sudo add-apt-repository universe
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev webkit2gtk-4.1 libmpv-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libwpewebkit-1.0-dev libmpv-dev
 
       - name: Create env file
         run: |

@@ -1,66 +1,25 @@
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Flutter: Attach to Device",
-      "type": "dart",
-      "request": "attach"
-    },
-    {
-      "name": "Flutter: Debug",
-      "type": "dart",
-      "request": "launch",
-      "flutterMode": "debug",
-      "args": [
-        "--dart-define-from-file=keys.json"
-      ],
-      "env": {
-        "FLUTTER_ENGINE_IMPELER_ENABLE": "false",
-        "DISABLE_IMPELER": "true",
-      }
-    },
-    {
-      "name": "Flutter: Release",
-      "type": "dart",
-      "request": "launch",
-      "flutterMode": "release",
-      "args": [
-        "--dart-define-from-file=keys.json"
-      ],
-      "env": {
-        "FLUTTER_ENGINE_IMPELER_ENABLE": "false",
-        "DISABLE_IMPELER": "true",
-      }
-    },
-    {
-      "name": "Flutter: Debug (Wayland)",
-      "type": "dart",
-      "request": "launch",
-      "flutterMode": "debug",
-      "args": [
-        "--dart-define-from-file=keys.json"
-      ],
-      "env": {
-        "FLUTTER_ENGINE_IMPELER_ENABLE": "false",
-        "DISABLE_IMPELER": "true",
-        "GDK_BACKEND": "wayland",
-        "WAYLAND_DISPLAY": "${env:WAYLAND_DISPLAY}"
-      }
-    },
-    {
-      "name": "Flutter: Debug (X11 Fallback)",
-      "type": "dart",
-      "request": "launch",
-      "flutterMode": "debug",
-      "args": [
-        "--dart-define-from-file=keys.json",
-        "--enable-software-rendering"
-      ],
-      "env": {
-        "FLUTTER_ENGINE_IMPELER_ENABLE": "false",
-        "DISABLE_IMPELER": "true",
-        "GDK_BACKEND": "x11"
-      }
-    }
-  ]
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "shonenx",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "shonenx (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "shonenx (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        }
+    ]
 }

@@ -59,7 +59,10 @@ class AniyomiExtensions extends Extension {
       case ItemType.novel:
         break;
     }
-    isar.writeTxnSync(() => isar.bridgeSettings.putSync(settings));
+
+    await isar.writeTxn(() async {
+      await isar.bridgeSettings.put(settings);
+    });
 
     final sources = await _loadExtensions(method, repos: repos);
     final installedIds = getInstalledRx(type).value.map((e) => e.id).toSet();

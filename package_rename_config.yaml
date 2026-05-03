@@ -1,0 +1,31 @@
+package_rename_config-production:
+  android:
+    app_name: "ShonenX"
+    package_name: "com.roshancodespace.shonenx"
+
+  linux:
+    app_name: "ShonenX"
+    package_name: "com.roshancodespace.shonenx"
+    exe_name: "shonenx"
+
+  windows:
+    app_name: "ShonenX"
+    organization: "roshancodespace"
+    copyright_notice: "Copyright © 2026"
+    exe_name: "shonenx"
+
+package_rename_config-development:
+  android:
+    app_name: "ShonenX Dev"
+    package_name: "com.roshancodespace.shonenx.dev"
+
+  linux:
+    app_name: "ShonenX Dev"
+    package_name: "com.roshancodespace.shonenx.dev"
+    exe_name: "shonenx-dev"
+
+  windows:
+    app_name: "ShonenX Dev"
+    organization: "roshancodespace"
+    copyright_notice: "Copyright © 2026"
+    exe_name: "shonenx-dev"

@@ -56,7 +56,7 @@ class MangayomiExtensions extends Extension {
         settings.mangayomiNovelExtensions = repos ?? [];
         break;
     }
-    isar.writeTxnSync(() => isar.bridgeSettings.putSync(settings));
+    await isar.writeTxn(() => isar.bridgeSettings.put(settings));
 
     final sources = await _manager.fetchAvailableExtensionsStream(type, repos);
     final installedIds = getInstalledRx(type).value.map((e) => e.id).toSet();
@@ -127,7 +127,7 @@ class MangayomiExtensions extends Extension {
 
     final availableList = _getAvailableList(source.itemType!);
     if (availableList.any((s) => s.sourceId == source.id)) {
-      getAvailableRx(source.itemType!).update((list) => list?.add(source));
+      getInstalledRx(source.itemType!).update((list) => list?.remove(source));
     }
   }
 

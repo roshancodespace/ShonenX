@@ -34,8 +34,8 @@ class DartotsuExtensionBridge {
         .idEqualTo(26)
         .findFirst();
     if (settings == null) {
-      isar.writeTxnSync(
-        () => isar.bridgeSettings.putSync(BridgeSettings()..id = 26),
+      await isar.writeTxn(
+        () async => await isar.bridgeSettings.put(BridgeSettings()..id = 26),
       );
     }
 

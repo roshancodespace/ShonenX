@@ -21,20 +21,20 @@ class ExtensionManager extends GetxController {
 
   Extension get currentManager => _currentManager.value;
 
-  Rx<Extension> get currentManagerRx => _currentManager;
-
   void initialize() {
     final settings = isar.bridgeSettings.getSync(26)!;
     final savedType = ExtensionType.fromString(settings.currentManager);
     _currentManager = savedType.getManager().obs;
   }
 
-  void setCurrentManager(ExtensionType type) {
+  void setCurrentManager(ExtensionType type) async {
     _currentManager.value = type.getManager();
     final settings = isar.bridgeSettings.getSync(26)!;
-    isar.writeTxnSync(() {
-      isar.bridgeSettings.putSync(settings..currentManager = type.toString());
-    });
+    await isar.writeTxn(
+      () async => await isar.bridgeSettings.put(
+        settings..currentManager = type.toString(),
+      ),
+    );
   }
 }
 

@@ -13,8 +13,8 @@ dependencies:
     sdk: flutter
   plugin_platform_interface: ^2.0.2
   http: ^1.4.0
-  isar_community: ^3.3.0-dev.2
-  isar_community_flutter_libs: ^3.3.0-dev.2
+  isar_community: ^3.3.0
+  isar_community_flutter_libs: ^3.3.0
   d4rt: ^0.1.7
   get: ^4.7.2
   path_provider: ^2.1.5
@@ -22,7 +22,10 @@ dependencies:
   http_interceptor: ^2.0.0
   html: ^0.15.6
   intl: ^0.20.2
-  flutter_inappwebview: ^6.2.0-beta.2
+  flutter_inappwebview:
+    git:
+      url: https://github.com/roshancodespace/flutter_inappwebview.git
+      path: flutter_inappwebview
   pseudom: ^1.0.1
   encrypt: ^5.0.3
   xpath_selector_html_parser: ^3.0.1
@@ -32,7 +35,6 @@ dependencies:
     git:
       url: https://github.com/kodjodevf/flutter_qjs.git
       ref: f3cef51
-
   epubx:
     git:
       url: https://github.com/kodjodevf/epubx.dart.git
@@ -43,7 +45,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  isar_community_generator: ^3.3.0-dev.2
+  isar_community_generator: ^3.3.0
   build_runner: ^2.5.4
 
 # For information on the generic Dart part of this file, see the

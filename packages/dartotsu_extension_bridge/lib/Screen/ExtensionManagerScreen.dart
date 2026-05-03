@@ -1,39 +1,48 @@
+import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../ExtensionManager.dart';
-import '../Models/Source.dart';
+typedef ExtensionScreenBuilder =
+    Widget Function(
+      ItemType itemType,
+      bool isInstalled,
+      String searchQuery,
+      String selectedLanguage,
+    );
 
-///Extend this class to create a screen for managing extensions.
-///If you don't like manual labor
 abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     with TickerProviderStateMixin {
-  late TabController _tabBarController;
-  var manager = Get.find<ExtensionManager>().currentManager;
-  final _selectedLanguage = 'All'.obs;
-  final _textEditingController = TextEditingController();
+  late final TabController tabController;
+
+  final manager = Get.find<ExtensionManager>().currentManager;
+
+  final TextEditingController searchController = TextEditingController();
+  final ValueNotifier<String> selectedLanguage = ValueNotifier('All');
+
+  Future<void> Function(List<String> repoUrl, ItemType type) get onRepoSaved;
 
   @override
   void initState() {
     super.initState();
+
     int totalTabs = 0;
     if (manager.supportsAnime) totalTabs += 2;
     if (manager.supportsManga) totalTabs += 2;
     if (manager.supportsNovel) totalTabs += 2;
-    _tabBarController = TabController(length: totalTabs, vsync: this);
-    _tabBarController.animateTo(0);
+
+    tabController = TabController(length: totalTabs, vsync: this);
   }
 
   @override
   void dispose() {
+    tabController.dispose();
+    searchController.dispose();
+    selectedLanguage.dispose();
     super.dispose();
-    _tabBarController.dispose();
-    _textEditingController.dispose();
-    _selectedLanguage.close();
   }
 
-  Text get title;
+  Text title(TextTheme textTheme);
 
   ExtensionScreenBuilder get extensionScreenBuilder;
 
@@ -53,82 +62,12 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     void Function() onChanged,
   );
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context).colorScheme;
-
-    return ScrollConfiguration(
-      behavior: ScrollConfiguration.of(context).copyWith(
-        physics: const BouncingScrollPhysics(),
-        scrollbars: false,
-        dragDevices: {
-          PointerDeviceKind.touch,
-          PointerDeviceKind.mouse,
-          PointerDeviceKind.trackpad,
-        },
-      ),
-      child: DefaultTabController(
-        length: 6,
-        child: Scaffold(
-          appBar: AppBar(
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-            title: title,
-            iconTheme: IconThemeData(color: theme.primary),
-            actions: [
-              ...extensionActions(
-                context,
-                _tabBarController,
-                _selectedLanguage.value,
-                manager.onRepoSaved,
-                (lang) => setState(() => _selectedLanguage.value = lang),
-              ),
-              const SizedBox(width: 8),
-            ],
-          ),
-          body: Column(
-            children: [
-              Obx(
-                () => TabBar(
-                  controller: _tabBarController,
-                  isScrollable: true,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  dragStartBehavior: DragStartBehavior.start,
-                  tabs: _buildTabs(context),
-                ),
-              ),
-              const SizedBox(height: 8),
-              searchBar(
-                context,
-                _textEditingController,
-                () => setState(
-                  () {},
-                ), // Trigger rebuild on search change _textEditingController handles the text input
-              ),
-              const SizedBox(height: 8),
-              Obx(
-                () => Expanded(
-                  child: TabBarView(
-                    controller: _tabBarController,
-                    children: _buildTabViews(theme, extensionScreenBuilder),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   List<Widget> _buildTabs(BuildContext context) {
-    final manager = Get.find<ExtensionManager>().currentManager;
+    final tabs = <Widget>[];
 
-    List<Widget> tabs = [];
-
-    void addTabs(String label, int installedCount, int availableCount) {
-      tabs.add(tabWidget(context, 'Installed $label', installedCount));
-      tabs.add(tabWidget(context, 'Available $label', availableCount));
+    void addTabs(String label, int installed, int available) {
+      tabs.add(tabWidget(context, 'Installed $label', installed));
+      tabs.add(tabWidget(context, 'Available $label', available));
     }
 
     if (manager.supportsAnime) {
@@ -138,6 +77,7 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
         manager.availableAnimeExtensions.value.length,
       );
     }
+
     if (manager.supportsManga) {
       addTabs(
         'manga',
@@ -145,6 +85,7 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
         manager.availableMangaExtensions.value.length,
       );
     }
+
     if (manager.supportsNovel) {
       addTabs(
         'novel',
@@ -156,45 +97,44 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     return tabs;
   }
 
-  List<Widget> _buildTabViews(
-    ColorScheme theme,
-    ExtensionScreenBuilder builder,
-  ) {
-    final manager = Get.find<ExtensionManager>().currentManager;
-    final query = _textEditingController.text;
-    final lang = _selectedLanguage.value;
+  List<Widget> _buildTabViews(ColorScheme theme) {
+    final query = searchController.text;
+    final lang = selectedLanguage.value;
 
-    List<Widget> views = [];
+    final views = <Widget>[];
 
-    void addViews(ItemType type, List installed, List available) {
+    void add(ItemType type, List installed, List available) {
       views.add(
         installed.isEmpty
-            ? _emptyMessage('No installed ${type.name} extensions', theme)
-            : builder(type, true, query, lang),
+            ? Center(child: Text('No installed ${type.name} extensions'))
+            : extensionScreenBuilder(type, true, query, lang),
       );
+
       views.add(
         available.isEmpty
-            ? _emptyMessage('No available ${type.name} extensions', theme)
-            : builder(type, false, query, lang),
+            ? Center(child: Text('No available ${type.name} extensions'))
+            : extensionScreenBuilder(type, false, query, lang),
       );
     }
 
     if (manager.supportsAnime) {
-      addViews(
+      add(
         ItemType.anime,
         manager.installedAnimeExtensions.value,
         manager.availableAnimeExtensions.value,
       );
     }
+
     if (manager.supportsManga) {
-      addViews(
+      add(
         ItemType.manga,
         manager.installedMangaExtensions.value,
         manager.availableMangaExtensions.value,
       );
     }
+
     if (manager.supportsNovel) {
-      addViews(
+      add(
         ItemType.novel,
         manager.installedNovelExtensions.value,
         manager.availableNovelExtensions.value,
@@ -204,17 +144,53 @@ abstract class ExtensionManagerScreen<T extends StatefulWidget> extends State<T>
     return views;
   }
 
-  Widget _emptyMessage(String message, ColorScheme theme) {
-    return Center(
-      child: Text(message, style: TextStyle(color: theme.onSurface)),
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context).colorScheme;
+
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(
+        physics: const BouncingScrollPhysics(),
+        dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.trackpad,
+        },
+      ),
+      child: Scaffold(
+        appBar: AppBar(
+          title: title(Theme.of(context).textTheme),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new),
+            onPressed: () => Navigator.pop(context),
+          ),
+          actions: extensionActions(
+            context,
+            tabController,
+            selectedLanguage.value,
+            onRepoSaved,
+            (lang) => selectedLanguage.value = lang,
+          ),
+        ),
+        body: Column(
+          children: [
+            TabBar(
+              controller: tabController,
+              isScrollable: true,
+              tabs: _buildTabs(context),
+            ),
+            const SizedBox(height: 8),
+            searchBar(context, searchController, () => setState(() {})),
+            const SizedBox(height: 8),
+            Expanded(
+              child: TabBarView(
+                controller: tabController,
+                children: _buildTabViews(theme),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
-
-typedef ExtensionScreenBuilder =
-    Widget Function(
-      ItemType itemType,
-      bool isInstalled,
-      String searchQuery,
-      String selectedLanguage,
-    );

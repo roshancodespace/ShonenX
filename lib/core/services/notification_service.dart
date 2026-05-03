@@ -1,96 +1,144 @@
+import 'dart:io';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
-  static final NotificationService _instance = NotificationService._internal();
+  static final instance = NotificationService._();
+  NotificationService._();
 
-  factory NotificationService() => _instance;
-
-  NotificationService._internal();
-
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+  final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+  final Set<int> _scheduledIds = {};
 
-  Future<void> initialize() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+  final ScopedLogger _log = AppLogger.scope('NotificationService');
 
-    // const DarwinInitializationSettings initializationSettingsDarwin =
-    //     DarwinInitializationSettings();
+  Future<void> init() async {
+    _log.i('Initializing NotificationService...');
+    try {
+      tz.initializeTimeZones();
+      final String timeZoneName =
+          (await FlutterTimezone.getLocalTimezone()).identifier;
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+      _log.d('Timezone configured: $timeZoneName');
 
-    const LinuxInitializationSettings initializationSettingsLinux =
-        LinuxInitializationSettings(defaultActionName: 'Open notification');
+      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const windows = WindowsInitializationSettings(
+        appName: 'ShonenX',
+        appUserModelId: 'com.example.shonenx',
+        guid: '123e4567-e89b-12d3-a456-426614174000',
+      );
+      const linux = LinuxInitializationSettings(defaultActionName: 'ShonenX');
 
-    const WindowsInitializationSettings initializationSettingsWindows =
-        WindowsInitializationSettings(
-          appName: 'ShonenX',
-          appUserModelId: 'RoshanKumar.ShonenX.App.v2',
-          guid: '0516d984-72bf-47d4-bfbc-b2b8fd563479',
-        );
+      const settings = InitializationSettings(
+        android: android,
+        windows: windows,
+        linux: linux,
+      );
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(
-          android: initializationSettingsAndroid,
-          // iOS: initializationSettingsDarwin,
-          linux: initializationSettingsLinux,
-          windows: initializationSettingsWindows,
-        );
+      await _plugin.initialize(
+        settings: settings,
+        onDidReceiveNotificationResponse: (_) {
+          _log.d('Notification tapped by user');
+        },
+      );
 
-    await flutterLocalNotificationsPlugin.initialize(
-      settings: initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // Handle notification tap
-        AppLogger.infoPair('Notification tapped', response.payload);
-      },
-    );
+      if (Platform.isAndroid) {
+        final androidPlugin = _plugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
 
-    await _createNotificationChannel();
+        if (androidPlugin != null) {
+          await androidPlugin.requestNotificationsPermission();
+          await androidPlugin.requestExactAlarmsPermission();
+          _log.d('Android permissions requested');
+        }
+      }
+
+      if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+        final pending = await _plugin.pendingNotificationRequests();
+        _scheduledIds.addAll(pending.map((e) => e.id));
+        _log.d('Restored ${_scheduledIds.length} pending notification IDs');
+      }
+
+      _log.s('Initialization complete');
+    } catch (e, st) {
+      _log.e('Failed to initialize NotificationService', e, st);
+    }
   }
 
-  Future<void> _createNotificationChannel() async {
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'shonenx_news_channel', // id
-      'ShonenX News', // title
-      description: 'Notifications for latest anime news', // description
-      importance: Importance.high,
-      playSound: true,
-      enableVibration: true,
-    );
+  static int generateId(String type, String refId, String variant) =>
+      '$type:$refId:$variant'.hashCode;
 
-    final androidImplementation = flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
+  Future<bool> isScheduled(int id) async => _scheduledIds.contains(id);
 
-    await androidImplementation?.createNotificationChannel(channel);
-  }
-
-  Future<void> showNewsNotification({
+  Future<bool> schedule({
+    required int id,
     required String title,
     required String body,
-    String? payload,
+    required DateTime scheduleTime,
   }) async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-          'shonenx_news_channel',
-          'ShonenX News',
-          channelDescription: 'Notifications for latest anime news',
-          importance: Importance.high,
-          priority: Priority.high,
-          ticker: 'ticker',
-          icon: '@mipmap/ic_launcher',
+    _log.d('Attempting to schedule notification [$id] for $scheduleTime');
+
+    try {
+      if (await isScheduled(id)) {
+        _log.warning('Notification [$id] is already scheduled. Skipping.');
+        return false;
+      }
+
+      if (scheduleTime.isBefore(DateTime.now())) {
+        _log.warning(
+          'Cannot schedule notification [$id] in the past ($scheduleTime).',
         );
+        return false;
+      }
 
-    const NotificationDetails platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-    );
+      const android = AndroidNotificationDetails(
+        'app_reminders',
+        'App Reminders',
+        channelDescription: 'General notifications for your anime & manga',
+        importance: Importance.high,
+        priority: Priority.high,
+      );
+      const windows = WindowsNotificationDetails();
+      const linux = LinuxNotificationDetails();
 
-    await flutterLocalNotificationsPlugin.show(
-      id: 0,
-      title: title,
-      body: body,
-      notificationDetails: platformChannelSpecifics,
-      payload: payload,
-    );
+      const details = NotificationDetails(
+        android: android,
+        windows: windows,
+        linux: linux,
+      );
+
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: tz.TZDateTime.from(scheduleTime, tz.local),
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+
+      _scheduledIds.add(id);
+      _log.s('Successfully scheduled notification [$id]');
+      return true;
+    } catch (e, st) {
+      _log.e('Failed to schedule notification [$id]', e, st);
+      return false;
+    }
+  }
+
+  Future<void> cancel(int id) async {
+    _log.d('Attempting to cancel notification [$id]');
+    try {
+      await _plugin.cancel(id: id);
+      _scheduledIds.remove(id);
+      _log.s('Successfully canceled notification [$id]');
+    } catch (e, st) {
+      _log.e('Failed to cancel notification [$id]', e, st);
+    }
   }
 }

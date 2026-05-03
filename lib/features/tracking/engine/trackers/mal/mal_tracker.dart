@@ -1,0 +1,270 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/network/auth/authenticator.dart';
+import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/features/auth/providers/auth_provider.dart';
+import 'package:shonenx/features/library/domain/models/library_entry.dart';
+import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
+import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_profile.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+import 'package:shonenx/features/tracking/engine/base_tracker.dart';
+import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
+import 'package:shonenx/features/tracking/engine/trackers/mal/mal_authenticator.dart';
+import 'package:shonenx/source_engine/models/tracker_search_result.dart';
+import 'mal_metadata.dart';
+
+class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
+  final Ref ref;
+  final HTTP _http;
+
+  @override
+  HTTP get http => _http;
+
+  MalTracker(this.ref) : _http = ref.read(httpClientProvider);
+
+  Future<String?> _getToken() async {
+    final tokens = await ref.read(authTokensProvider.future);
+    return tokens[TrackerType.myanimelist];
+  }
+
+  @override
+  Future<bool> get isAuthenticated async => (await _getToken()) != null;
+
+  @override
+  TrackerType get type => TrackerType.myanimelist;
+
+  @override
+  Authenticator get authenticator => MalAuthenticator();
+
+  @override
+  Future<List<TrackerSearchResult>> searchMedia(String query) {
+    return executeApi('SEARCH', fallback: (_, __) => [], () async {
+      final token = await _getToken();
+      final headers = <String, String>{};
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      } else {
+        throw Exception('MyAnimeList is not authenticated');
+      }
+
+      final response = await _http.get(
+        'https://api.myanimelist.net/v2/anime',
+        queryParameters: {'q': query, 'limit': '20'},
+        headers: headers,
+      );
+
+      final body = response.json;
+      if (body['error'] != null) {
+        throw Exception(body['message'] ?? 'Search failed');
+      }
+
+      final data = body['data'] as List? ?? [];
+
+      return data.map((item) {
+        final node = item['node'];
+        return TrackerSearchResult(
+          id: node['id']?.toString() ?? '',
+          title: node['title'] ?? 'Unknown Title',
+          cover:
+              node['main_picture']?['large'] ?? node['main_picture']?['medium'],
+        );
+      }).toList();
+    });
+  }
+
+  @override
+  Future<void> updateListItem({
+    required String trackingId,
+    TrackedStatus? status,
+    double? progress,
+    double? score,
+  }) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('MyAnimeList is not authenticated');
+
+    return executeApi('UPDATE_ENTRY', () async {
+      final body = <String, dynamic>{};
+      if (status != null) body['status'] = _toMalStatus(status);
+      if (progress != null) {
+        body['num_watched_episodes'] = progress.toInt();
+      }
+      if (score != null) {
+        body['score'] = score.toInt();
+      }
+
+      if (body.isEmpty) return;
+
+      final bodyString = body.entries
+          .map(
+            (e) =>
+                '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+          )
+          .join('&');
+
+      final response = await _http.post(
+        'https://api.myanimelist.net/v2/anime/$trackingId/my_list_status',
+        body: bodyString,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      );
+
+      final resBody = response.json;
+      if (resBody != null && resBody['error'] != null) {
+        throw Exception(resBody['message'] ?? 'Failed to update entry');
+      }
+    });
+  }
+
+  @override
+  Future<TrackerProfile> fetchProfile() async {
+    final token = await _getToken();
+    if (token == null) throw Exception('MyAnimeList is not authenticated');
+
+    return executeApi('PROFILE', () async {
+      final res = await _http.get(
+        'https://api.myanimelist.net/v2/users/@me',
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      final body = res.json;
+      if (body['error'] != null) {
+        throw Exception(body['message'] ?? 'Failed to fetch profile');
+      }
+
+      return TrackerProfile(
+        id: body['id']?.toString() ?? '',
+        username: body['name'] ?? '',
+        avatarUrl: body['picture'],
+      );
+    });
+  }
+
+  @override
+  Future<TrackedListItem?> fetchUserListItem({required String mediaId}) async {
+    final token = await _getToken();
+    if (token == null) return null;
+
+    return executeApi('FETCH_ENTRY', fallback: (_, __) => null, () async {
+      final res = await _http.get(
+        'https://api.myanimelist.net/v2/anime/$mediaId',
+        queryParameters: {'fields': 'my_list_status'},
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      final body = res.json;
+      if (body['error'] != null) {
+        return null;
+      }
+
+      final listStatus = body['my_list_status'];
+      if (listStatus == null) return null;
+
+      return TrackedListItem(
+        id: body['id']?.toString(),
+        status: _parseMalStatus(listStatus['status']),
+        progress: (listStatus['num_watched_episodes'] as num?)?.toDouble() ?? 0,
+        score: (listStatus['score'] as num?)?.toDouble(),
+      );
+    });
+  }
+
+  @override
+  Future<List<LibraryEntry>> fetchUserLibrary({
+    TrackedStatus status = TrackedStatus.watching,
+    int page = 1,
+  }) async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    return executeApi(
+      status.name.toUpperCase(),
+      fallback: (_, __) => [],
+      () async {
+        final limit = 50;
+        final offset = (page - 1) * limit;
+
+        final res = await _http.get(
+          'https://api.myanimelist.net/v2/users/@me/animelist',
+          queryParameters: {
+            'status': _toMalStatus(status),
+            'limit': limit.toString(),
+            'offset': offset.toString(),
+            'fields': 'list_status,num_episodes,mean,main_picture',
+          },
+          headers: {'Authorization': 'Bearer $token'},
+        );
+
+        final body = res.json;
+        if (body['error'] != null) return [];
+
+        final data = body['data'] as List? ?? [];
+
+        return data.map((item) {
+          final node = item['node'];
+          final listStatus = item['list_status'];
+
+          return LibraryEntry()
+            ..providerId = node['id']?.toString() ?? ''
+            ..type = 'ANIME'
+            ..title = node['title'] ?? 'Unknown'
+            ..cover =
+                node['main_picture']?['large'] ??
+                node['main_picture']?['medium'] ??
+                ''
+            ..status = _parseMalStatus(listStatus?['status']).id
+            ..episodes = node['num_episodes']
+            ..addedAt = DateTime.now();
+        }).toList();
+      },
+    );
+  }
+
+  @override
+  Future<void> removeEntry({required String trackingId}) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('MyAnimeList is not authenticated');
+
+    return executeApi('DELETE', () async {
+      await _http.delete(
+        'https://api.myanimelist.net/v2/anime/$trackingId/my_list_status',
+        headers: {'Authorization': 'Bearer $token'},
+      );
+    });
+  }
+
+  TrackedStatus _parseMalStatus(String? status) {
+    switch (status) {
+      case 'watching':
+        return TrackedStatus.watching;
+      case 'plan_to_watch':
+        return TrackedStatus.planning;
+      case 'completed':
+        return TrackedStatus.completed;
+      case 'on_hold':
+        return TrackedStatus.paused;
+      case 'dropped':
+        return TrackedStatus.dropped;
+      default:
+        return TrackedStatus.unknown;
+    }
+  }
+
+  String _toMalStatus(TrackedStatus status) {
+    switch (status) {
+      case TrackedStatus.watching:
+        return 'watching';
+      case TrackedStatus.planning:
+        return 'plan_to_watch';
+      case TrackedStatus.completed:
+        return 'completed';
+      case TrackedStatus.paused:
+        return 'on_hold';
+      case TrackedStatus.dropped:
+        return 'dropped';
+      case TrackedStatus.unknown:
+        return 'watching';
+    }
+  }
+}

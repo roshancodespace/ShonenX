@@ -11,11 +11,11 @@ void setPreferenceSetting(SourcePreference sourcePreference, MSource source) {
       .sourceIdEqualTo(source.id)
       .keyEqualTo(sourcePreference.key)
       .findFirstSync();
-  isar.writeTxnSync(() {
+  isar.writeTxn( () async {
     if (sourcePref != null) {
-      isar.sourcePreferences.putSync(sourcePreference);
+      await isar.sourcePreferences.put(sourcePreference);
     } else {
-      isar.sourcePreferences.putSync(sourcePreference..sourceId = source.id);
+      await isar.sourcePreferences.put(sourcePreference..sourceId = source.id);
     }
   });
 }

@@ -24,7 +24,7 @@ permissions:
 # ---------------- ANDROID ----------------
 jobs:
   build-android:
-    if: github.event_name == 'push' || github.event.inputs.build_android == true
+    if: github.event_name == 'push' || github.event.inputs.build_android == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -40,7 +40,7 @@ jobs:
           flutter-version: 3.35.7
           cache: true
 
-      - name: Decode Keystore
+      - name: Decode keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
@@ -53,7 +53,7 @@ jobs:
           storeFile=upload-keystore.jks
           EOF
 
-      - name: Create env file (Android)
+      - name: Create env file
         run: |
           cat <<EOF > keys.json
           {
@@ -80,7 +80,7 @@ jobs:
 
 # ---------------- LINUX ----------------
   build-linux:
-    if: github.event_name == 'push' || github.event.inputs.build_linux == true
+    if: github.event_name == 'push' || github.event.inputs.build_linux == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -91,12 +91,12 @@ jobs:
           flutter-version: 3.35.7
           cache: true
 
-      - name: Install Linux deps
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
 
-      - name: Create env file (Linux)
+      - name: Create env file
         run: |
           cat <<EOF > keys.json
           {
@@ -110,7 +110,6 @@ jobs:
 
       - run: flutter config --enable-linux-desktop
       - run: flutter pub get
-
       - run: flutter build linux --release --dart-define-from-file=keys.json
 
       - uses: actions/upload-artifact@v4
@@ -121,7 +120,7 @@ jobs:
 
 # ---------------- WINDOWS ----------------
   build-windows:
-    if: github.event_name == 'push' || github.event.inputs.build_windows == true
+    if: github.event_name == 'push' || github.event.inputs.build_windows == 'true'
     runs-on: windows-latest
 
     steps:
@@ -135,7 +134,7 @@ jobs:
       - name: Enable Windows
         run: flutter config --enable-windows-desktop
 
-      - name: Create env file (Windows)
+      - name: Create env file
         run: |
           echo '{
             "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",

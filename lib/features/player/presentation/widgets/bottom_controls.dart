@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/episode_list_panel.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
+import 'package:shonenx/features/player/presentation/player_screen.dart';
 import 'package:shonenx/features/player/presentation/widgets/progress_bar.dart';
 import 'package:shonenx/features/player/providers/active_engine_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_provider.dart';
@@ -17,6 +20,7 @@ class BottomControls extends StatefulWidget {
   final PlayerController controller;
   final ThemeData theme;
   final AniSkipArgs? aniskipArgs;
+  final PlayerParams? params;
 
   const BottomControls({
     super.key,
@@ -27,6 +31,7 @@ class BottomControls extends StatefulWidget {
     required this.controller,
     required this.theme,
     this.aniskipArgs,
+    this.params,
   });
 
   @override
@@ -121,8 +126,12 @@ class _BottomControlsState extends State<BottomControls> {
                           : const Icon(Icons.subtitles_outlined),
                     ),
                   ),
-                  // const SizedBox(width: 16),
-                  // _buildActionIcon(Icons.format_list_bulleted_rounded, () {}),
+                  const SizedBox(width: 16),
+                  if (widget.params != null)
+                    _buildActionIcon(
+                      Icons.format_list_bulleted_rounded,
+                      () => _showEpisodePanel(context),
+                    ),
                   const SizedBox(width: 24),
                   Consumer(
                     builder: (context, ref, child) {
@@ -210,6 +219,55 @@ class _BottomControlsState extends State<BottomControls> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showEpisodePanel(BuildContext context) {
+    final params = widget.params!;
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Episodes',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (_, __, ___) => Align(
+        alignment: Alignment.centerRight,
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.38,
+          height: double.infinity,
+          child: Material(
+            color: Theme.of(context).colorScheme.surface,
+            child: Column(
+              children: [
+                Expanded(
+                  child: EpisodeListPanel(
+                    media: params.media,
+                    currentEpisodeNumber: params.episode.number,
+                    onEpisodeTap: (episode, sourceInfo) {
+                      Navigator.of(context).pop();
+                      context.pushReplacement(
+                        '/player',
+                        extra: PlayerParams(
+                          media: params.media,
+                          episode: episode,
+                          sourceInfo: sourceInfo,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      transitionBuilder: (_, anim, __, child) => SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(1, 0),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+        child: child,
       ),
     );
   }

@@ -205,6 +205,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               playerState: playerState,
               controller: controller,
               theme: theme,
+              params: widget.params,
               onToggleLockControls: () =>
                   setState(() => _lockControls = !_lockControls),
             ),

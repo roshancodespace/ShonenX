@@ -47,7 +47,7 @@ class TrackingSettingsScreen extends ConsumerWidget {
             ],
           ),
           SettingsSection(
-            title: 'Privacy',
+            title: 'Privacy & Automation',
             children: [
               SettingsSwitchTile(
                 icon: Icons.visibility_off_outlined,
@@ -56,6 +56,18 @@ class TrackingSettingsScreen extends ConsumerWidget {
                 value: prefs.isIncognito,
                 onChanged: (_) {
                   ref.read(trackingPrefsProvider.notifier).toggleIncognito();
+                },
+              ),
+              SettingsSwitchTile(
+                icon: Icons.auto_awesome_outlined,
+                title: 'Auto Track Primary',
+                subtitle:
+                    'Automatically link media to your primary tracker if a matching ID is found',
+                value: prefs.autoTrackPrimary,
+                onChanged: (_) {
+                  ref
+                      .read(trackingPrefsProvider.notifier)
+                      .toggleAutoTrackPrimary();
                 },
               ),
             ],

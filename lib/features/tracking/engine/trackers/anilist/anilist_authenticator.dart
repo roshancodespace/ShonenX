@@ -11,11 +11,11 @@ class AnilistAuthenticator implements Authenticator {
   static final _isDesktop = Platform.isWindows || Platform.isLinux;
 
   String get _clientId =>
-      _isDesktop ? ANILIST_CLIENT_ID.last : ANILIST_CLIENT_ID.first;
+      _isDesktop ? Env.ANILIST_CLIENT_ID_LIST.last : Env.ANILIST_CLIENT_ID_LIST.first;
 
   String get _clientSecret => _isDesktop
-      ? ANILIST_CLIENT_SECRET.last
-      : ANILIST_CLIENT_SECRET.first;
+      ? Env.ANILIST_CLIENT_SECRET_LIST.last
+      : Env.ANILIST_CLIENT_SECRET_LIST.first;
 
   @override
   String get redirectUri => _isDesktop
@@ -31,10 +31,11 @@ class AnilistAuthenticator implements Authenticator {
 
   @override
   List<String> get apiHosts => ['graphql.anilist.co'];
-  
 
   @override
   Future<String> performLogin() async {
+    print(_clientId);
+    print(_clientSecret);
     final url = Uri.https('anilist.co', '/api/v2/oauth/authorize', {
       'client_id': _clientId,
       'redirect_uri': redirectUri,

@@ -95,6 +95,14 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
       return const MatchedMediaState();
     }
 
+    // Cache the match in SourcePreference to bypass matchmaker on next launch
+    Future.microtask(() {
+      ref.read(sourcePreferenceProvider(mediaTitle).notifier).setManualOverrides(
+            result.id,
+            result.title.availableTitle,
+          );
+    });
+
     return MatchedMediaState(
       matchedMedia: MatchedMedia(
         id: result.id,

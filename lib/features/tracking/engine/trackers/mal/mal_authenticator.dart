@@ -19,10 +19,11 @@ class MalAuthenticator implements Authenticator {
   static const String _authStateKey = 'mal_auth_state';
 
   String get _clientId =>
-      _isDesktop ? MAL_CLIENT_ID.last : MAL_CLIENT_ID.first;
+      _isDesktop ? Env.MAL_CLIENT_ID_LIST.last : Env.MAL_CLIENT_ID_LIST.first;
 
-  String get _clientSecret =>
-      _isDesktop ? MAL_CLIENT_SECRET.last : MAL_CLIENT_SECRET.first;
+  String get _clientSecret => _isDesktop
+      ? Env.MAL_CLIENT_SECRET_LIST.last
+      : Env.MAL_CLIENT_SECRET_LIST.first;
 
   @override
   String get redirectUri => _isDesktop

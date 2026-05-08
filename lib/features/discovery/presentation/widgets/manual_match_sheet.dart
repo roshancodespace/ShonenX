@@ -78,7 +78,7 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
         .read(sourcePreferenceProvider(widget.mediaTitle).notifier)
         .setManualOverrides(result.id, result.title.availableTitle);
 
-    context.pop();
+    context.pop(true);
   }
 
   @override

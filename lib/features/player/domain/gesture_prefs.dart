@@ -8,13 +8,13 @@ class GesturePrefs {
   final double doubleTapWidth;
 
   const GesturePrefs({
-    this.topMargin = 0.0,
-    this.bottomMargin = 0.0,
-    this.leftMargin = 0.0,
-    this.rightMargin = 0.0,
-    this.leftWidth = 0.4,
-    this.rightWidth = 0.4,
-    this.doubleTapWidth = 0.4,
+    this.topMargin = 0.05,
+    this.bottomMargin = 0.05,
+    this.leftMargin = 0.05,
+    this.rightMargin = 0.05,
+    this.leftWidth = 0.35,
+    this.rightWidth = 0.35,
+    this.doubleTapWidth = 0.35,
   });
 
   GesturePrefs copyWith({

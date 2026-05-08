@@ -7,7 +7,10 @@
         {
             "name": "shonenx",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "toolArgs": [
+                "--dart-define-from-file=keys.json"
+            ]
         },
         {
             "name": "shonenx (profile mode)",

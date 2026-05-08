@@ -143,6 +143,7 @@ class GojoSource implements AnimeSource {
             (server) => VideoServer(
               id: server['id']?.toString() ?? '',
               name: server['tip']?.toString() ?? 'Unknown Server',
+              type: ServerType.sub,
             ),
           )
           .where((s) => s.id.isNotEmpty)

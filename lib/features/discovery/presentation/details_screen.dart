@@ -17,7 +17,7 @@ import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
-class DetailsScreen extends ConsumerWidget {
+class DetailsScreen extends ConsumerStatefulWidget {
   final String tag;
   final MediaType mediaType;
   final UnifiedMedia media;
@@ -30,15 +30,65 @@ class DetailsScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DetailsScreen> createState() => _DetailsScreenState();
+}
+
+class _DetailsScreenState extends ConsumerState<DetailsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoLinkPrimaryTracker();
+    });
+  }
+
+  Future<void> _autoLinkPrimaryTracker() async {
+    final prefs = ref.read(trackingPrefsProvider);
+    if (!prefs.autoTrackPrimary) return;
+
+    final primaryType = prefs.primaryTracker;
+    if (primaryType == TrackerType.local) return;
+
+    final media = widget.media;
+
+    // Only auto-link if it's tracker-based metadata
+    final isTrackerMedia = media.sourceId == null;
+
+    if (!isTrackerMedia) return;
+
+    String? trackingId;
+    trackingId = media.id;
+
+    final linksMap = await ref.read(trackerLinkProvider(media.id).future);
+    if (linksMap.containsKey(primaryType)) return;
+
+    final mapping = TrackerMapping()
+      ..trackerId = primaryType.id
+      ..trackingId = trackingId
+      ..trackingTitle = media.title.availableTitle;
+
+    ref
+        .read(trackerLinkProvider(media.id).notifier)
+        .saveLink(primaryType, mapping);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
     final detailsState = ref.watch(
-      detailsProvider(DetailsArgs(media.id, mediaType, sourceId: media.sourceId)),
+      detailsProvider(
+        DetailsArgs(
+          widget.media.id,
+          widget.mediaType,
+          sourceId: widget.media.sourceId,
+        ),
+      ),
     );
 
-    final displayMedia = detailsState.value?.merge(media) ?? media;
+    final displayMedia =
+        detailsState.value?.merge(widget.media) ?? widget.media;
 
     return DefaultTabController(
       length: 2,
@@ -98,7 +148,7 @@ class DetailsScreen extends ConsumerWidget {
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(10),
                                     child: Hero(
-                                      tag: tag,
+                                      tag: widget.tag,
                                       child: CachedNetworkImage(
                                         imageUrl: displayMedia.cover ?? '',
                                         fit: BoxFit.cover,

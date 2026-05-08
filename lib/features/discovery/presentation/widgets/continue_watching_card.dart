@@ -14,6 +14,7 @@ import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/player/presentation/player_screen.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 class ContinueWatchingItem extends ConsumerStatefulWidget {
   final WatchHistoryEntry entry;
@@ -86,55 +87,228 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
     }
   }
 
+  void _handleSourceFailure(Object error) {
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      builder: (context) {
+        return AppBottomSheet(
+          title: 'Source Error',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Text(
+              //   'The selected source could not load episodes. It might be outdated or deleted.',
+              //   style: Theme.of(context).textTheme.bodyLarge,
+              // ),
+              // const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      error.toString(),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.error.withValues(alpha: 0.85),
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        await ref
+                            .read(
+                              sourcePreferenceProvider(
+                                widget.entry.animeTitle,
+                              ).notifier,
+                            )
+                            .clearPreference();
+
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Cleared preference. Retrying...'),
+                            ),
+                          );
+                          _handleTap();
+                        }
+                      },
+                      child: const Text('Auto Match (Clear)'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        final result = await showModalBottomSheet<bool>(
+                          context: context,
+                          builder: (context) => ManualMatchSheet(
+                            mediaTitle: widget.entry.animeTitle,
+                            type: MediaType.ANIME,
+                          ),
+                        );
+
+                        if (result == true && mounted) {
+                          _handleTap();
+                        }
+                      },
+                      child: const Text('Manual Match'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    // showDialog(
+    //   context: context,
+    //   builder: (context) => AlertDialog(
+    //     title: const Text('Source Error'),
+    //     content: Text(
+    //       'The selected source could not load episodes. It might be outdated or deleted.\n\nError: $error',
+    //     ),
+    //     actions: [
+    //       TextButton(
+    //         onPressed: () async {
+    //           Navigator.pop(context);
+    //           await ref
+    //               .read(
+    //                 sourcePreferenceProvider(widget.entry.animeTitle).notifier,
+    //               )
+    //               .clearPreference();
+
+    //           if (mounted) {
+    //             ScaffoldMessenger.of(context).showSnackBar(
+    //               const SnackBar(
+    //                 content: Text('Cleared preference. Retrying...'),
+    //               ),
+    //             );
+    //             _handleTap();
+    //           }
+    //         },
+    //         child: const Text('Auto Match (Clear)'),
+    //       ),
+    //       FilledButton(
+    //         onPressed: () async {
+    //           Navigator.pop(context);
+    //           final result = await showModalBottomSheet<bool>(
+    //             context: context,
+    //             builder: (context) => ManualMatchSheet(
+    //               mediaTitle: widget.entry.animeTitle,
+    //               type: MediaType.ANIME,
+    //             ),
+    //           );
+
+    //           if (result == true && mounted) {
+    //             _handleTap();
+    //           }
+    //         },
+    //         child: const Text('Manual Match'),
+    //       ),
+    //     ],
+    //   ),
+    // );
+  }
+
   Future<void> _handleTap() async {
     if (_isLoading) return;
 
     setState(() => _isLoading = true);
 
     final entry = widget.entry;
-    final prefState = await ref.read(
-      sourcePreferenceProvider(entry.animeTitle).future,
-    );
 
-    final sourceInfo = prefState.sourceInfo;
-
-    UnifiedEpisode? episode = ref
-        .read(episodesListProvider(entry.animeTitle))
-        .value
-        ?.episodes
-        .firstWhereOrNull((e) => e.number == entry.episodeNumber);
-
-    if (episode == null && mounted) {
-      if (mounted) {
-        await ref.read(episodesListProvider(entry.animeTitle).future);
-
-        episode = ref
-            .read(episodesListProvider(entry.animeTitle))
-            .value
-            ?.episodes
-            .firstWhereOrNull((e) => e.number == entry.episodeNumber);
-      }
-    }
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
-
-    if (episode != null && mounted) {
-      context.push(
-        '/player',
-        extra: PlayerParams(
-          media: UnifiedMedia(
-            id: entry.animeId,
-            idMal: entry.animeIdMal,
-            type: MediaType.ANIME,
-            title: MediaTitle(english: entry.animeTitle),
-          ),
-          episode: episode,
-          sourceInfo: sourceInfo,
-          startPosition: Duration(milliseconds: entry.positionInMilliseconds),
-        ),
+    try {
+      final prefState = await ref.read(
+        sourcePreferenceProvider(entry.animeTitle).future,
       );
+
+      final sourceInfo = prefState.sourceInfo;
+      UnifiedEpisode? episode;
+
+      if (prefState.manualOverrideId != null) {
+        try {
+          final args = (
+            providerId: prefState.manualOverrideId!,
+            sourceId: sourceInfo.id,
+          );
+          final episodesState = await ref.read(
+            sourceEpisodesProvider(args).future,
+          );
+          episode = episodesState.episodes.firstWhereOrNull(
+            (e) => e.number == entry.episodeNumber,
+          );
+
+          if (episode == null) {
+            throw Exception(
+              'Episode not found. The source might be outdated or deleted.',
+            );
+          }
+        } catch (e) {
+          _handleSourceFailure(e);
+          return;
+        }
+      } else {
+        try {
+          final episodesState = await ref.read(
+            episodesListProvider(entry.animeTitle).future,
+          );
+          episode = episodesState.episodes.firstWhereOrNull(
+            (e) => e.number == entry.episodeNumber,
+          );
+
+          if (episode == null) {
+            throw Exception(
+              'Episode not found. The source might be outdated or deleted.',
+            );
+          }
+        } catch (e) {
+          _handleSourceFailure(e);
+          return;
+        }
+      }
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+
+      if (mounted) {
+        context.push(
+          '/player',
+          extra: PlayerParams(
+            media: UnifiedMedia(
+              id: entry.animeId,
+              idMal: entry.animeIdMal,
+              type: MediaType.ANIME,
+              title: MediaTitle(english: entry.animeTitle),
+            ),
+            episode: episode,
+            sourceInfo: sourceInfo,
+            startPosition: Duration(milliseconds: entry.positionInMilliseconds),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 

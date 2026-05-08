@@ -1,6 +1,6 @@
 name: shonenx
 description: "Anime Client for Anime lovers."
-publish_to: 'none' 
+publish_to: "none"
 version: 2.0.0+1
 
 environment:

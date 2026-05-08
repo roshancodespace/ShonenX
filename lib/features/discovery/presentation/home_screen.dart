@@ -112,6 +112,7 @@ class HomeScreen extends ConsumerWidget {
                               discoveryPrefsProvider.select((p) => p.mode),
                             );
                             return IconButton.outlined(
+                              visualDensity: VisualDensity.standard,
                               onPressed: () => showModalBottomSheet(
                                 context: context,
                                 isScrollControlled: true,
@@ -130,6 +131,7 @@ class HomeScreen extends ConsumerWidget {
                         ),
                         const SizedBox(width: 10),
                         IconButton.outlined(
+                          visualDensity: VisualDensity.standard,
                           onPressed: () => context.push('/settings'),
                           tooltip: 'Settings',
                           icon: const Icon(Icons.settings_outlined),

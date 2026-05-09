@@ -91,3 +91,5 @@ android/app/build/
 
 # Misc
 *.log
+
+*.zip

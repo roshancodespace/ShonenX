@@ -97,28 +97,12 @@ class NotificationService {
         return false;
       }
 
-      const android = AndroidNotificationDetails(
-        'app_reminders',
-        'App Reminders',
-        channelDescription: 'General notifications for your anime & manga',
-        importance: Importance.high,
-        priority: Priority.high,
-      );
-      const windows = WindowsNotificationDetails();
-      const linux = LinuxNotificationDetails();
-
-      const details = NotificationDetails(
-        android: android,
-        windows: windows,
-        linux: linux,
-      );
-
       await _plugin.zonedSchedule(
         id: id,
         title: title,
         body: body,
         scheduledDate: tz.TZDateTime.from(scheduleTime, tz.local),
-        notificationDetails: details,
+        notificationDetails: _getNotificationDetails(),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
 
@@ -140,5 +124,42 @@ class NotificationService {
     } catch (e, st) {
       _log.e('Failed to cancel notification [$id]', e, st);
     }
+  }
+
+  Future<void> show({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    _log.d('Attempting to show immediate notification [$id]');
+    try {
+      await _plugin.show(
+        id: id,
+        title: title,
+        body: body,
+        notificationDetails: _getNotificationDetails(),
+      );
+      _log.s('Successfully showed immediate notification [$id]');
+    } catch (e, st) {
+      _log.e('Failed to show notification [$id]', e, st);
+    }
+  }
+
+  NotificationDetails _getNotificationDetails() {
+    const android = AndroidNotificationDetails(
+      'app_reminders',
+      'App Reminders',
+      channelDescription: 'General notifications for your anime & manga',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    const windows = WindowsNotificationDetails();
+    const linux = LinuxNotificationDetails();
+
+    return const NotificationDetails(
+      android: android,
+      windows: windows,
+      linux: linux,
+    );
   }
 }

@@ -33,4 +33,29 @@ class LibraryEntry {
       episodes: episodes,
     );
   }
+
+  Map<String, dynamic> toBackupMap() => {
+    'providerId': providerId,
+    'title': title,
+    'cover': cover,
+    'type': type,
+    'score': score,
+    'status': status,
+    'episodes': episodes,
+    'episodesWatched': episodesWatched,
+    'addedAt': addedAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
+
+  static LibraryEntry fromBackupMap(Map<String, dynamic> m) => LibraryEntry()
+    ..providerId = m['providerId'] as String
+    ..title = m['title'] as String
+    ..cover = m['cover'] as String
+    ..type = m['type'] as String?
+    ..score = (m['score'] as num?)?.toDouble()
+    ..status = m['status'] as String?
+    ..episodes = m['episodes'] as int?
+    ..episodesWatched = m['episodesWatched'] as int? ?? 0
+    ..addedAt = DateTime.tryParse(m['addedAt'] as String? ?? '') ?? DateTime.now()
+    ..updatedAt = DateTime.tryParse(m['updatedAt'] as String? ?? '') ?? DateTime.now();
 }

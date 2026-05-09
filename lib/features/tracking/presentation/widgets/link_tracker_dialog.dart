@@ -6,11 +6,13 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/models/tracker_search_result.dart';
 
 class LinkTrackerSheet extends ConsumerStatefulWidget {
   final String primaryMediaId;
+  final MediaType mediaType;
   final String initialSearchQuery;
   final RemoteTracker tracker;
 
@@ -18,6 +20,7 @@ class LinkTrackerSheet extends ConsumerStatefulWidget {
     super.key,
     required this.primaryMediaId,
     required this.initialSearchQuery,
+    required this.mediaType,
     required this.tracker,
   });
 
@@ -63,7 +66,10 @@ class _LinkTrackerSheetState extends ConsumerState<LinkTrackerSheet> {
     });
 
     try {
-      final results = await widget.tracker.searchMedia(cleanQuery);
+      final results = await widget.tracker.searchMedia(
+        cleanQuery,
+        type: widget.mediaType,
+      );
       if (mounted) setState(() => _results = results);
     } catch (_) {
       if (mounted) setState(() => _results = []);

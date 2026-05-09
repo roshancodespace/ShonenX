@@ -7,14 +7,21 @@ import 'package:shonenx/source_engine/models/paginated_result.dart';
 
 abstract interface class RemoteTracker implements TrackingService {
   Authenticator get authenticator;
-  
+
   Future<TrackerProfile> fetchProfile();
-  
-  Future<List<TrackerSearchResult>> searchMedia(String query);
+
+  Future<List<TrackerSearchResult>> searchMedia(
+    String query, {
+    required MediaType type,
+  });
 
   Future<PaginatedResult<UnifiedMedia>> getTrending({int page = 1});
 
-  Future<PaginatedResult<UnifiedMedia>> search(String query, {int page = 1});
+  Future<PaginatedResult<UnifiedMedia>> search(
+    String query, {
+    int page = 1,
+    required MediaType type,
+  });
 
   Future<UnifiedMedia> getDetails(String providerId, MediaType type);
 }

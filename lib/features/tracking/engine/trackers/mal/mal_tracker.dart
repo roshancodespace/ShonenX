@@ -38,7 +38,10 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
   Authenticator get authenticator => MalAuthenticator();
 
   @override
-  Future<List<TrackerSearchResult>> searchMedia(String query) {
+  Future<List<TrackerSearchResult>> searchMedia(
+    String query, {
+    required MediaType type,
+  }) {
     return executeApi('SEARCH', fallback: (_, __) => [], () async {
       final token = await _getToken();
       final headers = <String, String>{};

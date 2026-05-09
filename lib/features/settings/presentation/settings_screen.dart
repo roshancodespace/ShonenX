@@ -52,6 +52,12 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: 'AniList, MyAnimeList connections',
                 onTap: () => context.push('/settings/tracking'),
               ),
+              SettingsNavTile(
+                icon: Icons.import_export_outlined,
+                title: 'Backup & Restore',
+                subtitle: 'Export or import your data',
+                onTap: () => context.push('/settings/backup'),
+              ),
             ],
           ),
 
@@ -81,6 +87,18 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Cache Manager',
                 subtitle: 'Clear cache and thumbnails',
                 onTap: () => context.push('/settings/cache'),
+              ),
+            ],
+          ),
+
+          SettingsSection(
+            title: 'Advanced',
+            children: [
+              SettingsNavTile(
+                icon: Icons.bug_report_outlined,
+                title: 'Debug',
+                subtitle: 'Test notifications and UI components',
+                onTap: () => context.push('/settings/debug'),
               ),
             ],
           ),

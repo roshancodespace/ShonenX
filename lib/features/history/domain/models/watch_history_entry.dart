@@ -26,4 +26,35 @@ class WatchHistoryEntry {
 
   @Index()
   late DateTime lastUpdated;
+
+  Map<String, dynamic> toBackupMap() => {
+    'episodeNumber': episodeNumber,
+    'animeId': animeId,
+    'animeIdMal': animeIdMal,
+    'animeTitle': animeTitle,
+    'episodeTitle': episodeTitle,
+    'thumbnailUrl': thumbnailUrl,
+    'totalEpisodes': totalEpisodes,
+    'positionInMilliseconds': positionInMilliseconds,
+    'durationInMilliseconds': durationInMilliseconds,
+    'sourceId': sourceId,
+    'sourceName': sourceName,
+    'providerId': providerId,
+    'lastUpdated': lastUpdated.toIso8601String(),
+  };
+
+  static WatchHistoryEntry fromBackupMap(Map<String, dynamic> m) => WatchHistoryEntry()
+    ..episodeNumber = (m['episodeNumber'] as num).toDouble()
+    ..animeId = m['animeId'] as String
+    ..animeIdMal = m['animeIdMal'] as String?
+    ..animeTitle = m['animeTitle'] as String
+    ..episodeTitle = m['episodeTitle'] as String?
+    ..thumbnailUrl = m['thumbnailUrl'] as String?
+    ..totalEpisodes = m['totalEpisodes'] as int?
+    ..positionInMilliseconds = m['positionInMilliseconds'] as int
+    ..durationInMilliseconds = m['durationInMilliseconds'] as int
+    ..sourceId = m['sourceId'] as String?
+    ..sourceName = m['sourceName'] as String?
+    ..providerId = m['providerId'] as String?
+    ..lastUpdated = DateTime.tryParse(m['lastUpdated'] as String? ?? '') ?? DateTime.now();
 }

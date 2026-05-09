@@ -110,6 +110,7 @@ class _AvailableTrackerRow extends StatelessWidget {
             useSafeArea: true,
             builder: (_) => LinkTrackerSheet(
               primaryMediaId: media.id,
+              mediaType: media.type,
               initialSearchQuery: media.title.availableTitle,
               tracker: tracker as RemoteTracker,
             ),
@@ -375,6 +376,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
                         useSafeArea: true,
                         builder: (_) => LinkTrackerSheet(
                           primaryMediaId: media.id,
+                          mediaType: media.type,
                           initialSearchQuery: media.title.availableTitle,
                           tracker: tracker as RemoteTracker,
                         ),
@@ -466,6 +468,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
                       useSafeArea: true,
                       builder: (_) => LinkTrackerSheet(
                         primaryMediaId: media.id,
+                        mediaType: media.type,
                         initialSearchQuery: media.title.availableTitle,
                         tracker: tracker as RemoteTracker,
                       ),

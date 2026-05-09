@@ -18,6 +18,10 @@ import 'package:shonenx/features/settings/presentation/settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/theme_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/tracking_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/ui_settings_screen.dart';
+import 'package:shonenx/features/settings/presentation/backup_settings_screen.dart';
+import 'package:shonenx/features/settings/presentation/import_preview_screen.dart';
+import 'package:shonenx/features/settings/presentation/debug_settings_screen.dart';
+import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 
@@ -138,6 +142,23 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'ui',
             builder: (context, state) => const UiSettingsScreen(),
+          ),
+          GoRoute(
+            path: 'backup',
+            builder: (context, state) => const BackupSettingsScreen(),
+            routes: [
+              GoRoute(
+                path: 'preview',
+                builder: (context, state) {
+                  final manifest = state.extra as BackupManifest;
+                  return ImportPreviewScreen(manifest: manifest);
+                },
+              ),
+            ],
+          ),
+          GoRoute(
+            path: 'debug',
+            builder: (context, state) => const DebugSettingsScreen(),
           ),
         ],
       ),

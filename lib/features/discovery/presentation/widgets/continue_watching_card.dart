@@ -34,6 +34,8 @@ class ContinueWatchingItem extends ConsumerStatefulWidget {
 }
 
 class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
+  static const _contentPadding = 14.0;
+
   bool _isLoading = false;
 
   void _showItemContextMenu(Offset position) async {
@@ -61,17 +63,13 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
           .read(sourcePreferenceProvider(entry.animeTitle).notifier)
           .clearPreference();
 
-      if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Source preference cleared')),
       );
     } else if (value == 'remove_history' && mounted) {
       await ref.read(watchHistoryRepositoryProvider).deleteEntry(entry.id);
 
-      if (context.mounted) {
-        if (!mounted) return;
-
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Removed from history')));
@@ -79,7 +77,7 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
     } else if (value == 'fix_match' && mounted) {
       await showModalBottomSheet(
         context: context,
-        builder: (context) => ManualMatchSheet(
+        builder: (_) => ManualMatchSheet(
           mediaTitle: entry.animeTitle,
           type: MediaType.ANIME,
         ),
@@ -89,45 +87,36 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
 
   void _handleSourceFailure(Object error) {
     if (!mounted) return;
+
     setState(() => _isLoading = false);
+
     showModalBottomSheet(
       context: context,
       useRootNavigator: true,
-      builder: (context) {
+      builder: (_) {
         return AppBottomSheet(
           title: 'Source Error',
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Text(
-              //   'The selected source could not load episodes. It might be outdated or deleted.',
-              //   style: Theme.of(context).textTheme.bodyLarge,
-              // ),
-              // const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      error.toString(),
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.error.withValues(alpha: 0.85),
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                  ),
-                ],
+              Text(
+                error.toString(),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.error.withValues(alpha: 0.9),
+                  fontFamily: 'monospace',
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
               Row(
                 children: [
                   Expanded(
-                    child: FilledButton(
+                    child: FilledButton.tonal(
                       onPressed: () async {
                         Navigator.pop(context);
+
                         await ref
                             .read(
                               sourcePreferenceProvider(
@@ -136,26 +125,22 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
                             )
                             .clearPreference();
 
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Cleared preference. Retrying...'),
-                            ),
-                          );
+                        if (mounted) {
                           _handleTap();
                         }
                       },
-                      child: const Text('Auto Match (Clear)'),
+                      child: const Text('Auto Match'),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: FilledButton(
                       onPressed: () async {
                         Navigator.pop(context);
+
                         final result = await showModalBottomSheet<bool>(
                           context: context,
-                          builder: (context) => ManualMatchSheet(
+                          builder: (_) => ManualMatchSheet(
                             mediaTitle: widget.entry.animeTitle,
                             type: MediaType.ANIME,
                           ),
@@ -175,54 +160,6 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
         );
       },
     );
-    // showDialog(
-    //   context: context,
-    //   builder: (context) => AlertDialog(
-    //     title: const Text('Source Error'),
-    //     content: Text(
-    //       'The selected source could not load episodes. It might be outdated or deleted.\n\nError: $error',
-    //     ),
-    //     actions: [
-    //       TextButton(
-    //         onPressed: () async {
-    //           Navigator.pop(context);
-    //           await ref
-    //               .read(
-    //                 sourcePreferenceProvider(widget.entry.animeTitle).notifier,
-    //               )
-    //               .clearPreference();
-
-    //           if (mounted) {
-    //             ScaffoldMessenger.of(context).showSnackBar(
-    //               const SnackBar(
-    //                 content: Text('Cleared preference. Retrying...'),
-    //               ),
-    //             );
-    //             _handleTap();
-    //           }
-    //         },
-    //         child: const Text('Auto Match (Clear)'),
-    //       ),
-    //       FilledButton(
-    //         onPressed: () async {
-    //           Navigator.pop(context);
-    //           final result = await showModalBottomSheet<bool>(
-    //             context: context,
-    //             builder: (context) => ManualMatchSheet(
-    //               mediaTitle: widget.entry.animeTitle,
-    //               type: MediaType.ANIME,
-    //             ),
-    //           );
-
-    //           if (result == true && mounted) {
-    //             _handleTap();
-    //           }
-    //         },
-    //         child: const Text('Manual Match'),
-    //       ),
-    //     ],
-    //   ),
-    // );
   }
 
   Future<void> _handleTap() async {
@@ -238,6 +175,7 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
       );
 
       final sourceInfo = prefState.sourceInfo;
+
       UnifiedEpisode? episode;
 
       if (prefState.manualOverrideId != null) {
@@ -246,17 +184,17 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
             providerId: prefState.manualOverrideId!,
             sourceId: sourceInfo.id,
           );
+
           final episodesState = await ref.read(
             sourceEpisodesProvider(args).future,
           );
+
           episode = episodesState.episodes.firstWhereOrNull(
             (e) => e.number == entry.episodeNumber,
           );
 
           if (episode == null) {
-            throw Exception(
-              'Episode not found. The source might be outdated or deleted.',
-            );
+            throw Exception('Episode not found.');
           }
         } catch (e) {
           _handleSourceFailure(e);
@@ -267,14 +205,13 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
           final episodesState = await ref.read(
             episodesListProvider(entry.animeTitle).future,
           );
+
           episode = episodesState.episodes.firstWhereOrNull(
             (e) => e.number == entry.episodeNumber,
           );
 
           if (episode == null) {
-            throw Exception(
-              'Episode not found. The source might be outdated or deleted.',
-            );
+            throw Exception('Episode not found.');
           }
         } catch (e) {
           _handleSourceFailure(e);
@@ -303,12 +240,13 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
         );
       }
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
+      if (!mounted) return;
+
+      setState(() => _isLoading = false);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -333,32 +271,70 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
     switch (style) {
       case ContinueWatchingStyle.wideBanner:
         return _buildWideBanner(theme);
+
       case ContinueWatchingStyle.classic:
         return _buildClassic(theme);
     }
   }
 
   Widget _buildClassic(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: SizedBox(
-        width: widget.style.layout.width,
+    final cs = theme.colorScheme;
+
+    return SizedBox(
+      width: widget.style.layout.width,
+      child: Padding(
+        padding: const EdgeInsets.all(_contentPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildThumbnailStack(aspectRatio: 16 / 9, borderRadius: 8),
-            const SizedBox(height: 6),
+            _buildThumbnailStack(
+              aspectRatio: 16 / 9,
+              borderRadius: 20,
+              progressInset: 0,
+              layers: [
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest.withValues(alpha: 0.92),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      'CONTINUE',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: cs.primary,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Text(
               widget.entry.animeTitle,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelLarge,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                height: 1.3,
+              ),
             ),
+            const SizedBox(height: 6),
             Text(
               _formatEpisodeText(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(color: Colors.grey),
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -367,75 +343,125 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
   }
 
   Widget _buildWideBanner(ThemeData theme) {
+    final cs = theme.colorScheme;
+
     return Container(
       width: widget.style.layout.width,
-      margin: const EdgeInsets.only(right: 10),
+      margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceTint.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(16),
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.28)),
       ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: widget.style.layout.width / 2.5,
-            height: double.infinity,
-            child: _buildThumbnailStack(aspectRatio: 16 / 9, borderRadius: 16),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.entry.animeTitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    width: double.maxFinite,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      _formatEpisodeText(),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+      child: Padding(
+        padding: const EdgeInsets.all(_contentPadding),
+        child: Row(
+          children: [
+            SizedBox(
+              width: widget.style.layout.width * 0.38,
+              child: _buildThumbnailStack(
+                aspectRatio: 16 / 10,
+                borderRadius: 20,
+                progressInset: 0,
+                layers: [
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.primaryContainer,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        'EP ${widget.entry.episodeNumber.toInt()}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: cs.onPrimaryContainer,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    widget.entry.animeTitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.entry.episodeTitle ?? 'Continue watching',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: LinearProgressIndicator(
+                        value: widget.progress.clamp(0, 1),
+                        minHeight: 6,
+                        backgroundColor: cs.surfaceContainerHighest,
+                        valueColor: AlwaysStoppedAnimation(cs.primary),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${(widget.progress * 100).toInt()}% watched',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: cs.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   String _formatEpisodeText() {
     final epNum = widget.entry.episodeNumber;
+
     final cleanNum = epNum.toString().contains('.0') ? epNum.toInt() : epNum;
+
     final epTitle = widget.entry.episodeTitle;
+
     return 'EP $cleanNum${epTitle != null ? ' • $epTitle' : ''}';
   }
 
   Widget _buildThumbnailStack({
     required double aspectRatio,
     required double borderRadius,
+    required double progressInset,
     List<Widget>? layers,
   }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: AspectRatio(
@@ -458,23 +484,53 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
                           base64Decode(widget.entry.thumbnailUrl!),
                           fit: BoxFit.cover,
                         )
-                : Container(color: Colors.grey.shade800),
+                : Container(
+                    color: cs.surfaceContainerHighest,
+                    child: Icon(
+                      Icons.movie_creation_outlined,
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.45, 1],
+                    colors: [
+                      Colors.transparent,
+                      cs.scrim.withValues(alpha: 0.75),
+                    ],
+                  ),
+                ),
+              ),
+            ),
             Positioned(
+              left: progressInset,
+              right: progressInset,
               bottom: 0,
-              left: 0,
-              right: 0,
-              child: LinearProgressIndicator(
-                value: widget.progress.clamp(0, 1),
-                minHeight: 3,
-                backgroundColor: Colors.black26,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: widget.progress.clamp(0, 1),
+                  minHeight: 4,
+                  backgroundColor: Colors.black26,
+                  valueColor: AlwaysStoppedAnimation(cs.primary),
+                ),
               ),
             ),
             if (layers != null) ...layers,
             if (_isLoading)
               Positioned.fill(
-                child: Container(
-                  color: Colors.black54,
-                  child: const Center(child: CircularProgressIndicator()),
+                child: ColoredBox(
+                  color: Colors.black45,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.4,
+                      color: cs.primary,
+                    ),
+                  ),
                 ),
               ),
           ],

@@ -16,7 +16,7 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
     return null;
   }
 
-  Future<void> search(String query) async {
+  Future<void> search(String query, {MediaType type = MediaType.ANIME}) async {
     if (query.isEmpty) {
       state = const AsyncData(null);
       return;
@@ -29,17 +29,18 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
 
       if (prefs.mode == MetadataMode.tracker) {
         final engine = ref.read(metadataSourceProvider);
-        final result = await engine.search(query);
+        final result = await engine.search(query, type: type);
         state = AsyncData(result);
       } else {
-        final allSources =
-            await ref.read(availableAnimeSourcesProvider.future);
+        final allSources = await ref.read(availableAnimeSourcesProvider.future);
         final activeSources = allSources
             .where((s) => prefs.activeSources.contains(s.id))
             .toList();
 
         if (activeSources.isEmpty) {
-          state = const AsyncData(PaginatedResult(items: [], hasNextPage: false));
+          state = const AsyncData(
+            PaginatedResult(items: [], hasNextPage: false),
+          );
           return;
         }
 
@@ -56,9 +57,7 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
         final results = await Future.wait(futures);
         final merged = results.expand((list) => list).toList();
 
-        state = AsyncData(
-          PaginatedResult(items: merged, hasNextPage: false),
-        );
+        state = AsyncData(PaginatedResult(items: merged, hasNextPage: false));
       }
     } catch (e, st) {
       state = AsyncError(e, st);

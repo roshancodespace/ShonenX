@@ -1,8 +1,8 @@
 class AnilistTrackerQueries {
   static const String search = '''
-    query(\$search: String) {
+    query(\$search: String, \$type: MediaType) {
       Page(page: 1, perPage: 15) {
-        media(search: \$search, type: ANIME) {
+        media(search: \$search, type: \$type) {
           id
           title {
             english

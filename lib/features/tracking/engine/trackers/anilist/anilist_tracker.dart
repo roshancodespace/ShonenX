@@ -41,7 +41,10 @@ class AnilistTracker extends BaseTracker
   Authenticator get authenticator => AnilistAuthenticator();
 
   @override
-  Future<List<TrackerSearchResult>> searchMedia(String query) {
+  Future<List<TrackerSearchResult>> searchMedia(
+    String query, {
+    required MediaType type,
+  }) {
     return executeApi('SEARCH', fallback: (_, __) => [], () async {
       String normalize(String input) {
         return input
@@ -57,7 +60,10 @@ class AnilistTracker extends BaseTracker
         'https://graphql.anilist.co',
         body: {
           'query': AnilistTrackerQueries.search,
-          'variables': {'search': cleanQuery},
+          'variables': {
+            'search': cleanQuery,
+            'type': _toAnilistMediaType(type),
+          },
         },
         headers: {
           'Content-Type': 'application/json',
@@ -232,7 +238,7 @@ class AnilistTracker extends BaseTracker
         );
 
         final body = res.json;
-        
+
         if (body is! Map || body['errors'] != null) {
           return [];
         }

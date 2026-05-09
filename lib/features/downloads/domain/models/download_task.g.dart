@@ -37,34 +37,41 @@ const DownloadTaskSchema = CollectionSchema(
       name: r'fileName',
       type: IsarType.string,
     ),
-    r'mediaId': PropertySchema(id: 4, name: r'mediaId', type: IsarType.string),
+    r'headers': PropertySchema(
+      id: 4,
+      name: r'headers',
+      type: IsarType.objectList,
+
+      target: r'DownloadHeader',
+    ),
+    r'mediaId': PropertySchema(id: 5, name: r'mediaId', type: IsarType.string),
     r'progress': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'progress',
       type: IsarType.double,
     ),
     r'savePath': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'savePath',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'status',
       type: IsarType.byte,
       enumMap: _DownloadTaskstatusEnumValueMap,
     ),
     r'totalBytes': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'totalBytes',
       type: IsarType.long,
     ),
     r'updatedAt': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
-    r'url': PropertySchema(id: 10, name: r'url', type: IsarType.string),
+    r'url': PropertySchema(id: 11, name: r'url', type: IsarType.string),
   },
 
   estimateSize: _downloadTaskEstimateSize,
@@ -88,7 +95,7 @@ const DownloadTaskSchema = CollectionSchema(
     ),
   },
   links: {},
-  embeddedSchemas: {},
+  embeddedSchemas: {r'DownloadHeader': DownloadHeaderSchema},
 
   getId: _downloadTaskGetId,
   getLinks: _downloadTaskGetLinks,
@@ -103,6 +110,18 @@ int _downloadTaskEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.fileName.length * 3;
+  bytesCount += 3 + object.headers.length * 3;
+  {
+    final offsets = allOffsets[DownloadHeader]!;
+    for (var i = 0; i < object.headers.length; i++) {
+      final value = object.headers[i];
+      bytesCount += DownloadHeaderSchema.estimateSize(
+        value,
+        offsets,
+        allOffsets,
+      );
+    }
+  }
   bytesCount += 3 + object.mediaId.length * 3;
   bytesCount += 3 + object.savePath.length * 3;
   bytesCount += 3 + object.url.length * 3;
@@ -119,13 +138,19 @@ void _downloadTaskSerialize(
   writer.writeLong(offsets[1], object.downloadedBytes);
   writer.writeDouble(offsets[2], object.episodeNumber);
   writer.writeString(offsets[3], object.fileName);
-  writer.writeString(offsets[4], object.mediaId);
-  writer.writeDouble(offsets[5], object.progress);
-  writer.writeString(offsets[6], object.savePath);
-  writer.writeByte(offsets[7], object.status.index);
-  writer.writeLong(offsets[8], object.totalBytes);
-  writer.writeDateTime(offsets[9], object.updatedAt);
-  writer.writeString(offsets[10], object.url);
+  writer.writeObjectList<DownloadHeader>(
+    offsets[4],
+    allOffsets,
+    DownloadHeaderSchema.serialize,
+    object.headers,
+  );
+  writer.writeString(offsets[5], object.mediaId);
+  writer.writeDouble(offsets[6], object.progress);
+  writer.writeString(offsets[7], object.savePath);
+  writer.writeByte(offsets[8], object.status.index);
+  writer.writeLong(offsets[9], object.totalBytes);
+  writer.writeDateTime(offsets[10], object.updatedAt);
+  writer.writeString(offsets[11], object.url);
 }
 
 DownloadTask _downloadTaskDeserialize(
@@ -139,16 +164,24 @@ DownloadTask _downloadTaskDeserialize(
   object.downloadedBytes = reader.readLong(offsets[1]);
   object.episodeNumber = reader.readDouble(offsets[2]);
   object.fileName = reader.readString(offsets[3]);
+  object.headers =
+      reader.readObjectList<DownloadHeader>(
+        offsets[4],
+        DownloadHeaderSchema.deserialize,
+        allOffsets,
+        DownloadHeader(),
+      ) ??
+      [];
   object.id = id;
-  object.mediaId = reader.readString(offsets[4]);
-  object.progress = reader.readDouble(offsets[5]);
-  object.savePath = reader.readString(offsets[6]);
+  object.mediaId = reader.readString(offsets[5]);
+  object.progress = reader.readDouble(offsets[6]);
+  object.savePath = reader.readString(offsets[7]);
   object.status =
-      _DownloadTaskstatusValueEnumMap[reader.readByteOrNull(offsets[7])] ??
+      _DownloadTaskstatusValueEnumMap[reader.readByteOrNull(offsets[8])] ??
       DownloadStatus.pending;
-  object.totalBytes = reader.readLong(offsets[8]);
-  object.updatedAt = reader.readDateTime(offsets[9]);
-  object.url = reader.readString(offsets[10]);
+  object.totalBytes = reader.readLong(offsets[9]);
+  object.updatedAt = reader.readDateTime(offsets[10]);
+  object.url = reader.readString(offsets[11]);
   return object;
 }
 
@@ -168,20 +201,29 @@ P _downloadTaskDeserializeProp<P>(
     case 3:
       return (reader.readString(offset)) as P;
     case 4:
-      return (reader.readString(offset)) as P;
+      return (reader.readObjectList<DownloadHeader>(
+                offset,
+                DownloadHeaderSchema.deserialize,
+                allOffsets,
+                DownloadHeader(),
+              ) ??
+              [])
+          as P;
     case 5:
-      return (reader.readDouble(offset)) as P;
-    case 6:
       return (reader.readString(offset)) as P;
+    case 6:
+      return (reader.readDouble(offset)) as P;
     case 7:
+      return (reader.readString(offset)) as P;
+    case 8:
       return (_DownloadTaskstatusValueEnumMap[reader.readByteOrNull(offset)] ??
               DownloadStatus.pending)
           as P;
-    case 8:
-      return (reader.readLong(offset)) as P;
     case 9:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 10:
+      return (reader.readDateTime(offset)) as P;
+    case 11:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -738,6 +780,59 @@ extension DownloadTaskQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(property: r'fileName', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  headersLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'headers', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  headersIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'headers', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  headersIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'headers', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  headersLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'headers', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  headersLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'headers', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  headersLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'headers',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
       );
     });
   }
@@ -1473,7 +1568,14 @@ extension DownloadTaskQueryFilter
 }
 
 extension DownloadTaskQueryObject
-    on QueryBuilder<DownloadTask, DownloadTask, QFilterCondition> {}
+    on QueryBuilder<DownloadTask, DownloadTask, QFilterCondition> {
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition>
+  headersElement(FilterQuery<DownloadHeader> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'headers');
+    });
+  }
+}
 
 extension DownloadTaskQueryLinks
     on QueryBuilder<DownloadTask, DownloadTask, QFilterCondition> {}
@@ -1879,6 +1981,13 @@ extension DownloadTaskQueryProperty
     });
   }
 
+  QueryBuilder<DownloadTask, List<DownloadHeader>, QQueryOperations>
+  headersProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'headers');
+    });
+  }
+
   QueryBuilder<DownloadTask, String, QQueryOperations> mediaIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'mediaId');
@@ -1922,3 +2031,357 @@ extension DownloadTaskQueryProperty
     });
   }
 }
+
+// **************************************************************************
+// IsarEmbeddedGenerator
+// **************************************************************************
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+const DownloadHeaderSchema = Schema(
+  name: r'DownloadHeader',
+  id: 1302927990834472110,
+  properties: {
+    r'key': PropertySchema(id: 0, name: r'key', type: IsarType.string),
+    r'value': PropertySchema(id: 1, name: r'value', type: IsarType.string),
+  },
+
+  estimateSize: _downloadHeaderEstimateSize,
+  serialize: _downloadHeaderSerialize,
+  deserialize: _downloadHeaderDeserialize,
+  deserializeProp: _downloadHeaderDeserializeProp,
+);
+
+int _downloadHeaderEstimateSize(
+  DownloadHeader object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  bytesCount += 3 + object.key.length * 3;
+  bytesCount += 3 + object.value.length * 3;
+  return bytesCount;
+}
+
+void _downloadHeaderSerialize(
+  DownloadHeader object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeString(offsets[0], object.key);
+  writer.writeString(offsets[1], object.value);
+}
+
+DownloadHeader _downloadHeaderDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = DownloadHeader();
+  object.key = reader.readString(offsets[0]);
+  object.value = reader.readString(offsets[1]);
+  return object;
+}
+
+P _downloadHeaderDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readString(offset)) as P;
+    case 1:
+      return (reader.readString(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+extension DownloadHeaderQueryFilter
+    on QueryBuilder<DownloadHeader, DownloadHeader, QFilterCondition> {
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  keyEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'key',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  keyGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'key',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  keyLessThan(String value, {bool include = false, bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'key',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  keyBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'key',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  keyStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'key',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  keyEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'key',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  keyContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'key',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  keyMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'key',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  keyIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'key', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  keyIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'key', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  valueEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'value',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  valueGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'value',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  valueLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'value',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  valueBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'value',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  valueStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'value',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  valueEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'value',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  valueContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'value',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  valueMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'value',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  valueIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'value', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadHeader, DownloadHeader, QAfterFilterCondition>
+  valueIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'value', value: ''),
+      );
+    });
+  }
+}
+
+extension DownloadHeaderQueryObject
+    on QueryBuilder<DownloadHeader, DownloadHeader, QFilterCondition> {}

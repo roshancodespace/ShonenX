@@ -171,8 +171,8 @@ class _ExtensionsSettingsScreenState
           ],
         ),
         floatingActionButton: FloatingActionButton(
-          backgroundColor: theme.colorScheme.secondaryContainer,
-          foregroundColor: theme.colorScheme.onSecondaryContainer,
+          backgroundColor: theme.colorScheme.secondary,
+          foregroundColor: theme.colorScheme.onSecondary,
           onPressed: () {
             final repoUrlController = TextEditingController();
 

@@ -2,7 +2,24 @@ import 'package:isar_community/isar.dart';
 
 part 'download_task.g.dart';
 
-enum DownloadStatus { pending, downloading, paused, completed, failed, canceled }
+enum DownloadStatus {
+  pending,
+  downloading,
+  paused,
+  completed,
+  failed,
+  canceled,
+}
+
+@embedded
+class DownloadHeader {
+  late String key;
+  late String value;
+
+  DownloadHeader();
+
+  DownloadHeader.create({required this.key, required this.value});
+}
 
 @collection
 class DownloadTask {
@@ -16,6 +33,8 @@ class DownloadTask {
   String savePath = '';
   String fileName = '';
 
+  List<DownloadHeader> headers = [];
+
   @enumerated
   DownloadStatus status = DownloadStatus.pending;
 
@@ -25,4 +44,17 @@ class DownloadTask {
 
   DateTime createdAt = DateTime.now();
   DateTime updatedAt = DateTime.now();
+
+  @ignore
+  Map<String, String> get headersMap {
+    return {for (final header in headers) header.key: header.value};
+  }
+
+  set headersMap(Map<String, String>? value) {
+    headers =
+        value?.entries
+            .map((e) => DownloadHeader.create(key: e.key, value: e.value))
+            .toList() ??
+        [];
+  }
 }

@@ -61,8 +61,18 @@ class LibraryScreen extends ConsumerWidget {
                         return Padding(
                           padding: const EdgeInsets.only(right: 8.0),
                           child: ChoiceChip(
-                            label: Text(status.displayName),
+                            label: Text(
+                              status.displayName,
+                              style: TextStyle(
+                                color: isActive
+                                    ? theme.colorScheme.onSecondaryContainer
+                                    : theme.colorScheme.onSurface,
+                              ),
+                            ),
                             selected: isActive,
+                            selectedColor: theme.colorScheme.secondaryContainer,
+                            checkmarkColor:
+                                theme.colorScheme.onSecondaryContainer,
                             onSelected: (selected) {
                               if (selected) {
                                 ref
@@ -117,7 +127,7 @@ class LibraryScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(10.0),
                 child: GridView.builder(
                   gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: cardStyle.layout.width,
+                    maxCrossAxisExtent: cardStyle.layout.width + 10,
                     mainAxisExtent: cardStyle.layout.height,
                     childAspectRatio: cardStyle.layout.aspectRatio,
                     mainAxisSpacing: 10,

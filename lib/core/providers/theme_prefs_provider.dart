@@ -10,12 +10,14 @@ class ThemePrefsState {
   final FlexScheme flexScheme;
   final bool useAmoled;
   final bool useDynamic;
+  final String? exclusiveScheme;
 
   const ThemePrefsState({
     this.themeMode = ThemeMode.system,
     this.flexScheme = FlexScheme.deepBlue,
     this.useAmoled = false,
     this.useDynamic = false,
+    this.exclusiveScheme,
   });
 
   ThemePrefsState copyWith({
@@ -23,12 +25,15 @@ class ThemePrefsState {
     FlexScheme? flexScheme,
     bool? useAmoled,
     bool? useDynamic,
+    String? exclusiveScheme,
+    bool clearExclusiveScheme = false,
   }) {
     return ThemePrefsState(
       themeMode: themeMode ?? this.themeMode,
       flexScheme: flexScheme ?? this.flexScheme,
       useAmoled: useAmoled ?? this.useAmoled,
       useDynamic: useDynamic ?? this.useDynamic,
+      exclusiveScheme: clearExclusiveScheme ? null : (exclusiveScheme ?? this.exclusiveScheme),
     );
   }
 
@@ -38,6 +43,7 @@ class ThemePrefsState {
       'flexScheme': flexScheme.index,
       'useAmoled': useAmoled,
       'useDynamic': useDynamic,
+      'exclusiveScheme': exclusiveScheme,
     };
   }
 
@@ -48,6 +54,7 @@ class ThemePrefsState {
           FlexScheme.values[map['flexScheme'] ?? FlexScheme.deepBlue.index],
       useAmoled: map['useAmoled'] ?? false,
       useDynamic: map['useDynamic'] ?? false,
+      exclusiveScheme: map['exclusiveScheme'],
     );
   }
 

@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import 'package:shonenx/features/discovery/presentation/widgets/download_sheet.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episode_list_panel.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/manual_match_sheet.dart';
-import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
+import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
 import 'package:shonenx/features/player/presentation/player_screen.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
@@ -39,8 +42,8 @@ class EpisodesTabWidget extends ConsumerWidget {
 
     return Column(
       children: [
-        _EpisodesHeader(media: media),
-        const Divider(),
+        StaggeredFadeIn(index: 0, child: _EpisodesHeader(media: media)),
+        const StaggeredFadeIn(index: 1, child: Divider()),
         Expanded(
           child: EpisodeListPanel(
             media: media,
@@ -55,6 +58,48 @@ class EpisodesTabWidget extends ConsumerWidget {
                 ),
               );
             },
+            episodeActionsBuilder:
+                (episodeActionsContext, episode, isCurrent, isWatched) {
+                  return [
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () {
+                        AppBottomSheet.show(
+                          context: episodeActionsContext,
+                          title:
+                              'Episode ${episode.number.toString().contains('.0') ? episode.number.toInt() : episode.number}',
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                title: const Text('Download'),
+                                leading: const Icon(Icons.download),
+                                onTap: () {
+                                  episodeActionsContext.pop();
+                                  DownloadSheet.show(
+                                    context,
+                                    episode,
+                                    ref
+                                            .read(
+                                              sourcePreferenceProvider(
+                                                media.title.availableTitle,
+                                              ),
+                                            )
+                                            .value
+                                            ?.sourceInfo ??
+                                        sources.first,
+                                    media,
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.more_horiz),
+                    ),
+                  ];
+                },
           ),
         ),
       ],
@@ -69,30 +114,49 @@ class _EpisodesHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final title = media.title.availableTitle;
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final title = media.title.availableTitle;
 
     if (media.sourceId != null) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(10.0, 10.0, 10.0, 0),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
         child: Row(
           children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: cs.primaryContainer,
+              ),
+              child: Icon(
+                Icons.hub_rounded,
+                size: 18,
+                color: cs.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'SOURCE',
-                    style: textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.primary,
+                    style: textTheme.labelMedium?.copyWith(
+                      color: cs.primary,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
                     ),
                   ),
                   Text(
                     title,
-                    style: textTheme.bodyMedium,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -104,57 +168,92 @@ class _EpisodesHeader extends ConsumerWidget {
 
     final availableSources =
         ref.watch(availableAnimeSourcesProvider).value ?? [];
+
     if (availableSources.isEmpty) {
       return const SizedBox.shrink();
     }
 
     final sourceState = ref.watch(sourcePreferenceProvider(title)).value;
+
     final matchedTitle = ref.watch(
       matchedMediaProvider(title).select((s) => s.value?.matchedMedia?.title),
     );
+
     final sourceName = sourceState?.sourceInfo.name ?? 'Unknown';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10.0, 10.0, 10.0, 0),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: cs.secondaryContainer,
+            ),
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              size: 18,
+              color: cs.onSecondaryContainer,
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'MATCHED (by $sourceName)',
-                  style: textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'MATCHED',
+                      style: textTheme.labelMedium?.copyWith(
+                        color: cs.primary,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '· $sourceName',
+                      style: textTheme.labelMedium?.copyWith(
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
                 Text(
                   matchedTitle ?? 'Searching...',
-                  style: textTheme.bodyMedium,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
           ),
-          TextButton.icon(
-            onPressed: () => _showSourceSelector(
+          _HeaderIconButton(
+            icon: Icons.swap_horiz_rounded,
+            onTap: () => _showSourceSelector(
               context,
               ref,
               title,
               sourceState?.sourceInfo,
             ),
-            icon: const Icon(Icons.swap_horiz),
-            label: Text(sourceName, style: textTheme.labelLarge),
           ),
-          IconButton(
-            onPressed: () => showModalBottomSheet(
-              context: context,
-              builder: (context) =>
-                  ManualMatchSheet(mediaTitle: title, type: media.type),
-            ),
-            icon: const Icon(Icons.help_outline),
-            tooltip: 'Manual Match',
+          const SizedBox(width: 4),
+          _HeaderIconButton(
+            icon: Icons.tune_rounded,
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (_) =>
+                    ManualMatchSheet(mediaTitle: title, type: media.type),
+              );
+            },
           ),
         ],
       ),
@@ -173,21 +272,41 @@ class _EpisodesHeader extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        final cs = theme.colorScheme;
+
         return AppBottomSheet(
           title: title,
           child: ListView.builder(
+            shrinkWrap: true,
             itemCount: availableSources.length,
             itemBuilder: (context, index) {
               final sourceInfo = availableSources[index];
+              final selected = currentSource == sourceInfo;
+
               return ListTile(
-                title: Text(sourceInfo.name),
-                trailing: currentSource == sourceInfo
-                    ? const Icon(Icons.check)
-                    : null,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                leading: Icon(
+                  selected
+                      ? Icons.radio_button_checked_rounded
+                      : Icons.radio_button_off_rounded,
+                  color: selected
+                      ? cs.primary
+                      : cs.onSurfaceVariant.withValues(alpha: 0.7),
+                ),
+                title: Text(
+                  sourceInfo.name,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 onTap: () {
                   ref
                       .read(sourcePreferenceProvider(title).notifier)
                       .updateSource(sourceInfo);
+
                   Navigator.pop(sheetContext);
                 },
               );
@@ -199,44 +318,86 @@ class _EpisodesHeader extends ConsumerWidget {
   }
 }
 
+class _HeaderIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _HeaderIconButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return IconButton(
+      onPressed: onTap,
+      style: IconButton.styleFrom(
+        backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.6),
+        foregroundColor: cs.onSurfaceVariant,
+        shape: const CircleBorder(),
+        padding: EdgeInsets.zero,
+      ),
+      icon: Icon(icon, size: 20),
+    );
+  }
+}
+
 class _NoExtensionsPlaceholder extends StatelessWidget {
   const _NoExtensionsPlaceholder();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+        padding: const EdgeInsets.symmetric(horizontal: 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.extension_off_outlined,
-              size: 64,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            Container(
+              width: 68,
+              height: 68,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: cs.primaryContainer,
+              ),
+              child: Icon(
+                Icons.extension_off_rounded,
+                size: 30,
+                color: cs.onPrimaryContainer,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             Text(
               'No extensions installed',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
               textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              'You need at least one extension to stream episodes. Head to Extensions settings to get started.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              'Install an extension to start streaming episodes.',
               textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant.withValues(alpha: 0.75),
+              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 22),
             FilledButton.icon(
               onPressed: () => context.push('/settings/extensions'),
               icon: const Icon(Icons.extension_rounded),
               label: const Text('Get Extensions'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
             ),
           ],
         ),

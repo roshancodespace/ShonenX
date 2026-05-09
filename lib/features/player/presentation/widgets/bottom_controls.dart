@@ -325,7 +325,7 @@ class _BottomControlsState extends State<BottomControls> {
     required String Function(T) itemLabel,
     required void Function(T) onChanged,
     bool? isDisabled,
-    bool? withBadge = true,
+    bool withBadge = true,
     String? displayText,
     Widget? displayWidget,
     bool isHighlighted = false,
@@ -333,59 +333,21 @@ class _BottomControlsState extends State<BottomControls> {
   }) {
     return Badge(
       label: Text(items.length.toString()),
-      isLabelVisible: (withBadge ?? true) && items.length > 1,
+      isLabelVisible: withBadge && items.length > 1,
       backgroundColor: widget.theme.colorScheme.primary,
       textColor: widget.theme.colorScheme.onPrimary,
       child: InkWell(
         onTap: isDisabled == true
             ? null
             : () {
-                showModalBottomSheet(
+                AppBottomSheet.showSelector<T>(
                   context: context,
-                  isScrollControlled: true,
-                  builder: (context) {
-                    return AppBottomSheet(
-                      title: displayText ?? '',
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: items.map((item) {
-                            final isSelected = item == value;
-
-                            return ListTile(
-                              title: Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      itemLabel(item),
-                                      style: TextStyle(
-                                        fontWeight: isSelected
-                                            ? FontWeight.w600
-                                            : FontWeight.normal,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (badgeBuilder != null) ...[
-                                    const SizedBox(width: 10),
-                                    badgeBuilder(item) ??
-                                        const SizedBox.shrink(),
-                                  ],
-                                ],
-                              ),
-                              trailing: isSelected
-                                  ? const Icon(Icons.check)
-                                  : null,
-                              onTap: () {
-                                onChanged(item);
-                                Navigator.pop(context);
-                              },
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    );
-                  },
+                  title: displayText ?? '',
+                  items: items,
+                  selectedValue: value,
+                  itemLabel: itemLabel,
+                  badgeBuilder: badgeBuilder,
+                  onChanged: onChanged,
                 );
               },
         borderRadius: BorderRadius.circular(6),

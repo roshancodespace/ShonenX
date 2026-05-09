@@ -25,7 +25,7 @@ class LibraryEntry {
   UnifiedMedia toUnifiedMedia() {
     return UnifiedMedia(
       id: providerId,
-      type: MediaType.values.firstWhere((e) => e.name == type),
+      type: MediaType.values.firstWhere((e) => e.id == type),
       providerId: providerId,
       cover: cover,
       title: MediaTitle(english: title),

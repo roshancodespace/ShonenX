@@ -69,8 +69,8 @@ class SettingsNavTile extends StatelessWidget {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
-      leading: Icon(icon, color: theme.colorScheme.secondary),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      leading: Icon(icon, color: theme.colorScheme.primary),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: subtitle != null
           ? Text(
               subtitle!,
@@ -112,8 +112,8 @@ class SettingsSwitchTile extends StatelessWidget {
 
     return SwitchListTile.adaptive(
       contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
-      secondary: Icon(icon, color: theme.colorScheme.secondary),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      secondary: Icon(icon, color: theme.colorScheme.primary),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: subtitle != null
           ? Text(
               subtitle!,
@@ -170,12 +170,12 @@ class SettingsActionTile extends StatelessWidget {
           (icon != null
               ? Icon(
                   icon,
-                  color: color ?? accentColor ?? theme.colorScheme.secondary,
+                  color: color ?? accentColor ?? theme.colorScheme.primary,
                 )
               : null),
       title: Text(
         title,
-        style: TextStyle(fontWeight: FontWeight.w500, color: color),
+        style: TextStyle(fontWeight: FontWeight.w600, color: color),
       ),
       subtitle: subtitle != null
           ? Text(
@@ -261,7 +261,7 @@ class SettingsRadioTile<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return RadioListTile<T>(
       contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       value: value,
       groupValue: groupValue,
       onChanged: onChanged,
@@ -299,8 +299,8 @@ class SettingsSliderTile extends StatelessWidget {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
-      leading: Icon(icon, color: theme.colorScheme.secondary),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      leading: Icon(icon, color: theme.colorScheme.primary),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -348,8 +348,8 @@ class SettingsDropdownTile<T> extends StatelessWidget {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
-      leading: Icon(icon, color: theme.colorScheme.secondary),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      leading: Icon(icon, color: theme.colorScheme.primary),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       trailing: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
           value: value,

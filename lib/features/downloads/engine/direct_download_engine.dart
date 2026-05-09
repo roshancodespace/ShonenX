@@ -35,6 +35,11 @@ class DirectDownloadEngine implements DownloadEngine {
       int downloaded = await file.exists() ? await file.length() : 0;
 
       final request = await _client.getUrl(Uri.parse(task.url));
+      if (task.headersMap.isNotEmpty) {
+        task.headersMap.forEach((key, value) {
+          request.headers.set(key, value);
+        });
+      }
       if (downloaded > 0) {
         request.headers.set(HttpHeaders.rangeHeader, 'bytes=$downloaded-');
       }
@@ -52,7 +57,7 @@ class DirectDownloadEngine implements DownloadEngine {
       }
 
       final contentLength = response.contentLength;
-      final total = downloaded + contentLength;
+      final total = contentLength == -1 ? -1 : downloaded + contentLength;
 
       fileHandle = await file.open(mode: FileMode.append);
       int lastDbWrite = 0;
@@ -69,7 +74,7 @@ class DirectDownloadEngine implements DownloadEngine {
           onProgress(
             downloadedBytes: downloaded,
             totalBytes: total,
-            progress: total > 0 ? downloaded / total : 0.0,
+            progress: total > 0 ? downloaded / total : -1.0,
           );
         }
       }

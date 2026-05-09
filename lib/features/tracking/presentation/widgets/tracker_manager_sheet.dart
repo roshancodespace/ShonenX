@@ -6,8 +6,8 @@ import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
-import 'package:shonenx/features/tracking/engine/tracking_service.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
+import 'package:shonenx/features/tracking/engine/tracking_service.dart';
 import 'package:shonenx/features/tracking/presentation/widgets/edit_tracker_sheet.dart';
 import 'package:shonenx/features/tracking/presentation/widgets/link_tracker_dialog.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
@@ -36,7 +36,6 @@ class TrackerManagerSheet extends ConsumerWidget {
       title: 'Manage Trackers',
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ...activeTrackers.map((type) {
             final tracker = ref
@@ -53,44 +52,128 @@ class TrackerManagerSheet extends ConsumerWidget {
                 trackerMapping: isRemote ? trackerLinks[type] : null,
                 tracker: tracker,
               );
-            } else if (isAuthenticated) {
-              return ListTile(
-                leading: const Icon(Icons.sync),
-                title: Text(type.displayName),
-                subtitle: const Text('Tap to link anime'),
-                trailing: const Icon(Icons.chevron_right),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                onTap: () {
-                  if (isRemote) {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      useSafeArea: true,
-                      builder: (_) => LinkTrackerSheet(
-                        primaryMediaId: media.id,
-                        initialSearchQuery: media.title.availableTitle,
-                        tracker: tracker,
-                      ),
-                    );
-                  }
-                },
-              );
-            } else {
-              return ListTile(
-                leading: const Icon(Icons.sync),
-                title: Text(type.displayName),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                subtitle: Text('Login to ${type.displayName}'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  if (isRemote) {
-                    ref.read(authTokensProvider.notifier).login(tracker);
-                  }
-                },
-              );
             }
+
+            if (isAuthenticated) {
+              return _AvailableTrackerRow(media: media, tracker: tracker);
+            }
+
+            return _LoginTrackerRow(tracker: tracker);
           }),
         ],
+      ),
+    );
+  }
+}
+
+class _AvailableTrackerRow extends StatelessWidget {
+  final UnifiedMedia media;
+  final TrackingService tracker;
+
+  const _AvailableTrackerRow({required this.media, required this.tracker});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return ListTile(
+      minTileHeight: 40,
+      leading: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: cs.surfaceContainerHighest,
+        ),
+        child: Icon(Icons.sync_rounded, size: 20, color: cs.onSurfaceVariant),
+      ),
+      title: Text(
+        tracker.type.displayName,
+        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text(
+          'Tap to link anime',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: cs.onSurfaceVariant.withValues(alpha: 0.78),
+          ),
+        ),
+      ),
+      trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
+      onTap: () {
+        if (tracker is RemoteTracker) {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            useSafeArea: true,
+            builder: (_) => LinkTrackerSheet(
+              primaryMediaId: media.id,
+              initialSearchQuery: media.title.availableTitle,
+              tracker: tracker as RemoteTracker,
+            ),
+          );
+        }
+      },
+    );
+  }
+}
+
+class _LoginTrackerRow extends ConsumerWidget {
+  final TrackingService tracker;
+
+  const _LoginTrackerRow({required this.tracker});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return ListTile(
+      minTileHeight: 40,
+      leading: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: cs.surfaceContainerHighest,
+        ),
+        child: Icon(
+          Icons.lock_outline_rounded,
+          size: 20,
+          color: cs.onSurfaceVariant,
+        ),
+      ),
+      title: Text(
+        tracker.type.displayName,
+        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text(
+          'Login required',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: cs.onSurfaceVariant.withValues(alpha: 0.78),
+          ),
+        ),
+      ),
+      trailing: FilledButton.tonal(
+        onPressed: () {
+          if (tracker is RemoteTracker) {
+            ref
+                .read(authTokensProvider.notifier)
+                .login(tracker as RemoteTracker);
+          }
+        },
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(0, 42),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+        child: const Text('Login'),
       ),
     );
   }
@@ -115,6 +198,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
       builder: (context) {
         bool deleteRemote = false;
         bool isDeleting = false;
+
         return StatefulBuilder(
           builder: (context, setState) {
             return AppBottomSheet(
@@ -124,60 +208,65 @@ class _LinkedTrackerRow extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Are you sure you want to completely remove the link to ${tracker.type.displayName}?',
+                    'Remove link with ${tracker.type.displayName}?',
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
                   CheckboxListTile(
-                    title: const Text('Also drop from remote list'),
-                    subtitle: const Text('Erases tracked progress on remote.'),
                     value: deleteRemote,
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: const Text('Also remove remote entry'),
+                    subtitle: const Text(
+                      'Deletes tracked progress from remote service.',
+                    ),
                     onChanged: isDeleting
                         ? null
-                        : (val) => setState(() => deleteRemote = val ?? false),
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: EdgeInsets.zero,
+                        : (value) {
+                            setState(() {
+                              deleteRemote = value ?? false;
+                            });
+                          },
                   ),
                   const SizedBox(height: 24),
                   FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.error,
-                      foregroundColor: Theme.of(context).colorScheme.onError,
-                    ),
                     onPressed: isDeleting
                         ? null
                         : () async {
-                            setState(() => isDeleting = true);
+                            setState(() {
+                              isDeleting = true;
+                            });
+
                             if (deleteRemote) {
                               try {
                                 await tracker.removeEntry(
                                   trackingId:
                                       trackerMapping?.trackingId ?? media.id,
                                 );
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Failed to delete remote data: $e',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              }
+                              } catch (_) {}
                             }
+
                             ref
                                 .read(trackerLinkProvider(media.id).notifier)
                                 .removeLink(tracker.type);
-                            if (context.mounted) context.pop();
+
+                            if (context.mounted) {
+                              context.pop();
+                            }
                           },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      foregroundColor: Theme.of(context).colorScheme.onError,
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
                     child: isDeleting
                         ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('Remove Connection'),
                   ),
@@ -195,64 +284,91 @@ class _LinkedTrackerRow extends ConsumerWidget {
     final trackingState = ref.watch(
       mediaTrackingProvider(TrackingQuery(tracker.type, media.id)),
     );
-    final colorScheme = Theme.of(context).colorScheme;
+
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     return trackingState.when(
-      loading: () => ListTile(
-        title: Text(tracker.type.displayName),
-        trailing: const SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      ),
-      error: (err, stack) => ListTile(
-        leading: Icon(Icons.error_outline, color: colorScheme.error),
-        title: Text(tracker.type.displayName),
-        subtitle: const Text('Failed to load'),
-        trailing: IconButton(
-          icon: const Icon(Icons.refresh),
-          onPressed: () => ref.invalidate(
-            mediaTrackingProvider(TrackingQuery(tracker.type, media.id)),
+      loading: () {
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: 20),
+          child: Center(child: CircularProgressIndicator()),
+        );
+      },
+      error: (_, __) {
+        return ListTile(
+          minTileHeight: 40,
+          leading: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: cs.errorContainer,
+            ),
+            child: Icon(
+              Icons.error_outline_rounded,
+              color: cs.onErrorContainer,
+              size: 20,
+            ),
           ),
-        ),
-      ),
+          title: Text(
+            tracker.type.displayName,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          subtitle: const Text('Failed to load'),
+          trailing: _TrackerActionButton(
+            icon: Icons.refresh_rounded,
+            onTap: () {
+              ref.invalidate(
+                mediaTrackingProvider(TrackingQuery(tracker.type, media.id)),
+              );
+            },
+          ),
+        );
+      },
       data: (listItem) {
         final isRemote = tracker is RemoteTracker;
-        final isAuth = !isRemote || tracker.type.isAuthenticated(ref);
 
-        if (!isAuth) {
+        if (listItem == null) {
           return ListTile(
-            leading: Icon(Icons.cloud_off, color: colorScheme.onSurfaceVariant),
-            title: Text(tracker.type.displayName),
-            subtitle: const Text('Not logged in'),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-            trailing: FilledButton.tonal(
-              onPressed: () {
-                if (isRemote) {
-                  ref
-                      .read(authTokensProvider.notifier)
-                      .login(tracker as RemoteTracker);
-                }
-              },
-              child: const Text('Login'),
+            minTileHeight: 40,
+            leading: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: cs.surfaceContainerHighest,
+              ),
+              child: Icon(
+                Icons.cloud_off_rounded,
+                size: 20,
+                color: cs.onSurfaceVariant,
+              ),
             ),
-          );
-        } else if (listItem == null) {
-          return ListTile(
-            leading: Icon(Icons.cloud_off, color: colorScheme.onSurfaceVariant),
             title: Text(
-              '${tracker.type.displayName} - (${trackerMapping?.trackingTitle ?? media.title.availableTitle})',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              tracker.type.displayName,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            subtitle: const Text('Not in list'),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Not in list',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.78),
+                ),
+              ),
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (isRemote)
-                  IconButton.outlined(
-                    onPressed: () {
+                if (isRemote) ...[
+                  _TrackerActionButton(
+                    icon: Icons.swap_horiz_rounded,
+                    onTap: () {
                       showModalBottomSheet(
                         context: context,
                         isScrollControlled: true,
@@ -264,15 +380,15 @@ class _LinkedTrackerRow extends ConsumerWidget {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.swap_horiz),
                   ),
-                const SizedBox(width: 10),
+                  const SizedBox(width: 8),
+                ],
                 FilledButton.tonal(
                   onPressed: () {
                     final blankItem = TrackedListItem(
                       status: TrackedStatus.unknown,
                       progress: 0,
-                      score: 0.0,
+                      score: 0,
                     );
 
                     showModalBottomSheet(
@@ -286,6 +402,13 @@ class _LinkedTrackerRow extends ConsumerWidget {
                       ),
                     );
                   },
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 42),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
                   child: const Text('Add'),
                 ),
               ],
@@ -294,34 +417,49 @@ class _LinkedTrackerRow extends ConsumerWidget {
         }
 
         return ListTile(
-          leading: Icon(Icons.bookmark_added, color: colorScheme.primary),
+          minTileHeight: 40,
+          leading: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: cs.primaryContainer,
+            ),
+            child: Icon(
+              Icons.bookmark_added_rounded,
+              size: 20,
+              color: cs.onPrimaryContainer,
+            ),
+          ),
           title: Text(
-            '${tracker.type.displayName} - (${trackerMapping?.trackingTitle ?? media.title.availableTitle})',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            tracker.type.displayName,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              height: 1.1,
+            ),
           ),
-          subtitle: Text(
-            'Ep ${listItem.progress.toInt()} • ${listItem.status.displayName}',
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Ep ${listItem.progress.toInt()} • ${listItem.status.displayName}',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant.withValues(alpha: 0.78),
+              ),
+            ),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 10),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton.outlined(
-                onPressed: () => _removeTracker(context, ref),
-                icon: const Icon(Icons.link_off),
-                style: IconButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error,
-                  side: BorderSide(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.error.withValues(alpha: 0.5),
-                  ),
-                ),
+              _TrackerActionButton(
+                icon: Icons.link_off_rounded,
+                color: cs.error,
+                onTap: () => _removeTracker(context, ref),
               ),
-              const SizedBox(width: 10),
-              if (isRemote)
-                IconButton.outlined(
-                  onPressed: () {
+              if (isRemote) ...[
+                const SizedBox(width: 6),
+                _TrackerActionButton(
+                  icon: Icons.swap_horiz_rounded,
+                  onTap: () {
                     showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,
@@ -333,9 +471,9 @@ class _LinkedTrackerRow extends ConsumerWidget {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.swap_horiz),
                 ),
-              if (isRemote) const SizedBox(width: 10),
+              ],
+              const SizedBox(width: 8),
               FilledButton.tonal(
                 onPressed: () {
                   showModalBottomSheet(
@@ -349,12 +487,49 @@ class _LinkedTrackerRow extends ConsumerWidget {
                     ),
                   );
                 },
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(0, 42),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
                 child: const Text('Edit'),
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _TrackerActionButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color? color;
+
+  const _TrackerActionButton({
+    required this.icon,
+    required this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return IconButton(
+      onPressed: onTap,
+      style: IconButton.styleFrom(
+        minimumSize: const Size(42, 42),
+        maximumSize: const Size(42, 42),
+        padding: EdgeInsets.zero,
+        backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.7),
+        foregroundColor: color ?? cs.onSurfaceVariant,
+        shape: const CircleBorder(),
+      ),
+      icon: Icon(icon, size: 20),
     );
   }
 }

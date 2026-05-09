@@ -8,6 +8,7 @@ class AnilistTrackerQueries {
             english
             romaji
           }
+          format
           coverImage {
             large
           }
@@ -51,15 +52,26 @@ class AnilistTrackerQueries {
   ''';
 
   static const String userLibrary = '''
-    query(\$userId: Int, \$status: MediaListStatus, \$page: Int) {
+    query(
+      \$userId: Int,
+      \$status: MediaListStatus,
+      \$page: Int,
+      \$type: MediaType,
+    ) {
       Page(page: \$page, perPage: 50) {
         pageInfo {
           hasNextPage
         }
-        mediaList(userId: \$userId, status: \$status, type: ANIME) {
+        mediaList(
+          userId: \$userId,
+          status: \$status,
+          type: \$type,
+          sort: [STARTED_ON_DESC],
+        ) {
           media {
             id
             type
+            format
             title { english romaji native }
             coverImage { large }
             status
@@ -95,6 +107,7 @@ class AnilistTrackerQueries {
             english
             native
           }
+          format
           coverImage {
             large
           }
@@ -132,6 +145,7 @@ class AnilistTrackerQueries {
             romaji
             english
           }
+          format
           coverImage {
             large
           }
@@ -160,6 +174,7 @@ class AnilistTrackerQueries {
           english
           native
         }
+        format
         coverImage {
           large
         }
@@ -185,6 +200,7 @@ class AnilistTrackerQueries {
             node {
               id
               type
+              format
               title {
                 romaji
                 english

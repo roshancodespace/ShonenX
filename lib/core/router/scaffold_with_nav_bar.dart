@@ -1,43 +1,33 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/features/downloads/domain/models/download_task.dart';
+import 'package:shonenx/features/downloads/providers/download_provider.dart';
 
 class ScaffoldWithNavBar extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
-
   const ScaffoldWithNavBar({super.key, required this.navigationShell});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
       extendBody: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final isLarge = constraints.maxWidth > 800;
-
-          if (isLarge) {
+          if (constraints.maxWidth > 800) {
             return Row(
               children: [
-                _SideNavBar(
-                  navigationShell: navigationShell,
-                  colorScheme: colorScheme,
-                ),
+                _SideNavBar(navigationShell: navigationShell),
                 Expanded(child: navigationShell),
               ],
             );
           }
-
           return Stack(
             fit: StackFit.expand,
             children: [
               navigationShell,
-              _BottomNavBar(
-                navigationShell: navigationShell,
-                colorScheme: colorScheme,
-              ),
+              _BottomNavV2(navigationShell: navigationShell),
             ],
           );
         },
@@ -46,90 +36,204 @@ class ScaffoldWithNavBar extends StatelessWidget {
   }
 }
 
-class _BottomNavBar extends StatelessWidget {
+class _NavDest {
+  final IconData icon;
+  final String label;
+  const _NavDest(this.icon, this.label);
+}
+
+const _destinations = [
+  _NavDest(Icons.home_outlined, 'Home'),
+  _NavDest(Icons.search_rounded, 'Search'),
+  _NavDest(Icons.library_books_outlined, 'Library'),
+];
+
+class _BottomNavV2 extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
-  final ColorScheme colorScheme;
-
-  const _BottomNavBar({
-    required this.navigationShell,
-    required this.colorScheme,
-  });
-
-  Widget _buildGlassPill({required Widget child, double? width}) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-        child: SizedBox(
-          height: 60,
-          width: width,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              color: colorScheme.surface.withValues(alpha: 0.5),
-              border: Border.all(color: colorScheme.outline),
-            ),
-            child: Padding(padding: const EdgeInsets.all(8), child: child),
-          ),
-        ),
-      ),
-    );
-  }
+  const _BottomNavV2({required this.navigationShell});
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
+    final cs = Theme.of(context).colorScheme;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+
+    final barHeight = screenWidth < 400 ? 60.0 : 68.0;
+    final iconSize = screenWidth < 400 ? 22.0 : 25.0;
+    final fontSize = screenWidth < 400 ? 13.0 : 14.5;
+    final hPad = screenWidth < 400 ? 6.0 : 8.0;
+    final itemRadius = barHeight / 2 - 2;
 
     return SafeArea(
       child: Align(
         alignment: Alignment.bottomCenter,
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: size.height * 0.01),
+          padding: EdgeInsets.only(bottom: screenHeight * 0.018),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              _buildGlassPill(
-                width: size.width * 0.65,
-                child: Row(
-                  children: [
-                    _NavItem(
-                      index: 0,
-                      currentIndex: navigationShell.currentIndex,
-                      icon: Icons.home,
-                      onTap: () => navigationShell.goBranch(0),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(barHeight / 2),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                  child: Container(
+                    height: barHeight,
+                    padding: EdgeInsets.all(hPad),
+                    decoration: BoxDecoration(
+                      color: cs.surface.withValues(alpha: 0.75),
+                      borderRadius: BorderRadius.circular(barHeight / 2),
+                      border: Border.all(
+                        color: cs.outlineVariant.withValues(alpha: 0.45),
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    _NavItem(
-                      index: 1,
-                      currentIndex: navigationShell.currentIndex,
-                      icon: Icons.search,
-                      onTap: () => navigationShell.goBranch(1),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(_destinations.length, (i) {
+                        final active = navigationShell.currentIndex == i;
+                        return GestureDetector(
+                          onTap: () => navigationShell.goBranch(i),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOutCubic,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: active ? 18 : 14,
+                              vertical: hPad + 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: active ? cs.primary : Colors.transparent,
+                              borderRadius: BorderRadius.circular(itemRadius),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _destinations[i].icon,
+                                  color: active
+                                      ? cs.onPrimary
+                                      : cs.onSurfaceVariant.withValues(
+                                          alpha: 0.6,
+                                        ),
+                                  size: iconSize,
+                                ),
+                                ClipRect(
+                                  child: AnimatedSize(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOutCubic,
+                                    child: active
+                                        ? Padding(
+                                            padding: const EdgeInsets.only(
+                                              left: 8,
+                                            ),
+                                            child: Text(
+                                              _destinations[i].label,
+                                              style: TextStyle(
+                                                fontSize: fontSize,
+                                                fontWeight: FontWeight.w600,
+                                                color: cs.onPrimary,
+                                              ),
+                                            ),
+                                          )
+                                        : const SizedBox.shrink(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
                     ),
-                    const SizedBox(width: 8),
-                    _NavItem(
-                      index: 2,
-                      currentIndex: navigationShell.currentIndex,
-                      icon: Icons.library_books,
-                      onTap: () => navigationShell.goBranch(2),
-                      isLast: true,
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              // const SizedBox(width: 12),
-              // _buildGlassPill(
-              //   width: 60,
-              //   child: Center(
-              //     child: IconButton(
-              //       padding: EdgeInsets.zero,
-              //       icon: Icon(Icons.download, color: colorScheme.onSurface),
-              //       onPressed: () {
-              //         context.push('/downloads');
-              //       },
-              //     ),
-              //   ),
-              // ),
+              SizedBox(width: hPad + 4),
+              _DownloadButton(
+                colorScheme: cs,
+                size: barHeight,
+                iconSize: iconSize,
+                padding: hPad,
+              ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DownloadButton extends ConsumerWidget {
+  final ColorScheme colorScheme;
+  final double size;
+  final double iconSize;
+  final double padding;
+  const _DownloadButton({
+    required this.colorScheme,
+    required this.size,
+    required this.iconSize,
+    required this.padding,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tasks = ref.watch(downloadTasksProvider).value ?? [];
+    final activeTasks = tasks
+        .where(
+          (t) =>
+              t.status == DownloadStatus.downloading ||
+              t.status == DownloadStatus.pending,
+        )
+        .toList();
+    final count = activeTasks.length;
+
+    double? progress;
+    if (count > 0) {
+      final valid = activeTasks.where((t) => t.progress >= 0);
+      if (valid.isNotEmpty) {
+        progress =
+            valid.map((t) => t.progress).reduce((a, b) => a + b) / valid.length;
+      }
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(size / 2),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: colorScheme.surface.withValues(alpha: 0.75),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+            ),
+          ),
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            icon: Badge(
+              isLabelVisible: count > 0,
+              label: Text('$count'),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (count > 0)
+                    SizedBox(
+                      width: iconSize + 8,
+                      height: iconSize + 8,
+                      child: CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 2.5,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  Icon(
+                    Icons.download_outlined,
+                    color: colorScheme.onSurface,
+                    size: iconSize,
+                  ),
+                ],
+              ),
+            ),
+            onPressed: () => context.push('/downloads'),
           ),
         ),
       ),
@@ -139,48 +243,60 @@ class _BottomNavBar extends StatelessWidget {
 
 class _SideNavBar extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
-  final ColorScheme colorScheme;
-
-  const _SideNavBar({required this.navigationShell, required this.colorScheme});
+  const _SideNavBar({required this.navigationShell});
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    const barWidth = 72.0;
+    const hPad = 8.0;
+
     return SafeArea(
-      child: Container(
-        width: 80,
-        margin: const EdgeInsets.fromLTRB(10, 10, 0, 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(50),
-          color: colorScheme.surface.withValues(alpha: 0.5),
-          border: Border.all(color: colorScheme.outline),
-        ),
-        padding: const EdgeInsets.all(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         child: Column(
           children: [
-            _NavItem(
-              index: 0,
-              radius: 50,
-              currentIndex: navigationShell.currentIndex,
-              icon: Icons.home,
-              onTap: () => navigationShell.goBranch(0),
-              forSideBar: true,
+            Expanded(
+              flex: 3,
+              child: _GlassPillContainer(
+                width: barWidth,
+                padding: hPad,
+                child: Column(
+                  children: List.generate(_destinations.length, (i) {
+                    final active = navigationShell.currentIndex == i;
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () => navigationShell.goBranch(i),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 400),
+                          curve: Curves.easeOutCubic,
+                          width: double.infinity,
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          decoration: BoxDecoration(
+                            color: active ? cs.primary : Colors.transparent,
+                            borderRadius: BorderRadius.circular(barWidth / 2),
+                          ),
+                          child: _PillContent(
+                            icon: _destinations[i].icon,
+                            label: _destinations[i].label,
+                            active: active,
+                            cs: cs,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
             ),
-            _NavItem(
-              index: 1,
-              radius: 50,
-              currentIndex: navigationShell.currentIndex,
-              icon: Icons.search,
-              onTap: () => navigationShell.goBranch(1),
-              forSideBar: true,
-            ),
-            _NavItem(
-              index: 2,
-              radius: 50,
-              currentIndex: navigationShell.currentIndex,
-              icon: Icons.library_books,
-              onTap: () => navigationShell.goBranch(2),
-              forSideBar: true,
-              isLast: true,
+            const SizedBox(height: 12),
+            Expanded(
+              flex: 1,
+              child: _GlassPillContainer(
+                width: barWidth,
+                padding: hPad,
+                child: _TallDownloadPillContent(cs: cs),
+              ),
             ),
           ],
         ),
@@ -189,64 +305,128 @@ class _SideNavBar extends StatelessWidget {
   }
 }
 
-class _NavItem extends StatelessWidget {
-  final int index;
-  final int currentIndex;
-  final bool isLast;
-  final double radius;
-  final VoidCallback onTap;
-  final IconData icon;
-  final bool forSideBar;
+class _GlassPillContainer extends StatelessWidget {
+  final double width;
+  final double padding;
+  final Widget child;
 
-  const _NavItem({
-    required this.index,
-    required this.currentIndex,
-    required this.onTap,
-    required this.icon,
-    this.radius = 30.0,
-    this.isLast = false,
-    this.forSideBar = false,
+  const _GlassPillContainer({
+    required this.width,
+    required this.padding,
+    required this.child,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isActive = currentIndex == index;
-    final isFirst = index == 0;
-
-    final borderRadius = BorderRadius.only(
-      topLeft: Radius.circular(isFirst ? radius : 0),
-      topRight: Radius.circular(
-        (isLast && !forSideBar) || (forSideBar && isFirst) ? radius : 0,
-      ),
-      bottomLeft: Radius.circular(
-        (isFirst && !forSideBar) || (forSideBar && isLast) ? radius : 0,
-      ),
-      bottomRight: Radius.circular(isLast ? radius : 0),
-    );
-
-    return Expanded(
-      child: InkWell(
-        borderRadius: borderRadius,
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          alignment: Alignment.center,
+    final cs = Theme.of(context).colorScheme;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(width / 2),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          width: width,
+          padding: EdgeInsets.all(padding),
           decoration: BoxDecoration(
-            borderRadius: borderRadius,
-            color: isActive
-                ? colorScheme.primary.withValues(alpha: 0.2)
-                : Colors.transparent,
+            color: cs.surface.withValues(alpha: 0.75),
+            borderRadius: BorderRadius.circular(width / 2),
             border: Border.all(
-              color: isActive ? colorScheme.primary : Colors.transparent,
+              color: cs.outlineVariant.withValues(alpha: 0.45),
             ),
           ),
-          child: Icon(
-            icon,
-            color: isActive
-                ? colorScheme.primary
-                : colorScheme.onSurfaceVariant,
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _PillContent extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final ColorScheme cs;
+  final bool isDownload;
+
+  const _PillContent({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.cs,
+    this.isDownload = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          icon,
+          color: active || isDownload
+              ? (isDownload ? cs.onSurface : cs.onPrimary)
+              : cs.onSurfaceVariant.withValues(alpha: 0.6),
+          size: 25,
+        ),
+        ClipRect(
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            child: (active || isDownload)
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: RotatedBox(
+                      quarterTurns: -1,
+                      child: Text(
+                        label.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 14,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.bold,
+                          color: isDownload ? cs.onSurface : cs.onPrimary,
+                        ),
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TallDownloadPillContent extends ConsumerWidget {
+  final ColorScheme cs;
+
+  const _TallDownloadPillContent({required this.cs});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tasks = ref.watch(downloadTasksProvider).value ?? [];
+    final count = tasks
+        .where(
+          (t) =>
+              t.status == DownloadStatus.downloading ||
+              t.status == DownloadStatus.pending,
+        )
+        .length;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(100),
+        onTap: () => context.push('/downloads'),
+        child: Badge(
+          isLabelVisible: count > 0,
+          label: Text('$count'),
+          backgroundColor: cs.primary,
+          textColor: cs.onPrimary,
+          child: _PillContent(
+            icon: Icons.download_outlined,
+            label: 'DOWNLOAD',
+            active: false,
+            isDownload: true,
+            cs: cs,
           ),
         ),
       ),

@@ -10,6 +10,7 @@ import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/base_tracker.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/engine/trackers/mal/mal_authenticator.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/tracker_search_result.dart';
 import 'mal_metadata.dart';
 
@@ -173,6 +174,7 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
   @override
   Future<List<LibraryEntry>> fetchUserLibrary({
     TrackedStatus status = TrackedStatus.watching,
+    MediaType mediaType = MediaType.ANIME,
     int page = 1,
   }) async {
     final token = await _getToken();

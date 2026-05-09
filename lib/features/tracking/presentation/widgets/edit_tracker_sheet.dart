@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
@@ -187,6 +188,8 @@ class _EditTrackerSheetState extends ConsumerState<EditTrackerSheet> {
                                 children: [
                                   IntrinsicWidth(
                                     child: TextField(
+                                      canRequestFocus: true,
+                                      autofocus: true,
                                       controller: TextEditingController(
                                         text: _progress.toInt().toString(),
                                       ),
@@ -211,6 +214,9 @@ class _EditTrackerSheetState extends ConsumerState<EditTrackerSheet> {
                                           );
                                         }
                                       },
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
                                     ),
                                   ),
                                   Text(

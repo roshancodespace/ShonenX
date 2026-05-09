@@ -49,6 +49,7 @@ Future<void> main(List<String> args) async {
 
       case 'linux':
         await run(['flutter', 'build', 'linux', ...common]);
+        await run(['zip', '-r', 'linux-bundle.zip', 'build/linux/x64/release/bundle']);
         break;
 
       case 'windows':

@@ -9,7 +9,9 @@ import 'package:shonenx/core/models/component_layout.dart';
 enum MediaCardStyle {
   classic(ComponentLayout(width: 120, height: 200)),
   minimal(ComponentLayout(width: 120, height: 180)),
-  expressive(ComponentLayout(width: 140, height: 230));
+  expressive(ComponentLayout(width: 140, height: 230)),
+  material(ComponentLayout(width: 135, height: 210)),
+  liquidGlass(ComponentLayout(width: 140, height: 210));
 
   final ComponentLayout layout;
   const MediaCardStyle(this.layout);
@@ -22,6 +24,10 @@ enum MediaCardStyle {
         return 'Minimal';
       case MediaCardStyle.expressive:
         return 'Expressive';
+      case MediaCardStyle.material:
+        return 'Material';
+      case MediaCardStyle.liquidGlass:
+        return 'Liquid Glass';
     }
   }
 }

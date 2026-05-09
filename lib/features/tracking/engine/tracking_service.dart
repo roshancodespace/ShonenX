@@ -4,6 +4,7 @@ import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 abstract class TrackingService {
   TrackerType get type;
@@ -19,6 +20,7 @@ abstract class TrackingService {
 
   Future<List<LibraryEntry>> fetchUserLibrary({
     TrackedStatus status = TrackedStatus.watching,
+    MediaType mediaType = MediaType.ANIME,
     int page = 1,
   });
 

@@ -10,6 +10,7 @@ import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/base_tracker.dart';
 import 'package:shonenx/features/tracking/engine/trackers/anilist/anilist_tracker_queries.dart';
 import 'package:shonenx/features/tracking/engine/trackers/anilist/anilist_authenticator.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/tracker_search_result.dart';
 import 'package:shonenx/core/network/auth/authenticator.dart';
 import 'anilist_metadata.dart';
@@ -198,6 +199,7 @@ class AnilistTracker extends BaseTracker
   @override
   Future<List<LibraryEntry>> fetchUserLibrary({
     TrackedStatus status = TrackedStatus.watching,
+    MediaType mediaType = MediaType.ANIME,
     int page = 1,
   }) async {
     final token = await _getToken();
@@ -220,6 +222,7 @@ class AnilistTracker extends BaseTracker
               'userId': parsedUserId,
               'status': _toAnilistStatus(status),
               'page': page,
+              'type': _toAnilistMediaType(mediaType),
             },
           },
           headers: {
@@ -229,7 +232,7 @@ class AnilistTracker extends BaseTracker
         );
 
         final body = res.json;
-
+        
         if (body is! Map || body['errors'] != null) {
           return [];
         }
@@ -247,7 +250,7 @@ class AnilistTracker extends BaseTracker
 
               return LibraryEntry()
                 ..providerId = media['id']?.toString() ?? ''
-                ..type = media['type'] ?? 'ANIME'
+                ..type = _fromAnilistMediaType(media['type'])
                 ..title =
                     media['title']?['english'] ??
                     media['title']?['romaji'] ??
@@ -320,6 +323,26 @@ class AnilistTracker extends BaseTracker
         return 'DROPPED';
       case TrackedStatus.unknown:
         return 'CURRENT';
+    }
+  }
+
+  String _toAnilistMediaType(MediaType type) {
+    switch (type) {
+      case MediaType.ANIME:
+        return 'ANIME';
+      case MediaType.MANGA:
+        return 'MANGA';
+    }
+  }
+
+  String _fromAnilistMediaType(String type) {
+    switch (type) {
+      case 'ANIME':
+        return 'anime';
+      case 'MANGA':
+        return 'manga';
+      default:
+        return 'anime';
     }
   }
 }

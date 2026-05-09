@@ -13,6 +13,100 @@ class AppBottomSheet extends StatelessWidget {
     this.padding = const EdgeInsets.fromLTRB(20, 12, 20, 20),
   });
 
+  static Future<T?> show<T>({
+    required BuildContext context,
+    required String title,
+    required Widget child,
+    bool isScrollControlled = true,
+    bool useRootNavigator = false,
+    bool enableDrag = true,
+    bool useSafeArea = true,
+    EdgeInsetsGeometry padding = const EdgeInsets.fromLTRB(20, 12, 20, 20),
+  }) {
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: isScrollControlled,
+      useRootNavigator: useRootNavigator,
+      enableDrag: enableDrag,
+      useSafeArea: useSafeArea,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return AppBottomSheet(title: title, padding: padding, child: child);
+      },
+    );
+  }
+
+  static Future<T?> showSelector<T>({
+    required BuildContext context,
+    required String title,
+    required List<T> items,
+    required String Function(T item) itemLabel,
+    required void Function(T item) onChanged,
+    T? selectedValue,
+    Widget? Function(T item)? badgeBuilder,
+    bool closeOnSelect = true,
+    bool isScrollControlled = true,
+    bool useRootNavigator = false,
+    bool enableDrag = true,
+    bool useSafeArea = true,
+    EdgeInsetsGeometry padding = const EdgeInsets.fromLTRB(20, 12, 20, 20),
+    Widget? Function(T item, bool isSelected)? trailingBuilder,
+  }) {
+    return show<T>(
+      context: context,
+      title: title,
+      isScrollControlled: isScrollControlled,
+      useRootNavigator: useRootNavigator,
+      enableDrag: enableDrag,
+      useSafeArea: useSafeArea,
+      padding: padding,
+      child: Builder(
+        builder: (sheetContext) {
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: items.map((item) {
+                final isSelected = item == selectedValue;
+
+                return ListTile(
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          itemLabel(item),
+                          style: TextStyle(
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (badgeBuilder != null) ...[
+                        const SizedBox(width: 10),
+                        badgeBuilder(item) ?? const SizedBox.shrink(),
+                      ],
+                    ],
+                  ),
+                  trailing:
+                      trailingBuilder?.call(item, isSelected) ??
+                      (isSelected ? const Icon(Icons.check) : null),
+                  onTap: () {
+                    onChanged(item);
+
+                    if (closeOnSelect) {
+                      sheetContext.pop(item);
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -21,7 +115,7 @@ class AppBottomSheet extends StatelessWidget {
     return Container(
       margin: EdgeInsets.only(bottom: bottomInset),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainer,
+        color: colorScheme.surfaceContainer,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Padding(
@@ -42,7 +136,6 @@ class AppBottomSheet extends StatelessWidget {
               ),
             ),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: Text(

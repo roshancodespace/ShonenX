@@ -9,6 +9,7 @@ import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/media_card.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/notification_toggle.dart';
+import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 
 class AboutTabWidget extends ConsumerWidget {
   final UnifiedMedia media;
@@ -23,41 +24,68 @@ class AboutTabWidget extends ConsumerWidget {
     final hasTags = media.tags != null && media.tags!.isNotEmpty;
     final hasRelations = media.relations != null && media.relations!.isNotEmpty;
 
-    return ListView(
-      padding: const EdgeInsets.all(10),
-      children: [
-        if (media.airingAt != null) ...[
-          _AiringBanner(
+    final items = <Widget>[];
+
+    if (media.airingAt != null) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: _AiringBanner(
             mediaId: media.id,
             mediaTitle: media.title.availableTitle,
             airingAt: media.airingAt!,
             nextEpisode: media.nextEpisode,
           ),
-          const SizedBox(height: 16),
-        ],
+        ),
+      );
+    }
 
-        Synopsis(description: media.description ?? ''),
+    items.add(Synopsis(description: media.description ?? ''));
 
-        if (hasTags) ...[
-          const SizedBox(height: 16),
-          Text('Tags', style: textTheme.headlineSmall),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 4.0,
-            runSpacing: 4.0,
-            children: media.tags!
-                .map((tag) => _TagChip(label: tag.name))
-                .toList(),
+    if (hasTags) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Tags', style: textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 4.0,
+                runSpacing: 4.0,
+                children: media.tags!
+                    .map((tag) => _TagChip(label: tag.name))
+                    .toList(),
+              ),
+            ],
           ),
-        ],
+        ),
+      );
+    }
 
-        if (hasRelations) ...[
-          const SizedBox(height: 16),
-          Text('Relations', style: textTheme.headlineSmall),
-          const SizedBox(height: 12),
-          _RelationsList(relations: media.relations!),
-        ],
-      ],
+    if (hasRelations) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Relations', style: textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              _RelationsList(relations: media.relations!),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(10),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        return StaggeredFadeIn(index: index, child: items[index]);
+      },
     );
   }
 }
@@ -173,6 +201,7 @@ class _RelationsList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
+    relations.removeWhere((e) => e.type != MediaType.ANIME);
 
     return SizedBox(
       height: style.layout.height,
@@ -182,14 +211,14 @@ class _RelationsList extends ConsumerWidget {
         itemCount: relations.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final season = relations[index];
+          final relation = relations[index];
           return MediaCard(
-            tag: 'details-${season.id}',
-            title: season.title.availableTitle,
-            imageUrl: season.cover ?? season.banner ?? '',
+            tag: 'details-${relation.id}',
+            title: relation.title.availableTitle,
+            imageUrl: relation.cover ?? relation.banner ?? '',
             onTap: () => context.pushReplacement(
-              '/details/${season.type.name}?tag=details-${season.id}',
-              extra: season,
+              '/details/${relation.type.id}?tag=details-${relation.id}',
+              extra: relation,
             ),
             style: style,
           );

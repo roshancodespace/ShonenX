@@ -1,5 +1,10 @@
 // ignore: constant_identifier_names
-enum MediaType { ANIME, MANGA }
+enum MediaType {
+  ANIME,
+  MANGA;
+
+  String get id => name.toLowerCase();
+}
 
 class UnifiedMedia {
   final String id;
@@ -8,6 +13,7 @@ class UnifiedMedia {
   final String? providerId;
   final String? idMal;
   final MediaTitle title;
+  final String? format;
   final String? cover;
   final String? banner;
   final String? description;
@@ -28,6 +34,7 @@ class UnifiedMedia {
     this.title = const MediaTitle(),
     this.providerId,
     this.idMal,
+    this.format,
     this.cover,
     this.banner,
     this.description,
@@ -72,6 +79,7 @@ extension UnifiedMediaX on UnifiedMedia {
       sourceId: other.sourceId ?? sourceId,
       providerId: other.providerId ?? providerId,
       idMal: other.idMal ?? idMal,
+      format: other.format ?? format,
 
       title: title.merge(other.title),
 

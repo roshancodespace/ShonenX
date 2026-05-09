@@ -4,6 +4,7 @@ import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/tracking_service.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 class LocalTracker implements TrackingService {
   final Isar _isar;
@@ -51,12 +52,14 @@ class LocalTracker implements TrackingService {
   @override
   Future<List<LibraryEntry>> fetchUserLibrary({
     TrackedStatus status = TrackedStatus.watching,
+    MediaType mediaType = MediaType.ANIME,
     int page = 1,
   }) async {
     return _isar.libraryEntrys
         .where()
         .filter()
         .statusEqualTo(status.id)
+        .typeEqualTo(mediaType.id)
         .sortByAddedAtDesc()
         .offset((page - 1) * 50)
         .limit(50)

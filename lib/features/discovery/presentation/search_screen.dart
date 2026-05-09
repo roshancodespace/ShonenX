@@ -33,7 +33,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final searchState = ref.watch(searchProvider);
 
     return AppScaffold(
-      title: 'Discover Anime',
+      title: 'Discover',
       subtitle: 'Find your next obsession',
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -72,7 +72,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
                       return GridView.builder(
                         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: style.layout.width,
+                          maxCrossAxisExtent: style.layout.width + 10,
                           mainAxisExtent: style.layout.height,
                           childAspectRatio: style.layout.aspectRatio,
                           crossAxisSpacing: 10,
@@ -91,7 +91,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             title: media.title.availableTitle,
                             imageUrl: media.cover ?? media.banner ?? '',
                             onTap: () => context.push(
-                              '/details/${media.type.name}?tag=search-${media.id}',
+                              '/details/${media.type.id}?tag=search-${media.id}',
                               extra: media,
                             ),
                             style: style,

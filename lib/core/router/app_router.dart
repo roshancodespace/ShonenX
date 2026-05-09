@@ -11,6 +11,7 @@ import 'package:shonenx/features/extensions/presentation/extensions_settings_scr
 import 'package:shonenx/features/library/presentation/library_screen.dart';
 import 'package:shonenx/features/player/presentation/player_screen.dart';
 import 'package:shonenx/features/settings/presentation/cache_settings_screen.dart';
+import 'package:shonenx/features/settings/presentation/download_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/home_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/player_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/settings_screen.dart';
@@ -73,7 +74,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/details/:mediaType',
         builder: (context, state) {
           final mediaType = MediaType.values.firstWhere(
-            (e) => e.name == state.pathParameters['mediaType'],
+            (e) => e.id == state.pathParameters['mediaType'],
           );
           final tag = state.uri.queryParameters['tag'];
           final media = state.extra as UnifiedMedia;
@@ -106,6 +107,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
         routes: [
+          GoRoute(
+            path: 'downloads',
+            builder: (context, state) => const DownloadSettingsScreen(),
+          ),
           GoRoute(
             path: 'tracking',
             builder: (context, state) => const TrackingSettingsScreen(),

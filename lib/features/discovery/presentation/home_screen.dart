@@ -58,83 +58,118 @@ class HomeScreen extends ConsumerWidget {
                     );
 
                     return Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
+                        Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
                             color: theme.colorScheme.primaryContainer,
-                            padding: const EdgeInsets.all(2),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(20),
-                              child: CachedNetworkImage(
-                                imageUrl:
-                                    profiles[primaryTrackerType]?.avatarUrl ??
-                                    '',
-                                errorWidget: (context, url, error) => Icon(
-                                  Icons.person_outline_rounded,
+                          ),
+                          child: ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl:
+                                  profiles[primaryTrackerType]?.avatarUrl ?? '',
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => Container(
+                                width: 48,
+                                height: 48,
+                                color: theme.colorScheme.primaryContainer,
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  Icons.person_rounded,
                                   color: theme.colorScheme.onPrimaryContainer,
+                                  size: 22,
                                 ),
-                                width: 45,
-                                height: 45,
-                                fit: BoxFit.cover,
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        RichText(
-                          text: TextSpan(
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              TextSpan(
-                                text: 'Welcome back,\n',
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(
-                                      color: theme.colorScheme.primaryContainer,
-                                      height: 1,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                              Text(
+                                'Welcome back',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.2,
+                                ),
                               ),
-                              TextSpan(
-                                text:
-                                    profiles[primaryTrackerType]?.username ??
+                              const SizedBox(height: 2),
+                              Text(
+                                profiles[primaryTrackerType]?.username ??
                                     'Guest',
-                                style: Theme.of(context).textTheme.titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.1,
+                                ),
                               ),
                             ],
                           ),
                         ),
-                        const Spacer(),
-                        Consumer(
-                          builder: (context, modeRef, _) {
-                            final mode = modeRef.watch(
-                              discoveryPrefsProvider.select((p) => p.mode),
-                            );
-                            return IconButton.outlined(
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Consumer(
+                              builder: (context, modeRef, _) {
+                                final mode = modeRef.watch(
+                                  discoveryPrefsProvider.select((p) => p.mode),
+                                );
+
+                                final isTracker = mode == MetadataMode.tracker;
+
+                                return IconButton.filledTonal(
+                                  visualDensity: VisualDensity.standard,
+                                  tooltip: 'Discovery Mode',
+                                  onPressed: () => showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    useSafeArea: true,
+                                    useRootNavigator: true,
+                                    builder: (_) => const DiscoveryModeSheet(),
+                                  ),
+                                  iconSize: 20,
+                                  icon: Icon(
+                                    isTracker
+                                        ? Icons.cloud_outlined
+                                        : Icons.extension_outlined,
+                                  ),
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: isTracker
+                                        ? theme.colorScheme.secondaryContainer
+                                        : theme
+                                              .colorScheme
+                                              .surfaceContainerHighest,
+                                    foregroundColor: isTracker
+                                        ? theme.colorScheme.onSecondaryContainer
+                                        : theme.colorScheme.onSurface,
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton.filledTonal(
                               visualDensity: VisualDensity.standard,
-                              onPressed: () => showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                useSafeArea: true,
-                                useRootNavigator: true,
-                                builder: (_) => const DiscoveryModeSheet(),
+                              tooltip: 'Settings',
+                              iconSize: 20,
+                              onPressed: () => context.push('/settings'),
+                              icon: const Icon(Icons.settings_outlined),
+                              style: IconButton.styleFrom(
+                                backgroundColor:
+                                    theme.colorScheme.surfaceContainerHighest,
+                                foregroundColor: theme.colorScheme.onSurface,
                               ),
-                              tooltip: 'Discovery Mode',
-                              icon: Icon(
-                                mode == MetadataMode.tracker
-                                    ? Icons.cloud_outlined
-                                    : Icons.extension_outlined,
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 10),
-                        IconButton.outlined(
-                          visualDensity: VisualDensity.standard,
-                          onPressed: () => context.push('/settings'),
-                          tooltip: 'Settings',
-                          icon: const Icon(Icons.settings_outlined),
+                            ),
+                          ],
                         ),
                       ],
                     );
@@ -230,11 +265,12 @@ class HomeScreen extends ConsumerWidget {
               padding: const EdgeInsets.only(right: 10),
               child: MediaCard(
                 tag: '$title-${item.id}',
+                format: item.format,
                 title: item.title.availableTitle,
                 imageUrl: item.cover ?? '',
                 style: style,
                 onTap: () => context.push(
-                  '/details/${item.type.name}?tag=$title-${item.id}',
+                  '/details/${item.type.id}?tag=$title-${item.id}',
                   extra: item,
                 ),
               ),

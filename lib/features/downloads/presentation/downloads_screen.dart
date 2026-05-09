@@ -1,9 +1,11 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
+import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
@@ -15,38 +17,55 @@ class DownloadsScreen extends ConsumerWidget {
     final tasksAsync = ref.watch(downloadTasksProvider);
     final managerAsync = ref.watch(downloadManagerProvider);
 
-    return AppScaffold(
-      title: 'Downloads',
-      body: tasksAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Error: $err')),
-        data: (tasks) {
-          if (tasks.isEmpty) {
-            return Center(
-              child: Text(
-                'No downloads',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            );
-          }
+    return DefaultTabController(
+      length: 2,
+      child: AppScaffold(
+        title: 'Downloads',
+        barBottom: const TabBar(
+          tabs: [
+            Tab(text: 'Queue'),
+            Tab(text: 'Files'),
+          ],
+        ),
+        body: TabBarView(
+          children: [
+            // Queue Tab
+            tasksAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Center(child: Text('Error: $err')),
+              data: (tasks) {
+                if (tasks.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No downloads',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  );
+                }
 
-          return ListView.separated(
-            itemCount: tasks.length,
-            separatorBuilder: (_, __) =>
-                const Divider(height: 1, indent: 16, endIndent: 16),
-            itemBuilder: (context, index) => _DownloadTile(task: tasks[index]),
-          );
-        },
-      ),
-      floatingActionButton: managerAsync.isLoading
-          ? null
-          : FloatingActionButton(
-              elevation: 0,
-              onPressed: () => _addTestDownload(context, ref),
-              child: const Icon(Icons.add),
+                return ListView.separated(
+                  itemCount: tasks.length,
+                  separatorBuilder: (_, __) =>
+                      const Divider(height: 1, indent: 16, endIndent: 16),
+                  itemBuilder: (context, index) =>
+                      _DownloadTile(task: tasks[index]),
+                );
+              },
             ),
+            // Files Tab
+            const _DownloadedFilesTab(),
+          ],
+        ),
+        floatingActionButton: managerAsync.isLoading || kDebugMode
+            ? null
+            : FloatingActionButton(
+                elevation: 0,
+                onPressed: () => _addTestDownload(context, ref),
+                child: const Icon(Icons.add),
+              ),
+      ),
     );
   }
 
@@ -98,7 +117,7 @@ class _DownloadTile extends ConsumerWidget {
           children: [
             if (!isDone && status != DownloadStatus.canceled) ...[
               LinearProgressIndicator(
-                value: task.progress,
+                value: task.totalBytes > 0 ? task.progress : null,
                 minHeight: 2,
                 backgroundColor: colors.surfaceContainerHighest,
                 color: _progressColor(status, colors),
@@ -158,11 +177,22 @@ class _DownloadTile extends ConsumerWidget {
       return statusText;
     }
 
-    final percent = (task.progress * 100).toStringAsFixed(0);
+    final isM3U8 = task.url.contains('.m3u8');
+
+    if (isM3U8) {
+      final percent = (task.progress * 100).toStringAsFixed(0);
+      if (task.totalBytes > 0) {
+        return '$statusText • $percent% • ${task.downloadedBytes} / ${task.totalBytes} Segments';
+      }
+      return '$statusText • ${task.downloadedBytes} Segments';
+    }
+
     if (task.totalBytes > 0) {
+      final percent = (task.progress * 100).toStringAsFixed(0);
       return '$statusText • $percent% • ${_mb(task.downloadedBytes)} / ${_mb(task.totalBytes)} MB';
     }
-    return '$statusText • $percent%';
+
+    return '$statusText • ${_mb(task.downloadedBytes)} MB';
   }
 
   Color _progressColor(DownloadStatus status, ColorScheme colors) {
@@ -174,4 +204,143 @@ class _DownloadTile extends ConsumerWidget {
   }
 
   String _mb(int bytes) => (bytes / (1024 * 1024)).toStringAsFixed(1);
+}
+
+class _DownloadedFilesTab extends ConsumerStatefulWidget {
+  const _DownloadedFilesTab();
+
+  @override
+  ConsumerState<_DownloadedFilesTab> createState() =>
+      _DownloadedFilesTabState();
+}
+
+class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
+  late Future<List<File>> _filesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFiles();
+  }
+
+  void _loadFiles() {
+    _filesFuture = _getFiles();
+  }
+
+  Future<List<File>> _getFiles() async {
+    final prefs = await ref.read(downloadPrefsProvider.future);
+    final dir = Directory(prefs.downloadPath);
+    if (!await dir.exists()) return [];
+
+    final List<File> files = [];
+    final entities = await dir.list().toList();
+    for (final entity in entities) {
+      if (entity is File && entity.path.endsWith('.mp4')) {
+        files.add(entity);
+      }
+    }
+    // Sort by modified time, newest first
+    files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+    return files;
+  }
+
+  Future<void> _deleteFile(File file) async {
+    try {
+      await file.delete();
+      setState(() {
+        _loadFiles();
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to delete file: $e')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<File>>(
+      future: _filesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        final files = snapshot.data ?? [];
+        if (files.isEmpty) {
+          return Center(
+            child: Text(
+              'No downloaded files',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          );
+        }
+
+        return ListView.separated(
+          itemCount: files.length,
+          separatorBuilder: (_, __) =>
+              const Divider(height: 1, indent: 16, endIndent: 16),
+          itemBuilder: (context, index) {
+            final file = files[index];
+            final sizeStr = (file.lengthSync() / (1024 * 1024)).toStringAsFixed(
+              1,
+            );
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+              leading: const Icon(Icons.video_file, size: 36),
+              title: Text(
+                file.path.split('/').last,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text('$sizeStr MB'),
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Delete File?'),
+                      content: const Text(
+                        'Are you sure you want to delete this file?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _deleteFile(file);
+                          },
+                          child: const Text('Delete'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }

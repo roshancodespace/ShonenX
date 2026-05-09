@@ -34,6 +34,12 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: 'Aniyomi and Mangayomi extensions',
                 onTap: () => context.push('/settings/extensions'),
               ),
+              SettingsNavTile(
+                icon: Icons.download_outlined,
+                title: 'Downloads',
+                subtitle: 'Download location, file naming',
+                onTap: () => context.push('/settings/downloads'),
+              ),
             ],
           ),
 

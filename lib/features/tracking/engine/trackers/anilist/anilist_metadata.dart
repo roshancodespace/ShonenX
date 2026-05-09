@@ -15,7 +15,7 @@ class AnilistException implements Exception {
 
 mixin AnilistMetadata on BaseTracker implements RemoteTracker {
   HTTP get http;
-  
+
   final String _endpoint = 'https://graphql.anilist.co';
 
   Map<String, dynamic> _validateAndParseResponse(
@@ -260,6 +260,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
         airingAt: airingAt,
         providerId: json['id']?.toString() ?? '',
         title: title,
+        format: json['format'],
         cover:
             (json['coverImage'] as Map?)?['extraLarge'] ??
             (json['coverImage'] as Map?)?['large'] ??

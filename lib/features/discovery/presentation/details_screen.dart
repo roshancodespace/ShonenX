@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/about_tab.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/episodes_tab.dart';
 import 'package:shonenx/features/discovery/providers/details_provider.dart';
+import 'package:shonenx/features/downloads/domain/models/download_task.dart';
+import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
@@ -240,16 +242,17 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                   ],
                 ),
               ),
-              actions: [_TrackerAppBarButton(media: displayMedia)],
-            ),
-          ],
-          body: SafeArea(
-            child: TabBarView(
-              children: [
-                AboutTabWidget(media: displayMedia),
-                EpisodesTabWidget(media: displayMedia),
+              actions: [
+                const _DownloadAppBarButton(),
+                _TrackerAppBarButton(media: displayMedia),
               ],
             ),
+          ],
+          body: TabBarView(
+            children: [
+              AboutTabWidget(media: displayMedia),
+              EpisodesTabWidget(media: displayMedia),
+            ],
           ),
         ),
         bottomNavigationBar: const SafeArea(
@@ -386,21 +389,34 @@ class _TrackerAppBarButton extends ConsumerWidget {
     return TextButton.icon(
       style: TextButton.styleFrom(
         backgroundColor: isEnabled
-            ? theme.colorScheme.tertiaryContainer
-            : theme.colorScheme.tertiaryContainer.withOpacity(0.5),
+            ? theme.colorScheme.primary
+            : theme.colorScheme.primary.withValues(alpha: 0.5),
         foregroundColor: isEnabled
-            ? theme.colorScheme.onTertiaryContainer
-            : theme.colorScheme.onTertiaryContainer.withOpacity(0.5),
+            ? theme.colorScheme.onPrimary
+            : theme.colorScheme.onPrimary.withValues(alpha: 0.5),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.horizontal(left: Radius.circular(24)),
         ),
-        // ✅ Prevents app bar overflow on smaller screens
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
       onPressed: isEnabled ? onPressed : null,
       onLongPress: isEnabled ? onLongPress : null,
-      icon: Icon(icon, size: 18),
-      label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+      icon: Icon(
+        icon,
+        size: 18,
+        color: isEnabled
+            ? theme.colorScheme.onPrimary
+            : theme.colorScheme.onPrimary.withValues(alpha: 0.5),
+      ),
+      label: Text(
+        label,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: isEnabled
+              ? theme.colorScheme.onPrimary
+              : theme.colorScheme.onPrimary.withValues(alpha: 0.5),
+        ),
+      ),
     );
   }
 
@@ -417,6 +433,65 @@ class _TrackerAppBarButton extends ConsumerWidget {
         media: media,
         activeTrackers: activeTrackers,
         editTracker: editTracker,
+      ),
+    );
+  }
+}
+
+class _DownloadAppBarButton extends ConsumerWidget {
+  const _DownloadAppBarButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tasksAsync = ref.watch(downloadTasksProvider);
+    final activeTasks =
+        tasksAsync.value
+            ?.where(
+              (t) =>
+                  t.status == DownloadStatus.downloading ||
+                  t.status == DownloadStatus.pending,
+            )
+            .toList() ??
+        [];
+    final activeCount = activeTasks.length;
+
+    if (activeCount == 0) return const SizedBox.shrink();
+
+    double? averageProgress;
+    double totalProgress = 0.0;
+    int validCount = 0;
+    for (final t in activeTasks) {
+      if (t.progress >= 0.0) {
+        totalProgress += t.progress;
+        validCount++;
+      }
+    }
+    averageProgress = validCount > 0 ? totalProgress / validCount : null;
+
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: Badge(
+        label: Text(activeCount.toString()),
+        child: IconButton(
+          icon: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  value: averageProgress,
+                  strokeWidth: 2.5,
+                  color: colorScheme.primary,
+                ),
+              ),
+              const Icon(Icons.download),
+            ],
+          ),
+          onPressed: () => context.push('/downloads'),
+        ),
       ),
     );
   }

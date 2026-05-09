@@ -216,14 +216,13 @@ class AnimePaheSource implements AnimeSource {
         if (kwikUrl.isEmpty) continue;
 
         final audioAttr = btn.attributes['data-audio'] ?? '';
-        final bool isStreamDub = audioAttr == 'eng';
+        final bool isStreamDub = audioAttr.toLowerCase() == 'eng';
         if (isStreamDub != isDub) continue;
 
         final resAttr = btn.attributes['data-resolution'];
         final quality = resAttr != null
             ? '${resAttr}p'
-            : (btn.text.trim().isNotEmpty ? btn.text.trim() : 'Auto');
-
+            : '${btn.text.trim().isNotEmpty ? btn.text.trim() : 'Auto'} | ${isStreamDub ? 'DUB' : 'SUB'}';
         extractTasks.add(() async {
           try {
             final directUrl = await _extractKwikStream(kwikUrl);

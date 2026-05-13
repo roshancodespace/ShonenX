@@ -11,15 +11,20 @@ class AniSkipService {
   Future<List<AniSkipStamp>> getSkipTimes({
     required int idMal,
     required int episodeNumber,
+    required List<SkipType> types,
     int? episodeLength,
   }) async {
+    if (episodeLength == null || episodeLength < 50) {
+      return [];
+    }
+
     final log = _log.child('getSkipTimes');
 
     try {
       final uri = Uri.parse(
         '$_baseUrl/$idMal/$episodeNumber'
-        '?types[]=op&types[]=ed&types[]=mixed-op&types[]=mixed-ed&types[]=recap'
-        '${episodeLength != null ? '&episodeLength=$episodeLength' : ''}',
+        '?types[]=${types.map((t) => t.apiID).join('&types[]=')}'
+        '&episodeLength=$episodeLength',
       );
 
       log.d('Request → $uri');
@@ -73,15 +78,17 @@ class AniSkipService {
   SkipType _mapType(String type) {
     switch (type) {
       case 'op':
-      case 'mixed-op':
         return SkipType.opening;
       case 'ed':
-      case 'mixed-ed':
         return SkipType.ending;
+      case 'mixed-op':
+        return SkipType.mixedOpening;
+      case 'mixed-ed':
+        return SkipType.mixedEnding;
       case 'recap':
         return SkipType.recap;
       default:
-        return SkipType.intro;
+        throw Exception('Unknown skip type: $type');
     }
   }
 }

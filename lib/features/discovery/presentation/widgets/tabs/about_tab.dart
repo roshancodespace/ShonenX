@@ -183,6 +183,7 @@ class _TagChip extends StatelessWidget {
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       labelPadding: EdgeInsets.zero,
       padding: const EdgeInsets.symmetric(horizontal: 10),
+      backgroundColor: theme.colorScheme.surfaceContainerLow,
       label: Text(
         label,
         style: theme.textTheme.bodySmall?.copyWith(

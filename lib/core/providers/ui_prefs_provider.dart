@@ -33,8 +33,8 @@ enum MediaCardStyle {
 }
 
 enum ContinueWatchingStyle {
-  classic(ComponentLayout(width: 200, height: 200)),
-  wideBanner(ComponentLayout(width: 400, height: 135));
+  classic(ComponentLayout(width: 180, height: 180)),
+  wideBanner(ComponentLayout(width: 390, height: 125));
 
   final ComponentLayout layout;
   const ContinueWatchingStyle(this.layout);

@@ -11,7 +11,7 @@ class ContinueWatchingRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncData = ref.watch(continueWatchingProvider);
+    final asyncData = ref.watch(continueWatchingPerAnimeProvider(10));
     final style = ref.watch(
       uiPrefsProvider.select((p) => p.continueWatchingStyle),
     );

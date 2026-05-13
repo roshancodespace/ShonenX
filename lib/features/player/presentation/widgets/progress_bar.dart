@@ -4,10 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/providers/active_engine_provider.dart';
-import 'package:shonenx/features/player/providers/aniskip_provider.dart';
 
 class ProgressBar extends ConsumerWidget {
-  final AniSkipArgs? aniskipArgs;
+  final List<AniSkipStamp> aniSkips;
   final VideoEngine engine;
   final double? draggingValue;
   final Function(double) onDragStart;
@@ -16,7 +15,7 @@ class ProgressBar extends ConsumerWidget {
 
   const ProgressBar({
     super.key,
-    required this.aniskipArgs,
+    required this.aniSkips,
     required this.engine,
     required this.draggingValue,
     required this.onDragStart,
@@ -26,9 +25,13 @@ class ProgressBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final position = ref.watch(engineStateProvider.select((s) => s.position));
-    final duration = ref.watch(engineStateProvider.select((s) => s.duration));
-    final buffer = ref.watch(engineStateProvider.select((s) => s.buffer));
+    final position = ref.watch(
+      videoEngineStateProvider.select((s) => s.position),
+    );
+    final duration = ref.watch(
+      videoEngineStateProvider.select((s) => s.duration),
+    );
+    final buffer = ref.watch(videoEngineStateProvider.select((s) => s.buffer));
 
     return SizedBox(
       height: 40,
@@ -63,7 +66,7 @@ class ProgressBar extends ConsumerWidget {
                 return CustomPaint(
                   size: const Size(double.infinity, 40),
                   painter: ProgressBarPainter(
-                    skipStamps: [],
+                    skipStamps: aniSkips,
                     totalDuration: dur,
                     progress: current,
                     buffer: bfr,
@@ -263,16 +266,16 @@ class ProgressBarPainter extends CustomPainter {
 
   static Color _defaultSkipColor(SkipType type) {
     switch (type) {
-      case SkipType.intro:
-        return const Color(0x664FC3F7);
-      case SkipType.recap:
-        return const Color(0x66FFD54F);
-      case SkipType.outro:
-        return const Color(0x66FF6B6B);
       case SkipType.opening:
         return const Color(0x664CD964);
       case SkipType.ending:
         return const Color(0x66BA68C8);
+      case SkipType.mixedOpening:
+        return const Color(0x664FC3F7);
+      case SkipType.mixedEnding:
+        return const Color(0x66FF6B6B);
+      case SkipType.recap:
+        return const Color(0x66FFD54F);
     }
   }
 }

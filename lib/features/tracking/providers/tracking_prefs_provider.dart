@@ -35,8 +35,10 @@ class TrackingPrefsState {
     );
   }
 
-  bool isTrackerEnabled(TrackerType trackerType) =>
-      enabledTrackers[trackerType] ?? false;
+  bool isTrackerEnabled(TrackerType trackerType) {
+    if (trackerType == TrackerType.local) return true;
+    return enabledTrackers[trackerType] ?? false;
+  }
 
   Map<String, dynamic> toMap() {
     return {

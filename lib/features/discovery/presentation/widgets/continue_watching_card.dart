@@ -34,7 +34,7 @@ class ContinueWatchingItem extends ConsumerStatefulWidget {
 }
 
 class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
-  static const _contentPadding = 14.0;
+  static const _contentPadding = 5.0;
 
   bool _isLoading = false;
 
@@ -282,62 +282,59 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
 
     return SizedBox(
       width: widget.style.layout.width,
-      child: Padding(
-        padding: const EdgeInsets.all(_contentPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildThumbnailStack(
-              aspectRatio: 16 / 9,
-              borderRadius: 20,
-              progressInset: 0,
-              layers: [
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest.withValues(alpha: 0.92),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      'CONTINUE',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: cs.primary,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.4,
-                      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildThumbnailStack(
+            aspectRatio: 16 / 9,
+            borderRadius: 20,
+            progressInset: 0,
+            layers: [
+              Positioned(
+                top: 10,
+                left: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    'CONTINUE',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: cs.primary,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.4,
                     ),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              widget.entry.animeTitle,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                height: 1.3,
               ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            widget.entry.animeTitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              height: 1.3,
             ),
-            const SizedBox(height: 6),
-            Text(
-              _formatEpisodeText(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: cs.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _formatEpisodeText(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -347,7 +344,6 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
 
     return Container(
       width: widget.style.layout.width,
-      margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(24),
@@ -357,8 +353,7 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
         padding: const EdgeInsets.all(_contentPadding),
         child: Row(
           children: [
-            SizedBox(
-              width: widget.style.layout.width * 0.38,
+            Expanded(
               child: _buildThumbnailStack(
                 aspectRatio: 16 / 10,
                 borderRadius: 20,
@@ -388,7 +383,7 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
                 ],
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

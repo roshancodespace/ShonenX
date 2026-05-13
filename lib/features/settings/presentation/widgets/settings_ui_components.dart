@@ -91,7 +91,8 @@ class SettingsNavTile extends StatelessWidget {
 }
 
 class SettingsSwitchTile extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+  final Widget? leading;
   final String title;
   final String? subtitle;
   final bool value;
@@ -99,7 +100,8 @@ class SettingsSwitchTile extends StatelessWidget {
 
   const SettingsSwitchTile({
     super.key,
-    required this.icon,
+    this.icon,
+    this.leading,
     required this.title,
     this.subtitle,
     required this.value,
@@ -112,7 +114,9 @@ class SettingsSwitchTile extends StatelessWidget {
 
     return SwitchListTile.adaptive(
       contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
-      secondary: Icon(icon, color: theme.colorScheme.primary),
+      secondary:
+          leading ??
+          (icon != null ? Icon(icon, color: theme.colorScheme.primary) : null),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: subtitle != null
           ? Text(
@@ -234,7 +238,7 @@ class SettingsSegmentedTile<T> extends StatelessWidget {
             selected: selected,
             onSelectionChanged: onSelectionChanged,
             style: SegmentedButton.styleFrom(
-              visualDensity: VisualDensity.compact,
+              visualDensity: VisualDensity.adaptivePlatformDensity,
             ),
           ),
         ],

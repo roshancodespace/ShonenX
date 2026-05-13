@@ -29,19 +29,23 @@ enum FileNameFormat {
 class DownloadPrefs {
   final String downloadPath;
   final FileNameFormat fileNameFormat;
+  final bool useOneDM;
 
   const DownloadPrefs({
     required this.downloadPath,
     required this.fileNameFormat,
+    this.useOneDM = false,
   });
 
   DownloadPrefs copyWith({
     String? downloadPath,
     FileNameFormat? fileNameFormat,
+    bool? useOneDM,
   }) {
     return DownloadPrefs(
       downloadPath: downloadPath ?? this.downloadPath,
       fileNameFormat: fileNameFormat ?? this.fileNameFormat,
+      useOneDM: useOneDM ?? this.useOneDM,
     );
   }
 
@@ -49,6 +53,7 @@ class DownloadPrefs {
     return DownloadPrefs(
       downloadPath: map['downloadPath'] ?? defaultPath,
       fileNameFormat: FileNameFormat.fromString(map['fileNameFormat']),
+      useOneDM: map['useOneDM'] ?? false,
     );
   }
 
@@ -56,6 +61,7 @@ class DownloadPrefs {
     return {
       'downloadPath': downloadPath,
       'fileNameFormat': fileNameFormat.name,
+      'useOneDM': useOneDM,
     };
   }
 }
@@ -86,6 +92,7 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
     return DownloadPrefs(
       downloadPath: defaultPath,
       fileNameFormat: FileNameFormat.titleAndEpisode,
+      useOneDM: false,
     );
   }
 
@@ -98,6 +105,12 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
   Future<void> setFileNameFormat(FileNameFormat format) async {
     final prefs = ref.read(sharedPreferencesProvider);
     state = AsyncData(state.value!.copyWith(fileNameFormat: format));
+    await prefs.setString(_key, jsonEncode(state.value!.toMap()));
+  }
+
+  Future<void> setUseOneDM(bool value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    state = AsyncData(state.value!.copyWith(useOneDM: value));
     await prefs.setString(_key, jsonEncode(state.value!.toMap()));
   }
 }

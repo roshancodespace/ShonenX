@@ -18,7 +18,7 @@ class M3U8DownloadEngine implements DownloadEngine {
   Isolate? _isolate;
   SendPort? _commandPort;
   final ReceivePort _receivePort = ReceivePort();
-  
+
   bool _cancelled = false;
   bool _paused = false;
   bool _isRunning = false;
@@ -73,9 +73,8 @@ class M3U8DownloadEngine implements DownloadEngine {
           }
         } else if (msg is String) {
           if (msg.startsWith('err:')) {
-            print('[M3U8Engine] Error: ${msg.substring(4)}');
             if (!_cancelled && !_paused) {
-               onStatus(DownloadStatus.failed);
+              onStatus(DownloadStatus.failed);
             }
             _cleanup();
           }
@@ -151,7 +150,12 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
     final tempDir = Directory('${p.dirname(task.savePath)}/.temp_${task.id}');
     await tempDir.create(recursive: true);
 
-    final segments = await _parsePlaylist(task.url, task.headers, client, task.sendPort);
+    final segments = await _parsePlaylist(
+      task.url,
+      task.headers,
+      client,
+      task.sendPort,
+    );
     if (segments.isEmpty) throw Exception("Empty playlist");
 
     final batchSize = 3;
@@ -168,7 +172,9 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
     for (var i = 0; i < segments.length; i += batchSize) {
       if (isCancelled) break;
 
-      final end = (i + batchSize < segments.length) ? i + batchSize : segments.length;
+      final end = (i + batchSize < segments.length)
+          ? i + batchSize
+          : segments.length;
       final batch = segments.sublist(i, end);
 
       await Future.wait(
@@ -179,7 +185,9 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
 
           final bytes = await _fetch(seg.url, task.headers, client);
           if (bytes != null) {
-            final data = seg.key != null ? _decrypt(bytes, seg.key!, seg.iv, seg.index) : bytes;
+            final data = seg.key != null
+                ? _decrypt(bytes, seg.key!, seg.iv, seg.index)
+                : bytes;
             await file.writeAsBytes(data);
             completedSegments++;
           }
@@ -218,10 +226,7 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
         'downloadedBytes': totalSegments,
         'totalBytes': totalSegments,
       });
-      task.sendPort.send({
-        'type': 'status',
-        'status': 'completed',
-      });
+      task.sendPort.send({'type': 'status', 'status': 'completed'});
     }
   } catch (e) {
     if (!isCancelled) task.sendPort.send('err:$e');
@@ -249,7 +254,12 @@ Future<List<_Segment>> _parsePlaylist(
       if (lines[i].startsWith('#EXT-X-STREAM-INF') && i + 1 < lines.length) {
         final next = lines[i + 1].trim();
         if (next.isNotEmpty && !next.startsWith('#')) {
-          return _parsePlaylist(baseUri.resolve(next).toString(), headers, client, port);
+          return _parsePlaylist(
+            baseUri.resolve(next).toString(),
+            headers,
+            client,
+            port,
+          );
         }
       }
     }
@@ -269,14 +279,20 @@ Future<List<_Segment>> _parsePlaylist(
       }
       if (ivHex != null) iv = _hexToBytes(ivHex);
     } else if (!trim.startsWith('#')) {
-      segments.add(_Segment(baseUri.resolve(trim).toString(), key, iv, segments.length));
+      segments.add(
+        _Segment(baseUri.resolve(trim).toString(), key, iv, segments.length),
+      );
     }
   }
 
   return segments;
 }
 
-Future<Uint8List?> _fetch(String url, Map<String, String> headers, http.Client client) async {
+Future<Uint8List?> _fetch(
+  String url,
+  Map<String, String> headers,
+  http.Client client,
+) async {
   for (int i = 0; i < 3; i++) {
     try {
       final res = await client.get(Uri.parse(url), headers: headers);
@@ -291,7 +307,9 @@ Future<Uint8List?> _fetch(String url, Map<String, String> headers, http.Client c
 Uint8List _decrypt(Uint8List bytes, Uint8List key, Uint8List? iv, int seq) {
   final effectiveIV = iv ?? _seqToIV(seq);
   final encrypter = Encrypter(AES(Key(key), mode: AESMode.cbc));
-  return Uint8List.fromList(encrypter.decryptBytes(Encrypted(bytes), iv: IV(effectiveIV)));
+  return Uint8List.fromList(
+    encrypter.decryptBytes(Encrypted(bytes), iv: IV(effectiveIV)),
+  );
 }
 
 Uint8List _seqToIV(int seq) {

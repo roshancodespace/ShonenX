@@ -37,22 +37,26 @@ class MediaKitEngine implements VideoEngine {
     _player = Player();
     _controller = VideoController(_player);
     updatePrefs(prefs);
-    
+
     _subscriptions.addAll([
       _player.stream.position.listen((pos) {
-        ref.read(engineStateProvider.notifier).updateState(position: pos);
+        ref.read(videoEngineStateProvider.notifier).updateState(position: pos);
       }),
       _player.stream.duration.listen((dur) {
-        ref.read(engineStateProvider.notifier).updateState(duration: dur);
+        ref.read(videoEngineStateProvider.notifier).updateState(duration: dur);
       }),
       _player.stream.buffer.listen((buf) {
-        ref.read(engineStateProvider.notifier).updateState(buffer: buf);
+        ref.read(videoEngineStateProvider.notifier).updateState(buffer: buf);
       }),
       _player.stream.playing.listen((playing) {
-        ref.read(engineStateProvider.notifier).updateState(isPlaying: playing);
+        ref
+            .read(videoEngineStateProvider.notifier)
+            .updateState(isPlaying: playing);
       }),
       _player.stream.buffering.listen((buffering) {
-        ref.read(engineStateProvider.notifier).updateState(isBuffering: buffering);
+        ref
+            .read(videoEngineStateProvider.notifier)
+            .updateState(isBuffering: buffering);
       }),
     ]);
   }

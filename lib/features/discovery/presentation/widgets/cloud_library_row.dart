@@ -28,17 +28,15 @@ class CloudLibraryRowWidget extends ConsumerWidget {
       emptyText: 'No anime in this list.',
       data: asyncData,
       itemBuilder: (context, entry) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: MediaCard(
-            tag: 'library-$status-${entry.providerId}',
-            title: entry.title,
-            imageUrl: entry.cover,
-            style: style,
-            onTap: () => context.push(
-              '/details/${entry.type}/?tag=library-$status-${entry.providerId}',
-              extra: entry.toUnifiedMedia(),
-            ),
+        return MediaCard(
+          tag: 'library-$status-${entry.providerId}',
+          title: entry.title,
+          imageUrl: entry.cover,
+          format: entry.format,
+          style: style,
+          onTap: () => context.push(
+            '/details/${entry.type}/?tag=library-$status-${entry.providerId}',
+            extra: entry.toUnifiedMedia(),
           ),
         );
       },

@@ -26,7 +26,6 @@ class CenterControls extends ConsumerStatefulWidget {
 }
 
 class _CenterControlsState extends ConsumerState<CenterControls> {
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -66,8 +65,12 @@ class _CenterControlsState extends ConsumerState<CenterControls> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Consumer(
                   builder: (context, ref, child) {
-                    final isPlaying = ref.watch(engineStateProvider.select((s) => s.isPlaying));
-                    final isBuffering = ref.watch(engineStateProvider.select((s) => s.isBuffering));
+                    final isPlaying = ref.watch(
+                      videoEngineStateProvider.select((s) => s.isPlaying),
+                    );
+                    final isBuffering = ref.watch(
+                      videoEngineStateProvider.select((s) => s.isBuffering),
+                    );
 
                     if (isBuffering) {
                       return const CircularProgressIndicator(

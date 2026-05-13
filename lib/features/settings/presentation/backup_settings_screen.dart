@@ -36,8 +36,11 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
       final manifest = await service.exportData(_exportCategories);
       final json = manifest.toJson();
 
-      final timestamp =
-          DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+      final timestamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .split('.')
+          .first;
       final fileName = 'shonenx_backup_$timestamp.json';
 
       String? savePath;
@@ -114,24 +117,17 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
                   subtitle: cat.description,
                   value: _exportCategories.contains(cat),
                   onChanged: (v) => setState(() {
-                    v ? _exportCategories.add(cat) : _exportCategories.remove(cat);
+                    v
+                        ? _exportCategories.add(cat)
+                        : _exportCategories.remove(cat);
                   }),
                 ),
-              SettingsActionTile(
-                icon: Icons.upload_outlined,
-                title: 'Export Backup',
-                subtitle: _exporting
-                    ? 'Exporting…'
-                    : '${_exportCategories.length} categories selected',
-                onTap: _exporting ? null : _export,
-                trailing: _exporting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : null,
+              FilledButton.icon(
+                onPressed: _exporting ? null : _export,
+                icon: const Icon(Icons.upload_outlined),
+                label: Text(_exporting ? 'Exporting…' : 'Export Backup'),
               ),
+              const SizedBox(height: 10),
             ],
           ),
           const Divider(height: 1, indent: 16, endIndent: 16),
@@ -152,5 +148,3 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
     );
   }
 }
-
-

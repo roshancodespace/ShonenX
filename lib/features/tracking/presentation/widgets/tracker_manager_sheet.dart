@@ -401,6 +401,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
                         media: media,
                         initialItem: blankItem,
                         trackerType: tracker.type,
+                        trackingId: trackerMapping?.trackingId,
                       ),
                     );
                   },
@@ -487,6 +488,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
                       media: media,
                       initialItem: listItem,
                       trackerType: tracker.type,
+                      trackingId: trackerMapping?.trackingId,
                     ),
                   );
                 },

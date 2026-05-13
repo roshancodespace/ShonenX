@@ -144,14 +144,10 @@ class HomeScreen extends ConsumerWidget {
                                         : Icons.extension_outlined,
                                   ),
                                   style: IconButton.styleFrom(
-                                    backgroundColor: isTracker
-                                        ? theme.colorScheme.secondaryContainer
-                                        : theme
-                                              .colorScheme
-                                              .surfaceContainerHighest,
-                                    foregroundColor: isTracker
-                                        ? theme.colorScheme.onSecondaryContainer
-                                        : theme.colorScheme.onSurface,
+                                    backgroundColor:
+                                        theme.colorScheme.secondary,
+                                    foregroundColor:
+                                        theme.colorScheme.onSecondary,
                                   ),
                                 );
                               },
@@ -261,18 +257,15 @@ class HomeScreen extends ConsumerWidget {
           height: style.layout.height,
           data: AsyncValue.data(items),
           itemBuilder: (context, item) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: MediaCard(
-                tag: '$title-${item.id}',
-                format: item.format,
-                title: item.title.availableTitle,
-                imageUrl: item.cover ?? '',
-                style: style,
-                onTap: () => context.push(
-                  '/details/${item.type.id}?tag=$title-${item.id}',
-                  extra: item,
-                ),
+            return MediaCard(
+              tag: '$title-${item.id}',
+              format: item.format,
+              title: item.title.availableTitle,
+              imageUrl: item.cover ?? '',
+              style: style,
+              onTap: () => context.push(
+                '/details/${item.type.id}?tag=$title-${item.id}',
+                extra: item,
               ),
             );
           },

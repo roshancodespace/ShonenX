@@ -256,11 +256,12 @@ class AnilistTracker extends BaseTracker
 
               return LibraryEntry()
                 ..providerId = media['id']?.toString() ?? ''
-                ..type = _fromAnilistMediaType(media['type'])
+                ..type = mediaType.id
                 ..title =
                     media['title']?['english'] ??
                     media['title']?['romaji'] ??
                     'Unknown'
+                ..format = media['format']?.toString() ?? ''
                 ..cover = media['coverImage']?['large'] ?? ''
                 ..status = _parseAnilistStatus(media['status']).id
                 ..episodes = media['episodes']
@@ -338,17 +339,6 @@ class AnilistTracker extends BaseTracker
         return 'ANIME';
       case MediaType.MANGA:
         return 'MANGA';
-    }
-  }
-
-  String _fromAnilistMediaType(String type) {
-    switch (type) {
-      case 'ANIME':
-        return 'anime';
-      case 'MANGA':
-        return 'manga';
-      default:
-        return 'anime';
     }
   }
 }

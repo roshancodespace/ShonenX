@@ -15,8 +15,6 @@ class DiscoveryModeSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final prefs = ref.watch(discoveryPrefsProvider);
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return AppBottomSheet(
       title: 'Discovery Mode',
@@ -43,9 +41,11 @@ class DiscoveryModeSheet extends ConsumerWidget {
               ref.read(discoveryPrefsProvider.notifier).setMode(value.first);
             },
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 18),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
+            duration: const Duration(milliseconds: 280),
+            switchInCurve: Curves.easeOutQuart,
+            switchOutCurve: Curves.easeInQuart,
             child: prefs.mode == MetadataMode.tracker
                 ? const _TrackerConfig(key: ValueKey('tracker'))
                 : _SourceConfig(
@@ -54,23 +54,7 @@ class DiscoveryModeSheet extends ConsumerWidget {
                   ),
           ),
           const SizedBox(height: 24),
-          SizedBox(
-            height: 48,
-            child: FilledButton(
-              onPressed: () => context.pop(),
-              style: FilledButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text(
-                'Done',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
-              ),
-            ),
-          ),
+          FilledButton(onPressed: context.pop, child: const Text('Done')),
         ],
       ),
     );
@@ -83,35 +67,31 @@ class _TrackerConfig extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+
     final primaryTracker = ref.watch(primaryTrackerProvider);
 
-    return SettingsSection(
-      title: 'METADATA SOURCE',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: SettingsActionTile(
-            icon: primaryTracker.type == TrackerType.anilist
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(
+            primaryTracker.type == TrackerType.anilist
                 ? Icons.analytics_outlined
-                : Icons.list_alt,
-            title: primaryTracker.type.displayName,
-            subtitle: 'Trending, search & details from your primary tracker',
-            tileColor: theme.colorScheme.surfaceContainerHighest,
-            accentColor: theme.colorScheme.primary,
-            trailing: Icon(
-              Icons.check_circle,
-              color: theme.colorScheme.primary,
-              size: 20,
-            ),
+                : Icons.list_alt_outlined,
+          ),
+          title: Text(primaryTracker.type.displayName),
+          subtitle: const Text('Trending, search & details from your tracker'),
+          trailing: Icon(
+            Icons.check_circle_rounded,
+            color: theme.colorScheme.primary,
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(top: 10.0, left: 10.0, right: 10.0),
-          child: Text(
-            'Change your primary tracker in Settings → Tracking.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+        const SizedBox(height: 8),
+        Text(
+          'Change your primary tracker in Settings → Tracking.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -120,118 +100,165 @@ class _TrackerConfig extends ConsumerWidget {
 }
 
 class _SourceConfig extends ConsumerWidget {
-  final List<String> activeSources;
-
   const _SourceConfig({super.key, required this.activeSources});
+
+  final List<String> activeSources;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final availableSources = ref.watch(availableAnimeSourcesProvider);
 
-    return SettingsSection(
-      title: 'ACTIVE SOURCES',
-      subtitle: 'Select sources to show in your home feed and search.',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        availableSources.when(
-          data: (sources) {
-            if (sources.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: Text(
-                    'No sources available.\nInstall extensions to use Source Mode.',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            return Column(
-              children: sources.map((source) {
-                final isActive = activeSources.contains(source.id);
-
-                return _SourceTile(
-                  source: source,
-                  isActive: isActive,
-                  onToggle: () {
-                    ref
-                        .read(discoveryPrefsProvider.notifier)
-                        .toggleSource(source.id);
-                  },
-                );
-              }).toList(),
-            );
+        FilledButton.tonalIcon(
+          onPressed: () {
+            context.pop();
+            context.push('/settings/extensions');
           },
-          loading: () => const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (e, _) => Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: Text('Error loading sources: $e'),
+          icon: const Icon(Icons.extension_outlined),
+          label: const Text('Manage Extensions'),
+        ),
+        const SizedBox(height: 18),
+        Text(
+          'ACTIVE SOURCES',
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.primary,
+            letterSpacing: 1.1,
+            fontWeight: FontWeight.w700,
           ),
         ),
+        const SizedBox(height: 6),
+        Text(
+          'Select sources for discovery and search.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ref
+            .watch(availableAnimeSourcesProvider)
+            .when(
+              data: (sources) {
+                if (sources.isEmpty) {
+                  return const _EmptySourcesState();
+                }
+
+                return Column(
+                  children: [
+                    for (final source in sources)
+                      _SourceTile(
+                        key: ValueKey(source.id),
+                        source: source,
+                        isActive: activeSources.contains(source.id),
+                        onToggle: () {
+                          ref
+                              .read(discoveryPrefsProvider.notifier)
+                              .toggleSource(source.id);
+                        },
+                      ),
+                  ],
+                );
+              },
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (e, _) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text('Failed to load sources\n$e'),
+              ),
+            ),
       ],
     );
   }
 }
 
-class _SourceTile extends StatelessWidget {
-  final SourceInfo source;
-  final bool isActive;
-  final VoidCallback onToggle;
+class _EmptySourcesState extends StatelessWidget {
+  const _EmptySourcesState();
 
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 36),
+      child: Column(
+        children: [
+          Icon(
+            Icons.extension_off_outlined,
+            size: 42,
+            color: theme.colorScheme.outline,
+          ),
+          const SizedBox(height: 14),
+          Text('No sources available', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 6),
+          Text(
+            'Install extensions to use Source Mode.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 18),
+          FilledButton(
+            onPressed: () {
+              context.pop();
+              context.push('/settings/extensions');
+            },
+            child: const Text('Browse Extensions'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SourceTile extends StatelessWidget {
   const _SourceTile({
+    super.key,
     required this.source,
     required this.isActive,
     required this.onToggle,
   });
 
+  final SourceInfo source;
+  final bool isActive;
+  final VoidCallback onToggle;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6, left: 10, right: 10),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: SettingsActionTile(
-          icon: source.type == SourceType.inbuilt
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      onTap: onToggle,
+      leading: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 220),
+        switchInCurve: Curves.easeOutQuart,
+        switchOutCurve: Curves.easeInQuart,
+        child: Icon(
+          source.type == SourceType.inbuilt
               ? Icons.home_outlined
               : Icons.extension_outlined,
-          title: source.name,
-          subtitle: source.type == SourceType.inbuilt
-              ? 'Built-in'
-              : 'Extension',
-          tileColor: isActive
-              ? colorScheme.primaryContainer.withValues(alpha: 0.4)
-              : colorScheme.surfaceContainerHighest,
-          foregroundColor: isActive ? colorScheme.onSurface : null,
-          accentColor: isActive
-              ? colorScheme.primary
-              : colorScheme.onSurfaceVariant,
-          onTap: onToggle,
-          trailing: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: isActive
-                ? Icon(
-                    Icons.check_circle,
-                    key: const ValueKey('check'),
-                    color: colorScheme.primary,
-                    size: 22,
-                  )
-                : Icon(
-                    Icons.circle_outlined,
-                    key: const ValueKey('uncheck'),
-                    color: colorScheme.onSurfaceVariant,
-                    size: 22,
-                  ),
-          ),
+          key: ValueKey(isActive),
+          color: isActive ? colorScheme.primary : colorScheme.onSurfaceVariant,
+        ),
+      ),
+      title: Text(source.name),
+      subtitle: Text(
+        source.type == SourceType.inbuilt
+            ? 'Built-in source'
+            : 'Extension source',
+      ),
+      trailing: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 180),
+        child: Icon(
+          isActive
+              ? Icons.check_circle_rounded
+              : Icons.radio_button_unchecked_rounded,
+          key: ValueKey(isActive),
+          color: isActive ? colorScheme.primary : colorScheme.onSurfaceVariant,
         ),
       ),
     );

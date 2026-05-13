@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/data/aniskip_service.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
+import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
 
 class AniSkipArgs {
   final int? idMal;
@@ -29,6 +30,7 @@ class AniSkipArgs {
 
 final aniSkipProvider = FutureProvider.autoDispose
     .family<List<AniSkipStamp>, AniSkipArgs?>((ref, args) async {
+      final prefs = ref.read(aniskipPrefsProvider);
       final service = AniSkipService();
       if (args == null) {
         return [];
@@ -38,6 +40,7 @@ final aniSkipProvider = FutureProvider.autoDispose
         throw Exception('episodeNumber is in floating');
       } else {
         return await service.getSkipTimes(
+          types: prefs.enabledTypes(),
           idMal: args.idMal!,
           episodeNumber: args.episodeNumber.toInt(),
           episodeLength: args.episodeLength,

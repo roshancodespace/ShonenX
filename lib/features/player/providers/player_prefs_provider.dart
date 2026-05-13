@@ -22,11 +22,9 @@ enum PlayerType {
 
 class PlayerPrefsState {
   final PlayerType playerType;
-  final AniSkipPrefs aniSkipPrefs;
   final GesturePrefs gesturePrefs;
 
   const PlayerPrefsState({
-    this.aniSkipPrefs = const AniSkipPrefs(),
     this.playerType = PlayerType.mediakit,
     this.gesturePrefs = const GesturePrefs(),
   });
@@ -37,7 +35,6 @@ class PlayerPrefsState {
     GesturePrefs? gesturePrefs,
   }) {
     return PlayerPrefsState(
-      aniSkipPrefs: aniSkipPrefs ?? this.aniSkipPrefs,
       playerType: playerType ?? this.playerType,
       gesturePrefs: gesturePrefs ?? this.gesturePrefs,
     );
@@ -46,9 +43,6 @@ class PlayerPrefsState {
   factory PlayerPrefsState.fromMap(Map<String, dynamic> map) {
     return PlayerPrefsState(
       playerType: PlayerType.fromString(map['playerType']),
-      aniSkipPrefs: map['aniSkipPrefs'] != null
-          ? AniSkipPrefs.fromMap(map['aniSkipPrefs'])
-          : const AniSkipPrefs(),
       gesturePrefs: map['gesturePrefs'] != null
           ? GesturePrefs.fromMap(map['gesturePrefs'])
           : const GesturePrefs(),
@@ -57,7 +51,6 @@ class PlayerPrefsState {
 
   Map<String, dynamic> toMap() {
     return {
-      'aniSkipPrefs': aniSkipPrefs.toMap(),
       'playerType': playerType.name,
       'gesturePrefs': gesturePrefs.toMap(),
     };
@@ -88,28 +81,6 @@ class PlayerPrefsNotifier extends Notifier<PlayerPrefsState> {
     );
   }
 
-  void setSegmentMode(SkipType segment, SkipMode mode) {
-    state = state.copyWith(
-      aniSkipPrefs: state.aniSkipPrefs.updateSegment(segment, mode),
-    );
-    _saveDb();
-  }
-
-  void toggleSegment(SkipType segment) {
-    final current = state.aniSkipPrefs.mode(segment);
-
-    final next = switch (current) {
-      SkipMode.off => SkipMode.manual,
-      SkipMode.manual => SkipMode.auto,
-      SkipMode.auto => SkipMode.off,
-    };
-
-    state = state.copyWith(
-      aniSkipPrefs: state.aniSkipPrefs.updateSegment(segment, next),
-    );
-    _saveDb();
-  }
-
   void changePlayer(PlayerType playerType) {
     state = state.copyWith(playerType: playerType);
     _saveDb();
@@ -119,19 +90,6 @@ class PlayerPrefsNotifier extends Notifier<PlayerPrefsState> {
     state = state.copyWith(gesturePrefs: gesturePrefs);
     _saveDb();
   }
-
-  SkipMode getSegmentMode(SkipType segment) {
-    return state.aniSkipPrefs.mode(segment);
-  }
-
-  bool isAuto(SkipType segment) =>
-      state.aniSkipPrefs.mode(segment) == SkipMode.auto;
-
-  bool isManual(SkipType segment) =>
-      state.aniSkipPrefs.mode(segment) == SkipMode.manual;
-
-  bool isOff(SkipType segment) =>
-      state.aniSkipPrefs.mode(segment) == SkipMode.off;
 
   void _saveDb() {
     _debounce?.cancel();

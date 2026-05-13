@@ -18,7 +18,31 @@ class DownloadHeader {
 
   DownloadHeader();
 
-  DownloadHeader.create({required this.key, required this.value});
+  DownloadHeader.create({
+    required this.key,
+    required this.value,
+  });
+
+  factory DownloadHeader.fromMapEntry(
+    MapEntry<String, String> entry,
+  ) {
+    return DownloadHeader.create(
+      key: entry.key,
+      value: entry.value,
+    );
+  }
+
+  static List<DownloadHeader> fromMap(
+    Map<String, String> map,
+  ) {
+    return map.entries
+        .map(DownloadHeader.fromMapEntry)
+        .toList();
+  }
+
+  MapEntry<String, String> toMapEntry() {
+    return MapEntry(key, value);
+  }
 }
 
 @collection

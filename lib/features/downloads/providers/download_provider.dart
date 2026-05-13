@@ -2,11 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/database/database_provider.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/http_x.dart';
+import 'package:shonenx/core/services/one_dm_service.dart';
 import 'package:shonenx/features/downloads/domain/download_repository.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/engine/direct_download_engine.dart';
 import 'package:shonenx/features/downloads/engine/download_engine.dart';
 import 'package:shonenx/features/downloads/engine/m3u8_download_engine.dart';
+import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 
 final downloadRepositoryProvider = Provider<DownloadRepository>((ref) {
   return DownloadRepository(ref.watch(databaseProvider));
@@ -36,6 +38,19 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
   }
 
   Future<void> startDownload(DownloadTask task) async {
+    final prefs = await ref.read(downloadPrefsProvider.future);
+
+    if (prefs.useOneDM) {
+      final success = await OneDMService.instance.download(
+        url: task.url,
+        fileName: task.fileName,
+        headers: Map.fromEntries(
+          task.headers.map((header) => header.toMapEntry()),
+        ),
+      );
+      if (success) return;
+    }
+
     // Deduplicate by URL
     final existing = await repo.getTaskByUrl(task.url);
     if (existing != null) {

@@ -327,7 +327,7 @@ class _GlassPillContainer extends StatelessWidget {
           width: width,
           padding: EdgeInsets.all(padding),
           decoration: BoxDecoration(
-            color: cs.surface.withValues(alpha: 0.75),
+            color: cs.surfaceContainerLow.withValues(alpha: 0.75),
             borderRadius: BorderRadius.circular(width / 2),
             border: Border.all(
               color: cs.outlineVariant.withValues(alpha: 0.45),

@@ -14,6 +14,7 @@ class LibraryEntry {
   late String title;
   late String cover;
   String? type;
+  String? format;
   double? score;
   String? status;
   int? episodes;
@@ -29,6 +30,7 @@ class LibraryEntry {
       providerId: providerId,
       cover: cover,
       title: MediaTitle(english: title),
+      format: format,
       status: status,
       episodes: episodes,
     );
@@ -39,6 +41,7 @@ class LibraryEntry {
     'title': title,
     'cover': cover,
     'type': type,
+    'format': format,
     'score': score,
     'status': status,
     'episodes': episodes,
@@ -52,10 +55,13 @@ class LibraryEntry {
     ..title = m['title'] as String
     ..cover = m['cover'] as String
     ..type = m['type'] as String?
+    ..format = m['format'] as String?
     ..score = (m['score'] as num?)?.toDouble()
     ..status = m['status'] as String?
     ..episodes = m['episodes'] as int?
     ..episodesWatched = m['episodesWatched'] as int? ?? 0
-    ..addedAt = DateTime.tryParse(m['addedAt'] as String? ?? '') ?? DateTime.now()
-    ..updatedAt = DateTime.tryParse(m['updatedAt'] as String? ?? '') ?? DateTime.now();
+    ..addedAt =
+        DateTime.tryParse(m['addedAt'] as String? ?? '') ?? DateTime.now()
+    ..updatedAt =
+        DateTime.tryParse(m['updatedAt'] as String? ?? '') ?? DateTime.now();
 }

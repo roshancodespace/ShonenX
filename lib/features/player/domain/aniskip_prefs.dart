@@ -1,6 +1,27 @@
 enum SkipMode { off, manual, auto }
 
-enum SkipType { intro, recap, outro, opening, ending }
+enum SkipType {
+  opening,
+  ending,
+  mixedOpening,
+  mixedEnding,
+  recap;
+
+  String get apiID {
+    switch (this) {
+      case SkipType.opening:
+        return 'op';
+      case SkipType.ending:
+        return 'ed';
+      case SkipType.mixedOpening:
+        return 'mixed-op';
+      case SkipType.mixedEnding:
+        return 'mixed-ed';
+      case SkipType.recap:
+        return 'recap';
+    }
+  }
+}
 
 class AniSkipStamp {
   final SkipType type;
@@ -19,11 +40,11 @@ class AniSkipPrefs {
 
   const AniSkipPrefs({
     this.segments = const {
-      SkipType.intro: SkipMode.auto,
-      SkipType.recap: SkipMode.auto,
-      SkipType.outro: SkipMode.auto,
       SkipType.opening: SkipMode.auto,
       SkipType.ending: SkipMode.auto,
+      SkipType.mixedOpening: SkipMode.auto,
+      SkipType.mixedEnding: SkipMode.auto,
+      SkipType.recap: SkipMode.auto,
     },
   });
 
@@ -54,5 +75,22 @@ class AniSkipPrefs {
     return {
       'segments': segments.map((key, value) => MapEntry(key.name, value.name)),
     };
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'segments': segments};
+  }
+
+  factory AniSkipPrefs.fromJson(Map<String, dynamic> json) {
+    return AniSkipPrefs(
+      segments: Map<SkipType, SkipMode>.from(json['segments']),
+    );
+  }
+
+  List<SkipType> enabledTypes() {
+    return segments.entries
+        .where((entry) => entry.value != SkipMode.off)
+        .map((entry) => entry.key)
+        .toList();
   }
 }

@@ -388,12 +388,8 @@ class _TrackerAppBarButton extends ConsumerWidget {
   }) {
     return TextButton.icon(
       style: TextButton.styleFrom(
-        backgroundColor: isEnabled
-            ? theme.colorScheme.primary
-            : theme.colorScheme.primary.withValues(alpha: 0.5),
-        foregroundColor: isEnabled
-            ? theme.colorScheme.onPrimary
-            : theme.colorScheme.onPrimary.withValues(alpha: 0.5),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.horizontal(left: Radius.circular(24)),
         ),
@@ -401,20 +397,12 @@ class _TrackerAppBarButton extends ConsumerWidget {
       ),
       onPressed: isEnabled ? onPressed : null,
       onLongPress: isEnabled ? onLongPress : null,
-      icon: Icon(
-        icon,
-        size: 18,
-        color: isEnabled
-            ? theme.colorScheme.onPrimary
-            : theme.colorScheme.onPrimary.withValues(alpha: 0.5),
-      ),
+      icon: Icon(icon, size: 18, color: theme.colorScheme.onPrimary),
       label: Text(
         label,
         style: TextStyle(
           fontWeight: FontWeight.bold,
-          color: isEnabled
-              ? theme.colorScheme.onPrimary
-              : theme.colorScheme.onPrimary.withValues(alpha: 0.5),
+          color: theme.colorScheme.onPrimary,
         ),
       ),
     );
@@ -471,26 +459,36 @@ class _DownloadAppBarButton extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
+      padding: const EdgeInsets.only(right: 8),
       child: Badge(
+        isLabelVisible: activeCount > 0,
         label: Text(activeCount.toString()),
+        offset: const Offset(2, -2),
         child: IconButton(
+          onPressed: () => context.push('/downloads'),
+          style: IconButton.styleFrom(
+            backgroundColor: colorScheme.primaryContainer,
+            foregroundColor: colorScheme.onPrimaryContainer,
+          ),
           icon: Stack(
             alignment: Alignment.center,
             children: [
               SizedBox(
-                width: 28,
-                height: 28,
+                width: 26,
+                height: 26,
                 child: CircularProgressIndicator(
                   value: averageProgress,
-                  strokeWidth: 2.5,
-                  color: colorScheme.primary,
+                  strokeWidth: 2.2,
+                  strokeCap: StrokeCap.round,
+                  backgroundColor: colorScheme.primaryContainer.withValues(
+                    alpha: 0.12,
+                  ),
+                  color: colorScheme.onPrimaryContainer,
                 ),
               ),
-              const Icon(Icons.download),
+              const Icon(Icons.download_rounded, size: 18),
             ],
           ),
-          onPressed: () => context.push('/downloads'),
         ),
       ),
     );

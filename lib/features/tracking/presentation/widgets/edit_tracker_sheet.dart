@@ -17,12 +17,14 @@ class EditTrackerSheet extends ConsumerStatefulWidget {
   final UnifiedMedia media;
   final TrackedListItem initialItem;
   final TrackerType trackerType;
+  final String? trackingId;
 
   const EditTrackerSheet({
     super.key,
     required this.media,
     required this.initialItem,
     required this.trackerType,
+    this.trackingId,
   });
 
   @override
@@ -79,7 +81,7 @@ class _EditTrackerSheetState extends ConsumerState<EditTrackerSheet> {
         }
       } else {
         await tracker.updateListItem(
-          trackingId: widget.media.id,
+          trackingId: widget.trackingId ?? widget.media.id,
           status: _status,
           progress: _progress,
           score: _score,

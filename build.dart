@@ -37,19 +37,18 @@ Future<void> main(List<String> args) async {
     switch (platform) {
       case 'android':
         await killGradle();
-        await run([
-          'flutter',
-          'build',
-          'apk',
-          '--split-per-abi',
-          ...common,
-        ]);
+        await run(['flutter', 'build', 'apk', '--split-per-abi', ...common]);
         await killGradle();
         break;
 
       case 'linux':
         await run(['flutter', 'build', 'linux', ...common]);
-        await run(['zip', '-r', 'linux-bundle.zip', 'build/linux/x64/release/bundle']);
+        await run([
+          'zip',
+          '-r',
+          'linux-bundle.zip',
+          'build/linux/x64/release/bundle',
+        ]);
         break;
 
       case 'windows':
@@ -57,11 +56,7 @@ Future<void> main(List<String> args) async {
         break;
 
       case 'run':
-        await run([
-          'flutter',
-          'run',
-          '--dart-define-from-file=$defineFile',
-        ]);
+        await run(['flutter', 'run', '--dart-define-from-file=$defineFile']);
         break;
 
       default:

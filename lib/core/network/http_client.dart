@@ -164,6 +164,36 @@ class HTTP {
     );
   }
 
+  Future<HttpResponse> put(
+    String url, {
+    Map<String, String>? headers,
+    Map<String, String>? queryParameters,
+    Object? body,
+  }) {
+    return _request(
+      'PUT',
+      url,
+      headers: headers,
+      body: body,
+      queryParameters: queryParameters,
+    );
+  }
+
+  Future<HttpResponse> patch(
+    String url, {
+    Map<String, String>? headers,
+    Map<String, String>? queryParameters,
+    Object? body,
+  }) {
+    return _request(
+      'PATCH',
+      url,
+      headers: headers,
+      body: body,
+      queryParameters: queryParameters,
+    );
+  }
+
   Future<HttpResponse> delete(
     String url, {
     Map<String, String>? headers,

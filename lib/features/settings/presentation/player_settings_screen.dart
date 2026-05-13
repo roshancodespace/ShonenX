@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
+import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/gesture_settings_sheet.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -13,7 +14,9 @@ class PlayerSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final prefs = ref.watch(playerPrefsProvider);
+    final playerPrefs = ref.watch(playerPrefsProvider);
+    final aniskipPrefs = ref.watch(aniskipPrefsProvider);
+    final aniskipPrefsNotifier = ref.read(aniskipPrefsProvider.notifier);
     final prefsNotifier = ref.read(playerPrefsProvider.notifier);
 
     return AppScaffold(
@@ -21,13 +24,13 @@ class PlayerSettingsScreen extends ConsumerWidget {
       body: ListView(
         children: [
           SettingsSection(
-            title: 'Aniskip [WIP]',
+            title: 'Aniskip',
             children: SkipType.values
                 .map(
                   (s) => SettingsDropdownTile(
                     icon: _icon(s),
                     title: _capitalize(s.name),
-                    value: prefs.aniSkipPrefs.mode(s),
+                    value: aniskipPrefs.mode(s),
                     items: SkipMode.values
                         .map(
                           (m) => DropdownMenuItem(
@@ -38,7 +41,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
                         .toList(),
                     onChanged: (value) {
                       if (value != null) {
-                        prefsNotifier.setSegmentMode(s, value);
+                        aniskipPrefsNotifier.setMode(s, value);
                       }
                     },
                   ),
@@ -47,7 +50,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
           ),
           if (Platform.isAndroid)
             SettingsSegmentedTile<PlayerType>(
-              title: 'Player type [WIP]',
+              title: 'Player type',
               segments: [
                 ButtonSegment(
                   value: PlayerType.mediakit,
@@ -62,7 +65,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
                   label: Text('VP (Lightest)'),
                 ),
               ],
-              selected: {prefs.playerType},
+              selected: {playerPrefs.playerType},
               onSelectionChanged: (Set<PlayerType> selection) =>
                   prefsNotifier.changePlayer(selection.first),
             ),
@@ -139,15 +142,15 @@ class PlayerSettingsScreen extends ConsumerWidget {
 
   IconData _icon(SkipType type) {
     switch (type) {
-      case SkipType.intro:
-        return Icons.skip_next_outlined;
-      case SkipType.recap:
-        return Icons.skip_next_outlined;
-      case SkipType.outro:
-        return Icons.skip_next_outlined;
       case SkipType.opening:
         return Icons.skip_next_outlined;
       case SkipType.ending:
+        return Icons.skip_next_outlined;
+      case SkipType.mixedOpening:
+        return Icons.skip_next_outlined;
+      case SkipType.mixedEnding:
+        return Icons.skip_next_outlined;
+      case SkipType.recap:
         return Icons.skip_next_outlined;
     }
   }

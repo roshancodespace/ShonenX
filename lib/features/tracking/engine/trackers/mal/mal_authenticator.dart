@@ -133,7 +133,7 @@ class MalAuthenticator implements Authenticator {
       final bodyString = bodyParams.entries
           .map(
             (e) =>
-                '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+                '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value.toString())}',
           )
           .join('&');
 

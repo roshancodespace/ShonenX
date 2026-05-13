@@ -27,4 +27,13 @@ class WatchHistoryRepository {
         .limit(limit)
         .watch(fireImmediately: true);
   }
+
+  Stream<List<WatchHistoryEntry>> watchHistoryPerAnime({int limit = 10}) {
+    return _isar.watchHistoryEntrys
+        .where()
+        .sortByLastUpdatedDesc()
+        .distinctByAnimeId()
+        .limit(limit)
+        .watch(fireImmediately: true);
+  }
 }

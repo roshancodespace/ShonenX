@@ -7,6 +7,7 @@ class HorizontalSection<T> extends StatelessWidget {
   final Widget Function(BuildContext context, T item) itemBuilder;
   final double height;
   final String emptyText;
+  final double? gap;
 
   const HorizontalSection({
     super.key,
@@ -14,6 +15,7 @@ class HorizontalSection<T> extends StatelessWidget {
     required this.data,
     required this.itemBuilder,
     required this.height,
+    this.gap,
     this.emptyText = 'No data found',
   });
 
@@ -41,12 +43,14 @@ class HorizontalSection<T> extends StatelessWidget {
                 );
               }
 
-              return ListView.builder(
+              return ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 itemCount: items.length,
                 itemBuilder: (context, index) =>
                     itemBuilder(context, items[index]),
+                separatorBuilder: (context, index) =>
+                    SizedBox(width: gap ?? 10.0),
               );
             },
           ),

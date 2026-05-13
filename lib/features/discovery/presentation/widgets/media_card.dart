@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
@@ -278,7 +276,7 @@ class _MinimalCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelLarge?.copyWith(
-                  color: cs.onInverseSurface,
+                  color: Colors.white,
                   fontWeight: FontWeight.w700,
                   height: 1.25,
                   letterSpacing: -0.2,
@@ -304,44 +302,48 @@ class _ExpressiveCard extends StatelessWidget {
     final layout = widget.style.layout;
     final imageHeight = layout.height * 0.7;
 
-    return Container(
+    return SizedBox(
       width: layout.width,
-      height: layout.height,
-      decoration: BoxDecoration(
-        color: cs.primaryContainer.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(26),
-      ),
-      padding: const EdgeInsets.all(6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              _buildImage(
-                widget,
-                theme,
-                width: layout.width,
-                height: imageHeight,
-                radius: 22,
-              ),
-              _TopOverlay(format: widget.format, badge: widget.badge),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              widget.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: cs.onSurface,
-                height: 1.25,
+      child: Container(
+        width: layout.width,
+        height: layout.height,
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.28)),
+        ),
+        padding: const EdgeInsets.all(5),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                _buildImage(
+                  widget,
+                  theme,
+                  width: double.maxFinite,
+                  height: imageHeight,
+                  radius: 22,
+                ),
+                _TopOverlay(format: widget.format, badge: widget.badge),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                widget.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: cs.onSurface,
+                  height: 1.25,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

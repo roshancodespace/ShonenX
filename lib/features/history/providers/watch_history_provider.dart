@@ -8,7 +8,16 @@ final watchHistoryRepositoryProvider = Provider<WatchHistoryRepository>((ref) {
   return WatchHistoryRepository(isar);
 }, name: 'watchHistoryRepositoryProvider');
 
-final continueWatchingProvider =
-    StreamProvider.autoDispose<List<WatchHistoryEntry>>((ref) {
-      return ref.watch(watchHistoryRepositoryProvider).watchHistory();
+final continueWatchingProvider = StreamProvider.autoDispose
+    .family<List<WatchHistoryEntry>, int>((ref, limit) {
+      return ref
+          .watch(watchHistoryRepositoryProvider)
+          .watchHistory(limit: limit);
     }, name: 'continueWatchingProvider');
+
+final continueWatchingPerAnimeProvider = StreamProvider.autoDispose
+    .family<List<WatchHistoryEntry>, int>((ref, limit) {
+      return ref
+          .watch(watchHistoryRepositoryProvider)
+          .watchHistoryPerAnime(limit: limit);
+    }, name: 'continueWatchingPerAnimeProvider');

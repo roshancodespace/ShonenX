@@ -18,7 +18,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
   HTTP get http;
 
   static const String _baseUrl = 'https://api.myanimelist.net/v2';
-  static String get _clientId => Platform.isWindows || Platform.isLinux
+  static String get clientId => Platform.isWindows || Platform.isLinux
       ? Env.MAL_CLIENT_ID_LIST.last
       : Env.MAL_CLIENT_ID_LIST.first;
   static const String _fields =
@@ -84,7 +84,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
             'offset': offset.toString(),
             'fields': _fields,
           },
-          headers: {'X-MAL-CLIENT-ID': _clientId},
+          headers: {'X-MAL-CLIENT-ID': clientId},
           cacheDuration: const Duration(hours: 1),
         );
 
@@ -137,7 +137,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
             'offset': offset.toString(),
             'fields': _fields,
           },
-          headers: {'X-MAL-CLIENT-ID': _clientId},
+          headers: {'X-MAL-CLIENT-ID': clientId},
         );
 
         final data = _validateAndParseResponse(response.json, 'search');
@@ -182,7 +182,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
       final response = await http.get(
         '$_baseUrl/$endpoint/$id',
         queryParameters: {'fields': _fields},
-        headers: {'X-MAL-CLIENT-ID': _clientId},
+        headers: {'X-MAL-CLIENT-ID': clientId},
         cacheDuration: const Duration(days: 1),
       );
 

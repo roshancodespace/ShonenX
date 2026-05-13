@@ -50,7 +50,7 @@ class VideoPlayerEngine implements VideoEngine {
         : Duration.zero;
 
     ref
-        .read(engineStateProvider.notifier)
+        .read(videoEngineStateProvider.notifier)
         .updateState(
           position: value.position,
           duration: value.duration,

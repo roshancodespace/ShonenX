@@ -27,90 +27,94 @@ class TopControls extends StatelessWidget {
       top: showControls ? 0 : -100,
       left: 0,
       right: 0,
-      child: Container(
-        padding: const EdgeInsets.only(
-          bottom: 40,
-          top: 20,
-          left: 10,
-          right: 10,
-        ),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: [
-              Colors.transparent,
-              Colors.black.withValues(alpha: 0.3),
-              Colors.black,
+      child: AnimatedOpacity(
+        duration: Durations.short4,
+        opacity: showControls ? 1 : 0,
+        child: Container(
+          padding: const EdgeInsets.only(
+            bottom: 40,
+            top: 20,
+            left: 10,
+            right: 10,
+          ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+              colors: [
+                Colors.transparent,
+                Colors.black.withValues(alpha: 0.3),
+                Colors.black,
+              ],
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _buildActionIcon(
+                icon: Icons.arrow_back_ios_new_rounded,
+                onTap: onBack,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      media.title.availableTitle,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(0, 1),
+                            blurRadius: 4.0,
+                            color: Colors.black54,
+                          ),
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      playerState.activeEpisode?.title ?? 'N/A',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(0, 1),
+                            blurRadius: 4.0,
+                            color: Colors.black54,
+                          ),
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              _buildActionIcon(
+                icon: Icons.settings_outlined,
+                onTap: () {
+                  if (engine.buildSettingsView(context) == null) return;
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    useSafeArea: true,
+                    builder: (context) => engine.buildSettingsView(context)!,
+                  );
+                },
+              ),
             ],
           ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _buildActionIcon(
-              icon: Icons.arrow_back_ios_new_rounded,
-              onTap: onBack,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    media.title.availableTitle,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                      shadows: [
-                        Shadow(
-                          offset: Offset(0, 1),
-                          blurRadius: 4.0,
-                          color: Colors.black54,
-                        ),
-                      ],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    playerState.activeEpisode?.title ?? 'N/A',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      shadows: [
-                        Shadow(
-                          offset: Offset(0, 1),
-                          blurRadius: 4.0,
-                          color: Colors.black54,
-                        ),
-                      ],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            _buildActionIcon(
-              icon: Icons.settings_outlined,
-              onTap: () {
-                if (engine.buildSettingsView(context) == null) return;
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  useSafeArea: true,
-                  builder: (context) => engine.buildSettingsView(context)!,
-                );
-              },
-            ),
-          ],
         ),
       ),
     );

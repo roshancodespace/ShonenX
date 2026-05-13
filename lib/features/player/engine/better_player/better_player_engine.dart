@@ -47,7 +47,7 @@ class BetterPlayerEngine implements VideoEngine {
       }
 
       ref
-          .read(engineStateProvider.notifier)
+          .read(videoEngineStateProvider.notifier)
           .updateState(
             position: value.position,
             duration: value.duration,
@@ -63,29 +63,37 @@ class BetterPlayerEngine implements VideoEngine {
         case BetterPlayerEventType.initialized:
           _isBuffering = false;
           ref
-              .read(engineStateProvider.notifier)
+              .read(videoEngineStateProvider.notifier)
               .updateState(isBuffering: false);
           _emitState();
           break;
         case BetterPlayerEventType.play:
-          ref.read(engineStateProvider.notifier).updateState(isPlaying: true);
+          ref
+              .read(videoEngineStateProvider.notifier)
+              .updateState(isPlaying: true);
           break;
         case BetterPlayerEventType.pause:
-          ref.read(engineStateProvider.notifier).updateState(isPlaying: false);
+          ref
+              .read(videoEngineStateProvider.notifier)
+              .updateState(isPlaying: false);
           break;
         case BetterPlayerEventType.bufferingStart:
           _isBuffering = true;
-          ref.read(engineStateProvider.notifier).updateState(isBuffering: true);
+          ref
+              .read(videoEngineStateProvider.notifier)
+              .updateState(isBuffering: true);
           break;
         case BetterPlayerEventType.bufferingEnd:
           _isBuffering = false;
           ref
-              .read(engineStateProvider.notifier)
+              .read(videoEngineStateProvider.notifier)
               .updateState(isBuffering: false);
           _emitState();
           break;
         case BetterPlayerEventType.finished:
-          ref.read(engineStateProvider.notifier).updateState(isPlaying: false);
+          ref
+              .read(videoEngineStateProvider.notifier)
+              .updateState(isPlaying: false);
           break;
         default:
           break;
@@ -100,7 +108,7 @@ class BetterPlayerEngine implements VideoEngine {
     final buffered = value.buffered;
 
     ref
-        .read(engineStateProvider.notifier)
+        .read(videoEngineStateProvider.notifier)
         .updateState(
           position: value.position,
           duration: value.duration,
@@ -116,7 +124,7 @@ class BetterPlayerEngine implements VideoEngine {
     Duration? startAt,
   }) async {
     _isBuffering = false;
-    ref.read(engineStateProvider.notifier).updateState(isBuffering: false);
+    ref.read(videoEngineStateProvider.notifier).updateState(isBuffering: false);
 
     await _controller.setupDataSource(
       BetterPlayerDataSource.network(

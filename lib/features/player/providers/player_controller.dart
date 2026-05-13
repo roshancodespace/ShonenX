@@ -7,7 +7,10 @@ import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
+import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/providers/active_engine_provider.dart';
+import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
+import 'package:shonenx/features/player/providers/aniskip_provider.dart';
 import 'package:shonenx/features/tracking/engine/sync_engine.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -71,6 +74,8 @@ class PlayerController extends Notifier<PlayerState> {
   late AnimeSource _source;
   late ScreenshotController _screenshot;
 
+  final Set<SkipType> _alreadyAutoSkipped = {};
+
   @override
   PlayerState build() {
     ref.onDispose(() => _progressTimer?.cancel);
@@ -122,6 +127,7 @@ class PlayerController extends Notifier<PlayerState> {
     UnifiedEpisode newEpisode, {
     bool force = false,
   }) async {
+    _alreadyAutoSkipped.clear();
     await _loadData(newEpisode, force: force);
   }
 
@@ -216,6 +222,36 @@ class PlayerController extends Notifier<PlayerState> {
     } catch (e) {
       state = state.copyWith(error: 'Failed to switch subtitle: $e');
     }
+  }
+
+  void setupAutoSkipListener(AniSkipArgs? args) {
+    ref.listen(videoEngineStateProvider.select((s) => s.position), (
+      previous,
+      current,
+    ) {
+      final skips = ref.read(aniSkipProvider(args)).value ?? [];
+      final prefs = ref.read(aniskipPrefsProvider);
+
+      for (final skip in skips) {
+        final mode = prefs.mode(skip.type);
+
+        if (mode == SkipMode.auto) {
+          final seconds = current.inSeconds;
+
+          if (seconds >= skip.startTime && seconds < skip.endTime) {
+            if (!_alreadyAutoSkipped.contains(skip.type)) {
+              _alreadyAutoSkipped.add(skip.type);
+
+              ref
+                  .read(videoEngineProvider)
+                  .seekTo(Duration(seconds: skip.endTime.ceil()));
+            } else if (seconds < skip.startTime) {
+              _alreadyAutoSkipped.remove(skip.type);
+            }
+          }
+        }
+      }
+    });
   }
 
   Future<void> _startProgressTracker() async {

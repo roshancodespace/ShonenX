@@ -92,7 +92,8 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
       if (progress != null) {
         body['num_watched_episodes'] = progress.toInt();
       }
-      if (score != null) {
+      // MAL treats score=0 as "unscored"; only include if user explicitly rated
+      if (score != null && score > 0) {
         body['score'] = score.toInt();
       }
 
@@ -101,11 +102,11 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
       final bodyString = body.entries
           .map(
             (e) =>
-                '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+                '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value.toString())}',
           )
           .join('&');
 
-      final response = await _http.post(
+      final response = await _http.patch(
         'https://api.myanimelist.net/v2/anime/$trackingId/my_list_status',
         body: bodyString,
         headers: {
@@ -114,9 +115,11 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
         },
       );
 
-      final resBody = response.json;
-      if (resBody != null && resBody['error'] != null) {
-        throw Exception(resBody['message'] ?? 'Failed to update entry');
+      if (response.statusCode >= 400) {
+        final resBody = response.json;
+        throw Exception(
+          'MAL Error ${response.statusCode}: ${resBody?['message'] ?? resBody?['error'] ?? 'Failed to update entry'}',
+        );
       }
     });
   }
@@ -150,28 +153,45 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
     final token = await _getToken();
     if (token == null) return null;
 
-    return executeApi('FETCH_ENTRY', fallback: (_, __) => null, () async {
-      final res = await _http.get(
-        'https://api.myanimelist.net/v2/anime/$mediaId',
-        queryParameters: {'fields': 'my_list_status'},
-        headers: {'Authorization': 'Bearer $token'},
-      );
-
-      final body = res.json;
-      if (body['error'] != null) {
+    return executeApi(
+      'FETCH_ENTRY',
+      fallback: (e, st) {
         return null;
-      }
+      },
+      () async {
+        final res = await _http.get(
+          'https://api.myanimelist.net/v2/anime/$mediaId',
+          queryParameters: {'fields': 'my_list_status'},
+          headers: {
+            'Authorization': 'Bearer $token',
+            'X-MAL-CLIENT-ID': MalMetadata.clientId,
+          },
+        );
 
-      final listStatus = body['my_list_status'];
-      if (listStatus == null) return null;
+        if (res.statusCode >= 400) {
+          return null;
+        }
 
-      return TrackedListItem(
-        id: body['id']?.toString(),
-        status: _parseMalStatus(listStatus['status']),
-        progress: (listStatus['num_watched_episodes'] as num?)?.toDouble() ?? 0,
-        score: (listStatus['score'] as num?)?.toDouble(),
-      );
-    });
+        final body = res.json;
+        if (body == null || body['error'] != null) {
+          return null;
+        }
+
+        final listStatus = body['my_list_status'] as Map?;
+        if (listStatus == null) return null;
+
+        final rawScore = (listStatus['score'] as num?)?.toInt() ?? 0;
+        final progress =
+            (listStatus['num_episodes_watched'] as num?)?.toDouble() ?? 0.0;
+
+        return TrackedListItem(
+          id: body['id']?.toString(),
+          status: _parseMalStatus(listStatus['status']?.toString()),
+          progress: progress,
+          score: rawScore > 0 ? rawScore.toDouble() : null,
+        );
+      },
+    );
   }
 
   @override
@@ -210,15 +230,20 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
           final node = item['node'];
           final listStatus = item['list_status'];
 
+          final rawScore = (listStatus?['score'] as num?)?.toInt() ?? 0;
+
           return LibraryEntry()
             ..providerId = node['id']?.toString() ?? ''
-            ..type = 'ANIME'
+            ..type = mediaType.id
             ..title = node['title'] ?? 'Unknown'
             ..cover =
                 node['main_picture']?['large'] ??
                 node['main_picture']?['medium'] ??
                 ''
             ..status = _parseMalStatus(listStatus?['status']).id
+            ..score = rawScore > 0 ? rawScore.toDouble() : 0
+            ..episodesWatched =
+                (listStatus?['num_watched_episodes'] as num?)?.toInt() ?? 0
             ..episodes = node['num_episodes']
             ..addedAt = DateTime.now();
         }).toList();
@@ -232,10 +257,21 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
     if (token == null) throw Exception('MyAnimeList is not authenticated');
 
     return executeApi('DELETE', () async {
-      await _http.delete(
+      final response = await _http.delete(
         'https://api.myanimelist.net/v2/anime/$trackingId/my_list_status',
         headers: {'Authorization': 'Bearer $token'},
       );
+
+      // 200 or 204 = success; anything ≥400 is an error.
+      // MAL may return an empty body on 200/204, so only parse JSON on errors.
+      if (response.statusCode >= 400) {
+        String detail = 'Failed to remove entry';
+        try {
+          final resBody = response.json as Map?;
+          detail = resBody?['message'] ?? resBody?['error'] ?? detail;
+        } catch (_) {}
+        throw Exception('MAL Error ${response.statusCode}: $detail');
+      }
     });
   }
 

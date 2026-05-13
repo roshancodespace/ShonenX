@@ -31,14 +31,15 @@ final mediaTrackingProvider = FutureProvider.autoDispose
 
         if (!(await tracker.isAuthenticated)) return null;
 
-        final links = await ref.watch(
-          trackerLinkProvider(query.mediaId).future,
-        );
         String? trackingId;
         if (query.trackerType == TrackerType.local) {
           trackingId = query.mediaId;
         } else {
-          trackingId = links[query.trackerType]?.trackingId;
+          trackingId = await ref.watch(
+            trackerLinkProvider(
+              query.mediaId,
+            ).selectAsync((links) => links[query.trackerType]?.trackingId),
+          );
         }
 
         if (trackingId == null) return null;

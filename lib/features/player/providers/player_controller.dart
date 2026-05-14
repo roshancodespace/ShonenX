@@ -76,6 +76,12 @@ class PlayerController extends Notifier<PlayerState> {
 
   final Set<SkipType> _alreadyAutoSkipped = {};
 
+  // Smart Memory
+  String? _preferredServerId;
+  ServerType? _preferredServerType;
+  String? _preferredQuality;
+  String? _preferredSubtitleLang;
+
   @override
   PlayerState build() {
     ref.onDispose(() => _progressTimer?.cancel);
@@ -92,6 +98,9 @@ class PlayerController extends Notifier<PlayerState> {
     _source = source;
     _media = media;
     _screenshot = screenshot;
+
+    // Todo: Load smart memory from player prefs
+
     await _loadData(episode, startPosition: startPosition);
   }
 
@@ -102,6 +111,9 @@ class PlayerController extends Notifier<PlayerState> {
         newServer.type == active.type) {
       return;
     }
+
+    _preferredServerId = newServer.id;
+    _preferredServerType = newServer.type;
 
     final currentPos = ref.read(videoEngineProvider).currentPosition;
     await _loadData(
@@ -161,13 +173,51 @@ class PlayerController extends Notifier<PlayerState> {
         if (servers.isEmpty) throw Exception('No servers available.');
       }
 
-      final activeServer = server ?? servers.first;
+      // Video Server Selection
+      VideoServer activeServer = servers.first;
+      if (server != null) {
+        activeServer = server;
+      } else {
+        // Priority 1: Exact match (Same ID and Same Type)
+        final exactMatch = servers.firstWhereOrNull(
+          (s) => s.id == _preferredServerId && s.type == _preferredServerType,
+        );
+
+        if (exactMatch != null) {
+          activeServer = exactMatch;
+        } else {
+          // Priority 2: Type match (ID didn't match, but we have the preferred type e.g., Dub)
+          final typeMatch = servers.firstWhereOrNull(
+            (s) => s.type == _preferredServerType,
+          );
+          if (typeMatch != null) {
+            activeServer = typeMatch;
+          }
+        }
+      }
+
       final streams = await _source.getSources(episode.id, activeServer);
       if (streams.isEmpty) throw Exception('No streams available.');
 
-      final activeStream = streams.first;
+      // Video Stream Selection
+      VideoStream activeStream = streams.first;
+      if (_preferredQuality != null) {
+        final qualityMatch = streams.firstWhereOrNull(
+          (s) => s.quality == _preferredQuality,
+        );
+        if (qualityMatch != null) activeStream = qualityMatch;
+      }
+
       final subtitles = activeStream.subtitles;
-      final activeSubtitle = subtitles.firstOrNull;
+
+      // Subtitle Selection
+      SubtitleTrack? activeSubtitle = subtitles.firstOrNull;
+      if (_preferredSubtitleLang != null && subtitles.isNotEmpty) {
+        final subMatch = subtitles.firstWhereOrNull(
+          (s) => s.language == _preferredSubtitleLang,
+        );
+        if (subMatch != null) activeSubtitle = subMatch;
+      }
 
       state = state.copyWith(
         servers: servers,
@@ -194,6 +244,8 @@ class PlayerController extends Notifier<PlayerState> {
   }
 
   Future<void> changeStream(VideoStream newStream) async {
+    _preferredQuality = newStream.quality;
+
     final engine = ref.read(videoEngineProvider);
     final currentPos = engine.currentPosition;
 
@@ -216,6 +268,10 @@ class PlayerController extends Notifier<PlayerState> {
   }
 
   Future<void> changeSubtitle(SubtitleTrack? newSubtitle) async {
+    if (newSubtitle != null) {
+      _preferredSubtitleLang = newSubtitle.language;
+    }
+
     state = state.copyWith(activeSubtitle: newSubtitle, error: null);
     try {
       await ref.read(videoEngineProvider).setSubtitle(newSubtitle);
@@ -227,7 +283,7 @@ class PlayerController extends Notifier<PlayerState> {
   void setupAutoSkipListener(AniSkipArgs? args) {
     final prefs = ref.read(aniskipPrefsProvider);
     final skips = ref.read(aniSkipProvider(args)).value ?? [];
-    
+
     ref.listen(videoEngineStateProvider.select((s) => s.position), (
       previous,
       current,

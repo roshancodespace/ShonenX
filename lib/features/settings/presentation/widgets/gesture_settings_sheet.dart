@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/domain/gesture_prefs.dart';
@@ -14,418 +16,267 @@ class GestureSettingsSheet extends ConsumerWidget {
 
     return AppBottomSheet(
       title: 'Gesture Areas',
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 0, 10, 24),
+        child: _LivePreview(
+          prefs: prefs,
+          onChanged: notifier.updateGesturePrefs,
+        ),
+      ),
+    );
+  }
+}
+
+class _LivePreview extends StatelessWidget {
+  final GesturePrefs prefs;
+  final ValueChanged<GesturePrefs> onChanged;
+
+  const _LivePreview({required this.prefs, required this.onChanged});
+
+  String _pct(double v) => '${(v * 100).round()}%';
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return AspectRatio(
+      aspectRatio: 16 / 9,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 560;
-          return Padding(
-            padding: EdgeInsets.fromLTRB(
-              isWide ? 24 : 16,
-              isWide ? 16 : 8,
-              isWide ? 24 : 16,
-              isWide ? 28 : 20,
+          final w = constraints.maxWidth;
+          final h = constraints.maxHeight;
+
+          final left = prefs.leftMargin * w;
+          final right = prefs.rightMargin * w;
+          final top = prefs.topMargin * h;
+          final bottom = prefs.bottomMargin * h;
+
+          final safeW = math.max(1.0, w - left - right);
+          final safeH = math.max(1.0, h - top - bottom);
+
+          return Container(
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(24),
             ),
-            child: isWide
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Positioned(
+                  top: top,
+                  bottom: bottom,
+                  left: left,
+                  right: right,
+                  child: ColoredBox(color: cs.surface),
+                ),
+                Positioned(
+                  top: 0,
+                  left: left,
+                  right: right,
+                  height: top,
+                  child: _deadZone(cs, _pct(prefs.topMargin)),
+                ),
+                Positioned(
+                  bottom: 0,
+                  left: left,
+                  right: right,
+                  height: bottom,
+                  child: _deadZone(cs, _pct(prefs.bottomMargin)),
+                ),
+                Positioned(
+                  top: 0,
+                  bottom: 0,
+                  left: 0,
+                  width: left,
+                  child: _deadZone(cs, _pct(prefs.leftMargin)),
+                ),
+                Positioned(
+                  top: 0,
+                  bottom: 0,
+                  right: 0,
+                  width: right,
+                  child: _deadZone(cs, _pct(prefs.rightMargin)),
+                ),
+                Positioned(
+                  left: left,
+                  top: top,
+                  width: safeW,
+                  height: safeH,
+                  child: Stack(
                     children: [
-                      Expanded(
-                        flex: 5,
-                        child: _GesturePreview(prefs: prefs, isWide: true),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: FractionallySizedBox(
+                          widthFactor: prefs.leftWidth,
+                          heightFactor: 1,
+                          child: _gestureArea(
+                            bgColor: cs.primaryContainer.withValues(alpha: 0.5),
+                            fgColor: cs.onPrimaryContainer,
+                            icon: Icons.light_mode_rounded,
+                            percent: _pct(prefs.leftWidth),
+                            isLeft: true,
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 28),
-                      Expanded(
-                        flex: 6,
-                        child: _SliderList(
-                          prefs: prefs,
-                          notifier: notifier,
-                          isWide: true,
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: FractionallySizedBox(
+                          widthFactor: prefs.rightWidth,
+                          heightFactor: 1,
+                          child: _gestureArea(
+                            bgColor: cs.tertiaryContainer.withValues(
+                              alpha: 0.5,
+                            ),
+                            fgColor: cs.onTertiaryContainer,
+                            icon: Icons.volume_up_rounded,
+                            percent: _pct(prefs.rightWidth),
+                            isLeft: false,
+                          ),
                         ),
                       ),
                     ],
-                  )
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _GesturePreview(prefs: prefs, isWide: false),
-                      const SizedBox(height: 20),
-                      _SliderList(
-                        prefs: prefs,
-                        notifier: notifier,
-                        isWide: false,
-                      ),
-                    ],
                   ),
+                ),
+                Positioned(
+                  left: left + (prefs.leftWidth * safeW) - 24,
+                  top: top,
+                  bottom: bottom,
+                  width: 48,
+                  child: _dragHandle(
+                    axis: Axis.horizontal,
+                    color: cs.primary,
+                    onDrag: (d) {
+                      final currentWidthPx = prefs.leftWidth * safeW;
+                      final newWidthPx = currentWidthPx + d.delta.dx;
+                      final v = (newWidthPx / safeW).clamp(0.1, 0.45);
+                      onChanged(prefs.copyWith(leftWidth: v));
+                    },
+                  ),
+                ),
+                Positioned(
+                  right: right + (prefs.rightWidth * safeW) - 24,
+                  top: top,
+                  bottom: bottom,
+                  width: 48,
+                  child: _dragHandle(
+                    axis: Axis.horizontal,
+                    color: cs.tertiary,
+                    onDrag: (d) {
+                      final currentWidthPx = prefs.rightWidth * safeW;
+                      final newWidthPx = currentWidthPx - d.delta.dx;
+                      final v = (newWidthPx / safeW).clamp(0.1, 0.45);
+                      onChanged(prefs.copyWith(rightWidth: v));
+                    },
+                  ),
+                ),
+                Positioned(
+                  top: math.max(0, top - 24),
+                  left: 0,
+                  right: 0,
+                  height: 48,
+                  child: _dragHandle(
+                    axis: Axis.vertical,
+                    color: cs.outline,
+                    onDrag: (d) {
+                      final v = ((top + d.delta.dy) / h).clamp(0.0, 0.35);
+                      onChanged(prefs.copyWith(topMargin: v));
+                    },
+                  ),
+                ),
+                Positioned(
+                  bottom: math.max(0, bottom - 24),
+                  left: 0,
+                  right: 0,
+                  height: 48,
+                  child: _dragHandle(
+                    axis: Axis.vertical,
+                    color: cs.outline,
+                    onDrag: (d) {
+                      final v = ((bottom - d.delta.dy) / h).clamp(0.0, 0.35);
+                      onChanged(prefs.copyWith(bottomMargin: v));
+                    },
+                  ),
+                ),
+                Positioned(
+                  left: math.max(0, left - 24),
+                  top: 0,
+                  bottom: 0,
+                  width: 48,
+                  child: _dragHandle(
+                    axis: Axis.horizontal,
+                    color: cs.outline,
+                    onDrag: (d) {
+                      final v = ((left + d.delta.dx) / w).clamp(0.0, 0.35);
+                      onChanged(prefs.copyWith(leftMargin: v));
+                    },
+                  ),
+                ),
+                Positioned(
+                  right: math.max(0, right - 24),
+                  top: 0,
+                  bottom: 0,
+                  width: 48,
+                  child: _dragHandle(
+                    axis: Axis.horizontal,
+                    color: cs.outline,
+                    onDrag: (d) {
+                      final v = ((right - d.delta.dx) / w).clamp(0.0, 0.35);
+                      onChanged(prefs.copyWith(rightMargin: v));
+                    },
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
     );
   }
-}
 
-class _SliderList extends StatelessWidget {
-  final GesturePrefs prefs;
-  final PlayerPrefsNotifier notifier;
-  final bool isWide;
-
-  const _SliderList({
-    required this.prefs,
-    required this.notifier,
-    required this.isWide,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final labelW = isWide ? 110.0 : 100.0;
-    final pctW = isWide ? 36.0 : 32.0;
-    final fs = isWide ? 12.5 : 12.0;
-
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _SectionLabel('Dead Zones', isWide: isWide),
-          _row(
-            context,
-            'Top',
-            prefs.topMargin,
-            0.4,
-            labelW,
-            pctW,
-            fs,
-            (v) => notifier.updateGesturePrefs(prefs.copyWith(topMargin: v)),
+  Widget _deadZone(ColorScheme cs, String label) {
+    if (label == '0%') return const SizedBox.shrink();
+    return ColoredBox(
+      color: cs.errorContainer.withValues(alpha: 0.4),
+      child: Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            color: cs.onErrorContainer,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
           ),
-          _row(
-            context,
-            'Bottom',
-            prefs.bottomMargin,
-            0.4,
-            labelW,
-            pctW,
-            fs,
-            (v) => notifier.updateGesturePrefs(prefs.copyWith(bottomMargin: v)),
-          ),
-          _row(
-            context,
-            'Left',
-            prefs.leftMargin,
-            0.4,
-            labelW,
-            pctW,
-            fs,
-            (v) => notifier.updateGesturePrefs(prefs.copyWith(leftMargin: v)),
-          ),
-          _row(
-            context,
-            'Right',
-            prefs.rightMargin,
-            0.4,
-            labelW,
-            pctW,
-            fs,
-            (v) => notifier.updateGesturePrefs(prefs.copyWith(rightMargin: v)),
-          ),
-          SizedBox(height: isWide ? 12 : 8),
-          _SectionLabel('Gesture Widths', isWide: isWide),
-          _row(
-            context,
-            'Left',
-            prefs.leftWidth,
-            (1.0 - prefs.rightWidth - prefs.leftMargin - prefs.rightMargin)
-                .clamp(0.1, 0.8),
-            labelW,
-            pctW,
-            fs,
-            (v) => notifier.updateGesturePrefs(prefs.copyWith(leftWidth: v)),
-          ),
-          _row(
-            context,
-            'Right',
-            prefs.rightWidth,
-            (1.0 - prefs.leftWidth - prefs.leftMargin - prefs.rightMargin)
-                .clamp(0.1, 0.8),
-            labelW,
-            pctW,
-            fs,
-            (v) => notifier.updateGesturePrefs(prefs.copyWith(rightWidth: v)),
-          ),
-          _row(
-            context,
-            'Double Tap',
-            prefs.doubleTapWidth,
-            0.45,
-            labelW,
-            pctW,
-            fs,
-            (v) =>
-                notifier.updateGesturePrefs(prefs.copyWith(doubleTapWidth: v)),
-          ),
-          SizedBox(height: isWide ? 10 : 6),
-          Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.4)),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () =>
-                  notifier.updateGesturePrefs(const GesturePrefs()),
-              style: TextButton.styleFrom(
-                foregroundColor: cs.onSurfaceVariant,
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                textStyle: TextStyle(fontSize: isWide ? 12.5 : 12),
-              ),
-              child: const Text('Reset defaults'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _row(
-    BuildContext context,
-    String label,
-    double value,
-    double max,
-    double labelW,
-    double pctW,
-    double fs,
-    ValueChanged<double> onChanged,
-  ) {
-    final cs = Theme.of(context).colorScheme;
-    final pct = (value * 100).toInt();
-    final atMax = value >= max - 0.01;
-
-    return SizedBox(
-      height: isWide ? 36 : 32,
-      child: Row(
-        children: [
-          SizedBox(
-            width: labelW,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: fs,
-                color: cs.onSurfaceVariant,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ),
-          Expanded(
-            child: SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                trackHeight: isWide ? 2.5 : 2,
-                thumbShape: RoundSliderThumbShape(
-                  enabledThumbRadius: isWide ? 6.5 : 6,
-                ),
-                overlayShape: RoundSliderOverlayShape(
-                  overlayRadius: isWide ? 13 : 11,
-                ),
-                activeTrackColor: atMax ? cs.error : cs.primary,
-                inactiveTrackColor: cs.outlineVariant,
-                thumbColor: atMax ? cs.error : cs.primary,
-                overlayColor: (atMax ? cs.error : cs.primary).withValues(
-                  alpha: 0.1,
-                ),
-              ),
-              child: Slider.adaptive(
-                value: value,
-                min: 0,
-                max: max,
-                divisions: 20,
-                onChanged: onChanged,
-              ),
-            ),
-          ),
-          SizedBox(
-            width: pctW,
-            child: Text(
-              '$pct%',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: isWide ? 11.5 : 11,
-                fontWeight: FontWeight.w600,
-                color: atMax ? cs.error : cs.onSurfaceVariant,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  final bool isWide;
-
-  const _SectionLabel(this.text, {required this.isWide});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: EdgeInsets.only(bottom: isWide ? 2 : 1, left: 2),
-      child: Text(
-        text.toUpperCase(),
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-          letterSpacing: 0.8,
-        ),
-      ),
-    );
-  }
-}
-
-// ── Preview ──────────────────────────────────────────────────────────────────
-
-class _GesturePreview extends StatelessWidget {
-  final GesturePrefs prefs;
-  final bool isWide;
-
-  const _GesturePreview({required this.prefs, required this.isWide});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final safeH = (1.0 - prefs.topMargin - prefs.bottomMargin).clamp(0.0, 1.0);
-    final safeW = (1.0 - prefs.leftMargin - prefs.rightMargin).clamp(0.0, 1.0);
-
-    return AspectRatio(
-      aspectRatio: 16 / 9,
-      child: Container(
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(isWide ? 12 : 10),
-          border: Border.all(color: cs.outlineVariant, width: 0.8),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-            if (prefs.topMargin > 0)
-              Align(
-                alignment: Alignment.topCenter,
-                child: FractionallySizedBox(
-                  widthFactor: 1,
-                  heightFactor: prefs.topMargin,
-                  child: ColoredBox(color: cs.error.withValues(alpha: 0.15)),
-                ),
-              ),
-            if (prefs.bottomMargin > 0)
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: FractionallySizedBox(
-                  widthFactor: 1,
-                  heightFactor: prefs.bottomMargin,
-                  child: ColoredBox(color: cs.error.withValues(alpha: 0.15)),
-                ),
-              ),
-            if (prefs.leftMargin > 0)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: FractionallySizedBox(
-                  widthFactor: prefs.leftMargin,
-                  heightFactor: 1,
-                  child: ColoredBox(color: cs.error.withValues(alpha: 0.15)),
-                ),
-              ),
-            if (prefs.rightMargin > 0)
-              Align(
-                alignment: Alignment.centerRight,
-                child: FractionallySizedBox(
-                  widthFactor: prefs.rightMargin,
-                  heightFactor: 1,
-                  child: ColoredBox(color: cs.error.withValues(alpha: 0.15)),
-                ),
-              ),
-            Align(
-              alignment: Alignment.center,
-              child: FractionallySizedBox(
-                widthFactor: safeW,
-                heightFactor: safeH,
-                child: Stack(
-                  children: [
-                    _gestureZone(
-                      alignment: Alignment.centerLeft,
-                      width: prefs.leftWidth,
-                      color: Colors.blue.withValues(alpha: 0.18),
-                      icon: Icons.light_mode_rounded,
-                      label: 'Brightness',
-                      labelAlign: Alignment.topLeft,
-                    ),
-                    _gestureZone(
-                      alignment: Alignment.centerRight,
-                      width: prefs.rightWidth,
-                      color: Colors.green.withValues(alpha: 0.18),
-                      icon: Icons.volume_up_rounded,
-                      label: 'Volume',
-                      labelAlign: Alignment.topRight,
-                    ),
-                    _tapZone(
-                      alignment: Alignment.centerLeft,
-                      width: prefs.doubleTapWidth,
-                      icon: Icons.replay_10_rounded,
-                      label: '−10s',
-                      isRight: false,
-                    ),
-                    _tapZone(
-                      alignment: Alignment.centerRight,
-                      width: prefs.doubleTapWidth,
-                      icon: Icons.forward_10_rounded,
-                      label: '+10s',
-                      isRight: true,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );
   }
 
-  Widget _gestureZone({
-    required Alignment alignment,
-    required double width,
-    required Color color,
+  Widget _gestureArea({
+    required Color bgColor,
+    required Color fgColor,
     required IconData icon,
-    required String label,
-    required Alignment labelAlign,
+    required String percent,
+    required bool isLeft,
   }) {
-    final iconSize = isWide ? 20.0 : 15.0;
-    final fontSize = isWide ? 8.5 : 7.0;
-    final padding = isWide ? 8.0 : 5.0;
-
-    return Align(
-      alignment: alignment,
-      child: FractionallySizedBox(
-        widthFactor: width,
-        heightFactor: 1,
-        child: Container(
-          color: color,
-          padding: EdgeInsets.all(padding),
-          child: Stack(
+    return ClipRRect(
+      borderRadius: BorderRadius.horizontal(
+        left: Radius.circular(!isLeft ? 24 : 0),
+        right: Radius.circular(isLeft ? 24 : 0),
+      ),
+      child: ColoredBox(
+        color: bgColor,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Align(
-                alignment: labelAlign,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    color: Colors.white.withValues(alpha: 0.45),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              Center(
-                child: Icon(
-                  icon,
-                  size: iconSize,
-                  color: Colors.white.withValues(alpha: 0.45),
+              Icon(icon, size: 24, color: fgColor),
+              const SizedBox(height: 2),
+              Text(
+                percent,
+                style: TextStyle(
+                  color: fgColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -435,70 +286,23 @@ class _GesturePreview extends StatelessWidget {
     );
   }
 
-  Widget _tapZone({
-    required Alignment alignment,
-    required double width,
-    required IconData icon,
-    required String label,
-    required bool isRight,
+  Widget _dragHandle({
+    required Axis axis,
+    required ValueChanged<DragUpdateDetails> onDrag,
+    required Color color,
   }) {
-    final iconSize = isWide ? 11.0 : 8.0;
-    final fontSize = isWide ? 8.5 : 7.0;
-    final padding = isWide ? 8.0 : 5.0;
+    final isHorizontal = axis == Axis.horizontal;
 
-    return Align(
-      alignment: alignment,
-      child: FractionallySizedBox(
-        widthFactor: width,
-        heightFactor: 1,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onPanUpdate: onDrag,
+      child: Center(
         child: Container(
+          width: isHorizontal ? 4 : 32,
+          height: isHorizontal ? 32 : 4,
           decoration: BoxDecoration(
-            border: Border(
-              left: isRight
-                  ? BorderSide(color: Colors.white.withValues(alpha: 0.12))
-                  : BorderSide.none,
-              right: isRight
-                  ? BorderSide.none
-                  : BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-            ),
-          ),
-          padding: EdgeInsets.all(padding),
-          child: Align(
-            alignment: isRight ? Alignment.bottomRight : Alignment.bottomLeft,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: isRight
-                  ? [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: fontSize,
-                          color: Colors.white.withValues(alpha: 0.28),
-                        ),
-                      ),
-                      SizedBox(width: isWide ? 3 : 2),
-                      Icon(
-                        icon,
-                        size: iconSize,
-                        color: Colors.white.withValues(alpha: 0.28),
-                      ),
-                    ]
-                  : [
-                      Icon(
-                        icon,
-                        size: iconSize,
-                        color: Colors.white.withValues(alpha: 0.28),
-                      ),
-                      SizedBox(width: isWide ? 3 : 2),
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: fontSize,
-                          color: Colors.white.withValues(alpha: 0.28),
-                        ),
-                      ),
-                    ],
-            ),
+            color: color,
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),

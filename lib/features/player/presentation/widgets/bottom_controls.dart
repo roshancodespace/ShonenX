@@ -229,8 +229,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                       },
                     ),
                     const Spacer(),
-                    if (widget.playerState.activeServer?.type !=
-                        ServerType.unknown)
+                    if (widget.playerState.activeServer != null)
                       _buildActionButton(
                         displayText:
                             widget.playerState.activeServer?.type ==

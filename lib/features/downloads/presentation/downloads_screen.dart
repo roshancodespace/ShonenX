@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
@@ -260,25 +260,17 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
     }
   }
 
-  void _openFile(File file) {
-    if (Platform.isAndroid) {
-      try {
-        final intent = AndroidIntent(
-          action: 'action_view',
-          data: 'file://${file.path}',
-          type: 'video/*',
-          flags: <int>[1], // FLAG_GRANT_READ_URI_PERMISSION
-        );
-        intent.launch();
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Failed to open video: $e')));
-        }
-      }
-    }
+ Future<void> _openFile(File file) async {
+  final result = await OpenFile.open(file.path);
+
+  if (result.type != ResultType.done && mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.message),
+      ),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {

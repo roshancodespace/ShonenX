@@ -122,7 +122,6 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 28),
       itemCount: _servers!.length,
       separatorBuilder: (_, __) =>
           const Divider(height: 1, indent: 20, endIndent: 20),
@@ -172,8 +171,10 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
 
     String targetDir = prefs.downloadPath;
     if (prefs.createSubfolders) {
-      final animeFolderName =
-          widget.media.title.availableTitle.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      final animeFolderName = widget.media.title.availableTitle.replaceAll(
+        RegExp(r'[\\/:*?"<>|]'),
+        '_',
+      );
       targetDir = '$targetDir/$animeFolderName';
     }
 
@@ -241,8 +242,8 @@ class _ServerTile extends StatelessWidget {
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
-        tilePadding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
-        childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+        tilePadding: const EdgeInsets.fromLTRB(10, 4, 10, 4),
+        childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 14),
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         onExpansionChanged: (expanded) {
           if (expanded) onExpand();

@@ -156,6 +156,7 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
       client,
       task.sendPort,
     );
+
     if (segments.isEmpty) throw Exception("Empty playlist");
 
     final batchSize = 3;
@@ -164,7 +165,8 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
     DateTime lastLog = DateTime.now();
 
     for (var s in segments) {
-      if (File(p.join(tempDir.path, '${s.fileIndex}.ts')).existsSync()) {
+      final f = File(p.join(tempDir.path, '${s.fileIndex}.ts'));
+      if (f.existsSync() && f.lengthSync() > 0) {
         completedSegments++;
       }
     }
@@ -181,11 +183,13 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
         batch.map((seg) async {
           if (isCancelled) return;
           final file = File(p.join(tempDir.path, '${seg.fileIndex}.ts'));
-          if (await file.exists()) return;
+
+          if (file.existsSync() && file.lengthSync() > 0) return;
 
           final bytes = await _fetch(seg.url, task.headers, client);
-          if (bytes == null)
+          if (bytes == null) {
             throw Exception("Failed to download segment ${seg.fileIndex}");
+          }
 
           final data = seg.key != null
               ? _decrypt(bytes, seg.key!, seg.iv, seg.seq)
@@ -212,10 +216,12 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
 
     for (var s in segments) {
       final f = File(p.join(tempDir.path, '${s.fileIndex}.ts'));
-      if (await f.exists()) {
+      if (f.existsSync() && f.lengthSync() > 0) {
         await sink.addStream(f.openRead());
       } else {
-        throw Exception("Missing segment file ${s.fileIndex} during stitching");
+        throw Exception(
+          "Missing or corrupted segment ${s.fileIndex} during stitching",
+        );
       }
     }
 
@@ -255,7 +261,7 @@ Future<List<_Segment>> _parsePlaylist(
         final next = lines[i + 1].trim();
         if (next.isNotEmpty && !next.startsWith('#')) {
           return _parsePlaylist(
-            baseUri.resolve(next).toString(),
+            _resolveUrl(baseUri, next),
             headers,
             client,
             port,
@@ -279,9 +285,7 @@ Future<List<_Segment>> _parsePlaylist(
     } else if (trim.startsWith('#EXT-X-MAP')) {
       final mapUri = RegExp(r'URI="([^"]+)"').firstMatch(trim)?.group(1);
       if (mapUri != null) {
-        segments.add(
-          _Segment(baseUri.resolve(mapUri).toString(), key, iv, -1, -1),
-        );
+        segments.add(_Segment(_resolveUrl(baseUri, mapUri), key, iv, -1, -1));
       }
     } else if (trim.startsWith('#EXT-X-KEY')) {
       final keyUri = RegExp(r'URI="([^"]+)"').firstMatch(trim)?.group(1);
@@ -291,14 +295,14 @@ Future<List<_Segment>> _parsePlaylist(
       ).firstMatch(trim)?.group(1);
 
       if (keyUri != null) {
-        key = await _fetch(baseUri.resolve(keyUri).toString(), headers, client);
+        key = await _fetch(_resolveUrl(baseUri, keyUri), headers, client);
         if (key == null) throw Exception("Failed to fetch decryption key");
       }
       if (ivHex != null) iv = _hexToBytes(ivHex);
     } else if (!trim.startsWith('#')) {
       segments.add(
         _Segment(
-          baseUri.resolve(trim).toString(),
+          _resolveUrl(baseUri, trim),
           key,
           iv,
           mediaSeq + segmentCount,
@@ -311,6 +315,17 @@ Future<List<_Segment>> _parsePlaylist(
   }
 
   return segments;
+}
+
+String _resolveUrl(Uri baseUri, String url) {
+  final parsed = Uri.parse(url);
+  if (parsed.hasScheme) return url;
+
+  final resolved = baseUri.resolve(url);
+  if (baseUri.hasQuery && !parsed.hasQuery) {
+    return resolved.replace(query: baseUri.query).toString();
+  }
+  return resolved.toString();
 }
 
 Future<Uint8List?> _fetch(
@@ -331,10 +346,21 @@ Future<Uint8List?> _fetch(
 
 Uint8List _decrypt(Uint8List bytes, Uint8List key, Uint8List? iv, int seq) {
   final effectiveIV = iv ?? _seqToIV(seq);
-  final encrypter = Encrypter(AES(Key(key), mode: AESMode.cbc));
-  return Uint8List.fromList(
-    encrypter.decryptBytes(Encrypted(bytes), iv: IV(effectiveIV)),
-  );
+  try {
+    final encrypter = Encrypter(
+      AES(Key(key), mode: AESMode.cbc, padding: 'PKCS7'),
+    );
+    return Uint8List.fromList(
+      encrypter.decryptBytes(Encrypted(bytes), iv: IV(effectiveIV)),
+    );
+  } catch (e) {
+    final fallbackEncrypter = Encrypter(
+      AES(Key(key), mode: AESMode.cbc, padding: null),
+    );
+    return Uint8List.fromList(
+      fallbackEncrypter.decryptBytes(Encrypted(bytes), iv: IV(effectiveIV)),
+    );
+  }
 }
 
 Uint8List _seqToIV(int seq) {

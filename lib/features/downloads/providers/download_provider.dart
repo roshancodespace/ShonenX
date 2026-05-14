@@ -121,7 +121,9 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
     required OnProgressCallback onProgress,
     required OnStatusCallback onStatus,
   }) async {
-    final isHLS = await ref.read(httpClientProvider).isHLS(task.url);
+    final isHLS = await ref
+        .read(httpClientProvider)
+        .isHLS(task.url, headers: task.headersMap);
     if (isHLS) {
       return M3U8DownloadEngine(
         task: task,

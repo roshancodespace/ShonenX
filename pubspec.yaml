@@ -70,6 +70,7 @@ dependencies:
   encrypt: ^5.0.3
   device_apps: ^2.2.0
   android_intent_plus: ^6.0.0
+  open_file: ^3.5.11
 
 dev_dependencies:
   flutter_test:

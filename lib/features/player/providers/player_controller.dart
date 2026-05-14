@@ -225,13 +225,13 @@ class PlayerController extends Notifier<PlayerState> {
   }
 
   void setupAutoSkipListener(AniSkipArgs? args) {
+    final prefs = ref.read(aniskipPrefsProvider);
+    final skips = ref.read(aniSkipProvider(args)).value ?? [];
+    
     ref.listen(videoEngineStateProvider.select((s) => s.position), (
       previous,
       current,
     ) {
-      final skips = ref.read(aniSkipProvider(args)).value ?? [];
-      final prefs = ref.read(aniskipPrefsProvider);
-
       for (final skip in skips) {
         final mode = prefs.mode(skip.type);
 

@@ -11,6 +11,7 @@ import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/providers/active_engine_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_provider.dart';
+import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
 import 'package:shonenx/features/tracking/engine/sync_engine.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -85,7 +86,27 @@ class PlayerController extends Notifier<PlayerState> {
   @override
   PlayerState build() {
     ref.onDispose(() => _progressTimer?.cancel);
+
+    ref.listen(subtitlePrefsProvider, (prev, current) {
+      if (prev?.useCustomSubtitle != current.useCustomSubtitle) {
+        _applyNativeSubtitle(state.activeSubtitle);
+      }
+    });
+
     return const PlayerState();
+  }
+
+  Future<void> _applyNativeSubtitle(SubtitleTrack? subtitle) async {
+    final prefs = ref.read(subtitlePrefsProvider);
+    try {
+      if (prefs.useCustomSubtitle) {
+        await ref.read(videoEngineProvider).setSubtitle(null);
+      } else {
+        await ref.read(videoEngineProvider).setSubtitle(subtitle);
+      }
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to switch subtitle: $e');
+    }
   }
 
   Future<void> initialize(
@@ -233,7 +254,9 @@ class PlayerController extends Notifier<PlayerState> {
           .read(videoEngineProvider)
           .initialize(
             activeStream,
-            subtitle: activeSubtitle,
+            subtitle: ref.read(subtitlePrefsProvider).useCustomSubtitle
+                ? null
+                : activeSubtitle,
             startAt: startPosition,
           );
 
@@ -259,7 +282,9 @@ class PlayerController extends Notifier<PlayerState> {
     try {
       await engine.initialize(
         newStream,
-        subtitle: newStream.subtitles.firstOrNull,
+        subtitle: ref.read(subtitlePrefsProvider).useCustomSubtitle
+            ? null
+            : newStream.subtitles.firstOrNull,
         startAt: currentPos,
       );
     } catch (e) {
@@ -273,11 +298,7 @@ class PlayerController extends Notifier<PlayerState> {
     }
 
     state = state.copyWith(activeSubtitle: newSubtitle, error: null);
-    try {
-      await ref.read(videoEngineProvider).setSubtitle(newSubtitle);
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to switch subtitle: $e');
-    }
+    await _applyNativeSubtitle(newSubtitle);
   }
 
   void setupAutoSkipListener(AniSkipArgs? args) {

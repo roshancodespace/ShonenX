@@ -6,6 +6,7 @@ import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/gesture_settings_sheet.dart';
+import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings_sheet.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
@@ -69,6 +70,23 @@ class PlayerSettingsScreen extends ConsumerWidget {
               onSelectionChanged: (Set<PlayerType> selection) =>
                   prefsNotifier.changePlayer(selection.first),
             ),
+          SettingsSection(
+            title: 'Subtitles',
+            children: [
+              SettingsActionTile(
+                icon: Icons.subtitles_rounded,
+                title: 'Subtitle Preferences',
+                subtitle: 'Customize subtitle appearance and rendering engine',
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (context) => const SubtitleSettingsSheet(),
+                  );
+                },
+              ),
+            ],
+          ),
           SettingsSection(
             title: 'Gestures',
             children: [

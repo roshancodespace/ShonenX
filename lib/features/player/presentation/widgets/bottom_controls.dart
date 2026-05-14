@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:window_manager/window_manager.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episode_list_panel.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
@@ -10,6 +13,7 @@ import 'package:shonenx/features/player/providers/active_engine_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_provider.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
+import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings_sheet.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -42,6 +46,25 @@ class BottomControls extends ConsumerStatefulWidget {
 
 class _BottomControlsState extends ConsumerState<BottomControls> {
   double? _dragingValue;
+  bool _isFullScreen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      windowManager.isFullScreen().then((val) {
+        if (mounted) setState(() => _isFullScreen = val);
+      });
+    }
+  }
+
+  void _toggleFullScreen() async {
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      bool isFull = await windowManager.isFullScreen();
+      await windowManager.setFullScreen(!isFull);
+      if (mounted) setState(() => _isFullScreen = !isFull);
+    }
+  }
 
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
@@ -181,8 +204,14 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                       items: widget.playerState.subtitles,
                       itemLabel: (s) => s.language,
                       onChanged: (v) => widget.controller.changeSubtitle(v),
+                      onLongPress: () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        builder: (context) => SubtitleSettingsSheet(),
+                      ),
                       isDisabled: widget.playerState.subtitles.isEmpty,
                       withBadge: false,
+                      displayText: 'Subtitles',
                       displayWidget: Badge(
                         label: Text(
                           widget.playerState.subtitles.length.toString(),
@@ -293,6 +322,17 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                         displayText:
                             widget.playerState.activeStream?.quality ?? 'Auto',
                       ),
+                    if (Platform.isWindows ||
+                        Platform.isLinux ||
+                        Platform.isMacOS) ...[
+                      const SizedBox(width: 20),
+                      _buildActionIcon(
+                        _isFullScreen
+                            ? Icons.fullscreen_exit_rounded
+                            : Icons.fullscreen_rounded,
+                        _toggleFullScreen,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -425,6 +465,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     required List<T> items,
     required String Function(T) itemLabel,
     required void Function(T) onChanged,
+    void Function()? onLongPress,
     bool? isDisabled,
     bool withBadge = true,
     String? displayText,
@@ -451,6 +492,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                   onChanged: onChanged,
                 );
               },
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(6),
         child: Container(
           alignment: Alignment.center,

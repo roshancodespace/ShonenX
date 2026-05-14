@@ -10,6 +10,7 @@ import 'package:shonenx/shared/models/video_stream.dart' as stream;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/providers/active_engine_provider.dart';
+import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
 
 class MediaKitEngine implements VideoEngine {
   late final Player _player;
@@ -107,7 +108,50 @@ class MediaKitEngine implements VideoEngine {
 
   @override
   Widget buildVideoView() {
-    return Video(controller: _controller, controls: NoVideoControls);
+    return Consumer(
+      builder: (context, ref, _) {
+        final subtitlePrefs = ref.watch(subtitlePrefsProvider);
+        return Video(
+          controller: _controller,
+          controls: NoVideoControls,
+          subtitleViewConfiguration: SubtitleViewConfiguration(
+            padding: EdgeInsets.only(bottom: subtitlePrefs.bottomPadding),
+            style: TextStyle(
+              fontSize: subtitlePrefs.fontSize,
+              color: Color(subtitlePrefs.fontColor),
+              backgroundColor: subtitlePrefs.backgroundColor == 0x00000000 
+                  ? null 
+                  : Color(subtitlePrefs.backgroundColor),
+              fontWeight: subtitlePrefs.bold ? FontWeight.w700 : FontWeight.w500,
+              shadows: subtitlePrefs.outlineColor == 0x00000000
+                  ? null
+                  : [
+                      Shadow(
+                        offset: Offset(-subtitlePrefs.outlineSize, -subtitlePrefs.outlineSize),
+                        color: Color(subtitlePrefs.outlineColor),
+                        blurRadius: subtitlePrefs.outlineSize,
+                      ),
+                      Shadow(
+                        offset: Offset(subtitlePrefs.outlineSize, -subtitlePrefs.outlineSize),
+                        color: Color(subtitlePrefs.outlineColor),
+                        blurRadius: subtitlePrefs.outlineSize,
+                      ),
+                      Shadow(
+                        offset: Offset(subtitlePrefs.outlineSize, subtitlePrefs.outlineSize),
+                        color: Color(subtitlePrefs.outlineColor),
+                        blurRadius: subtitlePrefs.outlineSize,
+                      ),
+                      Shadow(
+                        offset: Offset(-subtitlePrefs.outlineSize, subtitlePrefs.outlineSize),
+                        color: Color(subtitlePrefs.outlineColor),
+                        blurRadius: subtitlePrefs.outlineSize,
+                      ),
+                    ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override

@@ -78,6 +78,7 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
 
   @override
   Future<void> updateListItem({
+    required UnifiedMedia media,
     required String trackingId,
     TrackedStatus? status,
     double? progress,
@@ -244,8 +245,7 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
             ..score = rawScore > 0 ? rawScore.toDouble() : 0
             ..episodesWatched =
                 (listStatus?['num_watched_episodes'] as num?)?.toInt() ?? 0
-            ..episodes = node['num_episodes']
-            ..addedAt = DateTime.now();
+            ..episodes = node['num_episodes'];
         }).toList();
       },
     );

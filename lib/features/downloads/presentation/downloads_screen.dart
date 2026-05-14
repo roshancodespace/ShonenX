@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -233,7 +234,7 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
     if (!await dir.exists()) return [];
 
     final List<File> files = [];
-    final entities = await dir.list().toList();
+    final entities = await dir.list(recursive: true).toList();
     for (final entity in entities) {
       if (entity is File && entity.path.endsWith('.mp4')) {
         files.add(entity);
@@ -255,6 +256,26 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Failed to delete file: $e')));
+      }
+    }
+  }
+
+  void _openFile(File file) {
+    if (Platform.isAndroid) {
+      try {
+        final intent = AndroidIntent(
+          action: 'action_view',
+          data: 'file://${file.path}',
+          type: 'video/*',
+          flags: <int>[1], // FLAG_GRANT_READ_URI_PERMISSION
+        );
+        intent.launch();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to open video: $e')));
+        }
       }
     }
   }
@@ -293,6 +314,7 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
               1,
             );
             return ListTile(
+              onTap: () => _openFile(file),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 8,

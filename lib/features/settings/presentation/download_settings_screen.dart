@@ -41,6 +41,15 @@ class DownloadSettingsScreen extends ConsumerWidget {
             SettingsSection(
               title: 'Formatting',
               children: [
+                SettingsSwitchTile(
+                  icon: Icons.create_new_folder_outlined,
+                  title: 'Create Anime Folders',
+                  subtitle: 'Save episodes inside a folder named after the anime',
+                  value: prefs.createSubfolders,
+                  onChanged: (val) {
+                    prefsNotifier.setCreateSubfolders(val);
+                  },
+                ),
                 SettingsDropdownTile<FileNameFormat>(
                   icon: Icons.title_outlined,
                   title: 'File Name Format',

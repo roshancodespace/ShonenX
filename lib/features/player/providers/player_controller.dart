@@ -298,7 +298,7 @@ class PlayerController extends Notifier<PlayerState> {
       ref
           .read(syncEngineProvider)
           .processPlayback(
-            primaryMediaId: _media.id,
+            media: _media,
             episodeNumber: state.activeEpisode!.number,
             position: position,
             duration: duration,

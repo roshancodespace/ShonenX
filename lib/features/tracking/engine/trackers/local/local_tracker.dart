@@ -19,6 +19,7 @@ class LocalTracker implements TrackingService {
 
   @override
   Future<void> updateListItem({
+    required UnifiedMedia media,
     required String trackingId,
     TrackedStatus? status,
     double? progress,
@@ -31,7 +32,12 @@ class LocalTracker implements TrackingService {
 
       entry ??= LibraryEntry()
         ..providerId = trackingId
-        ..addedAt = DateTime.now();
+        ..format = media.format
+        ..title = media.title.availableTitle
+        ..cover = media.cover ?? ''
+        ..type = media.type.id
+        ..episodes = media.episodes
+        ..updatedAt = DateTime.now();
 
       if (progress != null) {
         entry.episodesWatched = progress.toInt();

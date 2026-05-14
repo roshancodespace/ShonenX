@@ -29,22 +29,26 @@ enum FileNameFormat {
 class DownloadPrefs {
   final String downloadPath;
   final FileNameFormat fileNameFormat;
+  final bool createSubfolders;
   final bool useOneDM;
 
   const DownloadPrefs({
     required this.downloadPath,
     required this.fileNameFormat,
+    this.createSubfolders = true,
     this.useOneDM = false,
   });
 
   DownloadPrefs copyWith({
     String? downloadPath,
     FileNameFormat? fileNameFormat,
+    bool? createSubfolders,
     bool? useOneDM,
   }) {
     return DownloadPrefs(
       downloadPath: downloadPath ?? this.downloadPath,
       fileNameFormat: fileNameFormat ?? this.fileNameFormat,
+      createSubfolders: createSubfolders ?? this.createSubfolders,
       useOneDM: useOneDM ?? this.useOneDM,
     );
   }
@@ -53,6 +57,7 @@ class DownloadPrefs {
     return DownloadPrefs(
       downloadPath: map['downloadPath'] ?? defaultPath,
       fileNameFormat: FileNameFormat.fromString(map['fileNameFormat']),
+      createSubfolders: map['createSubfolders'] ?? true,
       useOneDM: map['useOneDM'] ?? false,
     );
   }
@@ -61,6 +66,7 @@ class DownloadPrefs {
     return {
       'downloadPath': downloadPath,
       'fileNameFormat': fileNameFormat.name,
+      'createSubfolders': createSubfolders,
       'useOneDM': useOneDM,
     };
   }
@@ -92,6 +98,7 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
     return DownloadPrefs(
       downloadPath: defaultPath,
       fileNameFormat: FileNameFormat.titleAndEpisode,
+      createSubfolders: true,
       useOneDM: false,
     );
   }
@@ -111,6 +118,12 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
   Future<void> setUseOneDM(bool value) async {
     final prefs = ref.read(sharedPreferencesProvider);
     state = AsyncData(state.value!.copyWith(useOneDM: value));
+    await prefs.setString(_key, jsonEncode(state.value!.toMap()));
+  }
+
+  Future<void> setCreateSubfolders(bool value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    state = AsyncData(state.value!.copyWith(createSubfolders: value));
     await prefs.setString(_key, jsonEncode(state.value!.toMap()));
   }
 }

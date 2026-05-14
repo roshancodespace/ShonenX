@@ -7,6 +7,7 @@ import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 final syncEngineProvider = Provider<SyncEngine>((ref) => SyncEngine(ref));
 
@@ -20,7 +21,7 @@ class SyncEngine {
   SyncEngine(this.ref);
 
   Future<void> processPlayback({
-    required String primaryMediaId,
+    required UnifiedMedia media,
     required double episodeNumber,
     required Duration position,
     required Duration duration,
@@ -29,7 +30,7 @@ class SyncEngine {
 
     if (duration.inSeconds == 0) return;
 
-    final sessionKey = '${primaryMediaId}_$episodeNumber';
+    final sessionKey = '${media.id}_$episodeNumber';
     if (_sessionSyncedCache.contains(sessionKey)) return;
 
     final progressPercent = position.inSeconds / duration.inSeconds;
@@ -43,14 +44,14 @@ class SyncEngine {
       log.i('Threshold hit → syncing');
 
       await syncEpisodeProgress(
-        primaryMediaId: primaryMediaId,
+        media: media,
         episodeNumber: episodeNumber,
       );
     }
   }
 
   Future<void> syncEpisodeProgress({
-    required String primaryMediaId,
+    required UnifiedMedia media,
     required double episodeNumber,
   }) async {
     final log = _log.child('syncEpisodeProgress');
@@ -64,7 +65,7 @@ class SyncEngine {
 
     final allTrackers = ref.read(availableTrackersProvider);
     final linkedIds = await ref.read(
-      trackerLinkProvider(primaryMediaId).future,
+      trackerLinkProvider(media.id).future,
     );
 
     List<Future<void>> syncTasks = [];
@@ -80,11 +81,11 @@ class SyncEngine {
 
       String? actualTrackingId = linkedIds[tracker.type]?.trackingId;
       if (tracker.type == TrackerType.local) {
-        actualTrackingId = primaryMediaId;
+        actualTrackingId = media.id;
       }
 
       if (actualTrackingId != null) {
-        final query = TrackingQuery(tracker.type, primaryMediaId);
+        final query = TrackingQuery(tracker.type, media.id);
 
         TrackedListItem? currentData;
 
@@ -114,6 +115,7 @@ class SyncEngine {
         syncTasks.add(
           tracker
               .updateListItem(
+                media: media,
                 trackingId: actualTrackingId,
                 progress: episodeNumber,
                 status: updateStatus,
@@ -126,7 +128,7 @@ class SyncEngine {
               .catchError((e, st) {
                 log.e('Sync failed (${tracker.type.displayName})', e, st);
 
-                _sessionSyncedCache.remove('${primaryMediaId}_$episodeNumber');
+                _sessionSyncedCache.remove('${media.id}_$episodeNumber');
               }),
         );
       }

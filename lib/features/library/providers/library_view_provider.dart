@@ -3,6 +3,7 @@ import 'package:shonenx/features/library/domain/models/library_entry.dart';
 import 'package:shonenx/features/library/providers/cloud_library_provider.dart';
 import 'package:shonenx/features/library/providers/local_library_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 
 enum LibraryMode { local, cloud }
@@ -44,7 +45,7 @@ final dynamicLibraryProvider =
       );
       final libraryView = ref.watch(libraryViewStateProvider);
 
-      if (primaryTrackerType == LibraryMode.local) {
+      if (primaryTrackerType == TrackerType.local) {
         return ref.watch(localLibraryListProvider(libraryView.status));
       } else {
         return ref.watch(cloudLibraryProvider(libraryView.status));

@@ -160,7 +160,7 @@ class TrackingSettingsScreen extends ConsumerWidget {
                       ),
                     ),
 
-                    onTap: isLoggedIn && !prefs.isIncognito
+                    onTap: !prefs.isIncognito
                         ? () {
                             ref
                                 .read(trackingPrefsProvider.notifier)

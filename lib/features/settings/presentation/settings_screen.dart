@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -40,6 +42,14 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: 'Download location, file naming',
                 onTap: () => context.push('/settings/downloads'),
               ),
+              if (Platform.isAndroid) ...[
+                SettingsNavTile(
+                  icon: Icons.security_outlined,
+                  title: 'Permissions',
+                  subtitle: 'Manage app permissions',
+                  onTap: () => context.push('/settings/permissions'),
+                ),
+              ],
             ],
           ),
 

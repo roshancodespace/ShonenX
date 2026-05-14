@@ -164,7 +164,7 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
     DateTime lastLog = DateTime.now();
 
     for (var s in segments) {
-      if (File(p.join(tempDir.path, '${s.index}.ts')).existsSync()) {
+      if (File(p.join(tempDir.path, '${s.fileIndex}.ts')).existsSync()) {
         completedSegments++;
       }
     }
@@ -180,17 +180,18 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
       await Future.wait(
         batch.map((seg) async {
           if (isCancelled) return;
-          final file = File(p.join(tempDir.path, '${seg.index}.ts'));
+          final file = File(p.join(tempDir.path, '${seg.fileIndex}.ts'));
           if (await file.exists()) return;
 
           final bytes = await _fetch(seg.url, task.headers, client);
-          if (bytes != null) {
-            final data = seg.key != null
-                ? _decrypt(bytes, seg.key!, seg.iv, seg.index)
-                : bytes;
-            await file.writeAsBytes(data);
-            completedSegments++;
-          }
+          if (bytes == null)
+            throw Exception("Failed to download segment ${seg.fileIndex}");
+
+          final data = seg.key != null
+              ? _decrypt(bytes, seg.key!, seg.iv, seg.seq)
+              : bytes;
+          await file.writeAsBytes(data);
+          completedSegments++;
         }),
       );
 
@@ -208,26 +209,25 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
 
     final output = File(task.savePath);
     final sink = output.openWrite();
-    int totalSize = 0;
 
     for (var s in segments) {
-      final f = File(p.join(tempDir.path, '${s.index}.ts'));
+      final f = File(p.join(tempDir.path, '${s.fileIndex}.ts'));
       if (await f.exists()) {
-        totalSize += await f.length();
         await sink.addStream(f.openRead());
+      } else {
+        throw Exception("Missing segment file ${s.fileIndex} during stitching");
       }
     }
+
     await sink.close();
     await tempDir.delete(recursive: true);
 
-    if (!isCancelled) {
-      task.sendPort.send({
-        'type': 'progress',
-        'downloadedBytes': totalSegments,
-        'totalBytes': totalSegments,
-      });
-      task.sendPort.send({'type': 'status', 'status': 'completed'});
-    }
+    task.sendPort.send({
+      'type': 'progress',
+      'downloadedBytes': totalSegments,
+      'totalBytes': totalSegments,
+    });
+    task.sendPort.send({'type': 'status', 'status': 'completed'});
   } catch (e) {
     if (!isCancelled) task.sendPort.send('err:$e');
   } finally {
@@ -266,22 +266,47 @@ Future<List<_Segment>> _parsePlaylist(
   }
 
   Uint8List? key, iv;
+  int mediaSeq = 0;
+  int fileIndex = 0;
+  int segmentCount = 0;
+
   for (final line in lines) {
     final trim = line.trim();
     if (trim.isEmpty) continue;
 
-    if (trim.startsWith('#EXT-X-KEY')) {
+    if (trim.startsWith('#EXT-X-MEDIA-SEQUENCE:')) {
+      mediaSeq = int.tryParse(trim.split(':').last) ?? 0;
+    } else if (trim.startsWith('#EXT-X-MAP')) {
+      final mapUri = RegExp(r'URI="([^"]+)"').firstMatch(trim)?.group(1);
+      if (mapUri != null) {
+        segments.add(
+          _Segment(baseUri.resolve(mapUri).toString(), key, iv, -1, -1),
+        );
+      }
+    } else if (trim.startsWith('#EXT-X-KEY')) {
       final keyUri = RegExp(r'URI="([^"]+)"').firstMatch(trim)?.group(1);
-      final ivHex = RegExp(r'IV=0x([0-9A-Fa-f]+)').firstMatch(trim)?.group(1);
+      final ivHex = RegExp(
+        r'IV=(?:0x)?([0-9A-Fa-f]+)',
+        caseSensitive: false,
+      ).firstMatch(trim)?.group(1);
 
       if (keyUri != null) {
         key = await _fetch(baseUri.resolve(keyUri).toString(), headers, client);
+        if (key == null) throw Exception("Failed to fetch decryption key");
       }
       if (ivHex != null) iv = _hexToBytes(ivHex);
     } else if (!trim.startsWith('#')) {
       segments.add(
-        _Segment(baseUri.resolve(trim).toString(), key, iv, segments.length),
+        _Segment(
+          baseUri.resolve(trim).toString(),
+          key,
+          iv,
+          mediaSeq + segmentCount,
+          fileIndex,
+        ),
       );
+      segmentCount++;
+      fileIndex++;
     }
   }
 
@@ -314,18 +339,18 @@ Uint8List _decrypt(Uint8List bytes, Uint8List key, Uint8List? iv, int seq) {
 
 Uint8List _seqToIV(int seq) {
   final iv = Uint8List(16);
+  int s = seq < 0 ? 0 : seq;
   for (int i = 15; i >= 0; i--) {
-    iv[i] = (seq >> (8 * (15 - i))) & 0xFF;
+    iv[i] = (s >> (8 * (15 - i))) & 0xFF;
   }
   return iv;
 }
 
 Uint8List _hexToBytes(String hex) {
-  hex = hex.replaceAll('0x', '');
-  if (hex.length % 2 != 0) hex = '0$hex';
+  hex = hex.padLeft(32, '0');
   return Uint8List.fromList(
     List.generate(
-      hex.length ~/ 2,
+      16,
       (i) => int.parse(hex.substring(i * 2, i * 2 + 2), radix: 16),
     ),
   );
@@ -335,6 +360,7 @@ class _Segment {
   final String url;
   final Uint8List? key;
   final Uint8List? iv;
-  final int index;
-  _Segment(this.url, this.key, this.iv, this.index);
+  final int seq;
+  final int fileIndex;
+  _Segment(this.url, this.key, this.iv, this.seq, this.fileIndex);
 }

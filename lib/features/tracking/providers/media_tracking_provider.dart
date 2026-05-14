@@ -21,8 +21,8 @@ class TrackingQuery {
   int get hashCode => trackerType.hashCode ^ mediaId.hashCode;
 }
 
-final mediaTrackingProvider = FutureProvider.autoDispose
-    .family<TrackedListItem?, TrackingQuery>(
+final mediaTrackingProvider =
+    FutureProvider.family<TrackedListItem?, TrackingQuery>(
       retry: (retryCount, error) => null,
       (ref, query) async {
         final tracker = ref

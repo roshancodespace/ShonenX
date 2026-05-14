@@ -197,7 +197,8 @@ class _LinkedTrackerRow extends ConsumerWidget {
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) {
-        bool deleteRemote = false;
+        bool isLocal = tracker.type == TrackerType.local;
+        bool deleteRemote = isLocal;
         bool isDeleting = false;
 
         return StatefulBuilder(
@@ -221,7 +222,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
                     subtitle: const Text(
                       'Deletes tracked progress from remote service.',
                     ),
-                    onChanged: isDeleting
+                    onChanged: isLocal || isDeleting
                         ? null
                         : (value) {
                             setState(() {
@@ -250,6 +251,14 @@ class _LinkedTrackerRow extends ConsumerWidget {
                             ref
                                 .read(trackerLinkProvider(media.id).notifier)
                                 .removeLink(tracker.type);
+
+                            if (isLocal) {
+                              ref.invalidate(
+                                mediaTrackingProvider(
+                                  TrackingQuery(tracker.type, media.id),
+                                ),
+                              );
+                            }
 
                             if (context.mounted) {
                               context.pop();
@@ -400,7 +409,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
                       builder: (_) => EditTrackerSheet(
                         media: media,
                         initialItem: blankItem,
-                        trackerType: tracker.type,
+                        tracker: tracker,
                         trackingId: trackerMapping?.trackingId,
                       ),
                     );
@@ -487,7 +496,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
                     builder: (_) => EditTrackerSheet(
                       media: media,
                       initialItem: listItem,
-                      trackerType: tracker.type,
+                      tracker: tracker,
                       trackingId: trackerMapping?.trackingId,
                     ),
                   );

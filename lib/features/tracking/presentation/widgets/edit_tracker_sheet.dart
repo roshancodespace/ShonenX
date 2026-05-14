@@ -2,28 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/features/library/data/library_repository.dart';
-import 'package:shonenx/features/library/domain/models/library_entry.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
-import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+import 'package:shonenx/features/tracking/engine/tracking_service.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
-import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 class EditTrackerSheet extends ConsumerStatefulWidget {
   final UnifiedMedia media;
   final TrackedListItem initialItem;
-  final TrackerType trackerType;
+  final TrackingService tracker;
   final String? trackingId;
 
   const EditTrackerSheet({
     super.key,
     required this.media,
     required this.initialItem,
-    required this.trackerType,
+    required this.tracker,
     this.trackingId,
   });
 
@@ -51,46 +47,21 @@ class _EditTrackerSheetState extends ConsumerState<EditTrackerSheet> {
     setState(() => _isSaving = true);
 
     try {
-      final tracker = ref
-          .read(availableTrackersProvider)
-          .firstWhere((t) => t.type == widget.trackerType);
-
-      if (!(await tracker.isAuthenticated)) {
+      if (!(await widget.tracker.isAuthenticated)) {
         throw Exception('Not authenticated');
       }
-      if (tracker.type == TrackerType.local &&
-          widget.initialItem.status == TrackedStatus.unknown) {
-        try {
-          await ref
-              .read(libraryRepositoryProvider)
-              .addToLibrary(
-                LibraryEntry()
-                  ..providerId = widget.media.id
-                  ..title = widget.media.title.availableTitle
-                  ..cover = widget.media.cover ?? ''
-                  ..status = _status.id
-                  ..type = widget.media.type.name
-                  ..score = _score
-                  ..episodes = widget.media.episodes
-                  ..episodesWatched = _progress.toInt()
-                  ..updatedAt = DateTime.now()
-                  ..addedAt = DateTime.now(),
-              );
-        } catch (e, st) {
-          AppLogger.e("EditTrackerSheet", "Error adding to library", [e, st]);
-        }
-      } else {
-        await tracker.updateListItem(
-          trackingId: widget.trackingId ?? widget.media.id,
-          status: _status,
-          progress: _progress,
-          score: _score,
-        );
-      }
+
+      await widget.tracker.updateListItem(
+        media: widget.media,
+        trackingId: widget.trackingId ?? widget.media.id,
+        status: _status,
+        progress: _progress,
+        score: _score,
+      );
 
       ref.invalidate(
         mediaTrackingProvider(
-          TrackingQuery(widget.trackerType, widget.media.id),
+          TrackingQuery(widget.tracker.type, widget.media.id),
         ),
       );
 

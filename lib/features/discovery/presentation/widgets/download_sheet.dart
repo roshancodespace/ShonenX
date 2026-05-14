@@ -170,7 +170,14 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
         : 'Episode $epNum.mp4';
     fileName = fileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
 
-    final dir = Directory(prefs.downloadPath);
+    String targetDir = prefs.downloadPath;
+    if (prefs.createSubfolders) {
+      final animeFolderName =
+          widget.media.title.availableTitle.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      targetDir = '$targetDir/$animeFolderName';
+    }
+
+    final dir = Directory(targetDir);
     if (!await dir.exists()) {
       try {
         await dir.create(recursive: true);
@@ -189,7 +196,7 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
       ..mediaId = widget.media.id
       ..headersMap = stream.headers
       ..episodeNumber = widget.episode.number
-      ..savePath = '${prefs.downloadPath}/$fileName'
+      ..savePath = '$targetDir/$fileName'
       ..fileName = fileName;
 
     await ref.read(downloadManagerProvider.notifier).startDownload(task);

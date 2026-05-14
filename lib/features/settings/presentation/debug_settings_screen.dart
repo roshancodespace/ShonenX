@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/services/notification_service.dart';
@@ -50,46 +52,48 @@ class DebugSettingsScreen extends ConsumerWidget {
                   );
                 },
               ),
-              SettingsActionTile(
-                icon: Icons.timer_outlined,
-                title: 'Scheduled Notification (5s)',
-                subtitle: 'Send a notification in 5 seconds',
-                onTap: () async {
-                  final success = await NotificationService.instance.schedule(
-                    id: 1000,
-                    title: 'Scheduled Test',
-                    body: 'This notification was scheduled 5 seconds ago.',
-                    scheduleTime: DateTime.now().add(
-                      const Duration(seconds: 5),
-                    ),
-                  );
-
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          success
-                              ? 'Notification scheduled for 5s from now'
-                              : 'Failed to schedule notification',
-                        ),
+              if (Platform.isAndroid) ...[
+                SettingsActionTile(
+                  icon: Icons.timer_outlined,
+                  title: 'Scheduled Notification (5s)',
+                  subtitle: 'Send a notification in 5 seconds',
+                  onTap: () async {
+                    final success = await NotificationService.instance.schedule(
+                      id: 1000,
+                      title: 'Scheduled Test',
+                      body: 'This notification was scheduled 5 seconds ago.',
+                      scheduleTime: DateTime.now().add(
+                        const Duration(seconds: 5),
                       ),
                     );
-                  }
-                },
-              ),
-              SettingsActionTile(
-                icon: Icons.notifications_off_outlined,
-                title: 'Cancel Scheduled',
-                subtitle: 'Cancel the 5s test notification',
-                onTap: () {
-                  NotificationService.instance.cancel(1000);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Canceled scheduled test notification'),
-                    ),
-                  );
-                },
-              ),
+
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            success
+                                ? 'Notification scheduled for 5s from now'
+                                : 'Failed to schedule notification',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
+                SettingsActionTile(
+                  icon: Icons.notifications_off_outlined,
+                  title: 'Cancel Scheduled',
+                  subtitle: 'Cancel the 5s test notification',
+                  onTap: () {
+                    NotificationService.instance.cancel(1000);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Canceled scheduled test notification'),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ],

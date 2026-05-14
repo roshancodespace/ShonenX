@@ -96,6 +96,7 @@ class AnilistTracker extends BaseTracker
 
   @override
   Future<void> updateListItem({
+    required UnifiedMedia media,
     required String trackingId,
     TrackedStatus? status,
     double? progress,
@@ -264,8 +265,7 @@ class AnilistTracker extends BaseTracker
                 ..format = media['format']?.toString() ?? ''
                 ..cover = media['coverImage']?['large'] ?? ''
                 ..status = _parseAnilistStatus(media['status']).id
-                ..episodes = media['episodes']
-                ..addedAt = DateTime.now();
+                ..episodes = media['episodes'];
             })
             .whereType<LibraryEntry>()
             .toList();

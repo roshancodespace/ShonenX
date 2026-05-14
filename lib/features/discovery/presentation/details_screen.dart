@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/features/auth/providers/auth_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/about_tab.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/episodes_tab.dart';
 import 'package:shonenx/features/discovery/providers/details_provider.dart';
@@ -10,6 +11,8 @@ import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
+import 'package:shonenx/features/tracking/engine/tracking_service.dart';
 import 'package:shonenx/features/tracking/presentation/widgets/edit_tracker_sheet.dart';
 import 'package:shonenx/features/tracking/presentation/widgets/tracker_manager_sheet.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
@@ -292,17 +295,17 @@ class _TrackerAppBarButton extends ConsumerWidget {
     if (activeTrackers.isEmpty) return const SizedBox.shrink();
 
     final trackerLinksAsync = ref.watch(trackerLinkProvider(media.id));
-    final primaryType = ref.watch(primaryTrackerProvider).type;
+    final tracker = ref.watch(primaryTrackerProvider);
 
     final trackingState = ref.watch(
-      mediaTrackingProvider(TrackingQuery(primaryType, media.id)),
+      mediaTrackingProvider(TrackingQuery(tracker.type, media.id)),
     );
 
     return _buildUI(
       context,
       ref,
       theme,
-      primaryType,
+      tracker,
       activeTrackers,
       trackingState,
       trackerLinksAsync,
@@ -313,7 +316,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     ThemeData theme,
-    TrackerType primaryType,
+    TrackingService tracker,
     List<TrackerType> activeTrackers,
     AsyncValue<TrackedListItem?> trackingState,
     AsyncValue<Map<TrackerType, TrackerMapping>> trackerLinksAsync,
@@ -333,22 +336,22 @@ class _TrackerAppBarButton extends ConsumerWidget {
       ),
       data: (listItem) {
         final links = trackerLinksAsync.value ?? {};
-        final isPrimaryLinked = links.containsKey(primaryType);
-        final isAuthenticated = primaryType.isAuthenticated(ref);
+        final isTrackerLinked = links.containsKey(tracker.type);
+        final isAuthenticated = tracker.type.isAuthenticated(ref);
 
         String label = 'Add Tracker';
         IconData icon = Icons.add;
 
         if (!isAuthenticated) {
-          label = 'Login to ${primaryType.displayName}';
+          label = 'Login to ${tracker.type.displayName}';
           icon = Icons.login;
-        } else if (isPrimaryLinked || primaryType == TrackerType.local) {
+        } else if (isTrackerLinked || tracker.type == TrackerType.local) {
           if (listItem != null) {
             label =
                 'Ep ${listItem.progress.toInt()} • ${listItem.status.displayName}';
             icon = Icons.bookmark_added;
           } else {
-            label = 'Add to ${primaryType.displayName}';
+            label = 'Add to ${tracker.type.displayName}';
             icon = Icons.add_to_photos;
           }
         } else if (links.isNotEmpty) {
@@ -360,8 +363,14 @@ class _TrackerAppBarButton extends ConsumerWidget {
           theme,
           label: label,
           icon: icon,
-          onPressed: () => _openManager(context, activeTrackers),
-          onLongPress: (isPrimaryLinked && listItem != null)
+          onPressed: () {
+            if (tracker is RemoteTracker && !isAuthenticated) {
+              ref.read(authTokensProvider.notifier).login(tracker);
+              return;
+            }
+            _openManager(context, activeTrackers);
+          },
+          onLongPress: (isTrackerLinked && listItem != null)
               ? () => showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
@@ -369,7 +378,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
                   builder: (_) => EditTrackerSheet(
                     media: media,
                     initialItem: listItem,
-                    trackerType: primaryType,
+                    tracker: tracker,
                   ),
                 )
               : null,

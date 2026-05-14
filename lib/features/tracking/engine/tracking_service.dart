@@ -13,6 +13,7 @@ abstract class TrackingService {
 
   Future<void> updateListItem({
     required String trackingId,
+    required UnifiedMedia media,
     TrackedStatus? status,
     double? progress,
     double? score,

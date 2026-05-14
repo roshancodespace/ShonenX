@@ -13,6 +13,7 @@ import 'package:shonenx/features/player/presentation/player_screen.dart';
 import 'package:shonenx/features/settings/presentation/cache_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/download_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/home_settings_screen.dart';
+import 'package:shonenx/features/settings/presentation/permissions_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/player_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/theme_settings_screen.dart';
@@ -114,6 +115,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'downloads',
             builder: (context, state) => const DownloadSettingsScreen(),
+          ),
+          GoRoute(
+            path: 'permissions',
+            builder: (context, state) => const PermissionsSettingsScreen(),
           ),
           GoRoute(
             path: 'tracking',

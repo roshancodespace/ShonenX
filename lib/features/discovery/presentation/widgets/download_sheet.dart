@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shonenx/core/utils/device_info.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
@@ -119,43 +120,56 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
       );
     }
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _servers!.length,
-      separatorBuilder: (_, __) =>
-          const Divider(height: 1, indent: 20, endIndent: 20),
-      itemBuilder: (context, i) {
-        final server = _servers![i];
-        final key = _serverKey(server);
-        return _ServerTile(
-          server: server,
-          streams: _streamsCache[key],
-          isLoading: _loadingStreams.contains(key),
-          error: _streamErrors[key],
-          onExpand: () => _loadStreams(server),
-          onRetry: () => _loadStreams(server),
-          onDownload: (stream) => _startDownload(stream, server),
-        );
-      },
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(_servers!.length * 2 - 1, (index) {
+          if (index.isOdd) {
+            return const Divider(height: 1, indent: 20, endIndent: 20);
+          }
+
+          final i = index ~/ 2;
+          final server = _servers![i];
+          final key = _serverKey(server);
+
+          return _ServerTile(
+            server: server,
+            streams: _streamsCache[key],
+            isLoading: _loadingStreams.contains(key),
+            error: _streamErrors[key],
+            onExpand: () => _loadStreams(server),
+            onRetry: () => _loadStreams(server),
+            onDownload: (stream) => _startDownload(stream, server),
+          );
+        }),
+      ),
     );
   }
 
   Future<void> _startDownload(VideoStream stream, VideoServer server) async {
     if (Platform.isAndroid) {
-      final status = await Permission.manageExternalStorage.status;
+      final permission = await DeviceInfo.isAndroid10OrBelow()
+          ? Permission.storage
+          : Permission.manageExternalStorage;
+
+      final status = await permission.status;
+
       if (!status.isGranted) {
         if (!mounted) return;
+
         final granted = await PermissionSheet.show(
           context,
-          permission: Permission.manageExternalStorage,
+          permission: permission,
           title: 'Storage Permission',
           description:
               'To download episodes, ShonenX needs access to your device storage.',
           rationale:
               'Used only to save downloaded video files to your chosen folder.',
         );
-        if (!granted) return;
+
+        if (!granted) {
+          return;
+        }
       }
     }
 

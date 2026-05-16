@@ -2,8 +2,15 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
+
+final _navBreakpoints = ResponsiveBreakpoints.defaults.copyWith(
+  heightNormal: 750,
+  heightCompact: 600,
+  heightTight: 500,
+);
 
 class ScaffoldWithNavBar extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
@@ -11,27 +18,27 @@ class ScaffoldWithNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth > 800) {
-            return Row(
-              children: [
-                _SideNavBar(navigationShell: navigationShell),
-                Expanded(child: navigationShell),
-              ],
-            );
-          }
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              navigationShell,
-              _BottomNavV2(navigationShell: navigationShell),
-            ],
-          );
-        },
-      ),
+    return ResponsiveHandler(
+      breakpoints: _navBreakpoints,
+      builder: (context, r) {
+        return Scaffold(
+          extendBody: true,
+          body: r.isDesktop || r.isTabletLandscape
+              ? Row(
+                  children: [
+                    _SideNavBar(navigationShell: navigationShell),
+                    Expanded(child: navigationShell),
+                  ],
+                )
+              : Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    navigationShell,
+                    _BottomNavV2(navigationShell: navigationShell),
+                  ],
+                ),
+        );
+      },
     );
   }
 }
@@ -54,21 +61,20 @@ class _BottomNavV2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
     final cs = Theme.of(context).colorScheme;
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final screenHeight = MediaQuery.sizeOf(context).height;
 
-    final barHeight = screenWidth < 400 ? 60.0 : 68.0;
-    final iconSize = screenWidth < 400 ? 22.0 : 25.0;
-    final fontSize = screenWidth < 400 ? 13.0 : 14.5;
-    final hPad = screenWidth < 400 ? 6.0 : 8.0;
+    final barHeight = r.isPhone ? 68.0 : 80.0;
+    final iconSize = r.isPhone ? 25.0 : 28.0;
+    final fontSize = r.isPhone ? 14.5 : 16.0;
+    const hPad = 10.0;
     final itemRadius = barHeight / 2 - 2;
 
     return SafeArea(
       child: Align(
         alignment: Alignment.bottomCenter,
         child: Padding(
-          padding: EdgeInsets.only(bottom: screenHeight * 0.018),
+          padding: EdgeInsets.only(bottom: r.height * 0.018),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -247,13 +253,62 @@ class _SideNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
     final cs = Theme.of(context).colorScheme;
-    const barWidth = 72.0;
-    const hPad = 8.0;
+    final h = r.heightTier;
+
+    final barWidth = h.pick(
+      spacious: 72.0,
+      normal: 72.0,
+      compact: 70.0,
+      tight: 68.0,
+      cramped: 66.0,
+    );
+    final hPad = h.pick(
+      spacious: 8.0,
+      normal: 8.0,
+      compact: 6.0,
+      tight: 5.0,
+      cramped: 4.0,
+    );
+    final vOuterPad = h.pick(
+      spacious: 28.0,
+      normal: 24.0,
+      compact: 14.0,
+      tight: 8.0,
+      cramped: 4.0,
+    );
+    final hOuterPad = h.pick(
+      spacious: 16.0,
+      normal: 16.0,
+      compact: 14.0,
+      tight: 12.0,
+      cramped: 10.0,
+    );
+    final itemVMargin = h.pick(
+      spacious: 5.0,
+      normal: 4.0,
+      compact: 3.0,
+      tight: 2.0,
+      cramped: 1.0,
+    );
+    final gapBetween = h.pick(
+      spacious: 14.0,
+      normal: 12.0,
+      compact: 10.0,
+      tight: 8.0,
+      cramped: 4.0,
+    );
+
+    final hideDownloadLabel = h.isBelowCompact;
+    final hideNavLabels = h == HeightTier.cramped;
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        padding: EdgeInsets.symmetric(
+          vertical: vOuterPad,
+          horizontal: hOuterPad,
+        ),
         child: Column(
           children: [
             Expanded(
@@ -271,7 +326,7 @@ class _SideNavBar extends StatelessWidget {
                           duration: const Duration(milliseconds: 400),
                           curve: Curves.easeOutCubic,
                           width: double.infinity,
-                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          margin: EdgeInsets.symmetric(vertical: itemVMargin),
                           decoration: BoxDecoration(
                             color: active ? cs.primary : Colors.transparent,
                             borderRadius: BorderRadius.circular(barWidth / 2),
@@ -281,6 +336,8 @@ class _SideNavBar extends StatelessWidget {
                             label: _destinations[i].label,
                             active: active,
                             cs: cs,
+                            heightTier: h,
+                            forceHideLabel: hideNavLabels,
                           ),
                         ),
                       ),
@@ -289,13 +346,17 @@ class _SideNavBar extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: gapBetween),
             Expanded(
               flex: 1,
               child: _GlassPillContainer(
                 width: barWidth,
                 padding: hPad,
-                child: _TallDownloadPillContent(cs: cs),
+                child: _TallDownloadPillContent(
+                  cs: cs,
+                  heightTier: h,
+                  hideLabel: hideDownloadLabel,
+                ),
               ),
             ),
           ],
@@ -346,17 +407,52 @@ class _PillContent extends StatelessWidget {
   final bool active;
   final ColorScheme cs;
   final bool isDownload;
+  final HeightTier heightTier;
+  final bool forceHideLabel;
 
   const _PillContent({
     required this.icon,
     required this.label,
     required this.active,
     required this.cs,
+    required this.heightTier,
     this.isDownload = false,
+    this.forceHideLabel = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final iconSize = heightTier.pick(
+      spacious: 26.0,
+      normal: 25.0,
+      compact: 23.0,
+      tight: 21.0,
+      cramped: 20.0,
+    );
+    final labelSize = heightTier.pick(
+      spacious: 14.0,
+      normal: 14.0,
+      compact: 13.0,
+      tight: 12.0,
+      cramped: 11.0,
+    );
+    final labelSpacing = heightTier.pick(
+      spacious: 2.0,
+      normal: 2.0,
+      compact: 1.8,
+      tight: 1.6,
+      cramped: 1.4,
+    );
+    final labelTopPad = heightTier.pick(
+      spacious: 14.0,
+      normal: 12.0,
+      compact: 10.0,
+      tight: 7.0,
+      cramped: 5.0,
+    );
+
+    final showLabel = !forceHideLabel && (active || isDownload);
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -365,22 +461,22 @@ class _PillContent extends StatelessWidget {
           color: active || isDownload
               ? (isDownload ? cs.onSurface : cs.onPrimary)
               : cs.onSurfaceVariant.withValues(alpha: 0.6),
-          size: 25,
+          size: iconSize,
         ),
         ClipRect(
           child: AnimatedSize(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOutCubic,
-            child: (active || isDownload)
+            child: showLabel
                 ? Padding(
-                    padding: const EdgeInsets.only(top: 12),
+                    padding: EdgeInsets.only(top: labelTopPad),
                     child: RotatedBox(
                       quarterTurns: -1,
                       child: Text(
                         label.toUpperCase(),
                         style: TextStyle(
-                          fontSize: 14,
-                          letterSpacing: 2,
+                          fontSize: labelSize,
+                          letterSpacing: labelSpacing,
                           fontWeight: FontWeight.bold,
                           color: isDownload ? cs.onSurface : cs.onPrimary,
                         ),
@@ -397,8 +493,14 @@ class _PillContent extends StatelessWidget {
 
 class _TallDownloadPillContent extends ConsumerWidget {
   final ColorScheme cs;
+  final HeightTier heightTier;
+  final bool hideLabel;
 
-  const _TallDownloadPillContent({required this.cs});
+  const _TallDownloadPillContent({
+    required this.cs,
+    required this.heightTier,
+    required this.hideLabel,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -427,6 +529,8 @@ class _TallDownloadPillContent extends ConsumerWidget {
             active: false,
             isDownload: true,
             cs: cs,
+            heightTier: heightTier,
+            forceHideLabel: hideLabel,
           ),
         ),
       ),

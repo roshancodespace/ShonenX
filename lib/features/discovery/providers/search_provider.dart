@@ -5,62 +5,94 @@ import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
 
-final searchProvider =
-    AsyncNotifierProvider<SearchNotifier, PaginatedResult<UnifiedMedia>?>(() {
-      return SearchNotifier();
-    }, name: 'searchProvider');
+class SearchArgs {
+  final String query;
+  final MediaType type;
+
+  const SearchArgs({required this.query, required this.type});
+
+  @override
+  int get hashCode => Object.hash(query, type);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SearchArgs && other.query == query && other.type == type;
+}
+
+final searchProvider = AsyncNotifierProvider.autoDispose
+    .family<SearchNotifier, PaginatedResult<UnifiedMedia>?, SearchArgs>(
+      SearchNotifier.new,
+      name: 'searchProvider',
+    );
 
 class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
+  int _currentPage = 1;
+  bool _isFetchingNextPage = false;
+  SearchArgs arg;
+
+  SearchNotifier(this.arg);
+
   @override
   Future<PaginatedResult<UnifiedMedia>?> build() async {
-    return null;
+    _currentPage = 1;
+    _isFetchingNextPage = false;
+    if (arg.query.isEmpty) return null;
+    return _fetchPage(1);
   }
 
-  Future<void> search(String query, {MediaType type = MediaType.ANIME}) async {
-    if (query.isEmpty) {
-      state = const AsyncData(null);
-      return;
-    }
+  Future<PaginatedResult<UnifiedMedia>> _fetchPage(int page) async {
+    final prefs = ref.read(discoveryPrefsProvider);
 
-    state = const AsyncLoading();
+    if (prefs.mode == MetadataMode.tracker) {
+      final engine = ref.read(metadataSourceProvider);
+      return await engine.search(arg.query, type: arg.type, page: page);
+    } else {
+      final allSources = await ref.read(availableAnimeSourcesProvider.future);
+      final activeSources = allSources
+          .where((s) => prefs.activeSources.contains(s.id))
+          .toList();
+
+      if (activeSources.isEmpty) {
+        return const PaginatedResult(items: [], hasNextPage: false);
+      }
+
+      final futures = activeSources.map((info) async {
+        try {
+          final source = ref.read(animeSourceProvider(info));
+          return await source.search(arg.query, arg.type, page: page);
+        } catch (_) {
+          return <UnifiedMedia>[];
+        }
+      });
+
+      final results = await Future.wait(futures);
+      final merged = results.expand((list) => list).toList();
+
+      return PaginatedResult(items: merged, hasNextPage: false);
+    }
+  }
+
+  Future<void> loadNextPage() async {
+    if (_isFetchingNextPage) return;
+    final currentData = state.value;
+    if (currentData == null || !currentData.hasNextPage) return;
+
+    _isFetchingNextPage = true;
+    _currentPage++;
 
     try {
-      final prefs = ref.read(discoveryPrefsProvider);
-
-      if (prefs.mode == MetadataMode.tracker) {
-        final engine = ref.read(metadataSourceProvider);
-        final result = await engine.search(query, type: type);
-        state = AsyncData(result);
-      } else {
-        final allSources = await ref.read(availableAnimeSourcesProvider.future);
-        final activeSources = allSources
-            .where((s) => prefs.activeSources.contains(s.id))
-            .toList();
-
-        if (activeSources.isEmpty) {
-          state = const AsyncData(
-            PaginatedResult(items: [], hasNextPage: false),
-          );
-          return;
-        }
-
-        // Search all active sources concurrently and merge results.
-        final futures = activeSources.map((info) async {
-          try {
-            final source = ref.read(animeSourceProvider(info));
-            return await source.search(query, MediaType.ANIME);
-          } catch (_) {
-            return <UnifiedMedia>[];
-          }
-        });
-
-        final results = await Future.wait(futures);
-        final merged = results.expand((list) => list).toList();
-
-        state = AsyncData(PaginatedResult(items: merged, hasNextPage: false));
-      }
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      final newPageResult = await _fetchPage(_currentPage);
+      state = AsyncData(
+        PaginatedResult(
+          items: [...currentData.items, ...newPageResult.items],
+          hasNextPage: newPageResult.hasNextPage,
+        ),
+      );
+    } catch (e, _) {
+      _currentPage--;
+    } finally {
+      _isFetchingNextPage = false;
     }
   }
 }

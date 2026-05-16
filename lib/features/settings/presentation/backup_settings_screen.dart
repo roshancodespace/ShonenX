@@ -122,10 +122,13 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
                         : _exportCategories.remove(cat);
                   }),
                 ),
-              FilledButton.icon(
-                onPressed: _exporting ? null : _export,
-                icon: const Icon(Icons.upload_outlined),
-                label: Text(_exporting ? 'Exporting…' : 'Export Backup'),
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: FilledButton.icon(
+                  onPressed: _exporting ? null : _export,
+                  icon: const Icon(Icons.upload_outlined),
+                  label: Text(_exporting ? 'Exporting…' : 'Export Backup'),
+                ),
               ),
               const SizedBox(height: 10),
             ],

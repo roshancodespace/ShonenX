@@ -106,7 +106,7 @@ class _PermissionSheetState extends State<PermissionSheet>
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

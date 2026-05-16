@@ -25,6 +25,7 @@ class BetterPlayerEngine implements VideoEngine {
         ),
         autoPlay: true,
         autoDispose: false,
+        fit: BoxFit.contain,
       ),
     );
     _attachEventListener();

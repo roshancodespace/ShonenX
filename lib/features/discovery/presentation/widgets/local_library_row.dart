@@ -22,6 +22,7 @@ class LocalLibraryRow extends ConsumerWidget {
       height: style.layout.height,
       emptyText: 'No items in this list.',
       data: asyncData,
+      onMoreTap: () {},
       itemBuilder: (context, entry) {
         return MediaCard(
           tag: 'local-library-$status-${entry.providerId}',

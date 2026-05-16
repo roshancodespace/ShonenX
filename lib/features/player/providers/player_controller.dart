@@ -75,7 +75,16 @@ class PlayerController extends Notifier<PlayerState> {
   late AnimeSource _source;
   late ScreenshotController _screenshot;
 
+  // Thumbnail caching
+  String? _cachedThumbnail;
+  DateTime? _lastThumbnailTime;
+  bool _initialCaptureDone = false;
+  static const _thumbnailRefreshInterval = Duration(minutes: 2);
+
   final Set<SkipType> _alreadyAutoSkipped = {};
+
+  // Subscriptions
+  ProviderSubscription<Duration>? _positionSubscription;
 
   // Smart Memory
   String? _preferredServerId;
@@ -85,7 +94,10 @@ class PlayerController extends Notifier<PlayerState> {
 
   @override
   PlayerState build() {
-    ref.onDispose(() => _progressTimer?.cancel);
+    ref.onDispose(() {
+      _positionSubscription?.close();
+      _progressTimer?.cancel();
+    });
 
     ref.listen(subtitlePrefsProvider, (prev, current) {
       if (prev?.useCustomSubtitle != current.useCustomSubtitle) {
@@ -161,6 +173,9 @@ class PlayerController extends Notifier<PlayerState> {
     bool force = false,
   }) async {
     _alreadyAutoSkipped.clear();
+    _cachedThumbnail = null;
+    _lastThumbnailTime = null;
+    _initialCaptureDone = false;
     await _loadData(newEpisode, force: force);
   }
 
@@ -302,33 +317,35 @@ class PlayerController extends Notifier<PlayerState> {
   }
 
   void setupAutoSkipListener(AniSkipArgs? args) {
+    _positionSubscription?.close();
+
     final prefs = ref.read(aniskipPrefsProvider);
     final skips = ref.read(aniSkipProvider(args)).value ?? [];
 
-    ref.listen(videoEngineStateProvider.select((s) => s.position), (
-      previous,
-      current,
-    ) {
-      for (final skip in skips) {
-        final mode = prefs.mode(skip.type);
+    _positionSubscription = ref.listen(
+      videoEngineStateProvider.select((s) => s.position),
+      (previous, current) {
+        final seconds = current.inSeconds;
 
-        if (mode == SkipMode.auto) {
-          final seconds = current.inSeconds;
+        for (final skip in skips) {
+          final mode = prefs.mode(skip.type);
 
-          if (seconds >= skip.startTime && seconds < skip.endTime) {
-            if (!_alreadyAutoSkipped.contains(skip.type)) {
-              _alreadyAutoSkipped.add(skip.type);
+          if (mode != SkipMode.auto) continue;
 
+          final isInside = seconds >= skip.startTime && seconds < skip.endTime;
+
+          if (isInside) {
+            if (_alreadyAutoSkipped.add(skip.type)) {
               ref
                   .read(videoEngineProvider)
                   .seekTo(Duration(seconds: skip.endTime.ceil()));
-            } else if (seconds < skip.startTime) {
-              _alreadyAutoSkipped.remove(skip.type);
             }
+          } else {
+            _alreadyAutoSkipped.remove(skip.type);
           }
         }
-      }
-    });
+      },
+    );
   }
 
   Future<void> _startProgressTracker() async {
@@ -339,7 +356,30 @@ class PlayerController extends Notifier<PlayerState> {
     );
   }
 
-  Future<void> _saveCurrentProgress() async {
+  Future<String?> _captureThumbnail() async {
+    try {
+      final image = await _screenshot.capture(pixelRatio: 0.5);
+      if (image != null) {
+        _cachedThumbnail = base64Encode(image);
+        _lastThumbnailTime = DateTime.now();
+      }
+    } catch (_) {}
+    return _cachedThumbnail;
+  }
+
+  bool get _shouldCaptureThumbnail {
+    if (!_initialCaptureDone) return true;
+    if (_lastThumbnailTime == null) return true;
+    return DateTime.now().difference(_lastThumbnailTime!) >=
+        _thumbnailRefreshInterval;
+  }
+
+  Future<void> captureExitThumbnail() async {
+    await _captureThumbnail();
+    await _saveCurrentProgress(skipCapture: true);
+  }
+
+  Future<void> _saveCurrentProgress({bool skipCapture = false}) async {
     if (!ref.mounted) {
       _progressTimer?.cancel();
       return;
@@ -352,8 +392,13 @@ class PlayerController extends Notifier<PlayerState> {
     final duration = engine.currentDuration;
     if (position == Duration.zero || duration == Duration.zero) return;
 
-    final image = await _screenshot.capture(pixelRatio: 0.5);
-    final thumbnail = image != null ? base64Encode(image) : '';
+    // Capture thumbnail only when needed
+    if (!skipCapture && _shouldCaptureThumbnail) {
+      await _captureThumbnail();
+      _initialCaptureDone = true;
+    }
+
+    final thumbnail = _cachedThumbnail ?? '';
 
     final entry = WatchHistoryEntry()
       ..episodeNumber = state.activeEpisode?.number ?? 1
@@ -362,6 +407,8 @@ class PlayerController extends Notifier<PlayerState> {
       ..animeIdMal = _media.idMal
       ..animeTitle = _media.title.availableTitle
       ..episodeTitle = state.activeEpisode?.title
+      ..cover = _media.cover
+      ..banner = _media.banner
       ..thumbnailUrl = thumbnail.isNotEmpty
           ? thumbnail
           : state.activeEpisode?.thumbnailUrl

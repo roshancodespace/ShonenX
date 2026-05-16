@@ -15,12 +15,16 @@ abstract interface class RemoteTracker implements TrackingService {
     required MediaType type,
   });
 
-  Future<PaginatedResult<UnifiedMedia>> getTrending({int page = 1});
+  Future<PaginatedResult<UnifiedMedia>> getTrending({
+    int page = 1,
+    Duration? cacheDuration,
+  });
 
   Future<PaginatedResult<UnifiedMedia>> search(
     String query, {
     int page = 1,
     required MediaType type,
+    Duration? cacheDuration,
   });
 
   Future<UnifiedMedia> getDetails(String providerId, MediaType type);

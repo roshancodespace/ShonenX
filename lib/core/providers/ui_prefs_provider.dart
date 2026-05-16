@@ -3,8 +3,9 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shonenx/core/providers/storage_provider.dart';
 import 'package:shonenx/core/models/component_layout.dart';
+import 'package:shonenx/core/providers/storage_provider.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
 
 enum MediaCardStyle {
   classic(ComponentLayout(width: 120, height: 200)),
@@ -52,26 +53,31 @@ enum ContinueWatchingStyle {
 class UiPrefState {
   final MediaCardStyle cardStyle;
   final ContinueWatchingStyle continueWatchingStyle;
+  final EpisodeViewMode episodeViewMode;
 
   const UiPrefState({
     this.cardStyle = MediaCardStyle.classic,
     this.continueWatchingStyle = ContinueWatchingStyle.classic,
+    this.episodeViewMode = EpisodeViewMode.classic,
   });
 
   UiPrefState copyWith({
     MediaCardStyle? cardStyle,
     ContinueWatchingStyle? continueWatchingStyle,
+    EpisodeViewMode? episodeViewMode,
   }) {
     return UiPrefState(
       cardStyle: cardStyle ?? this.cardStyle,
       continueWatchingStyle:
           continueWatchingStyle ?? this.continueWatchingStyle,
+      episodeViewMode: episodeViewMode ?? this.episodeViewMode,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'cardStyle': cardStyle.name,
     'continueWatchingStyle': continueWatchingStyle.name,
+    'episodeViewMode': episodeViewMode.name,
   };
 
   factory UiPrefState.fromJson(Map<String, dynamic> json) {
@@ -84,26 +90,32 @@ class UiPrefState {
         (e) => e.name == json['continueWatchingStyle'],
         orElse: () => ContinueWatchingStyle.classic,
       ),
+      episodeViewMode: EpisodeViewMode.values.firstWhere(
+        (e) => e.name == json['episodeViewMode'],
+        orElse: () => EpisodeViewMode.classic,
+      ),
     );
   }
 
   @override
   String toString() =>
-      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle)';
+      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, episodeViewMode: $episodeViewMode)';
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is UiPrefState &&
         other.cardStyle == cardStyle &&
-        other.continueWatchingStyle == continueWatchingStyle;
+        other.continueWatchingStyle == continueWatchingStyle &&
+        other.episodeViewMode == episodeViewMode;
   }
 
   @override
-  int get hashCode => Object.hash(cardStyle, continueWatchingStyle);
+  int get hashCode =>
+      Object.hash(cardStyle, continueWatchingStyle, episodeViewMode);
 }
 
-class UiPreferencesNotifier extends Notifier<UiPrefState> {
+class UiPrefsNotifier extends Notifier<UiPrefState> {
   static const _key = 'ui_preferences';
   Timer? _debounce;
 
@@ -130,6 +142,11 @@ class UiPreferencesNotifier extends Notifier<UiPrefState> {
     _saveDb();
   }
 
+  void updateEpisodeViewMode(EpisodeViewMode mode) {
+    state = state.copyWith(episodeViewMode: mode);
+    _saveDb();
+  }
+
   void reset() {
     _storage.remove(_key);
     state = const UiPrefState();
@@ -146,6 +163,6 @@ class UiPreferencesNotifier extends Notifier<UiPrefState> {
   }
 }
 
-final uiPrefsProvider = NotifierProvider<UiPreferencesNotifier, UiPrefState>(
-  UiPreferencesNotifier.new,
+final uiPrefsProvider = NotifierProvider<UiPrefsNotifier, UiPrefState>(
+  UiPrefsNotifier.new,
 );

@@ -1,10 +1,11 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/episode_list_panel.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/presentation/player_screen.dart';
@@ -47,6 +48,7 @@ class BottomControls extends ConsumerStatefulWidget {
 class _BottomControlsState extends ConsumerState<BottomControls> {
   double? _dragingValue;
   bool _isFullScreen = false;
+  bool _isPortrait = false;
 
   @override
   void initState() {
@@ -66,6 +68,15 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     }
   }
 
+  void _toggleOrientation() {
+    setState(() => _isPortrait = !_isPortrait);
+    SystemChrome.setPreferredOrientations(
+      _isPortrait
+          ? [DeviceOrientation.portraitUp]
+          : [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight],
+    );
+  }
+
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
@@ -79,8 +90,10 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final mediaQuery = MediaQuery.of(context);
 
     final aniSkips = ref.watch(aniSkipProvider(widget.aniskipArgs));
+
     ref.listen(videoEngineStateProvider.select((s) => s.position), (
       previous,
       current,
@@ -89,6 +102,9 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
         widget.controller.setupAutoSkipListener(widget.aniskipArgs);
       }
     });
+
+    final isCompact = mediaQuery.size.width < 450;
+    final isVeryCompact = mediaQuery.size.width < 350;
 
     return AnimatedPositioned(
       duration: Durations.medium2,
@@ -100,7 +116,10 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
         duration: Durations.short4,
         opacity: widget.showControls ? 1 : 0,
         child: Container(
-          padding: const EdgeInsets.only(bottom: 20, top: 40),
+          padding: EdgeInsets.only(
+            bottom: mediaQuery.padding.bottom + 12,
+            top: 40,
+          ),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
@@ -121,16 +140,22 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                   Consumer(
                     builder: (aniContext, aniRef, child) {
                       final skips = aniSkips.value ?? [];
+
                       final position = aniRef.watch(
                         videoEngineStateProvider.select((s) => s.position),
                       );
+
                       final prefs = aniRef.watch(aniskipPrefsProvider);
 
                       final currentSkip = skips
                           .cast<AniSkipStamp?>()
                           .firstWhere((skip) {
-                            if (skip == null) return false;
+                            if (skip == null) {
+                              return false;
+                            }
+
                             final seconds = position.inSeconds;
+
                             return seconds >= skip.startTime &&
                                 seconds <= skip.endTime;
                           }, orElse: () => null);
@@ -140,8 +165,8 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                         final label = switch (currentSkip.type) {
                           SkipType.opening => 'Skip Opening',
                           SkipType.ending => 'Skip Ending',
-                          SkipType.mixedOpening => 'Skip Opening (Mixed)',
-                          SkipType.mixedEnding => 'Skip Ending (Mixed)',
+                          SkipType.mixedOpening => 'Skip Opening',
+                          SkipType.mixedEnding => 'Skip Ending',
                           SkipType.recap => 'Skip Recap',
                         };
 
@@ -157,182 +182,251 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                           defaultAccentColor: theme.colorScheme.onSecondary,
                           defaultBackgroundColor: theme.colorScheme.secondary,
                         );
-                      } else {
-                        return _buildActionButton(
-                          leading: const Icon(Icons.skip_next_rounded),
-                          displayText: '+85s',
-                          onTap: () async {
-                            await widget.engine.seekRelative(
-                              const Duration(seconds: 85),
-                            );
-                          },
-                          theme: theme,
-                          defaultAccentColor: theme.colorScheme.onSecondary,
-                          defaultBackgroundColor: theme.colorScheme.secondary,
-                        );
                       }
+
+                      return _buildActionButton(
+                        leading: const Icon(Icons.skip_next_rounded),
+                        displayText: '+85s',
+                        onTap: () async {
+                          await widget.engine.seekRelative(
+                            const Duration(seconds: 85),
+                          );
+                        },
+                        theme: theme,
+                        defaultAccentColor: theme.colorScheme.onSecondary,
+                        defaultBackgroundColor: theme.colorScheme.secondary,
+                      );
                     },
                   ),
                   const SizedBox(width: 10),
                 ],
               ),
+
               ProgressBar(
                 aniSkips: aniSkips.value ?? [],
                 engine: widget.engine,
                 draggingValue: _dragingValue,
-                onDragStart: (value) => setState(() => _dragingValue = value),
-                onChanged: (value) => setState(() => _dragingValue = value),
+                onDragStart: (value) {
+                  setState(() => _dragingValue = value);
+                },
+                onChanged: (value) {
+                  setState(() => _dragingValue = value);
+                },
                 onDragEnd: (value) {
                   widget.engine
                       .seekTo(Duration(seconds: value.toInt()))
                       .then((_) => setState(() => _dragingValue = null));
                 },
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    _buildActionIcon(
-                      Icons.lock_outline_rounded,
-                      () => widget.onToggleLockControls(),
-                    ),
-                    const SizedBox(width: 16),
-                    _buildBottomSheetTrigger(
-                      context: context,
-                      value: widget.playerState.activeSubtitle,
-                      items: widget.playerState.subtitles,
-                      itemLabel: (s) => s.language,
-                      onChanged: (v) => widget.controller.changeSubtitle(v),
-                      onLongPress: () => showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        builder: (context) => SubtitleSettingsSheet(),
-                      ),
-                      isDisabled: widget.playerState.subtitles.isEmpty,
-                      withBadge: false,
-                      displayText: 'Subtitles',
-                      displayWidget: Badge(
-                        label: Text(
-                          widget.playerState.subtitles.length.toString(),
-                        ),
-                        isLabelVisible: widget.playerState.subtitles.isNotEmpty,
-                        backgroundColor: widget.theme.colorScheme.primary,
-                        textColor: widget.theme.colorScheme.onPrimary,
-                        child:
-                            widget.playerState.subtitles.isEmpty ||
-                                widget.playerState.activeSubtitle == null
-                            ? Icon(
-                                Icons.subtitles_off_outlined,
-                                color: widget.playerState.subtitles.isEmpty
-                                    ? Colors.white54
-                                    : Colors.white,
-                              )
-                            : const Icon(Icons.subtitles_outlined),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    if (widget.params != null)
-                      _buildActionIcon(
-                        Icons.format_list_bulleted_rounded,
-                        () => _showEpisodePanel(context),
-                      ),
-                    const SizedBox(width: 24),
-                    Consumer(
-                      builder: (context, ref, child) {
-                        final position = ref.watch(
-                          videoEngineStateProvider.select((s) => s.position),
-                        );
-                        final duration = ref.watch(
-                          videoEngineStateProvider.select((s) => s.duration),
-                        );
 
-                        return Text(
-                          '${_formatDuration(position)} / ${_formatDuration(duration)}',
-                          style: widget.theme.textTheme.labelMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.5,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Wrap(
+                  spacing: 14,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  alignment: WrapAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildActionIcon(
+                          Icons.lock_outline_rounded,
+                          () => widget.onToggleLockControls(),
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        _buildBottomSheetTrigger(
+                          context: context,
+                          value: widget.playerState.activeSubtitle,
+                          items: widget.playerState.subtitles,
+                          itemLabel: (s) => s.language,
+                          onChanged: (v) {
+                            widget.controller.changeSubtitle(v);
+                          },
+                          onLongPress: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (context) {
+                                return SubtitleSettingsSheet();
+                              },
+                            );
+                          },
+                          isDisabled: widget.playerState.subtitles.isEmpty,
+                          withBadge: false,
+                          displayText: 'Subtitles',
+                          displayWidget: Badge(
+                            label: Text(
+                              widget.playerState.subtitles.length.toString(),
+                            ),
+                            isLabelVisible:
+                                widget.playerState.subtitles.isNotEmpty,
+                            backgroundColor: widget.theme.colorScheme.primary,
+                            textColor: widget.theme.colorScheme.onPrimary,
+                            child:
+                                widget.playerState.subtitles.isEmpty ||
+                                    widget.playerState.activeSubtitle == null
+                                ? Icon(
+                                    Icons.subtitles_off_outlined,
+                                    color: widget.playerState.subtitles.isEmpty
+                                        ? Colors.white54
+                                        : Colors.white,
+                                  )
+                                : const Icon(Icons.subtitles_outlined),
                           ),
-                        );
-                      },
+                        ),
+
+                        if (widget.params != null) ...[
+                          const SizedBox(width: 12),
+                          _buildActionIcon(
+                            Icons.format_list_bulleted_rounded,
+                            () => _showEpisodePanel(context),
+                          ),
+                        ],
+                      ],
                     ),
-                    const Spacer(),
-                    if (widget.playerState.activeServer != null)
-                      _buildActionButton(
-                        displayText:
-                            widget.playerState.activeServer?.type ==
-                                ServerType.dub
-                            ? 'DUB'
-                            : 'SUB',
-                        onTap: () => widget.controller.changeServerType(),
-                        isHighlighted: true,
-                        theme: widget.theme,
-                      ),
-                    const SizedBox(width: 20),
-                    if (widget.playerState.servers.isNotEmpty &&
-                        widget.playerState.servers.length > 1)
-                      _buildBottomSheetTrigger<VideoServer>(
-                        context: context,
-                        value: widget.playerState.activeServer,
-                        items: widget.playerState.servers,
-                        itemLabel: (s) => '[ ${s.id} ] ${s.name}',
-                        onChanged: (v) => widget.controller.changeServer(v),
-                        displayText:
-                            widget.playerState.activeServer?.id ?? 'Default',
-                        badgeBuilder: (s) {
-                          if (s.type == ServerType.unknown) {
-                            return null;
-                          }
-                          final isDub = s.type == ServerType.dub;
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDub
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.secondary,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              isDub ? 'DUB' : 'SUB',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: isDub
-                                    ? theme.colorScheme.onPrimary
-                                    : theme.colorScheme.onSecondary,
-                                letterSpacing: 0.5,
-                              ),
+
+                    if (!isVeryCompact)
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final position = ref.watch(
+                            videoEngineStateProvider.select((s) => s.position),
+                          );
+
+                          final duration = ref.watch(
+                            videoEngineStateProvider.select((s) => s.duration),
+                          );
+
+                          return Text(
+                            '${_formatDuration(position)} / ${_formatDuration(duration)}',
+                            style: widget.theme.textTheme.labelMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
                             ),
                           );
                         },
                       ),
-                    const SizedBox(width: 20),
-                    if (widget.playerState.streams.isNotEmpty &&
-                        widget.playerState.streams.length > 1)
-                      _buildBottomSheetTrigger<VideoStream>(
-                        context: context,
-                        value: widget.playerState.activeStream,
-                        items: widget.playerState.streams,
-                        itemLabel: (s) => s.quality,
-                        onChanged: (v) => widget.controller.changeStream(v),
-                        displayText:
-                            widget.playerState.activeStream?.quality ?? 'Auto',
-                      ),
-                    if (Platform.isWindows ||
-                        Platform.isLinux ||
-                        Platform.isMacOS) ...[
-                      const SizedBox(width: 20),
-                      _buildActionIcon(
-                        _isFullScreen
-                            ? Icons.fullscreen_exit_rounded
-                            : Icons.fullscreen_rounded,
-                        _toggleFullScreen,
-                      ),
-                    ],
+
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.playerState.activeServer != null)
+                          _buildActionButton(
+                            displayText:
+                                widget.playerState.activeServer?.type ==
+                                    ServerType.dub
+                                ? 'DUB'
+                                : 'SUB',
+                            onTap: () {
+                              widget.controller.changeServerType();
+                            },
+                            isHighlighted: true,
+                            highlightedAccentColor:
+                                widget.playerState.activeServer?.type ==
+                                    ServerType.dub
+                                ? widget.theme.colorScheme.primary
+                                : widget.theme.colorScheme.secondary,
+                            highlightedBackgroundColor:
+                                widget.playerState.activeServer?.type ==
+                                    ServerType.dub
+                                ? widget.theme.colorScheme.primary.withValues(
+                                    alpha: 0.1,
+                                  )
+                                : widget.theme.colorScheme.secondary.withValues(
+                                    alpha: 0.1,
+                                  ),
+                            theme: widget.theme,
+                          ),
+
+                        if (widget.playerState.servers.length > 1 &&
+                            !isCompact) ...[
+                          const SizedBox(width: 14),
+                          _buildBottomSheetTrigger<VideoServer>(
+                            context: context,
+                            value: widget.playerState.activeServer,
+                            items: widget.playerState.servers,
+                            itemLabel: (s) => '[ ${s.id} ] ${s.name}',
+                            onChanged: (v) {
+                              widget.controller.changeServer(v);
+                            },
+                            displayText:
+                                widget.playerState.activeServer?.id ??
+                                'Default',
+                            badgeBuilder: (s) {
+                              if (s.type == ServerType.unknown) {
+                                return null;
+                              }
+
+                              final isDub = s.type == ServerType.dub;
+
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDub
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.secondary,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  isDub ? 'DUB' : 'SUB',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDub
+                                        ? theme.colorScheme.onPrimary
+                                        : theme.colorScheme.onSecondary,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+
+                        if (widget.playerState.streams.length > 1 &&
+                            !isCompact) ...[
+                          const SizedBox(width: 14),
+                          _buildBottomSheetTrigger<VideoStream>(
+                            context: context,
+                            value: widget.playerState.activeStream,
+                            items: widget.playerState.streams,
+                            itemLabel: (s) => s.quality,
+                            onChanged: (v) {
+                              widget.controller.changeStream(v);
+                            },
+                            displayText:
+                                widget.playerState.activeStream?.quality ??
+                                'Auto',
+                          ),
+                        ],
+
+                        if (Platform.isAndroid || Platform.isIOS) ...[
+                          const SizedBox(width: 14),
+                          _buildActionIcon(
+                            _isPortrait
+                                ? Icons.screen_lock_landscape_outlined
+                                : Icons.screen_lock_portrait_outlined,
+                            _toggleOrientation,
+                          ),
+                        ],
+
+                        if (Platform.isWindows ||
+                            Platform.isLinux ||
+                            Platform.isMacOS) ...[
+                          const SizedBox(width: 14),
+                          _buildActionIcon(
+                            _isFullScreen
+                                ? Icons.fullscreen_exit_rounded
+                                : Icons.fullscreen_rounded,
+                            _toggleFullScreen,
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -366,14 +460,9 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                     currentEpisodeNumber: params.episode.number,
                     onEpisodeTap: (episode, sourceInfo) {
                       Navigator.of(context).pop();
-                      context.pushReplacement(
-                        '/player',
-                        extra: PlayerParams(
-                          media: params.media,
-                          episode: episode,
-                          sourceInfo: sourceInfo,
-                        ),
-                      );
+                      ref
+                          .read(playerControllerProvider.notifier)
+                          .loadEpisode(episode);
                     },
                   ),
                 ),

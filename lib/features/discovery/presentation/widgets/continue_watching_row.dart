@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue_watching_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/horizontal_section.dart';
@@ -21,6 +22,7 @@ class ContinueWatchingRow extends ConsumerWidget {
       height: style.layout.height,
       emptyText: 'No anime in this list.',
       data: asyncData,
+      onMoreTap: () => context.push('/continue-watching'),
       itemBuilder: (context, entry) {
         final progress = entry.durationInMilliseconds == 0
             ? 0.0

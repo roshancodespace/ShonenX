@@ -21,3 +21,10 @@ final continueWatchingPerAnimeProvider = StreamProvider.autoDispose
           .watch(watchHistoryRepositoryProvider)
           .watchHistoryPerAnime(limit: limit);
     }, name: 'continueWatchingPerAnimeProvider');
+
+final historyEpisodesProvider = StreamProvider.autoDispose
+    .family<List<WatchHistoryEntry>, String>((ref, animeId) {
+      return ref
+          .watch(watchHistoryRepositoryProvider)
+          .watchHistoryForAnime(animeId);
+    }, name: 'historyEpisodesProvider');

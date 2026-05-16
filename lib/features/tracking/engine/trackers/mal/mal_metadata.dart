@@ -65,6 +65,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
   Future<PaginatedResult<UnifiedMedia>> getTrending({
     int page = 1,
     MediaType type = MediaType.ANIME,
+    Duration? cacheDuration,
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
@@ -85,7 +86,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
             'fields': _fields,
           },
           headers: {'X-MAL-CLIENT-ID': clientId},
-          cacheDuration: const Duration(hours: 1),
+          cacheDuration: cacheDuration ?? const Duration(hours: 1),
         );
 
         final data = _validateAndParseResponse(response.json, 'getTrending');
@@ -119,6 +120,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
     String query, {
     int page = 1,
     MediaType type = MediaType.ANIME,
+    Duration? cacheDuration,
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
@@ -138,6 +140,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
             'fields': _fields,
           },
           headers: {'X-MAL-CLIENT-ID': clientId},
+          cacheDuration: cacheDuration,
         );
 
         final data = _validateAndParseResponse(response.json, 'search');

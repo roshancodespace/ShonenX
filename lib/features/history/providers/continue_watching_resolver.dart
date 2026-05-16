@@ -1,0 +1,84 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/utils/extensions.dart';
+import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
+import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
+import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
+import 'package:shonenx/features/player/presentation/player_screen.dart';
+import 'package:shonenx/shared/models/unified_episode.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
+
+final continueWatchingResolverProvider = Provider(
+  (ref) => ContinueWatchingResolver(ref),
+);
+
+class ContinueWatchingResult {
+  final PlayerParams params;
+
+  const ContinueWatchingResult({
+    required this.params,
+  });
+}
+
+class ContinueWatchingResolver {
+  final Ref ref;
+
+  const ContinueWatchingResolver(this.ref);
+
+  Future<ContinueWatchingResult> resolve(
+    WatchHistoryEntry entry,
+  ) async {
+    final prefState = await ref.read(
+      sourcePreferenceProvider(entry.animeTitle).future,
+    );
+
+    final sourceInfo = prefState.sourceInfo;
+
+    UnifiedEpisode? episode;
+
+    if (prefState.manualOverrideId != null) {
+      final args = (
+        providerId: prefState.manualOverrideId!,
+        sourceId: sourceInfo.id,
+      );
+
+      final episodesState = await ref.read(
+        sourceEpisodesProvider(args).future,
+      );
+
+      episode = episodesState.episodes.firstWhereOrNull(
+        (e) => e.number == entry.episodeNumber,
+      );
+    } else {
+      final episodesState = await ref.read(
+        episodesListProvider(entry.animeTitle).future,
+      );
+
+      episode = episodesState.episodes.firstWhereOrNull(
+        (e) => e.number == entry.episodeNumber,
+      );
+    }
+
+    if (episode == null) {
+      throw Exception('Episode not found.');
+    }
+
+    return ContinueWatchingResult(
+      params: PlayerParams(
+        media: UnifiedMedia(
+          id: entry.animeId,
+          idMal: entry.animeIdMal,
+          cover: entry.cover,
+          type: MediaType.ANIME,
+          title: MediaTitle(
+            english: entry.animeTitle,
+          ),
+        ),
+        episode: episode,
+        sourceInfo: sourceInfo,
+        startPosition: Duration(
+          milliseconds: entry.positionInMilliseconds,
+        ),
+      ),
+    );
+  }
+}

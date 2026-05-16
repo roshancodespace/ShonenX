@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/presentation/widgets/bottom_controls.dart';
 import 'package:shonenx/features/player/presentation/widgets/center_controls.dart';
 import 'package:shonenx/features/player/presentation/widgets/custom_subtitle_overlay.dart';
@@ -21,7 +20,6 @@ import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/providers/anime_source.dart';
-import 'package:volume_controller/volume_controller.dart';
 
 class PlayerParams {
   final UnifiedMedia media;
@@ -54,9 +52,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   bool _lockControls = false;
   Timer? _controlsTimer;
 
-  Widget? _cachedVideoView;
-  Object? _cachedEngineIdentity;
-
   static const _controlsAutoHideDuration = Duration(seconds: 3);
 
   void _showControlsTemporarily() {
@@ -74,15 +69,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     } else {
       _showControlsTemporarily();
     }
-  }
-
-  Widget _videoViewFor(VideoEngine engine) {
-    final id = identityHashCode(engine);
-    if (_cachedEngineIdentity != id || _cachedVideoView == null) {
-      _cachedVideoView = engine.buildVideoView();
-      _cachedEngineIdentity = id;
-    }
-    return _cachedVideoView!;
   }
 
   @override
@@ -142,110 +128,123 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       episodeLength: engine.currentDuration.inSeconds,
     );
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Focus(
-        autofocus: true,
-        onKeyEvent: (node, event) {
-          if (event is KeyDownEvent) {
-            final isPlaying = ref.read(videoEngineStateProvider).isPlaying;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          controller.captureExitThumbnail();
+          context.pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Focus(
+          autofocus: true,
+          onKeyEvent: (node, event) {
+            if (event is KeyDownEvent) {
+              final isPlaying = ref.read(videoEngineStateProvider).isPlaying;
 
-            if (event.logicalKey == LogicalKeyboardKey.space) {
-              isPlaying ? engine.pause() : engine.play();
-              _showControlsTemporarily();
-              return KeyEventResult.handled;
-            } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-              engine.seekRelative(const Duration(seconds: 10));
-              return KeyEventResult.handled;
-            } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-              engine.seekRelative(const Duration(seconds: -10));
-              return KeyEventResult.handled;
-            } else if (event.logicalKey == LogicalKeyboardKey.keyF) {
-              if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-                windowManager.isFullScreen().then((isFull) {
-                  windowManager.setFullScreen(!isFull);
-                });
+              if (event.logicalKey == LogicalKeyboardKey.space) {
+                isPlaying ? engine.pause() : engine.play();
+                _showControlsTemporarily();
+                return KeyEventResult.handled;
+              } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                engine.seekRelative(const Duration(seconds: 10));
+                return KeyEventResult.handled;
+              } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+                engine.seekRelative(const Duration(seconds: -10));
+                return KeyEventResult.handled;
+              } else if (event.logicalKey == LogicalKeyboardKey.keyF) {
+                if (Platform.isWindows ||
+                    Platform.isLinux ||
+                    Platform.isMacOS) {
+                  windowManager.isFullScreen().then((isFull) {
+                    windowManager.setFullScreen(!isFull);
+                  });
+                }
+                return KeyEventResult.handled;
               }
-              return KeyEventResult.handled;
             }
-          }
-          return KeyEventResult.ignored;
-        },
-        child: Stack(
-          children: [
-            // Video layer
-            Center(
-              child: Offstage(
-                offstage: playerState.isLoading || playerState.error != null,
-                child: Screenshot(
-                  controller: _screenshotController,
-                  child: _videoViewFor(engine),
-                ),
-              ),
-            ),
-            if (playerState.isLoading)
-              const Center(child: CircularProgressIndicator(color: Colors.red))
-            else if (playerState.error != null)
+            return KeyEventResult.ignored;
+          },
+          child: Stack(
+            children: [
+              // Video layer
               Center(
-                child: Text(
-                  playerState.error!,
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-            // Gesture layer (always present)
-            Positioned.fill(
-              child: PlayerGestureOverlay(
-                onToggleControls: _toggleControls,
-                onSeek: engine.seekRelative,
-                onSetSpeed: engine.setSpeed,
-              ),
-            ),
-
-            // Custom Subtitle Layer
-            if (playerState.activeSubtitle != null)
-              const CustomSubtitleOverlay(),
-
-            // Controls layer
-            if (_lockControls)
-              Center(
-                child: IconButton.filled(
-                  padding: const EdgeInsets.all(15),
-                  icon: const Icon(
-                    Icons.lock_open_rounded,
-                    color: Colors.white,
-                    size: 50,
+                child: Offstage(
+                  offstage: playerState.isLoading || playerState.error != null,
+                  child: Screenshot(
+                    controller: _screenshotController,
+                    child: engine.buildVideoView(),
                   ),
-                  onPressed: () => setState(() => _lockControls = false),
                 ),
-              )
-            else ...[
-              TopControls(
-                showControls: _showControls,
-                engine: engine,
-                media: widget.params.media,
-                playerState: playerState,
-                onBack: context.pop,
               ),
-              CenterControls(
-                showControls: _showControls,
-                playerState: playerState,
-                controller: controller,
-                mediaTitle: widget.params.media.title.availableTitle,
-                engine: engine,
+              if (playerState.isLoading)
+                const Center(
+                  child: CircularProgressIndicator(color: Colors.red),
+                )
+              else if (playerState.error != null)
+                Center(
+                  child: Text(
+                    playerState.error!,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              // Gesture layer (always present)
+              Positioned.fill(
+                child: PlayerGestureOverlay(
+                  onToggleControls: _toggleControls,
+                  onSeek: engine.seekRelative,
+                  onSetSpeed: engine.setSpeed,
+                ),
               ),
-              BottomControls(
-                aniskipArgs: aniSkipArgs,
-                showControls: _showControls,
-                engine: engine,
-                playerState: playerState,
-                controller: controller,
-                theme: theme,
-                params: widget.params,
-                onToggleLockControls: () =>
-                    setState(() => _lockControls = !_lockControls),
-              ),
+
+              // Custom Subtitle Layer
+              if (playerState.activeSubtitle != null)
+                const CustomSubtitleOverlay(),
+
+              // Controls layer
+              if (_lockControls)
+                Center(
+                  child: IconButton.filled(
+                    padding: const EdgeInsets.all(15),
+                    icon: const Icon(
+                      Icons.lock_open_rounded,
+                      color: Colors.white,
+                      size: 50,
+                    ),
+                    onPressed: () => setState(() => _lockControls = false),
+                  ),
+                )
+              else ...[
+                TopControls(
+                  showControls: _showControls,
+                  engine: engine,
+                  media: widget.params.media,
+                  playerState: playerState,
+                  onBack: context.pop,
+                ),
+                CenterControls(
+                  showControls: _showControls,
+                  playerState: playerState,
+                  controller: controller,
+                  mediaTitle: widget.params.media.title.availableTitle,
+                  engine: engine,
+                ),
+                BottomControls(
+                  aniskipArgs: aniSkipArgs,
+                  showControls: _showControls,
+                  engine: engine,
+                  playerState: playerState,
+                  controller: controller,
+                  theme: theme,
+                  params: widget.params,
+                  onToggleLockControls: () =>
+                      setState(() => _lockControls = !_lockControls),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

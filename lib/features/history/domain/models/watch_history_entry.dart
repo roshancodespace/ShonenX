@@ -13,6 +13,8 @@ class WatchHistoryEntry {
   late String? animeIdMal;
   late String animeTitle;
   String? episodeTitle;
+  String? cover;
+  String? banner;
 
   late String? thumbnailUrl;
   late int? totalEpisodes;
@@ -33,6 +35,8 @@ class WatchHistoryEntry {
     'animeIdMal': animeIdMal,
     'animeTitle': animeTitle,
     'episodeTitle': episodeTitle,
+    'cover': cover,
+    'banner': banner,
     'thumbnailUrl': thumbnailUrl,
     'totalEpisodes': totalEpisodes,
     'positionInMilliseconds': positionInMilliseconds,
@@ -49,6 +53,8 @@ class WatchHistoryEntry {
     ..animeIdMal = m['animeIdMal'] as String?
     ..animeTitle = m['animeTitle'] as String
     ..episodeTitle = m['episodeTitle'] as String?
+    ..cover = m['cover'] as String?
+    ..banner = m['banner'] as String?
     ..thumbnailUrl = m['thumbnailUrl'] as String?
     ..totalEpisodes = m['totalEpisodes'] as int?
     ..positionInMilliseconds = m['positionInMilliseconds'] as int

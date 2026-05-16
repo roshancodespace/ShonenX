@@ -48,6 +48,14 @@ class UnifiedMedia {
     this.nextEpisode,
     this.relations = const [],
   });
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) || other is UnifiedMedia && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 class MediaTitle {

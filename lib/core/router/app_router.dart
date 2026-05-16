@@ -5,9 +5,10 @@ import 'package:shonenx/core/router/complex_extra_codec.dart';
 import 'package:shonenx/core/router/scaffold_with_nav_bar.dart';
 import 'package:shonenx/features/discovery/presentation/details_screen.dart';
 import 'package:shonenx/features/discovery/presentation/home_screen.dart';
-import 'package:shonenx/features/discovery/presentation/search_screen.dart';
+import 'package:shonenx/features/discovery/presentation/discover_screen.dart';
 import 'package:shonenx/features/downloads/presentation/downloads_screen.dart';
 import 'package:shonenx/features/extensions/presentation/extensions_settings_screen.dart';
+import 'package:shonenx/features/history/presentation/continue_watching_screen.dart';
 import 'package:shonenx/features/library/presentation/library_screen.dart';
 import 'package:shonenx/features/player/presentation/player_screen.dart';
 import 'package:shonenx/features/settings/presentation/cache_settings_screen.dart';
@@ -59,8 +60,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             navigatorKey: _searchNavigatorKey,
             routes: [
               GoRoute(
-                path: '/search',
-                builder: (context, state) => const SearchScreen(),
+                path: '/discover',
+                builder: (context, state) {
+                  final query = state.uri.queryParameters['query'];
+                  final type = MediaType.values.firstWhere(
+                    (e) => e.id == state.uri.queryParameters['type'],
+                    orElse: () => MediaType.ANIME,
+                  );
+
+                  return DiscoverScreen(query: query, type: type);
+                },
               ),
             ],
           ),
@@ -164,6 +173,31 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'debug',
             builder: (context, state) => const DebugSettingsScreen(),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/category/:name',
+        builder: (context, state) {
+          final category = state.pathParameters['name'];
+          final type = MediaType.values.firstWhere(
+            (e) => e.id == state.uri.queryParameters['type'],
+            orElse: () => MediaType.ANIME,
+          );
+
+          return DiscoverScreen(type: type, category: category);
+        },
+      ),
+      GoRoute(
+        path: '/continue-watching',
+        builder: (context, state) => const ContinueWatchingScreen(),
+        routes: [
+          GoRoute(
+            path: ':animeId',
+            builder: (context, state) {
+              final animeId = state.pathParameters['animeId']!;
+              return ContinueWatchingEpisodesScreen(animeId: animeId);
+            },
           ),
         ],
       ),

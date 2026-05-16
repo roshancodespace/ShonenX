@@ -44,6 +44,7 @@ class AnilistTracker extends BaseTracker
   Future<List<TrackerSearchResult>> searchMedia(
     String query, {
     required MediaType type,
+    bool withCache = true,
   }) {
     return executeApi('SEARCH', fallback: (_, __) => [], () async {
       String normalize(String input) {

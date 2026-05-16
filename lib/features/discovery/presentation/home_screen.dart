@@ -255,6 +255,8 @@ class HomeScreen extends ConsumerWidget {
         return HorizontalSection(
           title: title,
           height: style.layout.height,
+          onMoreTap: () =>
+              context.push('/category/$title?type=${MediaType.ANIME.id}'),
           data: AsyncValue.data(items),
           itemBuilder: (context, item) {
             return MediaCard(

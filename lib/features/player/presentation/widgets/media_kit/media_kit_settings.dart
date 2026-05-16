@@ -53,7 +53,6 @@ class MediaKitSettings extends ConsumerWidget {
                 prefs.copyWith(enableLowLatency: value),
               ),
             ),
-            const SizedBox(height: 20),
           ],
         ),
       ),

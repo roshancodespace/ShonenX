@@ -5,14 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
-import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/manual_match_sheet.dart';
-import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
+import 'package:shonenx/features/history/providers/continue_watching_resolver.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
-import 'package:shonenx/features/player/presentation/player_screen.dart';
-import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
@@ -30,67 +27,40 @@ class ContinueWatchingItem extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<ContinueWatchingItem> createState() =>
-      ContinueWatchingItemState();
+      _ContinueWatchingItemState();
 }
 
-class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
+class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
   static const _contentPadding = 5.0;
 
   bool _isLoading = false;
 
-  void _showItemContextMenu(Offset position) async {
-    final entry = widget.entry;
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+  Future<void> _resumeEpisode() async {
+    if (_isLoading) return;
 
-    final value = await showMenu(
-      context: context,
-      position: RelativeRect.fromRect(
-        position & const Size(40, 40),
-        Offset.zero & overlay.size,
-      ),
-      items: const [
-        PopupMenuItem(value: 'clear', child: Text('Clear Source Preference')),
-        PopupMenuItem(
-          value: 'remove_history',
-          child: Text('Remove from History'),
-        ),
-        PopupMenuItem(value: 'fix_match', child: Text('Fix Match')),
-      ],
-    );
+    setState(() => _isLoading = true);
 
-    if (value == 'clear' && mounted) {
-      ref
-          .read(sourcePreferenceProvider(entry.animeTitle).notifier)
-          .clearPreference();
+    try {
+      final result = await ref
+          .read(continueWatchingResolverProvider)
+          .resolve(widget.entry);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Source preference cleared')),
-      );
-    } else if (value == 'remove_history' && mounted) {
-      await ref.read(watchHistoryRepositoryProvider).deleteEntry(entry.id);
+      if (!mounted) return;
 
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Removed from history')));
-      }
-    } else if (value == 'fix_match' && mounted) {
-      await showModalBottomSheet(
-        context: context,
-        builder: (_) => ManualMatchSheet(
-          mediaTitle: entry.animeTitle,
-          type: MediaType.ANIME,
-        ),
-      );
+      setState(() => _isLoading = false);
+
+      context.push('/player', extra: result.params);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => _isLoading = false);
+
+      _showSourceError(e);
     }
   }
 
-  void _handleSourceFailure(Object error) {
-    if (!mounted) return;
-
-    setState(() => _isLoading = false);
-
-    showModalBottomSheet(
+  Future<void> _showSourceError(Object error) async {
+    await showModalBottomSheet(
       context: context,
       useRootNavigator: true,
       builder: (_) {
@@ -103,9 +73,7 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
               Text(
                 error.toString(),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.error.withValues(alpha: 0.9),
+                  color: Theme.of(context).colorScheme.error,
                   fontFamily: 'monospace',
                 ),
               ),
@@ -126,7 +94,7 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
                             .clearPreference();
 
                         if (mounted) {
-                          _handleTap();
+                          _resumeEpisode();
                         }
                       },
                       child: const Text('Auto Match'),
@@ -140,14 +108,16 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
 
                         final result = await showModalBottomSheet<bool>(
                           context: context,
-                          builder: (_) => ManualMatchSheet(
-                            mediaTitle: widget.entry.animeTitle,
-                            type: MediaType.ANIME,
-                          ),
+                          builder: (_) {
+                            return ManualMatchSheet(
+                              mediaTitle: widget.entry.animeTitle,
+                              type: MediaType.ANIME,
+                            );
+                          },
                         );
 
                         if (result == true && mounted) {
-                          _handleTap();
+                          _resumeEpisode();
                         }
                       },
                       child: const Text('Manual Match'),
@@ -162,91 +132,59 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
     );
   }
 
-  Future<void> _handleTap() async {
-    if (_isLoading) return;
-
-    setState(() => _isLoading = true);
-
+  void _showItemContextMenu(Offset position) async {
     final entry = widget.entry;
 
-    try {
-      final prefState = await ref.read(
-        sourcePreferenceProvider(entry.animeTitle).future,
-      );
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
 
-      final sourceInfo = prefState.sourceInfo;
+    final value = await showMenu(
+      context: context,
+      position: RelativeRect.fromRect(
+        position & const Size(40, 40),
+        Offset.zero & overlay.size,
+      ),
+      items: const [
+        PopupMenuItem(value: 'clear', child: Text('Clear Source Preference')),
+        PopupMenuItem(
+          value: 'remove_history',
+          child: Text('Remove from History'),
+        ),
+        PopupMenuItem(value: 'fix_match', child: Text('Fix Match')),
+      ],
+    );
 
-      UnifiedEpisode? episode;
+    if (value == 'clear' && mounted) {
+      await ref
+          .read(sourcePreferenceProvider(entry.animeTitle).notifier)
+          .clearPreference();
 
-      if (prefState.manualOverrideId != null) {
-        try {
-          final args = (
-            providerId: prefState.manualOverrideId!,
-            sourceId: sourceInfo.id,
-          );
-
-          final episodesState = await ref.read(
-            sourceEpisodesProvider(args).future,
-          );
-
-          episode = episodesState.episodes.firstWhereOrNull(
-            (e) => e.number == entry.episodeNumber,
-          );
-
-          if (episode == null) {
-            throw Exception('Episode not found.');
-          }
-        } catch (e) {
-          _handleSourceFailure(e);
-          return;
-        }
-      } else {
-        try {
-          final episodesState = await ref.read(
-            episodesListProvider(entry.animeTitle).future,
-          );
-
-          episode = episodesState.episodes.firstWhereOrNull(
-            (e) => e.number == entry.episodeNumber,
-          );
-
-          if (episode == null) {
-            throw Exception('Episode not found.');
-          }
-        } catch (e) {
-          _handleSourceFailure(e);
-          return;
-        }
-      }
-
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-
-      if (mounted) {
-        context.push(
-          '/player',
-          extra: PlayerParams(
-            media: UnifiedMedia(
-              id: entry.animeId,
-              idMal: entry.animeIdMal,
-              type: MediaType.ANIME,
-              title: MediaTitle(english: entry.animeTitle),
-            ),
-            episode: episode,
-            sourceInfo: sourceInfo,
-            startPosition: Duration(milliseconds: entry.positionInMilliseconds),
-          ),
-        );
-      }
-    } catch (e) {
       if (!mounted) return;
 
-      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Source preference cleared')),
+      );
+    }
+
+    if (value == 'remove_history' && mounted) {
+      await ref.read(watchHistoryRepositoryProvider).deleteEntry(entry.id);
+
+      if (!mounted) return;
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ).showSnackBar(const SnackBar(content: Text('Removed from history')));
+    }
+
+    if (value == 'fix_match' && mounted) {
+      await showModalBottomSheet(
+        context: context,
+        builder: (_) {
+          return ManualMatchSheet(
+            mediaTitle: entry.animeTitle,
+            type: MediaType.ANIME,
+          );
+        },
+      );
     }
   }
 
@@ -257,12 +195,17 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onSecondaryTapDown: (details) =>
-            _showItemContextMenu(details.globalPosition),
-        onLongPressStart: (details) =>
-            _showItemContextMenu(details.globalPosition),
-        onTap: _handleTap,
-        child: _buildStyledContent(widget.style, theme),
+        onTap: _resumeEpisode,
+        onSecondaryTapDown: (details) {
+          _showItemContextMenu(details.globalPosition);
+        },
+        onLongPressStart: (details) {
+          _showItemContextMenu(details.globalPosition);
+        },
+        child: AnimatedSize(
+          duration: Durations.short4,
+          child: _buildStyledContent(widget.style, theme),
+        ),
       ),
     );
   }
@@ -455,7 +398,10 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
     List<Widget>? layers,
   }) {
     final theme = Theme.of(context);
+
     final cs = theme.colorScheme;
+
+    final thumbnail = widget.entry.thumbnailUrl;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
@@ -464,28 +410,8 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            widget.entry.thumbnailUrl != null
-                ? widget.entry.thumbnailUrl!.startsWith('http')
-                      ? CachedNetworkImage(
-                          imageUrl: widget.entry.thumbnailUrl!.split('#').first,
-                          httpHeaders: {
-                            'Referer': widget.entry.thumbnailUrl!
-                                .split('#')
-                                .last,
-                          },
-                          fit: BoxFit.cover,
-                        )
-                      : Image.memory(
-                          base64Decode(widget.entry.thumbnailUrl!),
-                          fit: BoxFit.cover,
-                        )
-                : Container(
-                    color: cs.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.movie_creation_outlined,
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
+            _buildThumbnail(thumbnail, cs),
+
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
@@ -501,6 +427,7 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
                 ),
               ),
             ),
+
             Positioned(
               left: progressInset,
               right: progressInset,
@@ -515,7 +442,9 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
                 ),
               ),
             ),
+
             if (layers != null) ...layers,
+
             if (_isLoading)
               Positioned.fill(
                 child: ColoredBox(
@@ -532,5 +461,50 @@ class ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
         ),
       ),
     );
+  }
+
+  Widget _buildThumbnail(String? thumbnail, ColorScheme cs) {
+    if (thumbnail == null || thumbnail.isEmpty) {
+      return Container(
+        color: cs.surfaceContainerHighest,
+        child: Icon(Icons.movie_creation_outlined, color: cs.onSurfaceVariant),
+      );
+    }
+
+    try {
+      if (thumbnail.startsWith('http')) {
+        final split = thumbnail.split('#');
+
+        final imageUrl = split.first;
+
+        final headers = split.length > 1
+            ? {'Referer': split.last}
+            : <String, String>{};
+
+        return CachedNetworkImage(
+          imageUrl: imageUrl,
+          httpHeaders: headers,
+          fit: BoxFit.cover,
+          errorWidget: (_, __, ___) => Container(
+            color: cs.surfaceContainerHighest,
+            child: Icon(Icons.broken_image_rounded, color: cs.onSurfaceVariant),
+          ),
+        );
+      }
+
+      return Image.memory(
+        base64Decode(thumbnail),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          color: cs.surfaceContainerHighest,
+          child: Icon(Icons.broken_image_rounded, color: cs.onSurfaceVariant),
+        ),
+      );
+    } catch (_) {
+      return Container(
+        color: cs.surfaceContainerHighest,
+        child: Icon(Icons.broken_image_rounded, color: cs.onSurfaceVariant),
+      );
+    }
   }
 }

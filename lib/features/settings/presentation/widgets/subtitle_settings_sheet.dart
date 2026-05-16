@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
+import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 class SubtitleSettingsSheet extends ConsumerWidget {
   const SubtitleSettingsSheet({super.key});
@@ -20,323 +21,279 @@ class SubtitleSettingsSheet extends ConsumerWidget {
     final clampedScale = prefs.fontSize.clamp(25.0, 100.0);
     final responsiveFontSize = (screenWidth * 0.08) * (clampedScale / 100);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 12),
-            Center(
-              child: Container(
-                width: 32,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.35),
-                  borderRadius: BorderRadius.circular(999),
+    return AppBottomSheet(
+      title: 'Subtitle Preferences',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: CachedNetworkImageProvider(
+                  'https://mir-s3-cdn-cf.behance.net/project_modules/1400_webp/833374164510463.63f7b82b9427d.png',
                 ),
+                fit: BoxFit.cover,
+                alignment: Alignment(0, -0.5),
               ),
             ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Subtitle Preferences',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
-                ),
+            child: AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              style: TextStyle(
+                fontSize: responsiveFontSize.clamp(10.0, 100.0),
+                color: Color(prefs.fontColor),
+                backgroundColor: prefs.backgroundColor == 0x00000000
+                    ? null
+                    : Color(prefs.backgroundColor),
+                fontWeight: prefs.bold ? FontWeight.w700 : FontWeight.w500,
+                height: 1.3,
+                shadows: prefs.outlineColor == 0x00000000
+                    ? null
+                    : [
+                        Shadow(
+                          offset: Offset(
+                            -prefs.outlineSize,
+                            -prefs.outlineSize,
+                          ),
+                          blurRadius: prefs.outlineSize,
+                          color: Color(prefs.outlineColor),
+                        ),
+                        Shadow(
+                          offset: Offset(prefs.outlineSize, -prefs.outlineSize),
+                          blurRadius: prefs.outlineSize,
+                          color: Color(prefs.outlineColor),
+                        ),
+                        Shadow(
+                          offset: Offset(prefs.outlineSize, prefs.outlineSize),
+                          blurRadius: prefs.outlineSize,
+                          color: Color(prefs.outlineColor),
+                        ),
+                        Shadow(
+                          offset: Offset(-prefs.outlineSize, prefs.outlineSize),
+                          blurRadius: prefs.outlineSize,
+                          color: Color(prefs.outlineColor),
+                        ),
+                      ],
               ),
+              textAlign: TextAlign.center,
+              child: const Text('Ore wa kaizoku ou ni naru!'),
             ),
-            const SizedBox(height: 8),
+          ),
 
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: CachedNetworkImageProvider(
-                    'https://mir-s3-cdn-cf.behance.net/project_modules/1400_webp/833374164510463.63f7b82b9427d.png',
-                  ),
-                  fit: BoxFit.cover,
-                  alignment: Alignment(0, -0.5),
+          Divider(color: cs.outlineVariant.withValues(alpha: 0.3), height: 1),
+
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                SettingsSwitchTile(
+                  icon: Icons.subtitles_outlined,
+                  title: 'Custom Overlay Engine',
+                  subtitle: 'Overrides default player subtitles',
+                  value: prefs.useCustomSubtitle,
+                  onChanged: (value) {
+                    notifier.updatePrefs(
+                      prefs.copyWith(useCustomSubtitle: value),
+                    );
+                  },
                 ),
-              ),
-              child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                style: TextStyle(
-                  fontSize: responsiveFontSize.clamp(10.0, 100.0),
-                  color: Color(prefs.fontColor),
-                  backgroundColor: prefs.backgroundColor == 0x00000000
-                      ? null
-                      : Color(prefs.backgroundColor),
-                  fontWeight: prefs.bold ? FontWeight.w700 : FontWeight.w500,
-                  height: 1.3,
-                  shadows: prefs.outlineColor == 0x00000000
-                      ? null
-                      : [
-                          Shadow(
-                            offset: Offset(
-                              -prefs.outlineSize,
-                              -prefs.outlineSize,
-                            ),
-                            blurRadius: prefs.outlineSize,
-                            color: Color(prefs.outlineColor),
-                          ),
-                          Shadow(
-                            offset: Offset(
-                              prefs.outlineSize,
-                              -prefs.outlineSize,
-                            ),
-                            blurRadius: prefs.outlineSize,
-                            color: Color(prefs.outlineColor),
-                          ),
-                          Shadow(
-                            offset: Offset(
-                              prefs.outlineSize,
-                              prefs.outlineSize,
-                            ),
-                            blurRadius: prefs.outlineSize,
-                            color: Color(prefs.outlineColor),
-                          ),
-                          Shadow(
-                            offset: Offset(
-                              -prefs.outlineSize,
-                              prefs.outlineSize,
-                            ),
-                            blurRadius: prefs.outlineSize,
-                            color: Color(prefs.outlineColor),
-                          ),
-                        ],
-                ),
-                textAlign: TextAlign.center,
-                child: const Text('Ore wa kaizoku ou ni naru!'),
-              ),
-            ),
 
-            Divider(color: cs.outlineVariant.withValues(alpha: 0.3), height: 1),
-
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                children: [
-                  SettingsSwitchTile(
-                    icon: Icons.subtitles_outlined,
-                    title: 'Custom Overlay Engine',
-                    subtitle: 'Overrides default player subtitles',
-                    value: prefs.useCustomSubtitle,
-                    onChanged: (value) {
-                      notifier.updatePrefs(
-                        prefs.copyWith(useCustomSubtitle: value),
-                      );
-                    },
-                  ),
-
-                  if (!prefs.useCustomSubtitle) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: cs.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.info_outline_rounded,
-                            size: 18,
-                            color: cs.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Native subtitles are active. Some appearance settings may not apply.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: cs.onSurfaceVariant,
-                                height: 1.4,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 12),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Text(
-                      'APPEARANCE',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: cs.primary,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-
-                  SettingsSliderTile(
-                    icon: Icons.format_size_rounded,
-                    title: 'Size Scale',
-                    subtitle: 'Responsive based on screen width',
-                    value: clampedScale,
-                    min: 25,
-                    max: 100,
-                    divisions: 15, // Jumps by 5%
-                    label: '${clampedScale.round()}%',
-                    onChanged: (value) {
-                      notifier.updatePrefs(prefs.copyWith(fontSize: value));
-                    },
-                  ),
-
-                  SettingsActionTile(
-                    icon: Icons.format_color_text_rounded,
-                    title: 'Font Color',
-                    trailing: _ColorIndicator(colorValue: prefs.fontColor),
-                    onTap: () {
-                      _showColorSheet(
-                        context,
-                        title: 'Font Color',
-                        currentValue: prefs.fontColor,
-                        options: const [
-                          0xFFFFFFFF,
-                          0xFFE0E0E0,
-                          0xFFFFFF00,
-                          0xFF00FFFF,
-                          0xFF4CAF50,
-                        ],
-                        onChanged: (value) {
-                          notifier.updatePrefs(
-                            prefs.copyWith(fontColor: value),
-                          );
-                        },
-                      );
-                    },
-                  ),
-
-                  SettingsActionTile(
-                    icon: Icons.format_color_fill_rounded,
-                    title: 'Background',
-                    trailing: _ColorIndicator(
-                      colorValue: prefs.backgroundColor,
-                    ),
-                    onTap: () {
-                      _showColorSheet(
-                        context,
-                        title: 'Background',
-                        currentValue: prefs.backgroundColor,
-                        options: const [
-                          0x00000000,
-                          0x80000000,
-                          0xFF000000,
-                          0x80FFFFFF,
-                        ],
-                        onChanged: (value) {
-                          notifier.updatePrefs(
-                            prefs.copyWith(backgroundColor: value),
-                          );
-                        },
-                      );
-                    },
-                  ),
-
+                if (!prefs.useCustomSubtitle) ...[
                   const SizedBox(height: 8),
-
-                  Theme(
-                    data: Theme.of(
-                      context,
-                    ).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      title: const Text(
-                        'Advanced Settings',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 4),
-                      childrenPadding: const EdgeInsets.only(bottom: 8),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SettingsSwitchTile(
-                          icon: Icons.format_bold_rounded,
-                          title: 'Bold Text',
-                          subtitle: 'Use thicker font weight',
-                          value: prefs.bold,
-                          onChanged: (value) {
-                            notifier.updatePrefs(prefs.copyWith(bold: value));
-                          },
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 18,
+                          color: cs.onSurfaceVariant,
                         ),
-                        SettingsActionTile(
-                          icon: Icons.border_style_rounded,
-                          title: 'Outline Color',
-                          trailing: _ColorIndicator(
-                            colorValue: prefs.outlineColor,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Native subtitles are active. Some appearance settings may not apply.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                              height: 1.4,
+                            ),
                           ),
-                          onTap: () {
-                            _showColorSheet(
-                              context,
-                              title: 'Outline Color',
-                              currentValue: prefs.outlineColor,
-                              options: const [
-                                0x00000000,
-                                0x80000000,
-                                0xFF000000,
-                                0xFFFFFFFF,
-                              ],
-                              onChanged: (value) {
-                                notifier.updatePrefs(
-                                  prefs.copyWith(outlineColor: value),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                        SettingsSliderTile(
-                          icon: Icons.line_weight_rounded,
-                          title: 'Outline Size',
-                          subtitle: 'Thickness of the text shadow',
-                          value: prefs.outlineSize,
-                          min: 0.0,
-                          max: 5.0,
-                          divisions: 10,
-                          label: prefs.outlineSize.toStringAsFixed(1),
-                          onChanged: (value) {
-                            notifier.updatePrefs(
-                              prefs.copyWith(outlineSize: value),
-                            );
-                          },
-                        ),
-                        SettingsSliderTile(
-                          icon: Icons.vertical_align_bottom_rounded,
-                          title: 'Bottom Padding',
-                          subtitle: 'Distance from bottom edge',
-                          value: prefs.bottomPadding,
-                          min: 0,
-                          max: 100,
-                          divisions: 20,
-                          label: '${prefs.bottomPadding.round()}px',
-                          onChanged: (value) {
-                            notifier.updatePrefs(
-                              prefs.copyWith(bottomPadding: value),
-                            );
-                          },
                         ),
                       ],
                     ),
                   ),
                 ],
-              ),
+
+                const SizedBox(height: 12),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    'APPEARANCE',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: cs.primary,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+
+                SettingsSliderTile(
+                  icon: Icons.format_size_rounded,
+                  title: 'Size Scale',
+                  subtitle: 'Responsive based on screen width',
+                  value: clampedScale,
+                  min: 25,
+                  max: 100,
+                  divisions: 15, // Jumps by 5%
+                  label: '${clampedScale.round()}%',
+                  onChanged: (value) {
+                    notifier.updatePrefs(prefs.copyWith(fontSize: value));
+                  },
+                ),
+
+                SettingsActionTile(
+                  icon: Icons.format_color_text_rounded,
+                  title: 'Font Color',
+                  trailing: _ColorIndicator(colorValue: prefs.fontColor),
+                  onTap: () {
+                    _showColorSheet(
+                      context,
+                      title: 'Font Color',
+                      currentValue: prefs.fontColor,
+                      options: const [
+                        0xFFFFFFFF,
+                        0xFFE0E0E0,
+                        0xFFFFFF00,
+                        0xFF00FFFF,
+                        0xFF4CAF50,
+                      ],
+                      onChanged: (value) {
+                        notifier.updatePrefs(prefs.copyWith(fontColor: value));
+                      },
+                    );
+                  },
+                ),
+
+                SettingsActionTile(
+                  icon: Icons.format_color_fill_rounded,
+                  title: 'Background',
+                  trailing: _ColorIndicator(colorValue: prefs.backgroundColor),
+                  onTap: () {
+                    _showColorSheet(
+                      context,
+                      title: 'Background',
+                      currentValue: prefs.backgroundColor,
+                      options: const [
+                        0x00000000,
+                        0x80000000,
+                        0xFF000000,
+                        0x80FFFFFF,
+                      ],
+                      onChanged: (value) {
+                        notifier.updatePrefs(
+                          prefs.copyWith(backgroundColor: value),
+                        );
+                      },
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 8),
+
+                Theme(
+                  data: Theme.of(
+                    context,
+                  ).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    title: const Text(
+                      'Advanced Settings',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 4),
+                    childrenPadding: const EdgeInsets.only(bottom: 8),
+                    children: [
+                      SettingsSwitchTile(
+                        icon: Icons.format_bold_rounded,
+                        title: 'Bold Text',
+                        subtitle: 'Use thicker font weight',
+                        value: prefs.bold,
+                        onChanged: (value) {
+                          notifier.updatePrefs(prefs.copyWith(bold: value));
+                        },
+                      ),
+                      SettingsActionTile(
+                        icon: Icons.border_style_rounded,
+                        title: 'Outline Color',
+                        trailing: _ColorIndicator(
+                          colorValue: prefs.outlineColor,
+                        ),
+                        onTap: () {
+                          _showColorSheet(
+                            context,
+                            title: 'Outline Color',
+                            currentValue: prefs.outlineColor,
+                            options: const [
+                              0x00000000,
+                              0x80000000,
+                              0xFF000000,
+                              0xFFFFFFFF,
+                            ],
+                            onChanged: (value) {
+                              notifier.updatePrefs(
+                                prefs.copyWith(outlineColor: value),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      SettingsSliderTile(
+                        icon: Icons.line_weight_rounded,
+                        title: 'Outline Size',
+                        subtitle: 'Thickness of the text shadow',
+                        value: prefs.outlineSize,
+                        min: 0.0,
+                        max: 5.0,
+                        divisions: 10,
+                        label: prefs.outlineSize.toStringAsFixed(1),
+                        onChanged: (value) {
+                          notifier.updatePrefs(
+                            prefs.copyWith(outlineSize: value),
+                          );
+                        },
+                      ),
+                      SettingsSliderTile(
+                        icon: Icons.vertical_align_bottom_rounded,
+                        title: 'Bottom Padding',
+                        subtitle: 'Distance from bottom edge',
+                        value: prefs.bottomPadding,
+                        min: 0,
+                        max: 100,
+                        divisions: 20,
+                        label: '${prefs.bottomPadding.round()}px',
+                        onChanged: (value) {
+                          notifier.updatePrefs(
+                            prefs.copyWith(bottomPadding: value),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

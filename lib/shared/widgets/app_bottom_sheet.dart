@@ -44,13 +44,15 @@ class AppBottomSheet extends StatelessWidget {
     required void Function(T item) onChanged,
     T? selectedValue,
     Widget? Function(T item)? badgeBuilder,
+    Widget? Function(T item, bool isSelected)? leadingBuilder,
+    Widget? Function(T item, bool isSelected)? trailingBuilder,
+    String? Function(T item)? subtitleBuilder,
     bool closeOnSelect = true,
     bool isScrollControlled = true,
     bool useRootNavigator = false,
     bool enableDrag = true,
     bool useSafeArea = true,
     EdgeInsetsGeometry padding = const EdgeInsets.fromLTRB(20, 12, 20, 20),
-    Widget? Function(T item, bool isSelected)? trailingBuilder,
   }) {
     return show<T>(
       context: context,
@@ -67,8 +69,10 @@ class AppBottomSheet extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: items.map((item) {
                 final isSelected = item == selectedValue;
+                final subtitle = subtitleBuilder?.call(item);
 
                 return ListTile(
+                  leading: leadingBuilder?.call(item, isSelected),
                   title: Row(
                     children: [
                       Expanded(
@@ -88,9 +92,25 @@ class AppBottomSheet extends StatelessWidget {
                       ],
                     ],
                   ),
+                  subtitle: subtitle != null
+                      ? Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(
+                              sheetContext,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        )
+                      : null,
                   trailing:
                       trailingBuilder?.call(item, isSelected) ??
-                      (isSelected ? const Icon(Icons.check) : null),
+                      (isSelected
+                          ? Icon(
+                              Icons.check_rounded,
+                              color: Theme.of(sheetContext).colorScheme.primary,
+                            )
+                          : null),
                   onTap: () {
                     onChanged(item);
 

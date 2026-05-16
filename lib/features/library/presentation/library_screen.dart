@@ -10,11 +10,18 @@ import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import '../providers/library_view_provider.dart';
 
-class LibraryScreen extends ConsumerWidget {
-  const LibraryScreen({super.key});
+class LibraryScreen extends ConsumerStatefulWidget {
+  final TrackedStatus? status;
+
+  const LibraryScreen({super.key, this.status});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
+}
+
+class _LibraryScreenState extends ConsumerState<LibraryScreen> {
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final viewState = ref.watch(libraryViewStateProvider);
     final dynamicLibrary = ref.watch(dynamicLibraryProvider);

@@ -8,6 +8,7 @@ class HorizontalSection<T> extends StatelessWidget {
   final double height;
   final String emptyText;
   final double? gap;
+  final VoidCallback? onMoreTap;
 
   const HorizontalSection({
     super.key,
@@ -17,6 +18,7 @@ class HorizontalSection<T> extends StatelessWidget {
     required this.height,
     this.gap,
     this.emptyText = 'No data found',
+    this.onMoreTap,
   });
 
   @override
@@ -25,8 +27,20 @@ class HorizontalSection<T> extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleLarge),
+              if (onMoreTap != null) ...[
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.arrow_forward_ios),
+                  onPressed: onMoreTap,
+                ),
+              ],
+            ],
+          ),
         ),
         SizedBox(
           height: height,

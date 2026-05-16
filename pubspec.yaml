@@ -71,6 +71,7 @@ dependencies:
   device_apps: ^2.2.0
   android_intent_plus: ^6.0.0
   open_file: ^3.5.11
+  device_info_plus: ^12.4.0
 
 dev_dependencies:
   flutter_test:

@@ -1,9 +1,11 @@
 import 'dart:developer';
+
 import 'package:shonenx/core/network/http_client.dart';
-import 'package:shonenx/shared/models/unified_media.dart';
-import 'package:shonenx/source_engine/models/paginated_result.dart';
 import 'package:shonenx/features/tracking/engine/base_tracker.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/source_engine/models/paginated_result.dart';
+
 import 'anilist_tracker_queries.dart';
 
 class AnilistException implements Exception {
@@ -57,6 +59,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
   Future<PaginatedResult<UnifiedMedia>> getTrending({
     int page = 1,
     MediaType type = MediaType.ANIME,
+    Duration? cacheDuration,
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
@@ -69,7 +72,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
             'query': AnilistTrackerQueries.trending,
             'variables': {'page': page, 'type': type.name},
           },
-          cacheDuration: const Duration(days: 1),
+          cacheDuration: cacheDuration ?? const Duration(days: 1),
         );
 
         final data = _validateAndParseResponse(response.json, 'getTrending');
@@ -107,6 +110,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
     String query, {
     int page = 1,
     MediaType type = MediaType.ANIME,
+    Duration? cacheDuration,
     bool isAdult = false,
     List<String> sort = const ['SEARCH_MATCH'],
   }) {
@@ -127,6 +131,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
               'sort': sort,
             },
           },
+          cacheDuration: cacheDuration,
         );
 
         final data = _validateAndParseResponse(response.json, 'search');

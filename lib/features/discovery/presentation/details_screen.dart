@@ -258,10 +258,12 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
             ],
           ),
         ),
-        bottomNavigationBar: const SafeArea(
+        bottomNavigationBar: SafeArea(
           child: TabBar(
             dividerHeight: 0,
+            dividerColor: Colors.transparent,
             indicatorSize: TabBarIndicatorSize.tab,
+            textScaler: const TextScaler.linear(1.15),
             tabs: [
               Tab(text: 'About'),
               Tab(text: 'Episodes'),

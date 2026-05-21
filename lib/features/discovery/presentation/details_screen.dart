@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/auth/providers/auth_provider.dart';
@@ -38,13 +39,28 @@ class DetailsScreen extends ConsumerStatefulWidget {
   ConsumerState<DetailsScreen> createState() => _DetailsScreenState();
 }
 
-class _DetailsScreenState extends ConsumerState<DetailsScreen> {
+class _DetailsScreenState extends ConsumerState<DetailsScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+  late final FocusNode _keyboardFocusNode;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this, initialIndex: 0);
+    _keyboardFocusNode = FocusNode();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _autoLinkPrimaryTracker();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _keyboardFocusNode.dispose();
+
+    super.dispose();
   }
 
   Future<void> _autoLinkPrimaryTracker() async {
@@ -95,172 +111,185 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
     final displayMedia =
         detailsState.value?.merge(widget.media) ?? widget.media;
 
-    return DefaultTabController(
-      length: 2,
-      child: AppScaffold(
-        body: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            SliverAppBar(
-              automaticallyImplyLeading: false,
-              expandedHeight: 350.0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new),
-                onPressed: () => context.pop(),
-              ),
-              flexibleSpace: FlexibleSpaceBar(
-                titlePadding: EdgeInsets.zero,
-                background: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: CachedNetworkImage(
-                        imageUrl:
-                            displayMedia.banner ?? displayMedia.cover ?? '',
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) =>
-                            const Center(child: CircularProgressIndicator()),
-                        errorWidget: (_, __, ___) =>
-                            const Center(child: Icon(Icons.error)),
-                      ),
+    return AppScaffold(
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverAppBar(
+            automaticallyImplyLeading: false,
+            expandedHeight: 350.0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new),
+              onPressed: () => context.pop(),
+            ),
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: EdgeInsets.zero,
+              background: Stack(
+                children: [
+                  Positioned.fill(
+                    child: CachedNetworkImage(
+                      imageUrl: displayMedia.banner ?? displayMedia.cover ?? '',
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) =>
+                          const Center(child: CircularProgressIndicator()),
+                      errorWidget: (_, __, ___) =>
+                          const Center(child: Icon(Icons.error)),
                     ),
-                    Positioned.fill(
-                      child: Container(
-                        padding: const EdgeInsets.only(bottom: 5),
-                        margin: const EdgeInsets.only(top: 10),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            stops: const [0, 0.5, 1],
-                            colors: [
-                              Colors.transparent,
-                              theme.scaffoldBackgroundColor.withValues(
-                                alpha: 0.8,
-                              ),
-                              theme.scaffoldBackgroundColor,
-                            ],
-                          ),
+                  ),
+                  Positioned.fill(
+                    child: Container(
+                      padding: const EdgeInsets.only(bottom: 5),
+                      margin: const EdgeInsets.only(top: 10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          stops: const [0, 0.5, 1],
+                          colors: [
+                            Colors.transparent,
+                            theme.scaffoldBackgroundColor.withValues(
+                              alpha: 0.8,
+                            ),
+                            theme.scaffoldBackgroundColor,
+                          ],
                         ),
-                        alignment: Alignment.bottomLeft,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(10.0),
-                              child: SizedBox(
-                                width: 112,
-                                child: AspectRatio(
-                                  aspectRatio: 2 / 3,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Hero(
-                                      tag: widget.tag,
-                                      child: CachedNetworkImage(
-                                        imageUrl: displayMedia.cover ?? '',
-                                        fit: BoxFit.cover,
-                                        placeholder: (context, url) =>
-                                            Container(
-                                              color: colorScheme
-                                                  .surfaceContainerHighest,
-                                            ),
-                                        errorWidget: (_, __, ___) =>
-                                            const Icon(Icons.error),
+                      ),
+                      alignment: Alignment.bottomLeft,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: SizedBox(
+                              width: 112,
+                              child: AspectRatio(
+                                aspectRatio: 2 / 3,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Hero(
+                                    tag: widget.tag,
+                                    child: CachedNetworkImage(
+                                      imageUrl: displayMedia.cover ?? '',
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => Container(
+                                        color:
+                                            colorScheme.surfaceContainerHighest,
                                       ),
+                                      errorWidget: (_, __, ___) =>
+                                          const Icon(Icons.error),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                  bottom: 10.0,
-                                  right: 10.0,
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: 10.0,
+                                right: 10.0,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    displayMedia.title.availableTitle,
+                                    style: textTheme.titleLarge,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (displayMedia.title.native != null ||
+                                      displayMedia.title.romaji != null)
                                     Text(
-                                      displayMedia.title.availableTitle,
-                                      style: textTheme.titleLarge,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    if (displayMedia.title.native != null ||
-                                        displayMedia.title.romaji != null)
-                                      Text(
-                                        displayMedia.title.native ??
-                                            displayMedia.title.romaji ??
-                                            '',
-                                        style: textTheme.labelLarge?.copyWith(
-                                          color: colorScheme.onSurfaceVariant,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      '${displayMedia.episodes ?? '?'} EPS | ${displayMedia.status?.toUpperCase() ?? 'UNKNOWN'}',
+                                      displayMedia.title.native ??
+                                          displayMedia.title.romaji ??
+                                          '',
                                       style: textTheme.labelLarge?.copyWith(
                                         color: colorScheme.onSurfaceVariant,
                                       ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    const SizedBox(height: 10),
-                                    Wrap(
-                                      spacing: 3.0,
-                                      runSpacing: 3.0,
-                                      alignment: WrapAlignment.start,
-                                      children: [
-                                        for (final genre
-                                            in displayMedia.genres ?? [])
-                                          Chip(
-                                            materialTapTargetSize:
-                                                MaterialTapTargetSize
-                                                    .shrinkWrap,
-                                            side: BorderSide.none,
-                                            color: WidgetStatePropertyAll(
-                                              colorScheme
-                                                  .surfaceContainerHighest,
-                                            ),
-                                            labelPadding: EdgeInsets.zero,
-                                            label: Text(
-                                              genre,
-                                              style: textTheme.bodySmall
-                                                  ?.copyWith(
-                                                    color: colorScheme
-                                                        .onSurfaceVariant,
-                                                  ),
-                                            ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    '${displayMedia.episodes ?? '?'} EPS | ${displayMedia.status?.toUpperCase() ?? 'UNKNOWN'}',
+                                    style: textTheme.labelLarge?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Wrap(
+                                    spacing: 3.0,
+                                    runSpacing: 3.0,
+                                    alignment: WrapAlignment.start,
+                                    children: [
+                                      for (final genre
+                                          in displayMedia.genres ?? [])
+                                        Chip(
+                                          materialTapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                          side: BorderSide.none,
+                                          color: WidgetStatePropertyAll(
+                                            colorScheme.surfaceContainerHighest,
                                           ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                          labelPadding: EdgeInsets.zero,
+                                          label: Text(
+                                            genre,
+                                            style: textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              actions: [
-                const _DownloadAppBarButton(),
-                _TrackerAppBarButton(media: displayMedia),
-              ],
             ),
-          ],
-          body: TabBarView(
-            children: [
-              AboutTabWidget(media: displayMedia),
-              EpisodesTabWidget(media: displayMedia),
+            actions: [
+              const _DownloadAppBarButton(),
+              _TrackerAppBarButton(media: displayMedia),
             ],
           ),
+        ],
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            AboutTabWidget(media: displayMedia),
+            EpisodesTabWidget(media: displayMedia),
+          ],
         ),
-        bottomNavigationBar: SafeArea(
+      ),
+      bottomNavigationBar: SafeArea(
+        child: KeyboardListener(
+          focusNode: _keyboardFocusNode,
+          autofocus: true,
+          onKeyEvent: (event) {
+            if (event is! KeyDownEvent) {
+              return;
+            }
+
+            switch (event.logicalKey) {
+              case LogicalKeyboardKey.digit1:
+                _tabController.animateTo(0);
+                break;
+              case LogicalKeyboardKey.digit2:
+                _tabController.animateTo(1);
+                break;
+            }
+          },
           child: TabBar(
             dividerHeight: 0,
+            controller: _tabController,
             dividerColor: Colors.transparent,
             indicatorSize: TabBarIndicatorSize.tab,
             textScaler: const TextScaler.linear(1.15),

@@ -60,6 +60,14 @@ class EpisodeListPanel extends ConsumerStatefulWidget {
 class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
   bool _descending = false;
   int _chunkIndex = 0;
+  final ScrollController _scrollController = ScrollController();
+  bool _hasAutoScrolled = false;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -209,9 +217,12 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                 index: chunks.length > 1 ? 5 : 4,
                 child: _buildEpisodeView(
                   context,
-                  filtered,
-                  state.source,
-                  viewMode,
+                  episodes: filtered,
+                  source: state.source,
+                  viewMode: viewMode,
+                  currentIndex: filtered.indexWhere(
+                    (ep) => ep.number == widget.currentEpisodeNumber,
+                  ),
                 ),
               ),
             ),
@@ -222,136 +233,221 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
   }
 
   Widget _buildEpisodeView(
-    BuildContext context,
-    List<UnifiedEpisode> episodes,
-    SourceInfo source,
-    EpisodeViewMode viewMode,
-  ) {
-    final r = context.responsiveOrNull ?? ResponsiveData.from(context);
+    BuildContext context, {
+    required List<UnifiedEpisode> episodes,
+    required SourceInfo source,
+    required EpisodeViewMode viewMode,
+    int currentIndex = -1,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final panelWidth = constraints.maxWidth;
 
-    switch (viewMode) {
-      case EpisodeViewMode.classic:
-        return ListView.builder(
-          itemCount: episodes.length,
-          itemBuilder: (context, i) {
-            final ep = episodes[i];
-            final isCurrent = widget.currentEpisodeNumber == ep.number;
-            final isWatched = widget.watchedProgress >= ep.number;
+        final WidthTier panelTier;
+        if (panelWidth >= 1600) {
+          panelTier = WidthTier.ultraLarge;
+        } else if (panelWidth >= 1200) {
+          panelTier = WidthTier.large;
+        } else if (panelWidth >= 640) {
+          panelTier = WidthTier.expanded;
+        } else if (panelWidth >= 500) {
+          panelTier = WidthTier.medium;
+        } else {
+          panelTier = WidthTier.compact;
+        }
 
-            return EpisodeClassicTile(
-              episode: ep,
-              isCurrent: isCurrent,
-              isWatched: isWatched,
-              imageFadeDirection: widget.imageFadeDirection,
-              imageFadeStops: widget.imageFadeStops,
-              imageOpacity: widget.imageOpacity,
-              imageBlurSigma: widget.imageBlurSigma,
-              isFiller: ep.isFiller,
-              actions:
-                  widget.episodeActionsBuilder?.call(
-                    context,
-                    ep,
-                    isCurrent,
-                    isWatched,
-                  ) ??
-                  const [],
-              onTap: () => widget.onEpisodeTap(ep, source),
+        if (currentIndex >= 0 && !_hasAutoScrolled) {
+          _hasAutoScrolled = true;
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (!mounted) return;
+            if (!_scrollController.hasClients) return;
+            final maxExt = _scrollController.position.maxScrollExtent;
+            if (maxExt <= 0) return;
+
+            double offset;
+            switch (viewMode) {
+              case EpisodeViewMode.classic:
+                offset = currentIndex * 72.0;
+              case EpisodeViewMode.grid:
+                final cols = panelTier.pick(
+                  compact: 2,
+                  medium: 3,
+                  expanded: 4,
+                  large: 5,
+                  ultraLarge: 6,
+                );
+                final pad = panelTier.pickOrFold(
+                  compact: 8.0,
+                  medium: 12.0,
+                  large: 16.0,
+                );
+                final spacing = panelTier.pickOrFold(
+                  compact: 8.0,
+                  medium: 10.0,
+                  large: 14.0,
+                );
+                final cellW =
+                    (panelWidth - pad * 2 - spacing * (cols - 1)) / cols;
+                final cellH = cellW * (10 / 16);
+                final row = currentIndex ~/ cols;
+                offset = pad + row * (cellH + spacing);
+              case EpisodeViewMode.box:
+                final boxSize = panelTier.pickOrFold(
+                  compact: 46.0,
+                  medium: 50.0,
+                  large: 58.0,
+                );
+                final boxPad = panelTier.pickOrFold(
+                  compact: 8.0,
+                  medium: 12.0,
+                  large: 16.0,
+                );
+                final boxSpacing = panelTier.pickOrFold(
+                  compact: 6.0,
+                  medium: 8.0,
+                  large: 10.0,
+                );
+                final cols = (panelWidth / boxSize).floor().clamp(1, 50);
+                final row = currentIndex ~/ cols;
+                offset = boxPad + row * (boxSize + boxSpacing);
+            }
+
+            _scrollController.animateTo(
+              offset.clamp(0.0, maxExt),
+              duration: const Duration(milliseconds: 1000),
+              curve: Curves.easeOutCubic,
             );
-          },
-        );
+          });
+        }
 
-      case EpisodeViewMode.grid:
-        final gridColumns = r.widthTier.pick(
-          compact: 2,
-          medium: 3,
-          expanded: 4,
-          large: 5,
-          ultraLarge: 6,
-        );
-        final gridPad = r.widthTier.pickOrFold(
-          compact: 10.0,
-          medium: 14.0,
-          large: 20.0,
-        );
-        final gridSpacing = r.widthTier.pickOrFold(
-          compact: 10.0,
-          medium: 12.0,
-          large: 16.0,
-        );
+        switch (viewMode) {
+          case EpisodeViewMode.classic:
+            return ListView.builder(
+              controller: _scrollController,
+              itemCount: episodes.length,
+              itemBuilder: (context, i) {
+                final ep = episodes[i];
+                final isCurrent = widget.currentEpisodeNumber == ep.number;
+                final isWatched = widget.watchedProgress >= ep.number;
 
-        return GridView.builder(
-          padding: EdgeInsets.all(gridPad),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: gridColumns,
-            crossAxisSpacing: gridSpacing,
-            mainAxisSpacing: gridSpacing,
-            childAspectRatio: 16 / 10,
-          ),
-          itemCount: episodes.length,
-          itemBuilder: (context, i) {
-            final ep = episodes[i];
-            final isCurrent = widget.currentEpisodeNumber == ep.number;
-            final isWatched = widget.watchedProgress >= ep.number;
-
-            return EpisodeGridTile(
-              episode: ep,
-              isCurrent: isCurrent,
-              isWatched: isWatched,
-              isFiller: ep.isFiller,
-              actions:
-                  widget.episodeActionsBuilder?.call(
-                    context,
-                    ep,
-                    isCurrent,
-                    isWatched,
-                  ) ??
-                  const [],
-              onTap: () => widget.onEpisodeTap(ep, source),
+                return EpisodeClassicTile(
+                  episode: ep,
+                  isCurrent: isCurrent,
+                  isWatched: isWatched,
+                  imageFadeDirection: widget.imageFadeDirection,
+                  imageFadeStops: widget.imageFadeStops,
+                  imageOpacity: widget.imageOpacity,
+                  imageBlurSigma: widget.imageBlurSigma,
+                  isFiller: ep.isFiller,
+                  actions:
+                      widget.episodeActionsBuilder?.call(
+                        context,
+                        ep,
+                        isCurrent,
+                        isWatched,
+                      ) ??
+                      const [],
+                  onTap: () => widget.onEpisodeTap(ep, source),
+                );
+              },
             );
-          },
-        );
 
-      case EpisodeViewMode.box:
-        final boxSize = r.widthTier.pickOrFold(
-          compact: 48.0,
-          medium: 52.0,
-          large: 60.0,
-        );
-        final boxPad = r.widthTier.pickOrFold(
-          compact: 10.0,
-          medium: 14.0,
-          large: 20.0,
-        );
-        final boxSpacing = r.widthTier.pickOrFold(
-          compact: 8.0,
-          medium: 10.0,
-          large: 12.0,
-        );
-
-        return GridView.builder(
-          padding: EdgeInsets.all(boxPad),
-          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: boxSize,
-            crossAxisSpacing: boxSpacing,
-            mainAxisSpacing: boxSpacing,
-            childAspectRatio: 1,
-          ),
-          itemCount: episodes.length,
-          itemBuilder: (context, i) {
-            final ep = episodes[i];
-            final isCurrent = widget.currentEpisodeNumber == ep.number;
-            final isWatched = widget.watchedProgress >= ep.number;
-
-            return EpisodeBoxTile(
-              episode: ep,
-              isCurrent: isCurrent,
-              isFiller: ep.isFiller,
-              isWatched: isWatched,
-              onTap: () => widget.onEpisodeTap(ep, source),
+          case EpisodeViewMode.grid:
+            final gridColumns = panelTier.pick(
+              compact: 2,
+              medium: 3,
+              expanded: 4,
+              large: 5,
+              ultraLarge: 6,
             );
-          },
-        );
-    }
+            final gridPad = panelTier.pickOrFold(
+              compact: 8.0,
+              medium: 12.0,
+              large: 16.0,
+            );
+            final gridSpacing = panelTier.pickOrFold(
+              compact: 8.0,
+              medium: 10.0,
+              large: 14.0,
+            );
+
+            return GridView.builder(
+              controller: _scrollController,
+              padding: EdgeInsets.all(gridPad),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: gridColumns,
+                crossAxisSpacing: gridSpacing,
+                mainAxisSpacing: gridSpacing,
+                childAspectRatio: 16 / 10,
+              ),
+              itemCount: episodes.length,
+              itemBuilder: (context, i) {
+                final ep = episodes[i];
+                final isCurrent = widget.currentEpisodeNumber == ep.number;
+                final isWatched = widget.watchedProgress >= ep.number;
+
+                return EpisodeGridTile(
+                  episode: ep,
+                  isCurrent: isCurrent,
+                  isWatched: isWatched,
+                  isFiller: ep.isFiller,
+                  actions:
+                      widget.episodeActionsBuilder?.call(
+                        context,
+                        ep,
+                        isCurrent,
+                        isWatched,
+                      ) ??
+                      const [],
+                  onTap: () => widget.onEpisodeTap(ep, source),
+                );
+              },
+            );
+
+          case EpisodeViewMode.box:
+            final boxSize = panelTier.pickOrFold(
+              compact: 46.0,
+              medium: 50.0,
+              large: 58.0,
+            );
+            final boxPad = panelTier.pickOrFold(
+              compact: 8.0,
+              medium: 12.0,
+              large: 16.0,
+            );
+            final boxSpacing = panelTier.pickOrFold(
+              compact: 6.0,
+              medium: 8.0,
+              large: 10.0,
+            );
+
+            return GridView.builder(
+              controller: _scrollController,
+              padding: EdgeInsets.all(boxPad),
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: boxSize,
+                crossAxisSpacing: boxSpacing,
+                mainAxisSpacing: boxSpacing,
+                childAspectRatio: 1,
+              ),
+              itemCount: episodes.length,
+              itemBuilder: (context, i) {
+                final ep = episodes[i];
+                final isCurrent = widget.currentEpisodeNumber == ep.number;
+                final isWatched = widget.watchedProgress >= ep.number;
+
+                return EpisodeBoxTile(
+                  episode: ep,
+                  isCurrent: isCurrent,
+                  isFiller: ep.isFiller,
+                  isWatched: isWatched,
+                  onTap: () => widget.onEpisodeTap(ep, source),
+                );
+              },
+            );
+        }
+      },
+    );
   }
 }
 

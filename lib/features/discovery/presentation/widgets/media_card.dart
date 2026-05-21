@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
+import 'package:shonenx/core/utils/focus_hover_detector.dart';
 import 'package:shonenx/shared/widgets/liquid_glass.dart';
 
 class MediaCard extends StatefulWidget {
@@ -49,43 +50,59 @@ class _MediaCardState extends State<MediaCard>
     super.dispose();
   }
 
-  void _tapDown(TapDownDetails _) => _controller.forward();
-
-  void _tapEnd([dynamic _]) => _controller.reverse();
-
   @override
   Widget build(BuildContext context) {
-    final scale = 1 - _controller.value;
     final theme = Theme.of(context);
 
-    final child = switch (widget.style) {
-      MediaCardStyle.classic => _ClassicCard(widget: widget, theme: theme),
-      MediaCardStyle.minimal => _MinimalCard(widget: widget, theme: theme),
-      MediaCardStyle.expressive => _ExpressiveCard(
-        widget: widget,
-        theme: theme,
-      ),
-      MediaCardStyle.material => _MaterialCard(widget: widget, theme: theme),
-      MediaCardStyle.liquidGlass => _LiquidGlassCard(
-        widget: widget,
-        theme: theme,
-      ),
-    };
+    return FocusHoverDetector(
+      onTap: widget.onTap,
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        onTapDown: _tapDown,
-        onTapCancel: _tapEnd,
-        onTapUp: _tapEnd,
-        child: AnimatedScale(
-          scale: scale,
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
-          child: child,
+      actions: {
+        ActivateIntent: CallbackAction<ActivateIntent>(
+          onInvoke: (_) {
+            widget.onTap();
+            return null;
+          },
         ),
-      ),
+      },
+
+      builder: (context, isFocused, isHovered) {
+        final isActive = isFocused || isHovered;
+
+        final child = switch (widget.style) {
+          MediaCardStyle.classic => _ClassicCard(
+            widget: widget,
+            theme: theme,
+            isActive: isActive,
+          ),
+
+          MediaCardStyle.minimal => _MinimalCard(
+            widget: widget,
+            theme: theme,
+            isActive: isActive,
+          ),
+
+          MediaCardStyle.expressive => _ExpressiveCard(
+            widget: widget,
+            theme: theme,
+            isActive: isActive,
+          ),
+
+          MediaCardStyle.material => _MaterialCard(
+            widget: widget,
+            theme: theme,
+            isActive: isActive,
+          ),
+
+          MediaCardStyle.liquidGlass => _LiquidGlassCard(
+            widget: widget,
+            theme: theme,
+            isActive: isActive,
+          ),
+        };
+
+        return child;
+      },
     );
   }
 }
@@ -181,8 +198,13 @@ class _TopOverlay extends StatelessWidget {
 class _ClassicCard extends StatelessWidget {
   final MediaCard widget;
   final ThemeData theme;
+  final bool isActive;
 
-  const _ClassicCard({required this.widget, required this.theme});
+  const _ClassicCard({
+    required this.widget,
+    required this.theme,
+    required this.isActive,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -190,9 +212,19 @@ class _ClassicCard extends StatelessWidget {
     final layout = widget.style.layout;
     final imageHeight = layout.height * 0.76;
 
-    return SizedBox(
+    return AnimatedContainer(
+      duration: Durations.short4,
       width: layout.width,
       height: layout.height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: isActive
+              ? cs.tertiary
+              : cs.outlineVariant.withValues(alpha: 0.28),
+          width: isActive ? 2.5 : 1.0,
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -230,17 +262,32 @@ class _ClassicCard extends StatelessWidget {
 class _MinimalCard extends StatelessWidget {
   final MediaCard widget;
   final ThemeData theme;
+  final bool isActive;
 
-  const _MinimalCard({required this.widget, required this.theme});
+  const _MinimalCard({
+    required this.widget,
+    required this.theme,
+    required this.isActive,
+  });
 
   @override
   Widget build(BuildContext context) {
     final cs = theme.colorScheme;
     final layout = widget.style.layout;
 
-    return SizedBox(
+    return AnimatedContainer(
+      duration: Durations.short4,
       width: layout.width,
       height: layout.height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isActive
+              ? cs.tertiary
+              : cs.outlineVariant.withValues(alpha: 0.28),
+          width: isActive ? 2.5 : 1.0,
+        ),
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
         child: Stack(
@@ -293,8 +340,13 @@ class _MinimalCard extends StatelessWidget {
 class _ExpressiveCard extends StatelessWidget {
   final MediaCard widget;
   final ThemeData theme;
+  final bool isActive;
 
-  const _ExpressiveCard({required this.widget, required this.theme});
+  const _ExpressiveCard({
+    required this.widget,
+    required this.theme,
+    required this.isActive,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -304,13 +356,19 @@ class _ExpressiveCard extends StatelessWidget {
 
     return SizedBox(
       width: layout.width,
-      child: Container(
+      child: AnimatedContainer(
+        duration: Durations.short4,
         width: layout.width,
         height: layout.height,
         decoration: BoxDecoration(
           color: cs.surfaceContainerLow,
           borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.28)),
+          border: Border.all(
+            color: isActive
+                ? cs.tertiary
+                : cs.outlineVariant.withValues(alpha: 0.28),
+            width: isActive ? 2.5 : 1.0,
+          ),
         ),
         padding: const EdgeInsets.all(5),
         child: Column(
@@ -352,8 +410,13 @@ class _ExpressiveCard extends StatelessWidget {
 class _MaterialCard extends StatelessWidget {
   final MediaCard widget;
   final ThemeData theme;
+  final bool isActive;
 
-  const _MaterialCard({required this.widget, required this.theme});
+  const _MaterialCard({
+    required this.widget,
+    required this.theme,
+    required this.isActive,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -361,9 +424,19 @@ class _MaterialCard extends StatelessWidget {
     final layout = widget.style.layout;
     final imageHeight = layout.height * 0.7;
 
-    return Container(
+    return AnimatedContainer(
+      duration: Durations.short4,
       width: layout.width,
       height: layout.height,
+      foregroundDecoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isActive
+              ? cs.tertiary
+              : cs.outlineVariant.withValues(alpha: 0.28),
+          width: isActive ? 2.5 : 1.0,
+        ),
+      ),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(22),
@@ -383,20 +456,6 @@ class _MaterialCard extends StatelessWidget {
                   width: layout.width,
                   height: imageHeight,
                   radius: 0,
-                ),
-              ),
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        cs.scrim.withValues(alpha: 0.2),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
                 ),
               ),
               _TopOverlay(format: widget.format, badge: widget.badge),
@@ -440,8 +499,13 @@ class _MaterialCard extends StatelessWidget {
 class _LiquidGlassCard extends StatelessWidget {
   final MediaCard widget;
   final ThemeData theme;
+  final bool isActive;
 
-  const _LiquidGlassCard({required this.widget, required this.theme});
+  const _LiquidGlassCard({
+    required this.widget,
+    required this.theme,
+    required this.isActive,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -532,6 +596,20 @@ class _LiquidGlassCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                     height: 1.2,
+                  ),
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 140),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isActive
+                        ? theme.colorScheme.onSurface.withValues(alpha: 0.8)
+                        : Colors.transparent,
+                    width: isActive ? 2.5 : 0.0,
                   ),
                 ),
               ),

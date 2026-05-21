@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/utils/responsive.dart';
@@ -18,27 +19,54 @@ class ScaffoldWithNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ResponsiveHandler(
-      breakpoints: _navBreakpoints,
-      builder: (context, r) {
-        return Scaffold(
-          extendBody: true,
-          body: r.isDesktop || r.isTabletLandscape
-              ? Row(
-                  children: [
-                    _SideNavBar(navigationShell: navigationShell),
-                    Expanded(child: navigationShell),
-                  ],
-                )
-              : Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    navigationShell,
-                    _BottomNavV2(navigationShell: navigationShell),
-                  ],
-                ),
-        );
+    return KeyboardListener(
+      focusNode: FocusNode(),
+      autofocus: true,
+      onKeyEvent: (event) {
+        if (event is! KeyDownEvent) {
+          return;
+        }
+
+        switch (event.logicalKey) {
+          case LogicalKeyboardKey.digit1:
+            navigationShell.goBranch(0);
+            break;
+
+          case LogicalKeyboardKey.digit2:
+            navigationShell.goBranch(1);
+            break;
+
+          case LogicalKeyboardKey.digit3:
+            navigationShell.goBranch(2);
+            break;
+
+          case LogicalKeyboardKey.digit4:
+            context.push('/downloads');
+            break;
+        }
       },
+      child: ResponsiveHandler(
+        breakpoints: _navBreakpoints,
+        builder: (context, r) {
+          return Scaffold(
+            extendBody: true,
+            body: r.isDesktop || r.isTabletLandscape
+                ? Row(
+                    children: [
+                      _SideNavBar(navigationShell: navigationShell),
+                      Expanded(child: navigationShell),
+                    ],
+                  )
+                : Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      navigationShell,
+                      _BottomNavBar(navigationShell: navigationShell),
+                    ],
+                  ),
+          );
+        },
+      ),
     );
   }
 }
@@ -55,9 +83,9 @@ const _destinations = [
   _NavDest(Icons.library_books_outlined, 'Library'),
 ];
 
-class _BottomNavV2 extends StatelessWidget {
+class _BottomNavBar extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
-  const _BottomNavV2({required this.navigationShell});
+  const _BottomNavBar({required this.navigationShell});
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +95,7 @@ class _BottomNavV2 extends StatelessWidget {
     final barHeight = r.isPhone ? 68.0 : 80.0;
     final iconSize = r.isPhone ? 25.0 : 28.0;
     final fontSize = r.isPhone ? 14.5 : 16.0;
-    const hPad = 10.0;
+    final hPad = r.isPhone ? 6.0 : 10.5;
     final itemRadius = barHeight / 2 - 2;
 
     return SafeArea(
@@ -96,14 +124,16 @@ class _BottomNavV2 extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: List.generate(_destinations.length, (i) {
                         final active = navigationShell.currentIndex == i;
-                        return GestureDetector(
+                        return InkWell(
                           onTap: () => navigationShell.goBranch(i),
+                          borderRadius: BorderRadius.circular(itemRadius),
+                          focusColor: cs.primary.withValues(alpha: 0.2),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeOutCubic,
+                            height: double.maxFinite,
                             padding: EdgeInsets.symmetric(
                               horizontal: active ? 18 : 14,
-                              vertical: hPad + 5,
                             ),
                             decoration: BoxDecoration(
                               color: active ? cs.primary : Colors.transparent,
@@ -320,24 +350,28 @@ class _SideNavBar extends StatelessWidget {
                   children: List.generate(_destinations.length, (i) {
                     final active = navigationShell.currentIndex == i;
                     return Expanded(
-                      child: GestureDetector(
-                        onTap: () => navigationShell.goBranch(i),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 400),
-                          curve: Curves.easeOutCubic,
-                          width: double.infinity,
-                          margin: EdgeInsets.symmetric(vertical: itemVMargin),
-                          decoration: BoxDecoration(
-                            color: active ? cs.primary : Colors.transparent,
-                            borderRadius: BorderRadius.circular(barWidth / 2),
-                          ),
-                          child: _PillContent(
-                            icon: _destinations[i].icon,
-                            label: _destinations[i].label,
-                            active: active,
-                            cs: cs,
-                            heightTier: h,
-                            forceHideLabel: hideNavLabels,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: itemVMargin),
+                        child: InkWell(
+                          onTap: () => navigationShell.goBranch(i),
+                          borderRadius: BorderRadius.circular(barWidth / 2),
+                          focusColor: cs.primary.withValues(alpha: 0.2),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 400),
+                            curve: Curves.easeOutCubic,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: active ? cs.primary : Colors.transparent,
+                              borderRadius: BorderRadius.circular(barWidth / 2),
+                            ),
+                            child: _PillContent(
+                              icon: _destinations[i].icon,
+                              label: _destinations[i].label,
+                              active: active,
+                              cs: cs,
+                              heightTier: h,
+                              forceHideLabel: hideNavLabels,
+                            ),
                           ),
                         ),
                       ),

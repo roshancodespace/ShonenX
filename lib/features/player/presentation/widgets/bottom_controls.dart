@@ -438,7 +438,6 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
   }
 
   void _showEpisodePanel(BuildContext context) {
-    final params = widget.params!;
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -455,14 +454,24 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             child: Column(
               children: [
                 Expanded(
-                  child: EpisodeListPanel(
-                    media: params.media,
-                    currentEpisodeNumber: params.episode.number,
-                    onEpisodeTap: (episode, sourceInfo) {
-                      Navigator.of(context).pop();
-                      ref
-                          .read(playerControllerProvider.notifier)
-                          .loadEpisode(episode);
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final currentEpisode = ref.watch(
+                        playerControllerProvider.select((s) => s.activeEpisode),
+                      );
+                      if (currentEpisode == null) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      return EpisodeListPanel(
+                        media: widget.params!.media,
+                        currentEpisodeNumber: currentEpisode.number,
+                        onEpisodeTap: (episode, sourceInfo) {
+                          Navigator.of(context).pop();
+                          ref
+                              .read(playerControllerProvider.notifier)
+                              .loadEpisode(episode);
+                        },
+                      );
                     },
                   ),
                 ),

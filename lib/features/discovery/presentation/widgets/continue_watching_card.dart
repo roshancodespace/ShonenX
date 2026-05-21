@@ -34,6 +34,8 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
   static const _contentPadding = 5.0;
 
   bool _isLoading = false;
+  bool _isFocused = false;
+  bool _isHovered = false;
 
   Future<void> _resumeEpisode() async {
     if (_isLoading) return;
@@ -191,11 +193,25 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isActive = _isFocused || _isHovered;
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
+    return FocusableActionDetector(
+      onShowFocusHighlight: (v) => setState(() => _isFocused = v),
+      onShowHoverHighlight: (v) => setState(() => _isHovered = v),
+      actions: {
+        ActivateIntent: CallbackAction<ActivateIntent>(
+          onInvoke: (_) {
+            _resumeEpisode();
+            return null;
+          },
+        ),
+      },
+      mouseCursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: _resumeEpisode,
+        onTap: () {
+          _resumeEpisode();
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
         onSecondaryTapDown: (details) {
           _showItemContextMenu(details.globalPosition);
         },
@@ -204,23 +220,27 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
         },
         child: AnimatedSize(
           duration: Durations.short4,
-          child: _buildStyledContent(widget.style, theme),
+          child: _buildStyledContent(widget.style, theme, isActive),
         ),
       ),
     );
   }
 
-  Widget _buildStyledContent(ContinueWatchingStyle style, ThemeData theme) {
+  Widget _buildStyledContent(
+    ContinueWatchingStyle style,
+    ThemeData theme,
+    bool isActive,
+  ) {
     switch (style) {
       case ContinueWatchingStyle.wideBanner:
-        return _buildWideBanner(theme);
+        return _buildWideBanner(theme, isActive);
 
       case ContinueWatchingStyle.classic:
-        return _buildClassic(theme);
+        return _buildClassic(theme, isActive);
     }
   }
 
-  Widget _buildClassic(ThemeData theme) {
+  Widget _buildClassic(ThemeData theme, bool isActive) {
     final cs = theme.colorScheme;
 
     return SizedBox(
@@ -232,6 +252,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
             aspectRatio: 16 / 9,
             borderRadius: 20,
             progressInset: 0,
+            isActive: isActive,
             layers: [
               Positioned(
                 top: 10,
@@ -282,11 +303,21 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
     );
   }
 
-  Widget _buildWideBanner(ThemeData theme) {
+  Widget _buildWideBanner(ThemeData theme, bool isActive) {
     final cs = theme.colorScheme;
 
-    return Container(
+    return AnimatedContainer(
+      duration: Durations.short4,
       width: widget.style.layout.width,
+      foregroundDecoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isActive
+              ? cs.tertiary
+              : cs.outlineVariant.withValues(alpha: 0.28),
+          width: isActive ? 2.5 : 0.0,
+        ),
+      ),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(24),
@@ -301,6 +332,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
                 aspectRatio: 16 / 10,
                 borderRadius: 20,
                 progressInset: 0,
+                isActive: false, // active border is on the parent wrapper
                 layers: [
                   Positioned(
                     top: 10,
@@ -395,6 +427,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
     required double aspectRatio,
     required double borderRadius,
     required double progressInset,
+    required bool isActive,
     List<Widget>? layers,
   }) {
     final theme = Theme.of(context);
@@ -444,6 +477,19 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
             ),
 
             if (layers != null) ...layers,
+
+            Positioned.fill(
+              child: AnimatedContainer(
+                duration: Durations.short4,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  border: Border.all(
+                    color: isActive ? cs.tertiary : Colors.transparent,
+                    width: isActive ? 2.5 : 0.0,
+                  ),
+                ),
+              ),
+            ),
 
             if (_isLoading)
               Positioned.fill(

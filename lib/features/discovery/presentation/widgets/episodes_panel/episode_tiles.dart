@@ -325,165 +325,168 @@ class EpisodeGridTile extends StatelessWidget {
         : episode.number.toString();
 
     final isEffectivelyWatched = isWatched && !isCurrent;
-    final dimColor = cs.onSurfaceVariant.withValues(alpha: 0.4);
+    final dimColor = cs.onSurfaceVariant.withValues(alpha: 0.45);
 
     final imageUrl = episode.thumbnailUrl?.split('#').first;
     final referer = episode.thumbnailUrl?.split('#').last;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            border: isFiller
-                ? Border.all(color: Colors.amber.shade700, width: 5)
-                : null,
-            shape: BoxShape.circle,
-          ),
-          child: Opacity(
-            opacity: isEffectivelyWatched ? 0.55 : 1.0,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // Thumbnail or placeholder
-                      if (imageUrl != null && imageUrl.isNotEmpty)
-                        Image(
-                          image: CachedNetworkImageProvider(
-                            imageUrl,
-                            headers: referer != null
-                                ? {'Referer': referer}
-                                : {},
-                          ),
-                          fit: BoxFit.cover,
-                        )
-                      else
-                        ColoredBox(
-                          color: cs.surfaceContainerHighest,
-                          child: Icon(
-                            Icons.movie_outlined,
-                            color: cs.onSurfaceVariant,
-                            size: 28,
-                          ),
-                        ),
-
-                      if (isEffectivelyWatched)
-                        const ColoredBox(color: Colors.black26),
-
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              colors: [
-                                Colors.black,
-                                Colors.black.withValues(alpha: 0.8),
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(6, 10, 6, 5),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: RichText(
-                                    text: TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          text: num,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 36,
-                                            fontWeight: FontWeight.bold,
-                                            fontStyle: FontStyle.italic,
-                                            height: 0.5,
-                                          ),
-                                        ),
-                                        if (episode.title != null &&
-                                            episode.title!.isNotEmpty)
-                                          TextSpan(
-                                            text: '   :   ${episode.title}',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.w500,
-                                              fontStyle: FontStyle.italic,
-                                              height: 1.15,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Current badge
-                      if (isCurrent)
-                        Positioned(
-                          top: 5,
-                          left: 5,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: cs.primary,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              '▶',
-                              style: TextStyle(
-                                color: cs.onPrimary,
-                                fontSize: 9,
-                                height: 1,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                      // Watched check
-                      if (isEffectivelyWatched)
-                        Positioned(
-                          top: 5,
-                          left: 5,
-                          child: Icon(
-                            Icons.check_circle_rounded,
-                            color: dimColor,
-                            size: 16,
-                          ),
-                        ),
-
-                      // Action buttons overlay (top-right)
-                      if (actions.isNotEmpty)
-                        Positioned(
-                          top: 2,
-                          right: 2,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: actions,
-                          ),
-                        ),
-                    ],
+    return Material(
+      color: cs.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Opacity(
+          opacity: isEffectivelyWatched ? 0.6 : 1.0,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (imageUrl != null && imageUrl.isNotEmpty)
+                Image(
+                  image: CachedNetworkImageProvider(
+                    imageUrl,
+                    headers: referer != null ? {'Referer': referer} : {},
+                  ),
+                  fit: BoxFit.cover,
+                )
+              else
+                ColoredBox(
+                  color: cs.surfaceContainerHighest,
+                  child: Center(
+                    child: Icon(
+                      Icons.movie_outlined,
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                      size: 24,
+                    ),
                   ),
                 ),
-              ],
-            ),
+
+              if (isEffectivelyWatched) const ColoredBox(color: Colors.black26),
+
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      stops: const [0.0, 0.55, 1.0],
+                      colors: [
+                        Colors.black.withValues(alpha: 0.92),
+                        Colors.black.withValues(alpha: 0.55),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(7, 14, 7, 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          num,
+                          style: TextStyle(
+                            color: isFiller
+                                ? Colors.amber.shade300
+                                : isCurrent
+                                ? cs.primary
+                                : Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            fontStyle: FontStyle.italic,
+                            height: 1.0,
+                            shadows: const [
+                              Shadow(blurRadius: 4, color: Colors.black),
+                            ],
+                          ),
+                        ),
+                        if (episode.title != null &&
+                            episode.title!.trim().isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            episode.title!,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              if (isFiller)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(height: 3, color: Colors.amber.shade600),
+                ),
+
+              if (isCurrent)
+                Positioned(
+                  top: 6,
+                  left: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cs.primary,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.play_arrow_rounded,
+                          color: cs.onPrimary,
+                          size: 8,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          'NOW',
+                          style: TextStyle(
+                            color: cs.onPrimary,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            height: 1,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              if (isEffectivelyWatched)
+                Positioned(
+                  top: 6,
+                  left: 6,
+                  child: Icon(
+                    Icons.check_circle_rounded,
+                    color: dimColor,
+                    size: 14,
+                  ),
+                ),
+
+              if (actions.isNotEmpty)
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: Row(mainAxisSize: MainAxisSize.min, children: actions),
+                ),
+            ],
           ),
         ),
       ),
@@ -530,41 +533,41 @@ class EpisodeBoxTile extends StatelessWidget {
         ? cs.onSurfaceVariant.withValues(alpha: 0.6)
         : cs.onSurface;
 
-    return InkWell(
-      onTap: onTap,
+    return Material(
+      color: bgColor,
       borderRadius: BorderRadius.circular(8),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: Container(
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                num,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: fgColor,
-                  fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          if (isFiller)
-            Positioned(
-              top: 2,
-              right: 2,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Stack(
+          children: [
+            Positioned.fill(
               child: Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade600,
-                  shape: BoxShape.circle,
+                alignment: Alignment.center,
+                child: Text(
+                  num,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: fgColor,
+                    fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
+                  ),
                 ),
               ),
             ),
-        ],
+            if (isFiller)
+              Positioned(
+                top: 2,
+                right: 2,
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade600,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -75,8 +75,8 @@ class PlayerPrefsNotifier extends Notifier<PlayerPrefsState> {
       return PlayerPrefsState.fromJson(jsonDecode(json));
     }
     return PlayerPrefsState(
-      playerType: !Platform.isAndroid
-          ? PlayerType.betterplayer
+      playerType: Platform.isAndroid
+          ? PlayerType.mediakit
           : PlayerType.mediakit,
     );
   }

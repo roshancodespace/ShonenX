@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/database/database_provider.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/http_x.dart';
+import 'package:shonenx/core/services/notification_service.dart';
 import 'package:shonenx/core/services/one_dm_service.dart';
 import 'package:shonenx/features/downloads/domain/download_repository.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
@@ -76,14 +77,28 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
 
   Future<void> pauseDownload(int taskId) async {
     await _activeEngines[taskId]?.pause();
+    await NotificationService.instance.cancelDownloadNotification(taskId);
   }
 
   Future<void> cancelDownload(int taskId) async {
     await _activeEngines[taskId]?.cancel();
     _activeEngines.remove(taskId);
+    await NotificationService.instance.cancelDownloadNotification(taskId);
   }
 
   Future<void> _launch(DownloadTask task) async {
+    final notif = NotificationService.instance;
+    final notifTitle = task.fileName.isNotEmpty
+        ? task.fileName
+        : 'Episode ${task.episodeNumber}';
+
+    // Show an indeterminate bar immediately so the user gets feedback
+    await notif.showDownloadProgress(
+      id: task.id,
+      title: notifTitle,
+      progress: -1,
+    );
+
     final engine = await _buildEngine(
       task: task,
       onProgress:
@@ -97,17 +112,39 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
             task.progress = progress;
             task.updatedAt = DateTime.now();
             await repo.putTask(task);
+
+            // only update notification every 2 %
+            final pct = (progress * 100).toInt();
+            if (pct % 2 == 0) {
+              await notif.showDownloadProgress(
+                id: task.id,
+                title: notifTitle,
+                progress: progress,
+              );
+            }
           },
       onStatus: (DownloadStatus status) async {
         task.status = status;
         task.updatedAt = DateTime.now();
         await repo.putTask(task);
 
-        if (status == DownloadStatus.completed ||
-            status == DownloadStatus.failed ||
-            status == DownloadStatus.canceled) {
-          _activeEngines.remove(task.id);
-          await repo.deleteTask(task.id);
+        switch (status) {
+          case DownloadStatus.completed:
+            await notif.showDownloadComplete(id: task.id, title: notifTitle);
+            _activeEngines.remove(task.id);
+            await repo.deleteTask(task.id);
+          case DownloadStatus.failed:
+            await notif.showDownloadFailed(id: task.id, title: notifTitle);
+            _activeEngines.remove(task.id);
+            await repo.deleteTask(task.id);
+          case DownloadStatus.canceled:
+            await notif.cancelDownloadNotification(task.id);
+            _activeEngines.remove(task.id);
+            await repo.deleteTask(task.id);
+          case DownloadStatus.paused:
+            await notif.cancelDownloadNotification(task.id);
+          default:
+            break;
         }
       },
     );

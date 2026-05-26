@@ -45,66 +45,62 @@ class EpisodesTabWidget extends ConsumerWidget {
         StaggeredFadeIn(index: 0, child: _EpisodesHeader(media: media)),
         const StaggeredFadeIn(index: 1, child: Divider()),
         Expanded(
-          child: MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(textScaler: const TextScaler.linear(1.1)),
-            child: EpisodeListPanel(
-              media: media,
-              watchedProgress: watchedProgress,
-              onEpisodeTap: (UnifiedEpisode episode, SourceInfo sourceInfo) {
-                context.push(
-                  '/player',
-                  extra: PlayerParams(
-                    media: media,
-                    episode: episode,
-                    sourceInfo: sourceInfo,
-                  ),
-                );
-              },
-              episodeActionsBuilder:
-                  (episodeActionsContext, episode, isCurrent, isWatched) {
-                    return [
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () {
-                          AppBottomSheet.show(
-                            context: episodeActionsContext,
-                            title:
-                                'Episode ${episode.number.toString().contains('.0') ? episode.number.toInt() : episode.number}',
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ListTile(
-                                  title: const Text('Download'),
-                                  leading: const Icon(Icons.download),
-                                  onTap: () {
-                                    episodeActionsContext.pop();
-                                    DownloadSheet.show(
-                                      context,
-                                      episode,
-                                      ref
-                                              .read(
-                                                sourcePreferenceProvider(
-                                                  media.title.availableTitle,
-                                                ),
-                                              )
-                                              .value
-                                              ?.sourceInfo ??
-                                          sources.first,
-                                      media,
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.more_horiz),
-                      ),
-                    ];
-                  },
-            ),
+          child: EpisodeListPanel(
+            media: media,
+            watchedProgress: watchedProgress,
+            useScrollController: false,
+            onEpisodeTap: (UnifiedEpisode episode, SourceInfo sourceInfo) {
+              context.push(
+                '/player',
+                extra: PlayerParams(
+                  media: media,
+                  episode: episode,
+                  sourceInfo: sourceInfo,
+                ),
+              );
+            },
+            episodeActionsBuilder:
+                (episodeActionsContext, episode, isCurrent, isWatched) {
+                  return [
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () {
+                        AppBottomSheet.show(
+                          context: episodeActionsContext,
+                          title:
+                              'Episode ${episode.number.toString().contains('.0') ? episode.number.toInt() : episode.number}',
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                title: const Text('Download'),
+                                leading: const Icon(Icons.download),
+                                onTap: () {
+                                  episodeActionsContext.pop();
+                                  DownloadSheet.show(
+                                    context,
+                                    episode,
+                                    ref
+                                            .read(
+                                              sourcePreferenceProvider(
+                                                media.title.availableTitle,
+                                              ),
+                                            )
+                                            .value
+                                            ?.sourceInfo ??
+                                        sources.first,
+                                    media,
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.more_horiz),
+                    ),
+                  ];
+                },
           ),
         ),
       ],

@@ -24,6 +24,8 @@ class EpisodeListPanel extends ConsumerStatefulWidget {
   final double? currentEpisodeNumber;
   final double watchedProgress;
 
+  final bool useScrollController;
+
   final void Function(UnifiedEpisode episode, SourceInfo sourceInfo)
   onEpisodeTap;
 
@@ -48,6 +50,7 @@ class EpisodeListPanel extends ConsumerStatefulWidget {
     this.watchedProgress = 0,
     this.episodeActionsBuilder,
     this.imageFadeDirection = EpisodeImageFadeDirection.left,
+    this.useScrollController = true,
     this.imageFadeStops,
     this.imageOpacity = 0.3,
     this.imageBlurSigma = 0,
@@ -323,7 +326,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
         switch (viewMode) {
           case EpisodeViewMode.classic:
             return ListView.builder(
-              controller: _scrollController,
+              controller: widget.useScrollController ? _scrollController : null,
               itemCount: episodes.length,
               itemBuilder: (context, i) {
                 final ep = episodes[i];
@@ -372,7 +375,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
             );
 
             return GridView.builder(
-              controller: _scrollController,
+              controller: widget.useScrollController ? _scrollController : null,
               padding: EdgeInsets.all(gridPad),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: gridColumns,
@@ -422,7 +425,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
             );
 
             return GridView.builder(
-              controller: _scrollController,
+              controller: widget.useScrollController ? _scrollController : null,
               padding: EdgeInsets.all(boxPad),
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: boxSize,

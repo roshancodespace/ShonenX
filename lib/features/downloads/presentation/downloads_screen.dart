@@ -59,7 +59,7 @@ class DownloadsScreen extends ConsumerWidget {
             const _DownloadedFilesTab(),
           ],
         ),
-        floatingActionButton: managerAsync.isLoading || kDebugMode
+        floatingActionButton: managerAsync.isLoading || !kDebugMode
             ? null
             : FloatingActionButton(
                 elevation: 0,
@@ -260,17 +260,15 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
     }
   }
 
- Future<void> _openFile(File file) async {
-  final result = await OpenFile.open(file.path);
+  Future<void> _openFile(File file) async {
+    final result = await OpenFile.open(file.path);
 
-  if (result.type != ResultType.done && mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result.message),
-      ),
-    );
+    if (result.type != ResultType.done && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message)));
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {

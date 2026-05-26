@@ -162,4 +162,118 @@ class NotificationService {
       linux: linux,
     );
   }
+
+  // Download notifications
+  Future<void> showDownloadProgress({
+    required int id,
+    required String title,
+    required double progress,
+  }) async {
+    final int maxProgress = 100;
+    final int currentProgress = progress < 0
+        ? 0
+        : (progress * 100).clamp(0, 100).toInt();
+    final bool indeterminate = progress < 0;
+
+    final String body = indeterminate
+        ? 'Preparing download…'
+        : '$currentProgress% complete';
+
+    _log.d('Download notification [$id] progress: $currentProgress%');
+    try {
+      await _plugin.show(
+        id: id,
+        title: title,
+        body: body,
+        notificationDetails: NotificationDetails(
+          android: AndroidNotificationDetails(
+            'downloads',
+            'Downloads',
+            channelDescription: 'Progress updates for active downloads',
+            importance: Importance.low,
+            priority: Priority.low,
+            showProgress: true,
+            maxProgress: maxProgress,
+            progress: currentProgress,
+            indeterminate: indeterminate,
+            onlyAlertOnce: true,
+            ongoing: true,
+            autoCancel: false,
+            styleInformation: BigTextStyleInformation(body),
+          ),
+          windows: const WindowsNotificationDetails(),
+          linux: const LinuxNotificationDetails(),
+        ),
+      );
+    } catch (e, st) {
+      _log.e('Failed to show download progress notification [$id]', e, st);
+    }
+  }
+
+  Future<void> showDownloadComplete({
+    required int id,
+    required String title,
+  }) async {
+    _log.d('Download complete notification [$id]');
+    try {
+      await _plugin.cancel(id: id);
+      await _plugin.show(
+        id: id,
+        title: '✅ Download complete',
+        body: title,
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'downloads',
+            'Downloads',
+            channelDescription: 'Progress updates for active downloads',
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+            autoCancel: true,
+          ),
+          windows: WindowsNotificationDetails(),
+          linux: LinuxNotificationDetails(),
+        ),
+      );
+    } catch (e, st) {
+      _log.e('Failed to show download complete notification [$id]', e, st);
+    }
+  }
+
+  Future<void> showDownloadFailed({
+    required int id,
+    required String title,
+  }) async {
+    _log.d('Download failed notification [$id]');
+    try {
+      await _plugin.cancel(id: id);
+      await _plugin.show(
+        id: id,
+        title: '❌ Download failed',
+        body: title,
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'downloads',
+            'Downloads',
+            channelDescription: 'Progress updates for active downloads',
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+            autoCancel: true,
+          ),
+          windows: WindowsNotificationDetails(),
+          linux: LinuxNotificationDetails(),
+        ),
+      );
+    } catch (e, st) {
+      _log.e('Failed to show download failed notification [$id]', e, st);
+    }
+  }
+
+  Future<void> cancelDownloadNotification(int id) async {
+    _log.d('Canceling download notification [$id]');
+    try {
+      await _plugin.cancel(id: id);
+    } catch (e, st) {
+      _log.e('Failed to cancel download notification [$id]', e, st);
+    }
+  }
 }

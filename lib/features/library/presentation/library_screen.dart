@@ -8,6 +8,7 @@ import 'package:shonenx/features/library/providers/local_library_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
+import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import '../providers/library_view_provider.dart';
 
@@ -31,6 +32,47 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     return AppScaffold(
       subtitle: 'FROM LIBRARY',
       title: viewState.status.displayName.toUpperCase(),
+      actions: [
+        if (ref.watch(trackingPrefsProvider.select((s) => s.primaryTracker)) !=
+                TrackerType.local &&
+            ref.watch(trackerProfileProvider)[ref.watch(
+                  trackingPrefsProvider.select((s) => s.primaryTracker),
+                )] !=
+                null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: SegmentedButton<LibraryMode>(
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment<LibraryMode>(
+                  value: LibraryMode.cloud,
+                  icon: Icon(
+                    viewState.mode == LibraryMode.cloud
+                        ? Icons.cloud
+                        : Icons.cloud_outlined,
+                  ),
+                  tooltip: 'Cloud Library',
+                ),
+                ButtonSegment<LibraryMode>(
+                  value: LibraryMode.local,
+                  icon: Icon(
+                    viewState.mode == LibraryMode.local
+                        ? Icons.folder
+                        : Icons.folder_outlined,
+                  ),
+                  tooltip: 'Local Library',
+                ),
+              ],
+              selected: {viewState.mode},
+              onSelectionChanged: (Set<LibraryMode> newSelection) {
+                ref
+                    .read(libraryViewStateProvider.notifier)
+                    .setMode(newSelection.first);
+              },
+            ),
+          ),
+        const SizedBox(width: 10),
+      ],
       barBottom: PreferredSize(
         preferredSize: const Size.fromHeight(45),
         child: Center(
@@ -83,10 +125,17 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
           return NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification scrollInfo) {
-              if (ref.watch(
-                        trackingPrefsProvider.select((s) => s.primaryTracker),
-                      ) !=
-                      TrackerType.local &&
+              final primaryTracker = ref.read(
+                trackingPrefsProvider.select((s) => s.primaryTracker),
+              );
+              final isCloudLoggedIn =
+                  ref.read(trackerProfileProvider)[primaryTracker] != null;
+              final isCloud =
+                  viewState.mode == LibraryMode.cloud &&
+                  primaryTracker != TrackerType.local &&
+                  isCloudLoggedIn;
+
+              if (isCloud &&
                   scrollInfo.metrics.pixels >=
                       scrollInfo.metrics.maxScrollExtent - 200) {
                 ref
@@ -97,10 +146,17 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             },
             child: RefreshIndicator(
               onRefresh: () async {
-                if (ref.watch(
-                      trackingPrefsProvider.select((s) => s.primaryTracker),
-                    ) !=
-                    TrackerType.local) {
+                final primaryTracker = ref.read(
+                  trackingPrefsProvider.select((s) => s.primaryTracker),
+                );
+                final isCloudLoggedIn =
+                    ref.read(trackerProfileProvider)[primaryTracker] != null;
+                final isCloud =
+                    viewState.mode == LibraryMode.cloud &&
+                    primaryTracker != TrackerType.local &&
+                    isCloudLoggedIn;
+
+                if (isCloud) {
                   ref
                       .read(cloudLibraryProvider(viewState.status).notifier)
                       .refresh();

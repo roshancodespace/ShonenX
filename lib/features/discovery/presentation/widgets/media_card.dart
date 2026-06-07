@@ -4,7 +4,6 @@ import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/utils/focus_hover_detector.dart';
 import 'package:shonenx/shared/widgets/liquid_glass.dart';
 
-// OPTIMIZATION: Converted MediaCard to a StatelessWidget and removed the unused AnimationController to eliminate rebuild triggers, frame listener overhead, and widget lifecycle management.
 class MediaCard extends StatelessWidget {
   final String title;
   final String tag;
@@ -216,7 +215,7 @@ class _ClassicCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
             child: Text(
               widget.title,
               maxLines: 2,

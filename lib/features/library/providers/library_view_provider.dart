@@ -5,16 +5,24 @@ import 'package:shonenx/features/library/providers/local_library_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
+import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
 
 enum LibraryMode { local, cloud }
 
 class LibraryViewState {
+  final LibraryMode mode;
   final TrackedStatus status;
 
-  LibraryViewState({this.status = TrackedStatus.watching});
+  LibraryViewState({
+    this.mode = LibraryMode.cloud,
+    this.status = TrackedStatus.watching,
+  });
 
   LibraryViewState copyWith({LibraryMode? mode, TrackedStatus? status}) {
-    return LibraryViewState(status: status ?? this.status);
+    return LibraryViewState(
+      mode: mode ?? this.mode,
+      status: status ?? this.status,
+    );
   }
 }
 
@@ -44,8 +52,11 @@ final dynamicLibraryProvider =
         trackingPrefsProvider.select((s) => s.primaryTracker),
       );
       final libraryView = ref.watch(libraryViewStateProvider);
+      final isCloudLoggedIn = ref.watch(trackerProfileProvider)[primaryTrackerType] != null;
 
-      if (primaryTrackerType == TrackerType.local) {
+      if (libraryView.mode == LibraryMode.local ||
+          primaryTrackerType == TrackerType.local ||
+          !isCloudLoggedIn) {
         return ref.watch(localLibraryListProvider(libraryView.status));
       } else {
         return ref.watch(cloudLibraryProvider(libraryView.status));

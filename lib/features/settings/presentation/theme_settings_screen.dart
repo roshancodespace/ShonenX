@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:shonenx/core/providers/theme_prefs_provider.dart';
 import 'package:shonenx/core/theme/exclusive_schemes.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -22,7 +23,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
       body: ListView(
         children: [
           SettingsSection(
-            title: 'Display',
+            title: 'Display & Color',
             children: [
               SettingsSegmentedTile<ThemeMode>(
                 title: 'Theme Mode',
@@ -36,27 +37,166 @@ class ThemeSettingsScreen extends ConsumerWidget {
                     notifier.updateTheme((p) => p.copyWith(themeMode: s.first)),
               ),
               SettingsSwitchTile(
-                icon: Icons.dark_mode_outlined,
-                title: 'Pure Black',
-                subtitle: 'Saves battery on OLED screens',
-                value: themePrefs.useAmoled,
-                onChanged: themePrefs.themeMode == ThemeMode.light
-                    ? null
-                    : (v) =>
-                          notifier.updateTheme((p) => p.copyWith(useAmoled: v)),
-              ),
-              SettingsSwitchTile(
                 icon: Icons.palette_outlined,
                 title: 'Dynamic Color',
                 subtitle: 'Uses wallpaper colors',
                 value: themePrefs.useDynamic,
                 onChanged: (v) => notifier.updateTheme(
-                  (p) => p.copyWith(
-                    useDynamic: v,
-                    clearExclusiveScheme: v,
-                  ),
+                  (p) => p.copyWith(useDynamic: v, clearExclusiveScheme: v),
                 ),
               ),
+              SettingsSwitchTile(
+                icon: Icons.dark_mode_outlined,
+                title: 'Pure Black',
+                subtitle: themePrefs.customBackgroundImagePath != null
+                    ? 'Disabled while background image is set'
+                    : 'Saves battery on OLED screens',
+                value: themePrefs.useAmoled,
+                onChanged:
+                    themePrefs.themeMode == ThemeMode.light ||
+                        themePrefs.customBackgroundImagePath != null
+                    ? null
+                    : (v) => notifier.updateTheme(
+                        (p) => p.copyWith(
+                          useAmoled: v,
+                          // Turn off effects that conflict with pure black
+                          useGradients: v ? false : p.useGradients,
+                          useNoiseOverlay: v ? false : p.useNoiseOverlay,
+                          clearCustomBackgroundImagePath: v,
+                        ),
+                      ),
+              ),
+            ],
+          ),
+          SettingsSection(
+            title: 'Surface Styling',
+            children: [
+              SettingsSliderTile(
+                icon: Icons.opacity_outlined,
+                title: 'Blend Level',
+                subtitle: 'Color infusion intensity',
+                value: themePrefs.blendLevel.toDouble(),
+                min: 0,
+                max: 40,
+                divisions: 40,
+                label: '${(themePrefs.blendLevel / 40 * 100).toInt()}%',
+                onChanged: (v) => notifier.updateTheme(
+                  (p) => p.copyWith(blendLevel: v.toInt()),
+                ),
+              ),
+              if (themePrefs.customBackgroundImagePath == null)
+                SettingsSwitchTile(
+                  icon: Icons.gradient_outlined,
+                  title: 'Gradient Surfaces',
+                  subtitle: themePrefs.useAmoled
+                      ? 'Disabled with Pure Black'
+                      : 'Subtle gradients instead of flat fills',
+                  value: themePrefs.useGradients,
+                  onChanged: themePrefs.useAmoled
+                      ? null
+                      : (v) => notifier.updateTheme(
+                          (p) => p.copyWith(useGradients: v),
+                        ),
+                ),
+            ],
+          ),
+          SettingsSection(
+            title: 'Background Decoration',
+            children: [
+              SettingsActionTile(
+                icon: Icons.image_outlined,
+                title: 'Custom Wallpaper',
+                subtitle: themePrefs.useAmoled
+                    ? 'Disabled with Pure Black'
+                    : themePrefs.customBackgroundImagePath != null
+                    ? 'Wallpaper active'
+                    : 'Select a custom background image',
+                onTap: themePrefs.useAmoled
+                    ? null
+                    : () async {
+                        final result = await FilePicker.platform.pickFiles(
+                          type: FileType.image,
+                        );
+                        if (result != null &&
+                            result.files.single.path != null) {
+                          notifier.updateTheme(
+                            (p) => p.copyWith(
+                              customBackgroundImagePath:
+                                  result.files.single.path,
+                              // Image replaces gradient
+                              useGradients: false,
+                            ),
+                          );
+                        }
+                      },
+                trailing:
+                    themePrefs.customBackgroundImagePath != null &&
+                        !themePrefs.useAmoled
+                    ? IconButton(
+                        icon: const Icon(Icons.clear_rounded),
+                        onPressed: () => notifier.updateTheme(
+                          (p) =>
+                              p.copyWith(clearCustomBackgroundImagePath: true),
+                        ),
+                      )
+                    : null,
+              ),
+              if (themePrefs.customBackgroundImagePath != null &&
+                  !themePrefs.useAmoled) ...[
+                SettingsSliderTile(
+                  icon: Icons.blur_on_rounded,
+                  title: 'Wallpaper Blur',
+                  subtitle: 'Softness of background image',
+                  value: themePrefs.backgroundBlur,
+                  min: 0.0,
+                  max: 25.0,
+                  divisions: 25,
+                  label: '${themePrefs.backgroundBlur.toInt()}px',
+                  onChanged: (v) => notifier.updateTheme(
+                    (p) => p.copyWith(backgroundBlur: v),
+                  ),
+                ),
+                SettingsSliderTile(
+                  icon: Icons.filter_b_and_w_outlined,
+                  title: 'Wallpaper Opacity',
+                  subtitle: 'Visibility of background image',
+                  value: themePrefs.backgroundImageOpacity,
+                  min: 0.0,
+                  max: 1.0,
+                  divisions: 20,
+                  label:
+                      '${(themePrefs.backgroundImageOpacity * 100).toInt()}%',
+                  onChanged: (v) => notifier.updateTheme(
+                    (p) => p.copyWith(backgroundImageOpacity: v),
+                  ),
+                ),
+              ],
+              SettingsSwitchTile(
+                icon: Icons.grain_rounded,
+                title: 'Noise Overlay',
+                subtitle: themePrefs.useAmoled
+                    ? 'Disabled with Pure Black'
+                    : 'Overlay a subtle textured grain grid',
+                value: themePrefs.useNoiseOverlay,
+                onChanged: themePrefs.useAmoled
+                    ? null
+                    : (v) => notifier.updateTheme(
+                        (p) => p.copyWith(useNoiseOverlay: v),
+                      ),
+              ),
+              if (themePrefs.useNoiseOverlay && !themePrefs.useAmoled)
+                SettingsSliderTile(
+                  icon: Icons.opacity_rounded,
+                  title: 'Noise Intensity',
+                  subtitle: 'Textured grain strength',
+                  value: themePrefs.noiseOpacity,
+                  min: 0.0,
+                  max: 0.15,
+                  divisions: 15,
+                  label: '${(themePrefs.noiseOpacity * 100).toInt()}%',
+                  onChanged: (v) =>
+                      notifier.updateTheme((p) => p.copyWith(noiseOpacity: v)),
+                ),
             ],
           ),
           if (!themePrefs.useDynamic) ...[
@@ -245,7 +385,7 @@ class _SwatchStack extends StatelessWidget {
   }
 }
 
-class _SchemePicker extends StatelessWidget {
+class _SchemePicker extends ConsumerWidget {
   const _SchemePicker({
     required this.currentScheme,
     required this.isDark,
@@ -257,15 +397,15 @@ class _SchemePicker extends StatelessWidget {
   final void Function(FlexScheme) onSelected;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final prefs = ref.watch(themePrefsProvider);
     final schemes = FlexColor.schemes.keys
         .where((s) => s != FlexScheme.custom)
         .toList();
 
     return ListView.builder(
       shrinkWrap: true,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
       itemCount: schemes.length,
       itemBuilder: (context, index) {
         final scheme = schemes[index];
@@ -276,41 +416,53 @@ class _SchemePicker extends StatelessWidget {
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 2),
-          child: ListTile(
-            shape: const StadiumBorder(),
-            tileColor: isSelected ? cs.secondaryContainer : Colors.transparent,
-            leading: CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.transparent,
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [primary, secondary],
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(100),
+              gradient: isSelected && prefs.useGradients
+                  ? LinearGradient(
+                      colors: [cs.secondaryContainer, Colors.transparent],
+                    )
+                  : null,
+            ),
+            child: ListTile(
+              shape: const StadiumBorder(),
+              tileColor: isSelected && !prefs.useGradients
+                  ? cs.secondaryContainer
+                  : Colors.transparent,
+              leading: CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.transparent,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [primary, secondary],
+                    ),
                   ),
                 ),
               ),
-            ),
-            title: Text(
-              data.name,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? cs.onSecondaryContainer : cs.onSurface,
+              title: Text(
+                data.name,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? cs.onSecondaryContainer : cs.onSurface,
+                ),
               ),
+              trailing: isSelected
+                  ? Icon(
+                      Icons.check_rounded,
+                      size: 18,
+                      color: cs.onSecondaryContainer,
+                    )
+                  : null,
+              onTap: () => onSelected(scheme),
             ),
-            trailing: isSelected
-                ? Icon(
-                    Icons.check_rounded,
-                    size: 18,
-                    color: cs.onSecondaryContainer,
-                  )
-                : null,
-            onTap: () => onSelected(scheme),
           ),
         );
       },
@@ -318,7 +470,7 @@ class _SchemePicker extends StatelessWidget {
   }
 }
 
-class _ExclusiveSchemePicker extends StatelessWidget {
+class _ExclusiveSchemePicker extends ConsumerWidget {
   const _ExclusiveSchemePicker({
     required this.currentKey,
     required this.isDark,
@@ -330,13 +482,13 @@ class _ExclusiveSchemePicker extends StatelessWidget {
   final void Function(String) onSelected;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final prefs = ref.watch(themePrefsProvider);
     final entries = exclusiveSchemes.entries.toList();
 
     return ListView.builder(
       shrinkWrap: true,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
       itemCount: entries.length,
       itemBuilder: (context, index) {
         final key = entries[index].key;
@@ -346,50 +498,62 @@ class _ExclusiveSchemePicker extends StatelessWidget {
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 2),
-          child: ListTile(
-            shape: const StadiumBorder(),
-            tileColor: isSelected ? cs.secondaryContainer : Colors.transparent,
-            leading: CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.transparent,
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [colors.primary, colors.secondary],
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(100),
+              gradient: isSelected && prefs.useGradients
+                  ? LinearGradient(
+                      colors: [cs.secondaryContainer, Colors.transparent],
+                    )
+                  : null,
+            ),
+            child: ListTile(
+              shape: const StadiumBorder(),
+              tileColor: isSelected && !prefs.useGradients
+                  ? cs.secondaryContainer
+                  : Colors.transparent,
+              leading: CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.transparent,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [colors.primary, colors.secondary],
+                    ),
                   ),
                 ),
               ),
-            ),
-            title: Text(
-              data.name,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? cs.onSecondaryContainer : cs.onSurface,
+              title: Text(
+                data.name,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? cs.onSecondaryContainer : cs.onSurface,
+                ),
               ),
-            ),
-            subtitle: Text(
-              data.description,
-              style: TextStyle(
-                fontSize: 12,
-                color: isSelected
-                    ? cs.onSecondaryContainer.withValues(alpha: 0.7)
-                    : cs.onSurfaceVariant,
+              subtitle: Text(
+                data.description,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isSelected
+                      ? cs.onSecondaryContainer.withValues(alpha: 0.7)
+                      : cs.onSurfaceVariant,
+                ),
               ),
+              trailing: isSelected
+                  ? Icon(
+                      Icons.check_rounded,
+                      size: 18,
+                      color: cs.onSecondaryContainer,
+                    )
+                  : null,
+              onTap: () => onSelected(key),
             ),
-            trailing: isSelected
-                ? Icon(
-                    Icons.check_rounded,
-                    size: 18,
-                    color: cs.onSecondaryContainer,
-                  )
-                : null,
-            onTap: () => onSelected(key),
           ),
         );
       },

@@ -4,7 +4,8 @@ import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/utils/focus_hover_detector.dart';
 import 'package:shonenx/shared/widgets/liquid_glass.dart';
 
-class MediaCard extends StatefulWidget {
+// OPTIMIZATION: Converted MediaCard to a StatelessWidget and removed the unused AnimationController to eliminate rebuild triggers, frame listener overhead, and widget lifecycle management.
+class MediaCard extends StatelessWidget {
   final String title;
   final String tag;
   final String? format;
@@ -25,42 +26,16 @@ class MediaCard extends StatefulWidget {
   });
 
   @override
-  State<MediaCard> createState() => _MediaCardState();
-}
-
-class _MediaCardState extends State<MediaCard>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 160),
-      lowerBound: 0,
-      upperBound: 0.035,
-    )..addListener(() => setState(() {}));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return FocusHoverDetector(
-      onTap: widget.onTap,
+      onTap: onTap,
 
       actions: {
         ActivateIntent: CallbackAction<ActivateIntent>(
           onInvoke: (_) {
-            widget.onTap();
+            onTap();
             return null;
           },
         ),
@@ -69,33 +44,33 @@ class _MediaCardState extends State<MediaCard>
       builder: (context, isFocused, isHovered) {
         final isActive = isFocused || isHovered;
 
-        final child = switch (widget.style) {
+        final child = switch (style) {
           MediaCardStyle.classic => _ClassicCard(
-            widget: widget,
+            widget: this,
             theme: theme,
             isActive: isActive,
           ),
 
           MediaCardStyle.minimal => _MinimalCard(
-            widget: widget,
+            widget: this,
             theme: theme,
             isActive: isActive,
           ),
 
           MediaCardStyle.expressive => _ExpressiveCard(
-            widget: widget,
+            widget: this,
             theme: theme,
             isActive: isActive,
           ),
 
           MediaCardStyle.material => _MaterialCard(
-            widget: widget,
+            widget: this,
             theme: theme,
             isActive: isActive,
           ),
 
           MediaCardStyle.liquidGlass => _LiquidGlassCard(
-            widget: widget,
+            widget: this,
             theme: theme,
             isActive: isActive,
           ),

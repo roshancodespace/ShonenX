@@ -42,7 +42,7 @@ class AppTheme {
             colors: exclusive?.dark,
             colorScheme: exclusive == null ? colorScheme : null,
             surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
-            blendLevel: 5,
+            blendLevel: prefs.blendLevel,
             appBarStyle: FlexAppBarStyle.surface,
             appBarOpacity: prefs.useAmoled ? 1.0 : 0.90,
             transparentStatusBar: true,
@@ -52,14 +52,14 @@ class AppTheme {
             swapLegacyOnMaterial3: true,
             visualDensity: FlexColorScheme.comfortablePlatformDensity,
             pageTransitionsTheme: _pageTransitionsTheme,
-            subThemesData: _subThemesData(blendLevel: 30),
+            subThemesData: _subThemesData(blendLevel: prefs.blendLevel),
           )
         : FlexThemeData.light(
             scheme: exclusive == null ? prefs.flexScheme : null,
             colors: exclusive?.light,
             colorScheme: exclusive == null ? colorScheme : null,
             surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
-            blendLevel: 5,
+            blendLevel: prefs.blendLevel,
             appBarStyle: FlexAppBarStyle.surface,
             appBarOpacity: 0.95,
             transparentStatusBar: true,
@@ -68,10 +68,13 @@ class AppTheme {
             swapLegacyOnMaterial3: true,
             visualDensity: FlexColorScheme.comfortablePlatformDensity,
             pageTransitionsTheme: _pageTransitionsTheme,
-            subThemesData: _subThemesData(blendLevel: 20),
+            subThemesData: _subThemesData(blendLevel: prefs.blendLevel),
           );
 
-    return _withSnackBarTheme(baseTheme);
+    return _withSnackBarTheme(baseTheme).copyWith(
+      shadowColor:
+          Colors.transparent, // Disable shadows for layered tonal depth
+    );
   }
 
   static ThemeData _withSnackBarTheme(ThemeData theme) {
@@ -124,15 +127,6 @@ class AppTheme {
 class AppPageTransition extends PageTransitionsBuilder {
   const AppPageTransition();
 
-  static const _curve = Curves.easeOutQuart;
-  static const _reverseCurve = Curves.easeInQuart;
-
-  @override
-  Duration get transitionDuration => const Duration(milliseconds: 360);
-
-  @override
-  Duration get reverseTransitionDuration => const Duration(milliseconds: 300);
-
   @override
   Widget buildTransitions<T>(
     PageRoute<T> route,
@@ -141,25 +135,33 @@ class AppPageTransition extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    final fade = CurvedAnimation(
+    final enterCurve = CurvedAnimation(
       parent: animation,
-      curve: _curve,
-      reverseCurve: _reverseCurve,
+      curve: Curves.easeInOutCubic,
+      reverseCurve: Curves.easeInOutCubic,
     );
 
-    final slide = Tween<Offset>(
-      begin: const Offset(0.035, 0),
+    final exitCurve = CurvedAnimation(
+      parent: secondaryAnimation,
+      curve: Curves.easeInOutCubic,
+      reverseCurve: Curves.easeInOutCubic,
+    );
+
+    // Slide incoming page from right to left
+    final slideIn = Tween<Offset>(
+      begin: const Offset(1.0, 0.0),
       end: Offset.zero,
-    ).animate(fade);
+    ).animate(enterCurve);
 
-    final scale = Tween<double>(begin: 0.985, end: 1).animate(fade);
+    // Slide outgoing page to the left
+    final slideOut = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(-1.0, 0.0),
+    ).animate(exitCurve);
 
-    return FadeTransition(
-      opacity: fade,
-      child: SlideTransition(
-        position: slide,
-        child: ScaleTransition(scale: scale, child: child),
-      ),
+    return SlideTransition(
+      position: slideOut,
+      child: SlideTransition(position: slideIn, child: child),
     );
   }
 }

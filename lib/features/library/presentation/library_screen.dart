@@ -8,6 +8,7 @@ import 'package:shonenx/features/library/providers/local_library_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import '../providers/library_view_provider.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -27,71 +28,48 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final dynamicLibrary = ref.watch(dynamicLibraryProvider);
     final cardStyle = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
 
-    return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 80,
-        forceMaterialTransparency: true,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'YOUR LIBRARY',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            Text(
-              viewState.status.displayName.toUpperCase(),
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: theme.colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(45),
-          child: Center(
-            child: SafeArea(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: TrackedStatus.values
-                      .where((s) => s != TrackedStatus.unknown)
-                      .map((status) {
-                        final isActive = viewState.status == status;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: ChoiceChip(
-                            label: Text(
-                              status.displayName,
-                              style: TextStyle(
-                                color: isActive
-                                    ? theme.colorScheme.onSecondaryContainer
-                                    : theme.colorScheme.onSurface,
-                              ),
+    return AppScaffold(
+      subtitle: 'FROM LIBRARY',
+      title: viewState.status.displayName.toUpperCase(),
+      barBottom: PreferredSize(
+        preferredSize: const Size.fromHeight(45),
+        child: Center(
+          child: SafeArea(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: TrackedStatus.values
+                    .where((s) => s != TrackedStatus.unknown)
+                    .map((status) {
+                      final isActive = viewState.status == status;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ChoiceChip(
+                          label: Text(
+                            status.displayName,
+                            style: TextStyle(
+                              color: isActive
+                                  ? theme.colorScheme.onSecondaryContainer
+                                  : theme.colorScheme.onSurface,
                             ),
-                            selected: isActive,
-                            selectedColor: theme.colorScheme.secondaryContainer,
-                            checkmarkColor:
-                                theme.colorScheme.onSecondaryContainer,
-                            onSelected: (selected) {
-                              if (selected) {
-                                ref
-                                    .read(libraryViewStateProvider.notifier)
-                                    .setStatus(status);
-                              }
-                            },
                           ),
-                        );
-                      })
-                      .toList(),
-                ),
+                          selected: isActive,
+                          selectedColor: theme.colorScheme.secondaryContainer,
+                          checkmarkColor:
+                              theme.colorScheme.onSecondaryContainer,
+                          onSelected: (selected) {
+                            if (selected) {
+                              ref
+                                  .read(libraryViewStateProvider.notifier)
+                                  .setStatus(status);
+                            }
+                          },
+                        ),
+                      );
+                    })
+                    .toList(),
               ),
             ),
           ),

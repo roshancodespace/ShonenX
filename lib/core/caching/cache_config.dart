@@ -5,20 +5,42 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/providers/storage_provider.dart';
 
 class CacheConfig {
-  final int? maxCacheSize;
+  final int maxCacheSize;
+  final bool enableCaching;
+  final bool bypassCache;
 
-  const CacheConfig({this.maxCacheSize = 1024 * 1024 * 1024});
+  const CacheConfig({
+    this.maxCacheSize = 1024 * 1024 * 1024,
+    this.enableCaching = true,
+    this.bypassCache = false,
+  });
 
-  CacheConfig copyWith({int? maxCacheSize}) {
-    return CacheConfig(maxCacheSize: maxCacheSize ?? this.maxCacheSize);
+  CacheConfig copyWith({
+    int? maxCacheSize,
+    bool? enableCaching,
+    bool? bypassCache,
+  }) {
+    return CacheConfig(
+      maxCacheSize: maxCacheSize ?? this.maxCacheSize,
+      enableCaching: enableCaching ?? this.enableCaching,
+      bypassCache: bypassCache ?? this.bypassCache,
+    );
   }
 
   factory CacheConfig.fromMap(Map<String, dynamic> map) {
-    return CacheConfig(maxCacheSize: map['maxCacheSize'] as int?);
+    return CacheConfig(
+      maxCacheSize: map['maxCacheSize'] as int? ?? 1024 * 1024 * 1024,
+      enableCaching: map['enableCaching'] as bool? ?? true,
+      bypassCache: map['bypassCache'] as bool? ?? false,
+    );
   }
 
   Map<String, dynamic> toMap() {
-    return {'maxCacheSize': maxCacheSize};
+    return {
+      'maxCacheSize': maxCacheSize,
+      'enableCaching': enableCaching,
+      'bypassCache': bypassCache,
+    };
   }
 
   factory CacheConfig.fromJson(Map<String, dynamic> json) =>
@@ -36,13 +58,25 @@ class CacheConfigNotifier extends Notifier<CacheConfig> {
     final prefs = ref.read(sharedPreferencesProvider);
     final json = prefs.getString(_key);
     if (json != null) {
-      return CacheConfig.fromJson(jsonDecode(json));
+      try {
+        return CacheConfig.fromJson(jsonDecode(json));
+      } catch (_) {}
     }
     return const CacheConfig();
   }
 
   void setMaxCacheSize(int maxCacheSize) {
-    state = CacheConfig(maxCacheSize: maxCacheSize);
+    state = state.copyWith(maxCacheSize: maxCacheSize);
+    _saveDb();
+  }
+
+  void setEnableCaching(bool enableCaching) {
+    state = state.copyWith(enableCaching: enableCaching);
+    _saveDb();
+  }
+
+  void setBypassCache(bool bypassCache) {
+    state = state.copyWith(bypassCache: bypassCache);
     _saveDb();
   }
 

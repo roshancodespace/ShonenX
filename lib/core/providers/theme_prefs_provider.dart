@@ -11,6 +11,13 @@ class ThemePrefsState {
   final bool useAmoled;
   final bool useDynamic;
   final String? exclusiveScheme;
+  final int blendLevel;
+  final bool useGradients;
+  final bool useNoiseOverlay;
+  final String? customBackgroundImagePath;
+  final double noiseOpacity;
+  final double backgroundBlur;
+  final double backgroundImageOpacity;
 
   const ThemePrefsState({
     this.themeMode = ThemeMode.system,
@@ -18,6 +25,13 @@ class ThemePrefsState {
     this.useAmoled = false,
     this.useDynamic = false,
     this.exclusiveScheme,
+    this.blendLevel = 10,
+    this.useGradients = false,
+    this.useNoiseOverlay = false,
+    this.customBackgroundImagePath,
+    this.noiseOpacity = 0.03,
+    this.backgroundBlur = 0.0,
+    this.backgroundImageOpacity = 0.4,
   });
 
   ThemePrefsState copyWith({
@@ -27,13 +41,33 @@ class ThemePrefsState {
     bool? useDynamic,
     String? exclusiveScheme,
     bool clearExclusiveScheme = false,
+    int? blendLevel,
+    bool? useGradients,
+    bool? useNoiseOverlay,
+    String? customBackgroundImagePath,
+    bool clearCustomBackgroundImagePath = false,
+    double? noiseOpacity,
+    double? backgroundBlur,
+    double? backgroundImageOpacity,
   }) {
     return ThemePrefsState(
       themeMode: themeMode ?? this.themeMode,
       flexScheme: flexScheme ?? this.flexScheme,
       useAmoled: useAmoled ?? this.useAmoled,
       useDynamic: useDynamic ?? this.useDynamic,
-      exclusiveScheme: clearExclusiveScheme ? null : (exclusiveScheme ?? this.exclusiveScheme),
+      exclusiveScheme: clearExclusiveScheme
+          ? null
+          : (exclusiveScheme ?? this.exclusiveScheme),
+      blendLevel: blendLevel ?? this.blendLevel,
+      useGradients: useGradients ?? this.useGradients,
+      useNoiseOverlay: useNoiseOverlay ?? this.useNoiseOverlay,
+      customBackgroundImagePath: clearCustomBackgroundImagePath
+          ? null
+          : (customBackgroundImagePath ?? this.customBackgroundImagePath),
+      noiseOpacity: noiseOpacity ?? this.noiseOpacity,
+      backgroundBlur: backgroundBlur ?? this.backgroundBlur,
+      backgroundImageOpacity:
+          backgroundImageOpacity ?? this.backgroundImageOpacity,
     );
   }
 
@@ -44,6 +78,13 @@ class ThemePrefsState {
       'useAmoled': useAmoled,
       'useDynamic': useDynamic,
       'exclusiveScheme': exclusiveScheme,
+      'blendLevel': blendLevel,
+      'useGradients': useGradients,
+      'useNoiseOverlay': useNoiseOverlay,
+      'customBackgroundImagePath': customBackgroundImagePath,
+      'noiseOpacity': noiseOpacity,
+      'backgroundBlur': backgroundBlur,
+      'backgroundImageOpacity': backgroundImageOpacity,
     };
   }
 
@@ -55,6 +96,14 @@ class ThemePrefsState {
       useAmoled: map['useAmoled'] ?? false,
       useDynamic: map['useDynamic'] ?? false,
       exclusiveScheme: map['exclusiveScheme'],
+      blendLevel: map['blendLevel'] ?? 10,
+      useGradients: map['useGradients'] ?? false,
+      useNoiseOverlay: map['useNoiseOverlay'] ?? false,
+      customBackgroundImagePath: map['customBackgroundImagePath'],
+      noiseOpacity: (map['noiseOpacity'] as num?)?.toDouble() ?? 0.03,
+      backgroundBlur: (map['backgroundBlur'] as num?)?.toDouble() ?? 0.0,
+      backgroundImageOpacity:
+          (map['backgroundImageOpacity'] as num?)?.toDouble() ?? 0.4,
     );
   }
 

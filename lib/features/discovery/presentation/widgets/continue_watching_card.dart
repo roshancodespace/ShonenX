@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
+import 'package:shonenx/core/utils/image_headers.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/manual_match_sheet.dart';
 import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
@@ -218,10 +219,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
         onLongPressStart: (details) {
           _showItemContextMenu(details.globalPosition);
         },
-        child: AnimatedSize(
-          duration: Durations.short4,
-          child: _buildStyledContent(widget.style, theme, isActive),
-        ),
+        child: _buildStyledContent(widget.style, theme, isActive),
       ),
     );
   }
@@ -332,7 +330,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
                 aspectRatio: 16 / 10,
                 borderRadius: 20,
                 progressInset: 0,
-                isActive: false, // active border is on the parent wrapper
+                isActive: false,
                 layers: [
                   Positioned(
                     top: 10,
@@ -519,17 +517,12 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
 
     try {
       if (thumbnail.startsWith('http')) {
-        final split = thumbnail.split('#');
-
-        final imageUrl = split.first;
-
-        final headers = split.length > 1
-            ? {'Referer': split.last}
-            : <String, String>{};
+        final imageUrl = thumbnail.split('#').first;
+        final headers = decodeUrlHeaders(thumbnail);
 
         return CachedNetworkImage(
           imageUrl: imageUrl,
-          httpHeaders: headers,
+          httpHeaders: headers.isEmpty ? null : headers,
           fit: BoxFit.cover,
           errorWidget: (_, __, ___) => Container(
             color: cs.surfaceContainerHighest,

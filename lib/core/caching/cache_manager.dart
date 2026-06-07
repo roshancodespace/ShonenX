@@ -6,15 +6,55 @@ import 'package:shonenx/core/database/database_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 
 class CacheManager {
-  late final Isar _isar;
-  late final CacheConfig _cacheConfig;
+  final Isar _isar;
+  final CacheConfig cacheConfig;
 
   late final ScopedLogger _log = AppLogger.scope(CacheManager);
 
-  CacheManager({required Isar isar, required CacheConfig cacheConfig}) {
-    _isar = isar;
-    _cacheConfig = cacheConfig;
-    clearExpired();
+  CacheManager({required Isar isar, required this.cacheConfig}) : _isar = isar {
+    _initCleanup();
+  }
+
+  Future<void> _initCleanup() async {
+    await clearExpired();
+    await _enforceMaxCacheSize();
+  }
+
+  Future<void> _enforceMaxCacheSize() async {
+    final log = _log.child('enforceMaxCacheSize');
+    try {
+      final maxSize = cacheConfig.maxCacheSize;
+      final currentSize = await getCacheSize();
+      if (currentSize <= maxSize) {
+        return;
+      }
+
+      // OPTIMIZATION: Query all cache entries sorted by earliest expiry first, and prune entries until the Isar DB size drops below maxCacheSize. Runs on startup for performance.
+      final entries = await _isar.cacheEntrys.where().sortByExpiry().findAll();
+      final keysToDelete = <String>[];
+      int bytesCleared = 0;
+
+      for (final entry in entries) {
+        keysToDelete.add(entry.key);
+        bytesCleared += entry.bodyBytes.length;
+        if (currentSize - bytesCleared <= maxSize) {
+          break;
+        }
+      }
+
+      if (keysToDelete.isNotEmpty) {
+        await _isar.writeTxn(() async {
+          for (final key in keysToDelete) {
+            await _isar.cacheEntrys.deleteByKey(key);
+          }
+        });
+        log.s(
+          'Pruned ${keysToDelete.length} entries, cleared approx $bytesCleared bytes',
+        );
+      }
+    } catch (e, st) {
+      log.e('PRUNING FAILED', e, st);
+    }
   }
 
   Future<CacheEntry?> get(String key) async {
@@ -119,9 +159,47 @@ class CacheManager {
       log.e('CLEAR FAILED', e, st);
     }
   }
-}
 
-// ---------------- Provider ----------------
+  Future<List<CacheEntry>> getAllEntries() async {
+    final log = _log.child('getAllEntries');
+    try {
+      return await _isar.cacheEntrys.where().findAll();
+    } catch (e, st) {
+      log.e('GET ALL ENTRIES FAILED', e, st);
+      return [];
+    }
+  }
+
+  Future<void> deleteEntriesByCategory(String category) async {
+    final log = _log.child('deleteEntriesByCategory');
+    try {
+      final entries = await getAllEntries();
+      final keysToDelete = entries
+          .where((e) => getCategoryName(e.key) == category)
+          .map((e) => e.key)
+          .toList();
+
+      if (keysToDelete.isNotEmpty) {
+        await _isar.writeTxn(() async {
+          for (final key in keysToDelete) {
+            await _isar.cacheEntrys.deleteByKey(key);
+          }
+        });
+        log.s('Deleted ${keysToDelete.length} entries for category: $category');
+      }
+    } catch (e, st) {
+      log.e('DELETE BY CATEGORY FAILED: $category', e, st);
+    }
+  }
+
+  String getCategoryName(String key) {
+    if (key.contains('/api/anime/search')) return 'Search Queries';
+    if (key.contains('/api/anime/eps/')) return 'Episode Metadata';
+    if (key.contains('/api/anime/servers/')) return 'Server Lists';
+    if (key.contains('/api/anime/oppai/')) return 'Stream Sources';
+    return 'General / Others';
+  }
+}
 
 final cacheManagerProvider = Provider<CacheManager>((ref) {
   final isar = ref.watch(databaseProvider);

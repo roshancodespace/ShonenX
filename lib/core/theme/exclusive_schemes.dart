@@ -206,6 +206,49 @@ const Map<String, ExclusiveSchemeData> exclusiveSchemes = {
     ),
   ),
 
+  'metallic_black': ExclusiveSchemeData(
+    name: 'Metallic Black',
+    description:
+        'Metallic blacks with stark, high-contrast silver/neon accents.',
+    light: FlexSchemeColor(
+      primary: Color(0xFF1E1E1E),
+      primaryContainer: Color(0xFFE0E0E0),
+      secondary: Color(0xFF424242),
+      secondaryContainer: Color(0xFFF5F5F5),
+      tertiary: Color(0xFF00E5FF),
+      tertiaryContainer: Color(0xFFB2EBF2),
+    ),
+    dark: FlexSchemeColor(
+      primary: Color(0xFFE0E0E0),
+      primaryContainer: Color(0xFF121212),
+      secondary: Color(0xFF9E9E9E),
+      secondaryContainer: Color(0xFF212121),
+      tertiary: Color(0xFF00E5FF),
+      tertiaryContainer: Color(0xFF003D4D),
+    ),
+  ),
+
+  'crimson_forge': ExclusiveSchemeData(
+    name: 'Crimson Forge',
+    description: 'Rich reds and deep crimsons forged in fire.',
+    light: FlexSchemeColor(
+      primary: Color(0xFFB71C1C),
+      primaryContainer: Color(0xFFFFCDD2),
+      secondary: Color(0xFFD32F2F),
+      secondaryContainer: Color(0xFFFFEBEE),
+      tertiary: Color(0xFFFF8F00),
+      tertiaryContainer: Color(0xFFFFECB3),
+    ),
+    dark: FlexSchemeColor(
+      primary: Color(0xFFFF5252),
+      primaryContainer: Color(0xFF4A0000),
+      secondary: Color(0xFFFF8A80),
+      secondaryContainer: Color(0xFF2B0000),
+      tertiary: Color(0xFFFFB300),
+      tertiaryContainer: Color(0xFF4D3300),
+    ),
+  ),
+
   'void_walker': ExclusiveSchemeData(
     name: 'Void Walker',
     description: 'Electric light cutting through deep space',

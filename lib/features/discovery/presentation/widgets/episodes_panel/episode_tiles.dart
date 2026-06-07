@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:shonenx/core/utils/image_headers.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 
 enum EpisodeViewMode {
@@ -103,7 +104,7 @@ class EpisodeClassicTile extends StatelessWidget {
         : imageOpacity;
 
     final imageUrl = episode.thumbnailUrl?.split('#').first;
-    final referer = episode.thumbnailUrl?.split('#').last;
+    final headers = decodeUrlHeaders(episode.thumbnailUrl);
 
     return Material(
       color: Colors.transparent,
@@ -131,9 +132,7 @@ class EpisodeClassicTile extends StatelessWidget {
                             child: Image(
                               image: CachedNetworkImageProvider(
                                 imageUrl,
-                                headers: referer != null
-                                    ? {'Referer': referer}
-                                    : {},
+                                headers: headers.isEmpty ? null : headers,
                               ),
                               fit: BoxFit.cover,
                               alignment: Alignment.center,
@@ -328,7 +327,7 @@ class EpisodeGridTile extends StatelessWidget {
     final dimColor = cs.onSurfaceVariant.withValues(alpha: 0.45);
 
     final imageUrl = episode.thumbnailUrl?.split('#').first;
-    final referer = episode.thumbnailUrl?.split('#').last;
+    final headers = decodeUrlHeaders(episode.thumbnailUrl);
 
     return Material(
       color: cs.surfaceContainerLow,
@@ -345,7 +344,7 @@ class EpisodeGridTile extends StatelessWidget {
                 Image(
                   image: CachedNetworkImageProvider(
                     imageUrl,
-                    headers: referer != null ? {'Referer': referer} : {},
+                    headers: headers.isEmpty ? null : headers,
                   ),
                   fit: BoxFit.cover,
                 )

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
+import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
 final _navBreakpoints = ResponsiveBreakpoints.defaults.copyWith(
   heightNormal: 750,
@@ -23,32 +24,22 @@ class ScaffoldWithNavBar extends StatelessWidget {
       focusNode: FocusNode(),
       autofocus: true,
       onKeyEvent: (event) {
-        if (event is! KeyDownEvent) {
-          return;
-        }
-
+        if (event is! KeyDownEvent) return;
         switch (event.logicalKey) {
           case LogicalKeyboardKey.digit1:
             navigationShell.goBranch(0);
-            break;
-
           case LogicalKeyboardKey.digit2:
             navigationShell.goBranch(1);
-            break;
-
           case LogicalKeyboardKey.digit3:
             navigationShell.goBranch(2);
-            break;
-
           case LogicalKeyboardKey.digit4:
             context.push('/downloads');
-            break;
         }
       },
       child: ResponsiveHandler(
         breakpoints: _navBreakpoints,
         builder: (context, r) {
-          return Scaffold(
+          return AppScaffold(
             extendBody: true,
             body: r.isDesktop || r.isTabletLandscape
                 ? Row(
@@ -142,14 +133,21 @@ class _BottomNavBar extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  _destinations[i].icon,
-                                  color: active
-                                      ? cs.onPrimary
-                                      : cs.onSurfaceVariant.withValues(
-                                          alpha: 0.6,
-                                        ),
-                                  size: iconSize,
+                                AnimatedScale(
+                                  scale: active ? 1.15 : 1.0,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOutBack,
+                                  child: AnimatedOpacity(
+                                    opacity: active ? 1.0 : 0.55,
+                                    duration: const Duration(milliseconds: 250),
+                                    child: Icon(
+                                      _destinations[i].icon,
+                                      color: active
+                                          ? cs.onPrimary
+                                          : cs.onSurfaceVariant,
+                                      size: iconSize,
+                                    ),
+                                  ),
                                 ),
                                 ClipRect(
                                   child: AnimatedSize(
@@ -219,9 +217,10 @@ class _DownloadButton extends ConsumerWidget {
         )
         .toList();
     final count = activeTasks.length;
+    final hasActive = count > 0;
 
     double? progress;
-    if (count > 0) {
+    if (hasActive) {
       final valid = activeTasks.where((t) => t.progress >= 0);
       if (valid.isNotEmpty) {
         progress =
@@ -246,13 +245,18 @@ class _DownloadButton extends ConsumerWidget {
           child: IconButton(
             padding: EdgeInsets.zero,
             icon: Badge(
-              isLabelVisible: count > 0,
-              label: Text('$count'),
+              isLabelVisible: hasActive,
+              label: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Text('$count', key: ValueKey(count)),
+              ),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  if (count > 0)
-                    SizedBox(
+                  AnimatedOpacity(
+                    opacity: hasActive ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: SizedBox(
                       width: iconSize + 8,
                       height: iconSize + 8,
                       child: CircularProgressIndicator(
@@ -261,10 +265,16 @@ class _DownloadButton extends ConsumerWidget {
                         color: colorScheme.primary,
                       ),
                     ),
-                  Icon(
-                    Icons.download_outlined,
-                    color: colorScheme.onSurface,
-                    size: iconSize,
+                  ),
+                  AnimatedScale(
+                    scale: hasActive ? 1.1 : 1.0,
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeOutBack,
+                    child: Icon(
+                      Icons.download_outlined,
+                      color: colorScheme.onSurface,
+                      size: iconSize,
+                    ),
                   ),
                 ],
               ),
@@ -357,7 +367,7 @@ class _SideNavBar extends StatelessWidget {
                           borderRadius: BorderRadius.circular(barWidth / 2),
                           focusColor: cs.primary.withValues(alpha: 0.2),
                           child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 400),
+                            duration: const Duration(milliseconds: 350),
                             curve: Curves.easeOutCubic,
                             width: double.infinity,
                             decoration: BoxDecoration(
@@ -490,12 +500,21 @@ class _PillContent extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          icon,
-          color: active || isDownload
-              ? (isDownload ? cs.onSurface : cs.onPrimary)
-              : cs.onSurfaceVariant.withValues(alpha: 0.6),
-          size: iconSize,
+        AnimatedScale(
+          scale: active ? 1.15 : 1.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutBack,
+          child: AnimatedOpacity(
+            opacity: active || isDownload ? 1.0 : 0.5,
+            duration: const Duration(milliseconds: 250),
+            child: Icon(
+              icon,
+              color: active || isDownload
+                  ? (isDownload ? cs.onSurface : cs.onPrimary)
+                  : cs.onSurfaceVariant,
+              size: iconSize,
+            ),
+          ),
         ),
         ClipRect(
           child: AnimatedSize(
@@ -554,9 +573,12 @@ class _TallDownloadPillContent extends ConsumerWidget {
         onTap: () => context.push('/downloads'),
         child: Badge(
           isLabelVisible: count > 0,
-          label: Text('$count'),
           backgroundColor: cs.primary,
           textColor: cs.onPrimary,
+          label: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Text('$count', key: ValueKey(count)),
+          ),
           child: _PillContent(
             icon: Icons.download_outlined,
             label: 'DOWNLOAD',

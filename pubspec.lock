@@ -440,7 +440,7 @@ packages:
     source: hosted
     version: "3.4.1"
   flutter_inappwebview:
-    dependency: transitive
+    dependency: "direct main"
     description:
       path: flutter_inappwebview
       ref: HEAD

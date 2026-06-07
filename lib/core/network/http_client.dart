@@ -85,6 +85,7 @@ class HTTP {
 
     if (shouldCache &&
         _cache != null &&
+        !_cache.cacheConfig.bypassCache &&
         (method == 'GET' || method == 'POST')) {
       final cached = await _cache.get(key);
       if (cached != null) {
@@ -95,10 +96,10 @@ class HTTP {
     final uri = Uri.parse(url).replace(queryParameters: queryParameters);
     final req = await _client.openUrl(method, uri);
 
-    req.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
     headers?.forEach(req.headers.set);
 
     if (body != null) {
+      req.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
       req.write(body is String ? body : jsonEncode(body));
     }
 
@@ -118,7 +119,10 @@ class HTTP {
 
     if (shouldCache &&
         _cache != null &&
-        (method == 'GET' || method == 'POST')) {
+        (method == 'GET' || method == 'POST') &&
+        res.statusCode >= 200 &&
+        res.statusCode < 300 &&
+        resBody.trim().isNotEmpty) {
       await _cache.put(
         key,
         CacheEntry()
@@ -221,6 +225,9 @@ class HTTP {
   }
 
   bool _shouldCache(Duration? cacheDuration) {
+    if (_cache != null && !_cache.cacheConfig.enableCaching) {
+      return false;
+    }
     return cacheDuration != null && cacheDuration > Duration.zero;
   }
 }

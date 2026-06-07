@@ -9,7 +9,7 @@ import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/caching/domain/cache_entry.dart';
 import 'package:shonenx/core/services/notification_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/features/discovery/domain/isar_source_preference.dart';
+import 'package:shonenx/features/discovery/domain/media_source_preference.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/library/domain/models/library_entry.dart';
@@ -79,7 +79,7 @@ class AppInit {
         [
           CacheEntrySchema,
           LibraryEntrySchema,
-          IsarSourcePreferenceSchema,
+          MediaSourcePreferenceSchema,
           IsarTrackerLinkSchema,
           WatchHistoryEntrySchema,
           DownloadTaskSchema,

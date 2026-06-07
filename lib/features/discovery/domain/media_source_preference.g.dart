@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'isar_source_preference.dart';
+part of 'media_source_preference.dart';
 
 // **************************************************************************
 // IsarCollectionGenerator
@@ -9,14 +9,14 @@ part of 'isar_source_preference.dart';
 // coverage:ignore-file
 // ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
 
-extension GetIsarSourcePreferenceCollection on Isar {
-  IsarCollection<IsarSourcePreference> get isarSourcePreferences =>
+extension GetMediaSourcePreferenceCollection on Isar {
+  IsarCollection<MediaSourcePreference> get mediaSourcePreferences =>
       this.collection();
 }
 
-const IsarSourcePreferenceSchema = CollectionSchema(
-  name: r'IsarSourcePreference',
-  id: 8557062117057454834,
+const MediaSourcePreferenceSchema = CollectionSchema(
+  name: r'MediaSourcePreference',
+  id: -7687347840577956678,
   properties: {
     r'manualOverrideId': PropertySchema(
       id: 0,
@@ -50,10 +50,10 @@ const IsarSourcePreferenceSchema = CollectionSchema(
     ),
   },
 
-  estimateSize: _isarSourcePreferenceEstimateSize,
-  serialize: _isarSourcePreferenceSerialize,
-  deserialize: _isarSourcePreferenceDeserialize,
-  deserializeProp: _isarSourcePreferenceDeserializeProp,
+  estimateSize: _mediaSourcePreferenceEstimateSize,
+  serialize: _mediaSourcePreferenceSerialize,
+  deserialize: _mediaSourcePreferenceDeserialize,
+  deserializeProp: _mediaSourcePreferenceDeserializeProp,
   idName: r'id',
   indexes: {
     r'mediaTitle': IndexSchema(
@@ -73,14 +73,14 @@ const IsarSourcePreferenceSchema = CollectionSchema(
   links: {},
   embeddedSchemas: {},
 
-  getId: _isarSourcePreferenceGetId,
-  getLinks: _isarSourcePreferenceGetLinks,
-  attach: _isarSourcePreferenceAttach,
+  getId: _mediaSourcePreferenceGetId,
+  getLinks: _mediaSourcePreferenceGetLinks,
+  attach: _mediaSourcePreferenceAttach,
   version: '3.3.0',
 );
 
-int _isarSourcePreferenceEstimateSize(
-  IsarSourcePreference object,
+int _mediaSourcePreferenceEstimateSize(
+  MediaSourcePreference object,
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
@@ -104,8 +104,8 @@ int _isarSourcePreferenceEstimateSize(
   return bytesCount;
 }
 
-void _isarSourcePreferenceSerialize(
-  IsarSourcePreference object,
+void _mediaSourcePreferenceSerialize(
+  MediaSourcePreference object,
   IsarWriter writer,
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
@@ -118,13 +118,13 @@ void _isarSourcePreferenceSerialize(
   writer.writeString(offsets[5], object.preferredSourceType);
 }
 
-IsarSourcePreference _isarSourcePreferenceDeserialize(
+MediaSourcePreference _mediaSourcePreferenceDeserialize(
   Id id,
   IsarReader reader,
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  final object = IsarSourcePreference();
+  final object = MediaSourcePreference();
   object.id = id;
   object.manualOverrideId = reader.readStringOrNull(offsets[0]);
   object.manualOverrideTitle = reader.readStringOrNull(offsets[1]);
@@ -135,7 +135,7 @@ IsarSourcePreference _isarSourcePreferenceDeserialize(
   return object;
 }
 
-P _isarSourcePreferenceDeserializeProp<P>(
+P _mediaSourcePreferenceDeserializeProp<P>(
   IsarReader reader,
   int propertyId,
   int offset,
@@ -159,30 +159,31 @@ P _isarSourcePreferenceDeserializeProp<P>(
   }
 }
 
-Id _isarSourcePreferenceGetId(IsarSourcePreference object) {
+Id _mediaSourcePreferenceGetId(MediaSourcePreference object) {
   return object.id;
 }
 
-List<IsarLinkBase<dynamic>> _isarSourcePreferenceGetLinks(
-  IsarSourcePreference object,
+List<IsarLinkBase<dynamic>> _mediaSourcePreferenceGetLinks(
+  MediaSourcePreference object,
 ) {
   return [];
 }
 
-void _isarSourcePreferenceAttach(
+void _mediaSourcePreferenceAttach(
   IsarCollection<dynamic> col,
   Id id,
-  IsarSourcePreference object,
+  MediaSourcePreference object,
 ) {
   object.id = id;
 }
 
-extension IsarSourcePreferenceByIndex on IsarCollection<IsarSourcePreference> {
-  Future<IsarSourcePreference?> getByMediaTitle(String mediaTitle) {
+extension MediaSourcePreferenceByIndex
+    on IsarCollection<MediaSourcePreference> {
+  Future<MediaSourcePreference?> getByMediaTitle(String mediaTitle) {
     return getByIndex(r'mediaTitle', [mediaTitle]);
   }
 
-  IsarSourcePreference? getByMediaTitleSync(String mediaTitle) {
+  MediaSourcePreference? getByMediaTitleSync(String mediaTitle) {
     return getByIndexSync(r'mediaTitle', [mediaTitle]);
   }
 
@@ -194,14 +195,14 @@ extension IsarSourcePreferenceByIndex on IsarCollection<IsarSourcePreference> {
     return deleteByIndexSync(r'mediaTitle', [mediaTitle]);
   }
 
-  Future<List<IsarSourcePreference?>> getAllByMediaTitle(
+  Future<List<MediaSourcePreference?>> getAllByMediaTitle(
     List<String> mediaTitleValues,
   ) {
     final values = mediaTitleValues.map((e) => [e]).toList();
     return getAllByIndex(r'mediaTitle', values);
   }
 
-  List<IsarSourcePreference?> getAllByMediaTitleSync(
+  List<MediaSourcePreference?> getAllByMediaTitleSync(
     List<String> mediaTitleValues,
   ) {
     final values = mediaTitleValues.map((e) => [e]).toList();
@@ -218,29 +219,32 @@ extension IsarSourcePreferenceByIndex on IsarCollection<IsarSourcePreference> {
     return deleteAllByIndexSync(r'mediaTitle', values);
   }
 
-  Future<Id> putByMediaTitle(IsarSourcePreference object) {
+  Future<Id> putByMediaTitle(MediaSourcePreference object) {
     return putByIndex(r'mediaTitle', object);
   }
 
-  Id putByMediaTitleSync(IsarSourcePreference object, {bool saveLinks = true}) {
+  Id putByMediaTitleSync(
+    MediaSourcePreference object, {
+    bool saveLinks = true,
+  }) {
     return putByIndexSync(r'mediaTitle', object, saveLinks: saveLinks);
   }
 
-  Future<List<Id>> putAllByMediaTitle(List<IsarSourcePreference> objects) {
+  Future<List<Id>> putAllByMediaTitle(List<MediaSourcePreference> objects) {
     return putAllByIndex(r'mediaTitle', objects);
   }
 
   List<Id> putAllByMediaTitleSync(
-    List<IsarSourcePreference> objects, {
+    List<MediaSourcePreference> objects, {
     bool saveLinks = true,
   }) {
     return putAllByIndexSync(r'mediaTitle', objects, saveLinks: saveLinks);
   }
 }
 
-extension IsarSourcePreferenceQueryWhereSort
-    on QueryBuilder<IsarSourcePreference, IsarSourcePreference, QWhere> {
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterWhere>
+extension MediaSourcePreferenceQueryWhereSort
+    on QueryBuilder<MediaSourcePreference, MediaSourcePreference, QWhere> {
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterWhere>
   anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
@@ -248,16 +252,21 @@ extension IsarSourcePreferenceQueryWhereSort
   }
 }
 
-extension IsarSourcePreferenceQueryWhere
-    on QueryBuilder<IsarSourcePreference, IsarSourcePreference, QWhereClause> {
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterWhereClause>
+extension MediaSourcePreferenceQueryWhere
+    on
+        QueryBuilder<
+          MediaSourcePreference,
+          MediaSourcePreference,
+          QWhereClause
+        > {
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterWhereClause>
   idEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IdWhereClause.between(lower: id, upper: id));
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterWhereClause>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterWhereClause>
   idNotEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
@@ -280,7 +289,7 @@ extension IsarSourcePreferenceQueryWhere
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterWhereClause>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterWhereClause>
   idGreaterThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
@@ -289,7 +298,7 @@ extension IsarSourcePreferenceQueryWhere
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterWhereClause>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterWhereClause>
   idLessThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
@@ -298,7 +307,7 @@ extension IsarSourcePreferenceQueryWhere
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterWhereClause>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterWhereClause>
   idBetween(
     Id lowerId,
     Id upperId, {
@@ -317,7 +326,7 @@ extension IsarSourcePreferenceQueryWhere
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterWhereClause>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterWhereClause>
   mediaTitleEqualTo(String mediaTitle) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
@@ -326,7 +335,7 @@ extension IsarSourcePreferenceQueryWhere
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterWhereClause>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterWhereClause>
   mediaTitleNotEqualTo(String mediaTitle) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
@@ -370,16 +379,16 @@ extension IsarSourcePreferenceQueryWhere
   }
 }
 
-extension IsarSourcePreferenceQueryFilter
+extension MediaSourcePreferenceQueryFilter
     on
         QueryBuilder<
-          IsarSourcePreference,
-          IsarSourcePreference,
+          MediaSourcePreference,
+          MediaSourcePreference,
           QFilterCondition
         > {
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   idEqualTo(Id value) {
@@ -391,8 +400,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   idGreaterThan(Id value, {bool include = false}) {
@@ -408,8 +417,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   idLessThan(Id value, {bool include = false}) {
@@ -425,8 +434,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   idBetween(
@@ -449,8 +458,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideIdIsNull() {
@@ -462,8 +471,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideIdIsNotNull() {
@@ -475,8 +484,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideIdEqualTo(String? value, {bool caseSensitive = true}) {
@@ -492,8 +501,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideIdGreaterThan(
@@ -514,8 +523,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideIdLessThan(
@@ -536,8 +545,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideIdBetween(
@@ -562,8 +571,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideIdStartsWith(String value, {bool caseSensitive = true}) {
@@ -579,8 +588,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideIdEndsWith(String value, {bool caseSensitive = true}) {
@@ -596,8 +605,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideIdContains(String value, {bool caseSensitive = true}) {
@@ -613,8 +622,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideIdMatches(String pattern, {bool caseSensitive = true}) {
@@ -630,8 +639,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideIdIsEmpty() {
@@ -643,8 +652,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideIdIsNotEmpty() {
@@ -656,8 +665,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideTitleIsNull() {
@@ -669,8 +678,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideTitleIsNotNull() {
@@ -682,8 +691,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideTitleEqualTo(String? value, {bool caseSensitive = true}) {
@@ -699,8 +708,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideTitleGreaterThan(
@@ -721,8 +730,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideTitleLessThan(
@@ -743,8 +752,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideTitleBetween(
@@ -769,8 +778,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideTitleStartsWith(String value, {bool caseSensitive = true}) {
@@ -786,8 +795,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideTitleEndsWith(String value, {bool caseSensitive = true}) {
@@ -803,8 +812,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideTitleContains(String value, {bool caseSensitive = true}) {
@@ -820,8 +829,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideTitleMatches(String pattern, {bool caseSensitive = true}) {
@@ -837,8 +846,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideTitleIsEmpty() {
@@ -850,8 +859,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   manualOverrideTitleIsNotEmpty() {
@@ -866,8 +875,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   mediaTitleEqualTo(String value, {bool caseSensitive = true}) {
@@ -883,8 +892,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   mediaTitleGreaterThan(
@@ -905,8 +914,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   mediaTitleLessThan(
@@ -927,8 +936,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   mediaTitleBetween(
@@ -953,8 +962,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   mediaTitleStartsWith(String value, {bool caseSensitive = true}) {
@@ -970,8 +979,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   mediaTitleEndsWith(String value, {bool caseSensitive = true}) {
@@ -987,8 +996,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   mediaTitleContains(String value, {bool caseSensitive = true}) {
@@ -1004,8 +1013,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   mediaTitleMatches(String pattern, {bool caseSensitive = true}) {
@@ -1021,8 +1030,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   mediaTitleIsEmpty() {
@@ -1034,8 +1043,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   mediaTitleIsNotEmpty() {
@@ -1047,8 +1056,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceIdEqualTo(String value, {bool caseSensitive = true}) {
@@ -1064,8 +1073,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceIdGreaterThan(
@@ -1086,8 +1095,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceIdLessThan(
@@ -1108,8 +1117,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceIdBetween(
@@ -1134,8 +1143,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceIdStartsWith(String value, {bool caseSensitive = true}) {
@@ -1151,8 +1160,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceIdEndsWith(String value, {bool caseSensitive = true}) {
@@ -1168,8 +1177,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceIdContains(String value, {bool caseSensitive = true}) {
@@ -1185,8 +1194,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceIdMatches(String pattern, {bool caseSensitive = true}) {
@@ -1202,8 +1211,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceIdIsEmpty() {
@@ -1215,8 +1224,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceIdIsNotEmpty() {
@@ -1228,8 +1237,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceNameEqualTo(String value, {bool caseSensitive = true}) {
@@ -1245,8 +1254,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceNameGreaterThan(
@@ -1267,8 +1276,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceNameLessThan(
@@ -1289,8 +1298,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceNameBetween(
@@ -1315,8 +1324,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceNameStartsWith(String value, {bool caseSensitive = true}) {
@@ -1332,8 +1341,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceNameEndsWith(String value, {bool caseSensitive = true}) {
@@ -1349,8 +1358,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceNameContains(String value, {bool caseSensitive = true}) {
@@ -1366,8 +1375,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceNameMatches(String pattern, {bool caseSensitive = true}) {
@@ -1383,8 +1392,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceNameIsEmpty() {
@@ -1396,8 +1405,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceNameIsNotEmpty() {
@@ -1412,8 +1421,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceTypeEqualTo(String value, {bool caseSensitive = true}) {
@@ -1429,8 +1438,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceTypeGreaterThan(
@@ -1451,8 +1460,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceTypeLessThan(
@@ -1473,8 +1482,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceTypeBetween(
@@ -1499,8 +1508,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceTypeStartsWith(String value, {bool caseSensitive = true}) {
@@ -1516,8 +1525,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceTypeEndsWith(String value, {bool caseSensitive = true}) {
@@ -1533,8 +1542,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceTypeContains(String value, {bool caseSensitive = true}) {
@@ -1550,8 +1559,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceTypeMatches(String pattern, {bool caseSensitive = true}) {
@@ -1567,8 +1576,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceTypeIsEmpty() {
@@ -1580,8 +1589,8 @@ extension IsarSourcePreferenceQueryFilter
   }
 
   QueryBuilder<
-    IsarSourcePreference,
-    IsarSourcePreference,
+    MediaSourcePreference,
+    MediaSourcePreference,
     QAfterFilterCondition
   >
   preferredSourceTypeIsNotEmpty() {
@@ -1596,102 +1605,102 @@ extension IsarSourcePreferenceQueryFilter
   }
 }
 
-extension IsarSourcePreferenceQueryObject
+extension MediaSourcePreferenceQueryObject
     on
         QueryBuilder<
-          IsarSourcePreference,
-          IsarSourcePreference,
+          MediaSourcePreference,
+          MediaSourcePreference,
           QFilterCondition
         > {}
 
-extension IsarSourcePreferenceQueryLinks
+extension MediaSourcePreferenceQueryLinks
     on
         QueryBuilder<
-          IsarSourcePreference,
-          IsarSourcePreference,
+          MediaSourcePreference,
+          MediaSourcePreference,
           QFilterCondition
         > {}
 
-extension IsarSourcePreferenceQuerySortBy
-    on QueryBuilder<IsarSourcePreference, IsarSourcePreference, QSortBy> {
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+extension MediaSourcePreferenceQuerySortBy
+    on QueryBuilder<MediaSourcePreference, MediaSourcePreference, QSortBy> {
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   sortByManualOverrideId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'manualOverrideId', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   sortByManualOverrideIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'manualOverrideId', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   sortByManualOverrideTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'manualOverrideTitle', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   sortByManualOverrideTitleDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'manualOverrideTitle', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   sortByMediaTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mediaTitle', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   sortByMediaTitleDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mediaTitle', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   sortByPreferredSourceId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'preferredSourceId', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   sortByPreferredSourceIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'preferredSourceId', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   sortByPreferredSourceName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'preferredSourceName', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   sortByPreferredSourceNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'preferredSourceName', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   sortByPreferredSourceType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'preferredSourceType', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   sortByPreferredSourceTypeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'preferredSourceType', Sort.desc);
@@ -1699,100 +1708,100 @@ extension IsarSourcePreferenceQuerySortBy
   }
 }
 
-extension IsarSourcePreferenceQuerySortThenBy
-    on QueryBuilder<IsarSourcePreference, IsarSourcePreference, QSortThenBy> {
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+extension MediaSourcePreferenceQuerySortThenBy
+    on QueryBuilder<MediaSourcePreference, MediaSourcePreference, QSortThenBy> {
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   thenByManualOverrideId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'manualOverrideId', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   thenByManualOverrideIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'manualOverrideId', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   thenByManualOverrideTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'manualOverrideTitle', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   thenByManualOverrideTitleDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'manualOverrideTitle', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   thenByMediaTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mediaTitle', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   thenByMediaTitleDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mediaTitle', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   thenByPreferredSourceId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'preferredSourceId', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   thenByPreferredSourceIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'preferredSourceId', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   thenByPreferredSourceName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'preferredSourceName', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   thenByPreferredSourceNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'preferredSourceName', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   thenByPreferredSourceType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'preferredSourceType', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QAfterSortBy>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QAfterSortBy>
   thenByPreferredSourceTypeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'preferredSourceType', Sort.desc);
@@ -1800,9 +1809,9 @@ extension IsarSourcePreferenceQuerySortThenBy
   }
 }
 
-extension IsarSourcePreferenceQueryWhereDistinct
-    on QueryBuilder<IsarSourcePreference, IsarSourcePreference, QDistinct> {
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QDistinct>
+extension MediaSourcePreferenceQueryWhereDistinct
+    on QueryBuilder<MediaSourcePreference, MediaSourcePreference, QDistinct> {
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QDistinct>
   distinctByManualOverrideId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(
@@ -1812,7 +1821,7 @@ extension IsarSourcePreferenceQueryWhereDistinct
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QDistinct>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QDistinct>
   distinctByManualOverrideTitle({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(
@@ -1822,14 +1831,14 @@ extension IsarSourcePreferenceQueryWhereDistinct
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QDistinct>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QDistinct>
   distinctByMediaTitle({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'mediaTitle', caseSensitive: caseSensitive);
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QDistinct>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QDistinct>
   distinctByPreferredSourceId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(
@@ -1839,7 +1848,7 @@ extension IsarSourcePreferenceQueryWhereDistinct
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QDistinct>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QDistinct>
   distinctByPreferredSourceName({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(
@@ -1849,7 +1858,7 @@ extension IsarSourcePreferenceQueryWhereDistinct
     });
   }
 
-  QueryBuilder<IsarSourcePreference, IsarSourcePreference, QDistinct>
+  QueryBuilder<MediaSourcePreference, MediaSourcePreference, QDistinct>
   distinctByPreferredSourceType({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(
@@ -1860,55 +1869,55 @@ extension IsarSourcePreferenceQueryWhereDistinct
   }
 }
 
-extension IsarSourcePreferenceQueryProperty
+extension MediaSourcePreferenceQueryProperty
     on
         QueryBuilder<
-          IsarSourcePreference,
-          IsarSourcePreference,
+          MediaSourcePreference,
+          MediaSourcePreference,
           QQueryProperty
         > {
-  QueryBuilder<IsarSourcePreference, int, QQueryOperations> idProperty() {
+  QueryBuilder<MediaSourcePreference, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
     });
   }
 
-  QueryBuilder<IsarSourcePreference, String?, QQueryOperations>
+  QueryBuilder<MediaSourcePreference, String?, QQueryOperations>
   manualOverrideIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'manualOverrideId');
     });
   }
 
-  QueryBuilder<IsarSourcePreference, String?, QQueryOperations>
+  QueryBuilder<MediaSourcePreference, String?, QQueryOperations>
   manualOverrideTitleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'manualOverrideTitle');
     });
   }
 
-  QueryBuilder<IsarSourcePreference, String, QQueryOperations>
+  QueryBuilder<MediaSourcePreference, String, QQueryOperations>
   mediaTitleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'mediaTitle');
     });
   }
 
-  QueryBuilder<IsarSourcePreference, String, QQueryOperations>
+  QueryBuilder<MediaSourcePreference, String, QQueryOperations>
   preferredSourceIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'preferredSourceId');
     });
   }
 
-  QueryBuilder<IsarSourcePreference, String, QQueryOperations>
+  QueryBuilder<MediaSourcePreference, String, QQueryOperations>
   preferredSourceNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'preferredSourceName');
     });
   }
 
-  QueryBuilder<IsarSourcePreference, String, QQueryOperations>
+  QueryBuilder<MediaSourcePreference, String, QQueryOperations>
   preferredSourceTypeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'preferredSourceType');

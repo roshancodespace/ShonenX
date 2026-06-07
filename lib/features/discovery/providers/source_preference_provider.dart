@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/database/database_provider.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core/utils/extensions.dart';
-import 'package:shonenx/features/discovery/domain/isar_source_preference.dart';
+import 'package:shonenx/features/discovery/domain/media_source_preference.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
@@ -42,7 +42,7 @@ class SourcePreferencNotifier extends AsyncNotifier<SourcePreferenceState> {
     final log = _log.child('build');
 
     try {
-      final savedPref = await _isar.isarSourcePreferences.getByMediaTitle(
+      final savedPref = await _isar.mediaSourcePreferences.getByMediaTitle(
         mediaTitle,
       );
 
@@ -134,7 +134,7 @@ class SourcePreferencNotifier extends AsyncNotifier<SourcePreferenceState> {
     if (currentState == null) return;
 
     try {
-      final pref = IsarSourcePreference()
+      final pref = MediaSourcePreference()
         ..mediaTitle = mediaTitle
         ..preferredSourceId = currentState.sourceInfo.id
         ..preferredSourceName = currentState.sourceInfo.name
@@ -143,7 +143,7 @@ class SourcePreferencNotifier extends AsyncNotifier<SourcePreferenceState> {
         ..manualOverrideTitle = currentState.manualOverrideTitle;
 
       await _isar.writeTxn(
-        () async => await _isar.isarSourcePreferences.put(pref),
+        () async => await _isar.mediaSourcePreferences.put(pref),
       );
 
       log.s('Saved');
@@ -158,7 +158,7 @@ class SourcePreferencNotifier extends AsyncNotifier<SourcePreferenceState> {
     try {
       await _isar.writeTxn(
         () async =>
-            await _isar.isarSourcePreferences.deleteByMediaTitle(mediaTitle),
+            await _isar.mediaSourcePreferences.deleteByMediaTitle(mediaTitle),
       );
 
       ref.invalidateSelf();

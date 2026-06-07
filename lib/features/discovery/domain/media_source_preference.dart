@@ -1,9 +1,9 @@
 import 'package:isar_community/isar.dart';
 
-part 'isar_source_preference.g.dart';
+part 'media_source_preference.g.dart';
 
 @collection
-class IsarSourcePreference {
+class MediaSourcePreference {
   Id id = Isar.autoIncrement;
 
   @Index(unique: true, replace: true)

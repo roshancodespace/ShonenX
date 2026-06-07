@@ -14,7 +14,7 @@ final metadataSourceProvider = Provider<RemoteTracker>((ref) {
   if (primary is RemoteTracker) {
     return primary;
   }
-  
+
   final trackers = ref.watch(availableTrackersProvider);
   return trackers.firstWhere((t) => t is RemoteTracker) as RemoteTracker;
 }, name: 'metadataSourceProvider');
@@ -50,6 +50,7 @@ final animeSourceProvider = Provider.family<AnimeSource, SourceInfo>((
       getDetail: ext.methods.getDetail,
       getVideoList: ext.methods.getVideoList,
       getPopular: ext.methods.getPopular,
+      getSettingsSchema: ext.methods.getPreference,
     ),
   );
 }, name: 'animeSourceProvider');

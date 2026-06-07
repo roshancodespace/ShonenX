@@ -4,6 +4,7 @@ import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
+import 'package:shonenx/source_engine/models/source_setting.dart';
 import 'package:shonenx/source_engine/providers/anime_source.dart';
 import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart'
     as bridge;
@@ -23,11 +24,14 @@ class AnimeBridgeMethods {
 
   final Future<bridge.Pages> Function(int page) getPopular;
 
+  final Future<List<bridge.SourcePreference>> Function() getSettingsSchema;
+
   AnimeBridgeMethods({
     required this.search,
     required this.getDetail,
     required this.getVideoList,
     required this.getPopular,
+    required this.getSettingsSchema,
   });
 }
 
@@ -40,6 +44,13 @@ class AnimeExtensionAdapter implements AnimeSource {
   AnimeExtensionAdapter({required this.sourceInfo, required this.methods});
 
   final _log = AppLogger.scope(AnimeExtensionAdapter);
+
+  @override
+  Future<List<SourceSetting>> getSettingsSchema() async {
+    final schema = await methods.getSettingsSchema();
+    print(schema.toString());
+    return [];
+  }
 
   @override
   Future<List<UnifiedMedia>> search(

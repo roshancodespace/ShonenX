@@ -123,12 +123,15 @@ class MalAuthenticator implements Authenticator {
 
       final bodyParams = {
         'client_id': _clientId,
-        'client_secret': _clientSecret,
         'grant_type': 'authorization_code',
         'code': code,
         'code_verifier': codeVerifier,
         'redirect_uri': redirectUri,
       };
+
+      if (_clientSecret.isNotEmpty) {
+        bodyParams['client_secret'] = _clientSecret;
+      }
 
       final bodyString = bodyParams.entries
           .map(
@@ -151,7 +154,12 @@ class MalAuthenticator implements Authenticator {
       final String? accessToken = responseJson['access_token'];
 
       if (accessToken == null || accessToken.isEmpty) {
-        throw Exception('MyAnimeList Auth Error: Failed to exchange token.');
+        final error = responseJson['error'] ?? 'Unknown Error';
+        final message =
+            responseJson['message'] ??
+            responseJson['error_description'] ??
+            tokenResponse.body;
+        throw Exception('MyAnimeList Auth Error ($error): $message');
       }
       return accessToken;
     } catch (e, _) {

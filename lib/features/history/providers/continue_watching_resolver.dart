@@ -3,7 +3,7 @@ import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
-import 'package:shonenx/features/player/presentation/player_screen.dart';
+import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
@@ -12,11 +12,9 @@ final continueWatchingResolverProvider = Provider(
 );
 
 class ContinueWatchingResult {
-  final PlayerParams params;
+  final PlayerModeOnline mode;
 
-  const ContinueWatchingResult({
-    required this.params,
-  });
+  const ContinueWatchingResult({required this.mode});
 }
 
 class ContinueWatchingResolver {
@@ -24,9 +22,7 @@ class ContinueWatchingResolver {
 
   const ContinueWatchingResolver(this.ref);
 
-  Future<ContinueWatchingResult> resolve(
-    WatchHistoryEntry entry,
-  ) async {
+  Future<ContinueWatchingResult> resolve(WatchHistoryEntry entry) async {
     final prefState = await ref.read(
       sourcePreferenceProvider(entry.animeTitle).future,
     );
@@ -41,9 +37,7 @@ class ContinueWatchingResolver {
         sourceId: sourceInfo.id,
       );
 
-      final episodesState = await ref.read(
-        sourceEpisodesProvider(args).future,
-      );
+      final episodesState = await ref.read(sourceEpisodesProvider(args).future);
 
       episode = episodesState.episodes.firstWhereOrNull(
         (e) => e.number == entry.episodeNumber,
@@ -63,21 +57,17 @@ class ContinueWatchingResolver {
     }
 
     return ContinueWatchingResult(
-      params: PlayerParams(
+      mode: PlayerModeOnline(
         media: UnifiedMedia(
           id: entry.animeId,
           idMal: entry.animeIdMal,
           cover: entry.cover,
           type: MediaType.ANIME,
-          title: MediaTitle(
-            english: entry.animeTitle,
-          ),
+          title: MediaTitle(english: entry.animeTitle),
         ),
         episode: episode,
         sourceInfo: sourceInfo,
-        startPosition: Duration(
-          milliseconds: entry.positionInMilliseconds,
-        ),
+        startPosition: Duration(milliseconds: entry.positionInMilliseconds),
       ),
     );
   }

@@ -16,30 +16,12 @@ import 'package:shonenx/features/player/presentation/widgets/top_controls.dart';
 import 'package:shonenx/features/player/providers/active_engine_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_provider.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
-import 'package:shonenx/shared/models/unified_episode.dart';
-import 'package:shonenx/shared/models/unified_media.dart';
-import 'package:shonenx/source_engine/models/source_info.dart';
-import 'package:shonenx/source_engine/providers/anime_source.dart';
-
-class PlayerParams {
-  final UnifiedMedia media;
-  final UnifiedEpisode episode;
-  final SourceInfo sourceInfo;
-  final Duration? startPosition;
-
-  const PlayerParams({
-    required this.media,
-    required this.episode,
-    required this.sourceInfo,
-    this.startPosition,
-  });
-}
+import 'package:shonenx/features/player/domain/player_mode.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
-  final PlayerParams params;
-  final AnimeSource source;
+  final PlayerMode mode;
 
-  const PlayerScreen({super.key, required this.params, required this.source});
+  const PlayerScreen({super.key, required this.mode});
 
   @override
   ConsumerState<PlayerScreen> createState() => _PlayerScreenState();
@@ -88,11 +70,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       ref
           .read(playerControllerProvider.notifier)
           .initialize(
-            widget.source,
+            widget.mode,
             screenshot: _screenshotController,
-            media: widget.params.media,
-            episode: widget.params.episode,
-            startPosition: widget.params.startPosition,
           );
       _showControlsTemporarily();
     });
@@ -122,11 +101,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     final controller = ref.read(playerControllerProvider.notifier);
     final engine = ref.watch(videoEngineProvider);
 
-    final AniSkipArgs aniSkipArgs = AniSkipArgs(
-      idMal: widget.params.media.idMal?.toInt(),
-      episodeNumber: widget.params.episode.number,
-      episodeLength: engine.currentDuration.inSeconds,
-    );
+    AniSkipArgs? aniSkipArgs;
+    if (widget.mode is PlayerModeOnline) {
+      final onlineMode = widget.mode as PlayerModeOnline;
+      aniSkipArgs = AniSkipArgs(
+        idMal: onlineMode.media.idMal?.toInt(),
+        episodeNumber: onlineMode.episode.number,
+        episodeLength: engine.currentDuration.inSeconds,
+      );
+    }
 
     return PopScope(
       canPop: false,
@@ -220,7 +203,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 TopControls(
                   showControls: _showControls,
                   engine: engine,
-                  media: widget.params.media,
+                  mode: widget.mode,
                   playerState: playerState,
                   onBack: context.pop,
                 ),
@@ -228,7 +211,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   showControls: _showControls,
                   playerState: playerState,
                   controller: controller,
-                  mediaTitle: widget.params.media.title.availableTitle,
+                  mediaTitle: widget.mode is PlayerModeOnline 
+                      ? (widget.mode as PlayerModeOnline).media.title.availableTitle 
+                      : (widget.mode as PlayerModeOffline).title ?? 'Local Media',
                   engine: engine,
                 ),
                 BottomControls(
@@ -238,7 +223,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   playerState: playerState,
                   controller: controller,
                   theme: theme,
-                  params: widget.params,
+                  mode: widget.mode,
                   onToggleLockControls: () =>
                       setState(() => _lockControls = !_lockControls),
                 ),

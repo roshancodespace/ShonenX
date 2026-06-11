@@ -1,3 +1,5 @@
+import 'package:shonenx/core/providers/content_prefs_provider.dart';
+
 class AnilistTrackerQueries {
   static const String search = '''
     query(\$search: String, \$type: MediaType) {
@@ -90,13 +92,18 @@ class AnilistTrackerQueries {
     }
   ''';
 
-  static const String trending = '''
+  static String trending(AdultContentMode mode) {
+    String adultFilter = '';
+    if (mode == AdultContentMode.safe) adultFilter = ', isAdult: false';
+    if (mode == AdultContentMode.adultOnly) adultFilter = ', isAdult: true';
+
+    return '''
     query(\$page: Int = 1) {
       Page(page: \$page, perPage: 20) {
         pageInfo {
           hasNextPage
         }
-        media(sort: TRENDING_DESC, type: ANIME, isAdult: false) {
+        media(sort: TRENDING_DESC, type: ANIME $adultFilter) {
           id
           nextAiringEpisode {
             episode
@@ -120,13 +127,18 @@ class AnilistTrackerQueries {
       }
     }
   ''';
+  }
 
-  static const String metadataSearch = '''
+  static String metadataSearch(AdultContentMode mode) {
+    String adultFilter = '';
+    if (mode == AdultContentMode.safe) adultFilter = 'isAdult: false';
+    if (mode == AdultContentMode.adultOnly) adultFilter = 'isAdult: true';
+
+    return '''
     query(
       \$search: String,
       \$page: Int = 1,
       \$type: MediaType!,
-      \$isAdult: Boolean = false,
       \$sort: [MediaSort] = [SEARCH_MATCH],
     ) {
       Page(page: \$page, perPage: 20) {
@@ -136,7 +148,7 @@ class AnilistTrackerQueries {
         media(
           search: \$search
           type: \$type
-          isAdult: \$isAdult
+          $adultFilter
           sort: \$sort
         ) {
           id
@@ -162,6 +174,7 @@ class AnilistTrackerQueries {
       }
     }
   ''';
+  }
 
   static const String details = '''
     query(\$id: Int!, \$type: MediaType!) {
@@ -198,6 +211,28 @@ class AnilistTrackerQueries {
           edges {
             relationType(version: 2)
             node {
+              id
+              type
+              format
+              title {
+                romaji
+                english
+                native
+              }
+              coverImage {
+                large
+              }
+              bannerImage
+              status
+              averageScore
+              episodes
+            }
+          }
+        }
+
+        recommendations(sort: RATING_DESC, perPage: 15) {
+          nodes {
+            mediaRecommendation {
               id
               type
               format

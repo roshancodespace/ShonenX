@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
-import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/features/player/domain/player_mode.dart';
 
 class TopControls extends StatelessWidget {
   final bool showControls;
-  final UnifiedMedia media;
+  final PlayerMode mode;
   final VideoEngine engine;
   final PlayerState playerState;
   final VoidCallback onBack;
@@ -13,7 +13,7 @@ class TopControls extends StatelessWidget {
   const TopControls({
     super.key,
     required this.showControls,
-    required this.media,
+    required this.mode,
     required this.engine,
     required this.playerState,
     required this.onBack,
@@ -62,7 +62,9 @@ class TopControls extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      media.title.availableTitle,
+                      mode is PlayerModeOnline
+                          ? (mode as PlayerModeOnline).media.title.availableTitle
+                          : (mode as PlayerModeOffline).title ?? 'Local Media',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -81,7 +83,7 @@ class TopControls extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      playerState.activeEpisode?.title ?? 'N/A',
+                      playerState.activeEpisode?.title ?? (mode is PlayerModeOffline ? 'Offline File' : 'N/A'),
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 13,

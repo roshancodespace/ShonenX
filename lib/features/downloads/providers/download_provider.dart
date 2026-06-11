@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/database/database_provider.dart';
 import 'package:shonenx/core/network/http_client.dart';
@@ -31,11 +33,27 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
 
   @override
   Future<DownloadManagerNotifier> build() async {
-    final resumable = await repo.getPendingOrPausedTasks();
-    for (final task in resumable) {
-      _launch(task);
-    }
+    _processQueue();
     return this;
+  }
+
+  Future<void> _processQueue() async {
+    final prefs = await ref.read(downloadPrefsProvider.future);
+    
+    if (_activeEngines.length >= prefs.concurrentDownloads) return;
+
+    // TODO: Implement Wi-Fi check here using connectivity_plus
+    // If not on Wi-Fi, we would return here and pause tasks.
+
+    final allTasks = await repo.getPendingOrPausedTasks();
+    final pending = allTasks.where((t) => t.status == DownloadStatus.pending).toList();
+    
+    for (final task in pending) {
+      if (_activeEngines.length >= prefs.concurrentDownloads) break;
+      if (!_activeEngines.containsKey(task.id)) {
+        _launch(task);
+      }
+    }
   }
 
   Future<void> startDownload(DownloadTask task) async {
@@ -52,6 +70,16 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
       if (success) return;
     }
 
+    // Check if file already exists at the target path
+    final file = File(task.savePath);
+    if (await file.exists()) {
+      if (prefs.duplicateAction == DuplicateAction.skip) {
+        return; // Skip adding the task
+      } else if (prefs.duplicateAction == DuplicateAction.overwrite) {
+        await file.delete();
+      }
+    }
+
     // Deduplicate by URL
     final existing = await repo.getTaskByUrl(task.url);
     if (existing != null) {
@@ -59,11 +87,12 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
           existing.status == DownloadStatus.pending) {
         return; // already running
       }
+      
       // Re-queue a paused / failed task
       existing.status = DownloadStatus.pending;
       existing.updatedAt = DateTime.now();
       await repo.putTask(existing);
-      _launch(existing);
+      _processQueue();
       return;
     }
 
@@ -72,18 +101,21 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
     task.createdAt = DateTime.now();
     task.updatedAt = DateTime.now();
     await repo.putTask(task);
-    _launch(task);
+    _processQueue();
   }
 
   Future<void> pauseDownload(int taskId) async {
     await _activeEngines[taskId]?.pause();
     await NotificationService.instance.cancelDownloadNotification(taskId);
+    _activeEngines.remove(taskId);
+    _processQueue(); // Start next in queue if available
   }
 
   Future<void> cancelDownload(int taskId) async {
     await _activeEngines[taskId]?.cancel();
     _activeEngines.remove(taskId);
     await NotificationService.instance.cancelDownloadNotification(taskId);
+    _processQueue(); // Start next in queue if available
   }
 
   Future<void> _launch(DownloadTask task) async {
@@ -133,16 +165,21 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
             await notif.showDownloadComplete(id: task.id, title: notifTitle);
             _activeEngines.remove(task.id);
             await repo.deleteTask(task.id);
+            _processQueue();
           case DownloadStatus.failed:
             await notif.showDownloadFailed(id: task.id, title: notifTitle);
             _activeEngines.remove(task.id);
             await repo.deleteTask(task.id);
+            _processQueue();
           case DownloadStatus.canceled:
             await notif.cancelDownloadNotification(task.id);
             _activeEngines.remove(task.id);
             await repo.deleteTask(task.id);
+            _processQueue();
           case DownloadStatus.paused:
             await notif.cancelDownloadNotification(task.id);
+            _activeEngines.remove(task.id);
+            _processQueue();
           default:
             break;
         }
@@ -158,9 +195,15 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
     required OnProgressCallback onProgress,
     required OnStatusCallback onStatus,
   }) async {
-    final isHLS = await ref
+    final isHLS = task.isM3u8 || await ref
         .read(httpClientProvider)
         .isHLS(task.url, headers: task.headersMap);
+        
+    if (isHLS && !task.isM3u8) {
+      task.isM3u8 = true;
+      await repo.putTask(task);
+    }
+    
     if (isHLS) {
       return M3U8DownloadEngine(
         task: task,

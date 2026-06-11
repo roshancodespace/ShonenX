@@ -4,6 +4,7 @@ import 'package:shonenx/features/tracking/domain/models/tracker_profile.dart';
 import 'package:shonenx/source_engine/models/tracker_search_result.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
+import 'package:shonenx/core/providers/content_prefs_provider.dart';
 
 abstract interface class RemoteTracker implements TrackingService {
   Authenticator get authenticator;
@@ -17,7 +18,9 @@ abstract interface class RemoteTracker implements TrackingService {
 
   Future<PaginatedResult<UnifiedMedia>> getTrending({
     int page = 1,
+    MediaType type = MediaType.ANIME,
     Duration? cacheDuration,
+    AdultContentMode adultMode = AdultContentMode.safe,
   });
 
   Future<PaginatedResult<UnifiedMedia>> search(
@@ -25,6 +28,7 @@ abstract interface class RemoteTracker implements TrackingService {
     int page = 1,
     required MediaType type,
     Duration? cacheDuration,
+    AdultContentMode adultMode = AdultContentMode.safe,
   });
 
   Future<UnifiedMedia> getDetails(String providerId, MediaType type);

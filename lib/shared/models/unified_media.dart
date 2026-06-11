@@ -25,7 +25,9 @@ class UnifiedMedia {
   final String? season;
   final DateTime? airingAt;
   final int? nextEpisode;
+  final String? relationType;
   final List<UnifiedMedia>? relations;
+  final List<UnifiedMedia>? recommendations;
 
   UnifiedMedia({
     required this.id,
@@ -46,7 +48,9 @@ class UnifiedMedia {
     this.season,
     this.airingAt,
     this.nextEpisode,
+    this.relationType,
     this.relations = const [],
+    this.recommendations = const [],
   });
 
   @override
@@ -107,10 +111,16 @@ extension UnifiedMediaX on UnifiedMedia {
       season: other.season ?? season,
       airingAt: other.airingAt ?? airingAt,
       nextEpisode: other.nextEpisode ?? nextEpisode,
+      relationType: other.relationType ?? relationType,
 
       relations: (other.relations != null && other.relations!.isNotEmpty)
           ? other.relations
           : relations,
+
+      recommendations:
+          (other.recommendations != null && other.recommendations!.isNotEmpty)
+          ? other.recommendations
+          : recommendations,
     );
   }
 }

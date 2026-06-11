@@ -52,7 +52,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
 
       setState(() => _isLoading = false);
 
-      context.push('/player', extra: result.params);
+      context.push('/player', extra: result.mode);
     } catch (e) {
       if (!mounted) return;
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/providers/content_prefs_provider.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
@@ -41,7 +42,8 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
 
   Future<HomeFeedState> _buildTrackerFeed() async {
     final tracker = ref.watch(metadataSourceProvider);
-    final result = await tracker.getTrending();
+    final adultMode = ref.watch(contentPrefsProvider).adultContentMode;
+    final result = await tracker.getTrending(adultMode: adultMode);
     return HomeFeedState(
       groups: [FeedGroup(title: 'Trending', items: result.items)],
     );

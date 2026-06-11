@@ -133,6 +133,7 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
     return executeApi('PROFILE', () async {
       final res = await _http.get(
         'https://api.myanimelist.net/v2/users/@me',
+        queryParameters: {'fields': 'picture'},
         headers: {'Authorization': 'Bearer $token'},
       );
 

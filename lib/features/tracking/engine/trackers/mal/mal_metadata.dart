@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/core/providers/content_prefs_provider.dart';
 import 'package:shonenx/core/utils/env.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
@@ -66,6 +67,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
     int page = 1,
     MediaType type = MediaType.ANIME,
     Duration? cacheDuration,
+    AdultContentMode adultMode = AdultContentMode.safe,
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
@@ -121,6 +123,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
     int page = 1,
     MediaType type = MediaType.ANIME,
     Duration? cacheDuration,
+    AdultContentMode adultMode = AdultContentMode.safe,
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
@@ -138,6 +141,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
             'limit': limit.toString(),
             'offset': offset.toString(),
             'fields': _fields,
+            'nsfw': adultMode == AdultContentMode.safe ? 'false' : 'true',
           },
           headers: {'X-MAL-CLIENT-ID': clientId},
           cacheDuration: cacheDuration,
@@ -198,8 +202,9 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
   UnifiedMedia _mapToUnified(
     Map<dynamic, dynamic> json,
     MediaType type,
-    int requestId,
-  ) {
+    int requestId, {
+    String? relationType,
+  }) {
     try {
       final titleJson = json['title'] as String? ?? '';
       final mainPicture = json['main_picture'] as Map? ?? {};
@@ -235,6 +240,43 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
       final cover =
           mainPicture['large'] as String? ?? mainPicture['medium'] as String?;
       final synopsis = json['synopsis'] as String?;
+      final format = json['media_type']?.toString().toUpperCase();
+
+      final relatedAnime = json['related_anime'] as List?;
+      final relatedManga = json['related_manga'] as List?;
+      final allRelations = [...?relatedAnime, ...?relatedManga];
+
+      final relations = allRelations
+          .map((e) {
+            final node = e['node'];
+            if (node == null) return null;
+            final relTypeFormatted =
+                e['relation_type_formatted']?.toString() ??
+                e['relation_type']?.toString();
+            final nodeType =
+                (e['relation_type'] == 'related_manga' ||
+                    relatedManga?.contains(e) == true)
+                ? MediaType.MANGA
+                : MediaType.ANIME;
+            return _mapToUnified(
+              node,
+              nodeType,
+              requestId,
+              relationType: relTypeFormatted,
+            );
+          })
+          .whereType<UnifiedMedia>()
+          .toList();
+
+      final recommendationsRaw = json['recommendations'] as List?;
+      final recommendations = recommendationsRaw
+          ?.map((e) {
+            final node = e['node'];
+            if (node == null) return null;
+            return _mapToUnified(node, type, requestId);
+          })
+          .whereType<UnifiedMedia>()
+          .toList();
 
       return UnifiedMedia(
         id: json['id']?.toString() ?? '',
@@ -242,11 +284,17 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
         type: type,
         providerId: json['id']?.toString() ?? '',
         title: title,
+        format: format,
         cover: cover,
         banner: null,
         description: synopsis,
         status: status,
         episodes: episodes,
+        relationType: relationType,
+        relations: relations.isNotEmpty ? relations : null,
+        recommendations: recommendations?.isNotEmpty == true
+            ? recommendations
+            : null,
         genres: genres,
       );
     } catch (e, stackTrace) {

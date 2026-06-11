@@ -4,12 +4,15 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/router/complex_extra_codec.dart';
 import 'package:shonenx/core/router/scaffold_with_nav_bar.dart';
 import 'package:shonenx/features/discovery/presentation/details_screen.dart';
+import 'package:shonenx/features/onboarding/providers/onboarding_provider.dart';
+import 'package:shonenx/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:shonenx/features/discovery/presentation/home_screen.dart';
 import 'package:shonenx/features/discovery/presentation/discover_screen.dart';
 import 'package:shonenx/features/downloads/presentation/downloads_screen.dart';
 import 'package:shonenx/features/extensions/presentation/extensions_settings_screen.dart';
 import 'package:shonenx/features/history/presentation/continue_watching_screen.dart';
 import 'package:shonenx/features/library/presentation/library_screen.dart';
+import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/player/presentation/player_screen.dart';
 import 'package:shonenx/features/settings/presentation/cache_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/download_settings_screen.dart';
@@ -23,9 +26,11 @@ import 'package:shonenx/features/settings/presentation/ui_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/backup_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/import_preview_screen.dart';
 import 'package:shonenx/features/settings/presentation/debug_settings_screen.dart';
+import 'package:shonenx/features/settings/presentation/content_settings_screen.dart';
+import 'package:shonenx/features/settings/presentation/about_screen.dart';
+import 'package:shonenx/features/notifications/presentation/notifications_settings_screen.dart';
 import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
-import 'package:shonenx/source_engine/source_engine_provider.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _homeNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'home');
@@ -33,15 +38,21 @@ final _libraryNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'library');
 final _searchNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'search');
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final onboardingComplete = ref.watch(onboardingProvider);
+
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/home',
+    initialLocation: onboardingComplete ? '/home' : '/onboarding',
     debugLogDiagnostics: true,
     extraCodec: const ComplexExtraCodec(),
     errorBuilder: (context, state) => Scaffold(
       body: Center(child: Text('Route not found: ${state.uri.toString()}')),
     ),
     routes: [
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return ScaffoldWithNavBar(navigationShell: navigationShell);
@@ -107,10 +118,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/player',
         builder: (context, state) {
-          final params = state.extra as PlayerParams;
-          final source = ref.read(animeSourceProvider(params.sourceInfo));
-
-          return PlayerScreen(params: params, source: source);
+          final mode = state.extra as PlayerMode;
+          return PlayerScreen(mode: mode);
         },
       ),
       GoRoute(
@@ -130,12 +139,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const PermissionsSettingsScreen(),
           ),
           GoRoute(
+            path: 'notifications',
+            builder: (context, state) => const NotificationsSettingsScreen(),
+          ),
+          GoRoute(
             path: 'tracking',
             builder: (context, state) => const TrackingSettingsScreen(),
           ),
           GoRoute(
             path: 'extensions',
             builder: (context, state) => const ExtensionsSettingsScreen(),
+          ),
+          GoRoute(
+            path: 'content',
+            builder: (context, state) => const ContentSettingsScreen(),
           ),
           GoRoute(
             path: 'theme',
@@ -173,6 +190,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'debug',
             builder: (context, state) => const DebugSettingsScreen(),
+          ),
+          GoRoute(
+            path: 'about',
+            builder: (context, state) => const AboutScreen(),
           ),
         ],
       ),

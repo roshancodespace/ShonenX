@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/core/providers/content_prefs_provider.dart';
 import 'package:shonenx/features/tracking/engine/base_tracker.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -60,6 +61,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
     int page = 1,
     MediaType type = MediaType.ANIME,
     Duration? cacheDuration,
+    AdultContentMode adultMode = AdultContentMode.safe,
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
 
@@ -69,8 +71,11 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
         final response = await http.post(
           _endpoint,
           body: {
-            'query': AnilistTrackerQueries.trending,
-            'variables': {'page': page, 'type': type.name},
+            'query': AnilistTrackerQueries.trending(adultMode),
+            'variables': {
+              'page': page,
+              'type': type.name,
+            },
           },
           cacheDuration: cacheDuration ?? const Duration(days: 1),
         );
@@ -111,7 +116,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
     int page = 1,
     MediaType type = MediaType.ANIME,
     Duration? cacheDuration,
-    bool isAdult = false,
+    AdultContentMode adultMode = AdultContentMode.safe,
     List<String> sort = const ['SEARCH_MATCH'],
   }) {
     final requestId = DateTime.now().microsecondsSinceEpoch;
@@ -122,12 +127,11 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
         final response = await http.post(
           _endpoint,
           body: {
-            'query': AnilistTrackerQueries.metadataSearch,
+            'query': AnilistTrackerQueries.metadataSearch(adultMode),
             'variables': {
               'search': query,
               'page': page,
               'type': type.name,
-              'isAdult': isAdult,
               'sort': sort,
             },
           },
@@ -205,8 +209,9 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
   UnifiedMedia _mapToUnified(
     Map<dynamic, dynamic> json,
     MediaType type,
-    int requestId,
-  ) {
+    int requestId, {
+    String? relationType,
+  }) {
     try {
       final titleJson = json['title'] as Map? ?? {};
 
@@ -230,15 +235,22 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
       }
 
       final relations = ((json['relations'] as Map?)?['edges'] as List?)
-          ?.map((e) => (e as Map?)?['node'])
-          .whereType<Map>()
-          .map((node) {
+          ?.map((e) {
+            final node = (e as Map?)?['node'];
+            final relType = e?['relationType']?.toString();
+            if (node == null) return null;
             final nodeType = MediaType.values.firstWhere(
               (t) => t.name == node['type'],
               orElse: () => MediaType.ANIME,
             );
-            return _mapToUnified(node, nodeType, requestId);
+            return _mapToUnified(
+              node,
+              nodeType,
+              requestId,
+              relationType: relType,
+            );
           })
+          .whereType<UnifiedMedia>()
           .toList();
 
       final tags = (json['tags'] as List?)
@@ -250,6 +262,18 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
               category: e['category'] ?? '',
             ),
           )
+          .toList();
+          
+      final recommendations = ((json['recommendations'] as Map?)?['nodes'] as List?)
+          ?.map((e) => (e as Map?)?['mediaRecommendation'])
+          .whereType<Map>()
+          .map((node) {
+            final nodeType = MediaType.values.firstWhere(
+              (t) => t.name == node['type'],
+              orElse: () => MediaType.ANIME,
+            );
+            return _mapToUnified(node, nodeType, requestId);
+          })
           .toList();
       final airingAt = json['nextAiringEpisode']?['airingAt'] != null
           ? DateTime.fromMillisecondsSinceEpoch(
@@ -274,7 +298,9 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
         description: json['description'],
         status: status,
         episodes: json['episodes'],
+        relationType: relationType,
         relations: relations,
+        recommendations: recommendations,
         nextEpisode: nextEpisode,
         genres: (json['genres'] as List?)?.map((e) => e.toString()).toList(),
         tags: tags,

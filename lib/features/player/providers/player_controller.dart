@@ -18,6 +18,8 @@ import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/source_engine/providers/anime_source.dart';
+import 'package:shonenx/features/player/domain/player_mode.dart';
+import 'package:shonenx/source_engine/source_engine_provider.dart';
 
 const _keepError = Object();
 
@@ -71,8 +73,8 @@ class PlayerState {
 
 class PlayerController extends Notifier<PlayerState> {
   Timer? _progressTimer;
-  late UnifiedMedia _media;
-  late AnimeSource _source;
+  UnifiedMedia? _media;
+  AnimeSource? _source;
   late ScreenshotController _screenshot;
 
   // Thumbnail caching
@@ -111,7 +113,7 @@ class PlayerController extends Notifier<PlayerState> {
   Future<void> _applyNativeSubtitle(SubtitleTrack? subtitle) async {
     final prefs = ref.read(subtitlePrefsProvider);
     try {
-      if (prefs.useCustomSubtitle) {
+      if (prefs.useCustomSubtitle || subtitle?.url.isEmpty == true) {
         await ref.read(videoEngineProvider).setSubtitle(null);
       } else {
         await ref.read(videoEngineProvider).setSubtitle(subtitle);
@@ -122,19 +124,57 @@ class PlayerController extends Notifier<PlayerState> {
   }
 
   Future<void> initialize(
-    AnimeSource source, {
+    PlayerMode mode, {
     required ScreenshotController screenshot,
-    required UnifiedEpisode episode,
-    required UnifiedMedia media,
-    Duration? startPosition,
   }) async {
-    _source = source;
-    _media = media;
     _screenshot = screenshot;
 
     // Todo: Load smart memory from player prefs
 
-    await _loadData(episode, startPosition: startPosition);
+    if (mode is PlayerModeOnline) {
+      _source = ref.read(animeSourceProvider(mode.sourceInfo));
+      _media = mode.media;
+      await _loadData(mode.episode, startPosition: mode.startPosition);
+    } else if (mode is PlayerModeOffline) {
+      _source = null;
+      _media = null;
+      await _loadOfflineData(mode);
+    }
+  }
+
+  Future<void> _loadOfflineData(PlayerModeOffline mode) async {
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      activeEpisode: null,
+    );
+
+    try {
+      final activeStream = VideoStream(
+        url: mode.filePath,
+        quality: 'Local',
+        subtitles: [],
+      );
+
+      state = state.copyWith(
+        servers: [],
+        activeServer: null,
+        streams: [activeStream],
+        activeStream: activeStream,
+        subtitles: [SubtitleTrack.none],
+        activeSubtitle: SubtitleTrack.none,
+        isLoading: false,
+      );
+
+      await ref.read(videoEngineProvider).initialize(
+        activeStream,
+        subtitle: null,
+        startAt: Duration.zero,
+      );
+
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
 
   Future<void> changeServer(VideoServer newServer) async {
@@ -180,9 +220,10 @@ class PlayerController extends Notifier<PlayerState> {
   }
 
   Future<void> skipEpisode({bool forward = true}) async {
+    if (_media == null) return;
     final episodes = await ref.read(
       episodesListProvider(
-        _media.title.availableTitle,
+        _media!.title.availableTitle,
       ).selectAsync((s) => s.episodes),
     );
     final targetNumber = state.activeEpisode!.number + (forward ? 1 : -1);
@@ -205,7 +246,7 @@ class PlayerController extends Notifier<PlayerState> {
     try {
       List<VideoServer> servers = state.servers;
       if (force || (server == null || state.activeEpisode?.id != episode.id)) {
-        servers = await _source.getServers(episode.id);
+        servers = await _source!.getServers(episode.id);
         if (servers.isEmpty) throw Exception('No servers available.');
       }
 
@@ -232,7 +273,7 @@ class PlayerController extends Notifier<PlayerState> {
         }
       }
 
-      final streams = await _source.getSources(episode.id, activeServer);
+      final streams = await _source!.getSources(episode.id, activeServer);
       if (streams.isEmpty) throw Exception('No streams available.');
 
       // Video Stream Selection
@@ -244,10 +285,10 @@ class PlayerController extends Notifier<PlayerState> {
         if (qualityMatch != null) activeStream = qualityMatch;
       }
 
-      final subtitles = activeStream.subtitles;
+      final subtitles = [SubtitleTrack.none, ...activeStream.subtitles];
 
       // Subtitle Selection
-      SubtitleTrack? activeSubtitle = subtitles.firstOrNull;
+      SubtitleTrack? activeSubtitle = subtitles.first;
       if (_preferredSubtitleLang != null && subtitles.isNotEmpty) {
         final subMatch = subtitles.firstWhereOrNull(
           (s) => s.language == _preferredSubtitleLang,
@@ -269,7 +310,9 @@ class PlayerController extends Notifier<PlayerState> {
           .read(videoEngineProvider)
           .initialize(
             activeStream,
-            subtitle: ref.read(subtitlePrefsProvider).useCustomSubtitle
+            subtitle:
+                ref.read(subtitlePrefsProvider).useCustomSubtitle ||
+                    activeSubtitle.url.isEmpty == true
                 ? null
                 : activeSubtitle,
             startAt: startPosition,
@@ -289,8 +332,8 @@ class PlayerController extends Notifier<PlayerState> {
 
     state = state.copyWith(
       activeStream: newStream,
-      subtitles: newStream.subtitles,
-      activeSubtitle: newStream.subtitles.firstOrNull,
+      subtitles: [...newStream.subtitles, SubtitleTrack.none],
+      activeSubtitle: newStream.subtitles.firstOrNull ?? SubtitleTrack.none,
       error: null,
     );
 
@@ -308,7 +351,7 @@ class PlayerController extends Notifier<PlayerState> {
   }
 
   Future<void> changeSubtitle(SubtitleTrack? newSubtitle) async {
-    if (newSubtitle != null) {
+    if (newSubtitle != null && newSubtitle.url.isNotEmpty) {
       _preferredSubtitleLang = newSubtitle.language;
     }
 
@@ -392,6 +435,8 @@ class PlayerController extends Notifier<PlayerState> {
     final duration = engine.currentDuration;
     if (position == Duration.zero || duration == Duration.zero) return;
 
+    if (_media == null) return;
+
     // Capture thumbnail only when needed
     if (!skipCapture && _shouldCaptureThumbnail) {
       await _captureThumbnail();
@@ -402,13 +447,13 @@ class PlayerController extends Notifier<PlayerState> {
 
     final entry = WatchHistoryEntry()
       ..episodeNumber = state.activeEpisode?.number ?? 1
-      ..totalEpisodes = _media.episodes
-      ..animeId = _media.id
-      ..animeIdMal = _media.idMal
-      ..animeTitle = _media.title.availableTitle
+      ..totalEpisodes = _media!.episodes
+      ..animeId = _media!.id
+      ..animeIdMal = _media!.idMal
+      ..animeTitle = _media!.title.availableTitle
       ..episodeTitle = state.activeEpisode?.title
-      ..cover = _media.cover
-      ..banner = _media.banner
+      ..cover = _media!.cover
+      ..banner = _media!.banner
       ..thumbnailUrl = thumbnail.isNotEmpty
           ? thumbnail
           : state.activeEpisode?.thumbnailUrl
@@ -422,7 +467,7 @@ class PlayerController extends Notifier<PlayerState> {
       ref
           .read(syncEngineProvider)
           .processPlayback(
-            media: _media,
+            media: _media!,
             episodeNumber: state.activeEpisode!.number,
             position: position,
             duration: duration,

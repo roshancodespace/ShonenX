@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/providers/content_prefs_provider.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
@@ -46,7 +47,13 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
 
     if (prefs.mode == MetadataMode.tracker) {
       final engine = ref.read(metadataSourceProvider);
-      return await engine.search(arg.query, type: arg.type, page: page);
+      final adultMode = ref.read(contentPrefsProvider).adultContentMode;
+      return await engine.search(
+        arg.query,
+        type: arg.type,
+        page: page,
+        adultMode: adultMode,
+      );
     } else {
       final allSources = await ref.read(availableAnimeSourcesProvider.future);
       final activeSources = allSources

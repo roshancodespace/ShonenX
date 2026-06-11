@@ -17,4 +17,6 @@ class SubtitleTrack {
   final String language;
 
   const SubtitleTrack({required this.url, required this.language});
+
+  static const none = SubtitleTrack(url: '', language: 'Off');
 }

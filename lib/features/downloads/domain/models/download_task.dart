@@ -62,6 +62,8 @@ class DownloadTask {
   @enumerated
   DownloadStatus status = DownloadStatus.pending;
 
+  bool isM3u8 = false;
+
   double progress = 0.0;
   int totalBytes = 0;
   int downloadedBytes = 0;

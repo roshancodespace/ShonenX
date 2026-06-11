@@ -3,6 +3,7 @@ import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.da
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/core/providers/content_prefs_provider.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
 
 class CategorySearchArgs {
@@ -50,10 +51,12 @@ class CategorySearchNotifier
 
     if (prefs.mode == MetadataMode.tracker) {
       final engine = ref.read(metadataSourceProvider);
+      final adultMode = ref.read(contentPrefsProvider).adultContentMode;
       return arg.category.toLowerCase().contains('trending')
           ? await engine.getTrending(
               page: page,
               cacheDuration: const Duration(seconds: 30),
+              adultMode: adultMode,
             )
           : const PaginatedResult<UnifiedMedia>(items: [], hasNextPage: false);
     } else {

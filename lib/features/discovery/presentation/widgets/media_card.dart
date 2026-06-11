@@ -193,9 +193,7 @@ class _ClassicCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(26),
         border: Border.all(
-          color: isActive
-              ? cs.tertiary
-              : cs.outlineVariant.withValues(alpha: 0.28),
+          color: isActive ? cs.tertiary : Colors.transparent,
           width: isActive ? 2.5 : 1.0,
         ),
       ),
@@ -215,7 +213,7 @@ class _ClassicCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 2.0),
             child: Text(
               widget.title,
               maxLines: 2,

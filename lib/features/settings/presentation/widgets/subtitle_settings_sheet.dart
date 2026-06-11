@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/features/player/domain/subtitle_prefs.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -17,12 +18,24 @@ class SubtitleSettingsSheet extends ConsumerWidget {
     final cs = theme.colorScheme;
 
     final screenWidth = MediaQuery.sizeOf(context).width;
-
-    final clampedScale = prefs.fontSize.clamp(25.0, 100.0);
-    final responsiveFontSize = (screenWidth * 0.08) * (clampedScale / 100);
+    final responsiveFontSize = getResponsiveSubtitleSize(
+      screenWidth,
+      prefs.fontSize,
+    );
 
     return AppBottomSheet(
       title: 'Subtitle Preferences',
+      actions: [
+        IconButton.filledTonal(
+          tooltip: 'Reset to Defaults',
+          style: IconButton.styleFrom(
+            backgroundColor: cs.errorContainer,
+            foregroundColor: cs.onErrorContainer,
+          ),
+          icon: const Icon(Icons.refresh_rounded, size: 20),
+          onPressed: () => notifier.updatePrefs(const SubtitlePrefs()),
+        ),
+      ],
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -152,11 +165,11 @@ class SubtitleSettingsSheet extends ConsumerWidget {
                   icon: Icons.format_size_rounded,
                   title: 'Size Scale',
                   subtitle: 'Responsive based on screen width',
-                  value: clampedScale,
-                  min: 25,
-                  max: 100,
-                  divisions: 15, // Jumps by 5%
-                  label: '${clampedScale.round()}%',
+                  value: prefs.fontSize,
+                  min: 0.5,
+                  max: 3.0,
+                  divisions: 25, // Jumps by 0.1
+                  label: '${prefs.fontSize.toStringAsFixed(1)}x',
                   onChanged: (value) {
                     notifier.updatePrefs(prefs.copyWith(fontSize: value));
                   },
@@ -307,70 +320,111 @@ class SubtitleSettingsSheet extends ConsumerWidget {
   }) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final textController = TextEditingController(
+      text: currentValue.toRadixString(16).padLeft(8, '0').toUpperCase(),
+    );
 
     showModalBottomSheet(
       context: context,
       backgroundColor: cs.surface,
+      isScrollControlled: true,
       builder: (context) {
-        return SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                Wrap(
-                  spacing: 14,
-                  runSpacing: 14,
-                  children: options.map((colorValue) {
-                    final selected = currentValue == colorValue;
-                    final transparent = colorValue == 0x00000000;
+                  const SizedBox(height: 24),
+                  Wrap(
+                    spacing: 14,
+                    runSpacing: 14,
+                    children: options.map((colorValue) {
+                      final selected = currentValue == colorValue;
+                      final transparent = colorValue == 0x00000000;
 
-                    return GestureDetector(
-                      onTap: () {
-                        onChanged(colorValue);
-                        Navigator.pop(context);
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: transparent
-                              ? cs.surfaceContainerHighest
-                              : Color(colorValue),
-                          border: transparent
-                              ? Border.all(color: cs.outlineVariant, width: 1)
+                      return GestureDetector(
+                        onTap: () {
+                          onChanged(colorValue);
+                          Navigator.pop(context);
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: transparent
+                                ? cs.surfaceContainerHighest
+                                : Color(colorValue),
+                            border: transparent
+                                ? Border.all(color: cs.outlineVariant, width: 1)
+                                : null,
+                          ),
+                          child: selected
+                              ? Icon(
+                                  Icons.check_rounded,
+                                  color: transparent
+                                      ? cs.onSurface
+                                      : Colors.white,
+                                )
+                              : transparent
+                              ? Icon(
+                                  Icons.close_rounded,
+                                  size: 18,
+                                  color: cs.onSurfaceVariant,
+                                )
                               : null,
                         ),
-                        child: selected
-                            ? Icon(
-                                Icons.check_rounded,
-                                color: transparent
-                                    ? cs.onSurface
-                                    : Colors.white,
-                              )
-                            : transparent
-                            ? Icon(
-                                Icons.close_rounded,
-                                size: 18,
-                                color: cs.onSurfaceVariant,
-                              )
-                            : null,
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: textController,
+                    decoration: InputDecoration(
+                      labelText: 'Custom Hex (AARRGGBB)',
+                      border: const OutlineInputBorder(),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
-                    );
-                  }).toList(),
-                ),
-              ],
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.check_rounded),
+                        onPressed: () {
+                          final val = int.tryParse(
+                            textController.text,
+                            radix: 16,
+                          );
+                          if (val != null) {
+                            onChanged(val);
+                            Navigator.pop(context);
+                          }
+                        },
+                      ),
+                    ),
+                    onSubmitted: (value) {
+                      final val = int.tryParse(value, radix: 16);
+                      if (val != null) {
+                        onChanged(val);
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         );

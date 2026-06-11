@@ -47,7 +47,24 @@ class GlobalBackground extends ConsumerWidget {
             systemNavigationBarDividerColor: Colors.transparent,
           );
 
-    final Widget backgroundContent;
+    Widget content = child;
+
+    if (useNoiseOverlay && noiseOpacity > 0.0) {
+      content = Stack(
+        children: [
+          content,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: StaticNoiseOverlay(
+                color: theme.colorScheme.onSurface,
+                opacity: noiseOpacity,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     if (customBackgroundImagePath != null) {
       final img = Image.file(
         File(customBackgroundImagePath),
@@ -58,57 +75,46 @@ class GlobalBackground extends ConsumerWidget {
         colorBlendMode: BlendMode.srcOver,
       );
 
-     if (backgroundBlur > 0.0) {
-        backgroundContent = RepaintBoundary(
-          child: ImageFiltered(
-            imageFilter: ui.ImageFilter.blur(
-              sigmaX: backgroundBlur,
-              sigmaY: backgroundBlur,
-            ),
-            child: img,
-          ),
-        );
-      } else {
-        backgroundContent = RepaintBoundary(child: img);
-      }
-    } else {
-      backgroundContent = const SizedBox.shrink();
+      final Widget bgImg = backgroundBlur > 0.0
+          ? RepaintBoundary(
+              child: ImageFiltered(
+                imageFilter: ui.ImageFilter.blur(
+                  sigmaX: backgroundBlur,
+                  sigmaY: backgroundBlur,
+                ),
+                child: img,
+              ),
+            )
+          : RepaintBoundary(child: img);
+
+      content = Stack(
+        children: [
+          Positioned.fill(child: bgImg),
+          content,
+        ],
+      );
     }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: overlayStyle,
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
           color: (useGradients || customBackgroundImagePath != null)
               ? null
               : theme.scaffoldBackgroundColor,
           gradient: useGradients
               ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  begin: Alignment.bottomLeft,
+                  end: Alignment.topRight,
                   colors: [
-                    theme.colorScheme.surface,
-                    theme.colorScheme.surfaceContainerHighest,
+                    theme.scaffoldBackgroundColor,
+                    theme.colorScheme.surfaceContainer,
+                    theme.colorScheme.surfaceContainerLowest,
                   ],
                 )
               : null,
         ),
-        child: Stack(
-          children: [
-            Positioned.fill(child: backgroundContent),
-            child,
-            Positioned.fill(
-              child: useNoiseOverlay
-                  ? IgnorePointer(
-                      child: StaticNoiseOverlay(
-                        color: theme.colorScheme.onSurface,
-                        opacity: noiseOpacity,
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ],
-        ),
+        child: content,
       ),
     );
   }

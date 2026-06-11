@@ -8,7 +8,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
-import 'package:shonenx/features/player/presentation/player_screen.dart';
+import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/player/presentation/widgets/progress_bar.dart';
 import 'package:shonenx/features/player/providers/active_engine_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
@@ -27,7 +27,7 @@ class BottomControls extends ConsumerStatefulWidget {
   final PlayerController controller;
   final ThemeData theme;
   final AniSkipArgs? aniskipArgs;
-  final PlayerParams? params;
+  final PlayerMode mode;
 
   const BottomControls({
     super.key,
@@ -38,7 +38,7 @@ class BottomControls extends ConsumerStatefulWidget {
     required this.controller,
     required this.theme,
     this.aniskipArgs,
-    this.params,
+    required this.mode,
   });
 
   @override
@@ -237,48 +237,51 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
 
                         const SizedBox(width: 12),
 
-                        _buildBottomSheetTrigger(
-                          context: context,
-                          value: widget.playerState.activeSubtitle,
-                          items: widget.playerState.subtitles,
-                          itemLabel: (s) => s.language,
-                          onChanged: (v) {
-                            widget.controller.changeSubtitle(v);
-                          },
-                          onLongPress: () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              builder: (context) {
-                                return SubtitleSettingsSheet();
-                              },
-                            );
-                          },
-                          isDisabled: widget.playerState.subtitles.isEmpty,
-                          withBadge: false,
-                          displayText: 'Subtitles',
-                          displayWidget: Badge(
-                            label: Text(
-                              widget.playerState.subtitles.length.toString(),
+                        if (widget.playerState.subtitles.length > 1)
+                          _buildBottomSheetTrigger(
+                            context: context,
+                            value: widget.playerState.activeSubtitle,
+                            items: widget.playerState.subtitles,
+                            itemLabel: (s) => s.language,
+                            onChanged: (v) {
+                              widget.controller.changeSubtitle(v);
+                            },
+                            onLongPress: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                builder: (context) {
+                                  return SubtitleSettingsSheet();
+                                },
+                              );
+                            },
+                            isDisabled: widget.playerState.subtitles.isEmpty,
+                            withBadge: false,
+                            displayText: 'Subtitles',
+                            displayWidget: Badge(
+                              label: Text(
+                                (widget.playerState.subtitles.length - 1)
+                                    .toString(),
+                              ),
+                              isLabelVisible:
+                                  widget.playerState.subtitles.isNotEmpty,
+                              backgroundColor: widget.theme.colorScheme.primary,
+                              textColor: widget.theme.colorScheme.onPrimary,
+                              child:
+                                  widget.playerState.subtitles.isEmpty ||
+                                      widget.playerState.activeSubtitle == null
+                                  ? Icon(
+                                      Icons.subtitles_off_outlined,
+                                      color:
+                                          widget.playerState.subtitles.isEmpty
+                                          ? Colors.white54
+                                          : Colors.white,
+                                    )
+                                  : const Icon(Icons.subtitles_outlined),
                             ),
-                            isLabelVisible:
-                                widget.playerState.subtitles.isNotEmpty,
-                            backgroundColor: widget.theme.colorScheme.primary,
-                            textColor: widget.theme.colorScheme.onPrimary,
-                            child:
-                                widget.playerState.subtitles.isEmpty ||
-                                    widget.playerState.activeSubtitle == null
-                                ? Icon(
-                                    Icons.subtitles_off_outlined,
-                                    color: widget.playerState.subtitles.isEmpty
-                                        ? Colors.white54
-                                        : Colors.white,
-                                  )
-                                : const Icon(Icons.subtitles_outlined),
                           ),
-                        ),
 
-                        if (widget.params != null) ...[
+                        if (widget.mode is PlayerModeOnline) ...[
                           const SizedBox(width: 12),
                           _buildActionIcon(
                             Icons.format_list_bulleted_rounded,
@@ -463,7 +466,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                         return const Center(child: CircularProgressIndicator());
                       }
                       return EpisodeListPanel(
-                        media: widget.params!.media,
+                        media: (widget.mode as PlayerModeOnline).media,
                         currentEpisodeNumber: currentEpisode.number,
                         onEpisodeTap: (episode, sourceInfo) {
                           Navigator.of(context).pop();

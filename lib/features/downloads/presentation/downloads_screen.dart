@@ -5,10 +5,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
+import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+
+sealed class OfflineItem {
+  final String name;
+  const OfflineItem(this.name);
+}
+
+class OfflineFile extends OfflineItem {
+  final File file;
+  final int sizeBytes;
+  const OfflineFile(super.name, this.file, this.sizeBytes);
+}
+
+class OfflineFolder extends OfflineItem {
+  final Directory directory;
+  final List<OfflineFile> files;
+  final int totalSizeBytes;
+  const OfflineFolder(
+    super.name,
+    this.directory,
+    this.files,
+    this.totalSizeBytes,
+  );
+}
 
 class DownloadsScreen extends ConsumerWidget {
   const DownloadsScreen({super.key});
@@ -256,10 +282,14 @@ class _DownloadTile extends ConsumerWidget {
     final name =
         task.status.name[0].toUpperCase() + task.status.name.substring(1);
     if (task.status == DownloadStatus.completed ||
-        task.status == DownloadStatus.canceled)
+        task.status == DownloadStatus.canceled) {
       return name;
+    }
 
-    final isM3U8 = task.url.contains('.m3u8');
+    final isM3U8 =
+        task.isM3u8 ||
+        task.url.contains('.m3u8') ||
+        (task.totalBytes > 0 && task.totalBytes < 10000);
     if (isM3U8) {
       final pct = (task.progress * 100).toStringAsFixed(0);
       return task.totalBytes > 0
@@ -287,44 +317,66 @@ class _DownloadedFilesTab extends ConsumerStatefulWidget {
 }
 
 class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
-  late Future<List<File>> _filesFuture;
+  late Future<List<OfflineItem>> _itemsFuture;
 
   @override
   void initState() {
     super.initState();
-    _filesFuture = _getFiles();
+    _itemsFuture = _getItems();
   }
 
-  Future<List<File>> _getFiles() async {
+  Future<List<OfflineItem>> _getItems() async {
     final prefs = await ref.read(downloadPrefsProvider.future);
     final dir = Directory(prefs.downloadPath);
     if (!await dir.exists()) return [];
-    final entities = await dir.list(recursive: true).toList();
-    final files =
-        entities
-            .whereType<File>()
-            .where((f) => f.path.endsWith('.mp4'))
-            .toList()
-          ..sort(
-            (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
-          );
-    return files;
-  }
 
-  Future<void> _deleteFile(File file) async {
-    try {
-      await file.delete();
-      setState(() => _filesFuture = _getFiles());
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
+    final items = <OfflineItem>[];
+    final entities = await dir.list().toList();
+
+    for (final entity in entities) {
+      if (entity is File && entity.path.endsWith('.mp4')) {
+        final name = entity.path.split('/').last.replaceAll('.mp4', '');
+        items.add(OfflineFile(name, entity, await entity.length()));
+      } else if (entity is Directory) {
+        final subEntities = await entity.list(recursive: true).toList();
+        final files = <OfflineFile>[];
+        int totalSize = 0;
+
+        for (final sub in subEntities) {
+          if (sub is File && sub.path.endsWith('.mp4')) {
+            final name = sub.path.split('/').last.replaceAll('.mp4', '');
+            final size = await sub.length();
+            files.add(OfflineFile(name, sub, size));
+            totalSize += size;
+          }
+        }
+
+        if (files.isNotEmpty) {
+          files.sort((a, b) => a.name.compareTo(b.name));
+          final name = entity.path.split('/').last;
+          items.add(OfflineFolder(name, entity, files, totalSize));
+        }
       }
     }
+
+    items.sort((a, b) {
+      if (a is OfflineFolder && b is OfflineFile) return -1;
+      if (a is OfflineFile && b is OfflineFolder) return 1;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+
+    return items;
   }
 
-  Future<void> _openFile(File file) async {
+  void _openFile(File file) {
+    final name = file.path.split('/').last.replaceAll('.mp4', '');
+    context.push(
+      '/player',
+      extra: PlayerModeOffline(filePath: file.path, title: name),
+    );
+  }
+
+  Future<void> _openExternal(File file) async {
     final result = await OpenFile.open(file.path);
     if (result.type != ResultType.done && mounted) {
       ScaffoldMessenger.of(
@@ -333,35 +385,87 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
     }
   }
 
-  void _confirmDelete(BuildContext context, File file) {
+  void _showDeleteSheet({
+    required BuildContext context,
+    required String title,
+    required String message,
+    required Future<void> Function() onDelete,
+  }) {
     final colors = Theme.of(context).colorScheme;
-    showDialog(
+
+    showModalBottomSheet(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Delete file?'),
-        content: const Text(
-          'This will permanently remove the downloaded file.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteFile(file);
-            },
-            child: Text(
-              'Delete',
-              style: TextStyle(
-                color: colors.error,
-                fontWeight: FontWeight.w600,
+      useRootNavigator: true,
+      builder: (_) {
+        return AppBottomSheet(
+          title: title,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(message, style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.tonal(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: colors.error,
+                        foregroundColor: colors.onError,
+                      ),
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        try {
+                          await onDelete();
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to delete: $e')),
+                            );
+                          }
+                        }
+                      },
+                      child: const Text('Delete'),
+                    ),
+                  ),
+                ],
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteFile(BuildContext context, OfflineFile item) {
+    _showDeleteSheet(
+      context: context,
+      title: 'Delete Episode?',
+      message: 'This will permanently remove ${item.name}.',
+      onDelete: () async {
+        await item.file.delete();
+        setState(() => _itemsFuture = _getItems());
+      },
+    );
+  }
+
+  void _confirmDeleteFolder(BuildContext context, OfflineFolder item) {
+    _showDeleteSheet(
+      context: context,
+      title: 'Delete Folder?',
+      message:
+          'This will permanently remove all ${item.files.length} episodes in ${item.name}.',
+      onDelete: () async {
+        await item.directory.delete(recursive: true);
+        setState(() => _itemsFuture = _getItems());
+      },
     );
   }
 
@@ -370,8 +474,8 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    return FutureBuilder<List<File>>(
-      future: _filesFuture,
+    return FutureBuilder<List<OfflineItem>>(
+      future: _itemsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(strokeWidth: 2));
@@ -380,8 +484,8 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
 
-        final files = snapshot.data ?? [];
-        if (files.isEmpty) {
+        final items = snapshot.data ?? [];
+        if (items.isEmpty) {
           return const _EmptyState(
             icon: Icons.video_library_outlined,
             title: 'No downloaded files',
@@ -389,71 +493,157 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
           );
         }
 
-        return ListView.separated(
-          padding: const EdgeInsets.only(bottom: 80),
-          itemCount: files.length,
-          separatorBuilder: (_, __) => Divider(
-            height: 1,
-            indent: 72,
-            color: colors.outlineVariant.withValues(alpha: 0.4),
-          ),
+        return ListView.builder(
+          padding: const EdgeInsets.only(bottom: 80, top: 8),
+          itemCount: items.length,
           itemBuilder: (context, i) {
-            final file = files[i];
-            final sizeStr = (file.lengthSync() / (1024 * 1024)).toStringAsFixed(
-              1,
-            );
-            final name = file.path.split('/').last.replaceAll('.mp4', '');
+            final item = items[i];
 
-            return InkWell(
-              onTap: () => _openFile(file),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.video_file_outlined,
-                      size: 24,
-                      color: colors.primary,
+            if (item is OfflineFolder) {
+              final sizeStr = (item.totalSizeBytes / (1024 * 1024))
+                  .toStringAsFixed(1);
+              return Theme(
+                data: theme.copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  leading: Icon(
+                    Icons.folder_open_rounded,
+                    color: colors.primary,
+                    size: 28,
+                  ),
+                  title: Text(
+                    item.name,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '$sizeStr MB',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+                  ),
+                  subtitle: Text(
+                    '${item.files.length} episodes · $sizeStr MB',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  childrenPadding: const EdgeInsets.only(left: 16),
+                  children: [
+                    for (final fileItem in item.files)
+                      _buildFileTile(context, fileItem, theme, colors),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () => _confirmDeleteFolder(context, item),
+                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                      label: const Text('Delete Folder'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: colors.error,
                       ),
                     ),
-                    _IconBtn(
-                      icon: Icons.delete_outline_rounded,
-                      color: colors.error,
-                      onPressed: () => _confirmDelete(context, file),
-                    ),
+                    const SizedBox(height: 12),
                   ],
                 ),
-              ),
-            );
+              );
+            } else if (item is OfflineFile) {
+              return _buildFileTile(context, item, theme, colors);
+            }
+            return const SizedBox();
           },
         );
       },
+    );
+  }
+
+  Widget _buildFileTile(
+    BuildContext context,
+    OfflineFile item,
+    ThemeData theme,
+    ColorScheme colors,
+  ) {
+    final sizeStr = (item.sizeBytes / (1024 * 1024)).toStringAsFixed(1);
+
+    return InkWell(
+      onTap: () => _openFile(item.file),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(
+              Icons.play_circle_outline_rounded,
+              size: 24,
+              color: colors.primary,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    item.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$sizeStr MB',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuButton<String>(
+              icon: Icon(
+                Icons.more_vert_rounded,
+                color: colors.onSurfaceVariant,
+                size: 20,
+              ),
+              onSelected: (val) {
+                if (val == 'play') _openFile(item.file);
+                if (val == 'external') _openExternal(item.file);
+                if (val == 'delete') _confirmDeleteFile(context, item);
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'play',
+                  child: Row(
+                    children: [
+                      Icon(Icons.play_arrow_rounded, size: 20),
+                      SizedBox(width: 12),
+                      Text('Play in ShonenX'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'external',
+                  child: Row(
+                    children: [
+                      Icon(Icons.open_in_new_rounded, size: 20),
+                      SizedBox(width: 12),
+                      Text('Play Externally'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.delete_outline_rounded,
+                        size: 20,
+                        color: colors.error,
+                      ),
+                      const SizedBox(width: 12),
+                      Text('Delete', style: TextStyle(color: colors.error)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

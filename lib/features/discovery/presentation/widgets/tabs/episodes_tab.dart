@@ -7,7 +7,7 @@ import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/e
 import 'package:shonenx/features/discovery/presentation/widgets/manual_match_sheet.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
-import 'package:shonenx/features/player/presentation/player_screen.dart';
+import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
@@ -52,7 +52,7 @@ class EpisodesTabWidget extends ConsumerWidget {
             onEpisodeTap: (UnifiedEpisode episode, SourceInfo sourceInfo) {
               context.push(
                 '/player',
-                extra: PlayerParams(
+                extra: PlayerModeOnline(
                   media: media,
                   episode: episode,
                   sourceInfo: sourceInfo,

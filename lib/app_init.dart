@@ -13,6 +13,7 @@ import 'package:shonenx/features/discovery/domain/media_source_preference.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/library/domain/models/library_entry.dart';
+import 'package:shonenx/features/notifications/domain/models/notification_subscription.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -83,6 +84,7 @@ class AppInit {
           IsarTrackerLinkSchema,
           WatchHistoryEntrySchema,
           DownloadTaskSchema,
+          NotificationSubscriptionSchema,
 
           MSourceSchema,
           SourcePreferenceSchema,

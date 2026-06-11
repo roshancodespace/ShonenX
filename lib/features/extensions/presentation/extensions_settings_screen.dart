@@ -34,7 +34,7 @@ class _ExtensionsSettingsScreenState
     return DefaultTabController(
       length: 2,
       child: AppScaffold(
-        title: 'Sources',
+        title: Platform.isAndroid ? null : 'Sources',
         barBottom: PreferredSize(
           preferredSize: Size.fromHeight(40),
           child: Expanded(

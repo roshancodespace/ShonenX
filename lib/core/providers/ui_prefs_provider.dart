@@ -8,7 +8,7 @@ import 'package:shonenx/core/providers/storage_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
 
 enum MediaCardStyle {
-  classic(ComponentLayout(width: 120, height: 200)),
+  classic(ComponentLayout(width: 125, height: 215)),
   minimal(ComponentLayout(width: 120, height: 180)),
   expressive(ComponentLayout(width: 140, height: 230)),
   material(ComponentLayout(width: 135, height: 210)),

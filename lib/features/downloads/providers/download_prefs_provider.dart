@@ -26,17 +26,46 @@ enum FileNameFormat {
   }
 }
 
+enum DuplicateAction {
+  skip,
+  overwrite;
+
+  String get displayName {
+    switch (this) {
+      case DuplicateAction.skip:
+        return 'Skip Download';
+      case DuplicateAction.overwrite:
+        return 'Overwrite Existing';
+    }
+  }
+
+  factory DuplicateAction.fromString(String? value) {
+    return DuplicateAction.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => DuplicateAction.skip,
+    );
+  }
+}
+
 class DownloadPrefs {
   final String downloadPath;
   final FileNameFormat fileNameFormat;
   final bool createSubfolders;
   final bool useOneDM;
+  final bool wifiOnly;
+  final int concurrentDownloads;
+  final DuplicateAction duplicateAction;
+  final bool autoDeleteWatched;
 
   const DownloadPrefs({
     required this.downloadPath,
     required this.fileNameFormat,
     this.createSubfolders = true,
     this.useOneDM = false,
+    this.wifiOnly = true,
+    this.concurrentDownloads = 2,
+    this.duplicateAction = DuplicateAction.skip,
+    this.autoDeleteWatched = false,
   });
 
   DownloadPrefs copyWith({
@@ -44,12 +73,20 @@ class DownloadPrefs {
     FileNameFormat? fileNameFormat,
     bool? createSubfolders,
     bool? useOneDM,
+    bool? wifiOnly,
+    int? concurrentDownloads,
+    DuplicateAction? duplicateAction,
+    bool? autoDeleteWatched,
   }) {
     return DownloadPrefs(
       downloadPath: downloadPath ?? this.downloadPath,
       fileNameFormat: fileNameFormat ?? this.fileNameFormat,
       createSubfolders: createSubfolders ?? this.createSubfolders,
       useOneDM: useOneDM ?? this.useOneDM,
+      wifiOnly: wifiOnly ?? this.wifiOnly,
+      concurrentDownloads: concurrentDownloads ?? this.concurrentDownloads,
+      duplicateAction: duplicateAction ?? this.duplicateAction,
+      autoDeleteWatched: autoDeleteWatched ?? this.autoDeleteWatched,
     );
   }
 
@@ -59,6 +96,10 @@ class DownloadPrefs {
       fileNameFormat: FileNameFormat.fromString(map['fileNameFormat']),
       createSubfolders: map['createSubfolders'] ?? true,
       useOneDM: map['useOneDM'] ?? false,
+      wifiOnly: map['wifiOnly'] ?? true,
+      concurrentDownloads: map['concurrentDownloads'] ?? 2,
+      duplicateAction: DuplicateAction.fromString(map['duplicateAction']),
+      autoDeleteWatched: map['autoDeleteWatched'] ?? false,
     );
   }
 
@@ -68,6 +109,10 @@ class DownloadPrefs {
       'fileNameFormat': fileNameFormat.name,
       'createSubfolders': createSubfolders,
       'useOneDM': useOneDM,
+      'wifiOnly': wifiOnly,
+      'concurrentDownloads': concurrentDownloads,
+      'duplicateAction': duplicateAction.name,
+      'autoDeleteWatched': autoDeleteWatched,
     };
   }
 }
@@ -100,6 +145,10 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
       fileNameFormat: FileNameFormat.titleAndEpisode,
       createSubfolders: true,
       useOneDM: false,
+      wifiOnly: true,
+      concurrentDownloads: 2,
+      duplicateAction: DuplicateAction.skip,
+      autoDeleteWatched: false,
     );
   }
 
@@ -124,6 +173,30 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
   Future<void> setCreateSubfolders(bool value) async {
     final prefs = ref.read(sharedPreferencesProvider);
     state = AsyncData(state.value!.copyWith(createSubfolders: value));
+    await prefs.setString(_key, jsonEncode(state.value!.toMap()));
+  }
+
+  Future<void> setWifiOnly(bool value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    state = AsyncData(state.value!.copyWith(wifiOnly: value));
+    await prefs.setString(_key, jsonEncode(state.value!.toMap()));
+  }
+
+  Future<void> setConcurrentDownloads(int value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    state = AsyncData(state.value!.copyWith(concurrentDownloads: value));
+    await prefs.setString(_key, jsonEncode(state.value!.toMap()));
+  }
+
+  Future<void> setDuplicateAction(DuplicateAction value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    state = AsyncData(state.value!.copyWith(duplicateAction: value));
+    await prefs.setString(_key, jsonEncode(state.value!.toMap()));
+  }
+
+  Future<void> setAutoDeleteWatched(bool value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    state = AsyncData(state.value!.copyWith(autoDeleteWatched: value));
     await prefs.setString(_key, jsonEncode(state.value!.toMap()));
   }
 }

@@ -46,19 +46,6 @@ class NotificationService {
         },
       );
 
-      if (Platform.isAndroid) {
-        final androidPlugin = _plugin
-            .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin
-            >();
-
-        if (androidPlugin != null) {
-          await androidPlugin.requestNotificationsPermission();
-          await androidPlugin.requestExactAlarmsPermission();
-          _log.d('Android permissions requested');
-        }
-      }
-
       if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
         final pending = await _plugin.pendingNotificationRequests();
         _scheduledIds.addAll(pending.map((e) => e.id));
@@ -69,6 +56,37 @@ class NotificationService {
     } catch (e, st) {
       _log.e('Failed to initialize NotificationService', e, st);
     }
+  }
+
+  Future<bool> requestPermissions() async {
+    _log.i('Requesting notification permissions manually...');
+    bool granted = false;
+
+    if (Platform.isAndroid) {
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+
+      if (androidPlugin != null) {
+        final notificationsGranted = await androidPlugin.requestNotificationsPermission() ?? false;
+        final alarmsGranted = await androidPlugin.requestExactAlarmsPermission() ?? false;
+        
+        granted = notificationsGranted;
+        _log.d('Android permissions requested. Notifications: $notificationsGranted, Alarms: $alarmsGranted');
+      }
+    } else if (Platform.isIOS) {
+      final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
+          
+      if (iosPlugin != null) {
+        granted = await iosPlugin.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        ) ?? false;
+      }
+    }
+    
+    return granted;
   }
 
   static int generateId(String type, String refId, String variant) =>

@@ -5,12 +5,14 @@ class AppBottomSheet extends StatelessWidget {
   final String title;
   final Widget child;
   final EdgeInsetsGeometry padding;
+  final List<Widget>? actions;
 
   const AppBottomSheet({
     super.key,
     required this.title,
     required this.child,
     this.padding = const EdgeInsets.fromLTRB(20, 12, 20, 20),
+    this.actions,
   });
 
   static Future<T?> show<T>({
@@ -169,6 +171,10 @@ class AppBottomSheet extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                if (actions != null) ...[
+                  ...actions!,
+                  const SizedBox(width: 8),
+                ],
                 IconButton.filledTonal(
                   style: IconButton.styleFrom(
                     backgroundColor: colorScheme.primary,

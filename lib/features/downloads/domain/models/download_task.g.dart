@@ -44,34 +44,35 @@ const DownloadTaskSchema = CollectionSchema(
 
       target: r'DownloadHeader',
     ),
-    r'mediaId': PropertySchema(id: 5, name: r'mediaId', type: IsarType.string),
+    r'isM3u8': PropertySchema(id: 5, name: r'isM3u8', type: IsarType.bool),
+    r'mediaId': PropertySchema(id: 6, name: r'mediaId', type: IsarType.string),
     r'progress': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'progress',
       type: IsarType.double,
     ),
     r'savePath': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'savePath',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'status',
       type: IsarType.byte,
       enumMap: _DownloadTaskstatusEnumValueMap,
     ),
     r'totalBytes': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'totalBytes',
       type: IsarType.long,
     ),
     r'updatedAt': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
-    r'url': PropertySchema(id: 11, name: r'url', type: IsarType.string),
+    r'url': PropertySchema(id: 12, name: r'url', type: IsarType.string),
   },
 
   estimateSize: _downloadTaskEstimateSize,
@@ -144,13 +145,14 @@ void _downloadTaskSerialize(
     DownloadHeaderSchema.serialize,
     object.headers,
   );
-  writer.writeString(offsets[5], object.mediaId);
-  writer.writeDouble(offsets[6], object.progress);
-  writer.writeString(offsets[7], object.savePath);
-  writer.writeByte(offsets[8], object.status.index);
-  writer.writeLong(offsets[9], object.totalBytes);
-  writer.writeDateTime(offsets[10], object.updatedAt);
-  writer.writeString(offsets[11], object.url);
+  writer.writeBool(offsets[5], object.isM3u8);
+  writer.writeString(offsets[6], object.mediaId);
+  writer.writeDouble(offsets[7], object.progress);
+  writer.writeString(offsets[8], object.savePath);
+  writer.writeByte(offsets[9], object.status.index);
+  writer.writeLong(offsets[10], object.totalBytes);
+  writer.writeDateTime(offsets[11], object.updatedAt);
+  writer.writeString(offsets[12], object.url);
 }
 
 DownloadTask _downloadTaskDeserialize(
@@ -173,15 +175,16 @@ DownloadTask _downloadTaskDeserialize(
       ) ??
       [];
   object.id = id;
-  object.mediaId = reader.readString(offsets[5]);
-  object.progress = reader.readDouble(offsets[6]);
-  object.savePath = reader.readString(offsets[7]);
+  object.isM3u8 = reader.readBool(offsets[5]);
+  object.mediaId = reader.readString(offsets[6]);
+  object.progress = reader.readDouble(offsets[7]);
+  object.savePath = reader.readString(offsets[8]);
   object.status =
-      _DownloadTaskstatusValueEnumMap[reader.readByteOrNull(offsets[8])] ??
+      _DownloadTaskstatusValueEnumMap[reader.readByteOrNull(offsets[9])] ??
       DownloadStatus.pending;
-  object.totalBytes = reader.readLong(offsets[9]);
-  object.updatedAt = reader.readDateTime(offsets[10]);
-  object.url = reader.readString(offsets[11]);
+  object.totalBytes = reader.readLong(offsets[10]);
+  object.updatedAt = reader.readDateTime(offsets[11]);
+  object.url = reader.readString(offsets[12]);
   return object;
 }
 
@@ -210,20 +213,22 @@ P _downloadTaskDeserializeProp<P>(
               [])
           as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 6:
-      return (reader.readDouble(offset)) as P;
-    case 7:
       return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readDouble(offset)) as P;
     case 8:
+      return (reader.readString(offset)) as P;
+    case 9:
       return (_DownloadTaskstatusValueEnumMap[reader.readByteOrNull(offset)] ??
               DownloadStatus.pending)
           as P;
-    case 9:
-      return (reader.readLong(offset)) as P;
     case 10:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 11:
+      return (reader.readDateTime(offset)) as P;
+    case 12:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -892,6 +897,16 @@ extension DownloadTaskQueryFilter
           upper: upper,
           includeUpper: includeUpper,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterFilterCondition> isM3u8EqualTo(
+    bool value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'isM3u8', value: value),
       );
     });
   }
@@ -1633,6 +1648,18 @@ extension DownloadTaskQuerySortBy
     });
   }
 
+  QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy> sortByIsM3u8() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isM3u8', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy> sortByIsM3u8Desc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isM3u8', Sort.desc);
+    });
+  }
+
   QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy> sortByMediaId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mediaId', Sort.asc);
@@ -1784,6 +1811,18 @@ extension DownloadTaskQuerySortThenBy
     });
   }
 
+  QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy> thenByIsM3u8() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isM3u8', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy> thenByIsM3u8Desc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isM3u8', Sort.desc);
+    });
+  }
+
   QueryBuilder<DownloadTask, DownloadTask, QAfterSortBy> thenByMediaId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mediaId', Sort.asc);
@@ -1900,6 +1939,12 @@ extension DownloadTaskQueryWhereDistinct
     });
   }
 
+  QueryBuilder<DownloadTask, DownloadTask, QDistinct> distinctByIsM3u8() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isM3u8');
+    });
+  }
+
   QueryBuilder<DownloadTask, DownloadTask, QDistinct> distinctByMediaId({
     bool caseSensitive = true,
   }) {
@@ -1985,6 +2030,12 @@ extension DownloadTaskQueryProperty
   headersProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'headers');
+    });
+  }
+
+  QueryBuilder<DownloadTask, bool, QQueryOperations> isM3u8Property() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isM3u8');
     });
   }
 

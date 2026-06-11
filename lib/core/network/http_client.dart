@@ -99,7 +99,11 @@ class HTTP {
     headers?.forEach(req.headers.set);
 
     if (body != null) {
-      req.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+      final hasContentType =
+          headers?.keys.any((k) => k.toLowerCase() == 'content-type') ?? false;
+      if (!hasContentType) {
+        req.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+      }
       req.write(body is String ? body : jsonEncode(body));
     }
 

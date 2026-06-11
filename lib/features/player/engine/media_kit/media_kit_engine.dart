@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shonenx/features/player/domain/media_kit_prefs.dart';
+import 'package:shonenx/features/player/domain/subtitle_prefs.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/presentation/widgets/media_kit/media_kit_settings.dart';
 import 'package:shonenx/shared/models/video_stream.dart' as stream;
@@ -111,38 +112,58 @@ class MediaKitEngine implements VideoEngine {
     return Consumer(
       builder: (context, ref, _) {
         final subtitlePrefs = ref.watch(subtitlePrefsProvider);
+        final screenWidth = MediaQuery.sizeOf(context).width;
+        final responsiveFontSize = getResponsiveSubtitleSize(
+          screenWidth,
+          subtitlePrefs.fontSize,
+        );
+
         return Video(
           controller: _controller,
           controls: NoVideoControls,
           subtitleViewConfiguration: SubtitleViewConfiguration(
             padding: EdgeInsets.only(bottom: subtitlePrefs.bottomPadding),
             style: TextStyle(
-              fontSize: subtitlePrefs.fontSize,
+              fontSize: responsiveFontSize,
               color: Color(subtitlePrefs.fontColor),
-              backgroundColor: subtitlePrefs.backgroundColor == 0x00000000 
-                  ? null 
+              backgroundColor: subtitlePrefs.backgroundColor == 0x00000000
+                  ? null
                   : Color(subtitlePrefs.backgroundColor),
-              fontWeight: subtitlePrefs.bold ? FontWeight.w700 : FontWeight.w500,
+              fontWeight: subtitlePrefs.bold
+                  ? FontWeight.w700
+                  : FontWeight.w500,
               shadows: subtitlePrefs.outlineColor == 0x00000000
                   ? null
                   : [
                       Shadow(
-                        offset: Offset(-subtitlePrefs.outlineSize, -subtitlePrefs.outlineSize),
+                        offset: Offset(
+                          -subtitlePrefs.outlineSize,
+                          -subtitlePrefs.outlineSize,
+                        ),
                         color: Color(subtitlePrefs.outlineColor),
                         blurRadius: subtitlePrefs.outlineSize,
                       ),
                       Shadow(
-                        offset: Offset(subtitlePrefs.outlineSize, -subtitlePrefs.outlineSize),
+                        offset: Offset(
+                          subtitlePrefs.outlineSize,
+                          -subtitlePrefs.outlineSize,
+                        ),
                         color: Color(subtitlePrefs.outlineColor),
                         blurRadius: subtitlePrefs.outlineSize,
                       ),
                       Shadow(
-                        offset: Offset(subtitlePrefs.outlineSize, subtitlePrefs.outlineSize),
+                        offset: Offset(
+                          subtitlePrefs.outlineSize,
+                          subtitlePrefs.outlineSize,
+                        ),
                         color: Color(subtitlePrefs.outlineColor),
                         blurRadius: subtitlePrefs.outlineSize,
                       ),
                       Shadow(
-                        offset: Offset(-subtitlePrefs.outlineSize, subtitlePrefs.outlineSize),
+                        offset: Offset(
+                          -subtitlePrefs.outlineSize,
+                          subtitlePrefs.outlineSize,
+                        ),
                         color: Color(subtitlePrefs.outlineColor),
                         blurRadius: subtitlePrefs.outlineSize,
                       ),
@@ -185,13 +206,13 @@ class MediaKitEngine implements VideoEngine {
 
   @override
   Future<void> setSubtitle(stream.SubtitleTrack? subtitle) async {
-    if (subtitle == null) {
+    if (subtitle == null || subtitle.url.isEmpty) {
       await _player.setSubtitleTrack(SubtitleTrack.no());
-      return;
+    } else {
+      await _player.setSubtitleTrack(
+        SubtitleTrack.uri(subtitle.url, language: subtitle.language),
+      );
     }
-    await _player.setSubtitleTrack(
-      SubtitleTrack.uri(subtitle.url, title: subtitle.language),
-    );
   }
 
   @override

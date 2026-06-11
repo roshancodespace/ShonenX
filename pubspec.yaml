@@ -58,6 +58,7 @@ dependencies:
   flutter_timezone: ^5.0.2
   screenshot: ^3.0.0
   window_manager: ^0.5.1
+  url_launcher: ^6.3.0
   better_player:
     git:
       url: https://github.com/frostnova721/betterplayer.git
@@ -72,6 +73,7 @@ dependencies:
   android_intent_plus: ^6.0.0
   open_file: ^3.5.11
   device_info_plus: ^12.4.0
+  package_info_plus: ^8.3.0
 
 dev_dependencies:
   flutter_test:

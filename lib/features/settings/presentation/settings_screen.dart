@@ -42,6 +42,12 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: 'Download location, file naming',
                 onTap: () => context.push('/settings/downloads'),
               ),
+              SettingsNavTile(
+                icon: Icons.filter_alt_outlined,
+                title: 'Content',
+                subtitle: 'Content filters, 18+ toggle',
+                onTap: () => context.push('/settings/content'),
+              ),
               if (Platform.isAndroid) ...[
                 SettingsNavTile(
                   icon: Icons.security_outlined,
@@ -89,6 +95,19 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
 
+          if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)
+            SettingsSection(
+              title: 'Notifications',
+              children: [
+                SettingsNavTile(
+                  icon: Icons.notifications_active_outlined,
+                  title: 'Manage Anime Notifications',
+                  subtitle: 'Manage your active subscriptions and reminders',
+                  onTap: () => context.push('/settings/notifications'),
+                ),
+              ],
+            ),
+
           SettingsSection(
             title: 'Misc',
             children: [
@@ -97,6 +116,12 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Cache Manager',
                 subtitle: 'Clear cache and thumbnails',
                 onTap: () => context.push('/settings/cache'),
+              ),
+              SettingsNavTile(
+                icon: Icons.info_outline_rounded,
+                title: 'About',
+                subtitle: 'Version, developer, and links',
+                onTap: () => context.push('/settings/about'),
               ),
             ],
           ),

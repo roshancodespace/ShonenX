@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/providers/active_engine_provider.dart';
 import 'package:shonenx/features/player/providers/custom_subtitle_provider.dart';
+import 'package:shonenx/features/player/domain/subtitle_prefs.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
 import 'package:shonenx/features/player/utils/subtitle_parser.dart';
 
@@ -29,6 +30,9 @@ class CustomSubtitleOverlay extends ConsumerWidget {
 
         if (activeCue == null) return const SizedBox.shrink();
 
+        final screenWidth = MediaQuery.sizeOf(context).width;
+        final responsiveFontSize = getResponsiveSubtitleSize(screenWidth, prefs.fontSize);
+
         return Positioned(
           bottom: prefs.bottomPadding, // Configurable bottom padding
           left: 0,
@@ -42,7 +46,7 @@ class CustomSubtitleOverlay extends ConsumerWidget {
                   activeCue.text,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: prefs.fontSize,
+                    fontSize: responsiveFontSize,
                     color: prefs.color,
                     backgroundColor: prefs.backgroundColor == 0x00000000
                         ? null

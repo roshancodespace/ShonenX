@@ -7,8 +7,10 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/media_card.dart';
+import 'package:shonenx/features/notifications/domain/models/notification_subscription.dart';
+import 'package:shonenx/features/notifications/presentation/widgets/notification_subscription_sheet.dart';
+import 'package:shonenx/features/notifications/providers/notification_subscriptions_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
-import 'package:shonenx/shared/widgets/notification_toggle.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 
 class AboutTabWidget extends ConsumerWidget {
@@ -23,6 +25,8 @@ class AboutTabWidget extends ConsumerWidget {
 
     final hasTags = media.tags != null && media.tags!.isNotEmpty;
     final hasRelations = media.relations != null && media.relations!.isNotEmpty;
+    final hasRecommendations =
+        media.recommendations != null && media.recommendations!.isNotEmpty;
 
     final items = <Widget>[];
 
@@ -30,12 +34,7 @@ class AboutTabWidget extends ConsumerWidget {
       items.add(
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: _AiringBanner(
-            mediaId: media.id,
-            mediaTitle: media.title.availableTitle,
-            airingAt: media.airingAt!,
-            nextEpisode: media.nextEpisode,
-          ),
+          child: _AiringBanner(media: media),
         ),
       );
     }
@@ -80,6 +79,22 @@ class AboutTabWidget extends ConsumerWidget {
       );
     }
 
+    if (hasRecommendations) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Recommendations', style: textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              _RecommendationsList(recommendations: media.recommendations!),
+            ],
+          ),
+        ),
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(10),
       itemCount: items.length,
@@ -90,23 +105,32 @@ class AboutTabWidget extends ConsumerWidget {
   }
 }
 
-class _AiringBanner extends StatelessWidget {
-  final DateTime airingAt;
-  final dynamic nextEpisode;
-  final String mediaId;
-  final String mediaTitle;
+class _AiringBanner extends ConsumerWidget {
+  final UnifiedMedia media;
 
-  const _AiringBanner({
-    required this.airingAt,
-    required this.nextEpisode,
-    required this.mediaId,
-    required this.mediaTitle,
-  });
+  const _AiringBanner({required this.media});
 
   @override
-  Widget build(BuildContext context) {
-    final episodeNum = nextEpisode is int ? nextEpisode : 1;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final airingAt = media.airingAt!;
+    final nextEpisode = media.nextEpisode;
+    final episodeNum = nextEpisode is int ? nextEpisode : (1);
     final theme = Theme.of(context);
+
+    final subscription = ref
+        .watch(notificationSubscriptionsProvider)
+        .where(
+          (e) =>
+              e.type == SubscriptionType.animeAiring &&
+              e.referenceId == media.id,
+        )
+        .firstOrNull;
+
+    final bool isMissed =
+        subscription != null &&
+        subscription.isEnabled &&
+        subscription.upcomingTime != null &&
+        subscription.upcomingTime!.isBefore(DateTime.now());
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -139,31 +163,71 @@ class _AiringBanner extends StatelessWidget {
                     letterSpacing: 1.2,
                   ),
                 ),
-                RichText(
-                  text: TextSpan(
+                if (isMissed) ...[
+                  Text(
+                    'You missed the notification for Episode $episodeNum',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface,
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.bold,
                     ),
-                    children: [
-                      const TextSpan(text: 'Airing in '),
-                      TextSpan(
-                        text: formatCountdown(airingAt),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  InkWell(
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Please check the Episodes tab for the latest release.',
+                          ),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'Open Episodes tab →',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  RichText(
+                    text: TextSpan(
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      children: [
+                        const TextSpan(text: 'Airing in '),
+                        TextSpan(
+                          text: formatCountdown(airingAt),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-          if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)
-            NotificationToggle(
-              type: 'airing',
-              refId: mediaId,
-              variant: 'ep_$episodeNum',
-              title: mediaTitle,
-              body: 'Episode $episodeNum airs soon!',
-              scheduleTime: airingAt.subtract(const Duration(minutes: 15)),
+          if (!Platform.isAndroid || Platform.isIOS || Platform.isMacOS)
+            IconButton(
+              icon: Icon(
+                subscription?.isEnabled == true
+                    ? Icons.notifications_active
+                    : Icons.notifications_outlined,
+                color: subscription?.isEnabled == true
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) =>
+                      NotificationSubscriptionSheet(media: media),
+                );
+              },
             ),
         ],
       ),
@@ -202,24 +266,100 @@ class _RelationsList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
-    relations.removeWhere((e) => e.type != MediaType.ANIME);
+
+    final Map<String, List<UnifiedMedia>> grouped = {};
+    for (final relation in relations) {
+      if (relation.type != MediaType.ANIME) continue;
+
+      final type = relation.relationType ?? 'Other';
+      final formattedType = type
+          .replaceAll('_', ' ')
+          .split(' ')
+          .map(
+            (s) => s.isEmpty
+                ? ''
+                : s[0].toUpperCase() + s.substring(1).toLowerCase(),
+          )
+          .join(' ');
+
+      grouped.putIfAbsent(formattedType, () => []).add(relation);
+    }
+
+    if (grouped.isEmpty) return const SizedBox();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: grouped.entries.map((entry) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                entry.key,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: style.layout.height,
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  scrollDirection: Axis.horizontal,
+                  itemCount: entry.value.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final relation = entry.value[index];
+                    return MediaCard(
+                      tag: 'details-${relation.id}',
+                      title: relation.title.availableTitle,
+                      format: relation.format,
+                      imageUrl: relation.cover ?? relation.banner ?? '',
+                      onTap: () => context.pushReplacement(
+                        '/details/${relation.type.id}?tag=details-${relation.id}',
+                        extra: relation,
+                      ),
+                      style: style,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _RecommendationsList extends ConsumerWidget {
+  final List<UnifiedMedia> recommendations;
+
+  const _RecommendationsList({required this.recommendations});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
 
     return SizedBox(
       height: style.layout.height,
       child: ListView.separated(
         shrinkWrap: true,
         scrollDirection: Axis.horizontal,
-        itemCount: relations.length,
+        itemCount: recommendations.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final relation = relations[index];
+          final rec = recommendations[index];
           return MediaCard(
-            tag: 'details-${relation.id}',
-            title: relation.title.availableTitle,
-            imageUrl: relation.cover ?? relation.banner ?? '',
+            tag: 'details-rec-${rec.id}',
+            title: rec.title.availableTitle,
+            format: rec.format,
+            imageUrl: rec.cover ?? rec.banner ?? '',
             onTap: () => context.pushReplacement(
-              '/details/${relation.type.id}?tag=details-${relation.id}',
-              extra: relation,
+              '/details/${rec.type.id}?tag=details-rec-${rec.id}',
+              extra: rec,
             ),
             style: style,
           );

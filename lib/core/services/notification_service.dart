@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -63,29 +64,39 @@ class NotificationService {
     bool granted = false;
 
     if (Platform.isAndroid) {
-      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
 
       if (androidPlugin != null) {
-        final notificationsGranted = await androidPlugin.requestNotificationsPermission() ?? false;
-        final alarmsGranted = await androidPlugin.requestExactAlarmsPermission() ?? false;
-        
+        final notificationsGranted =
+            await androidPlugin.requestNotificationsPermission() ?? false;
+        final alarmsGranted =
+            await androidPlugin.requestExactAlarmsPermission() ?? false;
+
         granted = notificationsGranted;
-        _log.d('Android permissions requested. Notifications: $notificationsGranted, Alarms: $alarmsGranted');
+        _log.d(
+          'Android permissions requested. Notifications: $notificationsGranted, Alarms: $alarmsGranted',
+        );
       }
     } else if (Platform.isIOS) {
-      final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
-          
+      final iosPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+
       if (iosPlugin != null) {
-        granted = await iosPlugin.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        ) ?? false;
+        granted =
+            await iosPlugin.requestPermissions(
+              alert: true,
+              badge: true,
+              sound: true,
+            ) ??
+            false;
       }
     }
-    
+
     return granted;
   }
 
@@ -115,13 +126,25 @@ class NotificationService {
         return false;
       }
 
+      AndroidScheduleMode scheduleMode =
+          AndroidScheduleMode.exactAllowWhileIdle;
+      if (Platform.isAndroid) {
+        final canScheduleExact = await Permission.scheduleExactAlarm.isGranted;
+        if (!canScheduleExact) {
+          scheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
+          _log.d(
+            'Exact alarms permission is not granted. Falling back to inexact scheduling.',
+          );
+        }
+      }
+
       await _plugin.zonedSchedule(
         id: id,
         title: title,
         body: body,
         scheduledDate: tz.TZDateTime.from(scheduleTime, tz.local),
         notificationDetails: _getNotificationDetails(),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: scheduleMode,
       );
 
       _scheduledIds.add(id);

@@ -416,7 +416,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         padding: const EdgeInsets.only(top: 32),
         child: FilledButton.icon(
           onPressed: () async {
-            final granted = await PermissionSheet.show(
+            final notifGranted = await PermissionSheet.show(
               context,
               permission: Permission.notification,
               title: 'Allow Notifications',
@@ -425,10 +425,39 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               rationale:
                   'This allows the app to show background download progress and notify you when new episodes of your tracked anime are released.',
             );
-            if (mounted && granted) {
+
+            bool alarmGranted = false;
+            if (Platform.isAndroid && mounted) {
+              alarmGranted = await PermissionSheet.show(
+                context,
+                permission: Permission.scheduleExactAlarm,
+                title: 'Exact Alarms',
+                description:
+                    'Allow ShonenX to schedule precise notifications for release reminders.',
+                rationale:
+                    'Android restricts background tasks. Exact alarm permission ensures you receive notifications at the exact minute an episode airs, rather than hours later.',
+              );
+            }
+
+            if (mounted) {
+              final String msg;
+              if (Platform.isAndroid) {
+                if (notifGranted && alarmGranted) {
+                  msg = 'Notifications & Exact Alarms Enabled!';
+                } else if (notifGranted) {
+                  msg = 'Notifications Enabled (Exact Alarms Denied)';
+                } else if (alarmGranted) {
+                  msg = 'Exact Alarms Enabled (Notifications Denied)';
+                } else {
+                  msg = 'Permissions Denied';
+                }
+              } else {
+                msg = notifGranted ? 'Notifications Enabled!' : 'Notifications Denied';
+              }
+
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Text('Notifications Enabled!'),
+                  content: Text(msg),
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),

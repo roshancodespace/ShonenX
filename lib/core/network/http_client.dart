@@ -240,3 +240,4 @@ final httpClientProvider = Provider<HTTP>((ref) {
   final cacheManager = ref.watch(cacheManagerProvider);
   return HTTP(cacheManager: cacheManager);
 });
+

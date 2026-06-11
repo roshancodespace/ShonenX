@@ -6,6 +6,15 @@ enum MediaType {
   String get id => name.toLowerCase();
 }
 
+enum TitlePreference {
+  english('English'),
+  romaji('Romaji'),
+  native('Native');
+
+  final String displayName;
+  const TitlePreference(this.displayName);
+}
+
 class UnifiedMedia {
   final String id;
   final MediaType type;
@@ -67,9 +76,24 @@ class MediaTitle {
   final String? english;
   final String? native;
 
-  const MediaTitle({this.romaji, this.english, this.native});
+  const MediaTitle({
+    this.romaji,
+    this.english,
+    this.native,
+  });
 
-  String get availableTitle => english ?? romaji ?? native ?? 'Unknown';
+  String get availableTitle {
+    switch (preference) {
+      case TitlePreference.english:
+        return english ?? romaji ?? native ?? 'Unknown';
+      case TitlePreference.romaji:
+        return romaji ?? english ?? native ?? 'Unknown';
+      case TitlePreference.native:
+        return native ?? romaji ?? english ?? 'Unknown';
+    }
+  }
+
+  static TitlePreference preference = TitlePreference.english;
 }
 
 class MediaTag {

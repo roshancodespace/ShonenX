@@ -209,7 +209,7 @@ class _AiringBanner extends ConsumerWidget {
               ],
             ),
           ),
-          if (!Platform.isAndroid || Platform.isIOS || Platform.isMacOS)
+          if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)
             IconButton(
               icon: Icon(
                 subscription?.isEnabled == true

@@ -69,10 +69,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(playerControllerProvider.notifier)
-          .initialize(
-            widget.mode,
-            screenshot: _screenshotController,
-          );
+          .initialize(widget.mode, screenshot: _screenshotController);
       _showControlsTemporarily();
     });
   }
@@ -205,15 +202,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   engine: engine,
                   mode: widget.mode,
                   playerState: playerState,
+                  controller: controller,
                   onBack: context.pop,
                 ),
                 CenterControls(
                   showControls: _showControls,
                   playerState: playerState,
                   controller: controller,
-                  mediaTitle: widget.mode is PlayerModeOnline 
-                      ? (widget.mode as PlayerModeOnline).media.title.availableTitle 
-                      : (widget.mode as PlayerModeOffline).title ?? 'Local Media',
+                  mediaTitle: widget.mode is PlayerModeOnline
+                      ? (widget.mode as PlayerModeOnline)
+                            .media
+                            .title
+                            .availableTitle
+                      : (widget.mode as PlayerModeOffline).title ??
+                            'Local Media',
                   engine: engine,
                 ),
                 BottomControls(

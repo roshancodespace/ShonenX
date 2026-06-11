@@ -23,7 +23,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
       ? Env.MAL_CLIENT_ID_LIST.last
       : Env.MAL_CLIENT_ID_LIST.first;
   static const String _fields =
-      'id,title,main_picture,start_date,end_date,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,status,genres,created_at,updated_at,media_type,nsfw,my_list_status,num_episodes,start_season,broadcast,source,average_episode_duration,rating,pictures,background,related_anime,related_manga,recommendations,studios,statistics';
+      'id,title,main_picture,alternative_titles,start_date,end_date,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,status,genres,created_at,updated_at,media_type,nsfw,my_list_status,num_episodes,start_season,broadcast,source,average_episode_duration,rating,pictures,background,related_anime,related_manga,recommendations,studios,statistics';
 
   Map<String, dynamic> _validateAndParseResponse(
     dynamic body,
@@ -208,11 +208,12 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
     try {
       final titleJson = json['title'] as String? ?? '';
       final mainPicture = json['main_picture'] as Map? ?? {};
+      final altTitles = json['alternative_titles'] as Map?;
 
       final title = MediaTitle(
-        english: json['title_english'] as String?,
+        english: altTitles?['en'] as String?,
         romaji: titleJson,
-        native: json['title_japanese'] as String?,
+        native: altTitles?['ja'] as String?,
       );
 
       String status = 'Unknown';
@@ -278,6 +279,76 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
           .whereType<UnifiedMedia>()
           .toList();
 
+      DateTime? airingAt;
+      int? nextEpisode;
+
+      if (status == 'Ongoing' && json['broadcast'] is Map) {
+        final broadcast = json['broadcast'] as Map;
+        final dayString = broadcast['day_of_the_week']
+            ?.toString()
+            .toLowerCase()
+            .trim();
+        final timeString = broadcast['start_time']?.toString().trim();
+
+        final Map<String, int> weekdayMap = {
+          'monday': DateTime.monday,
+          'tuesday': DateTime.tuesday,
+          'wednesday': DateTime.wednesday,
+          'thursday': DateTime.thursday,
+          'friday': DateTime.friday,
+          'saturday': DateTime.saturday,
+          'sunday': DateTime.sunday,
+        };
+
+        final targetWeekday = weekdayMap[dayString];
+        if (targetWeekday != null &&
+            timeString != null &&
+            timeString.contains(':')) {
+          final parts = timeString.split(':');
+          final hour = int.tryParse(parts[0]);
+          final minute = int.tryParse(parts[1]);
+
+          if (hour != null && minute != null) {
+            final nowUtc = DateTime.now().toUtc();
+            final nowJst = nowUtc.add(const Duration(hours: 9));
+
+            // Candidate airing time today in JST
+            final candidateJst = DateTime(
+              nowJst.year,
+              nowJst.month,
+              nowJst.day,
+              hour,
+              minute,
+            );
+            var daysDiff = targetWeekday - nowJst.weekday;
+            if (daysDiff < 0 ||
+                (daysDiff == 0 && nowJst.isAfter(candidateJst))) {
+              daysDiff += 7;
+            }
+
+            final airingTimeJst = candidateJst.add(Duration(days: daysDiff));
+            airingAt = airingTimeJst
+                .subtract(const Duration(hours: 9))
+                .toLocal();
+
+            // Calculate next episode number based on weeks elapsed since start_date
+            final startDateStr = json['start_date'] as String?;
+            if (startDateStr != null) {
+              final startDate = DateTime.tryParse(startDateStr);
+              if (startDate != null) {
+                final diffDays = airingTimeJst.difference(startDate).inDays;
+                if (diffDays >= 0) {
+                  final calculatedEp = (diffDays / 7).floor() + 1;
+                  if (episodes == null || calculatedEp <= episodes) {
+                    nextEpisode = calculatedEp;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
       return UnifiedMedia(
         id: json['id']?.toString() ?? '',
         idMal: json['id']?.toString(),
@@ -290,6 +361,8 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
         description: synopsis,
         status: status,
         episodes: episodes,
+        airingAt: airingAt,
+        nextEpisode: nextEpisode,
         relationType: relationType,
         relations: relations.isNotEmpty ? relations : null,
         recommendations: recommendations?.isNotEmpty == true

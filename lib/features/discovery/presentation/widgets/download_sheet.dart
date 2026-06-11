@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/device_info.dart';
+import 'package:shonenx/core/utils/http_x.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
@@ -86,9 +88,36 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
       final streams = await ref
           .read(animeSourceProvider(widget.source))
           .getSources(widget.episode.id, server);
+
+      final splitStreamsList = <VideoStream>[];
+      final httpClient = ref.read(httpClientProvider);
+
+      for (final stream in streams) {
+        splitStreamsList.add(stream); // Keep default Auto/Master first
+
+        try {
+          final parsedQualities = await httpClient.splitM3U8(
+            stream.url,
+            headers: stream.headers,
+          );
+          for (final q in parsedQualities) {
+            splitStreamsList.add(
+              VideoStream(
+                url: q.url,
+                headers: stream.headers,
+                quality: q.quality,
+                subtitles: stream.subtitles,
+              ),
+            );
+          }
+        } catch (_) {
+          // Fall back gracefully if parsing fails
+        }
+      }
+
       if (mounted) {
         setState(() {
-          _streamsCache[key] = streams;
+          _streamsCache[key] = splitStreamsList;
           _loadingStreams.remove(key);
         });
       }
@@ -272,7 +301,7 @@ class _ServerTile extends StatelessWidget {
           ),
         ),
         title: Text(
-          server.name,
+          '[${server.id}] ${server.name}',
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         ),
         subtitle: Text(

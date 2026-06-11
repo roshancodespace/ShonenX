@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:screenshot/screenshot.dart';
+import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/core/utils/http_x.dart';
 
 import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
@@ -27,8 +29,10 @@ class PlayerState {
   final List<VideoServer> servers;
   final List<VideoStream> streams;
   final List<SubtitleTrack> subtitles;
+  final List<VideoStream> qualities;
   final VideoServer? activeServer;
   final VideoStream? activeStream;
+  final VideoStream? activeQuality;
   final SubtitleTrack? activeSubtitle;
   final UnifiedEpisode? activeEpisode;
   final bool isLoading;
@@ -38,10 +42,12 @@ class PlayerState {
     this.servers = const [],
     this.streams = const [],
     this.subtitles = const [],
+    this.qualities = const [],
     this.activeServer,
     this.activeEpisode,
     this.activeSubtitle,
     this.activeStream,
+    this.activeQuality,
     this.isLoading = true,
     this.error,
   });
@@ -50,8 +56,10 @@ class PlayerState {
     List<VideoServer>? servers,
     List<VideoStream>? streams,
     List<SubtitleTrack>? subtitles,
+    List<VideoStream>? qualities,
     VideoServer? activeServer,
     VideoStream? activeStream,
+    VideoStream? activeQuality,
     SubtitleTrack? activeSubtitle,
     UnifiedEpisode? activeEpisode,
     bool? isLoading,
@@ -61,8 +69,10 @@ class PlayerState {
       servers: servers ?? this.servers,
       streams: streams ?? this.streams,
       subtitles: subtitles ?? this.subtitles,
+      qualities: qualities ?? this.qualities,
       activeServer: activeServer ?? this.activeServer,
       activeStream: activeStream ?? this.activeStream,
+      activeQuality: activeQuality ?? this.activeQuality,
       activeSubtitle: activeSubtitle ?? this.activeSubtitle,
       activeEpisode: activeEpisode ?? this.activeEpisode,
       isLoading: isLoading ?? this.isLoading,
@@ -161,6 +171,8 @@ class PlayerController extends Notifier<PlayerState> {
         activeServer: null,
         streams: [activeStream],
         activeStream: activeStream,
+        qualities: [activeStream],
+        activeQuality: activeStream,
         subtitles: [SubtitleTrack.none],
         activeSubtitle: SubtitleTrack.none,
         isLoading: false,
@@ -276,13 +288,47 @@ class PlayerController extends Notifier<PlayerState> {
       final streams = await _source!.getSources(episode.id, activeServer);
       if (streams.isEmpty) throw Exception('No streams available.');
 
-      // Video Stream Selection
+      // Video Stream (mirror) Selection
       VideoStream activeStream = streams.first;
       if (_preferredQuality != null) {
         final qualityMatch = streams.firstWhereOrNull(
           (s) => s.quality == _preferredQuality,
         );
         if (qualityMatch != null) activeStream = qualityMatch;
+      }
+
+      // Fetch qualities for the activeStream
+      final httpClient = ref.read(httpClientProvider);
+      final qualitiesList = <VideoStream>[
+        activeStream.copyWith(quality: 'Auto'),
+      ];
+
+      try {
+        final parsedQualities = await httpClient.splitM3U8(
+          activeStream.url,
+          headers: activeStream.headers,
+        );
+        for (final q in parsedQualities) {
+          qualitiesList.add(
+            VideoStream(
+              url: q.url,
+              headers: activeStream.headers,
+              quality: q.quality,
+              subtitles: activeStream.subtitles,
+            ),
+          );
+        }
+      } catch (_) {
+        // Fall back gracefully if parsing fails
+      }
+
+      // Select active quality from parsed list
+      VideoStream activeQuality = qualitiesList.first;
+      if (_preferredQuality != null) {
+        final qualityMatch = qualitiesList.firstWhereOrNull(
+          (s) => s.quality == _preferredQuality,
+        );
+        if (qualityMatch != null) activeQuality = qualityMatch;
       }
 
       final subtitles = [SubtitleTrack.none, ...activeStream.subtitles];
@@ -301,6 +347,8 @@ class PlayerController extends Notifier<PlayerState> {
         activeServer: activeServer,
         streams: streams,
         activeStream: activeStream,
+        qualities: qualitiesList,
+        activeQuality: activeQuality,
         subtitles: subtitles,
         activeSubtitle: activeSubtitle,
         isLoading: false,
@@ -309,7 +357,7 @@ class PlayerController extends Notifier<PlayerState> {
       await ref
           .read(videoEngineProvider)
           .initialize(
-            activeStream,
+            activeQuality,
             subtitle:
                 ref.read(subtitlePrefsProvider).useCustomSubtitle ||
                     activeSubtitle.url.isEmpty == true
@@ -325,12 +373,11 @@ class PlayerController extends Notifier<PlayerState> {
   }
 
   Future<void> changeStream(VideoStream newStream) async {
-    _preferredQuality = newStream.quality;
-
     final engine = ref.read(videoEngineProvider);
     final currentPos = engine.currentPosition;
 
     state = state.copyWith(
+      isLoading: true,
       activeStream: newStream,
       subtitles: [...newStream.subtitles, SubtitleTrack.none],
       activeSubtitle: newStream.subtitles.firstOrNull ?? SubtitleTrack.none,
@@ -338,15 +385,89 @@ class PlayerController extends Notifier<PlayerState> {
     );
 
     try {
+      final httpClient = ref.read(httpClientProvider);
+      final newQualities = <VideoStream>[
+        newStream.copyWith(quality: 'Auto'),
+      ];
+
+      try {
+        final parsedQualities = await httpClient.splitM3U8(
+          newStream.url,
+          headers: newStream.headers,
+        );
+        for (final q in parsedQualities) {
+          newQualities.add(
+            VideoStream(
+              url: q.url,
+              headers: newStream.headers,
+              quality: q.quality,
+              subtitles: newStream.subtitles,
+            ),
+          );
+        }
+      } catch (_) {}
+
+      VideoStream activeQuality = newQualities.first;
+      if (_preferredQuality != null) {
+        final qualityMatch = newQualities.firstWhereOrNull(
+          (s) => s.quality == _preferredQuality,
+        );
+        if (qualityMatch != null) activeQuality = qualityMatch;
+      }
+
+      state = state.copyWith(
+        qualities: newQualities,
+        activeQuality: activeQuality,
+        isLoading: false,
+      );
+
       await engine.initialize(
-        newStream,
+        activeQuality,
         subtitle: ref.read(subtitlePrefsProvider).useCustomSubtitle
             ? null
             : newStream.subtitles.firstOrNull,
         startAt: currentPos,
       );
     } catch (e) {
-      state = state.copyWith(error: 'Failed to switch stream: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to switch stream: $e',
+      );
+    }
+  }
+
+  Future<void> changeQuality(VideoStream newQuality) async {
+    if (state.activeQuality?.quality == newQuality.quality &&
+        state.activeQuality?.url == newQuality.url) {
+      return;
+    }
+
+    _preferredQuality = newQuality.quality;
+
+    final engine = ref.read(videoEngineProvider);
+    final currentPos = engine.currentPosition;
+
+    state = state.copyWith(
+      activeQuality: newQuality,
+      isLoading: true,
+      error: null,
+    );
+
+    try {
+      await engine.initialize(
+        newQuality,
+        subtitle: ref.read(subtitlePrefsProvider).useCustomSubtitle ||
+                state.activeSubtitle?.url.isEmpty == true
+            ? null
+            : state.activeSubtitle,
+        startAt: currentPos,
+      );
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to switch quality: $e',
+      );
     }
   }
 

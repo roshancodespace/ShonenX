@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
+import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/models/video_stream.dart';
 
 class TopControls extends StatelessWidget {
   final bool showControls;
   final PlayerMode mode;
   final VideoEngine engine;
   final PlayerState playerState;
+  final PlayerController controller;
   final VoidCallback onBack;
 
   const TopControls({
@@ -16,6 +19,7 @@ class TopControls extends StatelessWidget {
     required this.mode,
     required this.engine,
     required this.playerState,
+    required this.controller,
     required this.onBack,
   });
 
@@ -63,7 +67,10 @@ class TopControls extends StatelessWidget {
                   children: [
                     Text(
                       mode is PlayerModeOnline
-                          ? (mode as PlayerModeOnline).media.title.availableTitle
+                          ? (mode as PlayerModeOnline)
+                                .media
+                                .title
+                                .availableTitle
                           : (mode as PlayerModeOffline).title ?? 'Local Media',
                       style: const TextStyle(
                         color: Colors.white,
@@ -83,7 +90,8 @@ class TopControls extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      playerState.activeEpisode?.title ?? (mode is PlayerModeOffline ? 'Offline File' : 'N/A'),
+                      playerState.activeEpisode?.title ??
+                          (mode is PlayerModeOffline ? 'Offline File' : 'N/A'),
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 13,
@@ -103,6 +111,25 @@ class TopControls extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
+              if (mode is PlayerModeOnline &&
+                  playerState.qualities.length > 1) ...[
+                _buildQualityButton(
+                  qualityText: playerState.activeQuality?.quality ?? 'Auto',
+                  onTap: () {
+                    AppBottomSheet.showSelector<VideoStream>(
+                      context: context,
+                      title: 'Select Quality',
+                      items: playerState.qualities,
+                      selectedValue: playerState.activeQuality,
+                      itemLabel: (s) => s.quality,
+                      onChanged: (v) {
+                        controller.changeQuality(v);
+                      },
+                    );
+                  },
+                ),
+                const SizedBox(width: 16),
+              ],
               _buildActionIcon(
                 icon: Icons.settings_outlined,
                 onTap: () {
@@ -142,6 +169,39 @@ class TopControls extends StatelessWidget {
           ],
         ),
         child: Icon(icon, color: Colors.white, size: 24),
+      ),
+    );
+  }
+
+  Widget _buildQualityButton({
+    required String qualityText,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              qualityText.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Colors.white70,
+              size: 16,
+            ),
+          ],
+        ),
       ),
     );
   }

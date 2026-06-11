@@ -10,6 +10,20 @@ class VideoStream {
     this.quality = 'Auto',
     this.subtitles = const [],
   });
+
+  VideoStream copyWith({
+    String? url,
+    Map<String, String>? headers,
+    String? quality,
+    List<SubtitleTrack>? subtitles,
+  }) {
+    return VideoStream(
+      url: url ?? this.url,
+      headers: headers ?? this.headers,
+      quality: quality ?? this.quality,
+      subtitles: subtitles ?? this.subtitles,
+    );
+  }
 }
 
 class SubtitleTrack {

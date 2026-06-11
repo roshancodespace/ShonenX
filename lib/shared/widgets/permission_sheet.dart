@@ -45,6 +45,7 @@ class PermissionSheet extends StatefulWidget {
 class _PermissionSheetState extends State<PermissionSheet>
     with WidgetsBindingObserver {
   PermissionStatus? _status;
+  bool _hasPopped = false;
 
   bool get _isMobile => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
@@ -66,6 +67,12 @@ class _PermissionSheetState extends State<PermissionSheet>
     if (state == AppLifecycleState.resumed) _checkStatus(autoPop: true);
   }
 
+  void _popWithResult(bool result) {
+    if (!mounted || _hasPopped) return;
+    _hasPopped = true;
+    Navigator.of(context).pop(result);
+  }
+
   Future<void> _checkStatus({bool autoPop = false}) async {
     if (!_isMobile) {
       setState(() => _status = PermissionStatus.denied);
@@ -74,13 +81,13 @@ class _PermissionSheetState extends State<PermissionSheet>
     final status = await widget.permission.status;
     if (mounted) {
       setState(() => _status = status);
-      if (autoPop && status.isGranted) Navigator.of(context).pop(true);
+      if (autoPop && status.isGranted) _popWithResult(true);
     }
   }
 
   Future<void> _requestPermission() async {
     if (!_isMobile) {
-      Navigator.of(context).pop(true);
+      _popWithResult(true);
       return;
     }
     if (_status?.isPermanentlyDenied == true) {
@@ -90,7 +97,7 @@ class _PermissionSheetState extends State<PermissionSheet>
     final status = await widget.permission.request();
     if (mounted) {
       setState(() => _status = status);
-      if (status.isGranted) Navigator.of(context).pop(true);
+      if (status.isGranted) _popWithResult(true);
     }
   }
 
@@ -194,7 +201,7 @@ class _PermissionSheetState extends State<PermissionSheet>
           ),
           const SizedBox(height: 6),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => _popWithResult(false),
             style: TextButton.styleFrom(
               minimumSize: const Size.fromHeight(48),
               shape: const StadiumBorder(),

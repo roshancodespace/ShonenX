@@ -2,11 +2,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/auth/providers/auth_provider.dart';
+import 'package:shonenx/features/discovery/providers/home_feed_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
 
@@ -198,6 +200,32 @@ class TrackingSettingsScreen extends ConsumerWidget {
                 ),
               );
             }).toList(),
+          ),
+          SettingsSection(
+            title: 'Metadata Settings',
+            children: [
+              SettingsDropdownTile<TitlePreference>(
+                icon: Icons.title_rounded,
+                title: 'Preferred Title Language',
+                value: prefs.titlePreference,
+                items: TitlePreference.values
+                    .map(
+                      (e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(e.displayName),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    ref
+                        .read(trackingPrefsProvider.notifier)
+                        .setTitlePreference(val);
+                    ref.invalidate(homeFeedProvider);
+                  }
+                },
+              ),
+            ],
           ),
         ],
       ),

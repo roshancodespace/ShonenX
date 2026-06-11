@@ -38,7 +38,7 @@ final _libraryNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'library');
 final _searchNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'search');
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final onboardingComplete = ref.watch(onboardingProvider);
+  final onboardingComplete = ref.read(onboardingProvider);
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,

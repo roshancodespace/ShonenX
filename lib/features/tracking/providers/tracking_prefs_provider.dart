@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/providers/storage_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 class TrackingPrefsState {
   final bool isIncognito;
@@ -10,6 +11,7 @@ class TrackingPrefsState {
   final TrackerType primaryTracker;
   final bool autoTrackPrimary;
   final double syncThreshold;
+  final TitlePreference titlePreference;
 
   TrackingPrefsState({
     this.isIncognito = false,
@@ -17,6 +19,7 @@ class TrackingPrefsState {
     this.primaryTracker = TrackerType.local,
     this.autoTrackPrimary = false,
     this.syncThreshold = 0.8,
+    this.titlePreference = TitlePreference.english,
   });
 
   TrackingPrefsState copyWith({
@@ -25,6 +28,7 @@ class TrackingPrefsState {
     TrackerType? primaryTracker,
     bool? autoTrackPrimary,
     double? syncThreshold,
+    TitlePreference? titlePreference,
   }) {
     return TrackingPrefsState(
       isIncognito: isIncognito ?? this.isIncognito,
@@ -32,6 +36,7 @@ class TrackingPrefsState {
       primaryTracker: primaryTracker ?? this.primaryTracker,
       autoTrackPrimary: autoTrackPrimary ?? this.autoTrackPrimary,
       syncThreshold: syncThreshold ?? this.syncThreshold,
+      titlePreference: titlePreference ?? this.titlePreference,
     );
   }
 
@@ -49,6 +54,7 @@ class TrackingPrefsState {
       'primaryTracker': primaryTracker.id,
       'autoTrackPrimary': autoTrackPrimary,
       'syncThreshold': syncThreshold,
+      'titlePreference': titlePreference.name,
     };
   }
 
@@ -72,6 +78,10 @@ class TrackingPrefsState {
       ),
       autoTrackPrimary: map['autoTrackPrimary'] ?? false,
       syncThreshold: (map['syncThreshold'] as num?)?.toDouble() ?? 0.8,
+      titlePreference: TitlePreference.values.firstWhere(
+        (e) => e.name == map['titlePreference'],
+        orElse: () => TitlePreference.english,
+      ),
     );
   }
 
@@ -89,25 +99,31 @@ class TrackingPrefsNotifier extends Notifier<TrackingPrefsState> {
     final prefs = ref.watch(sharedPreferencesProvider);
     final jsonString = prefs.getString(_trackingPrefsKey);
 
+    TrackingPrefsState stateVal;
     if (jsonString != null) {
       try {
-        return TrackingPrefsState.fromJson(jsonString);
+        stateVal = TrackingPrefsState.fromJson(jsonString);
       } catch (e) {
-        return TrackingPrefsState(
+        stateVal = TrackingPrefsState(
           enabledTrackers: {
             TrackerType.anilist: true,
             TrackerType.myanimelist: true,
           },
         );
       }
+    } else {
+      stateVal = TrackingPrefsState(
+        enabledTrackers: {
+          TrackerType.anilist: true,
+          TrackerType.myanimelist: true,
+        },
+      );
     }
 
-    return TrackingPrefsState(
-      enabledTrackers: {
-        TrackerType.anilist: true,
-        TrackerType.myanimelist: true,
-      },
-    );
+    // Sync static title preference on MediaTitle
+    MediaTitle.preference = stateVal.titlePreference;
+
+    return stateVal;
   }
 
   void setPrimaryTracker(TrackerType type) {
@@ -141,6 +157,15 @@ class TrackingPrefsNotifier extends Notifier<TrackingPrefsState> {
     }
 
     state = state.copyWith(enabledTrackers: updatedMap);
+    _saveDb();
+  }
+
+  void setTitlePreference(TitlePreference preference) {
+    state = state.copyWith(titlePreference: preference);
+
+    // Sync to MediaTitle static field
+    MediaTitle.preference = preference;
+
     _saveDb();
   }
 

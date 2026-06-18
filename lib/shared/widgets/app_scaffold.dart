@@ -5,6 +5,7 @@ import 'package:shonenx/core/providers/theme_prefs_provider.dart';
 
 class AppScaffold extends ConsumerWidget {
   final String? title;
+  final Widget? titleWidget;
   final bool extendBody;
   final String? subtitle;
   final PreferredSizeWidget? barBottom;
@@ -19,6 +20,7 @@ class AppScaffold extends ConsumerWidget {
   const AppScaffold({
     super.key,
     this.title,
+    this.titleWidget,
     this.extendBody = false,
     this.subtitle,
     this.barBottom,
@@ -48,10 +50,10 @@ class AppScaffold extends ConsumerWidget {
           ? Colors.transparent
           : theme.scaffoldBackgroundColor,
       extendBody: extendBody,
-      appBar: title == null && actions == null
+      appBar: title == null && titleWidget == null && actions == null
           ? null
           : AppBar(
-              title: title == null
+              title: titleWidget ?? (title == null
                   ? null
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,7 +73,7 @@ class AppScaffold extends ConsumerWidget {
                             ),
                           ),
                       ],
-                    ),
+                    )),
               bottom: barBottom,
               centerTitle: centerTitle,
               elevation: 0,

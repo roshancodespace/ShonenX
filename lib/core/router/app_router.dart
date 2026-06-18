@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/router/complex_extra_codec.dart';
 import 'package:shonenx/core/router/scaffold_with_nav_bar.dart';
 import 'package:shonenx/features/discovery/presentation/details_screen.dart';
-import 'package:shonenx/features/onboarding/providers/onboarding_provider.dart';
 import 'package:shonenx/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:shonenx/features/discovery/presentation/home_screen.dart';
+import 'package:shonenx/features/splash/presentation/splash_screen.dart';
 import 'package:shonenx/features/discovery/presentation/discover_screen.dart';
 import 'package:shonenx/features/downloads/presentation/downloads_screen.dart';
 import 'package:shonenx/features/extensions/presentation/extensions_settings_screen.dart';
+import 'package:shonenx/features/extensions/presentation/extension_tester_screen.dart';
+import 'package:shonenx/core/remote_config/ui/remote_config_editor_screen.dart';
 import 'package:shonenx/features/history/presentation/continue_watching_screen.dart';
 import 'package:shonenx/features/library/presentation/library_screen.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
@@ -31,24 +33,29 @@ import 'package:shonenx/features/settings/presentation/about_screen.dart';
 import 'package:shonenx/features/notifications/presentation/notifications_settings_screen.dart';
 import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/core/network/cf_client.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _homeNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'home');
 final _libraryNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'library');
 final _searchNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'search');
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final onboardingComplete = ref.read(onboardingProvider);
+  CFClient.navigatorKey = rootNavigatorKey;
 
   return GoRouter(
-    navigatorKey: _rootNavigatorKey,
-    initialLocation: onboardingComplete ? '/home' : '/onboarding',
+    navigatorKey: rootNavigatorKey,
+    initialLocation: '/splash',
     debugLogDiagnostics: true,
     extraCodec: const ComplexExtraCodec(),
     errorBuilder: (context, state) => Scaffold(
       body: Center(child: Text('Route not found: ${state.uri.toString()}')),
     ),
     routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
@@ -78,8 +85,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                     (e) => e.id == state.uri.queryParameters['type'],
                     orElse: () => MediaType.ANIME,
                   );
+                  final genres = state.uri.queryParametersAll['genres'] ?? [];
+                  final tags = state.uri.queryParametersAll['tags'] ?? [];
 
-                  return DiscoverScreen(query: query, type: type);
+                  return DiscoverScreen(
+                    query: query, 
+                    type: type,
+                    genres: genres,
+                    tags: tags,
+                  );
                 },
               ),
             ],
@@ -149,6 +163,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'extensions',
             builder: (context, state) => const ExtensionsSettingsScreen(),
+            routes: [
+              GoRoute(
+                path: 'test',
+                builder: (context, state) => const ExtensionTesterScreen(),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: 'remote_config_editor',
+            builder: (context, state) => const RemoteConfigEditorScreen(),
           ),
           GoRoute(
             path: 'content',

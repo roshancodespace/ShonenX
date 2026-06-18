@@ -1,10 +1,11 @@
-import 'dart:io';
-
+import 'package:anymex_extension_runtime_bridge/Services/Mangayomi/MangayomiExtensions.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart'
+import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter/services.dart';
 
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -25,18 +26,50 @@ class ExtensionsSettingsScreen extends ConsumerStatefulWidget {
 
 class _ExtensionsSettingsScreenState
     extends ConsumerState<ExtensionsSettingsScreen> {
+  bool _isSearching = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final manager = ref.read(extensionManagerProvider);
+    final manager = ref.watch(extensionManagerProvider);
 
     return DefaultTabController(
       length: 2,
       child: AppScaffold(
-        title: Platform.isAndroid ? null : 'Sources',
+        title: _isSearching ? null : 'Sources',
+        floatingActionButtonLocation: MediaQuery.of(context).size.width < 600
+            ? FloatingActionButtonLocation.centerFloat
+            : FloatingActionButtonLocation.endFloat,
+        titleWidget: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search extensions...',
+                  border: InputBorder.none,
+                  hintStyle: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+                style: theme.textTheme.titleMedium,
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              )
+            : null,
         barBottom: PreferredSize(
-          preferredSize: Size.fromHeight(40),
+          preferredSize: const Size.fromHeight(40),
           child: Expanded(
             child: TabBar(
               indicatorSize: TabBarIndicatorSize.tab,
@@ -49,29 +82,35 @@ class _ExtensionsSettingsScreenState
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () => _showGuideSheet(context),
-          ),
-          if (Platform.isAndroid)
-            SegmentedButton(
-              segments: [
-                ButtonSegment(
-                  value: bridge.ExtensionType.mangayomi,
-                  label: Text('Mangayomi'),
-                ),
-                ButtonSegment(
-                  value: bridge.ExtensionType.aniyomi,
-                  label: Text('Tachiyomi'),
-                ),
-              ],
-              onSelectionChanged: (Set<bridge.ExtensionType> selected) {
-                ref.read(managerTypeProvider.notifier).setType(selected.first);
-                ref.invalidate(availableAnimeSourcesProvider);
-                setState(() => {});
+          if (_isSearching)
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () {
+                setState(() {
+                  _isSearching = false;
+                  _searchQuery = '';
+                  _searchController.clear();
+                });
               },
-              selected: {ref.watch(managerTypeProvider)},
+            )
+          else ...[
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                setState(() {
+                  _isSearching = true;
+                });
+              },
             ),
+            IconButton(
+              icon: const Icon(Icons.speed_outlined),
+              onPressed: () => context.push('/settings/extensions/test'),
+            ),
+            IconButton(
+              icon: const Icon(Icons.info_outline),
+              onPressed: () => _showGuideSheet(context),
+            ),
+          ],
           const SizedBox(width: 10),
         ],
         body: TabBarView(
@@ -82,10 +121,26 @@ class _ExtensionsSettingsScreenState
 
                 return sourcesAsync.when(
                   data: (sources) {
+                    final filteredSources = sources.where((s) {
+                      final name = s.name.toLowerCase();
+                      final id = s.id.toLowerCase();
+                      final query = _searchQuery.toLowerCase();
+                      return name.contains(query) || id.contains(query);
+                    }).toList();
+
+                    if (filteredSources.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No extensions found',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      );
+                    }
+
                     return ListView.builder(
-                      itemCount: sources.length,
+                      itemCount: filteredSources.length,
                       itemBuilder: (context, index) {
-                        final source = sources[index];
+                        final source = filteredSources[index];
                         final isInbuilt = source.type == SourceType.inbuilt;
 
                         final sourceImpl = ref.read(
@@ -157,14 +212,16 @@ class _ExtensionsSettingsScreenState
                                       icon: const Icon(Icons.delete),
                                       onPressed: () async {
                                         final extSource = manager
-                                            .currentManager
-                                            .installedAnimeExtensions
+                                            .getInstalledRx(
+                                              bridge.ItemType.anime,
+                                            )
                                             .value
                                             .firstWhere(
                                               (e) => e.id == source.id,
                                             );
-                                        await manager.currentManager
-                                            .uninstallSource(extSource);
+                                        await manager.uninstallSource(
+                                          extSource,
+                                        );
                                         ref.invalidate(
                                           availableAnimeSourcesProvider,
                                         );
@@ -184,28 +241,42 @@ class _ExtensionsSettingsScreenState
                 );
               },
             ),
-            manager.currentManager.availableAnimeExtensions.value.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.extension_off_outlined,
-                            size: 64,
-                            color: theme.colorScheme.onSurfaceVariant
-                                .withOpacity(0.5),
+            (() {
+              final available = manager
+                  .getAvailableRx(bridge.ItemType.anime)
+                  .value;
+              final filteredAvailable = available.where((e) {
+                final name = (e.name ?? '').toLowerCase();
+                final id = (e.id ?? '').toLowerCase();
+                final query = _searchQuery.toLowerCase();
+                return name.contains(query) || id.contains(query);
+              }).toList();
+
+              if (filteredAvailable.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.extension_off_outlined,
+                          size: 64,
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.5,
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No available extensions',
-                            style: theme.textTheme.titleLarge,
-                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _searchQuery.isEmpty
+                              ? 'No available extensions'
+                              : 'No extensions found',
+                          style: theme.textTheme.titleLarge,
+                        ),
+                        if (_searchQuery.isEmpty) ...[
                           const SizedBox(height: 8),
                           Text(
-                            ref.watch(managerTypeProvider) ==
-                                    bridge.ExtensionType.mangayomi
+                            manager is MangayomiExtensions
                                 ? 'Add a Mangayomi repository to fetch and install extensions.'
                                 : 'Add a Tachiyomi repository to fetch and install extensions.',
                             textAlign: TextAlign.center,
@@ -214,119 +285,83 @@ class _ExtensionsSettingsScreenState
                             ),
                           ),
                         ],
-                      ),
+                      ],
                     ),
-                  )
-                : ListView(
-                    children: manager
-                        .currentManager
-                        .availableAnimeExtensions
-                        .value
-                        .map((e) {
-                          return SettingsActionTile(
-                            title: e.name ?? 'N/A',
-                            subtitle: e.id ?? 'N/A',
-                            leading: CachedNetworkImage(
-                              imageUrl: e.iconUrl ?? '',
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.cover,
-                              errorWidget: (context, url, error) =>
-                                  const Icon(Icons.extension, size: 40),
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.add),
-                              onPressed: () async {
-                                await manager.currentManager.installSource(e);
-                                ref.invalidate(availableAnimeSourcesProvider);
-                                setState(() => {});
-                              },
-                            ),
-                          );
-                        })
-                        .toList(),
                   ),
+                );
+              }
+
+              return ListView(
+                children: filteredAvailable.map((e) {
+                  return SettingsActionTile(
+                    title: e.name ?? 'N/A',
+                    subtitle: e.id ?? 'N/A',
+                    leading: CachedNetworkImage(
+                      imageUrl: e.iconUrl ?? '',
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.extension, size: 40),
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () async {
+                        await manager.installSource(e);
+                        ref.invalidate(availableAnimeSourcesProvider);
+                        setState(() => {});
+                      },
+                    ),
+                  );
+                }).toList(),
+              );
+            })(),
           ],
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          backgroundColor: theme.colorScheme.secondary,
-          foregroundColor: theme.colorScheme.onSecondary,
-          icon: const Icon(Icons.add),
-          label: Text(
-            ref.watch(managerTypeProvider) == bridge.ExtensionType.mangayomi
-                ? 'Add Mangayomi Repo'
-                : 'Add Tachiyomi Repo',
-          ),
-          onPressed: () {
-            final repoUrlController = TextEditingController();
-
-            showModalBottomSheet(
-              context: context,
-              builder: (sheetContext) {
-                return StatefulBuilder(
-                  builder: (context, setModalState) {
-                    return AppBottomSheet(
-                      title:
-                          ref.watch(managerTypeProvider) ==
-                              bridge.ExtensionType.mangayomi
-                          ? 'Add Mangayomi Repository'
-                          : 'Add Tachiyomi Repository',
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextField(
-                            controller: repoUrlController,
-                            decoration: const InputDecoration(
-                              labelText: 'Repository URL',
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.maxFinite,
-                            child: FilledButton(
-                              onPressed: () async {
-                                final parsedUrl = _parseRepoUrl(
-                                  repoUrlController.text,
-                                );
-
-                                if (parsedUrl == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Text(
-                                        'Invalid repository URL. Please provide a direct link to the index.min.json file.',
-                                      ),
-                                      backgroundColor: Theme.of(
-                                        context,
-                                      ).colorScheme.error,
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                await manager.currentManager.onRepoSaved([
-                                  parsedUrl,
-                                ], bridge.ItemType.anime);
-
-                                if (sheetContext.mounted) {
-                                  Navigator.pop(sheetContext);
-                                }
-
-                                ref.invalidate(availableAnimeSourcesProvider);
-
-                                setState(() {});
-                              },
-                              child: const Text('Add'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
-            );
-          },
+        floatingActionButton: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 48,
+              child: SegmentedButton<String>(
+                style: SegmentedButton.styleFrom(
+                  minimumSize: const Size(0, 44),
+                  tapTargetSize: MaterialTapTargetSize.padded,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                segments: const [
+                  ButtonSegment(
+                    value: 'mangayomi',
+                    label: Text('Mangayomi', style: TextStyle(fontSize: 12)),
+                  ),
+                  ButtonSegment(
+                    value: 'aniyomi',
+                    label: Text('Tachiyomi', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+                selected: {manager.id.replaceAll('-desktop', '')},
+                onSelectionChanged: (selected) {
+                  ref
+                      .read(extensionManagerProvider.notifier)
+                      .setManager(selected.first);
+                  ref.invalidate(availableAnimeSourcesProvider);
+                  setState(() {});
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              height: 44,
+              child: FloatingActionButton.extended(
+                heroTag: 'add_repo_fab',
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add Repo', style: TextStyle(fontSize: 13)),
+                onPressed: () => _showAddRepoSheet(context),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -411,5 +446,251 @@ class _ExtensionsSettingsScreenState
         );
       },
     );
+  }
+
+  void _showAddRepoSheet(BuildContext context) {
+    final manager = ref.watch(extensionManagerProvider);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return _AddRepoSheet(
+          manager: manager,
+          onAdd: (url) async {
+            final parsedUrl = _parseRepoUrl(url);
+
+            if (parsedUrl == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text(
+                    'Invalid repository URL. Please provide a direct link to the index.min.json file.',
+                  ),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+              return;
+            }
+
+            await manager.addRepo(parsedUrl, bridge.ItemType.anime);
+            if (context.mounted) {
+              Navigator.pop(context);
+            }
+            ref.invalidate(availableAnimeSourcesProvider);
+            setState(() {});
+          },
+        );
+      },
+    );
+  }
+}
+
+class _AddRepoSheet extends StatefulWidget {
+  final bridge.Extension manager;
+  final Future<void> Function(String url) onAdd;
+
+  const _AddRepoSheet({required this.manager, required this.onAdd});
+
+  @override
+  State<_AddRepoSheet> createState() => _AddRepoSheetState();
+}
+
+class _AddRepoSheetState extends State<_AddRepoSheet> {
+  final _controller = TextEditingController();
+  bool _isLoading = false;
+  String? _clipboardText;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkClipboard();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _checkClipboard() async {
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text?.trim();
+      if (text != null &&
+          (text.startsWith('http://') || text.startsWith('https://'))) {
+        setState(() {
+          _clipboardText = text;
+        });
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isMangayomi = widget.manager.id == 'mangayomi';
+
+    return AppBottomSheet(
+      title: isMangayomi ? 'Add Mangayomi Repo' : 'Add Tachiyomi Repo',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: theme.colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Direct JSON Link Required',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isMangayomi
+                            ? 'Please provide a direct URL pointing to the index.min.json file.'
+                            : 'Please provide a direct URL to the repository index.json file.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            decoration: InputDecoration(
+              labelText: 'Repository URL',
+              prefixIcon: const Icon(Icons.link_rounded),
+              suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _controller,
+                builder: (context, value, _) {
+                  return value.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded),
+                          onPressed: () => _controller.clear(),
+                        )
+                      : const SizedBox.shrink();
+                },
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              helperText: isMangayomi
+                  ? 'Format: https://.../index.min.json'
+                  : 'Format: https://.../index.json',
+            ),
+            enabled: !_isLoading,
+            autofocus: true,
+            onSubmitted: (_) => _submit(),
+          ),
+          const SizedBox(height: 12),
+          if (_clipboardText != null && !_isLoading) ...[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () {
+                  _controller.text = _clipboardText!;
+                  _controller.selection = TextSelection.fromPosition(
+                    TextPosition(offset: _clipboardText!.length),
+                  );
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.secondary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 8,
+                  ),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                icon: const Icon(Icons.content_paste_rounded, size: 16),
+                label: Text(
+                  'Paste copied link: $_clipboardText',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.secondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          SizedBox(
+            height: 48,
+            child: FilledButton(
+              onPressed: _isLoading ? null : _submit,
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.cloud_download_outlined, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Add Repository',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.onPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submit() async {
+    final url = _controller.text.trim();
+    if (url.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await widget.onAdd(url);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }

@@ -10,7 +10,7 @@ import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/player/presentation/widgets/progress_bar.dart';
-import 'package:shonenx/features/player/providers/active_engine_provider.dart';
+import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_provider.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
@@ -354,9 +354,20 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                             onChanged: (v) {
                               widget.controller.changeServer(v);
                             },
-                            displayText:
-                                widget.playerState.activeServer?.id ??
-                                'Default',
+                            displayText: (() {
+                              final server = widget.playerState.activeServer;
+
+                              if (server == null) return 'Default';
+
+                              if (server.id.length <= 20) {
+                                return server.id;
+                              }
+
+                              final name = server.name;
+                              return name.length > 30
+                                  ? '${name.substring(0, 27)}...'
+                                  : name;
+                            })(),
                             badgeBuilder: (s) {
                               if (s.type == ServerType.unknown) {
                                 return null;

@@ -7,6 +7,7 @@ import 'package:shonenx/core/providers/storage_provider.dart';
 import 'package:shonenx/core/providers/theme_prefs_provider.dart';
 import 'package:shonenx/core/router/app_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/remote_config/ui/remote_config_listener.dart';
 import 'package:shonenx/core/theme/app_theme.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/shared/widgets/global_background.dart';
@@ -71,7 +72,7 @@ class ShonenXApp extends ConsumerWidget {
           routerConfig: ref.watch(routerProvider),
           builder: (context, child) {
             if (child == null) return const SizedBox.shrink();
-            return GlobalBackground(child: child);
+            return RemoteConfigListener(child: GlobalBackground(child: child));
           },
         );
       },

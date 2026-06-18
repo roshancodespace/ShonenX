@@ -27,7 +27,8 @@ class _StaticNoiseOverlayState extends State<StaticNoiseOverlay> {
   @override
   void didUpdateWidget(StaticNoiseOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.color != oldWidget.color || widget.opacity != oldWidget.opacity) {
+    if (widget.color != oldWidget.color ||
+        widget.opacity != oldWidget.opacity) {
       _painter.dispose();
       _painter = _StaticNoisePainter(widget.color, widget.opacity);
     }
@@ -42,10 +43,7 @@ class _StaticNoiseOverlayState extends State<StaticNoiseOverlay> {
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
-      child: CustomPaint(
-        painter: _painter,
-        size: Size.infinite,
-      ),
+      child: CustomPaint(painter: _painter, size: Size.infinite),
     );
   }
 }

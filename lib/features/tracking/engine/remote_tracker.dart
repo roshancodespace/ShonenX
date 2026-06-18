@@ -11,6 +11,10 @@ abstract interface class RemoteTracker implements TrackingService {
 
   Future<TrackerProfile> fetchProfile();
 
+  Future<List<String>> fetchGenres();
+
+  Future<List<String>> fetchTags();
+
   Future<List<TrackerSearchResult>> searchMedia(
     String query, {
     required MediaType type,
@@ -27,6 +31,8 @@ abstract interface class RemoteTracker implements TrackingService {
     String query, {
     int page = 1,
     required MediaType type,
+    List<String>? genres,
+    List<String>? tags,
     Duration? cacheDuration,
     AdultContentMode adultMode = AdultContentMode.safe,
   });

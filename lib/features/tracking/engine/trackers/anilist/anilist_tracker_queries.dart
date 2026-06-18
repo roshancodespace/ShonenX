@@ -139,6 +139,8 @@ class AnilistTrackerQueries {
       \$search: String,
       \$page: Int = 1,
       \$type: MediaType!,
+      \$genre_in: [String],
+      \$tag_in: [String],
       \$sort: [MediaSort] = [SEARCH_MATCH],
     ) {
       Page(page: \$page, perPage: 20) {
@@ -148,6 +150,8 @@ class AnilistTrackerQueries {
         media(
           search: \$search
           type: \$type
+          genre_in: \$genre_in
+          tag_in: \$tag_in
           $adultFilter
           sort: \$sort
         ) {
@@ -262,6 +266,20 @@ class AnilistTrackerQueries {
             }
           }
         }
+      }
+    }
+  ''';
+
+  static String get genres => '''
+    query {
+      GenreCollection
+    }
+  ''';
+
+  static String get tags => '''
+    query {
+      MediaTagCollection {
+        name
       }
     }
   ''';

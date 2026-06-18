@@ -13,6 +13,7 @@ import 'package:shonenx/features/discovery/presentation/widgets/discovery_mode_s
 import 'package:shonenx/features/discovery/providers/home_feed_provider.dart';
 import 'package:shonenx/features/discovery/providers/home_layout_provider.dart';
 import 'package:shonenx/features/library/providers/cloud_library_provider.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -37,7 +38,7 @@ class HomeScreen extends ConsumerWidget {
           for (final section in sections) {
             if (section.type == HomeSectionType.cloudLibraryStatus) {
               ref
-                  .read(cloudLibraryProvider(section.libraryStatus!).notifier)
+                  .read(cloudLibraryProvider((status: section.libraryStatus!, trackerType: section.targetTracker)).notifier)
                   .refresh();
             }
           }
@@ -201,17 +202,28 @@ class HomeScreen extends ConsumerWidget {
         return ContinueWatchingRow(title: section.title);
 
       case HomeSectionType.cloudLibraryStatus:
-        if (section.libraryStatus == null) return const SizedBox.shrink();
-        return CloudLibraryRowWidget(
-          title: section.title,
-          status: section.libraryStatus!,
-        );
-
       case HomeSectionType.localLibraryStatus:
         if (section.libraryStatus == null) return const SizedBox.shrink();
-        return LocalLibraryRow(
-          title: section.title,
-          status: section.libraryStatus!,
+
+        return Consumer(
+          builder: (context, ref, _) {
+            final activeTracker = section.targetTracker != null 
+                ? ref.watch(availableTrackersProvider).firstWhere((t) => t.type == section.targetTracker!)
+                : ref.watch(primaryTrackerProvider);
+            
+            if (activeTracker.type == TrackerType.local) {
+              return LocalLibraryRow(
+                title: section.title,
+                status: section.libraryStatus!,
+              );
+            } else {
+              return CloudLibraryRowWidget(
+                title: section.title,
+                status: section.libraryStatus!,
+                targetTracker: activeTracker.type,
+              );
+            }
+          },
         );
 
       case HomeSectionType.trending:

@@ -6,7 +6,7 @@ import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/models/source_setting.dart';
 import 'package:shonenx/source_engine/providers/anime_source.dart';
-import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart'
+import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
 
 class AnimeBridgeMethods {
@@ -47,9 +47,93 @@ class AnimeExtensionAdapter implements AnimeSource {
 
   @override
   Future<List<SourceSetting>> getSettingsSchema() async {
-    final schema = await methods.getSettingsSchema();
-    print(schema.toString());
-    return [];
+    final log = _log.child('getSettingsSchema');
+
+    try {
+      final schema = await methods.getSettingsSchema();
+      final List<SourceSetting> settings = [];
+
+      for (final pref in schema) {
+        if (pref.key == null || pref.type == null) continue;
+
+        try {
+          if (pref.type == 'switch' || pref.type == 'checkbox') {
+            final title =
+                pref.switchPreferenceCompat?.title ??
+                pref.checkBoxPreference?.title ??
+                pref.key!;
+            final description =
+                pref.switchPreferenceCompat?.summary ??
+                pref.checkBoxPreference?.summary ??
+                '';
+            final defaultValue =
+                pref.switchPreferenceCompat?.value ??
+                pref.checkBoxPreference?.value ??
+                false;
+
+            settings.add(
+              SourceSetting(
+                id: pref.key!,
+                name: title,
+                description: description,
+                type: SettingType.boolean,
+                defaultValue: defaultValue,
+              ),
+            );
+          } else if (pref.type == 'list') {
+            final listPref = pref.listPreference;
+            final options = listPref?.entryValues ?? listPref?.entries ?? [];
+
+            settings.add(
+              SourceSetting(
+                id: pref.key!,
+                name: listPref?.title ?? pref.key!,
+                description: listPref?.summary ?? '',
+                type: SettingType.select,
+                defaultValue:
+                    listPref?.value ??
+                    (options.isNotEmpty ? options.first : ''),
+                options: options,
+              ),
+            );
+          } else if (pref.type == 'multi_select') {
+            final multiPref = pref.multiSelectListPreference;
+            final options = multiPref?.entryValues ?? multiPref?.entries ?? [];
+
+            settings.add(
+              SourceSetting(
+                id: pref.key!,
+                name: multiPref?.title ?? pref.key!,
+                description: multiPref?.summary ?? '',
+                type: SettingType.multiSelect,
+                defaultValue: multiPref?.values ?? [],
+                options: options,
+              ),
+            );
+          } else if (pref.type == 'text') {
+            final textPref = pref.editTextPreference;
+            settings.add(
+              SourceSetting(
+                id: pref.key!,
+                name: textPref?.title ?? pref.key!,
+                description: textPref?.summary ?? '',
+                type: SettingType.text,
+                defaultValue: textPref?.value ?? '',
+              ),
+            );
+          } else {
+            log.w('Unsupported setting type: ${pref.type}');
+          }
+        } catch (e) {
+          log.e('Failed to parse setting ${pref.key}', e);
+        }
+      }
+
+      return settings;
+    } catch (e, st) {
+      log.e('Failed to fetch settings schema', e, st);
+      return [];
+    }
   }
 
   @override

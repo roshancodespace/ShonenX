@@ -122,6 +122,8 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
     String query, {
     int page = 1,
     MediaType type = MediaType.ANIME,
+    List<String>? genres,
+    List<String>? tags,
     Duration? cacheDuration,
     AdultContentMode adultMode = AdultContentMode.safe,
   }) {
@@ -197,6 +199,32 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
 
       return _mapToUnified(data, type, requestId);
     });
+  }
+
+  @override
+  Future<List<String>> fetchGenres() async {
+    return [
+      'Action',
+      'Adventure',
+      'Comedy',
+      'Drama',
+      'Fantasy',
+      'Romance',
+      'Sci-Fi',
+      'Slice of Life',
+      'Sports',
+      'Thriller',
+      'Mystery',
+      'Supernatural',
+      'Horror',
+      'Mecha',
+      'Psychological',
+    ];
+  }
+
+  @override
+  Future<List<String>> fetchTags() async {
+    return [];
   }
 
   UnifiedMedia _mapToUnified(

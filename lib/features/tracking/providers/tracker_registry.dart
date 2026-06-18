@@ -7,6 +7,8 @@ import 'package:shonenx/features/tracking/engine/tracking_service.dart';
 import 'package:shonenx/features/tracking/engine/trackers/anilist/anilist_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 
+import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
+
 final availableTrackersProvider = Provider<List<TrackingService>>(
   (ref) => [
     AnilistTracker(ref),
@@ -16,7 +18,27 @@ final availableTrackersProvider = Provider<List<TrackingService>>(
 );
 
 final primaryTrackerProvider = Provider<TrackingService>((ref) {
-  return ref
-      .watch(trackingPrefsProvider.select((s) => s.primaryTracker))
-      .getTracker(ref);
+  final preferredType = ref.watch(
+    trackingPrefsProvider.select((s) => s.primaryTracker),
+  );
+
+  if (preferredType == TrackerType.local) {
+    return preferredType.getTracker(ref);
+  }
+
+  final profiles = ref.watch(trackerProfileProvider);
+  if (profiles.containsKey(preferredType)) {
+    return preferredType.getTracker(ref);
+  }
+
+  // Preferred is cloud but not logged in. Find next logged in cloud tracker.
+  final loggedInCloudTypes = profiles.keys
+      .where((t) => t != TrackerType.local)
+      .toList();
+  if (loggedInCloudTypes.isNotEmpty) {
+    return loggedInCloudTypes.first.getTracker(ref);
+  }
+
+  // Fallback to local
+  return TrackerType.local.getTracker(ref);
 });

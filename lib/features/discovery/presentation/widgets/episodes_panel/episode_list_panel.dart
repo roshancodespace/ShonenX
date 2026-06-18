@@ -4,6 +4,7 @@ import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
+import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
@@ -88,7 +89,41 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
 
     return episodesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 48,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                e.toString().contains('Cloudflare')
+                    ? 'Cloudflare verification failed. Please try turning off "In-app Cloudflare Bypass" in settings to use the proxy, or perform a manual match.'
+                    : 'Failed to fetch episodes: $e',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  ref.invalidate(matchedMediaProvider(widget.media.title.availableTitle));
+                  ref.invalidate(episodesListProvider(widget.media.title.availableTitle));
+                },
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Retry Search'),
+              ),
+            ],
+          ),
+        ),
+      ),
       data: (state) {
         if (state.episodes.isEmpty) {
           return const Center(child: Text('No episodes found.'));

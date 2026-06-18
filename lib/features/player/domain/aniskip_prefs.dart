@@ -78,13 +78,11 @@ class AniSkipPrefs {
   }
 
   Map<String, dynamic> toJson() {
-    return {'segments': segments};
+    return toMap();
   }
 
   factory AniSkipPrefs.fromJson(Map<String, dynamic> json) {
-    return AniSkipPrefs(
-      segments: Map<SkipType, SkipMode>.from(json['segments']),
-    );
+    return AniSkipPrefs.fromMap(json);
   }
 
   List<SkipType> enabledTypes() {

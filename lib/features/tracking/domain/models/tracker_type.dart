@@ -10,7 +10,7 @@ import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dar
 enum TrackerType {
   anilist('AniList'),
   myanimelist('MyAnimeList'),
-  kitsu('Kitsu'),
+  // kitsu('Kitsu'),
   local('Local');
 
   final String displayName;
@@ -46,8 +46,8 @@ extension TrackerTypeX on TrackerType {
         return MalTracker(ref);
       case TrackerType.local:
         return LocalTracker(ref.watch(databaseProvider));
-      default:
-        throw UnimplementedError('Tracker type $this not implemented');
+      // default:
+      //   throw UnimplementedError('Tracker type $this not implemented');
     }
   }
 

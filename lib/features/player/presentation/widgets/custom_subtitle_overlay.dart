@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/features/player/providers/active_engine_provider.dart';
 import 'package:shonenx/features/player/providers/custom_subtitle_provider.dart';
 import 'package:shonenx/features/player/domain/subtitle_prefs.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
+import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/utils/subtitle_parser.dart';
 
 class CustomSubtitleOverlay extends ConsumerWidget {

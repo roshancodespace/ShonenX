@@ -9,29 +9,29 @@ abstract class AnimeSource {
   SourceInfo get sourceInfo;
 
   Future<List<SourceSetting>> getSettingsSchema() async => const [
-    SourceSetting(
-      id: 'use_proxy',
-      name: 'Use Proxy',
-      description: 'Enable proxy for bypassing region blocks',
-      type: SettingType.boolean,
-      defaultValue: false,
-    ),
-    SourceSetting(
-      id: 'preferred_quality',
-      name: 'Preferred Quality',
-      description: 'Default video quality to select',
-      type: SettingType.select,
-      options: ['Auto', '1080p', '720p', '480p'],
-      defaultValue: 'Auto',
-    ),
-    SourceSetting(
-      id: 'language_preference',
-      name: 'Language Preference',
-      description: 'Select available audio tracks to fetch',
-      type: SettingType.multiSelect,
-      options: ['Sub', 'Dub', 'Raw'],
-      defaultValue: <String>['Sub', 'Dub', 'Raw'],
-    ),
+    // SourceSetting(
+    //   id: 'use_proxy',
+    //   name: 'Use Proxy',
+    //   description: 'Enable proxy for bypassing region blocks',
+    //   type: SettingType.boolean,
+    //   defaultValue: false,
+    // ),
+    // SourceSetting(
+    //   id: 'preferred_quality',
+    //   name: 'Preferred Quality',
+    //   description: 'Default video quality to select',
+    //   type: SettingType.select,
+    //   options: ['Auto', '1080p', '720p', '480p'],
+    //   defaultValue: 'Auto',
+    // ),
+    // SourceSetting(
+    //   id: 'language_preference',
+    //   name: 'Language Preference',
+    //   description: 'Select available audio tracks to fetch',
+    //   type: SettingType.multiSelect,
+    //   options: ['Sub', 'Dub', 'Raw'],
+    //   defaultValue: <String>['Sub', 'Dub', 'Raw'],
+    // ),
   ];
 
   Future<List<UnifiedMedia>> search(

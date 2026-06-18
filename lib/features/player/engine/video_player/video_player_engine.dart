@@ -7,7 +7,7 @@ import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:video_player/video_player.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/features/player/providers/active_engine_provider.dart';
+import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 
 class VideoPlayerEngine implements VideoEngine {
   VideoPlayerController? _controller;

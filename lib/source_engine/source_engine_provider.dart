@@ -4,7 +4,7 @@ import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/providers/anime_source.dart';
 import 'package:shonenx/source_engine/providers/inbuilt_sources_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
-import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart'
+import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
@@ -30,7 +30,7 @@ final animeSourceProvider = Provider.family<AnimeSource, SourceInfo>((
   }
 
   final manager = ref.read(extensionManagerProvider);
-  final ext = manager.currentManager
+  final ext = manager
       .getInstalledRx(bridge.ItemType.anime)
       .value
       .firstWhere(

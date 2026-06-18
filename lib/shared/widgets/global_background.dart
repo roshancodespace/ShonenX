@@ -102,14 +102,13 @@ class GlobalBackground extends ConsumerWidget {
           color: (useGradients || customBackgroundImagePath != null)
               ? null
               : theme.scaffoldBackgroundColor,
-          gradient: useGradients
+          gradient: useGradients && customBackgroundImagePath == null
               ? LinearGradient(
                   begin: Alignment.bottomLeft,
                   end: Alignment.topRight,
                   colors: [
                     theme.scaffoldBackgroundColor,
                     theme.colorScheme.surfaceContainer,
-                    theme.colorScheme.surfaceContainerLowest,
                   ],
                 )
               : null,

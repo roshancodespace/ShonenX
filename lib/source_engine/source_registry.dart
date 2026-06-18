@@ -1,47 +1,60 @@
 import 'dart:io';
 
+import 'package:anymex_extension_runtime_bridge/Services/Aniyomi/AniyomiExtensions.dart';
+import 'package:anymex_extension_runtime_bridge/Services/AniyomiDesktop/DesktopAniyomiExtensions.dart';
+import 'package:anymex_extension_runtime_bridge/Services/Mangayomi/MangayomiExtensions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shonenx/core/providers/storage_provider.dart';
-import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart'
+import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/providers/inbuilt_sources_provider.dart';
 
-final extensionManagerProvider = Provider<bridge.ExtensionManager>((ref) {
-  final manager = Get.find<bridge.ExtensionManager>();
-  final type = ref.watch(managerTypeProvider);
-  manager.setCurrentManager(type);
-  return manager;
-}, name: 'extensionManagerProvider');
-
-final managerTypeProvider =
-    NotifierProvider<ManagerTypeNotifier, bridge.ExtensionType>(
-      ManagerTypeNotifier.new,
-      name: 'managerTypeProvider',
+final extensionManagerProvider =
+    NotifierProvider<ExtensionManagerNotifier, bridge.Extension>(
+      ExtensionManagerNotifier.new,
     );
 
-class ManagerTypeNotifier extends Notifier<bridge.ExtensionType> {
+class ExtensionManagerNotifier extends Notifier<bridge.Extension> {
   SharedPreferences get _storage => ref.read(sharedPreferencesProvider);
 
+  static const _key = 'currentManager';
+
+  late final bridge.ExtensionManager _manager =
+      Get.find<bridge.ExtensionManager>();
+
   @override
-  bridge.ExtensionType build() {
-    final saved = _storage.getString('currentManager');
-    if (saved != null) {
-      return bridge.ExtensionType.fromString(saved);
+  bridge.Extension build() {
+    final saved = _storage.getString(_key);
+
+    if (saved == 'aniyomi' || saved == 'aniyomi-desktop') {
+      return Platform.isAndroid
+          ? _manager.get<AniyomiExtensions>()
+          : _manager.get<DesktopAniyomiExtensions>();
     }
-    return bridge.ExtensionType.mangayomi;
+
+    return _manager.get<MangayomiExtensions>();
   }
 
-  void setType(bridge.ExtensionType type) {
-    if (!Platform.isAndroid && type == bridge.ExtensionType.aniyomi) return;
-    state = type;
-    _saveDb();
-  }
+  void setManager(String id) {
+    final effectiveId = (!Platform.isAndroid && id == 'aniyomi')
+        ? 'aniyomi-desktop'
+        : id;
 
-  void _saveDb() {
-    _storage.setString('currentManager', state.toString());
+    if (state.id == effectiveId) {
+      return;
+    }
+
+    final newExtension = id.contains('mangayomi')
+        ? _manager.get<MangayomiExtensions>()
+        : (Platform.isAndroid
+              ? _manager.get<AniyomiExtensions>()
+              : _manager.get<DesktopAniyomiExtensions>());
+
+    state = newExtension;
+    _storage.setString(_key, effectiveId);
   }
 }
 
@@ -61,8 +74,7 @@ final availableAnimeSourcesProvider = FutureProvider<List<SourceInfo>>(
 
     try {
       final manager = ref.read(extensionManagerProvider);
-      final extensionsRaw =
-          manager.currentManager.installedAnimeExtensions.value;
+      final extensionsRaw = manager.getInstalledRx(bridge.ItemType.anime).value;
 
       final extensions = extensionsRaw
           .map(

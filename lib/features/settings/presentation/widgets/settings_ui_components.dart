@@ -54,6 +54,7 @@ class SettingsNavTile extends StatelessWidget {
   final String title;
   final String? subtitle;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const SettingsNavTile({
     super.key,
@@ -61,6 +62,7 @@ class SettingsNavTile extends StatelessWidget {
     required this.title,
     this.subtitle,
     required this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -86,6 +88,7 @@ class SettingsNavTile extends StatelessWidget {
         color: theme.colorScheme.onSurfaceVariant,
       ),
       onTap: onTap,
+      onLongPress: onLongPress,
     );
   }
 }

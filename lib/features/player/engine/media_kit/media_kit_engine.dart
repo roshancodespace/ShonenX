@@ -10,7 +10,7 @@ import 'package:shonenx/features/player/presentation/widgets/media_kit/media_kit
 import 'package:shonenx/shared/models/video_stream.dart' as stream;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/features/player/providers/active_engine_provider.dart';
+import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
 
 class MediaKitEngine implements VideoEngine {
@@ -20,17 +20,24 @@ class MediaKitEngine implements VideoEngine {
   MediaKitPrefs prefs;
   final Ref ref;
 
+  bool _disposed = false;
+
   StreamSubscription<Duration>? _positionSubscription;
 
   Future<void> updatePrefs(MediaKitPrefs newPrefs) async {
+    if (_disposed) return;
     prefs = newPrefs;
 
     final player = _player.platform;
     if (player is! NativePlayer) return;
 
-    await player.setProperty('audio-channels', prefs.audioChannel.value);
-    await player.setProperty('volume-max', '200');
-    await _player.setVolume(prefs.boostVolume ? 140 : 100);
+    try {
+      await player.setProperty('audio-channels', prefs.audioChannel.value);
+      if (_disposed) return;
+      await player.setProperty('volume-max', '200');
+      if (_disposed) return;
+      await _player.setVolume(prefs.boostVolume ? 140 : 100);
+    } catch (_) {}
   }
 
   final List<StreamSubscription> _subscriptions = [];
@@ -42,23 +49,37 @@ class MediaKitEngine implements VideoEngine {
 
     _subscriptions.addAll([
       _player.stream.position.listen((pos) {
-        ref.read(videoEngineStateProvider.notifier).updateState(position: pos);
+        if (!_disposed) {
+          ref
+              .read(videoEngineStateProvider.notifier)
+              .updateState(position: pos);
+        }
       }),
       _player.stream.duration.listen((dur) {
-        ref.read(videoEngineStateProvider.notifier).updateState(duration: dur);
+        if (!_disposed) {
+          ref
+              .read(videoEngineStateProvider.notifier)
+              .updateState(duration: dur);
+        }
       }),
       _player.stream.buffer.listen((buf) {
-        ref.read(videoEngineStateProvider.notifier).updateState(buffer: buf);
+        if (!_disposed) {
+          ref.read(videoEngineStateProvider.notifier).updateState(buffer: buf);
+        }
       }),
       _player.stream.playing.listen((playing) {
-        ref
-            .read(videoEngineStateProvider.notifier)
-            .updateState(isPlaying: playing);
+        if (!_disposed) {
+          ref
+              .read(videoEngineStateProvider.notifier)
+              .updateState(isPlaying: playing);
+        }
       }),
       _player.stream.buffering.listen((buffering) {
-        ref
-            .read(videoEngineStateProvider.notifier)
-            .updateState(isBuffering: buffering);
+        if (!_disposed) {
+          ref
+              .read(videoEngineStateProvider.notifier)
+              .updateState(isBuffering: buffering);
+        }
       }),
     ]);
   }
@@ -222,6 +243,7 @@ class MediaKitEngine implements VideoEngine {
 
   @override
   Future<void> dispose() async {
+    _disposed = true;
     await _positionSubscription?.cancel();
     for (final sub in _subscriptions) {
       await sub.cancel();

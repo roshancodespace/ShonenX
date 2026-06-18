@@ -243,7 +243,7 @@ class _TagChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Chip(
+    return ActionChip(
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       labelPadding: EdgeInsets.zero,
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -254,6 +254,9 @@ class _TagChip extends StatelessWidget {
           color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
+      onPressed: () {
+        context.push('/discover?tags=${Uri.encodeComponent(label)}');
+      },
     );
   }
 }

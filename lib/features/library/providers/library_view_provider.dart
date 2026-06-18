@@ -59,6 +59,6 @@ final dynamicLibraryProvider =
           !isCloudLoggedIn) {
         return ref.watch(localLibraryListProvider(libraryView.status));
       } else {
-        return ref.watch(cloudLibraryProvider(libraryView.status));
+        return ref.watch(cloudLibraryProvider((status: libraryView.status, trackerType: null)));
       }
     });

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import 'package:shonenx/features/discovery/domain/models/home_section.dart';
 import 'package:shonenx/features/discovery/providers/home_layout_provider.dart';
-import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
@@ -166,12 +167,14 @@ class _EditSectionSheet extends ConsumerStatefulWidget {
 class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
   late final TextEditingController _titleController;
   late HomeSectionType _selectedType;
+  TrackerType? _targetTracker;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.section.title);
     _selectedType = widget.section.type;
+    _targetTracker = widget.section.targetTracker;
   }
 
   @override
@@ -187,7 +190,12 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
     ref
         .read(userHomeLayoutProvider.notifier)
         .updateSection(
-          widget.section.copyWith(title: title, type: _selectedType),
+          widget.section.copyWith(
+            title: title,
+            type: _selectedType,
+            targetTracker: _targetTracker,
+            clearTargetTracker: _targetTracker == null,
+          ),
         );
     context.pop();
   }
@@ -224,26 +232,27 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
             autofocus: true,
             onSubmitted: (_) => _save(),
           ),
-          // Show Local/Cloud toggle only for library status sections
           if (isLibraryStatus) ...[
             const SizedBox(height: 16),
-            SettingsSegmentedTile<HomeSectionType>(
-              padding: EdgeInsets.zero,
-              segments: [
-                ButtonSegment(
-                  value: HomeSectionType.localLibraryStatus,
-                  label: const Text('Local'),
+            DropdownButtonFormField<TrackerType?>(
+              initialValue: _targetTracker,
+              decoration: InputDecoration(
+                labelText: 'Data Source',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                ButtonSegment(
-                  value: HomeSectionType.cloudLibraryStatus,
-                  label: const Text('Cloud'),
+              ),
+              items: [
+                const DropdownMenuItem(
+                  value: null,
+                  child: Text('Auto (Default)'),
+                ),
+                ...TrackerType.values.map(
+                  (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
                 ),
               ],
-              selected: {_selectedType},
-              onSelectionChanged: (value) {
-                setState(() {
-                  _selectedType = value.first;
-                });
+              onChanged: (val) {
+                setState(() => _targetTracker = val);
               },
             ),
           ],
@@ -280,7 +289,7 @@ class _AddSectionSheet extends ConsumerStatefulWidget {
 
 class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
   TrackedStatus? _selectedStatus;
-  HomeSectionType? _selectedHomeSectionType;
+  TrackerType? _targetTracker;
   late final TextEditingController _titleController;
   late final List<TrackedStatus> _availableStatuses;
 
@@ -300,7 +309,6 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
     if (_availableStatuses.isNotEmpty) {
       _selectedStatus = _availableStatuses.first;
       _titleController.text = 'My ${_selectedStatus!.displayName}';
-      _selectedHomeSectionType = HomeSectionType.localLibraryStatus;
     }
   }
 
@@ -320,8 +328,10 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
           HomeSection(
             id: _selectedStatus!.id,
             title: title,
-            type: _selectedHomeSectionType!,
+            type: HomeSectionType
+                .localLibraryStatus, // Type is legacy/internal, functionally dynamic
             libraryStatus: _selectedStatus!,
+            targetTracker: _targetTracker,
           ),
         );
     context.pop();
@@ -411,27 +421,28 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
               onSubmitted: (_) => _submit(),
             ),
             const SizedBox(height: 16),
-            SettingsSegmentedTile<HomeSectionType>(
-              padding: EdgeInsets.zero,
-              segments: [
-                ButtonSegment(
-                  value: HomeSectionType.localLibraryStatus,
-                  label: const Text('Local'),
+            DropdownButtonFormField<TrackerType?>(
+              value: _targetTracker,
+              decoration: InputDecoration(
+                labelText: 'Data Source',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                ButtonSegment(
-                  value: HomeSectionType.cloudLibraryStatus,
-                  label: const Text('Cloud'),
+              ),
+              items: [
+                const DropdownMenuItem(
+                  value: null,
+                  child: Text('Auto (Default)'),
+                ),
+                ...TrackerType.values.map(
+                  (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
                 ),
               ],
-              selected: {_selectedHomeSectionType!},
-              onSelectionChanged: (value) {
-                setState(() {
-                  _selectedHomeSectionType = value.first;
-                });
+              onChanged: (val) {
+                setState(() => _targetTracker = val);
               },
             ),
-            const SizedBox(height: 32),
-
+            const SizedBox(height: 16),
             SizedBox(
               height: 52,
               child: FilledButton(

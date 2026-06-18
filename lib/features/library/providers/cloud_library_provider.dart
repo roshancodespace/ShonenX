@@ -1,17 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/library/domain/models/library_entry.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
+import 'package:shonenx/features/tracking/engine/tracking_service.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 
+import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+
+typedef CloudLibraryParams = ({TrackedStatus status, TrackerType? trackerType});
+
 final cloudLibraryProvider = AsyncNotifierProvider.autoDispose
-    .family<CloudLibraryNotifier, List<LibraryEntry>, TrackedStatus>(
+    .family<CloudLibraryNotifier, List<LibraryEntry>, CloudLibraryParams>(
       CloudLibraryNotifier.new,
     );
 
 class CloudLibraryNotifier extends AsyncNotifier<List<LibraryEntry>> {
-  TrackedStatus status;
+  CloudLibraryParams params;
 
-  CloudLibraryNotifier(this.status);
+  CloudLibraryNotifier(this.params);
 
   int _page = 1;
   bool _hasMore = true;
@@ -49,15 +54,23 @@ class CloudLibraryNotifier extends AsyncNotifier<List<LibraryEntry>> {
   }
 
   Future<List<LibraryEntry>> _fetchPage(int page) async {
-    final tracker = ref.watch(primaryTrackerProvider);
+    final TrackingService tracker = params.trackerType != null
+        ? ref
+              .watch(availableTrackersProvider)
+              .firstWhere((t) => t.type == params.trackerType!)
+        : ref.watch(primaryTrackerProvider);
 
     if (!(await tracker.isAuthenticated)) return [];
 
-    return await tracker.fetchUserLibrary(status: status, page: page);
+    return await tracker.fetchUserLibrary(status: params.status, page: page);
   }
 
   Future<void> removeEntry(String providerId) async {
-    final tracker = ref.watch(primaryTrackerProvider);
+    final TrackingService tracker = params.trackerType != null
+        ? ref
+              .watch(availableTrackersProvider)
+              .firstWhere((t) => t.type == params.trackerType!)
+        : ref.watch(primaryTrackerProvider);
 
     if (!(await tracker.isAuthenticated)) return;
 

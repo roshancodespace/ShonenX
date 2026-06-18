@@ -139,7 +139,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   scrollInfo.metrics.pixels >=
                       scrollInfo.metrics.maxScrollExtent - 200) {
                 ref
-                    .read(cloudLibraryProvider(viewState.status).notifier)
+                    .read(cloudLibraryProvider((status: viewState.status, trackerType: null)).notifier)
                     .loadMore();
               }
               return false;
@@ -158,7 +158,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
                 if (isCloud) {
                   ref
-                      .read(cloudLibraryProvider(viewState.status).notifier)
+                      .read(cloudLibraryProvider((status: viewState.status, trackerType: null)).notifier)
                       .refresh();
                 } else {
                   ref.invalidate(localLibraryListProvider(viewState.status));

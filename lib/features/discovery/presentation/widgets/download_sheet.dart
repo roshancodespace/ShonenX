@@ -301,7 +301,7 @@ class _ServerTile extends StatelessWidget {
           ),
         ),
         title: Text(
-          '[${server.id}] ${server.name}',
+          '${server.id.length <= 12 ? '[${server.id}] ' : ''}${server.name}',
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         ),
         subtitle: Text(

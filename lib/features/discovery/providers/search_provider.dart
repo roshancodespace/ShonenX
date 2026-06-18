@@ -9,16 +9,39 @@ import 'package:shonenx/source_engine/models/paginated_result.dart';
 class SearchArgs {
   final String query;
   final MediaType type;
+  final List<String> genres;
+  final List<String> tags;
 
-  const SearchArgs({required this.query, required this.type});
+  const SearchArgs({
+    required this.query,
+    required this.type,
+    this.genres = const [],
+    this.tags = const [],
+  });
 
   @override
-  int get hashCode => Object.hash(query, type);
+  int get hashCode =>
+      Object.hash(query, type, Object.hashAll(genres), Object.hashAll(tags));
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is SearchArgs && other.query == query && other.type == type;
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! SearchArgs) return false;
+
+    if (query != other.query || type != other.type) return false;
+
+    if (genres.length != other.genres.length) return false;
+    for (int i = 0; i < genres.length; i++) {
+      if (genres[i] != other.genres[i]) return false;
+    }
+
+    if (tags.length != other.tags.length) return false;
+    for (int i = 0; i < tags.length; i++) {
+      if (tags[i] != other.tags[i]) return false;
+    }
+
+    return true;
+  }
 }
 
 final searchProvider = AsyncNotifierProvider.autoDispose
@@ -38,7 +61,8 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
   Future<PaginatedResult<UnifiedMedia>?> build() async {
     _currentPage = 1;
     _isFetchingNextPage = false;
-    if (arg.query.isEmpty) return null;
+    if (arg.query.isEmpty && arg.genres.isEmpty && arg.tags.isEmpty)
+      return null;
     return _fetchPage(1);
   }
 
@@ -53,6 +77,8 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
         type: arg.type,
         page: page,
         adultMode: adultMode,
+        genres: arg.genres,
+        tags: arg.tags,
       );
     } else {
       final allSources = await ref.read(availableAnimeSourcesProvider.future);

@@ -72,10 +72,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
           _endpoint,
           body: {
             'query': AnilistTrackerQueries.trending(adultMode),
-            'variables': {
-              'page': page,
-              'type': type.name,
-            },
+            'variables': {'page': page, 'type': type.name},
           },
           cacheDuration: cacheDuration ?? const Duration(days: 1),
         );
@@ -115,6 +112,8 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
     String query, {
     int page = 1,
     MediaType type = MediaType.ANIME,
+    List<String>? genres,
+    List<String>? tags,
     Duration? cacheDuration,
     AdultContentMode adultMode = AdultContentMode.safe,
     List<String> sort = const ['SEARCH_MATCH'],
@@ -124,16 +123,26 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
     return executeApi(
       'SEARCH_METADATA',
       () async {
+        final variables = <String, dynamic>{
+          'search': query.isEmpty ? null : query,
+          'page': page,
+          'type': type.name,
+          'sort': sort,
+        };
+
+        if (genres != null && genres.isNotEmpty) {
+          variables['genre_in'] = genres;
+        }
+
+        if (tags != null && tags.isNotEmpty) {
+          variables['tag_in'] = tags;
+        }
+
         final response = await http.post(
           _endpoint,
           body: {
             'query': AnilistTrackerQueries.metadataSearch(adultMode),
-            'variables': {
-              'search': query,
-              'page': page,
-              'type': type.name,
-              'sort': sort,
-            },
+            'variables': variables,
           },
           cacheDuration: cacheDuration,
         );
@@ -206,6 +215,40 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
     });
   }
 
+  @override
+  Future<List<String>> fetchGenres() async {
+    return executeApi('FETCH_GENRES', () async {
+      final response = await http.post(
+        _endpoint,
+        body: {'query': AnilistTrackerQueries.genres},
+        cacheDuration: const Duration(days: 7),
+      );
+
+      final data = _validateAndParseResponse(response.json, 'fetchGenres');
+      final list = data['GenreCollection'] as List? ?? [];
+      return list.whereType<String>().toList();
+    });
+  }
+
+  @override
+  Future<List<String>> fetchTags() async {
+    return executeApi('FETCH_TAGS', () async {
+      final response = await http.post(
+        _endpoint,
+        body: {'query': AnilistTrackerQueries.tags},
+        cacheDuration: const Duration(days: 7),
+      );
+
+      final data = _validateAndParseResponse(response.json, 'fetchTags');
+      final list = data['MediaTagCollection'] as List? ?? [];
+      return list
+          .whereType<Map>()
+          .map((e) => e['name'] as String?)
+          .whereType<String>()
+          .toList();
+    });
+  }
+
   UnifiedMedia _mapToUnified(
     Map<dynamic, dynamic> json,
     MediaType type,
@@ -263,18 +306,19 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
             ),
           )
           .toList();
-          
-      final recommendations = ((json['recommendations'] as Map?)?['nodes'] as List?)
-          ?.map((e) => (e as Map?)?['mediaRecommendation'])
-          .whereType<Map>()
-          .map((node) {
-            final nodeType = MediaType.values.firstWhere(
-              (t) => t.name == node['type'],
-              orElse: () => MediaType.ANIME,
-            );
-            return _mapToUnified(node, nodeType, requestId);
-          })
-          .toList();
+
+      final recommendations =
+          ((json['recommendations'] as Map?)?['nodes'] as List?)
+              ?.map((e) => (e as Map?)?['mediaRecommendation'])
+              .whereType<Map>()
+              .map((node) {
+                final nodeType = MediaType.values.firstWhere(
+                  (t) => t.name == node['type'],
+                  orElse: () => MediaType.ANIME,
+                );
+                return _mapToUnified(node, nodeType, requestId);
+              })
+              .toList();
       final airingAt = json['nextAiringEpisode']?['airingAt'] != null
           ? DateTime.fromMillisecondsSinceEpoch(
               json['nextAiringEpisode']['airingAt'] * 1000,

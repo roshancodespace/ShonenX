@@ -60,7 +60,9 @@ class EngineStateNotifier extends Notifier<EngineState> {
 }
 
 final videoEngineStateProvider =
-    NotifierProvider<EngineStateNotifier, EngineState>(EngineStateNotifier.new);
+    NotifierProvider.autoDispose<EngineStateNotifier, EngineState>(
+      EngineStateNotifier.new,
+    );
 
 final videoEngineProvider = Provider.autoDispose<VideoEngine>((ref) {
   final playerType = ref.watch(playerPrefsProvider.select((s) => s.playerType));

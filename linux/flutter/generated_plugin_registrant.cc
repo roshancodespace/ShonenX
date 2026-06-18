@@ -6,7 +6,7 @@
 
 #include "generated_plugin_registrant.h"
 
-#include <dartotsu_extension_bridge/dartotsu_extension_bridge_plugin.h>
+#include <anymex_extension_runtime_bridge/anymex_extension_runtime_bridge_plugin.h>
 #include <dynamic_color/dynamic_color_plugin.h>
 #include <flutter_inappwebview_linux/flutter_inappwebview_linux_plugin.h>
 #include <flutter_qjs/flutter_qjs_plugin.h>
@@ -23,9 +23,9 @@
 #include <window_to_front/window_to_front_plugin.h>
 
 void fl_register_plugins(FlPluginRegistry* registry) {
-  g_autoptr(FlPluginRegistrar) dartotsu_extension_bridge_registrar =
-      fl_plugin_registry_get_registrar_for_plugin(registry, "DartotsuExtensionBridgePlugin");
-  dartotsu_extension_bridge_plugin_register_with_registrar(dartotsu_extension_bridge_registrar);
+  g_autoptr(FlPluginRegistrar) anymex_extension_runtime_bridge_registrar =
+      fl_plugin_registry_get_registrar_for_plugin(registry, "AnymexExtensionRuntimeBridgePlugin");
+  anymex_extension_runtime_bridge_plugin_register_with_registrar(anymex_extension_runtime_bridge_registrar);
   g_autoptr(FlPluginRegistrar) dynamic_color_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "DynamicColorPlugin");
   dynamic_color_plugin_register_with_registrar(dynamic_color_registrar);

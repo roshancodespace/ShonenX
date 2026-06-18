@@ -22,23 +22,37 @@ final episodesListProvider = FutureProvider.family<EpisodesListState, String>((
 ) async {
   final log = AppLogger.scope('EpisodesListProvider').child('fetch');
 
-  final matchState = await ref.watch(matchedMediaProvider(title).future);
-  final sourcePrefs = await ref.watch(sourcePreferenceProvider(title).future);
+  try {
+    final matchState = await ref.watch(matchedMediaProvider(title).future);
 
-  final animeSource = ref.watch(animeSourceProvider(sourcePrefs.sourceInfo));
+    final sourcePrefs = await ref.watch(sourcePreferenceProvider(title).future);
 
-  log.i('Fetching episodes for "$title"');
+    final animeSource = ref.watch(animeSourceProvider(sourcePrefs.sourceInfo));
 
-  if (matchState.matchedMedia == null) {
-    return EpisodesListState(source: animeSource.sourceInfo, episodes: []);
+    log.i('Fetching episodes for "$title"');
+
+    if (matchState.matchedMedia == null) {
+      return EpisodesListState(
+        source: animeSource.sourceInfo,
+        episodes: const [],
+      );
+    }
+
+    final episodes = await animeSource.getEpisodes(matchState.matchedMedia!.id);
+
+    episodes.sort((a, b) => a.number.compareTo(b.number));
+
+    log.s('Fetched ${episodes.length} episodes');
+
+    return EpisodesListState(
+      source: animeSource.sourceInfo,
+      episodes: episodes,
+    );
+  } catch (e, st) {
+    log.e('Failed to fetch episodes for "$title"', [e, st]);
+
+    rethrow;
   }
-
-  final episodes = await animeSource.getEpisodes(matchState.matchedMedia!.id);
-  episodes.sort((a, b) => a.number.compareTo(b.number));
-
-  log.s('Fetched ${episodes.length} episodes');
-
-  return EpisodesListState(source: animeSource.sourceInfo, episodes: episodes);
 });
 
 final sourceEpisodesProvider =
@@ -48,23 +62,36 @@ final sourceEpisodesProvider =
     ) async {
       final log = AppLogger.scope('SourceEpisodesProvider').child('fetch');
 
-      final allSources = await ref.watch(availableAnimeSourcesProvider.future);
-      final sourceInfo = allSources.firstWhere(
-        (s) => s.id == args.sourceId,
-        orElse: () => throw StateError('Source "${args.sourceId}" not found'),
-      );
+      try {
+        final allSources = await ref.watch(
+          availableAnimeSourcesProvider.future,
+        );
 
-      final animeSource = ref.watch(animeSourceProvider(sourceInfo));
+        final sourceInfo = allSources
+            .where((s) => s.id == args.sourceId)
+            .firstOrNull;
 
-      log.i('Fetching episodes directly from ${sourceInfo.name}');
+        if (sourceInfo == null) {
+          throw Exception('Source "${args.sourceId}" not found');
+        }
 
-      final episodes = await animeSource.getEpisodes(args.providerId);
-      episodes.sort((a, b) => a.number.compareTo(b.number));
+        final animeSource = ref.watch(animeSourceProvider(sourceInfo));
 
-      log.s('Fetched ${episodes.length} episodes');
+        log.i('Fetching episodes directly from ${sourceInfo.name}');
 
-      return EpisodesListState(
-        source: animeSource.sourceInfo,
-        episodes: episodes,
-      );
+        final episodes = await animeSource.getEpisodes(args.providerId);
+
+        episodes.sort((a, b) => a.number.compareTo(b.number));
+
+        log.s('Fetched ${episodes.length} episodes from ${sourceInfo.name}');
+
+        return EpisodesListState(
+          source: animeSource.sourceInfo,
+          episodes: episodes,
+        );
+      } catch (e, st) {
+        log.e('Failed to fetch episodes for source ${args.sourceId}', [e, st]);
+
+        rethrow;
+      }
     });

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dartotsu_extension_bridge/Mangayomi/string_extensions.dart';
+import 'package:anymex_extension_runtime_bridge/Services/Mangayomi/Util/string_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +13,7 @@ import 'package:shonenx/features/player/presentation/widgets/center_controls.dar
 import 'package:shonenx/features/player/presentation/widgets/custom_subtitle_overlay.dart';
 import 'package:shonenx/features/player/presentation/widgets/gesture_overlay.dart';
 import 'package:shonenx/features/player/presentation/widgets/top_controls.dart';
-import 'package:shonenx/features/player/providers/active_engine_provider.dart';
+import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_provider.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';

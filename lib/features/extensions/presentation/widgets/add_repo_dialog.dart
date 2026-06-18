@@ -1,4 +1,4 @@
-import 'package:dartotsu_extension_bridge/Models/Source.dart';
+import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart';
 import 'package:flutter/material.dart';
 
 class AddRepoDialog extends StatefulWidget {

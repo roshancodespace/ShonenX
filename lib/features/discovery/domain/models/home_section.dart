@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 
 enum HomeSectionType {
   continueWatching,
@@ -16,6 +17,7 @@ class HomeSection {
   final HomeSectionType type;
   final bool disabled;
   final TrackedStatus? libraryStatus;
+  final TrackerType? targetTracker;
 
   const HomeSection({
     required this.id,
@@ -23,6 +25,7 @@ class HomeSection {
     required this.type,
     this.disabled = false,
     this.libraryStatus,
+    this.targetTracker,
   });
 
   HomeSection copyWith({
@@ -31,6 +34,8 @@ class HomeSection {
     HomeSectionType? type,
     bool? disabled,
     TrackedStatus? libraryStatus,
+    TrackerType? targetTracker,
+    bool clearTargetTracker = false,
   }) {
     return HomeSection(
       id: id ?? this.id,
@@ -38,6 +43,7 @@ class HomeSection {
       type: type ?? this.type,
       disabled: disabled ?? this.disabled,
       libraryStatus: libraryStatus ?? this.libraryStatus,
+      targetTracker: clearTargetTracker ? null : (targetTracker ?? this.targetTracker),
     );
   }
 
@@ -48,6 +54,7 @@ class HomeSection {
       'type': type.name,
       'disabled': disabled,
       'libraryStatus': libraryStatus?.name,
+      'targetTracker': targetTracker?.id,
     };
   }
 
@@ -61,6 +68,9 @@ class HomeSection {
           ? TrackedStatus.values.firstWhere(
               (e) => e.name == map['libraryStatus'],
             )
+          : null,
+      targetTracker: map['targetTracker'] != null
+          ? TrackerType.tryFromId(map['targetTracker'])
           : null,
     );
   }

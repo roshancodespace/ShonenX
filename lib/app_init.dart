@@ -1,10 +1,16 @@
 import 'dart:io';
 
-import 'package:dartotsu_extension_bridge/Mangayomi/Eval/dart/model/source_preference.dart';
-import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
+import 'package:anymex_extension_runtime_bridge/ExtensionBridge.dart';
+import 'package:anymex_extension_runtime_bridge/Settings/KvStore.dart';
+import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart';
+// import 'package:dartotsu_extension_bridge/Mangayomi/Eval/dart/model/source_preference.dart';
+// import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:path/path.dart' as p;
 import 'package:isar_community/isar.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/caching/domain/cache_entry.dart';
 import 'package:shonenx/core/services/notification_service.dart';
@@ -86,30 +92,54 @@ class AppInit {
           DownloadTaskSchema,
           NotificationSubscriptionSchema,
 
-          MSourceSchema,
-          SourcePreferenceSchema,
-          SourcePreferenceStringValueSchema,
-          BridgeSettingsSchema,
+          // MSourceSchema,
+          // SourcePreferenceSchema,
+          // SourcePreferenceStringValueSchema,
+          // BridgeSettingsSchema,
+          KvEntrySchema,
         ],
         directory: dir.path,
         name: 'shonenx_db',
       );
 
       log.s('Isar opened');
-
-      await _setupBridge(isar);
-      log.s('Bridge initialized');
     } catch (e, st) {
       log.e('DB INIT FAILED', e, st);
       rethrow;
     }
   }
 
-  Future<void> _setupBridge(Isar instance) async {
-    final log = _log.child('_setupBridge');
+  static Future<void> setupBridge() async {
+    final log = AppLogger.scope('AppInit').child('setupBridge');
 
     try {
-      await DartotsuExtensionBridge().init(instance, 'ShonenX');
+      // await DartotsuExtensionBridge().init(instance, 'ShonenX');
+      // After initialization, register the bridged managers
+      // final extManager = Get.find<ExtensionManager>();
+      // await extManager.onRuntimeBridgeInitialization();
+
+      await AnymeXExtensionBridge.init(
+        getDirectory: AnymeXExtensionBridge.defaultGetDirectory(
+          baseDirectory: await getDatabaseDirectory('ShonenX'),
+        ),
+      );
+
+      await AnymeXRuntimeBridge.checkAndInitialize();
+
+      if (!AnymeXRuntimeBridge.controller.isReady.value) {
+        await AnymeXRuntimeBridge.setupRuntime();
+      }
+
+      final extManager = Get.find<ExtensionManager>();
+
+      // Wait for the async onInit of ExtensionManager to register the default extensions
+      while (extManager.managers.isEmpty) {
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+
+      // Force initialization of Aniyomi and CloudStream managers now that runtime is definitely ready
+      await extManager.onRuntimeBridgeInitialization(force: true);
+
       log.s('Extension bridge ready');
     } catch (e, st) {
       log.e('BRIDGE INIT FAILED', e, st);
@@ -126,6 +156,17 @@ class AppInit {
     } catch (e, st) {
       log.e('NOTIFICATION INIT FAILED', e, st);
       rethrow;
+    }
+  }
+
+  static Future<Directory> getDatabaseDirectory(String dirName) async {
+    final dir = await getApplicationDocumentsDirectory();
+    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+      return dir;
+    } else {
+      String dbDir = p.join(dir.path, dirName, 'databases');
+      await Directory(dbDir).create(recursive: true);
+      return Directory(dbDir);
     }
   }
 }

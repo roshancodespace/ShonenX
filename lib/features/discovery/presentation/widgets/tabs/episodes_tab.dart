@@ -12,10 +12,14 @@ import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/source_engine/source_engine_provider.dart';
+import 'package:shonenx/source_engine/models/source_setting.dart';
+import 'package:shonenx/features/settings/presentation/source_settings_sheet.dart';
 
 class EpisodesTabWidget extends ConsumerWidget {
   final UnifiedMedia media;
@@ -176,9 +180,19 @@ class _EpisodesHeader extends ConsumerWidget {
 
     final sourceState = ref.watch(sourcePreferenceProvider(title)).value;
 
-    final matchedTitle = ref.watch(
-      matchedMediaProvider(title).select((s) => s.value?.matchedMedia?.title),
-    );
+    final matchedMediaState = ref.watch(matchedMediaProvider(title));
+
+    final String matchedTitle;
+    final bool hasError = matchedMediaState.hasError;
+
+    if (hasError) {
+      matchedTitle = 'Failed to match';
+    } else if (matchedMediaState.isLoading) {
+      matchedTitle = 'Searching...';
+    } else {
+      matchedTitle =
+          matchedMediaState.value?.matchedMedia?.title ?? 'No match found';
+    }
 
     final sourceName = sourceState?.sourceInfo.name ?? 'Unknown';
 
@@ -192,12 +206,14 @@ class _EpisodesHeader extends ConsumerWidget {
             height: 36,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: cs.secondaryContainer,
+              color: hasError ? cs.errorContainer : cs.secondaryContainer,
             ),
             child: Icon(
-              Icons.auto_awesome_rounded,
+              hasError
+                  ? Icons.error_outline_rounded
+                  : Icons.auto_awesome_rounded,
               size: 18,
-              color: cs.onSecondaryContainer,
+              color: hasError ? cs.onErrorContainer : cs.onSecondaryContainer,
             ),
           ),
           const SizedBox(width: 12),
@@ -208,9 +224,9 @@ class _EpisodesHeader extends ConsumerWidget {
                 Row(
                   children: [
                     Text(
-                      'MATCHED',
+                      hasError ? 'ERROR' : 'MATCHED',
                       style: textTheme.labelMedium?.copyWith(
-                        color: cs.primary,
+                        color: hasError ? cs.error : cs.primary,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.3,
                       ),
@@ -226,11 +242,12 @@ class _EpisodesHeader extends ConsumerWidget {
                   ],
                 ),
                 Text(
-                  matchedTitle ?? 'Searching...',
+                  matchedTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
+                    color: hasError ? cs.error : null,
                   ),
                 ),
               ],
@@ -241,7 +258,7 @@ class _EpisodesHeader extends ConsumerWidget {
             onTap: () => _showSourceSelector(
               context,
               ref,
-              title,
+              media,
               sourceState?.sourceInfo,
             ),
           ),
@@ -264,54 +281,154 @@ class _EpisodesHeader extends ConsumerWidget {
   void _showSourceSelector(
     BuildContext context,
     WidgetRef ref,
-    String title,
+    UnifiedMedia media,
     SourceInfo? currentSource,
   ) {
+    final title = media.title.availableTitle;
     final availableSources =
         ref.read(availableAnimeSourcesProvider).value ?? [];
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
         final cs = theme.colorScheme;
+        final textTheme = theme.textTheme;
 
         return AppBottomSheet(
-          title: title,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: availableSources.length,
-            itemBuilder: (context, index) {
-              final sourceInfo = availableSources[index];
-              final selected = currentSource == sourceInfo;
-
-              return ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                leading: Icon(
-                  selected
-                      ? Icons.radio_button_checked_rounded
-                      : Icons.radio_button_off_rounded,
-                  color: selected
-                      ? cs.primary
-                      : cs.onSurfaceVariant.withValues(alpha: 0.7),
-                ),
-                title: Text(
-                  sourceInfo.name,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+          title: 'Select Source',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (availableSources.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  child: Center(
+                    child: Text(
+                      'No sources available',
+                      style: textTheme.bodyLarge?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
                   ),
-                ),
-                onTap: () {
-                  ref
-                      .read(sourcePreferenceProvider(title).notifier)
-                      .updateSource(sourceInfo);
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: availableSources.length,
+                  itemBuilder: (context, index) {
+                    final sourceInfo = availableSources[index];
+                    final selected = currentSource == sourceInfo;
+                    final sourceImpl = ref.read(
+                      animeSourceProvider(sourceInfo),
+                    );
 
-                  Navigator.pop(sheetContext);
-                },
-              );
-            },
+                    return InkWell(
+                      onTap: () {
+                        ref
+                            .read(sourcePreferenceProvider(title).notifier)
+                            .updateSource(sourceInfo);
+                        Navigator.pop(sheetContext);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    sourceInfo.name,
+                                    style: textTheme.titleMedium?.copyWith(
+                                      fontWeight: selected
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                      color: selected
+                                          ? cs.primary
+                                          : cs.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    sourceInfo.type.name.toUpperCase(),
+                                    style: textTheme.labelSmall?.copyWith(
+                                      color: cs.onSurfaceVariant.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            FutureBuilder<List<SourceSetting>>(
+                              future: sourceImpl.getSettingsSchema(),
+                              builder: (context, snapshot) {
+                                final hasSettings =
+                                    snapshot.hasData &&
+                                    snapshot.data!.isNotEmpty;
+                                if (!hasSettings) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                return IconButton(
+                                  icon: const Icon(Icons.settings_outlined),
+                                  color: cs.onSurfaceVariant,
+                                  onPressed: () {
+                                    Navigator.pop(sheetContext);
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.transparent,
+                                      builder: (context) => SourceSettingsSheet(
+                                        source: sourceInfo,
+                                        schema: snapshot.data!,
+                                      ),
+                                    ).then((_) {
+                                      if (selected) {
+                                        ref.invalidate(
+                                          matchedMediaProvider(title),
+                                        );
+                                        ref.invalidate(
+                                          episodesListProvider(title),
+                                        );
+                                        if (media.sourceId != null) {
+                                          ref.invalidate(
+                                            sourceEpisodesProvider((
+                                              providerId: media.id,
+                                              sourceId: media.sourceId!,
+                                            )),
+                                          );
+                                        }
+                                      }
+                                    });
+                                  },
+                                );
+                              },
+                            ),
+                            if (selected) ...[
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.check_rounded,
+                                color: cs.primary,
+                                size: 24,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              const SizedBox(height: 16),
+            ],
           ),
         );
       },

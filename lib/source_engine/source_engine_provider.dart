@@ -2,8 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/source_engine/adapters/anime_extension_adapter.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/providers/anime_source.dart';
+import 'package:shonenx/source_engine/providers/manga_source.dart';
 import 'package:shonenx/source_engine/providers/inbuilt_sources_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
@@ -43,6 +45,7 @@ final animeSourceProvider = Provider.family<AnimeSource, SourceInfo>((
       id: ext.id!,
       name: ext.name!,
       type: SourceType.extension,
+      mediaType: MediaType.ANIME,
       iconUrl: ext.iconUrl,
     ),
     methods: AnimeBridgeMethods(
@@ -54,3 +57,16 @@ final animeSourceProvider = Provider.family<AnimeSource, SourceInfo>((
     ),
   );
 }, name: 'animeSourceProvider');
+
+final mangaSourceProvider = Provider.family<MangaSource, SourceInfo>((
+  ref,
+  info,
+) {
+  if (info.type == SourceType.inbuilt) {
+    return ref
+        .read(inbuiltMangaSourcesProvider)
+        .firstWhere((s) => s.sourceInfo.id == info.id);
+  }
+
+  throw UnimplementedError('Manga extension adapter not implemented yet');
+}, name: 'mangaSourceProvider');

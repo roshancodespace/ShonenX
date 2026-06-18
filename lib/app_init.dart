@@ -132,12 +132,12 @@ class AppInit {
 
       final extManager = Get.find<ExtensionManager>();
 
-      // Wait for the async onInit of ExtensionManager to register the default extensions
-      while (extManager.managers.isEmpty) {
+      int retryCount = 0;
+      while (extManager.managers.isEmpty && retryCount < 100) {
         await Future.delayed(const Duration(milliseconds: 50));
+        retryCount++;
       }
 
-      // Force initialization of Aniyomi and CloudStream managers now that runtime is definitely ready
       await extManager.onRuntimeBridgeInitialization(force: true);
 
       log.s('Extension bridge ready');

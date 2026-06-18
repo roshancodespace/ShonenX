@@ -11,6 +11,7 @@ import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.
     as bridge;
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/providers/inbuilt_sources_provider.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 final extensionManagerProvider =
     NotifierProvider<ExtensionManagerNotifier, bridge.Extension>(
@@ -68,6 +69,7 @@ final availableAnimeSourcesProvider = FutureProvider<List<SourceInfo>>(
             id: s.sourceInfo.id,
             name: s.sourceInfo.name,
             type: SourceType.inbuilt,
+            mediaType: MediaType.ANIME,
           ),
         )
         .toList();
@@ -82,6 +84,7 @@ final availableAnimeSourcesProvider = FutureProvider<List<SourceInfo>>(
               id: ext.id ?? "Unknown",
               name: ext.name ?? "Unknown",
               type: SourceType.extension,
+              mediaType: MediaType.ANIME,
               iconUrl: ext.iconUrl,
             ),
           )
@@ -93,4 +96,43 @@ final availableAnimeSourcesProvider = FutureProvider<List<SourceInfo>>(
     }
   },
   name: 'availableAnimeSourcesProvider',
+);
+
+final availableMangaSourcesProvider = FutureProvider<List<SourceInfo>>(
+  retry: (retryCount, error) => null,
+  (ref) async {
+    final inbuilt = ref
+        .read(inbuiltMangaSourcesProvider)
+        .map(
+          (s) => SourceInfo(
+            id: s.sourceInfo.id,
+            name: s.sourceInfo.name,
+            type: SourceType.inbuilt,
+            mediaType: MediaType.MANGA,
+          ),
+        )
+        .toList();
+
+    try {
+      final manager = ref.read(extensionManagerProvider);
+      final extensionsRaw = manager.getInstalledRx(bridge.ItemType.manga).value;
+
+      final extensions = extensionsRaw
+          .map(
+            (ext) => SourceInfo(
+              id: ext.id ?? "Unknown",
+              name: ext.name ?? "Unknown",
+              type: SourceType.extension,
+              mediaType: MediaType.MANGA,
+              iconUrl: ext.iconUrl,
+            ),
+          )
+          .toList();
+
+      return [...inbuilt, ...extensions];
+    } catch (e) {
+      return inbuilt;
+    }
+  },
+  name: 'availableMangaSourcesProvider',
 );

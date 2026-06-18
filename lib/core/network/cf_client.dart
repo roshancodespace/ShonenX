@@ -170,10 +170,18 @@ class CfSolverScreen extends StatefulWidget {
 
 class _CfSolverScreenState extends State<CfSolverScreen> {
   bool _ready = false;
+  Timer? _pollingTimer;
+
   @override
   void initState() {
     super.initState();
     _init();
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _init() async {
@@ -216,7 +224,8 @@ class _CfSolverScreenState extends State<CfSolverScreen> {
   }
 
   void _poll(InAppWebViewController controller) async {
-    Timer.periodic(const Duration(milliseconds: 1000), (timer) async {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(milliseconds: 1000), (timer) async {
       if (!mounted) {
         timer.cancel();
         return;

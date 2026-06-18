@@ -1,15 +1,19 @@
+import 'package:shonenx/shared/models/unified_media.dart';
+
 enum SourceType { inbuilt, extension }
 
 class SourceInfo {
   final String id;
   final String name;
   final SourceType type;
+  final MediaType mediaType;
   final String? iconUrl;
 
   const SourceInfo({
     required this.id,
     required this.name,
     required this.type,
+    required this.mediaType,
     this.iconUrl,
   });
 
@@ -18,15 +22,17 @@ class SourceInfo {
       identical(this, other) ||
       other is SourceInfo &&
           id == other.id &&
-          type == other.type;
+          type == other.type &&
+          mediaType == other.mediaType;
 
   @override
-  int get hashCode => Object.hash(id, type);
+  int get hashCode => Object.hash(id, type, mediaType);
 
   Map<String, dynamic> toMap() => {
         'id': id,
         'name': name,
         'type': type.name,
+        'mediaType': mediaType.name,
         'iconUrl': iconUrl,
       };
 
@@ -35,6 +41,10 @@ class SourceInfo {
       id: map['id'],
       name: map['name'],
       type: SourceType.values.firstWhere((e) => e.name == map['type']),
+      mediaType: MediaType.values.firstWhere(
+        (e) => e.name == map['mediaType'],
+        orElse: () => MediaType.ANIME,
+      ),
       iconUrl: map['iconUrl'],
     );
   }

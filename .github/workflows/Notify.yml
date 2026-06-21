@@ -72,6 +72,7 @@ jobs:
       - name: Set up Environment
         id: env_setup
         run: |
+          export GH_REPO="${{ github.repository }}"
           echo "GH_REPO=${{ github.repository }}" >> $GITHUB_ENV
           if [ "${{ github.event_name }}" == "workflow_dispatch" ] || [ "${{ github.event_name }}" == "workflow_call" ]; then
             echo "NOTIFY_EVERYONE=${{ inputs.notify_everyone }}" >> $GITHUB_ENV

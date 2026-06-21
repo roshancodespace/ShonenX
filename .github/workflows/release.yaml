@@ -28,8 +28,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+
+      - name: Init specific submodule
+        run: |
+          git submodule update --init packages/anymex_extension_bridge
 
       - uses: actions/setup-java@v4
         with:
@@ -89,8 +91,10 @@ jobs:
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev webkit2gtk-4.1 libmpv-dev
 
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+
+      - name: Init specific submodule
+        run: |
+          git submodule update --init packages/anymex_extension_bridge
 
       - uses: subosito/flutter-action@v2
         with:
@@ -126,8 +130,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+
+      - name: Init specific submodule
+        run: |
+          git submodule update --init packages/anymex_extension_bridge
 
       - uses: subosito/flutter-action@v2
         with:

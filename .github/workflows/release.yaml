@@ -20,8 +20,8 @@ on:
 permissions:
   contents: write
 
-# ---------------- ANDROID ----------------
 jobs:
+  # ---------------- ANDROID ----------------
   build-android:
     if: github.event_name == 'push' || github.event.inputs.build_android == 'true'
     runs-on: ubuntu-latest
@@ -30,8 +30,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Init specific submodule
-        run: |
-          git submodule update --init packages/anymex_extension_bridge
+        run: git submodule update --init packages/anymex_extension_bridge
 
       - uses: actions/setup-java@v4
         with:
@@ -70,8 +69,11 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter build apk --release --split-per-abi
-          --dart-define-from-file=keys.json
+      - run: |
+          flutter build apk \
+            --release \
+            --split-per-abi \
+            --dart-define-from-file=keys.json
 
       - uses: actions/upload-artifact@v4
         with:
@@ -84,17 +86,43 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Init specific submodule
+        run: git submodule update --init packages/anymex_extension_bridge
+
       - name: Install dependencies
         run: |
           sudo add-apt-repository universe
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libmpv-dev libwpewebkit-1.0-dev libwpebackend-fdo-1.0-dev libasound2-dev webkit2gtk-4.1
 
-      - uses: actions/checkout@v4
+          sudo apt-get install -y \
+            clang \
+            lld \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libmpv-dev \
+            libasound2-dev \
+            libwpewebkit-1.0-dev \
+            libwpebackend-fdo-1.0-dev
 
-      - name: Init specific submodule
+      - name: Toolchain diagnostics
         run: |
-          git submodule update --init packages/anymex_extension_bridge
+          echo "===== CMAKE ====="
+          cmake --version
+
+          echo "===== CLANG ====="
+          clang --version
+
+          echo "===== GCC ====="
+          gcc --version
+
+          echo "===== WPE ====="
+          pkg-config --modversion wpe-webkit-1.0 || true
+          pkg-config --modversion wpebackend-fdo-1.0 || true
 
       - uses: subosito/flutter-action@v2
         with:
@@ -115,10 +143,29 @@ jobs:
 
       - run: flutter config --enable-linux-desktop
       - run: flutter pub get
-      - run: |
-          sed -i 's/-Wno-deprecated-literal-operator//g' \
-          flutter/ephemeral/.plugin_symlinks/flutter_inappwebview_linux/linux/CMakeLists.txt
-      - run: flutter build linux --release --dart-define-from-file=keys.json
+
+      - name: Patch flutter_inappwebview_linux
+        run: |
+          FILE=$(find ~/.pub-cache -type f -name CMakeLists.txt | grep flutter_inappwebview_linux | head -n 1)
+
+          if [ -n "$FILE" ]; then
+            echo "Patching $FILE"
+            sed -i 's/-Wno-deprecated-literal-operator//g' "$FILE"
+          fi
+
+      - name: Show WPE libraries
+        run: |
+          find /usr -name "libWPEWebKit*.so*" 2>/dev/null || true
+          find /usr -name "libwpe*.so*" 2>/dev/null || true
+
+      - name: Build Linux
+        env:
+          CC: clang
+          CXX: clang++
+        run: |
+          flutter build linux \
+            --release \
+            --dart-define-from-file=keys.json
 
       - uses: actions/upload-artifact@v4
         with:
@@ -134,8 +181,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Init specific submodule
-        run: |
-          git submodule update --init packages/anymex_extension_bridge
+        run: git submodule update --init packages/anymex_extension_bridge
 
       - uses: subosito/flutter-action@v2
         with:
@@ -157,7 +203,10 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter build windows --release --dart-define-from-file=keys.json
+      - run: |
+          flutter build windows \
+            --release \
+            --dart-define-from-file=keys.json
 
       - name: Build installer (InnoBundle)
         run: dart run inno_bundle --release

@@ -88,7 +88,7 @@ jobs:
         run: |
           sudo add-apt-repository universe
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev webkit2gtk-4.1 libmpv-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev wpewebkit libmpv-dev
 
       - uses: actions/checkout@v4
 
@@ -100,7 +100,6 @@ jobs:
         with:
           flutter-version: 3.35.7
           cache: true
-
 
       - name: Create env file
         run: |

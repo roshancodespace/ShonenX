@@ -74,15 +74,23 @@ jobs:
             echo "TAG_NAME=latest" >> $GITHUB_ENV
           fi
 
+      - name: Download all workflow artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          path: all-artifacts
+          merge-multiple: true
+
       - name: Fetch Data
         id: fetch_data
         run: |
           set -e
+          export GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
           
           if [ "$TAG_NAME" == "main" ] || [ "$TAG_NAME" == "commit" ]; then
-            echo "Explicitly fetching latest commit on main branch."
+            echo "Explicitly fetching latest commit on $GITHUB_REF_NAME branch."
             COMMIT_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{github.repository}}/commits/main")
+              "https://api.github.com/repos/${{github.repository}}/commits/$GITHUB_REF_NAME")
             TAG=$(echo "$COMMIT_DATA" | jq -r '.sha[0:7]')
             URL=$(echo "$COMMIT_DATA" | jq -r '.html_url')
             BODY=$(echo "$COMMIT_DATA" | jq -r '.commit.message')
@@ -92,14 +100,19 @@ jobs:
             echo "$BODY" > release_notes.txt
             echo "[]" > assets.json
           elif [ "$TAG_NAME" == "latest" ] || [ -z "$TAG_NAME" ]; then
-            # Fetch most recent release from the array
-            RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{github.repository}}/releases" | jq '.[0]')
-            
-            if [ "$RELEASE_DATA" == "null" ] || [ -z "$RELEASE_DATA" ]; then
-              echo "No releases found. Fetching latest commit on main branch."
+            # Attempt to fetch latest release
+            if gh release view --json tagName,url,body,assets > release.json 2>/dev/null; then
+              TAG=$(jq -r '.tagName' release.json)
+              URL=$(jq -r '.url' release.json)
+              jq -r '.body' release.json > release_notes.txt
+              jq -c '.assets' release.json > assets.json
+              echo "tag=$TAG" >> $GITHUB_OUTPUT
+              echo "url=$URL" >> $GITHUB_OUTPUT
+              echo "is_commit=false" >> $GITHUB_OUTPUT
+            else
+              echo "No releases found. Fetching latest commit on $GITHUB_REF_NAME branch."
               COMMIT_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                "https://api.github.com/repos/${{github.repository}}/commits/main")
+                "https://api.github.com/repos/${{github.repository}}/commits/$GITHUB_REF_NAME")
               TAG=$(echo "$COMMIT_DATA" | jq -r '.sha[0:7]')
               URL=$(echo "$COMMIT_DATA" | jq -r '.html_url')
               BODY=$(echo "$COMMIT_DATA" | jq -r '.commit.message')
@@ -108,39 +121,53 @@ jobs:
               echo "is_commit=true" >> $GITHUB_OUTPUT
               echo "$BODY" > release_notes.txt
               echo "[]" > assets.json
-            else
-              TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
-              URL=$(echo "$RELEASE_DATA" | jq -r '.html_url')
+            fi
+          else
+            # Fetch specific release by tag, create if missing
+            if gh release view "$TAG_NAME" --json tagName,url,body,assets > release.json 2>/dev/null; then
+              echo "Release $TAG_NAME exists. Fetching..."
+              TAG=$(jq -r '.tagName' release.json)
+              URL=$(jq -r '.url' release.json)
+              jq -r '.body' release.json > release_notes.txt
+              jq -c '.assets' release.json > assets.json
               echo "tag=$TAG" >> $GITHUB_OUTPUT
               echo "url=$URL" >> $GITHUB_OUTPUT
               echo "is_commit=false" >> $GITHUB_OUTPUT
-              echo "$RELEASE_DATA" | jq -r '.body' > release_notes.txt
-              echo "$RELEASE_DATA" | jq -c '.assets' > assets.json
+            else
+              echo "Release $TAG_NAME does not exist. Creating..."
+              PRERELEASE_FLAG=""
+              if [ "$IS_PRERELEASE" == "true" ]; then PRERELEASE_FLAG="--prerelease"; fi
+              
+              FILES=()
+              if [ -d "all-artifacts" ]; then
+                while IFS=  read -r -d $'\0'; do
+                    FILES+=("$REPLY")
+                done < <(find all-artifacts -type f -print0)
+              fi
+              
+              gh release create "$TAG_NAME" "${FILES[@]}" \
+                --title "Release $TAG_NAME" \
+                --generate-notes \
+                --target "$GITHUB_REF_NAME" \
+                $PRERELEASE_FLAG
+                
+              # Now fetch the newly created release data
+              gh release view "$TAG_NAME" --json tagName,url,body,assets > release.json
+              TAG=$(jq -r '.tagName' release.json)
+              URL=$(jq -r '.url' release.json)
+              jq -r '.body' release.json > release_notes.txt
+              jq -c '.assets' release.json > assets.json
+              echo "tag=$TAG" >> $GITHUB_OUTPUT
+              echo "url=$URL" >> $GITHUB_OUTPUT
+              echo "is_commit=false" >> $GITHUB_OUTPUT
             fi
-          else
-            # Fetch specific release by tag
-            RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{github.repository}}/releases/tags/$TAG_NAME")
-            
-            if echo "$RELEASE_DATA" | jq -e '.message == "Not Found"' >/dev/null; then
-              echo "Release for tag $TAG_NAME not found."
-              exit 1
-            fi
-            
-            TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
-            URL=$(echo "$RELEASE_DATA" | jq -r '.html_url')
-            echo "tag=$TAG" >> $GITHUB_OUTPUT
-            echo "url=$URL" >> $GITHUB_OUTPUT
-            echo "is_commit=false" >> $GITHUB_OUTPUT
-            echo "$RELEASE_DATA" | jq -r '.body' > release_notes.txt
-            echo "$RELEASE_DATA" | jq -c '.assets' > assets.json
           fi
 
       - name: Categorize Assets
         id: assets
         run: |
           if [ -s assets.json ] && [ "$(cat assets.json)" != "null" ] && [ "$(cat assets.json)" != "[]" ]; then
-            jq -r '.[] | "🔹 [\(.name)](\(.browser_download_url)) | \((.size/1048576) | tonumber | round) MB"' assets.json > asset_list.txt
+            jq -r '.[] | "🔹 [\(.name)](\(.browser_download_url // .url)) | \((.size/1048576) | tonumber | round) MB"' assets.json > asset_list.txt
           else
             echo "No assets available." > asset_list.txt
           fi
@@ -178,6 +205,10 @@ jobs:
               LOGS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             fi
             FULL_DESC=$(printf "%s\n\n### Logs\n[View Build Logs](%s)" "$FULL_DESC" "$LOGS_URL")
+          fi
+          
+          if [ ${#FULL_DESC} -gt 3900 ]; then
+            FULL_DESC="${FULL_DESC:0:3900}... [View full changelog on GitHub]($URL)"
           fi
           
           jq -n \

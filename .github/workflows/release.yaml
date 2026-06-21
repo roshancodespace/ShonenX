@@ -115,6 +115,9 @@ jobs:
 
       - run: flutter config --enable-linux-desktop
       - run: flutter pub get
+      - run: |
+          sed -i 's/-Wno-deprecated-literal-operator//g' \
+          flutter/ephemeral/.plugin_symlinks/flutter_inappwebview_linux/linux/CMakeLists.txt
       - run: flutter build linux --release --dart-define-from-file=keys.json
 
       - uses: actions/upload-artifact@v4

@@ -143,7 +143,7 @@ jobs:
   # ---------------- WINDOWS ----------------
   build-windows:
     if: github.event_name == 'push' || github.event.inputs.build_windows == 'true'
-    runs-on: windows-2019
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -159,6 +159,9 @@ jobs:
       - name: Enable Windows
         run: flutter config --enable-windows-desktop
 
+      - name: Regenerate Windows files
+        run: flutter create --platforms=windows .
+
       - name: Create env file
         run: |
           echo '{
@@ -168,6 +171,8 @@ jobs:
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
             "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}"
           }' > keys.json
+
+      - run: flutter pub upgrade
 
       - run: flutter build windows --release --dart-define-from-file=keys.json
 

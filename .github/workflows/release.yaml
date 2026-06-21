@@ -61,7 +61,6 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.35.7
-          cache: true
 
       - name: Decode keystore
         run: |
@@ -88,7 +87,7 @@ jobs:
           }
           EOF
 
-      - run: flutter pub get
+      - run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
 
       - run: flutter build apk --release --split-per-abi
           --dart-define-from-file=keys.json
@@ -119,7 +118,6 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.35.7
-          cache: true
 
       - name: Create env file
         run: |
@@ -134,7 +132,7 @@ jobs:
           EOF
 
       - run: flutter config --enable-linux-desktop
-      - run: flutter pub get
+      - run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
      
       - run: flutter build linux --release --dart-define-from-file=keys.json
       - uses: actions/upload-artifact@v4
@@ -157,7 +155,6 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.35.7
-          cache: true
 
       - name: Enable Windows
         run: flutter config --enable-windows-desktop
@@ -172,7 +169,7 @@ jobs:
             "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}"
           }' > keys.json
 
-      - run: flutter pub get
+      - run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
 
       - run: flutter build windows --release --dart-define-from-file=keys.json
 

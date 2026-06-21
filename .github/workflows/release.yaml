@@ -16,6 +16,26 @@ on:
       build_windows:
         type: boolean
         default: true
+      notify_discord:
+        description: "Send Discord Notification?"
+        type: boolean
+        default: true
+      notify_everyone:
+        description: "Ping @everyone on Discord?"
+        type: boolean
+        default: true
+      include_logs:
+        description: "Include run logs link in notification?"
+        type: boolean
+        default: true
+      is_prerelease:
+        description: "Is this a pre-release?"
+        type: boolean
+        default: false
+      tag_name:
+        description: "Release tag (use 'latest' for the most recent release, or fallback to main commit)"
+        type: string
+        default: "latest"
 
 permissions:
   contents: write
@@ -115,9 +135,7 @@ jobs:
 
       - run: flutter config --enable-linux-desktop
       - run: flutter pub get
-      - run: |
-          sed -i 's/-Wno-deprecated-literal-operator//g' \
-          flutter/ephemeral/.plugin_symlinks/flutter_inappwebview_linux/linux/CMakeLists.txt
+     
       - run: flutter build linux --release --dart-define-from-file=keys.json
       - uses: actions/upload-artifact@v4
         with:
@@ -165,3 +183,16 @@ jobs:
         with:
           name: windows-build
           path: build/windows/x64/runner/Release
+
+  # ---------------- NOTIFY ----------------
+  notify:
+    needs: [build-android, build-linux, build-windows]
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (github.event_name == 'push' || github.event.inputs.notify_discord == 'true')
+    uses: ./.github/workflows/notify_release.yaml
+    with:
+      notify_everyone: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.notify_everyone == 'true' || true }}
+      include_logs: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.include_logs == 'true' || true }}
+      is_prerelease: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.is_prerelease == 'true' || false }}
+      tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag_name || 'latest' }}
+    secrets:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}

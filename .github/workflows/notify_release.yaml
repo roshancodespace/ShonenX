@@ -1,0 +1,189 @@
+name: Notify Release
+
+on:
+  workflow_run:
+    workflows: ["Release Build"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      notify_everyone:
+        description: "Ping @everyone on Discord?"
+        required: false
+        default: true
+        type: boolean
+      include_logs:
+        description: "Include run logs link in notification?"
+        required: false
+        default: true
+        type: boolean
+      is_prerelease:
+        description: "Is this a pre-release?"
+        required: false
+        default: false
+        type: boolean
+      tag_name:
+        description: "Release tag (use 'latest' for the most recent release, or fallback to main commit if none exists)"
+        required: false
+        default: "latest"
+        type: string
+
+  workflow_call:
+    inputs:
+      notify_everyone:
+        description: "Ping @everyone on Discord?"
+        required: false
+        default: true
+        type: boolean
+      include_logs:
+        description: "Include run logs link in notification?"
+        required: false
+        default: true
+        type: boolean
+      is_prerelease:
+        description: "Is this a pre-release?"
+        required: false
+        default: false
+        type: boolean
+      tag_name:
+        description: "Release tag (use 'latest' for the most recent release, or fallback to main commit if none exists)"
+        required: false
+        default: "latest"
+        type: string
+    secrets:
+      DISCORD_WEBHOOK:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call' || github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Set up Environment
+        id: env_setup
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] || [ "${{ github.event_name }}" == "workflow_call" ]; then
+            echo "NOTIFY_EVERYONE=${{ inputs.notify_everyone }}" >> $GITHUB_ENV
+            echo "INCLUDE_LOGS=${{ inputs.include_logs }}" >> $GITHUB_ENV
+            echo "IS_PRERELEASE=${{ inputs.is_prerelease }}" >> $GITHUB_ENV
+            echo "TAG_NAME=${{ inputs.tag_name }}" >> $GITHUB_ENV
+          else
+            echo "NOTIFY_EVERYONE=true" >> $GITHUB_ENV
+            echo "INCLUDE_LOGS=true" >> $GITHUB_ENV
+            echo "IS_PRERELEASE=false" >> $GITHUB_ENV
+            echo "TAG_NAME=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Fetch Data
+        id: fetch_data
+        run: |
+          set -e
+          
+          if [ "$TAG_NAME" == "latest" ] || [ -z "$TAG_NAME" ]; then
+            # Fetch most recent release from the array
+            RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{github.repository}}/releases" | jq '.[0]')
+            
+            if [ "$RELEASE_DATA" == "null" ] || [ -z "$RELEASE_DATA" ]; then
+              echo "No releases found. Fetching latest commit on main branch."
+              COMMIT_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                "https://api.github.com/repos/${{github.repository}}/commits/main")
+              TAG=$(echo "$COMMIT_DATA" | jq -r '.sha[0:7]')
+              URL=$(echo "$COMMIT_DATA" | jq -r '.html_url')
+              BODY=$(echo "$COMMIT_DATA" | jq -r '.commit.message')
+              echo "tag=$TAG" >> $GITHUB_OUTPUT
+              echo "url=$URL" >> $GITHUB_OUTPUT
+              echo "is_commit=true" >> $GITHUB_OUTPUT
+              echo "$BODY" > release_notes.txt
+              echo "[]" > assets.json
+            else
+              TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
+              URL=$(echo "$RELEASE_DATA" | jq -r '.html_url')
+              echo "tag=$TAG" >> $GITHUB_OUTPUT
+              echo "url=$URL" >> $GITHUB_OUTPUT
+              echo "is_commit=false" >> $GITHUB_OUTPUT
+              echo "$RELEASE_DATA" | jq -r '.body' > release_notes.txt
+              echo "$RELEASE_DATA" | jq -c '.assets' > assets.json
+            fi
+          else
+            # Fetch specific release by tag
+            RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{github.repository}}/releases/tags/$TAG_NAME")
+            
+            if echo "$RELEASE_DATA" | jq -e '.message == "Not Found"' >/dev/null; then
+              echo "Release for tag $TAG_NAME not found."
+              exit 1
+            fi
+            
+            TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
+            URL=$(echo "$RELEASE_DATA" | jq -r '.html_url')
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "url=$URL" >> $GITHUB_OUTPUT
+            echo "is_commit=false" >> $GITHUB_OUTPUT
+            echo "$RELEASE_DATA" | jq -r '.body' > release_notes.txt
+            echo "$RELEASE_DATA" | jq -c '.assets' > assets.json
+          fi
+
+      - name: Categorize Assets
+        id: assets
+        run: |
+          if [ -s assets.json ] && [ "$(cat assets.json)" != "null" ] && [ "$(cat assets.json)" != "[]" ]; then
+            jq -r '.[] | "🔹 [\(.name)](\(.browser_download_url)) | \((.size/1048576) | tonumber | round) MB"' assets.json > asset_list.txt
+          else
+            echo "No assets available." > asset_list.txt
+          fi
+
+      - name: Send Discord Notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          MENTION: ${{ env.NOTIFY_EVERYONE == 'true' && '@everyone' || '' }}
+          TAG: ${{ steps.fetch_data.outputs.tag }}
+          URL: ${{ steps.fetch_data.outputs.url }}
+          IS_COMMIT: ${{ steps.fetch_data.outputs.is_commit }}
+        run: |
+          NOTES=$(cat release_notes.txt)
+          ASSETS=$(cat asset_list.txt)
+          
+          if [ "$IS_COMMIT" == "true" ]; then
+            FULL_DESC=$(printf "### Commit Message\n%s" "$NOTES")
+            TITLE="🔨 New Update (Commit: $TAG)"
+            COLOR=3447003 # Blue
+          else
+            FULL_DESC=$(printf "### Changelog\n%s\n\n### Downloads\n%s" "$NOTES" "$ASSETS")
+            if [ "$IS_PRERELEASE" == "true" ]; then
+              TITLE="🛠️ New Pre-Release: $TAG"
+              COLOR=16753920 # Orange
+            else
+              TITLE="🚀 New Release: $TAG"
+              COLOR=1754309 # Green
+            fi
+          fi
+          
+          if [ "$INCLUDE_LOGS" == "true" ]; then
+            if [ "${{ github.event_name }}" == "workflow_run" ]; then
+              LOGS_URL="${{ github.event.workflow_run.html_url }}"
+            else
+              LOGS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            fi
+            FULL_DESC=$(printf "%s\n\n### Logs\n[View Build Logs](%s)" "$FULL_DESC" "$LOGS_URL")
+          fi
+          
+          jq -n \
+            --arg content "$MENTION" \
+            --arg title "$TITLE" \
+            --arg desc "$FULL_DESC" \
+            --arg url "$URL" \
+            --arg color "$COLOR" \
+            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{
+              content: $content,
+              embeds: [{
+                title: $title,
+                description: $desc,
+                url: $url,
+                color: ($color | tonumber),
+                timestamp: $timestamp
+              }]
+            }' > final_payload.json
+            
+          curl -s -H "Content-Type: application/json" -X POST -d @final_payload.json "$DISCORD_WEBHOOK"

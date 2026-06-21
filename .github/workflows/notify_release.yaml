@@ -22,7 +22,7 @@ on:
         default: false
         type: boolean
       tag_name:
-        description: "Release tag (use 'latest' for the most recent release, or fallback to main commit if none exists)"
+        description: "Release tag ('latest' for newest release, 'main' for latest commit, or specific tag)"
         required: false
         default: "latest"
         type: string
@@ -45,7 +45,7 @@ on:
         default: false
         type: boolean
       tag_name:
-        description: "Release tag (use 'latest' for the most recent release, or fallback to main commit if none exists)"
+        description: "Release tag ('latest' for newest release, 'main' for latest commit, or specific tag)"
         required: false
         default: "latest"
         type: string
@@ -79,7 +79,19 @@ jobs:
         run: |
           set -e
           
-          if [ "$TAG_NAME" == "latest" ] || [ -z "$TAG_NAME" ]; then
+          if [ "$TAG_NAME" == "main" ] || [ "$TAG_NAME" == "commit" ]; then
+            echo "Explicitly fetching latest commit on main branch."
+            COMMIT_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{github.repository}}/commits/main")
+            TAG=$(echo "$COMMIT_DATA" | jq -r '.sha[0:7]')
+            URL=$(echo "$COMMIT_DATA" | jq -r '.html_url')
+            BODY=$(echo "$COMMIT_DATA" | jq -r '.commit.message')
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "url=$URL" >> $GITHUB_OUTPUT
+            echo "is_commit=true" >> $GITHUB_OUTPUT
+            echo "$BODY" > release_notes.txt
+            echo "[]" > assets.json
+          elif [ "$TAG_NAME" == "latest" ] || [ -z "$TAG_NAME" ]; then
             # Fetch most recent release from the array
             RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               "https://api.github.com/repos/${{github.repository}}/releases" | jq '.[0]')

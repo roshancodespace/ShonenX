@@ -33,7 +33,7 @@ on:
         type: boolean
         default: false
       tag_name:
-        description: "Release tag (use 'latest' for the most recent release, or fallback to main commit)"
+        description: "Release tag ('latest' for newest release, 'main' for latest commit, or specific tag)"
         type: string
         default: "latest"
 

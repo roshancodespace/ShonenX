@@ -18,30 +18,24 @@ import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 class TrackerManagerSheet extends ConsumerWidget {
   final UnifiedMedia media;
-  final List<TrackerType> activeTrackers;
-  final TrackerType? editTracker;
 
   const TrackerManagerSheet({
     super.key,
     required this.media,
-    required this.activeTrackers,
-    this.editTracker,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trackerLinks = ref.watch(trackerLinkProvider(media.id)).value ?? {};
+    final activeTrackers = ref.watch(activeTrackersProvider(media.type));
 
     return AppBottomSheet(
       title: 'Manage Trackers',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ...activeTrackers.map((type) {
-            final tracker = ref
-                .read(availableTrackersProvider)
-                .firstWhere((t) => t.type == type);
-
+          ...activeTrackers.map((tracker) {
+            final type = tracker.type;
             final isRemote = tracker is RemoteTracker;
             final isLinked = isRemote ? trackerLinks.containsKey(type) : true;
             final isAuthenticated = type.isAuthenticated(ref) || !isRemote;
@@ -244,6 +238,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
                                 await tracker.removeEntry(
                                   trackingId:
                                       trackerMapping?.trackingId ?? media.id,
+                                  mediaType: media.type,
                                 );
                               } catch (_) {}
                             }
@@ -255,7 +250,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
                             if (isLocal) {
                               ref.invalidate(
                                 mediaTrackingProvider(
-                                  TrackingQuery(tracker.type, media.id),
+                                  TrackingQuery(tracker.type, media.id, media.type),
                                 ),
                               );
                             }
@@ -292,7 +287,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trackingState = ref.watch(
-      mediaTrackingProvider(TrackingQuery(tracker.type, media.id)),
+      mediaTrackingProvider(TrackingQuery(tracker.type, media.id, media.type)),
     );
 
     final theme = Theme.of(context);
@@ -332,7 +327,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
             icon: Icons.refresh_rounded,
             onTap: () {
               ref.invalidate(
-                mediaTrackingProvider(TrackingQuery(tracker.type, media.id)),
+                mediaTrackingProvider(TrackingQuery(tracker.type, media.id, media.type)),
               );
             },
           ),

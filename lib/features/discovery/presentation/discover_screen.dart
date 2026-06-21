@@ -64,40 +64,34 @@ class SearchDiscoverScreen extends ConsumerStatefulWidget {
       _SearchDiscoverScreenState();
 }
 
-class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen> {
-  late final ScrollController _scrollController;
+class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
+    with SingleTickerProviderStateMixin {
+  late final TextEditingController _searchController;
+  late TabController _tabController;
 
-  bool _isLoadingMore = false;
   String _query = '';
   List<String> _genres = [];
   List<String> _tags = [];
 
-  SearchArgs get _args => SearchArgs(
-    query: _query,
-    type: widget.type,
-    genres: _genres,
-    tags: _tags,
-  );
-
-  bool get _hasActiveFilters =>
-      _query.isNotEmpty || _genres.isNotEmpty || _tags.isNotEmpty;
-
   @override
   void initState() {
     super.initState();
-
     _query = widget.initialQuery?.trim() ?? '';
+    _searchController = TextEditingController(text: _query);
     _genres = List.from(widget.initialGenres);
     _tags = List.from(widget.initialTags);
 
-    _scrollController = ScrollController()..addListener(_handleScroll);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.type == MediaType.ANIME ? 0 : 1,
+    );
   }
 
   @override
   void dispose() {
-    _scrollController
-      ..removeListener(_handleScroll)
-      ..dispose();
+    _searchController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -114,11 +108,13 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen> {
       builder: (context) {
         return AdvancedSearchSheet(
           initialQuery: _query,
+          type: _tabController.index == 0 ? MediaType.ANIME : MediaType.MANGA,
           initialGenres: _genres,
           initialTags: _tags,
           onApply: (query, genres, tags) {
             setState(() {
               _query = query.trim();
+              _searchController.text = _query;
               _genres = genres;
               _tags = tags;
             });
@@ -126,6 +122,227 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen> {
         );
       },
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return AppScaffold(
+      title: null,
+      subtitle: null,
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TabBar(
+              controller: _tabController,
+              dividerColor: Colors.transparent,
+              tabs: const [
+                Tab(text: 'Anime'),
+                Tab(text: 'Manga'),
+              ],
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_query.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _query = '');
+                        },
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.tune),
+                      tooltip: 'Advanced Filters',
+                      onPressed: () => _openAdvancedSearch(context),
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              textInputAction: TextInputAction.search,
+              onSubmitted: (value) {
+                setState(() {
+                  _query = value.trim();
+                });
+              },
+            ),
+            if (_genres.isNotEmpty || _tags.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 36,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    ..._genres.map(
+                      (g) => Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: InputChip(
+                          label: Text(g),
+                          onDeleted: () {
+                            setState(() {
+                              _genres.remove(g);
+                            });
+                          },
+                          backgroundColor: theme.colorScheme.secondaryContainer,
+                          labelStyle: TextStyle(
+                            color: theme.colorScheme.onSecondaryContainer,
+                          ),
+                          deleteIconColor:
+                              theme.colorScheme.onSecondaryContainer,
+                          side: BorderSide.none,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    ..._tags.map(
+                      (t) => Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: InputChip(
+                          label: Text(t),
+                          onDeleted: () {
+                            setState(() {
+                              _tags.remove(t);
+                            });
+                          },
+                          backgroundColor: theme.colorScheme.tertiaryContainer,
+                          labelStyle: TextStyle(
+                            color: theme.colorScheme.onTertiaryContainer,
+                          ),
+                          deleteIconColor:
+                              theme.colorScheme.onTertiaryContainer,
+                          side: BorderSide.none,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _DiscoverTabFeed(
+                    type: MediaType.ANIME,
+                    query: _query,
+                    genres: _genres,
+                    tags: _tags,
+                  ),
+                  _DiscoverTabFeed(
+                    type: MediaType.MANGA,
+                    query: _query,
+                    genres: _genres,
+                    tags: _tags,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CategoryDiscoverScreen extends ConsumerStatefulWidget {
+  final String category;
+  final MediaType type;
+
+  const CategoryDiscoverScreen({
+    super.key,
+    required this.category,
+    required this.type,
+  });
+
+  @override
+  ConsumerState<CategoryDiscoverScreen> createState() =>
+      _CategoryDiscoverScreenState();
+}
+
+class _CategoryDiscoverScreenState extends ConsumerState<CategoryDiscoverScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return AppScaffold(
+      title: widget.category,
+      subtitle: 'Browse ${widget.category}',
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        child: _CategoryTabFeed(
+          type: widget.type,
+          category: widget.category,
+        ),
+      ),
+    );
+  }
+}
+
+class _DiscoverTabFeed extends ConsumerStatefulWidget {
+  final MediaType type;
+  final String query;
+  final List<String> genres;
+  final List<String> tags;
+
+  const _DiscoverTabFeed({
+    required this.type,
+    required this.query,
+    required this.genres,
+    required this.tags,
+  });
+
+  @override
+  ConsumerState<_DiscoverTabFeed> createState() => _DiscoverTabFeedState();
+}
+
+class _DiscoverTabFeedState extends ConsumerState<_DiscoverTabFeed> {
+  late final ScrollController _scrollController;
+  bool _isLoadingMore = false;
+
+  SearchArgs get _args => SearchArgs(
+    query: widget.query,
+    type: widget.type,
+    genres: widget.genres,
+    tags: widget.tags,
+  );
+
+  bool get _hasActiveFilters =>
+      widget.query.isNotEmpty ||
+      widget.genres.isNotEmpty ||
+      widget.tags.isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController()..addListener(_handleScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _handleScroll() {
@@ -159,48 +376,33 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = _hasActiveFilters ? ref.watch(searchProvider(_args)) : null;
+    if (!_hasActiveFilters) {
+      return _DynamicGenreFeed(type: widget.type);
+    }
 
-    return _DiscoverGridScaffold(
-      title: 'Discover',
-      subtitle: 'Find your next obsession',
+    final state = ref.watch(searchProvider(_args));
+
+    return _PaginatedMediaGrid(
       state: state,
-      type: widget.type,
-      hasActiveFilters: _hasActiveFilters,
       scrollController: _scrollController,
       isLoadingMore: _isLoadingMore,
       onAutoLoad: _loadNextPage,
-      actions: [
-        FilledButton.tonalIcon(
-          onPressed: () => _openAdvancedSearch(context),
-          icon: const Icon(Icons.search),
-          label: const Text('Search anime...'),
-        ),
-        const SizedBox(width: 10),
-      ],
     );
   }
 }
 
-class CategoryDiscoverScreen extends ConsumerStatefulWidget {
-  final String category;
+class _CategoryTabFeed extends ConsumerStatefulWidget {
   final MediaType type;
+  final String category;
 
-  const CategoryDiscoverScreen({
-    super.key,
-    required this.category,
-    required this.type,
-  });
+  const _CategoryTabFeed({required this.type, required this.category});
 
   @override
-  ConsumerState<CategoryDiscoverScreen> createState() =>
-      _CategoryDiscoverScreenState();
+  ConsumerState<_CategoryTabFeed> createState() => _CategoryTabFeedState();
 }
 
-class _CategoryDiscoverScreenState
-    extends ConsumerState<CategoryDiscoverScreen> {
+class _CategoryTabFeedState extends ConsumerState<_CategoryTabFeed> {
   late final ScrollController _scrollController;
-
   bool _isLoadingMore = false;
 
   CategorySearchArgs get _args =>
@@ -214,9 +416,8 @@ class _CategoryDiscoverScreenState
 
   @override
   void dispose() {
-    _scrollController
-      ..removeListener(_handleScroll)
-      ..dispose();
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -230,6 +431,7 @@ class _CategoryDiscoverScreenState
 
   Future<void> _loadNextPage() async {
     if (_isLoadingMore) return;
+
     final state = ref.read(categorySearchProvider(_args));
     if (state.value?.hasNextPage != true) return;
 
@@ -252,12 +454,8 @@ class _CategoryDiscoverScreenState
   Widget build(BuildContext context) {
     final state = ref.watch(categorySearchProvider(_args));
 
-    return _DiscoverGridScaffold(
-      title: widget.category,
-      subtitle: 'Browse ${widget.category}',
+    return _PaginatedMediaGrid(
       state: state,
-      type: widget.type,
-      hasActiveFilters: true,
       scrollController: _scrollController,
       isLoadingMore: _isLoadingMore,
       onAutoLoad: _loadNextPage,
@@ -265,118 +463,84 @@ class _CategoryDiscoverScreenState
   }
 }
 
-class _DiscoverGridScaffold extends ConsumerWidget {
-  final String title;
-  final String subtitle;
-  final AsyncValue<PaginatedResult<UnifiedMedia>?>? state;
-  final MediaType type;
-  final bool hasActiveFilters;
+class _PaginatedMediaGrid extends ConsumerWidget {
+  final AsyncValue<PaginatedResult<UnifiedMedia>?> state;
   final ScrollController scrollController;
   final bool isLoadingMore;
   final VoidCallback onAutoLoad;
-  final List<Widget>? actions;
 
-  const _DiscoverGridScaffold({
-    required this.title,
-    required this.subtitle,
+  const _PaginatedMediaGrid({
     required this.state,
-    required this.type,
-    required this.hasActiveFilters,
     required this.scrollController,
     required this.isLoadingMore,
     required this.onAutoLoad,
-    this.actions,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
 
-    return AppScaffold(
-      title: title,
-      subtitle: subtitle,
-      actions: actions,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Column(
+    return state.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text(e.toString())),
+      data: (result) {
+        if (result == null || result.items.isEmpty) {
+          return const Center(child: Text('No results found'));
+        }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!scrollController.hasClients) {
+            return;
+          }
+
+          final position = scrollController.position;
+
+          if (position.maxScrollExtent == 0 && result.hasNextPage) {
+            onAutoLoad();
+          }
+        });
+
+        return Stack(
           children: [
-            Expanded(
-              child: !hasActiveFilters
-                  ? _DynamicGenreFeed(type: type)
-                  : state!.when(
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (e, _) => Center(child: Text(e.toString())),
-                      data: (result) {
-                        if (result == null || result.items.isEmpty) {
-                          return const Center(child: Text('No results found'));
-                        }
+            GridView.builder(
+              controller: scrollController,
+              padding: const EdgeInsets.only(bottom: 120, top: 10),
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: style.layout.width + 10,
+                mainAxisExtent: style.layout.height,
+                childAspectRatio: style.layout.aspectRatio,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemCount: result.items.length,
+              itemBuilder: (context, index) {
+                final media = result.items[index];
 
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (!scrollController.hasClients) {
-                            return;
-                          }
-
-                          final position = scrollController.position;
-
-                          if (position.maxScrollExtent == 0 &&
-                              result.hasNextPage) {
-                            onAutoLoad();
-                          }
-                        });
-
-                        return Stack(
-                          children: [
-                            GridView.builder(
-                              controller: scrollController,
-                              padding: const EdgeInsets.only(
-                                bottom: 120,
-                                top: 10,
-                              ),
-                              gridDelegate:
-                                  SliverGridDelegateWithMaxCrossAxisExtent(
-                                    maxCrossAxisExtent: style.layout.width + 10,
-                                    mainAxisExtent: style.layout.height,
-                                    childAspectRatio: style.layout.aspectRatio,
-                                    crossAxisSpacing: 10,
-                                    mainAxisSpacing: 10,
-                                  ),
-                              itemCount: result.items.length,
-                              itemBuilder: (context, index) {
-                                final media = result.items[index];
-
-                                return MediaCard(
-                                  tag: 'media-${media.id}',
-                                  title: media.title.availableTitle,
-                                  imageUrl: media.cover ?? media.banner ?? '',
-                                  style: style,
-                                  onTap: () {
-                                    context.push(
-                                      '/details/${media.type.id}?tag=media-${media.id}',
-                                      extra: media,
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                            AnimatedPositioned(
-                              duration: const Duration(milliseconds: 200),
-                              curve: Curves.easeOut,
-                              left: 0,
-                              right: 0,
-                              bottom: isLoadingMore ? 80 : -60,
-                              child: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
+                return MediaCard(
+                  tag: 'media-${media.id}',
+                  title: media.title.availableTitle,
+                  imageUrl: media.cover ?? media.banner ?? '',
+                  style: style,
+                  onTap: () {
+                    context.push(
+                      '/details/${media.type.id}?tag=media-${media.id}',
+                      extra: media,
+                    );
+                  },
+                );
+              },
+            ),
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              left: 0,
+              right: 0,
+              bottom: isLoadingMore ? 80 : -60,
+              child: const Center(child: CircularProgressIndicator()),
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

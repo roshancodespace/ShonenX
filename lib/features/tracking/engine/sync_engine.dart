@@ -50,6 +50,36 @@ class SyncEngine {
     }
   }
 
+  Future<void> processReading({
+    required UnifiedMedia media,
+    required double chapterNumber,
+    required int positionPage,
+    required int totalPages,
+  }) async {
+    final log = _log.child('processReading');
+
+    if (totalPages == 0) return;
+
+    final sessionKey = '${media.id}_$chapterNumber';
+    if (_sessionSyncedCache.contains(sessionKey)) return;
+
+    final progressPercent = positionPage / totalPages;
+    final threshold = ref.read(trackingPrefsProvider).syncThreshold;
+
+    log.v('Progress ${(progressPercent * 100).toStringAsFixed(1)}%');
+
+    if (progressPercent >= threshold) {
+      _sessionSyncedCache.add(sessionKey);
+
+      log.i('Threshold hit → syncing');
+
+      await syncEpisodeProgress(
+        media: media,
+        episodeNumber: chapterNumber,
+      );
+    }
+  }
+
   Future<void> syncEpisodeProgress({
     required UnifiedMedia media,
     required double episodeNumber,
@@ -85,7 +115,7 @@ class SyncEngine {
       }
 
       if (actualTrackingId != null) {
-        final query = TrackingQuery(tracker.type, media.id);
+        final query = TrackingQuery(tracker.type, media.id, media.type);
 
         TrackedListItem? currentData;
 

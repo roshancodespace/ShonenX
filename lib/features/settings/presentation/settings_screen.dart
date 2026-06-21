@@ -31,6 +31,12 @@ class SettingsScreen extends ConsumerWidget {
                 onTap: () => context.push('/settings/player'),
               ),
               SettingsNavTile(
+                icon: Icons.chrome_reader_mode_outlined,
+                title: 'Reader',
+                subtitle: 'Reading mode, background, scale',
+                onTap: () => context.push('/settings/reader'),
+              ),
+              SettingsNavTile(
                 icon: Icons.extension_outlined,
                 title: 'Extensions',
                 subtitle: 'Aniyomi and Mangayomi extensions',
@@ -103,7 +109,7 @@ class SettingsScreen extends ConsumerWidget {
               children: [
                 SettingsNavTile(
                   icon: Icons.notifications_active_outlined,
-                  title: 'Manage Anime Notifications',
+                  title: 'Manage Notifications',
                   subtitle: 'Manage your active subscriptions and reminders',
                   onTap: () => context.push('/settings/notifications'),
                 ),
@@ -136,6 +142,12 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Debug',
                 subtitle: 'Test notifications and UI components',
                 onTap: () => context.push('/settings/debug'),
+              ),
+              SettingsNavTile(
+                icon: Icons.article_outlined,
+                title: 'Logs',
+                subtitle: 'View, copy, and export app logs',
+                onTap: () => context.push('/settings/logs'),
               ),
             ],
           ),

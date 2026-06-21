@@ -9,21 +9,29 @@ import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
 
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 
+import 'package:shonenx/shared/models/unified_media.dart';
+
 class CloudLibraryRowWidget extends ConsumerWidget {
   final String title;
   final TrackedStatus status;
   final TrackerType? targetTracker;
+  final MediaType? targetMediaType;
 
   const CloudLibraryRowWidget({
     super.key,
     required this.title,
     required this.status,
     this.targetTracker,
+    this.targetMediaType,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncData = ref.watch(cloudLibraryProvider((status: status, trackerType: targetTracker)));
+    final asyncData = ref.watch(cloudLibraryProvider((
+      status: status, 
+      trackerType: targetTracker, 
+      mediaType: targetMediaType ?? MediaType.ANIME
+    )));
     final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
 
     return HorizontalSection(

@@ -7,7 +7,7 @@ part 'library_entry.g.dart';
 class LibraryEntry {
   Id id = Isar.autoIncrement;
 
-  @Index(unique: true, replace: true)
+  @Index(unique: true, replace: true, composite: [CompositeIndex('type')])
   late String providerId;
 
   @Index()

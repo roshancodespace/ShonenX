@@ -1,33 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:shonenx/core/providers/ui_prefs_provider.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/media_card.dart';
-import 'package:shonenx/features/library/providers/cloud_library_provider.dart';
-import 'package:shonenx/features/library/providers/local_library_provider.dart';
-import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
+import 'package:shonenx/features/library/presentation/widgets/library_filters.dart';
+import 'package:shonenx/features/library/presentation/widgets/library_grid.dart';
+import 'package:shonenx/features/library/providers/library_view_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
-import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
+import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
-import '../providers/library_view_provider.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
-  final TrackedStatus? status;
-
-  const LibraryScreen({super.key, this.status});
+  const LibraryScreen({super.key});
 
   @override
   ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _LibraryScreenState extends ConsumerState<LibraryScreen> {
+class _LibraryScreenState extends ConsumerState<LibraryScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_handleTabChange);
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_handleTabChange);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _handleTabChange() {
+    if (_tabController.indexIsChanging) return;
+    
+    final mediaType = _tabController.index == 0 ? MediaType.ANIME : MediaType.MANGA;
+    ref.read(libraryViewStateProvider.notifier).setMediaType(mediaType);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final viewState = ref.watch(libraryViewStateProvider);
-    final dynamicLibrary = ref.watch(dynamicLibraryProvider);
-    final cardStyle = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
+    
+    // Ensure the tab matches the state if changed externally
+    if (viewState.mediaType == MediaType.ANIME && _tabController.index != 0) {
+      _tabController.animateTo(0);
+    } else if (viewState.mediaType == MediaType.MANGA && _tabController.index != 1) {
+      _tabController.animateTo(1);
+    }
 
     return AppScaffold(
       subtitle: 'FROM LIBRARY',
@@ -74,133 +97,21 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         const SizedBox(width: 10),
       ],
       barBottom: PreferredSize(
-        preferredSize: const Size.fromHeight(45),
-        child: Center(
-          child: SafeArea(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: TrackedStatus.values
-                    .where((s) => s != TrackedStatus.unknown)
-                    .map((status) {
-                      final isActive = viewState.status == status;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: ChoiceChip(
-                          label: Text(
-                            status.displayName,
-                            style: TextStyle(
-                              color: isActive
-                                  ? theme.colorScheme.onSecondaryContainer
-                                  : theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          selected: isActive,
-                          selectedColor: theme.colorScheme.secondaryContainer,
-                          checkmarkColor:
-                              theme.colorScheme.onSecondaryContainer,
-                          onSelected: (selected) {
-                            if (selected) {
-                              ref
-                                  .read(libraryViewStateProvider.notifier)
-                                  .setStatus(status);
-                            }
-                          },
-                        ),
-                      );
-                    })
-                    .toList(),
-              ),
-            ),
-          ),
+        preferredSize: const Size.fromHeight(48),
+        child: TabBar(
+          controller: _tabController,
+          dividerColor: Colors.transparent,
+          tabs: const [
+            Tab(text: 'Anime'),
+            Tab(text: 'Manga'),
+          ],
         ),
       ),
-      body: dynamicLibrary.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('ERR: $err')),
-        data: (entries) {
-          if (entries.isEmpty) return const Center(child: Text('Empty List'));
-
-          return NotificationListener<ScrollNotification>(
-            onNotification: (ScrollNotification scrollInfo) {
-              final primaryTracker = ref.read(
-                trackingPrefsProvider.select((s) => s.primaryTracker),
-              );
-              final isCloudLoggedIn =
-                  ref.read(trackerProfileProvider)[primaryTracker] != null;
-              final isCloud =
-                  viewState.mode == LibraryMode.cloud &&
-                  primaryTracker != TrackerType.local &&
-                  isCloudLoggedIn;
-
-              if (isCloud &&
-                  scrollInfo.metrics.pixels >=
-                      scrollInfo.metrics.maxScrollExtent - 200) {
-                ref
-                    .read(cloudLibraryProvider((status: viewState.status, trackerType: null)).notifier)
-                    .loadMore();
-              }
-              return false;
-            },
-            child: RefreshIndicator(
-              onRefresh: () async {
-                final primaryTracker = ref.read(
-                  trackingPrefsProvider.select((s) => s.primaryTracker),
-                );
-                final isCloudLoggedIn =
-                    ref.read(trackerProfileProvider)[primaryTracker] != null;
-                final isCloud =
-                    viewState.mode == LibraryMode.cloud &&
-                    primaryTracker != TrackerType.local &&
-                    isCloudLoggedIn;
-
-                if (isCloud) {
-                  ref
-                      .read(cloudLibraryProvider((status: viewState.status, trackerType: null)).notifier)
-                      .refresh();
-                } else {
-                  ref.invalidate(localLibraryListProvider(viewState.status));
-                }
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: GridView.builder(
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: cardStyle.layout.width + 10,
-                    mainAxisExtent: cardStyle.layout.height,
-                    childAspectRatio: cardStyle.layout.aspectRatio,
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                  ),
-                  itemCount: entries.length + 5,
-
-                  itemBuilder: (context, index) {
-                    if (index >= entries.length) {
-                      return const SizedBox();
-                    }
-
-                    final entry = entries[index];
-
-                    return MediaCard(
-                      title: entry.title,
-                      tag: 'library__${viewState.status.id}_${entry.id}_$index',
-                      imageUrl: entry.cover,
-                      style: cardStyle,
-                      onTap: () {
-                        context.push(
-                          '/details/${entry.type}',
-                          extra: entry.toUnifiedMedia(),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
-          );
-        },
+      body: Column(
+        children: const [
+          LibraryFiltersWidget(),
+          Expanded(child: LibraryGridWidget()),
+        ],
       ),
     );
   }

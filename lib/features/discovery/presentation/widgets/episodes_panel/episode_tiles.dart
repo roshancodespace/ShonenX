@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/core/utils/image_headers.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 enum EpisodeViewMode {
   classic("Classic"),
@@ -25,6 +26,7 @@ enum EpisodeImageFadeDirection {
 
 class EpisodeClassicTile extends StatelessWidget {
   final UnifiedEpisode episode;
+  final MediaType mediaType;
   final bool isCurrent;
   final bool isWatched;
   final bool isFiller;
@@ -38,6 +40,7 @@ class EpisodeClassicTile extends StatelessWidget {
   const EpisodeClassicTile({
     super.key,
     required this.episode,
+    required this.mediaType,
     required this.isCurrent,
     required this.isWatched,
     required this.onTap,
@@ -218,7 +221,7 @@ class EpisodeClassicTile extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    'EPISODE $num',
+                                    '${mediaType == MediaType.ANIME ? 'EPISODE' : 'CHAPTER'} $num',
                                     style: theme.textTheme.labelSmall?.copyWith(
                                       fontWeight: FontWeight.w800,
                                       color: isFiller

@@ -22,7 +22,7 @@ class ContinueWatchingRow extends ConsumerWidget {
       height: style.layout.height,
       emptyText: 'No anime in this list.',
       data: asyncData,
-      onMoreTap: () => context.push('/continue-watching'),
+      onMoreTap: () => context.push('/continue/anime'),
       itemBuilder: (context, entry) {
         final progress = entry.durationInMilliseconds == 0
             ? 0.0

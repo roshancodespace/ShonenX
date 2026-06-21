@@ -24,9 +24,10 @@ class _NotificationSubscriptionSheetState
   @override
   void initState() {
     super.initState();
+    final subType = widget.media.type == MediaType.MANGA ? SubscriptionType.mangaChapter : SubscriptionType.animeAiring;
     final subscription = ref
         .read(notificationSubscriptionsProvider.notifier)
-        .getSubscription(SubscriptionType.animeAiring, widget.media.id);
+        .getSubscription(subType, widget.media.id);
 
     _isEnabled = subscription?.isEnabled ?? false;
     _mode = subscription?.mode ?? SubscriptionMode.nextOnly;
@@ -41,13 +42,14 @@ class _NotificationSubscriptionSheetState
     final nextEpisode = widget.media.nextEpisode;
     final int? episodeNumber = nextEpisode is int ? nextEpisode : (null);
 
+    final subType = widget.media.type == MediaType.MANGA ? SubscriptionType.mangaChapter : SubscriptionType.animeAiring;
     final existingSub = provider.getSubscription(
-      SubscriptionType.animeAiring,
+      subType,
       widget.media.id,
     );
 
     final sub = NotificationSubscription()
-      ..type = SubscriptionType.animeAiring
+      ..type = subType
       ..referenceId = widget.media.id
       ..title = widget.media.title.availableTitle
       ..image = widget.media.cover ?? widget.media.banner ?? ''
@@ -103,7 +105,7 @@ class _NotificationSubscriptionSheetState
           if (!hasAiringData) ...[
             const SizedBox(height: 8),
             Text(
-              'No upcoming episode data available for this anime.',
+              'No upcoming release data available for this ${widget.media.type == MediaType.MANGA ? 'manga' : 'anime'}.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.error,
               ),

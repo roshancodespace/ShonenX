@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/domain/models/home_section.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue_watching_row.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/continue_reading_row.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/horizontal_section.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/local_library_row.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/media_card.dart';
@@ -36,9 +37,16 @@ class HomeScreen extends ConsumerWidget {
         onRefresh: () async {
           ref.read(homeFeedProvider.notifier).refresh();
           for (final section in sections) {
-            if (section.type == HomeSectionType.cloudLibraryStatus) {
+            if (section.type == HomeSectionType.libraryStatus &&
+                section.targetTracker != TrackerType.local) {
               ref
-                  .read(cloudLibraryProvider((status: section.libraryStatus!, trackerType: section.targetTracker)).notifier)
+                  .read(
+                    cloudLibraryProvider((
+                      status: section.libraryStatus!,
+                      trackerType: section.targetTracker,
+                      mediaType: section.targetMediaType ?? MediaType.ANIME,
+                    )).notifier,
+                  )
                   .refresh();
             }
           }
@@ -185,7 +193,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 40)),
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
       ),
@@ -197,30 +205,37 @@ class HomeScreen extends ConsumerWidget {
     HomeSection section,
     AsyncValue<HomeFeedState> feedState,
   ) {
-    switch (section.type) {
-      case HomeSectionType.continueWatching:
-        return ContinueWatchingRow(title: section.title);
+    final mediaType = section.targetMediaType ?? MediaType.ANIME;
 
-      case HomeSectionType.cloudLibraryStatus:
-      case HomeSectionType.localLibraryStatus:
+    switch (section.type) {
+      case HomeSectionType.continueMedia:
+        return mediaType == MediaType.ANIME
+            ? ContinueWatchingRow(title: section.title)
+            : ContinueReadingRow(title: section.title);
+
+      case HomeSectionType.libraryStatus:
         if (section.libraryStatus == null) return const SizedBox.shrink();
 
         return Consumer(
           builder: (context, ref, _) {
-            final activeTracker = section.targetTracker != null 
-                ? ref.watch(availableTrackersProvider).firstWhere((t) => t.type == section.targetTracker!)
+            final activeTracker = section.targetTracker != null
+                ? ref
+                      .watch(availableTrackersProvider)
+                      .firstWhere((t) => t.type == section.targetTracker!)
                 : ref.watch(primaryTrackerProvider);
-            
+
             if (activeTracker.type == TrackerType.local) {
               return LocalLibraryRow(
                 title: section.title,
                 status: section.libraryStatus!,
+                targetMediaType: mediaType,
               );
             } else {
               return CloudLibraryRowWidget(
                 title: section.title,
                 status: section.libraryStatus!,
                 targetTracker: activeTracker.type,
+                targetMediaType: mediaType,
               );
             }
           },
@@ -228,20 +243,28 @@ class HomeScreen extends ConsumerWidget {
 
       case HomeSectionType.trending:
       case HomeSectionType.popular:
-        return _buildFeedGroups(context, feedState);
+        return _buildFeedGroups(context, feedState, mediaType);
     }
   }
 
   Widget _buildFeedGroups(
     BuildContext context,
     AsyncValue<HomeFeedState> feedState,
+    MediaType mediaType,
   ) {
     return feedState.when(
       data: (feed) {
         if (feed.groups.isEmpty) return const SizedBox.shrink();
 
+        final filteredGroups = feed.groups.where((g) {
+          if (g.items.isEmpty) return false;
+          return g.items.first.type == mediaType;
+        }).toList();
+
+        if (filteredGroups.isEmpty) return const SizedBox.shrink();
+
         return Column(
-          children: feed.groups
+          children: filteredGroups
               .map((group) => _buildFeedRow(context, group.title, group.items))
               .toList(),
         );
@@ -264,11 +287,12 @@ class HomeScreen extends ConsumerWidget {
     return Consumer(
       builder: (context, ref, child) {
         final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
+        final mediaType = items.isNotEmpty ? items.first.type : MediaType.ANIME;
         return HorizontalSection(
           title: title,
           height: style.layout.height,
           onMoreTap: () =>
-              context.push('/category/$title?type=${MediaType.ANIME.id}'),
+              context.push('/category/$title?type=${mediaType.id}'),
           data: AsyncValue.data(items),
           itemBuilder: (context, item) {
             return MediaCard(

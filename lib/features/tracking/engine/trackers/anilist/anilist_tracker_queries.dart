@@ -98,12 +98,12 @@ class AnilistTrackerQueries {
     if (mode == AdultContentMode.adultOnly) adultFilter = ', isAdult: true';
 
     return '''
-    query(\$page: Int = 1) {
+    query(\$page: Int = 1, \$type: MediaType) {
       Page(page: \$page, perPage: 20) {
         pageInfo {
           hasNextPage
         }
-        media(sort: TRENDING_DESC, type: ANIME $adultFilter) {
+        media(sort: TRENDING_DESC, type: \$type $adultFilter) {
           id
           nextAiringEpisode {
             episode

@@ -8,6 +8,7 @@ import 'package:shonenx/features/tracking/engine/trackers/anilist/anilist_tracke
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 final availableTrackersProvider = Provider<List<TrackingService>>(
   (ref) => [
@@ -42,3 +43,11 @@ final primaryTrackerProvider = Provider<TrackingService>((ref) {
   // Fallback to local
   return TrackerType.local.getTracker(ref);
 });
+
+final activeTrackersProvider =
+    Provider.family<List<TrackingService>, MediaType>((ref, mediaType) {
+      final availableTrackers = ref.watch(availableTrackersProvider);
+      return availableTrackers
+          .where((t) => t.supportsMediaType(mediaType))
+          .toList();
+    });

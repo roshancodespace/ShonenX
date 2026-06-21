@@ -3,22 +3,25 @@ import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 class TrackingQuery {
   final TrackerType trackerType;
   final String mediaId;
+  final MediaType mediaType;
 
-  const TrackingQuery(this.trackerType, this.mediaId);
+  const TrackingQuery(this.trackerType, this.mediaId, this.mediaType);
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is TrackingQuery &&
           other.trackerType == trackerType &&
-          other.mediaId == mediaId;
+          other.mediaId == mediaId &&
+          other.mediaType == mediaType;
 
   @override
-  int get hashCode => trackerType.hashCode ^ mediaId.hashCode;
+  int get hashCode => trackerType.hashCode ^ mediaId.hashCode ^ mediaType.hashCode;
 }
 
 final mediaTrackingProvider =
@@ -43,6 +46,6 @@ final mediaTrackingProvider =
         }
 
         if (trackingId == null) return null;
-        return tracker.fetchUserListItem(mediaId: trackingId);
+        return tracker.fetchUserListItem(mediaId: trackingId, mediaType: query.mediaType);
       },
     );

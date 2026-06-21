@@ -15,8 +15,9 @@ import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 
 class AboutTabWidget extends ConsumerWidget {
   final UnifiedMedia media;
+  final VoidCallback? onEpisodesTabRequested;
 
-  const AboutTabWidget({super.key, required this.media});
+  const AboutTabWidget({super.key, required this.media, this.onEpisodesTabRequested});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,7 +35,7 @@ class AboutTabWidget extends ConsumerWidget {
       items.add(
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: _AiringBanner(media: media),
+          child: _AiringBanner(media: media, onEpisodesTabRequested: onEpisodesTabRequested),
         ),
       );
     }
@@ -72,7 +73,10 @@ class AboutTabWidget extends ConsumerWidget {
             children: [
               Text('Relations', style: textTheme.headlineSmall),
               const SizedBox(height: 12),
-              _RelationsList(relations: media.relations!),
+              _RelationsList(
+                relations: media.relations!,
+                parentType: media.type,
+              ),
             ],
           ),
         ),
@@ -107,8 +111,9 @@ class AboutTabWidget extends ConsumerWidget {
 
 class _AiringBanner extends ConsumerWidget {
   final UnifiedMedia media;
+  final VoidCallback? onEpisodesTabRequested;
 
-  const _AiringBanner({required this.media});
+  const _AiringBanner({required this.media, this.onEpisodesTabRequested});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -117,11 +122,12 @@ class _AiringBanner extends ConsumerWidget {
     final episodeNum = nextEpisode is int ? nextEpisode : (1);
     final theme = Theme.of(context);
 
+    final subType = media.type == MediaType.MANGA ? SubscriptionType.mangaChapter : SubscriptionType.animeAiring;
     final subscription = ref
         .watch(notificationSubscriptionsProvider)
         .where(
           (e) =>
-              e.type == SubscriptionType.animeAiring &&
+              e.type == subType &&
               e.referenceId == media.id,
         )
         .firstOrNull;
@@ -131,6 +137,10 @@ class _AiringBanner extends ConsumerWidget {
         subscription.isEnabled &&
         subscription.upcomingTime != null &&
         subscription.upcomingTime!.isBefore(DateTime.now());
+
+    final isManga = media.type == MediaType.MANGA;
+    final itemText = isManga ? 'Chapter' : 'Episode';
+    final tabText = isManga ? 'Chapters' : 'Episodes';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -156,7 +166,7 @@ class _AiringBanner extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'EPISODE $episodeNum',
+                  '${itemText.toUpperCase()} $episodeNum',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.bold,
@@ -165,7 +175,7 @@ class _AiringBanner extends ConsumerWidget {
                 ),
                 if (isMissed) ...[
                   Text(
-                    'You missed the notification for Episode $episodeNum',
+                    'You missed the notification for $itemText $episodeNum',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.error,
                       fontWeight: FontWeight.bold,
@@ -174,16 +184,20 @@ class _AiringBanner extends ConsumerWidget {
                   const SizedBox(height: 4),
                   InkWell(
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Please check the Episodes tab for the latest release.',
+                      if (onEpisodesTabRequested != null) {
+                        onEpisodesTabRequested!();
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Please check the $tabText tab for the latest release.',
+                            ),
                           ),
-                        ),
-                      );
+                        );
+                      }
                     },
                     child: Text(
-                      'Open Episodes tab →',
+                      'Open $tabText tab →',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.primary,
                         decoration: TextDecoration.underline,
@@ -263,8 +277,9 @@ class _TagChip extends StatelessWidget {
 
 class _RelationsList extends ConsumerWidget {
   final List<UnifiedMedia> relations;
+  final MediaType parentType;
 
-  const _RelationsList({required this.relations});
+  const _RelationsList({required this.relations, required this.parentType});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -272,7 +287,7 @@ class _RelationsList extends ConsumerWidget {
 
     final Map<String, List<UnifiedMedia>> grouped = {};
     for (final relation in relations) {
-      if (relation.type != MediaType.ANIME) continue;
+      if (relation.type != parentType) continue;
 
       final type = relation.relationType ?? 'Other';
       final formattedType = type

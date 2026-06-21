@@ -7,6 +7,7 @@ import 'package:shonenx/core/utils/http_x.dart';
 
 import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
+import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
@@ -235,7 +236,7 @@ class PlayerController extends Notifier<PlayerState> {
     if (_media == null) return;
     final episodes = await ref.read(
       episodesListProvider(
-        _media!.title.availableTitle,
+        MatchArgs(mediaTitle: _media!.title.availableTitle, type: MediaType.ANIME),
       ).selectAsync((s) => s.episodes),
     );
     final targetNumber = state.activeEpisode!.number + (forward ? 1 : -1);

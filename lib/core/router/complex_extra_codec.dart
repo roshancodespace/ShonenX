@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:shonenx/features/player/domain/player_mode.dart';
+import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
 class ComplexExtraCodec extends Codec<Object?, Object?> {
@@ -32,7 +33,7 @@ class _ComplexExtraEncoder extends Converter<Object?, Object?> {
   @override
   Object? convert(Object? input) {
     if (input == null) return null;
-    if (input is UnifiedMedia || input is PlayerMode) {
+    if (input is UnifiedMedia || input is PlayerMode || input is ReaderMode) {
       final id = _ComplexExtraCache.instance.put(input);
       return {'__type': 'ComplexExtra', 'id': id};
     }

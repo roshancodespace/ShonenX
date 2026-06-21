@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shonenx/core/providers/storage_provider.dart';
 import 'package:shonenx/features/discovery/domain/models/home_section.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
   static const _dataKey = 'home_layout_data';
@@ -18,13 +19,27 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
     return const [
       HomeSection(
         id: '1',
-        title: 'Trending Now',
+        title: 'Trending Anime',
         type: HomeSectionType.trending,
+        targetMediaType: MediaType.ANIME,
       ),
       HomeSection(
         id: '2',
+        title: 'Trending Manga',
+        type: HomeSectionType.trending,
+        targetMediaType: MediaType.MANGA,
+      ),
+      HomeSection(
+        id: '3',
         title: 'Continue Watching',
-        type: HomeSectionType.continueWatching,
+        type: HomeSectionType.continueMedia,
+        targetMediaType: MediaType.ANIME,
+      ),
+      HomeSection(
+        id: '4',
+        title: 'Continue Reading',
+        type: HomeSectionType.continueMedia,
+        targetMediaType: MediaType.MANGA,
       ),
     ];
   }

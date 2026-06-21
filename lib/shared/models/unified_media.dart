@@ -3,6 +3,15 @@ enum MediaType {
   ANIME,
   MANGA;
 
+  String get displayName {
+    switch (this) {
+      case MediaType.ANIME:
+        return 'Anime';
+      case MediaType.MANGA:
+        return 'Manga';
+    }
+  }
+
   String get id => name.toLowerCase();
 }
 

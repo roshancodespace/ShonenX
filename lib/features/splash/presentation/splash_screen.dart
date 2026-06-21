@@ -53,7 +53,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   Future<void> _initializeApp() async {
     try {
-      await AppInit.setupBridge();
+      await AppInit.setupBridge(ref);
 
       if (mounted) {
         setState(() {

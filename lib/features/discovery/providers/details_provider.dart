@@ -27,17 +27,21 @@ final detailsProvider = FutureProvider.autoDispose
     .family<UnifiedMedia, DetailsArgs>(
       retry: (retryCount, error) => null,
       (ref, args) async {
-        // Source Mode: fetch details directly from the originating source.
         if (args.sourceId != null) {
-          final allSources =
-              await ref.watch(availableAnimeSourcesProvider.future);
+          final allSources = await ref.watch(
+            args.type == MediaType.ANIME
+                ? availableAnimeSourcesProvider.future
+                : availableMangaSourcesProvider.future,
+          );
           final sourceInfo = allSources.firstWhere(
             (s) => s.id == args.sourceId,
             orElse: () => throw StateError(
               'Source "${args.sourceId}" not found',
             ),
           );
-          final source = ref.read(animeSourceProvider(sourceInfo));
+          final source = args.type == MediaType.ANIME
+              ? ref.read(animeSourceProvider(sourceInfo))
+              : ref.read(mangaSourceProvider(sourceInfo));
           return source.getDetails(args.id, args.type);
         }
 

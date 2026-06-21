@@ -212,7 +212,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                                     ),
                                   const SizedBox(height: 10),
                                   Text(
-                                    '${displayMedia.episodes ?? '?'} EPS | ${displayMedia.status?.toUpperCase() ?? 'UNKNOWN'}',
+                                    '${displayMedia.episodes ?? '?'} ${widget.mediaType == MediaType.MANGA ? 'CHPS' : 'EPS'} | ${displayMedia.status?.toUpperCase() ?? 'UNKNOWN'}',
                                     style: textTheme.labelLarge?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
@@ -264,7 +264,10 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
         body: TabBarView(
           controller: _tabController,
           children: [
-            AboutTabWidget(media: displayMedia),
+            AboutTabWidget(
+              media: displayMedia,
+              onEpisodesTabRequested: () => _tabController.animateTo(1),
+            ),
             EpisodesTabWidget(media: displayMedia),
           ],
         ),
@@ -294,8 +297,12 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
             indicatorSize: TabBarIndicatorSize.tab,
             textScaler: const TextScaler.linear(1.15),
             tabs: [
-              Tab(text: 'About'),
-              Tab(text: 'Episodes'),
+              const Tab(text: 'About'),
+              Tab(
+                text: widget.mediaType == MediaType.MANGA
+                    ? 'Chapters'
+                    : 'Episodes',
+              ),
             ],
           ),
         ),
@@ -313,15 +320,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
-    final enabledMap = ref.watch(
-      trackingPrefsProvider.select((p) => p.enabledTrackers),
-    );
-    final availableTrackers = ref.watch(availableTrackersProvider);
-
-    final activeTrackers = availableTrackers
-        .where((t) => enabledMap[t.type] ?? true)
-        .map((t) => t.type)
-        .toList(growable: false);
+    final activeTrackers = ref.watch(activeTrackersProvider(media.type));
 
     if (activeTrackers.isEmpty) return const SizedBox.shrink();
 
@@ -329,7 +328,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
     final tracker = ref.watch(primaryTrackerProvider);
 
     final trackingState = ref.watch(
-      mediaTrackingProvider(TrackingQuery(tracker.type, media.id)),
+      mediaTrackingProvider(TrackingQuery(tracker.type, media.id, media.type)),
     );
 
     return _buildUI(
@@ -337,7 +336,6 @@ class _TrackerAppBarButton extends ConsumerWidget {
       ref,
       theme,
       tracker,
-      activeTrackers,
       trackingState,
       trackerLinksAsync,
     );
@@ -348,7 +346,6 @@ class _TrackerAppBarButton extends ConsumerWidget {
     WidgetRef ref,
     ThemeData theme,
     TrackingService tracker,
-    List<TrackerType> activeTrackers,
     AsyncValue<TrackedListItem?> trackingState,
     AsyncValue<Map<TrackerType, TrackerMapping>> trackerLinksAsync,
   ) {
@@ -363,7 +360,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
         theme,
         label: 'Sync Error',
         icon: Icons.sync_problem,
-        onPressed: () => _openManager(context, activeTrackers),
+        onPressed: () => _openManager(context),
       ),
       data: (listItem) {
         final links = trackerLinksAsync.value ?? {};
@@ -399,7 +396,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
               ref.read(authTokensProvider.notifier).login(tracker);
               return;
             }
-            _openManager(context, activeTrackers);
+            _openManager(context);
           },
           onLongPress: (isTrackerLinked && listItem != null)
               ? () => showModalBottomSheet(
@@ -448,19 +445,13 @@ class _TrackerAppBarButton extends ConsumerWidget {
     );
   }
 
-  void _openManager(
-    BuildContext context,
-    List<TrackerType> activeTrackers, [
-    TrackerType? editTracker,
-  ]) {
+  void _openManager(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (_) => TrackerManagerSheet(
         media: media,
-        activeTrackers: activeTrackers,
-        editTracker: editTracker,
       ),
     );
   }

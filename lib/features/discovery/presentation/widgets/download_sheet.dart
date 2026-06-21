@@ -59,6 +59,10 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
   @override
   void initState() {
     super.initState();
+    if (widget.media.type == MediaType.MANGA) {
+      _error = 'Manga downloading is not supported yet.';
+      return;
+    }
     _loadServers();
   }
 

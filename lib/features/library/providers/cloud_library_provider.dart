@@ -5,8 +5,9 @@ import 'package:shonenx/features/tracking/engine/tracking_service.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
-typedef CloudLibraryParams = ({TrackedStatus status, TrackerType? trackerType});
+typedef CloudLibraryParams = ({TrackedStatus status, TrackerType? trackerType, MediaType mediaType});
 
 final cloudLibraryProvider = AsyncNotifierProvider.autoDispose
     .family<CloudLibraryNotifier, List<LibraryEntry>, CloudLibraryParams>(
@@ -62,10 +63,10 @@ class CloudLibraryNotifier extends AsyncNotifier<List<LibraryEntry>> {
 
     if (!(await tracker.isAuthenticated)) return [];
 
-    return await tracker.fetchUserLibrary(status: params.status, page: page);
+    return await tracker.fetchUserLibrary(status: params.status, page: page, mediaType: params.mediaType);
   }
 
-  Future<void> removeEntry(String providerId) async {
+  Future<void> removeEntry(String providerId, MediaType mediaType) async {
     final TrackingService tracker = params.trackerType != null
         ? ref
               .watch(availableTrackersProvider)
@@ -74,7 +75,7 @@ class CloudLibraryNotifier extends AsyncNotifier<List<LibraryEntry>> {
 
     if (!(await tracker.isAuthenticated)) return;
 
-    await tracker.removeEntry(trackingId: providerId);
+    await tracker.removeEntry(trackingId: providerId, mediaType: mediaType);
 
     final currentList = state.value ?? [];
     state = AsyncData(

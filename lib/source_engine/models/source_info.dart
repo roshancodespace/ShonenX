@@ -8,6 +8,8 @@ class SourceInfo {
   final SourceType type;
   final MediaType mediaType;
   final String? iconUrl;
+  final String? baseUrl;
+  final String? lang;
 
   const SourceInfo({
     required this.id,
@@ -15,6 +17,8 @@ class SourceInfo {
     required this.type,
     required this.mediaType,
     this.iconUrl,
+    this.baseUrl,
+    this.lang,
   });
 
   @override
@@ -34,6 +38,7 @@ class SourceInfo {
         'type': type.name,
         'mediaType': mediaType.name,
         'iconUrl': iconUrl,
+        'lang': lang,
       };
 
   factory SourceInfo.fromMap(Map<String, dynamic> map) {
@@ -46,6 +51,7 @@ class SourceInfo {
         orElse: () => MediaType.ANIME,
       ),
       iconUrl: map['iconUrl'],
+      lang: map['lang'],
     );
   }
 }

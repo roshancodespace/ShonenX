@@ -6,13 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/utils/image_headers.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/manual_match_sheet.dart';
-import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/continue_media_mixin.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/history/providers/continue_watching_resolver.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
-import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/source_engine/source_registry.dart';
 
 class ContinueWatchingItem extends ConsumerStatefulWidget {
   final WatchHistoryEntry entry;
@@ -31,164 +30,45 @@ class ContinueWatchingItem extends ConsumerStatefulWidget {
       _ContinueWatchingItemState();
 }
 
-class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
+class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
+    with ContinueMediaMixin {
   static const _contentPadding = 5.0;
 
-  bool _isLoading = false;
   bool _isFocused = false;
   bool _isHovered = false;
 
-  Future<void> _resumeEpisode() async {
-    if (_isLoading) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final result = await ref
-          .read(continueWatchingResolverProvider)
-          .resolve(widget.entry);
-
-      if (!mounted) return;
-
-      setState(() => _isLoading = false);
-
-      context.push('/player', extra: result.mode);
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() => _isLoading = false);
-
-      _showSourceError(e);
-    }
-  }
-
-  Future<void> _showSourceError(Object error) async {
-    await showModalBottomSheet(
-      context: context,
-      useRootNavigator: true,
-      builder: (_) {
-        return AppBottomSheet(
-          title: 'Source Error',
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                error.toString(),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                  fontFamily: 'monospace',
-                ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.tonal(
-                      onPressed: () async {
-                        Navigator.pop(context);
-
-                        await ref
-                            .read(
-                              sourcePreferenceProvider(
-                                widget.entry.animeTitle,
-                              ).notifier,
-                            )
-                            .clearPreference();
-
-                        if (mounted) {
-                          _resumeEpisode();
-                        }
-                      },
-                      child: const Text('Auto Match'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () async {
-                        Navigator.pop(context);
-
-                        final result = await showModalBottomSheet<bool>(
-                          context: context,
-                          builder: (_) {
-                            return ManualMatchSheet(
-                              mediaTitle: widget.entry.animeTitle,
-                              type: MediaType.ANIME,
-                            );
-                          },
-                        );
-
-                        if (result == true && mounted) {
-                          _resumeEpisode();
-                        }
-                      },
-                      child: const Text('Manual Match'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
+  late final Map<Type, Action<Intent>> _actions = {
+    ActivateIntent: CallbackAction<ActivateIntent>(
+      onInvoke: (_) {
+        _resumeEpisode();
+        return null;
       },
+    ),
+  };
+
+  Future<void> _resumeEpisode() async {
+    await handleResumeMedia(
+      resolveAndPlay: () async {
+        final result = await ref
+            .read(continueWatchingResolverProvider)
+            .resolve(widget.entry);
+        if (!mounted) return;
+        context.push('/player', extra: result.mode);
+      },
+      mediaType: MediaType.ANIME,
+      mediaTitle: widget.entry.animeTitle,
+      availableSourcesProvider: availableAnimeSourcesProvider,
     );
   }
 
-  void _showItemContextMenu(Offset position) async {
-    final entry = widget.entry;
-
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-
-    final value = await showMenu(
-      context: context,
-      position: RelativeRect.fromRect(
-        position & const Size(40, 40),
-        Offset.zero & overlay.size,
-      ),
-      items: const [
-        PopupMenuItem(value: 'clear', child: Text('Clear Source Preference')),
-        PopupMenuItem(
-          value: 'remove_history',
-          child: Text('Remove from History'),
-        ),
-        PopupMenuItem(value: 'fix_match', child: Text('Fix Match')),
-      ],
+  void _showContextMenu(Offset position) {
+    showItemContextMenu(
+      position: position,
+      mediaType: MediaType.ANIME,
+      mediaTitle: widget.entry.animeTitle,
+      onRemoveHistory: () =>
+          ref.read(watchHistoryRepositoryProvider).deleteEntry(widget.entry.id),
     );
-
-    if (value == 'clear' && mounted) {
-      await ref
-          .read(sourcePreferenceProvider(entry.animeTitle).notifier)
-          .clearPreference();
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Source preference cleared')),
-      );
-    }
-
-    if (value == 'remove_history' && mounted) {
-      await ref.read(watchHistoryRepositoryProvider).deleteEntry(entry.id);
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Removed from history')));
-    }
-
-    if (value == 'fix_match' && mounted) {
-      await showModalBottomSheet(
-        context: context,
-        builder: (_) {
-          return ManualMatchSheet(
-            mediaTitle: entry.animeTitle,
-            type: MediaType.ANIME,
-          );
-        },
-      );
-    }
   }
 
   @override
@@ -199,14 +79,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
     return FocusableActionDetector(
       onShowFocusHighlight: (v) => setState(() => _isFocused = v),
       onShowHoverHighlight: (v) => setState(() => _isHovered = v),
-      actions: {
-        ActivateIntent: CallbackAction<ActivateIntent>(
-          onInvoke: (_) {
-            _resumeEpisode();
-            return null;
-          },
-        ),
-      },
+      actions: _actions,
       mouseCursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () {
@@ -214,10 +87,10 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
           FocusManager.instance.primaryFocus?.unfocus();
         },
         onSecondaryTapDown: (details) {
-          _showItemContextMenu(details.globalPosition);
+          _showContextMenu(details.globalPosition);
         },
         onLongPressStart: (details) {
-          _showItemContextMenu(details.globalPosition);
+          _showContextMenu(details.globalPosition);
         },
         child: _buildStyledContent(widget.style, theme, isActive),
       ),
@@ -489,7 +362,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
               ),
             ),
 
-            if (_isLoading)
+            if (isLoading)
               Positioned.fill(
                 child: ColoredBox(
                   color: Colors.black45,
@@ -534,6 +407,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem> {
       return Image.memory(
         base64Decode(thumbnail),
         fit: BoxFit.cover,
+        gaplessPlayback: true,
         errorBuilder: (_, __, ___) => Container(
           color: cs.surfaceContainerHighest,
           child: Icon(Icons.broken_image_rounded, color: cs.onSurfaceVariant),

@@ -3,7 +3,10 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
+import 'package:shonenx/source_engine/providers/anime_source.dart';
+import 'package:shonenx/source_engine/providers/manga_source.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
@@ -14,46 +17,61 @@ class EpisodesListState {
   EpisodesListState({required this.source, required this.episodes});
 }
 
-typedef SourceEpisodeArgs = ({String providerId, String sourceId});
+typedef SourceEpisodeArgs = ({String providerId, String sourceId, MediaType type});
 
-final episodesListProvider = FutureProvider.family<EpisodesListState, String>((
-  ref,
-  title,
-) async {
-  final log = AppLogger.scope('EpisodesListProvider').child('fetch');
+final episodesListProvider =
+    FutureProvider.family<EpisodesListState, MatchArgs>((ref, args) async {
+      final log = AppLogger.scope('EpisodesListProvider').child('fetch');
+      final title = args.mediaTitle;
 
-  try {
-    final matchState = await ref.watch(matchedMediaProvider(title).future);
+      try {
+        // Todo: Optimize this shit
+        final matchState = await ref.watch(matchedMediaProvider(args).future);
 
-    final sourcePrefs = await ref.watch(sourcePreferenceProvider(title).future);
+        final sourcePrefs = await ref.watch(
+          sourcePreferenceProvider(args).future,
+        );
 
-    final animeSource = ref.watch(animeSourceProvider(sourcePrefs.sourceInfo));
+        final sourceImpl = args.type == MediaType.ANIME
+            ? ref.watch(animeSourceProvider(sourcePrefs.sourceInfo))
+            : ref.watch(mangaSourceProvider(sourcePrefs.sourceInfo));
 
-    log.i('Fetching episodes for "$title"');
+        log.i('Fetching episodes for "$title"');
 
-    if (matchState.matchedMedia == null) {
-      return EpisodesListState(
-        source: animeSource.sourceInfo,
-        episodes: const [],
-      );
-    }
+        if (matchState.matchedMedia == null) {
+          return EpisodesListState(
+            source: sourceImpl.sourceInfo,
+            episodes: const [],
+          );
+        }
 
-    final episodes = await animeSource.getEpisodes(matchState.matchedMedia!.id);
+        List<UnifiedEpisode> episodes = [];
 
-    episodes.sort((a, b) => a.number.compareTo(b.number));
+        if (sourceImpl is AnimeSource) {
+          episodes = await sourceImpl.getEpisodes(matchState.matchedMedia!.id);
+        } else if (sourceImpl is MangaSource) {
+          final chapters = await sourceImpl.getChapters(
+            matchState.matchedMedia!.id,
+          );
+          episodes = chapters
+              .map((c) => UnifiedEpisode.fromChapter(c))
+              .toList();
+        }
 
-    log.s('Fetched ${episodes.length} episodes');
+        episodes.sort((a, b) => a.number.compareTo(b.number));
 
-    return EpisodesListState(
-      source: animeSource.sourceInfo,
-      episodes: episodes,
-    );
-  } catch (e, st) {
-    log.e('Failed to fetch episodes for "$title"', [e, st]);
+        log.s('Fetched ${episodes.length} episodes');
 
-    rethrow;
-  }
-});
+        return EpisodesListState(
+          source: sourceImpl.sourceInfo,
+          episodes: episodes,
+        );
+      } catch (e, st) {
+        log.e('Failed to fetch episodes for "$title"', [e, st]);
+
+        rethrow;
+      }
+    });
 
 final sourceEpisodesProvider =
     FutureProvider.family<EpisodesListState, SourceEpisodeArgs>((
@@ -63,9 +81,9 @@ final sourceEpisodesProvider =
       final log = AppLogger.scope('SourceEpisodesProvider').child('fetch');
 
       try {
-        final allSources = await ref.watch(
-          availableAnimeSourcesProvider.future,
-        );
+        final allSources = args.type == MediaType.ANIME
+            ? await ref.watch(availableAnimeSourcesProvider.future)
+            : await ref.watch(availableMangaSourcesProvider.future);
 
         final sourceInfo = allSources
             .where((s) => s.id == args.sourceId)
@@ -75,18 +93,25 @@ final sourceEpisodesProvider =
           throw Exception('Source "${args.sourceId}" not found');
         }
 
-        final animeSource = ref.watch(animeSourceProvider(sourceInfo));
+        List<UnifiedEpisode> episodes = [];
 
-        log.i('Fetching episodes directly from ${sourceInfo.name}');
-
-        final episodes = await animeSource.getEpisodes(args.providerId);
+        if (args.type == MediaType.ANIME) {
+          final animeSource = ref.watch(animeSourceProvider(sourceInfo));
+          log.i('Fetching episodes directly from ${sourceInfo.name}');
+          episodes = await animeSource.getEpisodes(args.providerId);
+        } else {
+          final mangaSource = ref.watch(mangaSourceProvider(sourceInfo));
+          log.i('Fetching chapters directly from ${sourceInfo.name}');
+          final chapters = await mangaSource.getChapters(args.providerId);
+          episodes = chapters.map((c) => UnifiedEpisode.fromChapter(c)).toList();
+        }
 
         episodes.sort((a, b) => a.number.compareTo(b.number));
 
-        log.s('Fetched ${episodes.length} episodes from ${sourceInfo.name}');
+        log.s('Fetched ${episodes.length} episodes/chapters from ${sourceInfo.name}');
 
         return EpisodesListState(
-          source: animeSource.sourceInfo,
+          source: sourceInfo,
           episodes: episodes,
         );
       } catch (e, st) {

@@ -60,7 +60,11 @@ class CategorySearchNotifier
             )
           : const PaginatedResult<UnifiedMedia>(items: [], hasNextPage: false);
     } else {
-      final allSources = await ref.read(availableAnimeSourcesProvider.future);
+      final allSources = await ref.read(
+        arg.type == MediaType.ANIME
+            ? availableAnimeSourcesProvider.future
+            : availableMangaSourcesProvider.future,
+      );
       final activeSources = allSources
           .where((s) => prefs.activeSources.contains(s.id))
           .toList();
@@ -71,7 +75,9 @@ class CategorySearchNotifier
 
       final futures = activeSources.map((info) async {
         try {
-          final source = ref.read(animeSourceProvider(info));
+          final source = arg.type == MediaType.ANIME
+              ? ref.read(animeSourceProvider(info))
+              : ref.read(mangaSourceProvider(info));
           return await source.search(arg.category, arg.type, page: page);
         } catch (_) {
           return <UnifiedMedia>[];

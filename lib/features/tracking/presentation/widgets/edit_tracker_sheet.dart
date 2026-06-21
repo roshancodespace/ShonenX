@@ -61,7 +61,11 @@ class _EditTrackerSheetState extends ConsumerState<EditTrackerSheet> {
 
       ref.invalidate(
         mediaTrackingProvider(
-          TrackingQuery(widget.tracker.type, widget.media.id),
+          TrackingQuery(
+            widget.tracker.type,
+            widget.media.id,
+            widget.media.type,
+          ),
         ),
       );
 

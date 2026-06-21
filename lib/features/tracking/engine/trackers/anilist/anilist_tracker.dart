@@ -35,6 +35,9 @@ class AnilistTracker extends BaseTracker
   Future<bool> get isAuthenticated async => (await _getToken()) != null;
 
   @override
+  bool supportsMediaType(MediaType mediaType) => true;
+
+  @override
   TrackerType get type => TrackerType.anilist;
 
   @override
@@ -169,7 +172,10 @@ class AnilistTracker extends BaseTracker
   }
 
   @override
-  Future<TrackedListItem?> fetchUserListItem({required String mediaId}) async {
+  Future<TrackedListItem?> fetchUserListItem({
+    required String mediaId,
+    required MediaType mediaType,
+  }) async {
     final token = await _getToken();
     if (token == null) return null;
 
@@ -275,7 +281,10 @@ class AnilistTracker extends BaseTracker
   }
 
   @override
-  Future<void> removeEntry({required String trackingId}) async {
+  Future<void> removeEntry({
+    required String trackingId,
+    required MediaType mediaType,
+  }) async {
     final token = await _getToken();
     if (token == null) throw Exception('Anilist is not authenticated');
 
@@ -283,7 +292,7 @@ class AnilistTracker extends BaseTracker
       final id = int.tryParse(trackingId);
       if (id == null) return;
 
-      final res = await fetchUserListItem(mediaId: trackingId);
+      final res = await fetchUserListItem(mediaId: trackingId, mediaType: mediaType);
       if (res == null) return;
 
       await _http.post(

@@ -53,23 +53,28 @@ enum ContinueWatchingStyle {
 class UiPrefState {
   final MediaCardStyle cardStyle;
   final ContinueWatchingStyle continueWatchingStyle;
+  final ContinueWatchingStyle continueReadingStyle;
   final EpisodeViewMode episodeViewMode;
 
   const UiPrefState({
     this.cardStyle = MediaCardStyle.classic,
     this.continueWatchingStyle = ContinueWatchingStyle.classic,
+    this.continueReadingStyle = ContinueWatchingStyle.classic,
     this.episodeViewMode = EpisodeViewMode.classic,
   });
 
   UiPrefState copyWith({
     MediaCardStyle? cardStyle,
     ContinueWatchingStyle? continueWatchingStyle,
+    ContinueWatchingStyle? continueReadingStyle,
     EpisodeViewMode? episodeViewMode,
   }) {
     return UiPrefState(
       cardStyle: cardStyle ?? this.cardStyle,
       continueWatchingStyle:
           continueWatchingStyle ?? this.continueWatchingStyle,
+      continueReadingStyle:
+          continueReadingStyle ?? this.continueReadingStyle,
       episodeViewMode: episodeViewMode ?? this.episodeViewMode,
     );
   }
@@ -77,6 +82,7 @@ class UiPrefState {
   Map<String, dynamic> toJson() => {
     'cardStyle': cardStyle.name,
     'continueWatchingStyle': continueWatchingStyle.name,
+    'continueReadingStyle': continueReadingStyle.name,
     'episodeViewMode': episodeViewMode.name,
   };
 
@@ -90,6 +96,10 @@ class UiPrefState {
         (e) => e.name == json['continueWatchingStyle'],
         orElse: () => ContinueWatchingStyle.classic,
       ),
+      continueReadingStyle: ContinueWatchingStyle.values.firstWhere(
+        (e) => e.name == json['continueReadingStyle'],
+        orElse: () => ContinueWatchingStyle.classic,
+      ),
       episodeViewMode: EpisodeViewMode.values.firstWhere(
         (e) => e.name == json['episodeViewMode'],
         orElse: () => EpisodeViewMode.classic,
@@ -99,7 +109,7 @@ class UiPrefState {
 
   @override
   String toString() =>
-      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, episodeViewMode: $episodeViewMode)';
+      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode)';
 
   @override
   bool operator ==(Object other) {
@@ -107,12 +117,13 @@ class UiPrefState {
     return other is UiPrefState &&
         other.cardStyle == cardStyle &&
         other.continueWatchingStyle == continueWatchingStyle &&
+        other.continueReadingStyle == continueReadingStyle &&
         other.episodeViewMode == episodeViewMode;
   }
 
   @override
   int get hashCode =>
-      Object.hash(cardStyle, continueWatchingStyle, episodeViewMode);
+      Object.hash(cardStyle, continueWatchingStyle, continueReadingStyle, episodeViewMode);
 }
 
 class UiPrefsNotifier extends Notifier<UiPrefState> {
@@ -139,6 +150,11 @@ class UiPrefsNotifier extends Notifier<UiPrefState> {
 
   void updateContinueWatchingStyle(ContinueWatchingStyle style) {
     state = state.copyWith(continueWatchingStyle: style);
+    _saveDb();
+  }
+
+  void updateContinueReadingStyle(ContinueWatchingStyle style) {
+    state = state.copyWith(continueReadingStyle: style);
     _saveDb();
   }
 

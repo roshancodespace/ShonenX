@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue_watching_card.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/continue_reading_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/media_card.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
+import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -21,6 +23,16 @@ class UiSettingsScreen extends ConsumerWidget {
     ..durationInMilliseconds = 1200000
     ..thumbnailUrl =
         'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8--VpUm_3ewaKmioaFpTjAUA4z46Qbb-4GQ&s';
+
+  static final _previewReadHistoryEntry = ReadHistoryEntry()
+    ..mangaId = '2'
+    ..mangaTitle = 'Jujutsu Kaisen'
+    ..chapterNumber = 236
+    ..chapterTitle = 'Go South'
+    ..positionPage = 14
+    ..totalPages = 20
+    ..cover =
+        'https://m.media-amazon.com/images/M/MV5BNGY4MTg3NzgtNjAwNC00NDFjLTg5ZWEtYzhkNWE3ZjJkNmY1XkEyXkFqcGc@._V1_.jpg';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,6 +67,17 @@ class UiSettingsScreen extends ConsumerWidget {
                 ),
                 onTap: () =>
                     _showContinueWatchingSheet(context, ref, notifier, theme),
+              ),
+              SettingsActionTile(
+                icon: Icons.menu_book_rounded,
+                title: 'Continue Reading Style',
+                subtitle: 'Style of cards on the Continue Reading row',
+                trailing: _Chip(
+                  label: prefs.continueReadingStyle.displayName,
+                  cs: cs,
+                ),
+                onTap: () =>
+                    _showContinueReadingSheet(context, ref, notifier, theme),
               ),
             ],
           ),
@@ -178,6 +201,56 @@ class UiSettingsScreen extends ConsumerWidget {
                   subtitle: _cwStyleDesc(style),
                   selectedColor: cs.primary,
                   onTap: () => notifier.updateContinueWatchingStyle(style),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showContinueReadingSheet(
+    BuildContext context,
+    WidgetRef ref,
+    UiPrefsNotifier notifier,
+    ThemeData theme,
+  ) {
+    final cs = theme.colorScheme;
+
+    AppBottomSheet.show(
+      context: context,
+      title: 'Continue Reading Style',
+      child: Consumer(
+        builder: (_, r, _) {
+          final current = r.watch(
+            uiPrefsProvider.select((s) => s.continueReadingStyle),
+          );
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: ContinueReadingItem(
+                  style: current,
+                  progress: 0.7,
+                  entry: _previewReadHistoryEntry,
+                ),
+              ),
+
+              const SizedBox(height: 14),
+              const Divider(height: 1),
+              const SizedBox(height: 4),
+
+              ...ContinueWatchingStyle.values.map(
+                (style) => _SelectionTile(
+                  selected: current == style,
+                  icon: _cwStyleIcon(style),
+                  title: style.displayName,
+                  subtitle: _cwStyleDesc(style),
+                  selectedColor: cs.primary,
+                  onTap: () => notifier.updateContinueReadingStyle(style),
                 ),
               ),
             ],

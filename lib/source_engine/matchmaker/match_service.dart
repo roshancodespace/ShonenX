@@ -1,22 +1,22 @@
 import 'dart:async';
 
 import 'package:shonenx/shared/models/unified_media.dart';
-import 'package:shonenx/source_engine/providers/anime_source.dart';
+import 'package:shonenx/source_engine/providers/media_source.dart';
 
 class MediaMatchService {
-  final AnimeSource _animeSource;
+  final MediaSource _mediaSource;
   final MediaType _type;
 
-  MediaMatchService(this._animeSource, this._type);
+  MediaMatchService(this._mediaSource, this._type);
 
   Future<UnifiedMedia?> findBestMatch(
     String cleanTitle, {
     String? romajiTitle,
   }) async {
-    var results = await _animeSource.search(cleanTitle, _type);
+    var results = await _mediaSource.search(cleanTitle, _type);
 
     if (results.isEmpty && romajiTitle != null) {
-      results = await _animeSource.search(romajiTitle, _type);
+      results = await _mediaSource.search(romajiTitle, _type);
     }
 
     if (results.isEmpty) {

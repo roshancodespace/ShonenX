@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/source_engine/adapters/anime_extension_adapter.dart';
+import 'package:shonenx/source_engine/adapters/anime_source_adapter.dart';
+import 'package:shonenx/source_engine/adapters/manga_source_adapter.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/providers/anime_source.dart';
 import 'package:shonenx/source_engine/providers/manga_source.dart';
@@ -40,7 +41,7 @@ final animeSourceProvider = Provider.family<AnimeSource, SourceInfo>((
         orElse: () => throw StateError('Extension "${info.name}" not found'),
       );
 
-  return AnimeExtensionAdapter(
+  return AnimeSourceAdapter(
     sourceInfo: SourceInfo(
       id: ext.id!,
       name: ext.name!,
@@ -48,13 +49,7 @@ final animeSourceProvider = Provider.family<AnimeSource, SourceInfo>((
       mediaType: MediaType.ANIME,
       iconUrl: ext.iconUrl,
     ),
-    methods: AnimeBridgeMethods(
-      search: ext.methods.search,
-      getDetail: ext.methods.getDetail,
-      getVideoList: ext.methods.getVideoList,
-      getPopular: ext.methods.getPopular,
-      getSettingsSchema: ext.methods.getPreference,
-    ),
+    source: ext,
   );
 }, name: 'animeSourceProvider');
 
@@ -68,5 +63,24 @@ final mangaSourceProvider = Provider.family<MangaSource, SourceInfo>((
         .firstWhere((s) => s.sourceInfo.id == info.id);
   }
 
-  throw UnimplementedError('Manga extension adapter not implemented yet');
+  final manager = ref.read(extensionManagerProvider);
+  final ext = manager
+      .getInstalledRx(bridge.ItemType.manga)
+      .value
+      .firstWhere(
+        (e) => (e.name ?? "Unknown") == info.name,
+        orElse: () => throw StateError('Extension "${info.name}" not found'),
+      );
+
+  return MangaSourceAdapter(
+    sourceInfo: SourceInfo(
+      id: ext.id!,
+      name: ext.name!,
+      type: SourceType.extension,
+      mediaType: MediaType.MANGA,
+      iconUrl: ext.iconUrl,
+      baseUrl: ext.baseUrl
+    ),
+    source: ext,
+  );
 }, name: 'mangaSourceProvider');

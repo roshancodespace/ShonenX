@@ -21,6 +21,7 @@ class AppLogger {
   );
 
   static File? _logFile;
+  static IOSink? _logSink;
   static bool _enabled = false;
 
   static final RegExp _ansiRegex = RegExp(r'\x1B\[[0-9;]*[mK]');
@@ -44,11 +45,13 @@ class AppLogger {
 
       _logFile = File(path);
       await _logFile!.create(recursive: true);
-      await _logFile!.writeAsString('', mode: FileMode.write);
+      
+      await _logSink?.close();
+      _logSink = _logFile!.openWrite(mode: FileMode.write);
 
       _enabled = true;
 
-      await _writeLine('=== SESSION START: ${DateTime.now()} ===');
+      _writeLine('=== SESSION START: ${DateTime.now()} ===');
 
       debugPrint('$_green✓ Logger ready: $path$_reset');
     } catch (e) {
@@ -115,17 +118,14 @@ class AppLogger {
 
   // ---------- Internal ----------
   static void _write(String level, String msg) {
-    if (!_enabled || _logFile == null) return;
-    unawaited(_writeLine('$level $msg'));
+    if (!_enabled || _logSink == null) return;
+    _writeLine('$level $msg');
   }
 
-  static Future<void> _writeLine(String msg) async {
+  static void _writeLine(String msg) {
     try {
       final clean = msg.replaceAll(_ansiRegex, '');
-      await _logFile!.writeAsString(
-        '${DateTime.now().toIso8601String()} $clean\n',
-        mode: FileMode.append,
-      );
+      _logSink!.writeln('${DateTime.now().toIso8601String()} $clean');
     } catch (e) {
       debugPrint('Log write failed: $e');
     }
@@ -135,6 +135,14 @@ class AppLogger {
   static String get reset => _reset;
   static String get bold => _bold;
   static String get magenta => _magenta;
+  static File? get logFile => _logFile;
+
+  static Future<String> getLogContent() async {
+    if (_logFile == null || !await _logFile!.exists()) {
+      return 'No logs available.';
+    }
+    return await _logFile!.readAsString();
+  }
 }
 
 class ScopedLogger {

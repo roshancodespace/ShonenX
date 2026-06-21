@@ -11,6 +11,8 @@ abstract class TrackingService {
 
   Future<bool> get isAuthenticated;
 
+  bool supportsMediaType(MediaType mediaType);
+
   Future<void> updateListItem({
     required String trackingId,
     required UnifiedMedia media,
@@ -25,9 +27,15 @@ abstract class TrackingService {
     int page = 1,
   });
 
-  Future<TrackedListItem?> fetchUserListItem({required String mediaId});
+  Future<TrackedListItem?> fetchUserListItem({
+    required String mediaId,
+    required MediaType mediaType,
+  });
 
-  Future<void> removeEntry({required String trackingId});
+  Future<void> removeEntry({
+    required String trackingId,
+    required MediaType mediaType,
+  });
 }
 
 extension TrackingServiceX on TrackingService {

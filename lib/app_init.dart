@@ -1,11 +1,11 @@
 import 'dart:io';
 
-import 'package:anymex_extension_runtime_bridge/ExtensionBridge.dart';
 import 'package:anymex_extension_runtime_bridge/Settings/KvStore.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart';
 // import 'package:dartotsu_extension_bridge/Mangayomi/Eval/dart/model/source_preference.dart';
 // import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:path/path.dart' as p;
 import 'package:isar_community/isar.dart';
@@ -18,6 +18,7 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/discovery/domain/media_source_preference.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
+import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/library/domain/models/library_entry.dart';
 import 'package:shonenx/features/notifications/domain/models/notification_subscription.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
@@ -89,6 +90,7 @@ class AppInit {
           MediaSourcePreferenceSchema,
           IsarTrackerLinkSchema,
           WatchHistoryEntrySchema,
+          ReadHistoryEntrySchema,
           DownloadTaskSchema,
           NotificationSubscriptionSchema,
 
@@ -109,7 +111,7 @@ class AppInit {
     }
   }
 
-  static Future<void> setupBridge() async {
+  static Future<void> setupBridge(WidgetRef ref) async {
     final log = AppLogger.scope('AppInit').child('setupBridge');
 
     try {
@@ -122,6 +124,7 @@ class AppInit {
         getDirectory: AnymeXExtensionBridge.defaultGetDirectory(
           baseDirectory: await getDatabaseDirectory('ShonenX'),
         ),
+        projectName: "ShonenX",
       );
 
       await AnymeXRuntimeBridge.checkAndInitialize();

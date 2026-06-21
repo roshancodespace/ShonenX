@@ -18,6 +18,9 @@ class LocalTracker implements TrackingService {
   Future<bool> get isAuthenticated async => true; // Local tracker is always ready
 
   @override
+  bool supportsMediaType(MediaType mediaType) => true;
+
+  @override
   Future<void> updateListItem({
     required UnifiedMedia media,
     required String trackingId,
@@ -26,8 +29,8 @@ class LocalTracker implements TrackingService {
     double? score,
   }) async {
     await _isar.writeTxn(() async {
-      LibraryEntry? entry = await _isar.libraryEntrys.getByProviderId(
-        trackingId,
+      LibraryEntry? entry = await _isar.libraryEntrys.getByProviderIdType(
+        trackingId, media.type.id
       );
 
       entry ??= LibraryEntry()
@@ -51,7 +54,7 @@ class LocalTracker implements TrackingService {
         entry.score = score;
       }
 
-      await _isar.libraryEntrys.putByProviderId(entry);
+      await _isar.libraryEntrys.putByProviderIdType(entry);
     });
   }
 
@@ -73,8 +76,11 @@ class LocalTracker implements TrackingService {
   }
 
   @override
-  Future<TrackedListItem?> fetchUserListItem({required String mediaId}) async {
-    final entry = await _isar.libraryEntrys.getByProviderId(mediaId);
+  Future<TrackedListItem?> fetchUserListItem({
+    required String mediaId,
+    required MediaType mediaType,
+  }) async {
+    final entry = await _isar.libraryEntrys.getByProviderIdType(mediaId, mediaType.id);
     if (entry == null) return null;
 
     return TrackedListItem(
@@ -89,9 +95,12 @@ class LocalTracker implements TrackingService {
   }
 
   @override
-  Future<void> removeEntry({required String trackingId}) async {
+  Future<void> removeEntry({
+    required String trackingId,
+    required MediaType mediaType,
+  }) async {
     await _isar.writeTxn(() async {
-      await _isar.libraryEntrys.deleteByProviderId(trackingId);
+      await _isar.libraryEntrys.deleteByProviderIdType(trackingId, mediaType.id);
     });
   }
 }

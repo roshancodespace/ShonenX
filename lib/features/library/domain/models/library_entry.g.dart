@@ -52,14 +52,19 @@ const LibraryEntrySchema = CollectionSchema(
   deserializeProp: _libraryEntryDeserializeProp,
   idName: r'id',
   indexes: {
-    r'providerId': IndexSchema(
-      id: -1675978104265523206,
-      name: r'providerId',
+    r'providerId_type': IndexSchema(
+      id: 924480394739446823,
+      name: r'providerId_type',
       unique: true,
       replace: true,
       properties: [
         IndexPropertySchema(
           name: r'providerId',
+          type: IndexType.hash,
+          caseSensitive: true,
+        ),
+        IndexPropertySchema(
+          name: r'type',
           type: IndexType.hash,
           caseSensitive: true,
         ),
@@ -210,61 +215,107 @@ void _libraryEntryAttach(
 }
 
 extension LibraryEntryByIndex on IsarCollection<LibraryEntry> {
-  Future<LibraryEntry?> getByProviderId(String providerId) {
-    return getByIndex(r'providerId', [providerId]);
+  Future<LibraryEntry?> getByProviderIdType(String providerId, String? type) {
+    return getByIndex(r'providerId_type', [providerId, type]);
   }
 
-  LibraryEntry? getByProviderIdSync(String providerId) {
-    return getByIndexSync(r'providerId', [providerId]);
+  LibraryEntry? getByProviderIdTypeSync(String providerId, String? type) {
+    return getByIndexSync(r'providerId_type', [providerId, type]);
   }
 
-  Future<bool> deleteByProviderId(String providerId) {
-    return deleteByIndex(r'providerId', [providerId]);
+  Future<bool> deleteByProviderIdType(String providerId, String? type) {
+    return deleteByIndex(r'providerId_type', [providerId, type]);
   }
 
-  bool deleteByProviderIdSync(String providerId) {
-    return deleteByIndexSync(r'providerId', [providerId]);
+  bool deleteByProviderIdTypeSync(String providerId, String? type) {
+    return deleteByIndexSync(r'providerId_type', [providerId, type]);
   }
 
-  Future<List<LibraryEntry?>> getAllByProviderId(
+  Future<List<LibraryEntry?>> getAllByProviderIdType(
     List<String> providerIdValues,
+    List<String?> typeValues,
   ) {
-    final values = providerIdValues.map((e) => [e]).toList();
-    return getAllByIndex(r'providerId', values);
+    final len = providerIdValues.length;
+    assert(
+      typeValues.length == len,
+      'All index values must have the same length',
+    );
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([providerIdValues[i], typeValues[i]]);
+    }
+
+    return getAllByIndex(r'providerId_type', values);
   }
 
-  List<LibraryEntry?> getAllByProviderIdSync(List<String> providerIdValues) {
-    final values = providerIdValues.map((e) => [e]).toList();
-    return getAllByIndexSync(r'providerId', values);
+  List<LibraryEntry?> getAllByProviderIdTypeSync(
+    List<String> providerIdValues,
+    List<String?> typeValues,
+  ) {
+    final len = providerIdValues.length;
+    assert(
+      typeValues.length == len,
+      'All index values must have the same length',
+    );
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([providerIdValues[i], typeValues[i]]);
+    }
+
+    return getAllByIndexSync(r'providerId_type', values);
   }
 
-  Future<int> deleteAllByProviderId(List<String> providerIdValues) {
-    final values = providerIdValues.map((e) => [e]).toList();
-    return deleteAllByIndex(r'providerId', values);
+  Future<int> deleteAllByProviderIdType(
+    List<String> providerIdValues,
+    List<String?> typeValues,
+  ) {
+    final len = providerIdValues.length;
+    assert(
+      typeValues.length == len,
+      'All index values must have the same length',
+    );
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([providerIdValues[i], typeValues[i]]);
+    }
+
+    return deleteAllByIndex(r'providerId_type', values);
   }
 
-  int deleteAllByProviderIdSync(List<String> providerIdValues) {
-    final values = providerIdValues.map((e) => [e]).toList();
-    return deleteAllByIndexSync(r'providerId', values);
+  int deleteAllByProviderIdTypeSync(
+    List<String> providerIdValues,
+    List<String?> typeValues,
+  ) {
+    final len = providerIdValues.length;
+    assert(
+      typeValues.length == len,
+      'All index values must have the same length',
+    );
+    final values = <List<dynamic>>[];
+    for (var i = 0; i < len; i++) {
+      values.add([providerIdValues[i], typeValues[i]]);
+    }
+
+    return deleteAllByIndexSync(r'providerId_type', values);
   }
 
-  Future<Id> putByProviderId(LibraryEntry object) {
-    return putByIndex(r'providerId', object);
+  Future<Id> putByProviderIdType(LibraryEntry object) {
+    return putByIndex(r'providerId_type', object);
   }
 
-  Id putByProviderIdSync(LibraryEntry object, {bool saveLinks = true}) {
-    return putByIndexSync(r'providerId', object, saveLinks: saveLinks);
+  Id putByProviderIdTypeSync(LibraryEntry object, {bool saveLinks = true}) {
+    return putByIndexSync(r'providerId_type', object, saveLinks: saveLinks);
   }
 
-  Future<List<Id>> putAllByProviderId(List<LibraryEntry> objects) {
-    return putAllByIndex(r'providerId', objects);
+  Future<List<Id>> putAllByProviderIdType(List<LibraryEntry> objects) {
+    return putAllByIndex(r'providerId_type', objects);
   }
 
-  List<Id> putAllByProviderIdSync(
+  List<Id> putAllByProviderIdTypeSync(
     List<LibraryEntry> objects, {
     bool saveLinks = true,
   }) {
-    return putAllByIndexSync(r'providerId', objects, saveLinks: saveLinks);
+    return putAllByIndexSync(r'providerId_type', objects, saveLinks: saveLinks);
   }
 }
 
@@ -349,24 +400,26 @@ extension LibraryEntryQueryWhere
     });
   }
 
-  QueryBuilder<LibraryEntry, LibraryEntry, QAfterWhereClause> providerIdEqualTo(
-    String providerId,
-  ) {
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterWhereClause>
+  providerIdEqualToAnyType(String providerId) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
-        IndexWhereClause.equalTo(indexName: r'providerId', value: [providerId]),
+        IndexWhereClause.equalTo(
+          indexName: r'providerId_type',
+          value: [providerId],
+        ),
       );
     });
   }
 
   QueryBuilder<LibraryEntry, LibraryEntry, QAfterWhereClause>
-  providerIdNotEqualTo(String providerId) {
+  providerIdNotEqualToAnyType(String providerId) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
             .addWhereClause(
               IndexWhereClause.between(
-                indexName: r'providerId',
+                indexName: r'providerId_type',
                 lower: [],
                 upper: [providerId],
                 includeUpper: false,
@@ -374,7 +427,7 @@ extension LibraryEntryQueryWhere
             )
             .addWhereClause(
               IndexWhereClause.between(
-                indexName: r'providerId',
+                indexName: r'providerId_type',
                 lower: [providerId],
                 includeLower: false,
                 upper: [],
@@ -384,7 +437,7 @@ extension LibraryEntryQueryWhere
         return query
             .addWhereClause(
               IndexWhereClause.between(
-                indexName: r'providerId',
+                indexName: r'providerId_type',
                 lower: [providerId],
                 includeLower: false,
                 upper: [],
@@ -392,9 +445,90 @@ extension LibraryEntryQueryWhere
             )
             .addWhereClause(
               IndexWhereClause.between(
-                indexName: r'providerId',
+                indexName: r'providerId_type',
                 lower: [],
                 upper: [providerId],
+                includeUpper: false,
+              ),
+            );
+      }
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterWhereClause>
+  providerIdEqualToTypeIsNull(String providerId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.equalTo(
+          indexName: r'providerId_type',
+          value: [providerId, null],
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterWhereClause>
+  providerIdEqualToTypeIsNotNull(String providerId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.between(
+          indexName: r'providerId_type',
+          lower: [providerId, null],
+          includeLower: false,
+          upper: [providerId],
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterWhereClause>
+  providerIdTypeEqualTo(String providerId, String? type) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.equalTo(
+          indexName: r'providerId_type',
+          value: [providerId, type],
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterWhereClause>
+  providerIdEqualToTypeNotEqualTo(String providerId, String? type) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'providerId_type',
+                lower: [providerId],
+                upper: [providerId, type],
+                includeUpper: false,
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'providerId_type',
+                lower: [providerId, type],
+                includeLower: false,
+                upper: [providerId],
+              ),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'providerId_type',
+                lower: [providerId, type],
+                includeLower: false,
+                upper: [providerId],
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'providerId_type',
+                lower: [providerId],
+                upper: [providerId, type],
                 includeUpper: false,
               ),
             );

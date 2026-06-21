@@ -17,6 +17,7 @@ final _riverpodLog = AppLogger.scope('RiverpodObserver');
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppLogger.init();
 
   final log = _log.child('main');
 

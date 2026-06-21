@@ -39,41 +39,37 @@ class MatchedMediaState {
 
 class MatchArgs {
   final String mediaTitle;
-  final String? sourceId;
-  final String? providerId;
+  final MediaType type;
 
-  const MatchArgs({
-    required this.mediaTitle,
-    this.sourceId,
-    this.providerId,
-  });
+  const MatchArgs({required this.mediaTitle, required this.type});
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is MatchArgs &&
           mediaTitle == other.mediaTitle &&
-          sourceId == other.sourceId &&
-          providerId == other.providerId;
+          type == other.type;
 
   @override
-  int get hashCode => Object.hash(mediaTitle, sourceId, providerId);
+  int get hashCode => Object.hash(mediaTitle, type);
 }
 
 final matchedMediaProvider =
-    AsyncNotifierProvider.family<MediaMatchNotifier, MatchedMediaState, String>(
-      MediaMatchNotifier.new,
-    );
+    AsyncNotifierProvider.family<
+      MediaMatchNotifier,
+      MatchedMediaState,
+      MatchArgs
+    >(MediaMatchNotifier.new);
 
 class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
-  late final String mediaTitle;
+  late final MatchArgs args;
 
-  MediaMatchNotifier(this.mediaTitle);
+  MediaMatchNotifier(this.args);
 
   @override
   Future<MatchedMediaState> build() async {
     state = const AsyncLoading();
-    final prefs = await ref.watch(sourcePreferenceProvider(mediaTitle).future);
+    final prefs = await ref.watch(sourcePreferenceProvider(args).future);
 
     if (prefs.manualOverrideId != null && prefs.manualOverrideTitle != null) {
       return MatchedMediaState(
@@ -84,12 +80,14 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
       );
     }
 
-    final animeSource = ref.read(animeSourceProvider(prefs.sourceInfo));
+    final sourceImpl = args.type == MediaType.ANIME
+        ? ref.read(animeSourceProvider(prefs.sourceInfo))
+        : ref.read(mangaSourceProvider(prefs.sourceInfo));
 
     final result = await MediaMatchService(
-      animeSource,
-      MediaType.ANIME,
-    ).findBestMatch(mediaTitle);
+      sourceImpl,
+      args.type,
+    ).findBestMatch(args.mediaTitle);
 
     if (result == null) {
       return const MatchedMediaState();
@@ -97,10 +95,9 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
 
     // Cache the match in SourcePreference to bypass matchmaker on next launch
     Future.microtask(() {
-      ref.read(sourcePreferenceProvider(mediaTitle).notifier).setManualOverrides(
-            result.id,
-            result.title.availableTitle,
-          );
+      ref
+          .read(sourcePreferenceProvider(args).notifier)
+          .setManualOverrides(result.id, result.title.availableTitle);
     });
 
     return MatchedMediaState(

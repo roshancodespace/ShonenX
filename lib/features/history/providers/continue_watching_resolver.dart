@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
+import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
@@ -24,7 +25,9 @@ class ContinueWatchingResolver {
 
   Future<ContinueWatchingResult> resolve(WatchHistoryEntry entry) async {
     final prefState = await ref.read(
-      sourcePreferenceProvider(entry.animeTitle).future,
+      sourcePreferenceProvider(
+        MatchArgs(mediaTitle: entry.animeTitle, type: MediaType.ANIME),
+      ).future,
     );
 
     final sourceInfo = prefState.sourceInfo;
@@ -35,6 +38,7 @@ class ContinueWatchingResolver {
       final args = (
         providerId: prefState.manualOverrideId!,
         sourceId: sourceInfo.id,
+        type: MediaType.ANIME,
       );
 
       final episodesState = await ref.read(sourceEpisodesProvider(args).future);
@@ -44,7 +48,9 @@ class ContinueWatchingResolver {
       );
     } else {
       final episodesState = await ref.read(
-        episodesListProvider(entry.animeTitle).future,
+        episodesListProvider(
+          MatchArgs(mediaTitle: entry.animeTitle, type: MediaType.ANIME),
+        ).future,
       );
 
       episode = episodesState.episodes.firstWhereOrNull(

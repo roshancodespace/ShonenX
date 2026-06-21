@@ -9,6 +9,7 @@ import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
+import 'package:shonenx/features/reader/providers/preferred_scanlator_provider.dart';
 
 export 'episode_tiles.dart' show EpisodeViewMode, EpisodeImageFadeDirection;
 
@@ -83,9 +84,17 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
             sourceEpisodesProvider((
               providerId: widget.media.id,
               sourceId: widget.media.sourceId!,
+              type: widget.media.type,
             )),
           )
-        : ref.watch(episodesListProvider(widget.media.title.availableTitle));
+        : ref.watch(
+            episodesListProvider(
+              MatchArgs(
+                mediaTitle: widget.media.title.availableTitle,
+                type: widget.media.type,
+              ),
+            ),
+          );
 
     return episodesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -107,15 +116,29 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                     ? 'Cloudflare verification failed. Please try turning off "In-app Cloudflare Bypass" in settings to use the proxy, or perform a manual match.'
                     : 'Failed to fetch episodes: $e',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () {
-                  ref.invalidate(matchedMediaProvider(widget.media.title.availableTitle));
-                  ref.invalidate(episodesListProvider(widget.media.title.availableTitle));
+                  ref.invalidate(
+                    matchedMediaProvider(
+                      MatchArgs(
+                        mediaTitle: widget.media.title.availableTitle,
+                        type: widget.media.type,
+                      ),
+                    ),
+                  );
+                  ref.invalidate(
+                    episodesListProvider(
+                      MatchArgs(
+                        mediaTitle: widget.media.title.availableTitle,
+                        type: widget.media.type,
+                      ),
+                    ),
+                  );
                 },
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Retry Search'),
@@ -126,7 +149,13 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
       ),
       data: (state) {
         if (state.episodes.isEmpty) {
-          return const Center(child: Text('No episodes found.'));
+          return Center(
+            child: Text(
+              widget.media.type == MediaType.MANGA
+                  ? 'No chapters found.'
+                  : 'No episodes found.',
+            ),
+          );
         }
 
         final nums = state.episodes.map((e) => e.number).toList()..sort();
@@ -152,6 +181,24 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
           return e.number >= active.min! && e.number <= active.max!;
         }).toList();
 
+        final prefScanlator = ref.read(
+          preferredScanlatorProvider(widget.media.id),
+        );
+        final Map<double, List<UnifiedEpisode>> grouped = {};
+        for (final ep in filtered) {
+          grouped.putIfAbsent(ep.number, () => []).add(ep);
+        }
+
+        filtered = grouped.values.map((eps) {
+          UnifiedEpisode target = eps.first;
+          if (prefScanlator != null) {
+            target =
+                eps.where((e) => e.scanlator == prefScanlator).firstOrNull ??
+                target;
+          }
+          return target;
+        }).toList();
+
         filtered.sort(
           (a, b) => _descending
               ? b.number.compareTo(a.number)
@@ -168,7 +215,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                 child: Row(
                   children: [
                     Text(
-                      '${state.episodes.length} episodes',
+                      '${state.episodes.length} ${widget.media.type == MediaType.MANGA ? 'chapters' : 'episodes'}',
                       style: Theme.of(context).textTheme.labelLarge,
                     ),
 
@@ -370,6 +417,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
 
                 return EpisodeClassicTile(
                   episode: ep,
+                  mediaType: widget.media.type,
                   isCurrent: isCurrent,
                   isWatched: isWatched,
                   imageFadeDirection: widget.imageFadeDirection,

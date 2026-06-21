@@ -264,13 +264,16 @@ class ResponsiveData {
     T Function()? desktop,
     required T Function() orElse,
   }) {
-    if (phoneLandscape != null && isPhone && isLandscape)
+    if (phoneLandscape != null && isPhone && isLandscape) {
       return phoneLandscape();
+    }
     if (phonePortrait != null && isPhone && isPortrait) return phonePortrait();
-    if (tabletPortrait != null && isTablet && isPortrait)
+    if (tabletPortrait != null && isTablet && isPortrait) {
       return tabletPortrait();
-    if (tabletLandscape != null && isTablet && isLandscape)
+    }
+    if (tabletLandscape != null && isTablet && isLandscape) {
       return tabletLandscape();
+    }
     if (desktop != null && isDesktop) return desktop();
     return orElse();
   }

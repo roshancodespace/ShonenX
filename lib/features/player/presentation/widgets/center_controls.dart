@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
+import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 class CenterControls extends ConsumerStatefulWidget {
   final bool showControls;
@@ -33,7 +35,7 @@ class _CenterControlsState extends ConsumerState<CenterControls> {
     final episodes =
         ref.watch(
           episodesListProvider(
-            widget.mediaTitle,
+            MatchArgs(mediaTitle: widget.mediaTitle, type: MediaType.ANIME),
           ).select((s) => s.value?.episodes),
         ) ??
         [];

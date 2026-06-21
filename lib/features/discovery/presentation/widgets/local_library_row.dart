@@ -7,14 +7,28 @@ import 'package:shonenx/features/discovery/presentation/widgets/media_card.dart'
 import 'package:shonenx/features/library/providers/local_library_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
 
+import 'package:shonenx/shared/models/unified_media.dart';
+
 class LocalLibraryRow extends ConsumerWidget {
   final String title;
   final TrackedStatus status;
-  const LocalLibraryRow({super.key, required this.title, required this.status});
+  final MediaType? targetMediaType;
+
+  const LocalLibraryRow({
+    super.key,
+    required this.title,
+    required this.status,
+    this.targetMediaType,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncData = ref.watch(localLibraryListProvider(status));
+    final asyncData = ref.watch(
+      localLibraryListProvider((
+        status: status,
+        mediaType: targetMediaType ?? MediaType.ANIME,
+      )),
+    );
     final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
 
     return HorizontalSection(

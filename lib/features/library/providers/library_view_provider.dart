@@ -6,22 +6,26 @@ import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 enum LibraryMode { local, cloud }
 
 class LibraryViewState {
   final LibraryMode mode;
   final TrackedStatus status;
+  final MediaType mediaType;
 
   LibraryViewState({
     this.mode = LibraryMode.cloud,
     this.status = TrackedStatus.watching,
+    this.mediaType = MediaType.ANIME,
   });
 
-  LibraryViewState copyWith({LibraryMode? mode, TrackedStatus? status}) {
+  LibraryViewState copyWith({LibraryMode? mode, TrackedStatus? status, MediaType? mediaType}) {
     return LibraryViewState(
       mode: mode ?? this.mode,
       status: status ?? this.status,
+      mediaType: mediaType ?? this.mediaType,
     );
   }
 }
@@ -38,6 +42,10 @@ class LibraryViewNotifier extends Notifier<LibraryViewState> {
 
   void setStatus(TrackedStatus status) {
     state = state.copyWith(status: status);
+  }
+
+  void setMediaType(MediaType mediaType) {
+    state = state.copyWith(mediaType: mediaType);
   }
 }
 
@@ -57,8 +65,8 @@ final dynamicLibraryProvider =
       if (libraryView.mode == LibraryMode.local ||
           primaryTrackerType == TrackerType.local ||
           !isCloudLoggedIn) {
-        return ref.watch(localLibraryListProvider(libraryView.status));
+        return ref.watch(localLibraryListProvider((status: libraryView.status, mediaType: libraryView.mediaType)));
       } else {
-        return ref.watch(cloudLibraryProvider((status: libraryView.status, trackerType: null)));
+        return ref.watch(cloudLibraryProvider((status: libraryView.status, trackerType: null, mediaType: libraryView.mediaType)));
       }
     });

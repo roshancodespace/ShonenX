@@ -5,6 +5,8 @@ import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/domain/media_source_preference.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 class SourcePreferenceState {
   final SourceInfo sourceInfo;
@@ -31,11 +33,13 @@ class SourcePreferenceState {
 }
 
 class SourcePreferencNotifier extends AsyncNotifier<SourcePreferenceState> {
-  SourcePreferencNotifier(this.mediaTitle);
-
-  final String mediaTitle;
+  late final MatchArgs args;
   late final _isar = ref.read(databaseProvider);
-  late final _log = AppLogger.scope(SourcePreferencNotifier).child(mediaTitle);
+  late final _log = AppLogger.scope(
+    SourcePreferencNotifier,
+  ).child(args.mediaTitle);
+
+  SourcePreferencNotifier(this.args);
 
   @override
   Future<SourcePreferenceState> build() async {
@@ -43,12 +47,12 @@ class SourcePreferencNotifier extends AsyncNotifier<SourcePreferenceState> {
 
     try {
       final savedPref = await _isar.mediaSourcePreferences.getByMediaTitle(
-        mediaTitle,
+        args.mediaTitle,
       );
 
-      final availableSourcesInfo = await ref.watch(
-        availableAnimeSourcesProvider.future,
-      );
+      final availableSourcesInfo = args.type == MediaType.ANIME
+          ? await ref.watch(availableAnimeSourcesProvider.future)
+          : await ref.watch(availableMangaSourcesProvider.future);
 
       if (availableSourcesInfo.isEmpty) {
         throw StateError('no-sources');
@@ -135,7 +139,7 @@ class SourcePreferencNotifier extends AsyncNotifier<SourcePreferenceState> {
 
     try {
       final pref = MediaSourcePreference()
-        ..mediaTitle = mediaTitle
+        ..mediaTitle = args.mediaTitle
         ..preferredSourceId = currentState.sourceInfo.id
         ..preferredSourceName = currentState.sourceInfo.name
         ..preferredSourceType = currentState.sourceInfo.type.name
@@ -157,8 +161,9 @@ class SourcePreferencNotifier extends AsyncNotifier<SourcePreferenceState> {
 
     try {
       await _isar.writeTxn(
-        () async =>
-            await _isar.mediaSourcePreferences.deleteByMediaTitle(mediaTitle),
+        () async => await _isar.mediaSourcePreferences.deleteByMediaTitle(
+          args.mediaTitle,
+        ),
       );
 
       ref.invalidateSelf();
@@ -173,5 +178,5 @@ final sourcePreferenceProvider =
     AsyncNotifierProvider.family<
       SourcePreferencNotifier,
       SourcePreferenceState,
-      String
+      MatchArgs
     >(SourcePreferencNotifier.new, name: 'sourcePreferenceProvider');

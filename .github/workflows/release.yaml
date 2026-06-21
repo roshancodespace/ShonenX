@@ -81,7 +81,7 @@ jobs:
   # ---------------- LINUX ----------------
   build-linux:
     if: github.event_name == 'push' || github.event.inputs.build_linux == 'true'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Install dependencies

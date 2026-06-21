@@ -63,6 +63,9 @@ on:
       DISCORD_WEBHOOK:
         required: true
 
+permissions:
+  contents: write
+
 jobs:
   notify:
     runs-on: ubuntu-latest

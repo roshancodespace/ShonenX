@@ -148,15 +148,12 @@ jobs:
         run: |
           FILE=$(find ~/.pub-cache -type f -name CMakeLists.txt | grep flutter_inappwebview_linux | head -n 1)
 
-          if [ -n "$FILE" ]; then
-            echo "Patching $FILE"
-            sed -i 's/-Wno-deprecated-literal-operator//g' "$FILE"
-          fi
+          echo "Patching $FILE"
 
-      - name: Show WPE libraries
-        run: |
-          find /usr -name "libWPEWebKit*.so*" 2>/dev/null || true
-          find /usr -name "libwpe*.so*" 2>/dev/null || true
+          sed -i 's/libWPEWebKit-2.0/libWPEWebKit-1.0/g' "$FILE"
+          sed -i 's/-Wno-deprecated-literal-operator//g' "$FILE"
+
+          grep -n "WPEWebKit" "$FILE" || true
 
       - name: Build Linux
         env:

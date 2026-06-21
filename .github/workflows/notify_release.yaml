@@ -26,6 +26,11 @@ on:
         required: false
         default: "latest"
         type: string
+      use_latest_artifacts:
+        description: "Fetch artifacts from latest 'Release Build' run?"
+        required: false
+        default: false
+        type: boolean
 
   workflow_call:
     inputs:
@@ -49,6 +54,11 @@ on:
         required: false
         default: "latest"
         type: string
+      use_latest_artifacts:
+        description: "Fetch artifacts from latest 'Release Build' run?"
+        required: false
+        default: false
+        type: boolean
     secrets:
       DISCORD_WEBHOOK:
         required: true
@@ -67,17 +77,33 @@ jobs:
             echo "INCLUDE_LOGS=${{ inputs.include_logs }}" >> $GITHUB_ENV
             echo "IS_PRERELEASE=${{ inputs.is_prerelease }}" >> $GITHUB_ENV
             echo "TAG_NAME=${{ inputs.tag_name }}" >> $GITHUB_ENV
+            echo "USE_LATEST_ARTIFACTS=${{ inputs.use_latest_artifacts }}" >> $GITHUB_ENV
           else
             echo "NOTIFY_EVERYONE=true" >> $GITHUB_ENV
             echo "INCLUDE_LOGS=true" >> $GITHUB_ENV
             echo "IS_PRERELEASE=false" >> $GITHUB_ENV
             echo "TAG_NAME=latest" >> $GITHUB_ENV
+            echo "USE_LATEST_ARTIFACTS=false" >> $GITHUB_ENV
+          fi
+          
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ inputs.use_latest_artifacts }}" == "true" ]; then
+            export GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+            RUN_ID=$(gh run list --workflow "Release Build" --status success --limit 1 --json databaseId -q ".[0].databaseId")
+            if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
+              echo "TARGET_RUN_ID=$RUN_ID" >> $GITHUB_ENV
+            else
+              echo "TARGET_RUN_ID=${{ github.run_id }}" >> $GITHUB_ENV
+            fi
+          else
+            echo "TARGET_RUN_ID=${{ github.run_id }}" >> $GITHUB_ENV
           fi
 
       - name: Download all workflow artifacts
         uses: actions/download-artifact@v4
         continue-on-error: true
         with:
+          run-id: ${{ env.TARGET_RUN_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           path: all-artifacts
           merge-multiple: true
 

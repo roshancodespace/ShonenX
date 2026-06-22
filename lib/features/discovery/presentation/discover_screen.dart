@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/horizontal_section.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/media_card.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/rows/horizontal_section.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/discovery/providers/category_search_provider.dart';
 import 'package:shonenx/features/discovery/providers/search_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
 import 'package:shonenx/features/discovery/providers/discovery_feed_provider.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/advanced_search_sheet.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/sheets/advanced_search_sheet.dart';
 
 class DiscoverScreen extends StatelessWidget {
   final String? query;

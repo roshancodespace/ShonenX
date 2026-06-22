@@ -6,7 +6,6 @@ import 'package:shonenx/shared/models/unified_media.dart';
 
 enum HomeSectionType {
   trending,
-  popular,
   continueMedia,
   libraryStatus,
 }

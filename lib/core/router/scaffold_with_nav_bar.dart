@@ -7,6 +7,7 @@ import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 
 final _navBreakpoints = ResponsiveBreakpoints.defaults.copyWith(
   heightNormal: 750,
@@ -87,7 +88,7 @@ class _BottomNavBar extends StatelessWidget {
     final iconSize = r.isPhone ? 25.0 : 28.0;
     final fontSize = r.isPhone ? 14.5 : 16.0;
     final hPad = r.isPhone ? 6.0 : 10.5;
-    final itemRadius = barHeight / 2 - 2;
+    final itemRadius = GlobalScale.uiRoundness;
 
     return SafeArea(
       child: Align(
@@ -98,7 +99,7 @@ class _BottomNavBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(barHeight / 2),
+                borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                   child: Container(
@@ -106,7 +107,9 @@ class _BottomNavBar extends StatelessWidget {
                     padding: EdgeInsets.all(hPad),
                     decoration: BoxDecoration(
                       color: cs.surface.withValues(alpha: 0.75),
-                      borderRadius: BorderRadius.circular(barHeight / 2),
+                      borderRadius: BorderRadius.circular(
+                        GlobalScale.uiRoundness,
+                      ),
                       border: Border.all(
                         color: cs.outlineVariant.withValues(alpha: 0.45),
                       ),
@@ -229,7 +232,7 @@ class _DownloadButton extends ConsumerWidget {
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(size / 2),
+      borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
@@ -237,7 +240,7 @@ class _DownloadButton extends ConsumerWidget {
           height: size,
           decoration: BoxDecoration(
             color: colorScheme.surface.withValues(alpha: 0.75),
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
             border: Border.all(
               color: colorScheme.outlineVariant.withValues(alpha: 0.45),
             ),
@@ -364,7 +367,9 @@ class _SideNavBar extends StatelessWidget {
                         padding: EdgeInsets.symmetric(vertical: itemVMargin),
                         child: InkWell(
                           onTap: () => navigationShell.goBranch(i),
-                          borderRadius: BorderRadius.circular(barWidth / 2),
+                          borderRadius: BorderRadius.circular(
+                            GlobalScale.uiRoundness,
+                          ),
                           focusColor: cs.primary.withValues(alpha: 0.2),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 350),
@@ -372,7 +377,9 @@ class _SideNavBar extends StatelessWidget {
                             width: double.infinity,
                             decoration: BoxDecoration(
                               color: active ? cs.primary : Colors.transparent,
-                              borderRadius: BorderRadius.circular(barWidth / 2),
+                              borderRadius: BorderRadius.circular(
+                                GlobalScale.uiRoundness,
+                              ),
                             ),
                             child: _PillContent(
                               icon: _destinations[i].icon,
@@ -425,7 +432,7 @@ class _GlassPillContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(width / 2),
+      borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
@@ -433,7 +440,7 @@ class _GlassPillContainer extends StatelessWidget {
           padding: EdgeInsets.all(padding),
           decoration: BoxDecoration(
             color: cs.surfaceContainerLow.withValues(alpha: 0.75),
-            borderRadius: BorderRadius.circular(width / 2),
+            borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
             border: Border.all(
               color: cs.outlineVariant.withValues(alpha: 0.45),
             ),
@@ -569,7 +576,7 @@ class _TallDownloadPillContent extends ConsumerWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(100),
+        borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
         onTap: () => context.push('/downloads'),
         child: Badge(
           isLabelVisible: count > 0,

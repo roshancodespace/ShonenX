@@ -54,6 +54,7 @@ class CategorySearchNotifier
       final adultMode = ref.read(contentPrefsProvider).adultContentMode;
       return arg.category.toLowerCase().contains('trending')
           ? await engine.getTrending(
+              type: arg.type,
               page: page,
               cacheDuration: const Duration(seconds: 30),
               adultMode: adultMode,

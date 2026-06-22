@@ -193,9 +193,6 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
       case HomeSectionType.trending:
         newTitle = 'Trending ${_selectedMediaType.displayName}';
         break;
-      case HomeSectionType.popular:
-        newTitle = 'Popular ${_selectedMediaType.displayName}';
-        break;
       case HomeSectionType.continueMedia:
         newTitle = _selectedMediaType == MediaType.ANIME
             ? 'Continue Watching'
@@ -250,10 +247,6 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
               DropdownMenuItem(
                 value: HomeSectionType.trending,
                 child: Text('Trending'),
-              ),
-              DropdownMenuItem(
-                value: HomeSectionType.popular,
-                child: Text('Popular'),
               ),
               DropdownMenuItem(
                 value: HomeSectionType.continueMedia,
@@ -462,9 +455,6 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
       case HomeSectionType.trending:
         newTitle = 'Trending ${_selectedMediaType.displayName}';
         break;
-      case HomeSectionType.popular:
-        newTitle = 'Popular ${_selectedMediaType.displayName}';
-        break;
       case HomeSectionType.continueMedia:
         newTitle = _selectedMediaType == MediaType.ANIME
             ? 'Continue Watching'
@@ -530,10 +520,6 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
               DropdownMenuItem(
                 value: HomeSectionType.trending,
                 child: Text('Trending'),
-              ),
-              DropdownMenuItem(
-                value: HomeSectionType.popular,
-                child: Text('Popular'),
               ),
               DropdownMenuItem(
                 value: HomeSectionType.continueMedia,

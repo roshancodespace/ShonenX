@@ -52,7 +52,7 @@ class AppTheme {
             swapLegacyOnMaterial3: true,
             visualDensity: FlexColorScheme.comfortablePlatformDensity,
             pageTransitionsTheme: _pageTransitionsTheme,
-            subThemesData: _subThemesData(blendLevel: prefs.blendLevel),
+            subThemesData: _subThemesData(prefs: prefs),
           )
         : FlexThemeData.light(
             scheme: exclusive == null ? prefs.flexScheme : null,
@@ -68,7 +68,7 @@ class AppTheme {
             swapLegacyOnMaterial3: true,
             visualDensity: FlexColorScheme.comfortablePlatformDensity,
             pageTransitionsTheme: _pageTransitionsTheme,
-            subThemesData: _subThemesData(blendLevel: prefs.blendLevel),
+            subThemesData: _subThemesData(prefs: prefs),
           );
 
     return _withSnackBarTheme(baseTheme).copyWith(
@@ -99,9 +99,10 @@ class AppTheme {
     );
   }
 
-  static FlexSubThemesData _subThemesData({required int blendLevel}) {
+  static FlexSubThemesData _subThemesData({required ThemePrefsState prefs}) {
     return FlexSubThemesData(
-      blendOnLevel: blendLevel,
+      blendOnLevel: prefs.blendLevel,
+      defaultRadius: prefs.uiRoundness,
       blendOnColors: true,
       useMaterial3Typography: true,
       buttonMinSize: _buttonMinSize,

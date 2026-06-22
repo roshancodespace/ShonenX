@@ -86,12 +86,20 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final positions = _itemPositionsListener.itemPositions.value;
     if (positions.isEmpty) return;
 
-    final first = positions
+    var current = positions
         .where((p) => p.itemTrailingEdge > 0)
-        .reduce((min, p) => p.itemLeadingEdge < min.itemLeadingEdge ? p : min);
+        .reduce((min, p) => p.itemLeadingEdge < min.itemLeadingEdge ? p : min)
+        .index;
 
-    if (_currentPage != first.index) {
-      setState(() => _currentPage = first.index);
+    for (final p in positions) {
+      if (p.index == _totalPages - 1 && p.itemTrailingEdge <= 1.01) {
+        current = _totalPages - 1;
+        break;
+      }
+    }
+
+    if (_currentPage != current) {
+      setState(() => _currentPage = current);
       _saveHistory();
     }
   }
@@ -192,17 +200,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
     return Scaffold(
       backgroundColor: themeInfo.bgColor,
-      extendBodyBehindAppBar: true,
-      appBar: _showOverlay ? _buildAppBar(themeInfo) : null,
-      body: MediaQuery.removePadding(
-        context: context,
-        removeTop: true,
-        removeBottom: true,
-        removeLeft: true,
-        removeRight: true,
-        child: Stack(
-          children: [
-            GestureDetector(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            removeBottom: true,
+            removeLeft: true,
+            removeRight: true,
+            child: GestureDetector(
               onTap: _toggleOverlay,
               child: _buildReaderContent(
                 readerStateAsync,
@@ -210,8 +217,22 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 themeInfo.textColor,
               ),
             ),
-            if (_showOverlay && _totalPages > 0)
-              ReaderBottomOverlay(
+          ),
+
+          if (_showOverlay)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _buildAppBar(themeInfo),
+            ),
+
+          if (_showOverlay && _totalPages > 0)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: ReaderBottomOverlay(
                 currentPage: _currentPage,
                 totalPages: _totalPages,
                 hasPrevChapter: _hasChapter(episodesState, next: false),
@@ -225,8 +246,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 onPageChanged: (newPage) =>
                     _jumpToPage(newPage, readerPrefs.direction),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -377,20 +398,24 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     ReaderPrefState prefs,
     Color textColor,
   ) {
-    return ScrollablePositionedList.builder(
-      itemCount: pages.length,
-      itemScrollController: _itemScrollController,
-      itemPositionsListener: _itemPositionsListener,
-      itemBuilder: (context, index) {
-        final page = pages[index];
-        return ReaderImage(
-          url: page.url,
-          headers: page.headers ?? const {},
-          index: index,
-          scaleType: prefs.scaleType,
-          textColor: textColor,
-        );
-      },
+    return InteractiveViewer(
+      minScale: 1.0,
+      maxScale: 4.0,
+      child: ScrollablePositionedList.builder(
+        itemCount: pages.length,
+        itemScrollController: _itemScrollController,
+        itemPositionsListener: _itemPositionsListener,
+        itemBuilder: (context, index) {
+          final page = pages[index];
+          return ReaderImage(
+            url: page.url,
+            headers: page.headers ?? const {},
+            index: index,
+            scaleType: prefs.scaleType,
+            textColor: textColor,
+          );
+        },
+      ),
     );
   }
 
@@ -408,12 +433,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       itemBuilder: (context, index) {
         final page = pages[index];
         return Center(
-          child: ReaderImage(
-            url: page.url,
-            headers: page.headers ?? const {},
-            index: index,
-            scaleType: prefs.scaleType,
-            textColor: textColor,
+          child: InteractiveViewer(
+            minScale: 1.0,
+            maxScale: 4.0,
+            child: ReaderImage(
+              url: page.url,
+              headers: page.headers ?? const {},
+              index: index,
+              scaleType: prefs.scaleType,
+              textColor: textColor,
+            ),
           ),
         );
       },

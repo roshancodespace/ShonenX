@@ -201,7 +201,7 @@ class SourcesTab extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 120),
           sliver: SliverList.builder(
             itemCount: sortedLangs.length,
             itemBuilder: (context, langIndex) {
@@ -234,14 +234,11 @@ class SourcesTab extends ConsumerWidget {
                     final groupSources = nameGroups[name]!;
 
                     if (groupSources.length == 1) {
-                      return Padding(
-                        padding: const EdgeInsets.only(left: 16.0),
-                        child: _buildItem(
-                          context,
-                          ref,
-                          groupSources.first,
-                          false,
-                        ),
+                      return _buildItem(
+                        context,
+                        ref,
+                        groupSources.first,
+                        false,
                       );
                     }
 

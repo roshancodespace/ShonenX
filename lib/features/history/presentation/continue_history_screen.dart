@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/continue_watching_card.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/continue_reading_card.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/media_card.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_watching_card.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_reading_card.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -12,19 +12,23 @@ import 'package:shonenx/shared/models/unified_media.dart';
 
 class ContinueHistoryScreen extends ConsumerWidget {
   final MediaType type;
-  
+
   const ContinueHistoryScreen({super.key, required this.type});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isAnime = type == MediaType.ANIME;
     final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
-    
+
     final AsyncValue<List<dynamic>> historyAsync;
     if (isAnime) {
-      historyAsync = ref.watch(continueWatchingPerAnimeProvider(100)).whenData((data) => data.toList());
+      historyAsync = ref
+          .watch(continueWatchingPerAnimeProvider(100))
+          .whenData((data) => data.toList());
     } else {
-      historyAsync = ref.watch(continueReadingPerMangaProvider(100)).whenData((data) => data.toList());
+      historyAsync = ref
+          .watch(continueReadingPerMangaProvider(100))
+          .whenData((data) => data.toList());
     }
 
     return AppScaffold(
@@ -51,8 +55,11 @@ class ContinueHistoryScreen extends ConsumerWidget {
             itemBuilder: (context, index) {
               final entry = entries[index];
               final String id = isAnime ? entry.animeId : entry.mangaId;
-              final String title = isAnime ? entry.animeTitle : entry.mangaTitle;
-              final String imageUrl = entry.cover ?? (isAnime ? entry.thumbnailUrl : null) ?? '';
+              final String title = isAnime
+                  ? entry.animeTitle
+                  : entry.mangaTitle;
+              final String imageUrl =
+                  entry.cover ?? (isAnime ? entry.thumbnailUrl : null) ?? '';
 
               return MediaCard(
                 tag: 'ch-$id',
@@ -76,7 +83,7 @@ class ContinueHistoryItemsScreen extends ConsumerWidget {
   final String mediaId;
 
   const ContinueHistoryItemsScreen({
-    super.key, 
+    super.key,
     required this.type,
     required this.mediaId,
   });
@@ -84,21 +91,31 @@ class ContinueHistoryItemsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isAnime = type == MediaType.ANIME;
-    
+
     final AsyncValue<List<dynamic>> historyAsync;
     if (isAnime) {
-      historyAsync = ref.watch(historyEpisodesProvider(mediaId)).whenData((data) => data.toList());
+      historyAsync = ref
+          .watch(historyEpisodesProvider(mediaId))
+          .whenData((data) => data.toList());
     } else {
-      historyAsync = ref.watch(historyChaptersProvider(mediaId)).whenData((data) => data.toList());
+      historyAsync = ref
+          .watch(historyChaptersProvider(mediaId))
+          .whenData((data) => data.toList());
     }
-    
-    final cardStyle = ref.watch(
-      uiPrefsProvider.select((s) => isAnime ? s.continueWatchingStyle : s.continueReadingStyle),
+
+    final cwStyle = ref.watch(
+      uiPrefsProvider.select((s) => s.continueWatchingStyle),
     );
+    final crStyle = ref.watch(
+      uiPrefsProvider.select((s) => s.continueReadingStyle),
+    );
+    final layout = isAnime ? cwStyle.layout : crStyle.layout;
 
     return AppScaffold(
       title: isAnime ? 'Episodes' : 'Chapters',
-      subtitle: isAnime ? 'Watched episodes for this anime' : 'Read chapters for this manga',
+      subtitle: isAnime
+          ? 'Watched episodes for this anime'
+          : 'Read chapters for this manga',
       body: historyAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text(err.toString())),
@@ -111,9 +128,9 @@ class ContinueHistoryItemsScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(10),
             itemCount: entries.length,
             gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: cardStyle.layout.width + 10,
-              mainAxisExtent: cardStyle.layout.height,
-              childAspectRatio: cardStyle.layout.aspectRatio,
+              maxCrossAxisExtent: layout.width + 10,
+              mainAxisExtent: layout.height,
+              childAspectRatio: layout.aspectRatio,
               mainAxisSpacing: 10,
               crossAxisSpacing: 10,
             ),
@@ -129,7 +146,7 @@ class ContinueHistoryItemsScreen extends ConsumerWidget {
                 return ContinueWatchingItem(
                   entry: entry,
                   progress: progress,
-                  style: cardStyle,
+                  style: cwStyle,
                 );
               } else {
                 final progress = entry.totalPages == 0
@@ -138,7 +155,7 @@ class ContinueHistoryItemsScreen extends ConsumerWidget {
                 return ContinueReadingItem(
                   entry: entry,
                   progress: progress,
-                  style: cardStyle,
+                  style: crStyle,
                 );
               }
             },

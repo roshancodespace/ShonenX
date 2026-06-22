@@ -7,6 +7,11 @@ import 'package:shonenx/core/models/component_layout.dart';
 import 'package:shonenx/core/providers/storage_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
 
+class GlobalScale {
+  static double uiScaleFactor = 1.0;
+  static double uiRoundness = 12.0;
+}
+
 enum MediaCardStyle {
   classic(ComponentLayout(width: 125, height: 215)),
   minimal(ComponentLayout(width: 120, height: 180)),
@@ -14,8 +19,22 @@ enum MediaCardStyle {
   material(ComponentLayout(width: 135, height: 210)),
   liquidGlass(ComponentLayout(width: 140, height: 210));
 
-  final ComponentLayout layout;
-  const MediaCardStyle(this.layout);
+  final ComponentLayout _baseLayout;
+  const MediaCardStyle(this._baseLayout);
+
+  ComponentLayout get layout {
+    return ComponentLayout(
+      width: _baseLayout.width * GlobalScale.uiScaleFactor,
+      height: _baseLayout.height * GlobalScale.uiScaleFactor,
+    );
+  }
+
+  ComponentLayout getScaledLayout(double scale) {
+    return ComponentLayout(
+      width: layout.width * scale,
+      height: layout.height * scale,
+    );
+  }
 
   String get displayName {
     switch (this) {
@@ -37,8 +56,22 @@ enum ContinueWatchingStyle {
   classic(ComponentLayout(width: 180, height: 180)),
   wideBanner(ComponentLayout(width: 390, height: 125));
 
-  final ComponentLayout layout;
-  const ContinueWatchingStyle(this.layout);
+  final ComponentLayout _baseLayout;
+  const ContinueWatchingStyle(this._baseLayout);
+
+  ComponentLayout get layout {
+    return ComponentLayout(
+      width: _baseLayout.width * GlobalScale.uiScaleFactor,
+      height: _baseLayout.height * GlobalScale.uiScaleFactor,
+    );
+  }
+
+  ComponentLayout getScaledLayout(double scale) {
+    return ComponentLayout(
+      width: layout.width * scale,
+      height: layout.height * scale,
+    );
+  }
 
   String get displayName {
     switch (this) {
@@ -50,31 +83,61 @@ enum ContinueWatchingStyle {
   }
 }
 
+enum ContinueReadingStyle {
+  classic(ComponentLayout(width: 140, height: 210)),
+  wideBanner(ComponentLayout(width: 390, height: 125));
+
+  final ComponentLayout _baseLayout;
+  const ContinueReadingStyle(this._baseLayout);
+
+  ComponentLayout get layout {
+    return ComponentLayout(
+      width: _baseLayout.width * GlobalScale.uiScaleFactor,
+      height: _baseLayout.height * GlobalScale.uiScaleFactor,
+    );
+  }
+
+  ComponentLayout getScaledLayout(double scale) {
+    return ComponentLayout(
+      width: layout.width * scale,
+      height: layout.height * scale,
+    );
+  }
+
+  String get displayName {
+    switch (this) {
+      case ContinueReadingStyle.classic:
+        return 'Classic';
+      case ContinueReadingStyle.wideBanner:
+        return 'Wide Banner';
+    }
+  }
+}
+
 class UiPrefState {
   final MediaCardStyle cardStyle;
   final ContinueWatchingStyle continueWatchingStyle;
-  final ContinueWatchingStyle continueReadingStyle;
+  final ContinueReadingStyle continueReadingStyle;
   final EpisodeViewMode episodeViewMode;
 
   const UiPrefState({
     this.cardStyle = MediaCardStyle.classic,
     this.continueWatchingStyle = ContinueWatchingStyle.classic,
-    this.continueReadingStyle = ContinueWatchingStyle.classic,
+    this.continueReadingStyle = ContinueReadingStyle.classic,
     this.episodeViewMode = EpisodeViewMode.classic,
   });
 
   UiPrefState copyWith({
     MediaCardStyle? cardStyle,
     ContinueWatchingStyle? continueWatchingStyle,
-    ContinueWatchingStyle? continueReadingStyle,
+    ContinueReadingStyle? continueReadingStyle,
     EpisodeViewMode? episodeViewMode,
   }) {
     return UiPrefState(
       cardStyle: cardStyle ?? this.cardStyle,
       continueWatchingStyle:
           continueWatchingStyle ?? this.continueWatchingStyle,
-      continueReadingStyle:
-          continueReadingStyle ?? this.continueReadingStyle,
+      continueReadingStyle: continueReadingStyle ?? this.continueReadingStyle,
       episodeViewMode: episodeViewMode ?? this.episodeViewMode,
     );
   }
@@ -96,9 +159,9 @@ class UiPrefState {
         (e) => e.name == json['continueWatchingStyle'],
         orElse: () => ContinueWatchingStyle.classic,
       ),
-      continueReadingStyle: ContinueWatchingStyle.values.firstWhere(
+      continueReadingStyle: ContinueReadingStyle.values.firstWhere(
         (e) => e.name == json['continueReadingStyle'],
-        orElse: () => ContinueWatchingStyle.classic,
+        orElse: () => ContinueReadingStyle.classic,
       ),
       episodeViewMode: EpisodeViewMode.values.firstWhere(
         (e) => e.name == json['episodeViewMode'],
@@ -122,8 +185,12 @@ class UiPrefState {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(cardStyle, continueWatchingStyle, continueReadingStyle, episodeViewMode);
+  int get hashCode => Object.hash(
+    cardStyle,
+    continueWatchingStyle,
+    continueReadingStyle,
+    episodeViewMode,
+  );
 }
 
 class UiPrefsNotifier extends Notifier<UiPrefState> {
@@ -153,7 +220,7 @@ class UiPrefsNotifier extends Notifier<UiPrefState> {
     _saveDb();
   }
 
-  void updateContinueReadingStyle(ContinueWatchingStyle style) {
+  void updateContinueReadingStyle(ContinueReadingStyle style) {
     state = state.copyWith(continueReadingStyle: style);
     _saveDb();
   }

@@ -207,8 +207,12 @@ class _ExtensionsSettingsScreenState
     bridge.Extension manager,
     ThemeData theme,
   ) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: 8.0,
+      runSpacing: 8.0,
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      verticalDirection: VerticalDirection.up,
       children: [
         SizedBox(
           height: 48,
@@ -238,7 +242,6 @@ class _ExtensionsSettingsScreenState
             },
           ),
         ),
-        const SizedBox(width: 8),
         SizedBox(
           height: 44,
           child: FloatingActionButton.extended(

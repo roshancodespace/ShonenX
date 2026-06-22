@@ -18,6 +18,9 @@ class ThemePrefsState {
   final double noiseOpacity;
   final double backgroundBlur;
   final double backgroundImageOpacity;
+  final double uiRoundness;
+  final double fontScaleFactor;
+  final double uiScaleFactor;
 
   const ThemePrefsState({
     this.themeMode = ThemeMode.system,
@@ -32,6 +35,9 @@ class ThemePrefsState {
     this.noiseOpacity = 0.03,
     this.backgroundBlur = 0.0,
     this.backgroundImageOpacity = 0.4,
+    this.uiRoundness = 12.0,
+    this.fontScaleFactor = 1.0,
+    this.uiScaleFactor = 1.0,
   });
 
   ThemePrefsState copyWith({
@@ -49,6 +55,9 @@ class ThemePrefsState {
     double? noiseOpacity,
     double? backgroundBlur,
     double? backgroundImageOpacity,
+    double? uiRoundness,
+    double? fontScaleFactor,
+    double? uiScaleFactor,
   }) {
     return ThemePrefsState(
       themeMode: themeMode ?? this.themeMode,
@@ -68,6 +77,9 @@ class ThemePrefsState {
       backgroundBlur: backgroundBlur ?? this.backgroundBlur,
       backgroundImageOpacity:
           backgroundImageOpacity ?? this.backgroundImageOpacity,
+      uiRoundness: uiRoundness ?? this.uiRoundness,
+      fontScaleFactor: fontScaleFactor ?? this.fontScaleFactor,
+      uiScaleFactor: uiScaleFactor ?? this.uiScaleFactor,
     );
   }
 
@@ -85,6 +97,9 @@ class ThemePrefsState {
       'noiseOpacity': noiseOpacity,
       'backgroundBlur': backgroundBlur,
       'backgroundImageOpacity': backgroundImageOpacity,
+      'uiRoundness': uiRoundness,
+      'fontScaleFactor': fontScaleFactor,
+      'uiScaleFactor': uiScaleFactor,
     };
   }
 
@@ -104,6 +119,9 @@ class ThemePrefsState {
       backgroundBlur: (map['backgroundBlur'] as num?)?.toDouble() ?? 0.0,
       backgroundImageOpacity:
           (map['backgroundImageOpacity'] as num?)?.toDouble() ?? 0.4,
+      uiRoundness: (map['uiRoundness'] as num?)?.toDouble() ?? 12.0,
+      fontScaleFactor: (map['fontScaleFactor'] as num?)?.toDouble() ?? 1.0,
+      uiScaleFactor: (map['uiScaleFactor'] as num?)?.toDouble() ?? 1.0,
     );
   }
 

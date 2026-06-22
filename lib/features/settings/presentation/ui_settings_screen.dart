@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/continue_watching_card.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/continue_reading_card.dart';
+import 'package:shonenx/core/providers/theme_prefs_provider.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_watching_card.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_reading_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/media_card.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -26,13 +27,13 @@ class UiSettingsScreen extends ConsumerWidget {
 
   static final _previewReadHistoryEntry = ReadHistoryEntry()
     ..mangaId = '2'
-    ..mangaTitle = 'Jujutsu Kaisen'
+    ..mangaTitle = 'One Piece'
     ..chapterNumber = 236
-    ..chapterTitle = 'Go South'
+    ..chapterTitle = 'Orewa Kaizoku Ou Ni Naru!'
     ..positionPage = 14
     ..totalPages = 20
     ..cover =
-        'https://m.media-amazon.com/images/M/MV5BNGY4MTg3NzgtNjAwNC00NDFjLTg5ZWEtYzhkNWE3ZjJkNmY1XkEyXkFqcGc@._V1_.jpg';
+        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8--VpUm_3ewaKmioaFpTjAUA4z46Qbb-4GQ&s';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -42,11 +43,34 @@ class UiSettingsScreen extends ConsumerWidget {
     final prefs = ref.watch(uiPrefsProvider);
     final notifier = ref.read(uiPrefsProvider.notifier);
 
+    final themePrefs = ref.watch(themePrefsProvider);
+    final themeNotifier = ref.read(themePrefsProvider.notifier);
+
     return AppScaffold(
       title: 'UI',
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
+          SettingsSection(
+            title: 'Appearance',
+            children: [
+              SettingsActionTile(
+                icon: Icons.tune_rounded,
+                title: 'Global UI Customization',
+                subtitle: 'Adjust corner radius, widget scale, and text scale',
+                onTap: () => _showAppearanceSheet(
+                  context,
+                  ref,
+                  themeNotifier,
+                  themePrefs,
+                  theme,
+                ),
+              ),
+            ],
+          ),
+
+          const Divider(height: 1, indent: 10, endIndent: 10),
+
           SettingsSection(
             title: 'Media Cards',
             children: [
@@ -101,6 +125,69 @@ class UiSettingsScreen extends ConsumerWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  void _showAppearanceSheet(
+    BuildContext context,
+    WidgetRef ref,
+    ThemePrefsNotifier themeNotifier,
+    ThemePrefsState initialThemePrefs,
+    ThemeData theme,
+  ) {
+    AppBottomSheet.show(
+      context: context,
+      title: 'Global UI Customization',
+      child: Consumer(
+        builder: (_, r, __) {
+          final currentPrefs = r.watch(themePrefsProvider);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SettingsSliderTile(
+                title: 'Border Roundness',
+                subtitle: 'Corner roundness across the app',
+                value: currentPrefs.uiRoundness,
+                min: 0.0,
+                max: 32.0,
+                divisions: 32,
+                label: currentPrefs.uiRoundness.toStringAsFixed(1),
+                icon: Icons.rounded_corner_outlined,
+                onChanged: (v) => themeNotifier.updateTheme(
+                  (s) => s.copyWith(uiRoundness: v),
+                ),
+              ),
+              SettingsSliderTile(
+                title: 'Font Scale',
+                subtitle: 'Scale text size globally',
+                value: currentPrefs.fontScaleFactor,
+                min: 0.8,
+                max: 1.5,
+                divisions: 7,
+                label: '${(currentPrefs.fontScaleFactor * 100).toInt()}%',
+                icon: Icons.format_size_outlined,
+                onChanged: (v) => themeNotifier.updateTheme(
+                  (s) => s.copyWith(fontScaleFactor: v),
+                ),
+              ),
+              SettingsSliderTile(
+                title: 'Widget Scale',
+                subtitle: 'Scale the size of media cards',
+                value: currentPrefs.uiScaleFactor,
+                min: 0.8,
+                max: 1.5,
+                divisions: 7,
+                label: '${(currentPrefs.uiScaleFactor * 100).toInt()}%',
+                icon: Icons.aspect_ratio_outlined,
+                onChanged: (v) => themeNotifier.updateTheme(
+                  (s) => s.copyWith(uiScaleFactor: v),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          );
+        },
       ),
     );
   }
@@ -243,12 +330,12 @@ class UiSettingsScreen extends ConsumerWidget {
               const Divider(height: 1),
               const SizedBox(height: 4),
 
-              ...ContinueWatchingStyle.values.map(
+              ...ContinueReadingStyle.values.map(
                 (style) => _SelectionTile(
                   selected: current == style,
-                  icon: _cwStyleIcon(style),
+                  icon: _crStyleIcon(style),
                   title: style.displayName,
-                  subtitle: _cwStyleDesc(style),
+                  subtitle: _crStyleDesc(style),
                   selectedColor: cs.primary,
                   onTap: () => notifier.updateContinueReadingStyle(style),
                 ),
@@ -322,6 +409,16 @@ class UiSettingsScreen extends ConsumerWidget {
   static IconData _cwStyleIcon(ContinueWatchingStyle s) => switch (s) {
     ContinueWatchingStyle.classic => Icons.view_module_outlined,
     ContinueWatchingStyle.wideBanner => Icons.view_day_outlined,
+  };
+
+  static String _crStyleDesc(ContinueReadingStyle s) => switch (s) {
+    ContinueReadingStyle.classic => 'Vertical manga cover cards',
+    ContinueReadingStyle.wideBanner => 'Wide horizontal banner cards',
+  };
+
+  static IconData _crStyleIcon(ContinueReadingStyle s) => switch (s) {
+    ContinueReadingStyle.classic => Icons.view_module_outlined,
+    ContinueReadingStyle.wideBanner => Icons.view_day_outlined,
   };
 
   static String _episodeModeLabel(EpisodeViewMode m) => switch (m) {

@@ -4,13 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/domain/models/home_section.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/continue_watching_row.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/continue_reading_row.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/horizontal_section.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/local_library_row.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/media_card.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_media_row.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/rows/horizontal_section.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/rows/library_row.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/discovery_mode_sheet.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/sheets/discovery_mode_sheet.dart';
 import 'package:shonenx/features/discovery/providers/home_feed_provider.dart';
 import 'package:shonenx/features/discovery/providers/home_layout_provider.dart';
 import 'package:shonenx/features/library/providers/cloud_library_provider.dart';
@@ -19,8 +18,6 @@ import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dar
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
-
-import 'widgets/cloud_library_row.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -209,9 +206,7 @@ class HomeScreen extends ConsumerWidget {
 
     switch (section.type) {
       case HomeSectionType.continueMedia:
-        return mediaType == MediaType.ANIME
-            ? ContinueWatchingRow(title: section.title)
-            : ContinueReadingRow(title: section.title);
+        return ContinueMediaRow(title: section.title, type: mediaType);
 
       case HomeSectionType.libraryStatus:
         if (section.libraryStatus == null) return const SizedBox.shrink();
@@ -224,25 +219,16 @@ class HomeScreen extends ConsumerWidget {
                       .firstWhere((t) => t.type == section.targetTracker!)
                 : ref.watch(primaryTrackerProvider);
 
-            if (activeTracker.type == TrackerType.local) {
-              return LocalLibraryRow(
-                title: section.title,
-                status: section.libraryStatus!,
-                targetMediaType: mediaType,
-              );
-            } else {
-              return CloudLibraryRowWidget(
-                title: section.title,
-                status: section.libraryStatus!,
-                targetTracker: activeTracker.type,
-                targetMediaType: mediaType,
-              );
-            }
+            return LibraryRow(
+              title: section.title,
+              status: section.libraryStatus!,
+              targetTracker: activeTracker.type,
+              targetMediaType: mediaType,
+            );
           },
         );
 
       case HomeSectionType.trending:
-      case HomeSectionType.popular:
         return _buildFeedGroups(context, feedState, mediaType);
     }
   }

@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/utils/formatting.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/media_card.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/notifications/domain/models/notification_subscription.dart';
 import 'package:shonenx/features/notifications/presentation/widgets/notification_subscription_sheet.dart';
 import 'package:shonenx/features/notifications/providers/notification_subscriptions_provider.dart';

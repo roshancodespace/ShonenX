@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import 'package:shonenx/features/discovery/presentation/widgets/download_sheet.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/sheets/download_sheet.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/manual_match_sheet.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/sheets/manual_match_sheet.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';

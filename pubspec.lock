@@ -765,15 +765,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
-  iconsax_latest:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: patch-1
-      resolved-ref: "5b084b24487287fe43001e4300e4934303eac959"
-      url: "https://github.com/roshancodespace/iconsax-latest.git"
-    source: git
-    version: "1.0.0"
   image:
     dependency: transitive
     description:

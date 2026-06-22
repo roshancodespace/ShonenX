@@ -79,7 +79,9 @@ class _ExtensionsSettingsScreenState
             ),
           ],
         ),
-        floatingActionButton: _buildFab(context, manager, theme),
+        floatingActionButton: Builder(
+          builder: (context) => _buildFab(context, manager, theme),
+        ),
       ),
     );
   }

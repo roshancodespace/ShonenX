@@ -135,12 +135,52 @@ class DownloadsScreen extends ConsumerWidget {
 
 // ─── Download Queue Tile ──────────────────────────────────────────────────────
 
-class _DownloadTile extends ConsumerWidget {
+class _DownloadTile extends ConsumerStatefulWidget {
   final DownloadTask task;
   const _DownloadTile({required this.task});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DownloadTile> createState() => _DownloadTileState();
+}
+
+class _DownloadTileState extends ConsumerState<_DownloadTile> {
+  int _lastBytes = 0;
+  DateTime _lastTime = DateTime.now();
+  double _speedBps = 0.0;
+
+  @override
+  void didUpdateWidget(covariant _DownloadTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.task.status != DownloadStatus.downloading) {
+      _speedBps = 0.0;
+      return;
+    }
+    final now = DateTime.now();
+    final diff = now.difference(_lastTime);
+    if (diff.inSeconds >= 1) {
+      final bytesDiff = widget.task.downloadedBytes - _lastBytes;
+      if (bytesDiff >= 0) {
+        _speedBps = bytesDiff / diff.inSeconds;
+      }
+      _lastBytes = widget.task.downloadedBytes;
+      _lastTime = now;
+    } else if (widget.task.downloadedBytes < _lastBytes) {
+      // Reset if task restarted
+      _lastBytes = widget.task.downloadedBytes;
+      _lastTime = now;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _lastBytes = widget.task.downloadedBytes;
+    _lastTime = DateTime.now();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final task = widget.task;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final status = task.status;
@@ -170,7 +210,7 @@ class _DownloadTile extends ConsumerWidget {
                     ),
                   Icon(
                     _statusIcon(status),
-                    size: 20,
+                    size: 24,
                     color: _statusColor(status, colors),
                   ),
                 ],
@@ -259,9 +299,9 @@ class _DownloadTile extends ConsumerWidget {
   IconData _statusIcon(DownloadStatus s) => switch (s) {
     DownloadStatus.completed => Icons.check_circle_outline_rounded,
     DownloadStatus.failed => Icons.error_outline_rounded,
-    DownloadStatus.paused => Icons.pause_circle_outline_rounded,
+    DownloadStatus.paused => Icons.play_arrow_outlined,
     DownloadStatus.canceled => Icons.cancel_outlined,
-    _ => Icons.downloading_rounded,
+    _ => Icons.pause,
   };
 
   Color _statusColor(DownloadStatus s, ColorScheme c) => switch (s) {
@@ -279,6 +319,7 @@ class _DownloadTile extends ConsumerWidget {
   };
 
   String _buildStatusText() {
+    final task = widget.task;
     final name =
         task.status.name[0].toUpperCase() + task.status.name.substring(1);
     if (task.status == DownloadStatus.completed ||
@@ -293,14 +334,39 @@ class _DownloadTile extends ConsumerWidget {
     if (isM3U8) {
       final pct = (task.progress * 100).toStringAsFixed(0);
       return task.totalBytes > 0
-          ? '$name · $pct% · ${task.downloadedBytes}/${task.totalBytes} segs'
-          : '$name · ${task.downloadedBytes} segs';
+          ? '$name · $pct% · ${task.downloadedBytes}/${task.totalBytes} segs $_etaText'
+          : '$name · ${task.downloadedBytes} segs $_etaText';
     }
     if (task.totalBytes > 0) {
       final pct = (task.progress * 100).toStringAsFixed(0);
-      return '$name · $pct% · ${_mb(task.downloadedBytes)}/${_mb(task.totalBytes)} MB';
+      return '$name · $pct% · ${_mb(task.downloadedBytes)}/${_mb(task.totalBytes)} MB $_etaText';
     }
-    return '$name · ${_mb(task.downloadedBytes)} MB';
+    return '$name · ${_mb(task.downloadedBytes)} MB $_etaText';
+  }
+
+  String get _etaText {
+    if (widget.task.status != DownloadStatus.downloading || _speedBps <= 0)
+      return '';
+    if (widget.task.totalBytes > 0 &&
+        !widget.task.isM3u8 &&
+        !widget.task.url.contains('.m3u8')) {
+      final remainingBytes =
+          widget.task.totalBytes - widget.task.downloadedBytes;
+      final seconds = remainingBytes / _speedBps;
+      if (seconds.isInfinite || seconds.isNaN) return '';
+      return '· ${_formatDuration(Duration(seconds: seconds.toInt()))}';
+    }
+    return '· ${_mb(_speedBps.toInt())} MB/s';
+  }
+
+  String _formatDuration(Duration d) {
+    final parts = <String>[];
+    if (d.inHours > 0) parts.add('${d.inHours}h');
+    if (d.inMinutes.remainder(60) > 0)
+      parts.add('${d.inMinutes.remainder(60)}m');
+    if (d.inSeconds.remainder(60) > 0 || parts.isEmpty)
+      parts.add('${d.inSeconds.remainder(60)}s');
+    return parts.join(' ');
   }
 
   String _mb(int bytes) => (bytes / (1024 * 1024)).toStringAsFixed(1);

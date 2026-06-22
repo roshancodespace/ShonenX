@@ -328,13 +328,6 @@ class _SideNavBar extends StatelessWidget {
       tight: 12.0,
       cramped: 10.0,
     );
-    final itemVMargin = h.pick(
-      spacious: 5.0,
-      normal: 4.0,
-      compact: 3.0,
-      tight: 2.0,
-      cramped: 1.0,
-    );
     final gapBetween = h.pick(
       spacious: 14.0,
       normal: 12.0,
@@ -363,32 +356,29 @@ class _SideNavBar extends StatelessWidget {
                   children: List.generate(_destinations.length, (i) {
                     final active = navigationShell.currentIndex == i;
                     return Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: itemVMargin),
-                        child: InkWell(
-                          onTap: () => navigationShell.goBranch(i),
-                          borderRadius: BorderRadius.circular(
-                            GlobalScale.uiRoundness,
+                      child: InkWell(
+                        onTap: () => navigationShell.goBranch(i),
+                        borderRadius: BorderRadius.circular(
+                          GlobalScale.uiRoundness,
+                        ),
+                        focusColor: cs.primary.withValues(alpha: 0.2),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 350),
+                          curve: Curves.easeOutCubic,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: active ? cs.primary : Colors.transparent,
+                            borderRadius: BorderRadius.circular(
+                              GlobalScale.uiRoundness,
+                            ),
                           ),
-                          focusColor: cs.primary.withValues(alpha: 0.2),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 350),
-                            curve: Curves.easeOutCubic,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: active ? cs.primary : Colors.transparent,
-                              borderRadius: BorderRadius.circular(
-                                GlobalScale.uiRoundness,
-                              ),
-                            ),
-                            child: _PillContent(
-                              icon: _destinations[i].icon,
-                              label: _destinations[i].label,
-                              active: active,
-                              cs: cs,
-                              heightTier: h,
-                              forceHideLabel: hideNavLabels,
-                            ),
+                          child: _PillContent(
+                            icon: _destinations[i].icon,
+                            label: _destinations[i].label,
+                            active: active,
+                            cs: cs,
+                            heightTier: h,
+                            forceHideLabel: hideNavLabels,
                           ),
                         ),
                       ),

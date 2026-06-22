@@ -136,10 +136,7 @@ class AppBottomSheet extends StatelessWidget {
 
     return Container(
       margin: EdgeInsets.only(bottom: bottomInset),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainer,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
+      decoration: BoxDecoration(color: colorScheme.surfaceContainer),
       child: Padding(
         padding: padding,
         child: Column(
@@ -171,10 +168,7 @@ class AppBottomSheet extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (actions != null) ...[
-                  ...actions!,
-                  const SizedBox(width: 8),
-                ],
+                if (actions != null) ...[...actions!, const SizedBox(width: 8)],
                 IconButton.filledTonal(
                   style: IconButton.styleFrom(
                     backgroundColor: colorScheme.primary,

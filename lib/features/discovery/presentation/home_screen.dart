@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/providers/theme_prefs_provider.dart';
 import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/domain/models/home_section.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
@@ -68,7 +69,11 @@ class HomeScreen extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
+                            borderRadius: BorderRadius.circular(
+                              ref.watch(
+                                themePrefsProvider.select((s) => s.uiRoundness),
+                              ),
+                            ),
                             color: theme.colorScheme.primaryContainer,
                           ),
                           child: ClipOval(

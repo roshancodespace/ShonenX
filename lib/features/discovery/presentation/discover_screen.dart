@@ -102,9 +102,6 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
       useSafeArea: true,
       useRootNavigator: true,
       constraints: const BoxConstraints(maxWidth: 800),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       builder: (context) {
         return AdvancedSearchSheet(
           initialQuery: _query,
@@ -145,38 +142,26 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
               ],
             ),
             const SizedBox(height: 10),
-            TextField(
+            SearchBar(
+              constraints: BoxConstraints(minWidth: double.maxFinite),
               controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_query.isNotEmpty)
-                      IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _query = '');
-                        },
-                      ),
-                    IconButton(
-                      icon: const Icon(Icons.tune),
-                      tooltip: 'Advanced Filters',
-                      onPressed: () => _openAdvancedSearch(context),
-                    ),
-                    const SizedBox(width: 4),
-                  ],
+              hintText: 'Search...',
+              leading: const Icon(Icons.search),
+              trailing: [
+                if (_query.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _query = '');
+                    },
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.tune),
+                  tooltip: 'Advanced Filters',
+                  onPressed: () => _openAdvancedSearch(context),
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-              textInputAction: TextInputAction.search,
+              ],
               onSubmitted: (value) {
                 setState(() {
                   _query = value.trim();
@@ -282,7 +267,8 @@ class CategoryDiscoverScreen extends ConsumerStatefulWidget {
       _CategoryDiscoverScreenState();
 }
 
-class _CategoryDiscoverScreenState extends ConsumerState<CategoryDiscoverScreen> {
+class _CategoryDiscoverScreenState
+    extends ConsumerState<CategoryDiscoverScreen> {
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
@@ -290,10 +276,7 @@ class _CategoryDiscoverScreenState extends ConsumerState<CategoryDiscoverScreen>
       subtitle: 'Browse ${widget.category}',
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        child: _CategoryTabFeed(
-          type: widget.type,
-          category: widget.category,
-        ),
+        child: _CategoryTabFeed(type: widget.type, category: widget.category),
       ),
     );
   }
@@ -620,7 +603,7 @@ class _GenreFeedRow extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Text(genre, style: Theme.of(context).textTheme.titleLarge),
             ),
             const Expanded(child: Center(child: CircularProgressIndicator())),

@@ -16,8 +16,14 @@ import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 class AboutTabWidget extends ConsumerWidget {
   final UnifiedMedia media;
   final VoidCallback? onEpisodesTabRequested;
+  final double uiRoundness;
 
-  const AboutTabWidget({super.key, required this.media, this.onEpisodesTabRequested});
+  const AboutTabWidget({
+    super.key,
+    required this.media,
+    this.onEpisodesTabRequested,
+    required this.uiRoundness,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,7 +41,11 @@ class AboutTabWidget extends ConsumerWidget {
       items.add(
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: _AiringBanner(media: media, onEpisodesTabRequested: onEpisodesTabRequested),
+          child: _AiringBanner(
+            media: media,
+            onEpisodesTabRequested: onEpisodesTabRequested,
+            uiRoundness: uiRoundness,
+          ),
         ),
       );
     }
@@ -111,9 +121,14 @@ class AboutTabWidget extends ConsumerWidget {
 
 class _AiringBanner extends ConsumerWidget {
   final UnifiedMedia media;
+  final double uiRoundness;
   final VoidCallback? onEpisodesTabRequested;
 
-  const _AiringBanner({required this.media, this.onEpisodesTabRequested});
+  const _AiringBanner({
+    required this.media,
+    this.onEpisodesTabRequested,
+    required this.uiRoundness,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -122,14 +137,12 @@ class _AiringBanner extends ConsumerWidget {
     final episodeNum = nextEpisode is int ? nextEpisode : (1);
     final theme = Theme.of(context);
 
-    final subType = media.type == MediaType.MANGA ? SubscriptionType.mangaChapter : SubscriptionType.animeAiring;
+    final subType = media.type == MediaType.MANGA
+        ? SubscriptionType.mangaChapter
+        : SubscriptionType.animeAiring;
     final subscription = ref
         .watch(notificationSubscriptionsProvider)
-        .where(
-          (e) =>
-              e.type == subType &&
-              e.referenceId == media.id,
-        )
+        .where((e) => e.type == subType && e.referenceId == media.id)
         .firstOrNull;
 
     final bool isMissed =
@@ -146,7 +159,7 @@ class _AiringBanner extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(uiRoundness),
         border: Border.all(
           color: theme.colorScheme.primary.withValues(alpha: 0.2),
         ),

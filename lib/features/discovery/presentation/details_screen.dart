@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/providers/theme_prefs_provider.dart';
 import 'package:shonenx/features/auth/providers/auth_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/about_tab.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/episodes_tab.dart';
@@ -107,6 +108,9 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
         ),
       ),
     );
+    final uiRoundness = ref.watch(
+      themePrefsProvider.select((s) => s.uiRoundness),
+    );
 
     final displayMedia =
         detailsState.value?.merge(widget.media) ?? widget.media;
@@ -164,7 +168,9 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                               child: AspectRatio(
                                 aspectRatio: 2 / 3,
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(
+                                    uiRoundness,
+                                  ),
                                   child: Hero(
                                     tag: widget.tag,
                                     child: CachedNetworkImage(
@@ -257,7 +263,10 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
             ),
             actions: [
               const _DownloadAppBarButton(),
-              _TrackerAppBarButton(media: displayMedia),
+              _TrackerAppBarButton(
+                media: displayMedia,
+                uiRoundness: uiRoundness,
+              ),
             ],
           ),
         ],
@@ -267,6 +276,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
             AboutTabWidget(
               media: displayMedia,
               onEpisodesTabRequested: () => _tabController.animateTo(1),
+              uiRoundness: uiRoundness,
             ),
             EpisodesTabWidget(media: displayMedia),
           ],
@@ -313,8 +323,9 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
 
 class _TrackerAppBarButton extends ConsumerWidget {
   final UnifiedMedia media;
+  final double uiRoundness;
 
-  const _TrackerAppBarButton({required this.media});
+  const _TrackerAppBarButton({required this.media, required this.uiRoundness});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -338,6 +349,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
       tracker,
       trackingState,
       trackerLinksAsync,
+      uiRoundness,
     );
   }
 
@@ -348,6 +360,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
     TrackingService tracker,
     AsyncValue<TrackedListItem?> trackingState,
     AsyncValue<Map<TrackerType, TrackerMapping>> trackerLinksAsync,
+    double uiRoundness,
   ) {
     return trackingState.when(
       loading: () => _buildButton(
@@ -355,12 +368,14 @@ class _TrackerAppBarButton extends ConsumerWidget {
         label: 'Loading...',
         icon: Icons.hourglass_empty,
         isEnabled: false,
+        uiRoundness: uiRoundness,
       ),
       error: (err, stack) => _buildButton(
         theme,
         label: 'Sync Error',
         icon: Icons.sync_problem,
         onPressed: () => _openManager(context),
+        uiRoundness: uiRoundness,
       ),
       data: (listItem) {
         final links = trackerLinksAsync.value ?? {};
@@ -410,6 +425,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
                   ),
                 )
               : null,
+          uiRoundness: uiRoundness,
         );
       },
     );
@@ -419,6 +435,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
     ThemeData theme, {
     required String label,
     required IconData icon,
+    required double uiRoundness,
     bool isEnabled = true,
     VoidCallback? onPressed,
     VoidCallback? onLongPress,
@@ -427,8 +444,10 @@ class _TrackerAppBarButton extends ConsumerWidget {
       style: TextButton.styleFrom(
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.horizontal(left: Radius.circular(24)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.horizontal(
+            left: Radius.circular(uiRoundness),
+          ),
         ),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
@@ -450,9 +469,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => TrackerManagerSheet(
-        media: media,
-      ),
+      builder: (_) => TrackerManagerSheet(media: media),
     );
   }
 }

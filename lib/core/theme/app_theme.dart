@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shonenx/core/providers/theme_prefs_provider.dart';
 import 'package:shonenx/core/theme/exclusive_schemes.dart';
 
+typedef ThemeModifier =
+    ThemeData Function(ThemeData theme, ThemePrefsState prefs);
+
 class AppTheme {
   AppTheme._();
 
@@ -52,7 +55,7 @@ class AppTheme {
             swapLegacyOnMaterial3: true,
             visualDensity: FlexColorScheme.comfortablePlatformDensity,
             pageTransitionsTheme: _pageTransitionsTheme,
-            subThemesData: _subThemesData(prefs: prefs),
+            subThemesData: _subThemesData(prefs),
           )
         : FlexThemeData.light(
             scheme: exclusive == null ? prefs.flexScheme : null,
@@ -68,16 +71,18 @@ class AppTheme {
             swapLegacyOnMaterial3: true,
             visualDensity: FlexColorScheme.comfortablePlatformDensity,
             pageTransitionsTheme: _pageTransitionsTheme,
-            subThemesData: _subThemesData(prefs: prefs),
+            subThemesData: _subThemesData(prefs),
           );
 
-    return _withSnackBarTheme(baseTheme).copyWith(
-      shadowColor:
-          Colors.transparent, // Disable shadows for layered tonal depth
+    return _themeModifiers.fold(
+      baseTheme,
+      (theme, modifier) => modifier(theme, prefs),
     );
   }
 
-  static ThemeData _withSnackBarTheme(ThemeData theme) {
+  static final List<ThemeModifier> _themeModifiers = [_widgets, _shadows];
+
+  static ThemeData _widgets(ThemeData theme, ThemePrefsState prefs) {
     final cs = theme.colorScheme;
 
     return theme.copyWith(
@@ -87,7 +92,7 @@ class AppTheme {
         backgroundColor: cs.surfaceContainerHigh,
         insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(prefs.uiRoundness),
           side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.35)),
         ),
         contentTextStyle: theme.textTheme.bodyMedium?.copyWith(
@@ -96,10 +101,46 @@ class AppTheme {
         ),
         actionTextColor: cs.primary,
       ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: cs.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(prefs.uiRoundness),
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(prefs.uiRoundness),
+          ),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(prefs.uiRoundness),
+        ),
+      ),
+      searchBarTheme: SearchBarThemeData(
+        shape: WidgetStateProperty.all(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(prefs.uiRoundness),
+          ),
+        ),
+        padding: WidgetStateProperty.all(
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: InputBorder.none,
+        filled: true,
+      ),
     );
   }
 
-  static FlexSubThemesData _subThemesData({required ThemePrefsState prefs}) {
+  static ThemeData _shadows(ThemeData theme, ThemePrefsState prefs) {
+    return theme.copyWith(shadowColor: Colors.transparent);
+  }
+
+  static FlexSubThemesData _subThemesData(ThemePrefsState prefs) {
     return FlexSubThemesData(
       blendOnLevel: prefs.blendLevel,
       defaultRadius: prefs.uiRoundness,
@@ -107,7 +148,7 @@ class AppTheme {
       useMaterial3Typography: true,
       buttonMinSize: _buttonMinSize,
       fabUseShape: true,
-      fabAlwaysCircular: true,
+      fabAlwaysCircular: false,
       interactionEffects: true,
       tintedDisabledControls: true,
       unselectedToggleIsColored: true,
@@ -148,16 +189,14 @@ class AppPageTransition extends PageTransitionsBuilder {
       reverseCurve: Curves.easeInOutCubic,
     );
 
-    // Slide incoming page from right to left
     final slideIn = Tween<Offset>(
-      begin: const Offset(1.0, 0.0),
+      begin: const Offset(1, 0),
       end: Offset.zero,
     ).animate(enterCurve);
 
-    // Slide outgoing page to the left
     final slideOut = Tween<Offset>(
       begin: Offset.zero,
-      end: const Offset(-1.0, 0.0),
+      end: const Offset(-1, 0),
     ).animate(exitCurve);
 
     return SlideTransition(

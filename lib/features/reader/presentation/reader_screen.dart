@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:shonenx/core/providers/theme_prefs_provider.dart';
 
-import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
@@ -13,16 +13,16 @@ import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/features/reader/providers/preferred_scanlator_provider.dart';
 import 'package:shonenx/features/reader/providers/reader_prefs_provider.dart';
 import 'package:shonenx/features/reader/providers/reader_provider.dart';
-import 'package:shonenx/features/settings/presentation/reader_settings_screen.dart';
 import 'package:shonenx/features/tracking/engine/sync_engine.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
-import 'package:shonenx/source_engine/models/chapter_page.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 
 import 'widgets/chapters_bottom_sheet.dart';
+import 'widgets/reader_app_bar.dart';
 import 'widgets/reader_bottom_overlay.dart';
-import 'widgets/reader_image.dart';
+import 'widgets/reader_content.dart';
+import 'widgets/reader_theme_info.dart';
 
 class ReaderScreen extends ConsumerStatefulWidget {
   final ReaderModeOnline mode;
@@ -38,27 +38,38 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   int _currentPage = 0;
   int _totalPages = 0;
 
+  Offset? _pointerDownPos;
+
+  late final FocusNode _focusNode = FocusNode();
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
-  PageController? _pageController;
+  late final PageController _pageController;
+  final TransformationController _transformationController =
+      TransformationController();
   late final MatchArgs _matchArgs;
+
+  double _currentScale = 1.0;
 
   @override
   void initState() {
     super.initState();
     _enableImmersiveMode();
+    _focusNode.requestFocus();
     _itemPositionsListener.itemPositions.addListener(_onWebtoonScroll);
     _matchArgs = MatchArgs(
       mediaTitle: widget.mode.media.title.availableTitle,
       type: widget.mode.media.type,
     );
+    _pageController = PageController(initialPage: _currentPage);
   }
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _itemPositionsListener.itemPositions.removeListener(_onWebtoonScroll);
-    _pageController?.dispose();
+    _pageController.dispose();
+    _transformationController.dispose();
     _disableImmersiveMode();
     super.dispose();
   }
@@ -190,265 +201,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final readerStateAsync = ref.watch(readerProvider(widget.mode));
-    final readerPrefs = ref.watch(readerPrefsProvider);
-    final episodesState = ref.watch(episodesListProvider(_matchArgs)).value;
-
-    final themeInfo = _getThemeInfo(readerPrefs.backgroundColor);
-
-    return Scaffold(
-      backgroundColor: themeInfo.bgColor,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          MediaQuery.removePadding(
-            context: context,
-            removeTop: true,
-            removeBottom: true,
-            removeLeft: true,
-            removeRight: true,
-            child: GestureDetector(
-              onTap: _toggleOverlay,
-              child: _buildReaderContent(
-                readerStateAsync,
-                readerPrefs,
-                themeInfo.textColor,
-              ),
-            ),
-          ),
-
-          if (_showOverlay)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: _buildAppBar(themeInfo),
-            ),
-
-          if (_showOverlay && _totalPages > 0)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: ReaderBottomOverlay(
-                currentPage: _currentPage,
-                totalPages: _totalPages,
-                hasPrevChapter: _hasChapter(episodesState, next: false),
-                hasNextChapter: _hasChapter(episodesState, next: true),
-                currentEpisode: widget.mode.episode,
-                appBarBg: themeInfo.appBarBg,
-                textColor: themeInfo.textColor,
-                onPrevChapter: () => _skipToChapter(episodesState, next: false),
-                onNextChapter: () => _skipToChapter(episodesState, next: true),
-                onChaptersTap: () => _showChaptersSheet(episodesState),
-                onPageChanged: (newPage) =>
-                    _jumpToPage(newPage, readerPrefs.direction),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  ReaderThemeInfo _getThemeInfo(ReaderBackgroundColor bgColorPref) {
-    switch (bgColorPref) {
-      case ReaderBackgroundColor.white:
-        return ReaderThemeInfo(
-          bgColor: Colors.white,
-          appBarBg: Colors.white.withValues(alpha: 0.9),
-          textColor: Colors.black,
-        );
-      case ReaderBackgroundColor.darkGrey:
-        return ReaderThemeInfo(
-          bgColor: Colors.grey[900]!,
-          appBarBg: Colors.grey[900]!.withValues(alpha: 0.9),
-          textColor: Colors.white,
-        );
-      case ReaderBackgroundColor.black:
-        return ReaderThemeInfo(
-          bgColor: Colors.black,
-          appBarBg: Colors.black.withValues(alpha: 0.8),
-          textColor: Colors.white,
-        );
-    }
-  }
-
-  PreferredSizeWidget _buildAppBar(ReaderThemeInfo themeInfo) {
-    final theme = Theme.of(context);
-    final episodeNumber = widget.mode.episode.number;
-    final displayChapter = episodeNumber.toString().contains('.0')
-        ? episodeNumber.toInt().toString()
-        : episodeNumber.toString();
-
-    return AppBar(
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            widget.mode.media.title.availableTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontSize: 14,
-              color: themeInfo.textColor,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            'Chapter $displayChapter',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: themeInfo.textColor.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
-      ),
-      backgroundColor: themeInfo.appBarBg,
-      elevation: 0,
-      centerTitle: false,
-      iconTheme: IconThemeData(color: themeInfo.textColor),
-      leading: IconButton(
-        onPressed: context.pop,
-        icon: const Icon(Icons.arrow_back_ios_new_outlined),
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.settings_outlined),
-          onPressed: () => AppBottomSheet.show(
-            context: context,
-            title: 'Reader Settings',
-            child: const ReaderSettingsContent(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildReaderContent(
-    AsyncValue<ReaderState> stateAsync,
-    ReaderPrefState prefs,
-    Color textColor,
-  ) {
-    return stateAsync.when(
-      data: (state) {
-        if (state.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (state.error != null) {
-          return _buildErrorState(state.error!, textColor);
-        }
-        if (state.pages.isEmpty) {
-          return Center(
-            child: Text('No pages found.', style: TextStyle(color: textColor)),
-          );
-        }
-
-        _updateTotalPagesIfNeeded(state.pages.length);
-
-        final isWebtoon = prefs.direction == ReaderDirection.webtoon;
-        Widget content = isWebtoon
-            ? _buildWebtoonList(state.pages, prefs, textColor)
-            : _buildPageView(state.pages, prefs, textColor);
-
-        if (isWebtoon &&
-            (ResponsiveData.from(context).isDesktop ||
-                ResponsiveData.from(context).isTablet)) {
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: content,
-            ),
-          );
-        }
-
-        return content;
-      },
-      error: (err, _) => Center(
-        child: Text('Error: $err', style: const TextStyle(color: Colors.red)),
-      ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-    );
-  }
-
-  Widget _buildErrorState(String error, Color textColor) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 48),
-          const SizedBox(height: 16),
-          Text(
-            'Failed to load pages:\n$error',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: textColor),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () =>
-                ref.read(readerProvider(widget.mode).notifier).retry(),
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWebtoonList(
-    List<ChapterPage> pages,
-    ReaderPrefState prefs,
-    Color textColor,
-  ) {
-    return InteractiveViewer(
-      minScale: 1.0,
-      maxScale: 4.0,
-      child: ScrollablePositionedList.builder(
-        itemCount: pages.length,
-        itemScrollController: _itemScrollController,
-        itemPositionsListener: _itemPositionsListener,
-        itemBuilder: (context, index) {
-          final page = pages[index];
-          return ReaderImage(
-            url: page.url,
-            headers: page.headers ?? const {},
-            index: index,
-            scaleType: prefs.scaleType,
-            textColor: textColor,
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildPageView(
-    List<ChapterPage> pages,
-    ReaderPrefState prefs,
-    Color textColor,
-  ) {
-    _pageController ??= PageController(initialPage: _currentPage);
-    return PageView.builder(
-      controller: _pageController,
-      reverse: prefs.direction == ReaderDirection.rtl,
-      itemCount: pages.length,
-      onPageChanged: _onPageChanged,
-      itemBuilder: (context, index) {
-        final page = pages[index];
-        return Center(
-          child: InteractiveViewer(
-            minScale: 1.0,
-            maxScale: 4.0,
-            child: ReaderImage(
-              url: page.url,
-              headers: page.headers ?? const {},
-              index: index,
-              scaleType: prefs.scaleType,
-              textColor: textColor,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   void _updateTotalPagesIfNeeded(int count) {
     if (_totalPages != count) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -474,20 +226,161 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _itemScrollController.jumpTo(index: newPage);
       }
     } else {
-      _pageController?.jumpToPage(newPage);
+      _pageController.jumpToPage(newPage);
     }
     setState(() => _currentPage = newPage);
   }
-}
 
-class ReaderThemeInfo {
-  final Color bgColor;
-  final Color appBarBg;
-  final Color textColor;
+  ReaderThemeInfo _getThemeInfo(ReaderBackgroundColor bgColorPref) {
+    switch (bgColorPref) {
+      case ReaderBackgroundColor.white:
+        return ReaderThemeInfo(
+          bgColor: Colors.white,
+          appBarBg: Colors.white.withValues(alpha: 0.9),
+          textColor: Colors.black,
+        );
+      case ReaderBackgroundColor.darkGrey:
+        return ReaderThemeInfo(
+          bgColor: Colors.grey[900]!,
+          appBarBg: Colors.grey[900]!.withValues(alpha: 0.9),
+          textColor: Colors.white,
+        );
+      case ReaderBackgroundColor.black:
+        return ReaderThemeInfo(
+          bgColor: Colors.black,
+          appBarBg: Colors.black.withValues(alpha: 0.8),
+          textColor: Colors.white,
+        );
+    }
+  }
 
-  const ReaderThemeInfo({
-    required this.bgColor,
-    required this.appBarBg,
-    required this.textColor,
-  });
+  void _toggleZoom(TapDownDetails details) {
+    final tapPosition = details.localPosition;
+    final targetScale = (_currentScale < 2.0) ? 2.0 : 1.0;
+    _zoomAtPoint(tapPosition, targetScale);
+  }
+
+  void _zoomOnScroll(double scrollDelta, Offset pointerPosition) {
+    final zoomFactor = (scrollDelta < 0) ? 1.1 : 0.9;
+    final newScale = (_currentScale * zoomFactor).clamp(1.0, 4.0);
+    _zoomAtPoint(pointerPosition, newScale);
+  }
+
+  void _zoomAtPoint(Offset focalPoint, double targetScale) {
+    _currentScale = targetScale;
+    final scenePoint = _transformationController.toScene(focalPoint);
+    _transformationController.value = Matrix4.identity()
+      ..translate(focalPoint.dx, focalPoint.dy)
+      ..scale(_currentScale)
+      ..translate(-scenePoint.dx, -scenePoint.dy);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final readerStateAsync = ref.watch(readerProvider(widget.mode));
+    final readerPrefs = ref.watch(readerPrefsProvider);
+    final uiRoundness = ref.watch(
+      themePrefsProvider.select((s) => s.uiRoundness),
+    );
+    final episodesState = ref.watch(episodesListProvider(_matchArgs)).value;
+
+    final themeInfo = _getThemeInfo(readerPrefs.backgroundColor);
+
+    return Scaffold(
+      backgroundColor: themeInfo.bgColor,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            removeBottom: true,
+            removeLeft: true,
+            removeRight: true,
+            child: KeyboardListener(
+              focusNode: _focusNode,
+              child: Listener(
+                onPointerDown: (event) => _pointerDownPos = event.position,
+                onPointerUp: (event) {
+                  if (_pointerDownPos != null) {
+                    final distance =
+                        (event.position - _pointerDownPos!).distance;
+                    if (distance < 10) {
+                      _toggleOverlay();
+                    }
+                  }
+                },
+                child: ReaderContent(
+                  stateAsync: readerStateAsync,
+                  prefs: readerPrefs,
+                  textColor: themeInfo.textColor,
+                  itemScrollController: _itemScrollController,
+                  itemPositionsListener: _itemPositionsListener,
+                  pageController: _pageController,
+                  transformationController: _transformationController,
+                  onTotalPagesUpdated: _updateTotalPagesIfNeeded,
+                  onPageChanged: _onPageChanged,
+                  onZoomOnScroll: _zoomOnScroll,
+                  onToggleZoom: _toggleZoom,
+                  onRetry: () =>
+                      ref.read(readerProvider(widget.mode).notifier).retry(),
+                ),
+              ),
+            ),
+          ),
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            top: _showOverlay ? 0 : -100,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              ignoring: !_showOverlay,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 250),
+                opacity: _showOverlay ? 1.0 : 0.0,
+                child: ReaderAppBar(
+                  mediaTitle: widget.mode.media.title.availableTitle,
+                  episodeNumber: widget.mode.episode.number,
+                  themeInfo: themeInfo,
+                ),
+              ),
+            ),
+          ),
+          if (_totalPages > 0)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              bottom: _showOverlay ? 0 : -150,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                ignoring: !_showOverlay,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 250),
+                  opacity: _showOverlay ? 1.0 : 0.0,
+                  child: ReaderBottomOverlay(
+                    currentPage: _currentPage,
+                    totalPages: _totalPages,
+                    hasPrevChapter: _hasChapter(episodesState, next: false),
+                    hasNextChapter: _hasChapter(episodesState, next: true),
+                    currentEpisode: widget.mode.episode,
+                    appBarBg: themeInfo.appBarBg,
+                    textColor: themeInfo.textColor,
+                    uiRoundness: uiRoundness,
+                    onPrevChapter: () =>
+                        _skipToChapter(episodesState, next: false),
+                    onNextChapter: () =>
+                        _skipToChapter(episodesState, next: true),
+                    onChaptersTap: () => _showChaptersSheet(episodesState),
+                    onPageChanged: (newPage) =>
+                        _jumpToPage(newPage, readerPrefs.direction),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }

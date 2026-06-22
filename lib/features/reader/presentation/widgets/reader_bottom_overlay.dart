@@ -13,6 +13,7 @@ class ReaderBottomOverlay extends StatelessWidget {
   final void Function() onNextChapter;
   final void Function() onChaptersTap;
   final void Function(int) onPageChanged;
+  final double uiRoundness;
 
   const ReaderBottomOverlay({
     super.key,
@@ -27,114 +28,111 @@ class ReaderBottomOverlay extends StatelessWidget {
     required this.onNextChapter,
     required this.onChaptersTap,
     required this.onPageChanged,
+    required this.uiRoundness,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final formattedChapterNum = currentEpisode.number.toString().contains('.0')
-        ? currentEpisode.number.toInt()
-        : currentEpisode.number;
 
-    return Positioned(
-      left: 16,
-      right: 16,
-      bottom: MediaQuery.of(context).padding.bottom + 24,
-      child: SafeArea(
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 400),
-            decoration: BoxDecoration(
-              color: appBarBg,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      onPressed: hasPrevChapter ? onPrevChapter : null,
-                      icon: const Icon(Icons.skip_previous_rounded),
-                      color: textColor,
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).padding.bottom + 10,
+      ),
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(
+            maxWidth: 320,
+          ), // More compact width
+          decoration: BoxDecoration(
+            color: appBarBg,
+            borderRadius: BorderRadius.circular(uiRoundness),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    '${currentPage + 1}',
+                    style: TextStyle(
+                      color: textColor.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
                     ),
-                    TextButton.icon(
-                      onPressed: onChaptersTap,
-                      icon: Icon(
-                        Icons.format_list_bulleted_rounded,
-                        color: textColor,
-                      ),
-                      label: Text(
-                        'Chapter $formattedChapterNum',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: hasNextChapter ? onNextChapter : null,
-                      icon: const Icon(Icons.skip_next_rounded),
-                      color: textColor,
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    children: [
-                      Text(
-                        '${currentPage + 1}',
-                        style: TextStyle(
-                          color: textColor.withValues(alpha: 0.7),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                      Expanded(
-                        child: SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            trackHeight: 3,
-                            thumbShape: const RoundSliderThumbShape(
-                              enabledThumbRadius: 5,
-                            ),
-                            overlayShape: const RoundSliderOverlayShape(
-                              overlayRadius: 12,
-                            ),
-                          ),
-                          child: Slider(
-                            value: currentPage.toDouble(),
-                            min: 0,
-                            max: (totalPages - 1).toDouble(),
-                            divisions: totalPages > 1 ? totalPages - 1 : 1,
-                            activeColor: theme.colorScheme.primary,
-                            inactiveColor: textColor.withValues(alpha: 0.2),
-                            onChanged: (value) => onPageChanged(value.toInt()),
-                          ),
-                        ),
-                      ),
-                      Text(
-                        '$totalPages',
-                        style: TextStyle(
-                          color: textColor.withValues(alpha: 0.7),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
                   ),
-                ),
-              ],
-            ),
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 2,
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 5,
+                        ),
+                        overlayShape: const RoundSliderOverlayShape(
+                          overlayRadius: 10,
+                        ),
+                        activeTrackColor: theme.colorScheme.primary,
+                        inactiveTrackColor: textColor.withValues(alpha: 0.15),
+                        thumbColor: theme.colorScheme.primary,
+                      ),
+                      child: Slider(
+                        value: currentPage.toDouble(),
+                        min: 0,
+                        max: (totalPages > 1 ? totalPages - 1 : 1).toDouble(),
+                        divisions: totalPages > 1 ? totalPages - 1 : 1,
+                        onChanged: (value) => onPageChanged(value.toInt()),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '$totalPages',
+                    style: TextStyle(
+                      color: textColor.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    onPressed: hasPrevChapter ? onPrevChapter : null,
+                    icon: const Icon(Icons.skip_previous_rounded),
+                    color: textColor,
+                    iconSize: 26,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  IconButton(
+                    onPressed: onChaptersTap,
+                    icon: const Icon(Icons.format_list_bulleted_rounded),
+                    color: textColor,
+                    iconSize: 24,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  IconButton(
+                    onPressed: hasNextChapter ? onNextChapter : null,
+                    icon: const Icon(Icons.skip_next_rounded),
+                    color: textColor,
+                    iconSize: 26,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

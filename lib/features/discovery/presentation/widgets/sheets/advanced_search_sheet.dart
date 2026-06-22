@@ -95,24 +95,18 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextField(
+          SearchBar(
             controller: _queryController,
-            decoration: InputDecoration(
-              hintText: 'Search ${widget.type.name.toLowerCase()}...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _queryController.text.isNotEmpty
-                  ? IconButton(
+            hintText: 'Search ${widget.type.name.toLowerCase()}...',
+            leading: const Icon(Icons.search),
+            trailing: _queryController.text.isNotEmpty
+                ? [
+                    IconButton(
                       icon: const Icon(Icons.clear),
                       onPressed: _queryController.clear,
-                    )
-                  : null,
-              filled: true,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            ),
+                    ),
+                  ]
+                : null,
             textInputAction: TextInputAction.search,
             onSubmitted: (_) => _submit(),
           ),
@@ -207,22 +201,21 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                           ),
                           const SizedBox(height: 12),
                         ],
-                        TextField(
+                        SearchBar(
                           controller: _tagQueryController,
-                          decoration: InputDecoration(
-                            hintText: 'Search tags to add...',
-                            prefixIcon: const Icon(Icons.tag),
-                            isDense: true,
-                            suffixIcon: _tagQueryController.text.isNotEmpty
-                                ? IconButton(
+                          hintText: 'Search tags to add...',
+                          leading: const Icon(Icons.tag),
+                          trailing: _tagQueryController.text.isNotEmpty
+                              ? [
+                                  IconButton(
                                     icon: const Icon(Icons.clear, size: 20),
-                                    onPressed: _tagQueryController.clear,
-                                  )
-                                : null,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
+                                    onPressed: () {
+                                      _tagQueryController.clear();
+                                      setState(() {});
+                                    },
+                                  ),
+                                ]
+                              : null,
                         ),
                         if (filteredTags.isNotEmpty) ...[
                           const SizedBox(height: 8),

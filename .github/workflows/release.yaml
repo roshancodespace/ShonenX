@@ -1,11 +1,14 @@
 name: Release Build
 
+# ---------------------------------------------------------
+# TRIGGERS: When does this workflow run?
+# ---------------------------------------------------------
 on:
   push:
     tags:
-      - "v*"
+      - "v*" # Runs automatically when you push a tag starting with 'v' (e.g., v1.0.0)
 
-  workflow_dispatch:
+  workflow_dispatch: # Allows you to run this manually from the Actions tab
     inputs:
       build_android:
         type: boolean
@@ -37,10 +40,14 @@ on:
         type: string
         default: "auto"
 
+# Give the workflow permission to write to your repository (needed for creating releases)
 permissions:
   contents: write
 
 jobs:
+  # ---------------------------------------------------------
+  # SETUP: Figure out what version/tag we are building
+  # ---------------------------------------------------------
   resolve-release-tag:
     runs-on: ubuntu-latest
     outputs:
@@ -64,11 +71,13 @@ jobs:
           requested="${REQUESTED_TAG:-auto}"
           requested="$(echo "$requested" | xargs)"
 
+          # Check if the tag already exists
           tag_exists_or_released() {
             local tag="$1"
             git rev-parse -q --verify "refs/tags/$tag" >/dev/null || gh release view "$tag" >/dev/null 2>&1
           }
 
+          # Find the latest alpha version if we need one
           latest_alpha_for_base() {
             local prefix="$1"
             {
@@ -77,6 +86,7 @@ jobs:
             } | sed -n "s/^$(printf '%s' "$prefix" | sed 's/[.[\*^$()+?{}|\\]/\\&/g')-alpha\.\([0-9][0-9]*\)$/\1/p" | sort -n | tail -1
           }
 
+          # Logic to determine the final tag name based on pubspec.yaml or manual input
           if [ "${{ github.event_name }}" = "push" ]; then
             resolved="$GITHUB_REF_NAME"
           elif [ -z "$requested" ] || [ "$requested" = "auto" ]; then
@@ -114,9 +124,12 @@ jobs:
           echo "tag_name=$resolved" >> "$GITHUB_OUTPUT"
           echo "is_prerelease=$prerelease" >> "$GITHUB_OUTPUT"
 
-  # ---------------- ANDROID ----------------
+  # ---------------------------------------------------------
+  # ANDROID BUILD
+  # ---------------------------------------------------------
   build-android:
     needs: resolve-release-tag
+    # Run if triggered by a push, OR if triggered manually and 'build_android' is true
     if: github.event_name == 'push' || github.event.inputs.build_android == 'true'
     runs-on: ubuntu-latest
 
@@ -124,8 +137,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Init specific submodule
-        run: |
-          git submodule update --init packages/anymex_extension_bridge
+        run: git submodule update --init packages/anymex_extension_bridge
 
       - uses: actions/setup-java@v4
         with:
@@ -137,9 +149,9 @@ jobs:
           flutter-version: 3.35.7
           cache: true
 
+      # Setup Android signing credentials securely
       - name: Decode keystore
-        run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
       - name: Create key.properties
         run: |
@@ -150,6 +162,7 @@ jobs:
           storeFile=upload-keystore.jks
           EOF
 
+      # Inject API keys into a temporary JSON file for compilation
       - name: Create env file
         run: |
           cat > keys.json <<EOF
@@ -162,25 +175,28 @@ jobs:
           }
           EOF
 
-      - run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
+      - name: Get Dependencies
+        run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
 
-      - run: >-
-          flutter build apk --release --split-per-abi
-          --dart-define-from-file=keys.json
+      - name: Build APKs
+        run: flutter build apk --release --split-per-abi --dart-define-from-file=keys.json
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: android-apks
           path: build/app/outputs/flutter-apk/*.apk
 
-  # ---------------- LINUX ----------------
+  # ---------------------------------------------------------
+  # LINUX BUILD
+  # ---------------------------------------------------------
   build-linux:
     needs: resolve-release-tag
     if: github.event_name == 'push' || github.event.inputs.build_linux == 'true'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install dependencies
+      - name: Install Linux dependencies
         run: |
           sudo add-apt-repository universe
           sudo apt-get update
@@ -189,8 +205,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Init specific submodule
-        run: |
-          git submodule update --init packages/anymex_extension_bridge
+        run: git submodule update --init packages/anymex_extension_bridge
 
       - uses: subosito/flutter-action@v2
         with:
@@ -209,16 +224,24 @@ jobs:
           }
           EOF
 
-      - run: flutter config --enable-linux-desktop
-      - run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
+      - name: Enable Linux config
+        run: flutter config --enable-linux-desktop
+      
+      - name: Get Dependencies
+        run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
 
-      - run: flutter build linux --release --dart-define-from-file=keys.json
-      - uses: actions/upload-artifact@v4
+      - name: Build Linux app
+        run: flutter build linux --release --dart-define-from-file=keys.json
+      
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: linux-bundle
           path: build/linux/x64/release/bundle
 
-  # ---------------- WINDOWS ----------------
+  # ---------------------------------------------------------
+  # WINDOWS BUILD
+  # ---------------------------------------------------------
   build-windows:
     needs: resolve-release-tag
     if: github.event_name == 'push' || github.event.inputs.build_windows == 'true'
@@ -228,15 +251,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Init specific submodule
-        run: |
-          git submodule update --init packages/anymex_extension_bridge
+        run: git submodule update --init packages/anymex_extension_bridge
 
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.35.7
           cache: true
 
-      - name: Enable Windows
+      - name: Enable Windows config
         run: flutter config --enable-windows-desktop
 
       - name: Create env file
@@ -252,22 +274,81 @@ jobs:
           }
           EOF
 
-      - run: flutter pub upgrade
+      - name: Get Dependencies
+        run: flutter pub upgrade
 
-      - run: flutter build windows --release --dart-define-from-file=keys.json
+      - name: Build Windows app
+        run: flutter build windows --release --dart-define-from-file=keys.json
 
       - name: Build installer (InnoBundle)
         run: dart run inno_bundle --release
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: windows-build
+          name: windows-installer # Fixed: Changed this so it matches the download step below
           path: build/windows/x64/runner/Release
 
-  # ---------------- NOTIFY ----------------
-  notify:
+  # ---------------------------------------------------------
+  # CREATE GITHUB RELEASE
+  # ---------------------------------------------------------
+  create-release:
+    # Wait for the tag resolution and all builds to finish
     needs: [resolve-release-tag, build-android, build-linux, build-windows]
+    runs-on: ubuntu-latest
+    
+    # Only run if nothing failed or got cancelled in the previous jobs
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+
+    steps:
+      - name: Download Android artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apks
+          path: artifacts/android
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-bundle
+          path: artifacts/linux
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          path: artifacts/windows
+
+      - name: Zip Linux bundle
+        run: |
+          cd artifacts
+          zip -r ShonenX-linux.zip linux
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.resolve-release-tag.outputs.tag_name }}
+          name: ${{ needs.resolve-release-tag.outputs.tag_name }}
+          prerelease: ${{ needs.resolve-release-tag.outputs.is_prerelease == 'true' }}
+          generate_release_notes: true
+          # Grab all our compiled files and attach them to the release
+          files: |
+            artifacts/android/*.apk
+            artifacts/ShonenX-linux.zip
+            artifacts/windows/**/*.exe
+            artifacts/windows/**/*.msi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------------
+  # DISCORD NOTIFICATION
+  # ---------------------------------------------------------
+  notify:
+    # Wait for all the build jobs before notifying
+    needs: [resolve-release-tag, build-android, build-linux, build-windows]
+    # Only notify if builds were successful AND user opted-in (or it was an auto push)
     if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (github.event_name == 'push' || github.event.inputs.notify_discord == 'true')
+    
     uses: ./.github/workflows/Notify.yml
     with:
       notify_everyone: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.notify_everyone == 'true' || true }}

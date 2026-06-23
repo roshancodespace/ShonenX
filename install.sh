@@ -1,160 +1,208 @@
 #!/usr/bin/env bash
-# ShonenX Universal Linux Installer / Uninstaller
-# Author: Roshan Kumar (roshancodespace)
 
-set -e
+set -euo pipefail
 
-# Configuration
 REPO="roshancodespace/ShonenX"
-INSTALL_DIR="$HOME/.local/share/ShonenX"
-BIN_DIR="$HOME/.local/bin"
-DESKTOP_DIR="$HOME/.local/share/applications"
-ICON_DIR="$HOME/.local/share/icons/hicolor/512x512/apps"
+EXE_NAME="shonenx"
 ICON_URL="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/icons/app_icon-modified-2.png"
-EXECUTABLE_NAME="shonenx"
-DESKTOP_FILE="shonenx.desktop"
+INSTALL_DIR="$HOME/.local/share/ShonenX"
 
-# Colors for UI
+# Set paths dynamically
+if [ -n "${TERMUX_VERSION:-}" ]; then
+    BIN_DIR="$PREFIX/bin"
+    DESKTOP_DIR=""
+    ICON_DIR=""
+else
+    BIN_DIR="$HOME/.local/bin"
+    DESKTOP_DIR="$HOME/.local/share/applications"
+    ICON_DIR="$HOME/.local/share/icons/hicolor/512x512/apps"
+fi
+
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-echo -e "${BLUE}=======================================${NC}"
-echo -e "${GREEN}        ShonenX Linux Manager          ${NC}"
-echo -e "${BLUE}=======================================${NC}"
-echo ""
+msg() { echo -e "${BLUE}[*] $1${NC}"; }
+success() { echo -e "${GREEN}[✓] $1${NC}"; }
+warn() { echo -e "${YELLOW}[!] $1${NC}"; }
+error() { echo -e "${RED}[✗] $1${NC}"; exit 1; }
 
-# Ensure required commands
-command -v curl >/dev/null 2>&1 || { echo -e "${RED}Error: curl is required but not installed.${NC}"; exit 1; }
-command -v jq >/dev/null 2>&1 || { echo -e "${RED}Error: jq is required but not installed. Please install jq first.${NC}"; exit 1; }
-command -v unzip >/dev/null 2>&1 || { echo -e "${RED}Error: unzip is required but not installed. Please install unzip first.${NC}"; exit 1; }
+bootstrap_deps() {
+    local missing=()
+    for cmd in curl jq unzip; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            missing+=("$cmd")
+        fi
+    done
 
-install_app() {
-    echo -e "${YELLOW}[1/5] Fetching latest release info...${NC}"
-    LATEST_RELEASE=$(curl -s "https://api.github.com/repos/$REPO/releases/latest")
-    
-    DOWNLOAD_URL=$(echo "$LATEST_RELEASE" | jq -r '.assets[] | select(.name=="linux-bundle.zip") | .browser_download_url')
-    VERSION_TAG=$(echo "$LATEST_RELEASE" | jq -r '.tag_name')
-
-    if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" == "null" ]; then
-        echo -e "${RED}Error: Could not find 'linux-bundle.zip' in the latest release ($VERSION_TAG).${NC}"
-        exit 1
+    # Install core tools if missing
+    if [ ${#missing[@]} -gt 0 ]; then
+        msg "Installing missing tools: ${missing[*]}..."
+        if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y "${missing[@]}"
+        elif command -v pacman >/dev/null 2>&1; then
+            sudo pacman -Sy --noconfirm "${missing[@]}"
+        elif command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y "${missing[@]}"
+        elif command -v zypper >/dev/null 2>&1; then
+            sudo zypper install -y "${missing[@]}"
+        elif [ -n "${TERMUX_VERSION:-}" ] && command -v pkg >/dev/null 2>&1; then
+            pkg install -y "${missing[@]}"
+        else
+            error "Install these manually first: ${missing[*]}"
+        fi
     fi
 
-    echo -e "${GREEN}Found Version $VERSION_TAG${NC}"
-    
-    echo -e "${YELLOW}[2/5] Downloading Linux bundle...${NC}"
-    TEMP_ZIP="/tmp/shonenx_linux_bundle.zip"
-    curl -L --progress-bar "$DOWNLOAD_URL" -o "$TEMP_ZIP"
-
-    echo -e "${YELLOW}[3/5] Extracting to $INSTALL_DIR...${NC}"
-    mkdir -p "$INSTALL_DIR"
-    # Clear old install if it exists to avoid conflicts
-    rm -rf "$INSTALL_DIR"/*
-    unzip -q -o "$TEMP_ZIP" -d "$INSTALL_DIR"
-    rm "$TEMP_ZIP"
-
-    # Some zip bundles extract into a subfolder, let's find the executable
-    ACTUAL_EXE=$(find "$INSTALL_DIR" -type f -name "$EXECUTABLE_NAME" | head -n 1)
-    
-    if [ -z "$ACTUAL_EXE" ]; then
-        echo -e "${RED}Error: Could not find executable '$EXECUTABLE_NAME' inside the extracted files.${NC}"
-        exit 1
+    # Check for libmpv / mpv shared library
+    local has_mpv=0
+    if ldconfig -p 2>/dev/null | grep -q "libmpv"; then has_mpv=1; fi
+    if [ -f /usr/lib/libmpv.so ] || [ -f /usr/lib64/libmpv.so ] || [ -f /usr/local/lib/libmpv.so ] || [ -f "${PREFIX:-}/lib/libmpv.so" ]; then 
+        has_mpv=1
     fi
 
-    chmod +x "$ACTUAL_EXE"
+    if [ "$has_mpv" -eq 0 ]; then
+        msg "libmpv not found. Installing libmpv/mpv fallback..."
+        if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get install -y libmpv-dev || sudo apt-get install -y mpv
+        elif command -v pacman >/dev/null 2>&1; then
+            sudo pacman -S --noconfirm mpv
+        elif command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y mpv-libs || sudo dnf install -y mpv
+        elif command -v zypper >/dev/null 2>&1; then
+            sudo zypper install -y libmpv1 || sudo zypper install -y mpv
+        elif [ -n "${TERMUX_VERSION:-}" ] && command -v pkg >/dev/null 2>&1; then
+            pkg install -y mpv
+        else
+            warn "Could not auto-install libmpv. Please ensure mpv/libmpv is installed manually."
+        fi
+    fi
+}
 
-    echo -e "${YELLOW}[4/5] Setting up system paths...${NC}"
+setup_path() {
+    if [ -n "${TERMUX_VERSION:-}" ] || [[ ":$PATH:" == *":$BIN_DIR:"* ]]; then
+        return
+    fi
+
+    warn "$BIN_DIR is not in your PATH."
+    read -p "Add it to your shell configurations automatically? (y/N): " add_path
+    if [[ "$add_path" =~ ^[yY](es)?$ ]]; then
+        [ -f "$HOME/.bashrc" ] && ! grep -q "$BIN_DIR" "$HOME/.bashrc" && echo -e "\nexport PATH=\"\$PATH:$BIN_DIR\"" >> "$HOME/.bashrc" && success "Updated ~/.bashrc"
+        [ -f "$HOME/.zshrc" ] && ! grep -q "$BIN_DIR" "$HOME/.zshrc" && echo -e "\nexport PATH=\"\$PATH:$BIN_DIR\"" >> "$HOME/.zshrc" && success "Updated ~/.zshrc"
+        
+        if [ -d "$HOME/.config/fish" ]; then
+            mkdir -p "$HOME/.config/fish"
+            touch "$HOME/.config/fish/config.fish"
+            if ! grep -q "$BIN_DIR" "$HOME/.config/fish/config.fish"; then
+                echo -e "\n# ShonenX Path\nfish_add_path $BIN_DIR" >> "$HOME/.config/fish/config.fish"
+                success "Updated ~/.config/fish/config.fish"
+            fi
+        fi
+        warn "Restart your terminal or source your config to apply PATH updates."
+    fi
+}
+
+install() {
+    bootstrap_deps
+    
+    msg "Checking latest release from GitHub..."
+    local release_json
+    release_json=$(curl -s "https://api.github.com/repos/$REPO/releases/latest")
+    
+    local download_url
+    download_url=$(echo "$release_json" | jq -r '
+        .assets[] | 
+        select(.name | ascii_downcase | (contains("linux") and endswith(".zip"))) | 
+        .browser_download_url
+    ' | head -n 1)
+
+    local version
+    version=$(echo "$release_json" | jq -r '.tag_name')
+
+    if [ -z "$download_url" ] || [ "$download_url" = "null" ]; then
+        error "No linux zip asset found in release $version"
+    fi
+
+    success "Found version: $version"
+    
+    local tmp_zip="/tmp/shonenx.zip"
+    msg "Downloading..."
+    curl -L --progress-bar "$download_url" -o "$tmp_zip"
+
+    msg "Extracting files..."
+    rm -rf "$INSTALL_DIR" && mkdir -p "$INSTALL_DIR"
+    unzip -q -o "$tmp_zip" -d "$INSTALL_DIR"
+    rm -f "$tmp_zip"
+
+    # Flatten the directory if files are nested inside a 'linux' folder
+    if [ -d "$INSTALL_DIR/linux" ]; then
+        find "$INSTALL_DIR/linux" -maxdepth 1 -mindepth 1 -exec mv -t "$INSTALL_DIR" {} +
+        rmdir "$INSTALL_DIR/linux"
+    fi
+
+    local exe_path
+    exe_path=$(find "$INSTALL_DIR" -type f -name "$EXE_NAME" | head -n 1)
+    
+    if [ -z "$exe_path" ]; then
+        error "Executable '$EXE_NAME' not found in archive"
+    fi
+    chmod +x "$exe_path"
+
     mkdir -p "$BIN_DIR"
-    ln -sf "$ACTUAL_EXE" "$BIN_DIR/$EXECUTABLE_NAME"
+    ln -sf "$exe_path" "$BIN_DIR/$EXE_NAME"
 
-    # Add ~/.local/bin to PATH if not already present
-    if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
-        echo -e "${YELLOW}Note: $BIN_DIR is not in your PATH. You may need to add it to your ~/.bashrc or ~/.zshrc${NC}"
-    fi
+    if [ -n "$DESKTOP_DIR" ]; then
+        msg "Creating desktop shortcuts..."
+        mkdir -p "$ICON_DIR" "$DESKTOP_DIR"
+        curl -sL "$ICON_URL" -o "$ICON_DIR/shonenx.png" || warn "Icon download failed, skipping shortcut icon."
 
-    echo -e "${YELLOW}[5/5] Creating Desktop Entry & Icon...${NC}"
-    mkdir -p "$ICON_DIR"
-    curl -sL "$ICON_URL" -o "$ICON_DIR/shonenx.png" || echo -e "${RED}Failed to download icon, using fallback.${NC}"
-
-    mkdir -p "$DESKTOP_DIR"
-    cat <<EOF > "$DESKTOP_DIR/$DESKTOP_FILE"
+        cat <<EOF > "$DESKTOP_DIR/shonenx.desktop"
 [Desktop Entry]
 Version=1.0
 Name=ShonenX
 Comment=Anilist & MAL Client for Anime and Manga
-Exec=$BIN_DIR/$EXECUTABLE_NAME
+Exec=$BIN_DIR/$EXE_NAME
 Icon=$ICON_DIR/shonenx.png
 Terminal=false
 Type=Application
 Categories=Network;Entertainment;
 EOF
+        command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP_DIR" || true
+    fi
 
-    # Update desktop database if possible
-    command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP_DIR" || true
-
-    echo ""
-    echo -e "${GREEN}=======================================${NC}"
-    echo -e "${GREEN}   Installation Completed Successfully!${NC}"
-    echo -e "${GREEN}=======================================${NC}"
-    echo -e "You can now launch ShonenX from your application menu,"
-    echo -e "or by typing '${BLUE}shonenx${NC}' in your terminal."
+    setup_path
+    success "Done. Run using: $EXE_NAME"
 }
 
-uninstall_app() {
-    echo -e "${YELLOW}Starting Uninstallation...${NC}"
-
-    echo "Removing Installation Directory ($INSTALL_DIR)..."
+uninstall() {
+    warn "Removing ShonenX..."
     rm -rf "$INSTALL_DIR"
+    rm -f "$BIN_DIR/$EXE_NAME"
 
-    echo "Removing Executable Symlink ($BIN_DIR/$EXECUTABLE_NAME)..."
-    rm -f "$BIN_DIR/$EXECUTABLE_NAME"
+    if [ -n "$DESKTOP_DIR" ]; then
+        rm -f "$DESKTOP_DIR/shonenx.desktop"
+        rm -f "$ICON_DIR/shonenx.png"
+        command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP_DIR" || true
+    fi
 
-    echo "Removing Desktop Entry ($DESKTOP_DIR/$DESKTOP_FILE)..."
-    rm -f "$DESKTOP_DIR/$DESKTOP_FILE"
-
-    echo "Removing App Icon ($ICON_DIR/shonenx.png)..."
-    rm -f "$ICON_DIR/shonenx.png"
-
-    # Update desktop database if possible
-    command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP_DIR" || true
-
-    echo ""
-    echo -e "${GREEN}=======================================${NC}"
-    echo -e "${GREEN}   Uninstallation Completed!           ${NC}"
-    echo -e "${GREEN}=======================================${NC}"
-    echo -e "All ShonenX system files have been removed."
-    echo -e "Note: User data/cache in ~/.config or ~/.local/share/shonenx_data is preserved."
+    success "Uninstalled successfully. Configuration metrics preserved."
 }
 
-echo "Please select an option:"
-echo -e "  ${GREEN}[1] Install / Update ShonenX${NC}"
-echo -e "  ${RED}[2] Uninstall ShonenX${NC}"
-echo "  [3] Exit"
+echo "ShonenX Launcher Utilities"
+echo " 1) Install / Update"
+echo " 2) Uninstall"
+echo " 3) Exit"
 echo ""
+read -p "Action [1-3]: " choice
 
-read -p "Selection (1-3): " choice
-
-case $choice in
-    1)
-        install_app
+case "$choice" in
+    1) install ;;
+    2) 
+        read -p "Are you sure? (y/N): " confirm
+        [[ "$confirm" =~ ^[yY](es)?$ ]] && uninstall || msg "Aborted."
         ;;
-    2)
-        read -p "Are you sure you want to uninstall ShonenX? (y/N): " confirm
-        if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
-            uninstall_app
-        else
-            echo "Uninstallation cancelled."
-        fi
-        ;;
-    3)
-        echo "Exiting..."
-        exit 0
-        ;;
-    *)
-        echo -e "${RED}Invalid selection.${NC}"
-        exit 1
-        ;;
+    3) exit 0 ;;
+    *) error "Invalid selection." ;;
 esac

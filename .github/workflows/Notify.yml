@@ -58,7 +58,6 @@ jobs:
             echo "NOTIFY_EVERYONE=true" >> $GITHUB_ENV
             echo "INCLUDE_LOGS=true" >> $GITHUB_ENV
             
-            # Auto-detect pre-release status based on tag formatting
             if [[ "${{ github.event.workflow_run.head_branch }}" == *"-"* ]]; then
               echo "IS_PRERELEASE=true" >> $GITHUB_ENV
             else
@@ -123,7 +122,6 @@ jobs:
               echo "url=$URL" >> $GITHUB_OUTPUT
             else
               if [ "$TAG_NAME" = "latest" ]; then
-                # Fallback to current commit if no physical releases exist yet
                 REF="${{ github.event.workflow_run.head_sha || github.sha }}"
                 COMMIT_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                   "https://api.github.com/repos/${{ github.repository }}/commits/$REF")
@@ -135,7 +133,6 @@ jobs:
                 echo "tag=$TAG" >> $GITHUB_OUTPUT
                 echo "url=$URL" >> $GITHUB_OUTPUT
               else
-                # Create ad-hoc release if a specific tag was targeted but missing
                 PRERELEASE_FLAG=""
                 if [ "$IS_PRERELEASE" = "true" ]; then PRERELEASE_FLAG="--prerelease"; fi
                 
@@ -194,7 +191,6 @@ jobs:
             COLOR=1754309
           fi
 
-          # Safe multi-line string construction via native jq files input
           jq -n \
             --arg mention "$MENTION" \
             --arg title "$TITLE" \
@@ -207,21 +203,23 @@ jobs:
             --rawfile notes release_notes.txt \
             --rawfile assets asset_list.txt \
             '
-            if $is_commit == "true" then
-              "### Commit Message\n" + $notes
-            else
-              "### Changelog\n" + $notes + "\n\n### Downloads\n" + $assets
-            end |
-            if $include_logs == "true" then
-              . + "\n\n### Logs\n[View Build Logs](" + $logs_url + ")"
-            else
-              .
-            end |
-            if length > 3900 then
-              .[0:3900] + "... [View full changelog on GitHub](" + $url + ")"
-            else
-              .
-            end as $desc |
+            (
+              if $is_commit == "true" then
+                "### Commit Message\n" + $notes
+              else
+                "### Changelog\n" + $notes + "\n\n### Downloads\n" + $assets
+              end |
+              if $include_logs == "true" then
+                . + "\n\n### Logs\n[View Build Logs](" + $logs_url + ")"
+              else
+                .
+              end |
+              if length > 3900 then
+                .[0:3900] + "... [View full changelog on GitHub](" + $url + ")"
+              else
+                .
+              end
+            ) as $desc |
             {
               content: $mention,
               embeds: [{

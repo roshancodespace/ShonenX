@@ -11,6 +11,7 @@ val newBuildDir: Directory =
         .get()
 rootProject.layout.buildDirectory.value(newBuildDir)
 
+
 subprojects {
     project.layout.buildDirectory.set(buildDir.resolve(project.name))
     

@@ -1,0 +1,33 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/source_engine/providers/anime_source.dart';
+import 'package:shonenx/source_engine/providers/manga_source.dart';
+
+import 'package:shonenx/core/remote_config/providers/remote_config_provider.dart';
+
+final inbuiltAnimeSourcesProvider = Provider<List<AnimeSource>>((ref) {
+  // final client = ref.watch(httpClientProvider);
+  // final storage = ref.watch(sharedPreferencesProvider);
+  // final remoteConfigService = ref.watch(remoteConfigServiceProvider);
+
+  // final allSources = [
+  //   GojoSource(client: client, storage: storage),
+  //   AnimePaheSource(client: client, storage: storage),
+  // ];
+
+  // return allSources.where((source) {
+  //   return !remoteConfigService.isSourceDisabled(source.sourceInfo.id);
+  // }).toList();
+  return [];
+}, name: 'inbuiltAnimeSourcesProvider');
+
+final inbuiltMangaSourcesProvider = Provider<List<MangaSource>>((ref) {
+  // final client = ref.watch(httpClientProvider);
+  // final storage = ref.watch(sharedPreferencesProvider);
+  final remoteConfigService = ref.watch(remoteConfigServiceProvider);
+
+  final allSources = <MangaSource>[];
+
+  return allSources.where((source) {
+    return !remoteConfigService.isSourceDisabled(source.sourceInfo.id);
+  }).toList();
+}, name: 'inbuiltMangaSourcesProvider');

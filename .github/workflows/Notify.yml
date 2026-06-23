@@ -6,56 +6,258 @@ on:
     types: [completed]
   workflow_dispatch:
     inputs:
-      mention_everyone:
+      notify_everyone:
         description: "Ping @everyone on Discord?"
+        required: false
+        default: true
+        type: boolean
+      include_logs:
+        description: "Include run logs link in notification?"
+        required: false
+        default: true
+        type: boolean
+      is_prerelease:
+        description: "Is this a pre-release?"
+        required: false
+        default: false
+        type: boolean
+      tag_name:
+        description: "Release tag ('latest' for newest release, 'main' for latest commit, or specific tag)"
+        required: false
+        default: "latest"
+        type: string
+      use_latest_artifacts:
+        description: "Fetch artifacts from latest 'Release Build' run?"
         required: false
         default: false
         type: boolean
 
+  workflow_call:
+    inputs:
+      notify_everyone:
+        description: "Ping @everyone on Discord?"
+        required: false
+        default: true
+        type: boolean
+      include_logs:
+        description: "Include run logs link in notification?"
+        required: false
+        default: true
+        type: boolean
+      is_prerelease:
+        description: "Is this a pre-release?"
+        required: false
+        default: false
+        type: boolean
+      tag_name:
+        description: "Release tag ('latest' for newest release, 'main' for latest commit, or specific tag)"
+        required: false
+        default: "latest"
+        type: string
+      use_latest_artifacts:
+        description: "Fetch artifacts from latest 'Release Build' run?"
+        required: false
+        default: false
+        type: boolean
+    secrets:
+      DISCORD_WEBHOOK:
+        required: true
+
+permissions:
+  contents: write
+
 jobs:
   notify:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call' || github.event.workflow_run.conclusion == 'success' }}
     
     steps:
-      - name: Fetch Release Data
+      - name: Set up Environment
+        id: env_setup
+        run: |
+          export GH_REPO="${{ github.repository }}"
+          echo "GH_REPO=${{ github.repository }}" >> $GITHUB_ENV
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] || [ "${{ github.event_name }}" == "workflow_call" ]; then
+            echo "NOTIFY_EVERYONE=${{ inputs.notify_everyone }}" >> $GITHUB_ENV
+            echo "INCLUDE_LOGS=${{ inputs.include_logs }}" >> $GITHUB_ENV
+            echo "IS_PRERELEASE=${{ inputs.is_prerelease }}" >> $GITHUB_ENV
+            echo "TAG_NAME=${{ inputs.tag_name }}" >> $GITHUB_ENV
+            echo "USE_LATEST_ARTIFACTS=${{ inputs.use_latest_artifacts }}" >> $GITHUB_ENV
+          else
+            echo "NOTIFY_EVERYONE=true" >> $GITHUB_ENV
+            echo "INCLUDE_LOGS=true" >> $GITHUB_ENV
+            echo "IS_PRERELEASE=false" >> $GITHUB_ENV
+            echo "TAG_NAME=latest" >> $GITHUB_ENV
+            echo "USE_LATEST_ARTIFACTS=false" >> $GITHUB_ENV
+          fi
+          
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ inputs.use_latest_artifacts }}" == "true" ]; then
+            export GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+            RUN_ID=$(gh run list --workflow "Release Build" --status success --limit 1 --json databaseId -q ".[0].databaseId")
+            if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
+              echo "TARGET_RUN_ID=$RUN_ID" >> $GITHUB_ENV
+            else
+              echo "TARGET_RUN_ID=${{ github.run_id }}" >> $GITHUB_ENV
+            fi
+          else
+            echo "TARGET_RUN_ID=${{ github.run_id }}" >> $GITHUB_ENV
+          fi
+
+      - name: Download all workflow artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          run-id: ${{ env.TARGET_RUN_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: all-artifacts
+          merge-multiple: true
+
+      - name: Fetch Data
         id: fetch_data
         run: |
-          RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{github.repository}}/releases" | jq '.[0]')
+          set -e
+          export GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
           
-          TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          
-          echo "$RELEASE_DATA" | jq -r '.body' > release_notes.txt
-          echo "$RELEASE_DATA" > release.json
+          if [ "$TAG_NAME" == "main" ] || [ "$TAG_NAME" == "commit" ]; then
+            echo "Explicitly fetching latest commit on $GITHUB_REF_NAME branch."
+            COMMIT_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{github.repository}}/commits/$GITHUB_REF_NAME")
+            TAG=$(echo "$COMMIT_DATA" | jq -r '.sha[0:7]')
+            URL=$(echo "$COMMIT_DATA" | jq -r '.html_url')
+            BODY=$(echo "$COMMIT_DATA" | jq -r '.commit.message')
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "url=$URL" >> $GITHUB_OUTPUT
+            echo "is_commit=true" >> $GITHUB_OUTPUT
+            echo "$BODY" > release_notes.txt
+            echo "[]" > assets.json
+          elif [ "$TAG_NAME" == "latest" ] || [ -z "$TAG_NAME" ]; then
+            # Attempt to fetch latest release
+            if gh release view --json tagName,url,body,assets > release.json 2>/dev/null; then
+              TAG=$(jq -r '.tagName' release.json)
+              URL=$(jq -r '.url' release.json)
+              jq -r '.body' release.json > release_notes.txt
+              jq -c '.assets' release.json > assets.json
+              echo "tag=$TAG" >> $GITHUB_OUTPUT
+              echo "url=$URL" >> $GITHUB_OUTPUT
+              echo "is_commit=false" >> $GITHUB_OUTPUT
+            else
+              echo "No releases found. Fetching latest commit on $GITHUB_REF_NAME branch."
+              COMMIT_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                "https://api.github.com/repos/${{github.repository}}/commits/$GITHUB_REF_NAME")
+              TAG=$(echo "$COMMIT_DATA" | jq -r '.sha[0:7]')
+              URL=$(echo "$COMMIT_DATA" | jq -r '.html_url')
+              BODY=$(echo "$COMMIT_DATA" | jq -r '.commit.message')
+              echo "tag=$TAG" >> $GITHUB_OUTPUT
+              echo "url=$URL" >> $GITHUB_OUTPUT
+              echo "is_commit=true" >> $GITHUB_OUTPUT
+              echo "$BODY" > release_notes.txt
+              echo "[]" > assets.json
+            fi
+          else
+            # Fetch specific release by tag, create if missing
+            if gh release view "$TAG_NAME" --json tagName,url,body,assets > release.json 2>/dev/null; then
+              echo "Release $TAG_NAME exists. Fetching..."
+              TAG=$(jq -r '.tagName' release.json)
+              URL=$(jq -r '.url' release.json)
+              jq -r '.body' release.json > release_notes.txt
+              jq -c '.assets' release.json > assets.json
+              echo "tag=$TAG" >> $GITHUB_OUTPUT
+              echo "url=$URL" >> $GITHUB_OUTPUT
+              echo "is_commit=false" >> $GITHUB_OUTPUT
+            else
+              echo "Release $TAG_NAME does not exist. Creating..."
+              PRERELEASE_FLAG=""
+              if [ "$IS_PRERELEASE" == "true" ]; then PRERELEASE_FLAG="--prerelease"; fi
+              
+              FILES=()
+              if [ -d "all-artifacts" ]; then
+                while IFS=  read -r -d $'\0'; do
+                    FILES+=("$REPLY")
+                done < <(find all-artifacts -type f -print0)
+              fi
+              
+              gh release create "$TAG_NAME" "${FILES[@]}" \
+                --title "Release $TAG_NAME" \
+                --generate-notes \
+                --target "$GITHUB_REF_NAME" \
+                $PRERELEASE_FLAG
+                
+              # Now fetch the newly created release data
+              gh release view "$TAG_NAME" --json tagName,url,body,assets > release.json
+              TAG=$(jq -r '.tagName' release.json)
+              URL=$(jq -r '.url' release.json)
+              jq -r '.body' release.json > release_notes.txt
+              jq -c '.assets' release.json > assets.json
+              echo "tag=$TAG" >> $GITHUB_OUTPUT
+              echo "url=$URL" >> $GITHUB_OUTPUT
+              echo "is_commit=false" >> $GITHUB_OUTPUT
+            fi
+          fi
 
       - name: Categorize Assets
+        id: assets
         run: |
-          jq -r '.assets[] | "🔹 [\(.name)](\(.browser_download_url)) | \((.size/1048576) | tonumber | round) MB"' release.json > asset_list.txt
+          if [ -s assets.json ] && [ "$(cat assets.json)" != "null" ] && [ "$(cat assets.json)" != "[]" ]; then
+            jq -r '.[] | "🔹 [\(.name)](\(.browser_download_url // .url)) | \((.size/1048576) | tonumber | round) MB"' assets.json > asset_list.txt
+          else
+            echo "No assets available." > asset_list.txt
+          fi
 
       - name: Send Discord Notification
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          MENTION: ${{ github.event.inputs.mention_everyone == 'true' && '@everyone' || '' }}
+          MENTION: ${{ env.NOTIFY_EVERYONE == 'true' && '@everyone' || '' }}
           TAG: ${{ steps.fetch_data.outputs.tag }}
+          URL: ${{ steps.fetch_data.outputs.url }}
+          IS_COMMIT: ${{ steps.fetch_data.outputs.is_commit }}
         run: |
           NOTES=$(cat release_notes.txt)
           ASSETS=$(cat asset_list.txt)
-          FULL_DESC=$(printf "### Changelog\n%s\n\n### Downloads\n%s" "$NOTES" "$ASSETS")
-
-          cat <<EOF > discord_payload.json
-          {
-            "content": "$MENTION",
-            "embeds": [{
-              "title": "🚀 New Release: $TAG",
-              "description": "",
-              "color": 1754309,
-              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            }]
-          }
-          EOF
-
-          jq --arg desc "$FULL_DESC" '.embeds[0].description = $desc' discord_payload.json > final_payload.json
-
-          curl -H "Content-Type: application/json" -X POST -d @final_payload.json "$DISCORD_WEBHOOK"
+          
+          if [ "$IS_COMMIT" == "true" ]; then
+            FULL_DESC=$(printf "### Commit Message\n%s" "$NOTES")
+            TITLE="🔨 New Update (Commit: $TAG)"
+            COLOR=3447003 # Blue
+          else
+            FULL_DESC=$(printf "### Changelog\n%s\n\n### Downloads\n%s" "$NOTES" "$ASSETS")
+            if [ "$IS_PRERELEASE" == "true" ]; then
+              TITLE="🛠️ New Pre-Release: $TAG"
+              COLOR=16753920 # Orange
+            else
+              TITLE="🚀 New Release: $TAG"
+              COLOR=1754309 # Green
+            fi
+          fi
+          
+          if [ "$INCLUDE_LOGS" == "true" ]; then
+            if [ "${{ github.event_name }}" == "workflow_run" ]; then
+              LOGS_URL="${{ github.event.workflow_run.html_url }}"
+            else
+              LOGS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            fi
+            FULL_DESC=$(printf "%s\n\n### Logs\n[View Build Logs](%s)" "$FULL_DESC" "$LOGS_URL")
+          fi
+          
+          if [ ${#FULL_DESC} -gt 3900 ]; then
+            FULL_DESC="${FULL_DESC:0:3900}... [View full changelog on GitHub]($URL)"
+          fi
+          
+          jq -n \
+            --arg content "$MENTION" \
+            --arg title "$TITLE" \
+            --arg desc "$FULL_DESC" \
+            --arg url "$URL" \
+            --arg color "$COLOR" \
+            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{
+              content: $content,
+              embeds: [{
+                title: $title,
+                description: $desc,
+                url: $url,
+                color: ($color | tonumber),
+                timestamp: $timestamp
+              }]
+            }' > final_payload.json
+            
+          curl -s -H "Content-Type: application/json" -X POST -d @final_payload.json "$DISCORD_WEBHOOK"

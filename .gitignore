@@ -76,3 +76,21 @@ dist
 
 # Debug
 .debug_cache
+
+# Gradle
+.gradle/
+**/.gradle/
+
+# Flutter / Dart
+.dart_tool/
+build/
+
+# Android
+android/.gradle/
+android/app/build/
+
+# Misc
+*.log
+
+*.js
+*.zip

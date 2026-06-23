@@ -1,148 +1,160 @@
-#!/bin/bash
-set -euo pipefail
+#!/usr/bin/env bash
+# ShonenX Universal Linux Installer / Uninstaller
+# Author: Roshan Kumar (roshancodespace)
 
-# --- Configuration ---
-APP_NAME="shonenx"
-REPO="Darkx-dev/ShonenX"
+set -e
+
+# Configuration
+REPO="roshancodespace/ShonenX"
 INSTALL_DIR="$HOME/.local/share/ShonenX"
 BIN_DIR="$HOME/.local/bin"
-LOG_FILE="/tmp/shonenx_install.log"
-SYS_DESKTOP="/usr/share/applications/$APP_NAME.desktop"
-SYS_ICON="/usr/share/icons/hicolor/256x256/apps/$APP_NAME.png"
+DESKTOP_DIR="$HOME/.local/share/applications"
+ICON_DIR="$HOME/.local/share/icons/hicolor/512x512/apps"
+ICON_URL="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/icons/app_icon-modified-2.png"
+EXECUTABLE_NAME="shonenx"
+DESKTOP_FILE="shonenx.desktop"
 
-# --- Dark Theme ---
-export NEWT_COLORS='
-  root=,black
-  window=black,black
-  border=black,black
-  shadow=black,black
-  button=black,cyan
-  actbutton=white,cyan
-  compactbutton=black,cyan
-  title=cyan,black
-  roottext=cyan,black
-  textbox=cyan,black
-  actlistbox=black,cyan
-  listbox=cyan,black
-  checkbox=cyan,black
-  actcheckbox=black,cyan
-'
+# Colors for UI
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-# --- Responsive Logic ---
-get_size() {
-    TERM_WIDTH=$(tput cols || echo 80)
-    BOX_WIDTH=$(( TERM_WIDTH * 70 / 100 ))
-    [[ $BOX_WIDTH -lt 45 ]] && BOX_WIDTH=45
-    BOX_HEIGHT=15
-}
+echo -e "${BLUE}=======================================${NC}"
+echo -e "${GREEN}        ShonenX Linux Manager          ${NC}"
+echo -e "${BLUE}=======================================${NC}"
+echo ""
 
-# --- Logic Functions ---
+# Ensure required commands
+command -v curl >/dev/null 2>&1 || { echo -e "${RED}Error: curl is required but not installed.${NC}"; exit 1; }
+command -v jq >/dev/null 2>&1 || { echo -e "${RED}Error: jq is required but not installed. Please install jq first.${NC}"; exit 1; }
+command -v unzip >/dev/null 2>&1 || { echo -e "${RED}Error: unzip is required but not installed. Please install unzip first.${NC}"; exit 1; }
 
-pre_auth_sudo() {
-    sudo -v
-}
+install_app() {
+    echo -e "${YELLOW}[1/5] Fetching latest release info...${NC}"
+    LATEST_RELEASE=$(curl -s "https://api.github.com/repos/$REPO/releases/latest")
+    
+    DOWNLOAD_URL=$(echo "$LATEST_RELEASE" | jq -r '.assets[] | select(.name=="linux-bundle.zip") | .browser_download_url')
+    VERSION_TAG=$(echo "$LATEST_RELEASE" | jq -r '.tag_name')
 
-task_deps() {
-    if command -v pacman &>/dev/null; then
-        sudo pacman -S --noconfirm --needed mpv curl unzip wget desktop-file-utils > "$LOG_FILE" 2>&1
-    elif command -v dnf &>/dev/null; then
-        sudo dnf install -y -q mpv-libs-devel curl unzip wget desktop-file-utils > "$LOG_FILE" 2>&1
-    elif command -v apt &>/dev/null; then
-        sudo apt update -qq && sudo apt install -y -qq libmpv-dev curl unzip wget desktop-file-utils > "$LOG_FILE" 2>&1
+    if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" == "null" ]; then
+        echo -e "${RED}Error: Could not find 'linux-bundle.zip' in the latest release ($VERSION_TAG).${NC}"
+        exit 1
     fi
-}
 
-task_download() {
-    mkdir -p "$INSTALL_DIR" "$BIN_DIR"
-    TMP_ZIP="/tmp/ShonenX_latest.zip"
-    curl -L "https://github.com/$REPO/releases/latest/download/ShonenX-Linux.zip" -o "$TMP_ZIP" 2>> "$LOG_FILE"
-    rm -rf "${INSTALL_DIR:?}"/*
-    unzip -o -q "$TMP_ZIP" -d "$INSTALL_DIR" >> "$LOG_FILE" 2>&1
-    rm -f "$TMP_ZIP"
-}
+    echo -e "${GREEN}Found Version $VERSION_TAG${NC}"
+    
+    echo -e "${YELLOW}[2/5] Downloading Linux bundle...${NC}"
+    TEMP_ZIP="/tmp/shonenx_linux_bundle.zip"
+    curl -L --progress-bar "$DOWNLOAD_URL" -o "$TEMP_ZIP"
 
-task_normalize() {
-    RAW_BIN=$(find "$INSTALL_DIR" -maxdepth 2 -iname "shonenx*" -type f -not -name "*.so*" -not -name "*.txt" -not -name "*.png" | head -n 1)
-    if [[ -n "$RAW_BIN" ]]; then
-        mv "$RAW_BIN" "$INSTALL_DIR/$APP_NAME"
-        chmod +x "$INSTALL_DIR/$APP_NAME"
-        ln -sf "$INSTALL_DIR/$APP_NAME" "$BIN_DIR/$APP_NAME"
-    else
-        return 1
+    echo -e "${YELLOW}[3/5] Extracting to $INSTALL_DIR...${NC}"
+    mkdir -p "$INSTALL_DIR"
+    # Clear old install if it exists to avoid conflicts
+    rm -rf "$INSTALL_DIR"/*
+    unzip -q -o "$TEMP_ZIP" -d "$INSTALL_DIR"
+    rm "$TEMP_ZIP"
+
+    # Some zip bundles extract into a subfolder, let's find the executable
+    ACTUAL_EXE=$(find "$INSTALL_DIR" -type f -name "$EXECUTABLE_NAME" | head -n 1)
+    
+    if [ -z "$ACTUAL_EXE" ]; then
+        echo -e "${RED}Error: Could not find executable '$EXECUTABLE_NAME' inside the extracted files.${NC}"
+        exit 1
     fi
-}
 
-task_ui() {
-    sudo mkdir -p "/usr/share/icons/hicolor/256x256/apps"
-    sudo wget -qO "$SYS_ICON" "https://raw.githubusercontent.com/$REPO/main/assets/icons/app_icon-modified-2.png" || true
-    sudo bash -c "cat <<EOF > $SYS_DESKTOP
+    chmod +x "$ACTUAL_EXE"
+
+    echo -e "${YELLOW}[4/5] Setting up system paths...${NC}"
+    mkdir -p "$BIN_DIR"
+    ln -sf "$ACTUAL_EXE" "$BIN_DIR/$EXECUTABLE_NAME"
+
+    # Add ~/.local/bin to PATH if not already present
+    if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
+        echo -e "${YELLOW}Note: $BIN_DIR is not in your PATH. You may need to add it to your ~/.bashrc or ~/.zshrc${NC}"
+    fi
+
+    echo -e "${YELLOW}[5/5] Creating Desktop Entry & Icon...${NC}"
+    mkdir -p "$ICON_DIR"
+    curl -sL "$ICON_URL" -o "$ICON_DIR/shonenx.png" || echo -e "${RED}Failed to download icon, using fallback.${NC}"
+
+    mkdir -p "$DESKTOP_DIR"
+    cat <<EOF > "$DESKTOP_DIR/$DESKTOP_FILE"
 [Desktop Entry]
 Version=1.0
-Type=Application
 Name=ShonenX
-Comment=Anime Streaming Desktop
-Exec=$BIN_DIR/$APP_NAME
-Icon=$APP_NAME
+Comment=Anilist & MAL Client for Anime and Manga
+Exec=$BIN_DIR/$EXECUTABLE_NAME
+Icon=$ICON_DIR/shonenx.png
 Terminal=false
-Categories=Video;AudioVideo;Player;
-StartupWMClass=shonenx
-EOF"
-    sudo chmod 644 "$SYS_DESKTOP"
-    sudo update-desktop-database /usr/share/applications >/dev/null 2>&1
-    rm -rf "$HOME/.cache/wofi" "$HOME/.cache/rofi" "$HOME/.cache/fuzzel" 2>/dev/null || true
+Type=Application
+Categories=Network;Entertainment;
+EOF
+
+    # Update desktop database if possible
+    command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP_DIR" || true
+
+    echo ""
+    echo -e "${GREEN}=======================================${NC}"
+    echo -e "${GREEN}   Installation Completed Successfully!${NC}"
+    echo -e "${GREEN}=======================================${NC}"
+    echo -e "You can now launch ShonenX from your application menu,"
+    echo -e "or by typing '${BLUE}shonenx${NC}' in your terminal."
 }
 
-task_path() {
-    if [[ "$SHELL" == *"fish"* ]]; then
-        fish -c "set -U fish_user_paths $BIN_DIR \$fish_user_paths" >/dev/null 2>&1
-    else
-        PROFILE="$HOME/.bashrc"
-        [[ "$SHELL" == *"zsh"* ]] && PROFILE="$HOME/.zshrc"
-        grep -q "$BIN_DIR" "$PROFILE" || echo "export PATH=\"$BIN_DIR:\$PATH\"" >> "$PROFILE"
-    fi
+uninstall_app() {
+    echo -e "${YELLOW}Starting Uninstallation...${NC}"
+
+    echo "Removing Installation Directory ($INSTALL_DIR)..."
+    rm -rf "$INSTALL_DIR"
+
+    echo "Removing Executable Symlink ($BIN_DIR/$EXECUTABLE_NAME)..."
+    rm -f "$BIN_DIR/$EXECUTABLE_NAME"
+
+    echo "Removing Desktop Entry ($DESKTOP_DIR/$DESKTOP_FILE)..."
+    rm -f "$DESKTOP_DIR/$DESKTOP_FILE"
+
+    echo "Removing App Icon ($ICON_DIR/shonenx.png)..."
+    rm -f "$ICON_DIR/shonenx.png"
+
+    # Update desktop database if possible
+    command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP_DIR" || true
+
+    echo ""
+    echo -e "${GREEN}=======================================${NC}"
+    echo -e "${GREEN}   Uninstallation Completed!           ${NC}"
+    echo -e "${GREEN}=======================================${NC}"
+    echo -e "All ShonenX system files have been removed."
+    echo -e "Note: User data/cache in ~/.config or ~/.local/share/shonenx_data is preserved."
 }
 
-# --- TUI Loop ---
+echo "Please select an option:"
+echo -e "  ${GREEN}[1] Install / Update ShonenX${NC}"
+echo -e "  ${RED}[2] Uninstall ShonenX${NC}"
+echo "  [3] Exit"
+echo ""
 
-while true; do
-    get_size
-    STATUS=$( [[ -d "$INSTALL_DIR" ]] && echo "INSTALLED" || echo "NOT FOUND" )
+read -p "Selection (1-3): " choice
 
-    CHOICE=$(whiptail --title " SHONENX MANAGER [$STATUS] " \
-        --menu "\nNavigation: Arrows | Confirm: Enter" \
-        $BOX_HEIGHT $BOX_WIDTH 5 \
-        "1" "Full Install / Update" \
-        "2" "Fix Shortcuts/Menu" \
-        "3" "Fix PATH/Terminal" \
-        "4" "Nuclear Uninstall" \
-        "5" "Exit" 3>&1 1>&2 2>&3) || exit 0
-
-    case $CHOICE in
-        1)
-            pre_auth_sudo
-            { 
-              echo 25; task_deps
-              echo 50; task_download
-              echo 75; task_normalize
-              echo 100; task_ui; task_path
-            } | whiptail --title " Installing " --gauge "\nProcessing build steps..." 8 $BOX_WIDTH 0
-            whiptail --title " Complete " --msgbox "\nShonenX is ready." 8 $BOX_WIDTH
-            ;;
-        2) 
-            pre_auth_sudo; task_ui
-            whiptail --title " Fixed " --msgbox "\nDesktop menu rebuilt." 8 $BOX_WIDTH
-            ;;
-        3) 
-            task_path
-            whiptail --title " Fixed " --msgbox "\nShell PATH updated." 8 $BOX_WIDTH
-            ;;
-        4) 
-            pre_auth_sudo
-            rm -rf "$INSTALL_DIR" && rm -f "$BIN_DIR/$APP_NAME"
-            sudo rm -f "$SYS_DESKTOP" "$SYS_ICON"
-            sudo update-desktop-database /usr/share/applications >/dev/null 2>&1
-            whiptail --title " Wiped " --msgbox "\nAll files removed." 8 $BOX_WIDTH
-            ;;
-        5) exit 0 ;;
-    esac
-done
+case $choice in
+    1)
+        install_app
+        ;;
+    2)
+        read -p "Are you sure you want to uninstall ShonenX? (y/N): " confirm
+        if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
+            uninstall_app
+        else
+            echo "Uninstallation cancelled."
+        fi
+        ;;
+    3)
+        echo "Exiting..."
+        exit 0
+        ;;
+    *)
+        echo -e "${RED}Invalid selection.${NC}"
+        exit 1
+        ;;
+esac

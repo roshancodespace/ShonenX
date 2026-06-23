@@ -1,23 +1,27 @@
 <div align="center">
 
-   <img src="assets/icons/app_icon-modified-2.png" alt="ShonenX Logo" width="120"/>
+   <img src="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/icons/app_icon-modified-2.png" alt="ShonenX Logo" width="120"/>
 
 # ShonenX
 
-### A Modern AniList & MyAnimeList Client
+### Read. Watch. Track.
 
 [![Flutter](https://img.shields.io/badge/Flutter-≥3.8.1-02569B?logo=flutter)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-≥3.8.1-0175C2?logo=dart)](https://dart.dev)
-[![Version](https://img.shields.io/badge/Version-1.7.5-blue)](https://github.com/Darkx-dev/ShonenX/releases)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-orange.svg)](https://opensource.org/licenses/apache-2-0)
-[![GitHub stars](https://img.shields.io/github/stars/Darkx-dev/ShonenX?style=social)](https://github.com/Darkx-dev/ShonenX/stargazers)
+[![Version](https://img.shields.io/badge/Version-1.7.5-blue)](https://github.com/roshancodespace/ShonenX/releases)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![GitHub stars](https://img.shields.io/github/stars/roshancodespace/ShonenX?style=social)](https://github.com/roshancodespace/ShonenX/stargazers)
 [![Discord](https://img.shields.io/discord/1348756894034165800?color=7289da&label=Discord&logo=discord&logoColor=white)](https://discord.gg/uJyXZYSmH4)
 
-Track and manage your anime library with AniList and MyAnimeList integration. Built with Flutter for Android and Windows.
+**[🌐 Visit the Official Website](https://shonenx.vercel.app)**
 
-[Features](#-features) • [Screenshots](#-screenshots) • [Installation](#-installation) • [Contributing](#-contributing)
+Started as a fun personal project. Now an open-source anime and manga companion. No ads, no trackers, pure data sovereignty. Syncs cleanly with MAL and AniList.
+
+[Features](#-features) • [Screenshots](#-screenshots) • [Installation](#-installation) • [Extensions](#-extensions) • [Legal](#-legal--dmca-disclaimer)
 
 </div>
+
+---
 
 ## ☕ Supporters
 
@@ -40,33 +44,34 @@ Track and manage your anime library with AniList and MyAnimeList integration. Bu
 
 ## ✨ Features
 
-### 📊 Anime Tracking
-- **AniList Integration** - Manage your anime library *(In Development)*
-- **MyAnimeList Support** - MAL client features *(Early Development)*
-- **Local Progress Tracking** - Continue watching without login
-- **Watch History** - Track your viewing locally
+- **Omni-Sync Tracking:** Native bidirectional integration with MyAnimeList and AniList.
+- **Custom Reader & Player:** Low-latency media playback and reading with customizable flow controls and AMOLED dark mode support.
+- **Offline Availability:** Complete volume and season downloading for offline viewing and reading.
+- **External Extensions:** Utilizes the AnymeX Extension Runtime Bridge, enabling Aniyomi and Mangayomi extension support. The client ships bare-bones; all sources must be manually added by the user.
+- **Cross-Platform:** High-performance native builds for Android, Windows, and Linux.
 
-### 🎨 Customization
-- **Custom Design System** - Unique UI with smooth animations
-- **Extensive Theming** - Wide range of theme options
-- **Light/Dark Mode** - Comfortable viewing anytime
-- **Advanced Settings** - Personalize your experience
+---
 
-### 🔌 Extensions
-- **Extensions** - Anime-focused extension support *(Experimental)*
-- **Built-in Sources** - Pre-configured providers
-- **Jikan Sync** - Episode metadata *(Experimental)*
+## 🛠️ Technology Stack
 
-### 🔍 Search & Discovery
-- **Advanced Search** - Comprehensive filtering
-- **Content Filters** - Adult content toggle (off by default)
-- **Continue Watching** - Resume where you left off
+**Framework**: Flutter ≥3.8.1 | **Language**: Dart ≥3.8.1
 
-### 🌐 Platform Support
-- **Android** - Fully supported mobile experience
-- **Windows** - Native desktop build supported
-- **Linux** - Experimental builds (via install script)
-- **iOS/macOS** - Not planned currently
+<details>
+<summary><b>View Key Dependencies</b></summary>
+
+```yaml
+dependencies:
+  flutter_riverpod: ^3.0.1
+  go_router: ^14.7.1
+  media_kit: ^1.2.6
+  media_kit_video: ^2.0.1
+  graphql: ^5.2.3
+  isar_community: ^3.3.0
+  dio: ^5.9.0
+  flex_color_scheme: ^8.4.0
+```
+
+</details>
 
 ---
 
@@ -96,36 +101,6 @@ Track and manage your anime library with AniList and MyAnimeList integration. Bu
       <img src="screenshots/mobile/anilist.jpg" width="200" alt="AniList"/>
       <br/><b>AniList</b>
     </td>
-  </tr>
-  <tr>
-    <td align="center"><img src="screenshots/mobile/image1.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image2.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image3.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image4.jpg" width="200"/></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="screenshots/mobile/image5.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image6.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image7.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image8.jpg" width="200"/></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="screenshots/mobile/image9.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image10.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image11.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image12.jpg" width="200"/></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="screenshots/mobile/image13.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image14.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image15.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image16.jpg" width="200"/></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="screenshots/mobile/image17.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image18.jpg" width="200"/></td>
-    <td align="center"><img src="screenshots/mobile/image19.jpg" width="200"/></td>
-    <td></td>
   </tr>
 </table>
 </div>
@@ -166,47 +141,22 @@ Track and manage your anime library with AniList and MyAnimeList integration. Bu
 
 ---
 
-## 🛠️ Technology Stack
-
-**Framework**: Flutter ≥3.8.1 | **Language**: Dart ≥3.8.1 | **Version**: 1.7.5
-
-<details>
-<summary><b>View Key Dependencies</b></summary>
-
-```yaml
-dependencies:
-  flutter_riverpod: ^3.0.1
-  go_router: ^14.7.1
-  hive_ce: ^2.16.0
-  hive_ce_flutter: ^2.1.0
-  media_kit: ^1.2.6
-  media_kit_video: ^2.0.1
-  graphql: ^5.2.3
-  google_fonts: ^6.2.1
-  cached_network_image: ^3.4.1
-  isar_community: ^3.3.0
-  dio: ^5.9.0
-  flex_color_scheme: ^8.4.0
-  dynamic_color: 1.7.0
-```
-
-</details>
-
----
-
 ## 🚀 Installation
 
 ### 📱 Android
-Download the latest `.apk` from the [Releases](https://github.com/Darkx-dev/ShonenX/releases) page.
+Download the latest `.apk` from the [GitHub Releases](https://github.com/roshancodespace/ShonenX/releases) page.
 
 ### 🪟 Windows
-Download the `Windows-Portable.zip` or the `.exe` installer from the [Releases](https://github.com/Darkx-dev/ShonenX/releases) page.
+Download the `Windows-Portable.zip` or the `.exe` installer from the [Releases](https://github.com/roshancodespace/ShonenX/releases) page.
 
-### 🐧 Linux
-Run the following command to install/update:
+### 🐧 Linux (Universal Install Script)
+We provide a universal interactive installation script for Linux users. It will fetch the latest release, extract it, set up the desktop icon, and add it to your PATH automatically.
+
+Run the following command in your terminal:
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/Darkx-dev/ShonenX/main/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/roshancodespace/ShonenX/main/install.sh)
 ```
+*Note: You can run this same command again to uninstall ShonenX safely!*
 
 ### 🛠️ Build from Source
 **Prerequisites**: Flutter SDK ≥3.8.1, Git
@@ -220,30 +170,36 @@ flutter run # Select your device/platform
 
 ---
 
-## 🤝 Contributing
+## ⚖️ Legal & DMCA Disclaimer
 
-Contributions welcome! Fork the repo, create a feature branch, and submit a PR.
+Please read this before complaining.
+
+**01. Service Nature**  
+Look, ShonenX does not host, upload, or own any of the media you see in the app. It's literally just a frontend client. It's a glorified web browser that makes stuff look pretty. We don't have servers full of anime.
+
+**02. APIs & Metadata**  
+The covers, synopses, and schedules you see? That's all pulled directly from public APIs like AniList and MyAnimeList. ShonenX just displays what they send back. Don't sue us for showing a picture of Goku.
+
+**03. User Extensions & Content**  
+Any "extensions" or third-party sources you decide to install are entirely on you. ShonenX doesn't distribute copyrighted material or endorse piracy. If you put in a weird URL and watch something you shouldn't, that's your problem, not ours. Make sure you follow your local laws, we are not your lawyers.
+
+If you're a copyright holder looking to DMCA someone, you're barking up the wrong tree. Go find the extension developers or whoever is actually hosting the video files.
 
 ---
 
-## 📄 License
+## 🤝 Contributing & Documentation
 
-Apache 2.0 License - see [LICENSE](LICENSE.md) file.
-
----
-
-## 📖 Documentation
-
-- [**Extension Development Guide**](EXTENSION_GUIDE.md) - Learn how to build extensions for ShonenX.
+Contributions are welcome! Feel free to inspect the code, compile from source, open an issue, or contribute if you understand the architecture.
 
 ---
 
 ## 📞 Support
 
-**Developer**: Roshan Kumar  
+**Developer**: Roshan Kumar Sharma  
 **GitHub**: [@roshancodespace](https://github.com/roshancodespace)  
 **Email**: roshan.codespace@gmail.com  
-**Discord**: [Join Community](https://discord.gg/uJyXZYSmH4)
+**Discord**: [Join Community](https://discord.gg/uJyXZYSmH4)  
+**License**: GPL-3.0 (See [LICENSE](LICENSE) file)
 
 ---
 

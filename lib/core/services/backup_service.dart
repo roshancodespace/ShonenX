@@ -1,173 +1,242 @@
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_ce/hive.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/data/hive/models/anime_watch_progress_model.dart';
-import 'package:shonenx/core/models/settings/content_settings_model.dart';
-import 'package:shonenx/core/models/settings/download_settings_model.dart';
-import 'package:shonenx/core/models/settings/experimental_model.dart';
-import 'package:shonenx/core/models/settings/player_model.dart';
-import 'package:shonenx/core/models/settings/theme_model.dart';
-import 'package:shonenx/core/models/settings/ui_model.dart';
-import 'package:shonenx/main.dart';
-import 'package:shonenx/shared/providers/permissions_provider.dart';
-import 'package:shonenx/storage_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:isar_community/isar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
+import 'package:shonenx/features/library/domain/models/library_entry.dart';
+import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
 
-final backupServiceProvider = Provider<BackupService>((ref) {
-  return BackupService(ref);
-});
+enum BackupCategory {
+  library('Library', 'Saved anime with status & progress'),
+  watchHistory('Watch History', 'Episode watch positions'),
+  trackerLinks('Tracker Links', 'AniList / MAL mappings'),
+  appPreferences('App Preferences', 'Theme, player, UI & other settings');
+
+  final String label;
+  final String description;
+  const BackupCategory(this.label, this.description);
+
+  IconData get icon => switch (this) {
+    library => Icons.collections_bookmark_outlined,
+    watchHistory => Icons.history_outlined,
+    trackerLinks => Icons.link_outlined,
+    appPreferences => Icons.tune_outlined,
+  };
+}
+
+class BackupManifest {
+  final String appVersion;
+  final DateTime exportDate;
+  final Set<BackupCategory> categories;
+  final Map<String, dynamic> data;
+
+  const BackupManifest({
+    required this.appVersion,
+    required this.exportDate,
+    required this.categories,
+    required this.data,
+  });
+
+  int countFor(BackupCategory category) {
+    final value = data[category.name];
+    if (value is List) return value.length;
+    if (value is Map) return value.length;
+    return 0;
+  }
+
+  String toJson() {
+    return const JsonEncoder.withIndent('  ').convert({
+      'appVersion': appVersion,
+      'exportDate': exportDate.toIso8601String(),
+      'categories': categories.map((c) => c.name).toList(),
+      'data': data,
+    });
+  }
+
+  factory BackupManifest.fromJson(String source) {
+    final map = jsonDecode(source) as Map<String, dynamic>;
+    return BackupManifest(
+      appVersion: map['appVersion'] as String? ?? 'unknown',
+      exportDate:
+          DateTime.tryParse(map['exportDate'] as String? ?? '') ??
+          DateTime.now(),
+      categories: (map['categories'] as List<dynamic>? ?? [])
+          .map(
+            (name) => BackupCategory.values.firstWhere(
+              (c) => c.name == name,
+              orElse: () => BackupCategory.library,
+            ),
+          )
+          .toSet(),
+      data: map['data'] as Map<String, dynamic>? ?? {},
+    );
+  }
+}
 
 class BackupService {
-  final Ref _ref;
+  final Isar _isar;
+  final SharedPreferences _prefs;
 
-  BackupService(this._ref);
+  static const _appVersion = '2.0.0';
 
-  static const String _progressBox = 'anime_watch_progress';
+  static const _prefKeys = [
+    'app_theme_data',
+    'ui_preferences',
+    'player_prefs',
+    'download_prefs',
+    'discovery_mode',
+    'discovery_active_sources',
+    'home_layout_data',
+    'app_tracking_prefs',
+    'media_kit_prefs',
+    'tracker_profiles_data',
+    'currentManager',
+    'cache_config',
+  ];
 
-  Future<void> exportData({
-    required bool includeWatchlist,
-    required bool includeSettings,
-  }) async {
-    try {
-      final Map<String, dynamic> dataPayload = {};
+  BackupService(this._isar, this._prefs);
 
-      if (includeWatchlist) {
-        final progressBox = Hive.box<AnimeWatchProgressEntry>(_progressBox);
-        dataPayload['watchlist'] = progressBox.toMap().map(
-              (key, value) => MapEntry(key.toString(), value.toMap()),
-            );
+  Future<BackupManifest> exportData(Set<BackupCategory> categories) async {
+    final data = <String, dynamic>{};
+
+    for (final cat in categories) {
+      switch (cat) {
+        case BackupCategory.library:
+          data['library'] = await _exportLibrary();
+        case BackupCategory.watchHistory:
+          data['watchHistory'] = await _exportWatchHistory();
+        case BackupCategory.trackerLinks:
+          data['trackerLinks'] = await _exportTrackerLinks();
+        case BackupCategory.appPreferences:
+          data['appPreferences'] = _exportPreferences();
       }
+    }
 
-      if (includeSettings) {
-        final settingsData = <String, dynamic>{};
+    return BackupManifest(
+      appVersion: _appVersion,
+      exportDate: DateTime.now(),
+      categories: categories,
+      data: data,
+    );
+  }
 
-        void addSetting<T>(String key, String prefKey, Map<String, dynamic> Function(String) parser) {
-          final jsonStr = sharedPrefs.getString(prefKey);
-          if (jsonStr != null) {
-            try {
-              settingsData[key] = parser(jsonStr);
-            } catch (_) {}
-          }
-        }
-
-        addSetting('theme', 'theme_settings', (j) => ThemeModel.fromJson(j).toMap());
-        addSetting('download', 'download_settings', (j) => DownloadSettingsModel.fromJson(j).toMap());
-        addSetting('player', 'player_settings', (j) => PlayerModel.fromJson(j).toMap());
-        addSetting('ui', 'ui_settings', (j) => UiSettings.fromJson(j).toMap());
-        addSetting('experimental', 'experimental_settings', (j) => ExperimentalFeaturesModel.fromJson(j).toMap());
-        addSetting('content', 'content_settings', (j) => ContentSettingsModel.fromJson(j).toMap());
-
-        dataPayload['settings'] = settingsData;
+  Future<void> importData(
+    BackupManifest manifest,
+    Set<BackupCategory> categories,
+  ) async {
+    for (final cat in categories) {
+      if (!manifest.categories.contains(cat)) continue;
+      switch (cat) {
+        case BackupCategory.library:
+          await _importLibrary(manifest.data['library'] as List<dynamic>?);
+        case BackupCategory.watchHistory:
+          await _importWatchHistory(
+            manifest.data['watchHistory'] as List<dynamic>?,
+          );
+        case BackupCategory.trackerLinks:
+          await _importTrackerLinks(
+            manifest.data['trackerLinks'] as List<dynamic>?,
+          );
+        case BackupCategory.appPreferences:
+          await _importPreferences(
+            manifest.data['appPreferences'] as Map<String, dynamic>?,
+          );
       }
-
-      final Map<String, dynamic> backupData = {
-        'version': 1,
-        'timestamp': DateTime.now().toIso8601String(),
-        'data': dataPayload,
-      };
-
-      final jsonString = jsonEncode(backupData);
-      final fileName = 'shonenx_backup_${DateTime.now().millisecondsSinceEpoch}.json';
-
-      if (Platform.isAndroid) {
-        final hasPermission = await _ref.read(permissionsProvider.notifier).requestStoragePermission();
-        
-        if (hasPermission) {
-          final dir = await StorageProvider.getDefaultDirectory();
-          if (dir != null) {
-            final file = File('${dir.path}/$fileName');
-            await file.writeAsString(jsonString);
-            AppLogger.i('Backup saved to ${file.path}');
-            return;
-          }
-        }
-
-        final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/$fileName');
-        await file.writeAsString(jsonString);
-        await Share.shareXFiles([XFile(file.path)], text: 'ShonenX Backup');
-      } else {
-        final result = await FilePicker.platform.saveFile(
-          dialogTitle: 'Save Backup',
-          fileName: fileName,
-          type: FileType.custom,
-          allowedExtensions: ['json'],
-        );
-
-        if (result != null) {
-          final file = File(result);
-          await file.writeAsString(jsonString);
-          AppLogger.i('Backup saved to ${file.path}');
-        }
-      }
-    } catch (e, s) {
-      AppLogger.e('Failed to export data', e, s);
-      rethrow;
     }
   }
 
-  Future<void> importData() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-      );
+  Future<Map<BackupCategory, int>> getExistingCounts() async {
+    return {
+      BackupCategory.library: await _isar.libraryEntrys.count(),
+      BackupCategory.watchHistory: await _isar.watchHistoryEntrys.count(),
+      BackupCategory.trackerLinks: await _isar.isarTrackerLinks.count(),
+      BackupCategory.appPreferences: _prefKeys
+          .where((k) => _prefs.containsKey(k))
+          .length,
+    };
+  }
 
-      if (result == null || result.files.single.path == null) return;
+  // Export helpers
 
-      final file = File(result.files.single.path!);
-      final jsonString = await file.readAsString();
-      final Map<String, dynamic> backupData = jsonDecode(jsonString);
+  Future<List<Map<String, dynamic>>> _exportLibrary() async {
+    final entries = await _isar.libraryEntrys.where().findAll();
+    return entries.map((e) => e.toBackupMap()).toList();
+  }
 
-      if (backupData['version'] != 1) {
-        throw Exception('Unsupported backup version');
+  Future<List<Map<String, dynamic>>> _exportWatchHistory() async {
+    final entries = await _isar.watchHistoryEntrys.where().findAll();
+    return entries.map((e) => e.toBackupMap()).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> _exportTrackerLinks() async {
+    final entries = await _isar.isarTrackerLinks.where().findAll();
+    return entries.map((e) => e.toBackupMap()).toList();
+  }
+
+  Map<String, dynamic> _exportPreferences() {
+    final map = <String, dynamic>{};
+    for (final key in _prefKeys) {
+      final value = _prefs.get(key);
+      if (value != null) map[key] = value;
+    }
+    return map;
+  }
+
+  Future<void> _importLibrary(List<dynamic>? items) async {
+    if (items == null || items.isEmpty) return;
+    await _isar.writeTxn(() async {
+      await _isar.libraryEntrys.clear();
+      for (final item in items) {
+        await _isar.libraryEntrys.put(
+          LibraryEntry.fromBackupMap(item as Map<String, dynamic>),
+        );
       }
+    });
+  }
 
-      final data = backupData['data'] as Map<String, dynamic>? ?? {};
-
-      if (data.containsKey('watchlist')) {
-        final watchlistData = data['watchlist'] as Map<String, dynamic>;
-        final box = Hive.box<AnimeWatchProgressEntry>(_progressBox);
-        await box.clear();
-
-        final Map<String, AnimeWatchProgressEntry> entries = {};
-        for (var entry in watchlistData.entries) {
-          try {
-            entries[entry.key] = AnimeWatchProgressEntry.fromMap(
-              Map<String, dynamic>.from(entry.value),
-            );
-          } catch (_) {}
-        }
-        await box.putAll(entries);
+  Future<void> _importWatchHistory(List<dynamic>? items) async {
+    if (items == null || items.isEmpty) return;
+    await _isar.writeTxn(() async {
+      await _isar.watchHistoryEntrys.clear();
+      for (final item in items) {
+        await _isar.watchHistoryEntrys.put(
+          WatchHistoryEntry.fromBackupMap(item as Map<String, dynamic>),
+        );
       }
+    });
+  }
 
-      if (data.containsKey('settings')) {
-        final settingsData = data['settings'] as Map<String, dynamic>;
-
-        Future<void> restoreSetting(String key, String prefKey, dynamic Function(Map<String, dynamic>) parser) async {
-          if (settingsData.containsKey(key)) {
-            try {
-              final model = parser(settingsData[key]);
-              await sharedPrefs.setString(prefKey, model.toJson());
-            } catch (_) {}
-          }
-        }
-
-        await restoreSetting('theme', 'theme_settings', (m) => ThemeModel.fromMap(m));
-        await restoreSetting('download', 'download_settings', (m) => DownloadSettingsModel.fromMap(m));
-        await restoreSetting('player', 'player_settings', (m) => PlayerModel.fromMap(m));
-        await restoreSetting('ui', 'ui_settings', (m) => UiSettings.fromMap(m));
-        await restoreSetting('experimental', 'experimental_settings', (m) => ExperimentalFeaturesModel.fromMap(m));
-        await restoreSetting('content', 'content_settings', (m) => ContentSettingsModel.fromMap(m));
+  Future<void> _importTrackerLinks(List<dynamic>? items) async {
+    if (items == null || items.isEmpty) return;
+    await _isar.writeTxn(() async {
+      await _isar.isarTrackerLinks.clear();
+      for (final item in items) {
+        await _isar.isarTrackerLinks.put(
+          IsarTrackerLink.fromBackupMap(item as Map<String, dynamic>),
+        );
       }
-    } catch (e, s) {
-      AppLogger.e('Failed to import data', e, s);
-      rethrow;
+    });
+  }
+
+  Future<void> _importPreferences(Map<String, dynamic>? prefs) async {
+    if (prefs == null || prefs.isEmpty) return;
+    for (final e in prefs.entries) {
+      final value = e.value;
+      if (value is String) {
+        await _prefs.setString(e.key, value);
+      } else if (value is int) {
+        await _prefs.setInt(e.key, value);
+      } else if (value is double) {
+        await _prefs.setDouble(e.key, value);
+      } else if (value is bool) {
+        await _prefs.setBool(e.key, value);
+      } else if (value is List) {
+        await _prefs.setStringList(
+          e.key,
+          value.map((v) => v.toString()).toList(),
+        );
+      }
     }
   }
 }

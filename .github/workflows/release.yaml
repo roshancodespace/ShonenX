@@ -4,227 +4,275 @@ on:
   push:
     tags:
       - "v*"
+
   workflow_dispatch:
     inputs:
-      build_windows:
-        description: "Build Windows"
-        required: false
-        default: true
-        type: boolean
-      build_linux:
-        description: "Build Linux"
-        required: false
-        default: true
-        type: boolean
       build_android:
-        description: "Build Android"
-        required: false
-        default: true
         type: boolean
+        default: true
+      build_linux:
+        type: boolean
+        default: true
+      build_windows:
+        type: boolean
+        default: true
+      notify_discord:
+        description: "Send Discord Notification?"
+        type: boolean
+        default: true
+      notify_everyone:
+        description: "Ping @everyone on Discord?"
+        type: boolean
+        default: true
+      include_logs:
+        description: "Include run logs link in notification?"
+        type: boolean
+        default: true
+      is_prerelease:
+        description: "Is this a pre-release?"
+        type: boolean
+        default: false
+      tag_name:
+        description: "Release tag ('auto' from pubspec.yaml, 'latest', 'main', or a specific tag)"
+        type: string
+        default: "auto"
 
 permissions:
   contents: write
 
 jobs:
-  build-android:
-    if: github.event_name == 'push' || github.event.inputs.build_android == 'true'
+  resolve-release-tag:
     runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.resolve.outputs.tag_name }}
+      is_prerelease: ${{ steps.resolve.outputs.is_prerelease }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release tag
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REQUESTED_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
+          INPUT_IS_PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.is_prerelease || false }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          requested="${REQUESTED_TAG:-auto}"
+          requested="$(echo "$requested" | xargs)"
+
+          tag_exists_or_released() {
+            local tag="$1"
+            git rev-parse -q --verify "refs/tags/$tag" >/dev/null || gh release view "$tag" >/dev/null 2>&1
+          }
+
+          latest_alpha_for_base() {
+            local prefix="$1"
+            {
+              git tag --list "${prefix}-alpha.*"
+              gh release list --limit 200 --json tagName -q '.[].tagName' 2>/dev/null || true
+            } | sed -n "s/^$(printf '%s' "$prefix" | sed 's/[.[\*^$()+?{}|\\]/\\&/g')-alpha\.\([0-9][0-9]*\)$/\1/p" | sort -n | tail -1
+          }
+
+          if [ "${{ github.event_name }}" = "push" ]; then
+            resolved="$GITHUB_REF_NAME"
+          elif [ -z "$requested" ] || [ "$requested" = "auto" ]; then
+            version="$(awk '/^version:[[:space:]]*/ {print $2; exit}' pubspec.yaml | cut -d+ -f1)"
+            if [ -z "$version" ]; then
+              echo "Could not read version from pubspec.yaml" >&2
+              exit 1
+            fi
+
+            base_tag="v$version"
+            if tag_exists_or_released "$base_tag"; then
+              major_minor="${version%.*}"
+              patch="${version##*.}"
+              next_patch=$((patch + 1))
+              alpha_base="v${major_minor}.${next_patch}"
+              last_alpha="$(latest_alpha_for_base "$alpha_base")"
+              if [ -z "$last_alpha" ]; then
+                resolved="${alpha_base}-alpha.1"
+              else
+                resolved="${alpha_base}-alpha.$((last_alpha + 1))"
+              fi
+            else
+              resolved="$base_tag"
+            fi
+          else
+            resolved="$requested"
+          fi
+
+          prerelease="$INPUT_IS_PRERELEASE"
+          case "$resolved" in
+            v*-*) prerelease="true" ;;
+          esac
+
+          echo "Resolved release tag: $resolved"
+          echo "tag_name=$resolved" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+
+  # ---------------- ANDROID ----------------
+  build-android:
+    needs: resolve-release-tag
+    if: github.event_name == 'push' || github.event.inputs.build_android == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Init specific submodule
+        run: |
+          git submodule update --init packages/anymex_extension_bridge
+
       - uses: actions/setup-java@v4
         with:
-          distribution: "temurin"
-          java-version: "21"
-      
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+          distribution: temurin
+          java-version: 21
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.35.7"
-      - uses: android-actions/setup-android@v3
-        with:
-          ndk-version: 29.0.14033849
-      - name: Configure Android Build
+          flutter-version: 3.35.7
+          cache: true
+
+      - name: Decode keystore
         run: |
-          yes | sdkmanager "cmake;3.18.1"
-          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
-          echo "cmake.dir=$ANDROID_HOME/cmake/3.18.1" >> android/local.properties
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-          cat <<EOF > android/key.properties
+
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties <<EOF
           storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           storeFile=upload-keystore.jks
           EOF
-          cat <<EOF > keys.json
+
+      - name: Create env file
+        run: |
+          cat > keys.json <<EOF
           {
             "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
             "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
             "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
-            "API_URL": "${{ secrets.API_URL }}",
             "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}"
           }
           EOF
-      - run: flutter pub get
-      - run: flutter build apk --release --split-per-abi --obfuscate --split-debug-info=build/app/outputs/symbols --dart-define-from-file=keys.json
+
+      - run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
+
+      - run: >-
+          flutter build apk --release --split-per-abi
+          --dart-define-from-file=keys.json
+
       - uses: actions/upload-artifact@v4
         with:
           name: android-apks
           path: build/app/outputs/flutter-apk/*.apk
 
+  # ---------------- LINUX ----------------
   build-linux:
+    needs: resolve-release-tag
     if: github.event_name == 'push' || github.event.inputs.build_linux == 'true'
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
 
-      - run: |
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo add-apt-repository universe
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev webkit2gtk-4.1 libwpewebkit-1.0-dev libsecret-1-dev libasound2-dev libmpv-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libmpv-dev libasound2-dev webkit2gtk-4.1
+
+      - uses: actions/checkout@v4
+
+      - name: Init specific submodule
+        run: |
+          git submodule update --init packages/anymex_extension_bridge
+
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.35.7"
-      - name: Configure Env
-        run:  |
-          cat <<EOF > keys.json
+          flutter-version: 3.35.7
+          cache: true
+
+      - name: Create env file
+        run: |
+          cat > keys.json <<EOF
           {
             "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
             "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
             "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
-            "API_URL": "${{ secrets.API_URL }}",
             "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}"
           }
           EOF
-      - run: flutter pub get
-      - run: flutter build linux --release --obfuscate --split-debug-info=build/linux/debug-info --dart-define-from-file=keys.json
-      - run: |
-          cd build/linux/x64/release/bundle
-          zip -r ../../../../../ShonenX-Linux.zip .
+
+      - run: flutter config --enable-linux-desktop
+      - run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
+
+      - run: flutter build linux --release --dart-define-from-file=keys.json
       - uses: actions/upload-artifact@v4
         with:
           name: linux-bundle
-          path: ShonenX-Linux.zip
+          path: build/linux/x64/release/bundle
 
+  # ---------------- WINDOWS ----------------
   build-windows:
+    needs: resolve-release-tag
     if: github.event_name == 'push' || github.event.inputs.build_windows == 'true'
-    runs-on: windows-latest
+    runs-on: windows-2022
+
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
 
-      - run: git config --system core.longpaths true
+      - name: Init specific submodule
+        run: |
+          git submodule update --init packages/anymex_extension_bridge
+
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.35.7"
-      - name: Configure Env
+          flutter-version: 3.35.7
+          cache: true
+
+      - name: Enable Windows
+        run: flutter config --enable-windows-desktop
+
+      - name: Create env file
         shell: bash
-        run:  |
-          cat <<EOF > keys.json
+        run: |
+          cat > keys.json <<EOF
           {
             "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
             "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
             "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
-            "API_URL": "${{ secrets.API_URL }}",
             "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}"
           }
           EOF
-      - run: flutter pub get
-      - run: flutter build windows --release --obfuscate --split-debug-info=build/windows/debug-info --dart-define-from-file=keys.json
-      - name: Generate Inno Script
-        shell: pwsh
-        run: |
-          $pubspec = Get-Content pubspec.yaml -Raw
-          $version = ([regex]::Match($pubspec, 'version:\s*([^\s+]+)')).Groups[1].Value
-          $appId = ([regex]::Match($pubspec, 'id:\s*([^\s\n\r]+)')).Groups[1].Value
-          $publisher = ([regex]::Match($pubspec, 'publisher:\s*([^\n\r]+)')).Groups[1].Value.Trim()
-          $appName = ([regex]::Match($pubspec, 'name:\s*([^\n\r]+)', [System.Text.RegularExpressions.RegexOptions]::RightToLeft)).Groups[1].Value.Trim()
-          $iss = @"
-          [Setup]
-          AppId={{$appId}}
-          AppName=$appName
-          AppVersion=$version
-          AppPublisher=$publisher
-          DefaultDirName={autopf}\$appName
-          DefaultGroupName=$appName
-          OutputDir=build\windows\x64\installer
-          OutputBaseFilename=$appName-v$version-Setup
-          Compression=lzma
-          SolidCompression=yes
-          WizardStyle=modern
-          ArchitecturesInstallIn64BitMode=x64
 
-          [Languages]
-          Name: "english"; MessagesFile: "compiler:Default.isl"
+      - run: flutter pub upgrade
 
-          [Tasks]
-          Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+      - run: flutter build windows --release --dart-define-from-file=keys.json
 
-          [Files]
-          Source: "build\windows\x64\runner\release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+      - name: Build installer (InnoBundle)
+        run: dart run inno_bundle --release
 
-          [Icons]
-          Name: "{group}\$appName"; Filename: "{app}\shonenx.exe"
-          Name: "{autodesktop}\$appName"; Filename: "{app}\shonenx.exe"; Tasks: desktopicon
-
-          [Run]
-          Filename: "{app}\shonenx.exe"; Description: "{cm:LaunchProgram,$appName}"; Flags: nowait postinstall skipifsilent
-          "@
-          $iss | Out-File -FilePath installer.iss -Encoding utf8
-      - name: Compile Inno Setup
-        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss'
-      - name: Create Portable Zip
-        run: Compress-Archive -Path build\windows\x64\runner\release\* -DestinationPath ShonenX-Windows-Portable.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: windows-dist
-          path: |
-            build/windows/x64/installer/*.exe
-            ShonenX-Windows-Portable.zip
+          name: windows-build
+          path: build/windows/x64/runner/Release
 
-  publish-release:
-    needs: [build-android, build-linux, build-windows]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-      - name: Generate Changelog
-        id: changelog
-        run: |
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          git log ${PREVIOUS_TAG:+$PREVIOUS_TAG..}HEAD --pretty=format:'%s' > all_commits.txt
-          TAG_NAME=${GITHUB_REF_NAME}
-          {
-            echo "notes<<EOF"
-            if [[ "$TAG_NAME" == *"debug"* ]]; then echo -e "> [!WARNING]\n> **DEBUG BUILD**";
-            elif [[ "$TAG_NAME" == *"beta"* ]]; then echo -e "> [!IMPORTANT]\n> **BETA RELEASE**";
-            elif [[ "$TAG_NAME" == *"alpha"* ]]; then echo -e "> [!CAUTION]\n> **ALPHA RELEASE**";
-            elif [[ "$TAG_NAME" == *"hotfix"* ]]; then echo -e "> [!NOTE]\n> **HOTFIX RELEASE**"; fi
-            echo -e "\n## Changelog"
-            grep -iE "^(feat|fix|perf|refactor|chore)" all_commits.txt | sed "s/^/- /" || echo "No specific changes tracked."
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            artifacts/**/*.apk
-            artifacts/**/*.zip
-            artifacts/**/*.exe
-          body: ${{ steps.changelog.outputs.notes }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+  # ---------------- NOTIFY ----------------
+  notify:
+    needs: [resolve-release-tag, build-android, build-linux, build-windows]
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (github.event_name == 'push' || github.event.inputs.notify_discord == 'true')
+    uses: ./.github/workflows/Notify.yml
+    with:
+      notify_everyone: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.notify_everyone == 'true' || true }}
+      include_logs: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.include_logs == 'true' || true }}
+      is_prerelease: ${{ needs.resolve-release-tag.outputs.is_prerelease == 'true' }}
+      tag_name: ${{ needs.resolve-release-tag.outputs.tag_name }}
+    secrets:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}

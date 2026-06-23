@@ -3,14 +3,12 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  connectivity_plus
-  dartotsu_extension_bridge
-  desktop_webview_window
-  dynamic_color
+  anymex_extension_runtime_bridge
+  dynamic_system_colors
   flutter_inappwebview_windows
   flutter_qjs
   flutter_secure_storage_windows
-  flutter_volume_controller
+  flutter_timezone
   isar_community_flutter_libs
   media_kit_libs_windows_video
   media_kit_video
@@ -26,6 +24,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
   flutter_local_notifications_windows
+  jni
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

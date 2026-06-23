@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
-import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
+import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
@@ -62,7 +62,7 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
 
     try {
       final pref = await ref.read(
-        sourcePreferenceProvider(MatchArgs(mediaTitle: widget.mediaTitle, type: widget.type)).future,
+        mediaPreferenceProvider(MatchArgs(mediaTitle: widget.mediaTitle, type: widget.type)).future,
       );
       final source = ref.read(animeSourceProvider(pref.sourceInfo));
       final results = await source.search(cleanQuery, widget.type);
@@ -76,7 +76,7 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
 
   void _onSelect(UnifiedMedia result) {
     ref
-        .read(sourcePreferenceProvider(MatchArgs(mediaTitle: widget.mediaTitle, type: widget.type)).notifier)
+        .read(mediaPreferenceProvider(MatchArgs(mediaTitle: widget.mediaTitle, type: widget.type)).notifier)
         .setManualOverrides(result.id, result.title.availableTitle);
 
     context.pop(true);

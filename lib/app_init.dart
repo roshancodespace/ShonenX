@@ -15,6 +15,7 @@ import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/caching/domain/cache_entry.dart';
 import 'package:shonenx/core/services/notification_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/features/discovery/domain/media_preference.dart';
 import 'package:shonenx/features/discovery/domain/media_source_preference.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
@@ -88,6 +89,7 @@ class AppInit {
           CacheEntrySchema,
           LibraryEntrySchema,
           MediaSourcePreferenceSchema,
+          MediaPreferenceSchema,
           IsarTrackerLinkSchema,
           WatchHistoryEntrySchema,
           ReadHistoryEntrySchema,
@@ -103,6 +105,28 @@ class AppInit {
         directory: dir.path,
         name: 'shonenx_db',
       );
+
+      // Perform migration from MediaSourcePreference to MediaPreference
+      final oldPrefsCount = await isar.mediaSourcePreferences.count();
+      if (oldPrefsCount > 0) {
+        log.i('Migrating $oldPrefsCount MediaSourcePreferences to MediaPreferences...');
+        final oldPrefs = await isar.mediaSourcePreferences.where().findAll();
+        
+        final newPrefs = oldPrefs.map((old) => MediaPreference()
+          ..mediaTitle = old.mediaTitle
+          ..preferredSourceId = old.preferredSourceId
+          ..preferredSourceName = old.preferredSourceName
+          ..preferredSourceType = old.preferredSourceType
+          ..manualOverrideId = old.manualOverrideId
+          ..manualOverrideTitle = old.manualOverrideTitle
+        ).toList();
+
+        await isar.writeTxn(() async {
+          await isar.mediaPreferences.putAll(newPrefs);
+          await isar.mediaSourcePreferences.clear();
+        });
+        log.s('Migration complete');
+      }
 
       log.s('Isar opened');
     } catch (e, st) {

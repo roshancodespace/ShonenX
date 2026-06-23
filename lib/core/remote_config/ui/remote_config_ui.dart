@@ -5,51 +5,42 @@ import 'package:shonenx/core/remote_config/models/remote_config.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 class RemoteConfigUI {
+  static const String _releasesUrl =
+      'https://github.com/roshancodespace/shonenx/releases/latest';
+
   static Future<void> showUpdateSheet(
     BuildContext context, {
-    required ChannelConfig config,
+    required String minimumVersion,
+    required VoidCallback onDownload,
   }) async {
-    final bool forceUpdate = config.forceUpdate;
-
+    // This sheet is forced and cannot be dismissed
     await AppBottomSheet.show(
       context: context,
-      title: 'Update Available',
-      enableDrag: !forceUpdate,
-      // If forced, tapping outside shouldn't dismiss it.
+      title: 'Update Required',
+      enableDrag: false,
       child: PopScope(
-        canPop: !forceUpdate,
+        canPop: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Version ${config.version} is now available.',
+              'A critical update to version $minimumVersion is required to continue using the application.',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
-            const SizedBox(height: 12),
-            if (config.message.isNotEmpty) ...[
-              Text(config.message),
-              const SizedBox(height: 16),
-            ],
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                if (!forceUpdate)
-                  TextButton(
-                    onPressed: () => context.pop(),
-                    child: const Text('Later'),
-                  ),
-                const SizedBox(width: 8),
                 FilledButton(
                   onPressed: () async {
-                    if (config.apk.isNotEmpty) {
-                      final url = Uri.parse(config.apk);
-                      if (await canLaunchUrl(url)) {
-                        await launchUrl(
-                          url,
-                          mode: LaunchMode.externalApplication,
-                        );
-                      }
+                    onDownload();
+                    final url = Uri.parse(_releasesUrl);
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(
+                        url,
+                        mode: LaunchMode.externalApplication,
+                      );
                     }
                   },
                   child: const Text('Download Update'),
@@ -68,7 +59,7 @@ class RemoteConfigUI {
   }) async {
     await AppBottomSheet.show(
       context: context,
-      title: 'Announcement',
+      title: announcement.title.isNotEmpty ? announcement.title : 'Announcement',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -83,6 +74,28 @@ class RemoteConfigUI {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  static Future<void> showApplicationDisabledSheet(BuildContext context) async {
+    await AppBottomSheet.show(
+      context: context,
+      title: 'Service Unavailable',
+      enableDrag: false,
+      child: PopScope(
+        canPop: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'The application has been disabled by the administrator. Please check back later.',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

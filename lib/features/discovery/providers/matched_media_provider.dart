@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
+import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/matchmaker/match_service.dart';
@@ -69,7 +69,7 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
   @override
   Future<MatchedMediaState> build() async {
     state = const AsyncLoading();
-    final prefs = await ref.watch(sourcePreferenceProvider(args).future);
+    final prefs = await ref.watch(mediaPreferenceProvider(args).future);
 
     if (prefs.manualOverrideId != null && prefs.manualOverrideTitle != null) {
       return MatchedMediaState(
@@ -96,7 +96,7 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
     // Cache the match in SourcePreference to bypass matchmaker on next launch
     Future.microtask(() {
       ref
-          .read(sourcePreferenceProvider(args).notifier)
+          .read(mediaPreferenceProvider(args).notifier)
           .setManualOverrides(result.id, result.title.availableTitle);
     });
 

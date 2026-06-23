@@ -315,18 +315,18 @@ class _SideNavBar extends StatelessWidget {
       cramped: 4.0,
     );
     final vOuterPad = h.pick(
-      spacious: 28.0,
-      normal: 24.0,
+      spacious: 16.0,
+      normal: 16.0,
       compact: 14.0,
       tight: 8.0,
-      cramped: 4.0,
+      cramped: 6.0,
     );
     final hOuterPad = h.pick(
       spacious: 16.0,
       normal: 16.0,
       compact: 14.0,
-      tight: 12.0,
-      cramped: 10.0,
+      tight: 8.0,
+      cramped: 6.0,
     );
     final gapBetween = h.pick(
       spacious: 14.0,

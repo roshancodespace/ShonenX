@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
-import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
+import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
@@ -29,7 +29,7 @@ final episodesListProvider =
         final matchState = await ref.watch(matchedMediaProvider(args).future);
 
         final sourcePrefs = await ref.watch(
-          sourcePreferenceProvider(args).future,
+          mediaPreferenceProvider(args).future,
         );
 
         final sourceImpl = args.type == MediaType.ANIME

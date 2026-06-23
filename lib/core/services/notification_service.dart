@@ -21,12 +21,36 @@ class NotificationService {
     _log.i('Initializing NotificationService...');
     try {
       tz.initializeTimeZones();
-      final String timeZoneName =
-          (await FlutterTimezone.getLocalTimezone()).identifier;
-      tz.setLocalLocation(tz.getLocation(timeZoneName));
-      _log.d('Timezone configured: $timeZoneName');
+      final TimezoneInfo timeZoneInfo =
+          await FlutterTimezone.getLocalTimezone();
+      String timeZoneName = timeZoneInfo.identifier;
 
-      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const aliases = {
+        'Asia/Calcutta': 'Asia/Kolkata',
+        'Asia/Rangoon': 'Asia/Yangon',
+        'Asia/Katmandu': 'Asia/Kathmandu',
+        'Asia/Saigon': 'Asia/Ho_Chi_Minh',
+        'US/Eastern': 'America/New_York',
+        'US/Central': 'America/Chicago',
+        'US/Mountain': 'America/Denver',
+        'US/Pacific': 'America/Los_Angeles',
+        'US/Alaska': 'America/Anchorage',
+        'US/Hawaii': 'Pacific/Honolulu',
+      };
+
+      if (aliases.containsKey(timeZoneName)) {
+        timeZoneName = aliases[timeZoneName]!;
+      }
+
+      try {
+        tz.setLocalLocation(tz.getLocation(timeZoneName));
+        _log.d('Timezone configured: $timeZoneName');
+      } catch (e) {
+        _log.e('Failed to load timezone $timeZoneName, falling back to UTC', e);
+        tz.setLocalLocation(tz.getLocation('UTC'));
+      }
+
+      const android = AndroidInitializationSettings('@mipmap/ic_launcher_monochrome');
       const windows = WindowsInitializationSettings(
         appName: 'ShonenX',
         appUserModelId: 'com.example.shonenx',

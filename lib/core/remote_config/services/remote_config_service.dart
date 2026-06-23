@@ -9,10 +9,9 @@ class RemoteConfigService {
       'https://raw.githubusercontent.com/roshancodespace/shonenx-config/refs/heads/main/remote_config.json';
 
   static const String _cacheKey = 'remote_config_cache';
-  static const String _channelKey = 'remote_config_channel';
-  static const String _seenAnnouncementKey = 'remote_config_seen_announcement';
-  static const String _lastUpdateIdSeenKey =
-      'remote_config_last_update_id_seen';
+  static const String _seenAnnouncementsKey = 'remote_config_seen_announcements';
+  static const String _lastUpdateVersionSeenKey =
+      'remote_config_last_update_version_seen';
 
   final SharedPreferences _prefs;
   final _log = AppLogger.scope('RemoteConfigService');
@@ -22,15 +21,6 @@ class RemoteConfigService {
   RemoteConfigService(this._prefs);
 
   RemoteConfig? get config => _currentConfig;
-
-  ReleaseChannel get currentChannel {
-    final str = _prefs.getString(_channelKey) ?? 'stable';
-    return str == 'test' ? ReleaseChannel.test : ReleaseChannel.stable;
-  }
-
-  Future<void> setChannel(ReleaseChannel channel) async {
-    await _prefs.setString(_channelKey, channel.name);
-  }
 
   Future<void> init() async {
     _log.i('Initializing remote config...');
@@ -72,45 +62,74 @@ class RemoteConfigService {
   }
 
   // Announcement logic
-  bool shouldShowAnnouncement() {
-    if (_currentConfig?.announcement == null) return false;
-    final announcementId = _currentConfig!.announcement!.id;
-    final seenId = _prefs.getString(_seenAnnouncementKey);
-    return announcementId != seenId;
+  Announcement? getActiveAppAnnouncement() {
+    if (_currentConfig == null) return null;
+    
+    final appAnnouncements = _currentConfig!.announcements.app;
+    final seenIds = _prefs.getStringList(_seenAnnouncementsKey) ?? [];
+
+    for (final ann in appAnnouncements) {
+      if (ann.enabled && !seenIds.contains(ann.id.toString())) {
+        return ann;
+      }
+    }
+    
+    return null;
   }
 
-  Future<void> markAnnouncementAsSeen() async {
-    if (_currentConfig?.announcement != null) {
-      await _prefs.setString(
-        _seenAnnouncementKey,
-        _currentConfig!.announcement!.id,
-      );
+  Future<void> markAnnouncementAsSeen(int id) async {
+    final seenIds = _prefs.getStringList(_seenAnnouncementsKey) ?? [];
+    if (!seenIds.contains(id.toString())) {
+      seenIds.add(id.toString());
+      await _prefs.setStringList(_seenAnnouncementsKey, seenIds);
     }
   }
 
   // Update logic
-  bool shouldShowUpdate(int currentAppUpdateId) {
-    final channelConfig = _currentConfig?.getChannelConfig(currentChannel);
-    if (channelConfig == null) return false;
+  bool shouldShowUpdate(String currentVersion) {
+    if (_currentConfig == null) return false;
+    
+    final minVersion = _currentConfig!.minimumVersion;
+    if (minVersion.isEmpty) return false;
 
-    final remoteUpdateId = channelConfig.updateId;
+    // Check if we already "downloaded" this specific tag
+    final lastDownloaded = _prefs.getString(_lastUpdateVersionSeenKey);
+    if (lastDownloaded == minVersion) return false;
 
-    if (remoteUpdateId > currentAppUpdateId) {
-      // If force update, we ALWAYS show it regardless of 'seen'
-      if (channelConfig.forceUpdate) return true;
-
-      // Otherwise, only show if we haven't seen it yet
-      final lastSeenUpdateId = _prefs.getInt(_lastUpdateIdSeenKey) ?? 0;
-      return remoteUpdateId > lastSeenUpdateId;
-    }
-    return false;
+    // Compare versions. If current < minVersion, force update.
+    return _compareVersions(currentVersion, minVersion) < 0;
   }
 
-  Future<void> markUpdateAsSeen() async {
-    final channelConfig = _currentConfig?.getChannelConfig(currentChannel);
-    if (channelConfig != null) {
-      await _prefs.setInt(_lastUpdateIdSeenKey, channelConfig.updateId);
+  Future<void> markUpdateAsDownloaded(String versionTag) async {
+    await _prefs.setString(_lastUpdateVersionSeenKey, versionTag);
+  }
+
+  /// Returns < 0 if v1 < v2, > 0 if v1 > v2, 0 if v1 == v2
+  int _compareVersions(String v1, String v2) {
+    final cleanV1 = v1.replaceAll('v', '').split('+').first;
+    final cleanV2 = v2.replaceAll('v', '').split('+').first;
+    
+    final parts1 = cleanV1.split('-');
+    final parts2 = cleanV2.split('-');
+
+    final main1 = parts1[0].split('.');
+    final main2 = parts2[0].split('.');
+
+    for (var i = 0; i < 3; i++) {
+      final numA = i < main1.length ? int.tryParse(main1[i]) ?? 0 : 0;
+      final numB = i < main2.length ? int.tryParse(main2[i]) ?? 0 : 0;
+      if (numA > numB) return 1;
+      if (numA < numB) return -1;
     }
+    
+    // If main versions are equal, compare pre-release tags
+    final pre1 = parts1.length > 1 ? parts1[1] : '';
+    final pre2 = parts2.length > 1 ? parts2[1] : '';
+
+    if (pre1.isEmpty && pre2.isNotEmpty) return 1; // 2.0.0 > 2.0.0-alpha
+    if (pre1.isNotEmpty && pre2.isEmpty) return -1; // 2.0.0-alpha < 2.0.0
+    
+    return pre1.compareTo(pre2);
   }
 
   // Source Status Logic

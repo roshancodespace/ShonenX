@@ -7,16 +7,23 @@ enum MetadataMode { tracker, source }
 class DiscoveryPrefs {
   final MetadataMode mode;
   final List<String> activeSources;
+  final String? metadataTrackerId;
 
   const DiscoveryPrefs({
     this.mode = MetadataMode.tracker,
     this.activeSources = const [],
+    this.metadataTrackerId,
   });
 
-  DiscoveryPrefs copyWith({MetadataMode? mode, List<String>? activeSources}) {
+  DiscoveryPrefs copyWith({
+    MetadataMode? mode,
+    List<String>? activeSources,
+    String? metadataTrackerId,
+  }) {
     return DiscoveryPrefs(
       mode: mode ?? this.mode,
       activeSources: activeSources ?? this.activeSources,
+      metadataTrackerId: metadataTrackerId ?? this.metadataTrackerId,
     );
   }
 }
@@ -24,6 +31,7 @@ class DiscoveryPrefs {
 class DiscoveryPrefsNotifier extends Notifier<DiscoveryPrefs> {
   static const _modeKey = 'discovery_mode';
   static const _activeSourcesKey = 'discovery_active_sources';
+  static const _metadataTrackerKey = 'discovery_metadata_tracker_id';
 
   SharedPreferences get _storage => ref.read(sharedPreferencesProvider);
 
@@ -35,8 +43,13 @@ class DiscoveryPrefsNotifier extends Notifier<DiscoveryPrefs> {
       orElse: () => MetadataMode.tracker,
     );
     final activeSources = _storage.getStringList(_activeSourcesKey) ?? [];
+    final metadataTrackerId = _storage.getString(_metadataTrackerKey);
 
-    return DiscoveryPrefs(mode: mode, activeSources: activeSources);
+    return DiscoveryPrefs(
+      mode: mode,
+      activeSources: activeSources,
+      metadataTrackerId: metadataTrackerId,
+    );
   }
 
   void setMode(MetadataMode mode) {
@@ -57,6 +70,19 @@ class DiscoveryPrefsNotifier extends Notifier<DiscoveryPrefs> {
       sources.add(sourceId);
     }
     setActiveSources(sources);
+  }
+
+  void setMetadataTrackerId(String? trackerId) {
+    if (trackerId == null) {
+      _storage.remove(_metadataTrackerKey);
+    } else {
+      _storage.setString(_metadataTrackerKey, trackerId);
+    }
+    state = DiscoveryPrefs(
+      mode: state.mode,
+      activeSources: state.activeSources,
+      metadataTrackerId: trackerId,
+    );
   }
 }
 

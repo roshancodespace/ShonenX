@@ -1,29 +1,27 @@
-enum ReleaseChannel { stable, test }
-
 class RemoteConfig {
-  final ChannelConfig? stable;
-  final ChannelConfig? test;
-  final Announcement? announcement;
+  final bool downloadsEnabled;
+  final bool applicationEnabled;
+  final String minimumVersion;
+  final AnnouncementsConfig announcements;
   final Map<String, SourceConfig> sources;
 
   RemoteConfig({
-    this.stable,
-    this.test,
-    this.announcement,
+    this.downloadsEnabled = true,
+    this.applicationEnabled = true,
+    this.minimumVersion = '',
+    required this.announcements,
     this.sources = const {},
   });
 
   factory RemoteConfig.fromJson(Map<String, dynamic> json) {
     return RemoteConfig(
-      stable: json['stable'] != null
-          ? ChannelConfig.fromJson(json['stable'])
-          : null,
-      test: json['test'] != null ? ChannelConfig.fromJson(json['test']) : null,
-      announcement: json['announcement'] != null
-          ? Announcement.fromJson(json['announcement'])
-          : null,
-      sources:
-          (json['sources'] as Map<String, dynamic>?)?.map(
+      downloadsEnabled: json['downloadsEnabled'] as bool? ?? true,
+      applicationEnabled: json['applicationEnabled'] as bool? ?? true,
+      minimumVersion: json['minimumVersion'] as String? ?? '',
+      announcements: json['announcements'] != null
+          ? AnnouncementsConfig.fromJson(json['announcements'])
+          : AnnouncementsConfig(app: [], website: []),
+      sources: (json['sources'] as Map<String, dynamic>?)?.map(
             (key, value) => MapEntry(key, SourceConfig.fromJson(value)),
           ) ??
           {},
@@ -32,70 +30,75 @@ class RemoteConfig {
 
   Map<String, dynamic> toJson() {
     return {
-      'stable': stable?.toJson(),
-      'test': test?.toJson(),
-      'announcement': announcement?.toJson(),
+      'downloadsEnabled': downloadsEnabled,
+      'applicationEnabled': applicationEnabled,
+      'minimumVersion': minimumVersion,
+      'announcements': announcements.toJson(),
       'sources': sources.map((key, value) => MapEntry(key, value.toJson())),
     };
   }
-
-  // Helper method to get config based on active channel
-  ChannelConfig? getChannelConfig(ReleaseChannel channel) {
-    return channel == ReleaseChannel.stable ? stable : test;
-  }
 }
 
-class ChannelConfig {
-  final int updateId;
-  final String version;
-  final bool forceUpdate;
-  final String message;
-  final String apk;
+class AnnouncementsConfig {
+  final List<Announcement> app;
+  final List<Announcement> website;
 
-  ChannelConfig({
-    required this.updateId,
-    required this.version,
-    required this.forceUpdate,
-    required this.message,
-    required this.apk,
-  });
+  AnnouncementsConfig({required this.app, required this.website});
 
-  factory ChannelConfig.fromJson(Map<String, dynamic> json) {
-    return ChannelConfig(
-      updateId: json['updateId'] as int? ?? 0,
-      version: json['version'] as String? ?? '1.0.0',
-      forceUpdate: json['forceUpdate'] as bool? ?? false,
-      message: json['message'] as String? ?? '',
-      apk: json['apk'] as String? ?? '',
+  factory AnnouncementsConfig.fromJson(Map<String, dynamic> json) {
+    return AnnouncementsConfig(
+      app: (json['app'] as List?)
+              ?.map((e) => Announcement.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      website: (json['website'] as List?)
+              ?.map((e) => Announcement.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'updateId': updateId,
-      'version': version,
-      'forceUpdate': forceUpdate,
-      'message': message,
-      'apk': apk,
+      'app': app.map((e) => e.toJson()).toList(),
+      'website': website.map((e) => e.toJson()).toList(),
     };
   }
 }
 
 class Announcement {
-  final String id;
+  final int id;
+  final bool enabled;
+  final String title;
   final String message;
+  final String type;
 
-  Announcement({required this.id, required this.message});
+  Announcement({
+    required this.id,
+    required this.enabled,
+    required this.title,
+    required this.message,
+    required this.type,
+  });
 
   factory Announcement.fromJson(Map<String, dynamic> json) {
     return Announcement(
-      id: json['id'] as String? ?? '',
+      id: json['id'] as int? ?? 0,
+      enabled: json['enabled'] as bool? ?? false,
+      title: json['title'] as String? ?? '',
       message: json['message'] as String? ?? '',
+      type: json['type'] as String? ?? 'info',
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'id': id, 'message': message};
+    return {
+      'id': id,
+      'enabled': enabled,
+      'title': title,
+      'message': message,
+      'type': type,
+    };
   }
 }
 

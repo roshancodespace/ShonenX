@@ -46,40 +46,44 @@ class _RemoteConfigListenerState extends ConsumerState<RemoteConfigListener> {
 
     if (config == null) return;
 
-    // Check for Update
+    final navContext = rootNavigatorKey.currentContext;
+    if (navContext == null || !navContext.mounted) return;
+
+    // 1. Check if application is disabled globally
+    if (!config.applicationEnabled) {
+      await RemoteConfigUI.showApplicationDisabledSheet(navContext);
+      return; // Stop further checks since app is disabled
+    }
+
+    // 2. Check for Updates
     try {
       final packageInfo = await PackageInfo.fromPlatform();
-      final currentUpdateId = int.tryParse(packageInfo.buildNumber) ?? 0;
+      final currentVersion = packageInfo.version;
 
-      if (service.shouldShowUpdate(currentUpdateId)) {
-        final channelConfig = config.getChannelConfig(service.currentChannel);
-        if (channelConfig != null && mounted) {
-          final navContext = rootNavigatorKey.currentContext;
-          if (navContext != null && navContext.mounted) {
-            await RemoteConfigUI.showUpdateSheet(
-              navContext,
-              config: channelConfig,
-            );
-            await service.markUpdateAsSeen();
-          }
-        }
+      if (service.shouldShowUpdate(currentVersion)) {
+        await RemoteConfigUI.showUpdateSheet(
+          navContext,
+          minimumVersion: config.minimumVersion,
+          onDownload: () {
+            service.markUpdateAsDownloaded(config.minimumVersion);
+          },
+        );
+        return; // Stop further checks since they are forced to update
       }
     } catch (e) {
       // Ignore package info errors
     }
 
-    if (!mounted) return;
+    if (!mounted || !navContext.mounted) return;
 
-    // Check for Announcement
-    if (service.shouldShowAnnouncement()) {
-      final navContext = rootNavigatorKey.currentContext;
-      if (navContext != null && navContext.mounted) {
-        await RemoteConfigUI.showAnnouncementSheet(
-          navContext,
-          announcement: config.announcement!,
-        );
-        await service.markAnnouncementAsSeen();
-      }
+    // 3. Check for active app announcement
+    final activeAnnouncement = service.getActiveAppAnnouncement();
+    if (activeAnnouncement != null) {
+      await RemoteConfigUI.showAnnouncementSheet(
+        navContext,
+        announcement: activeAnnouncement,
+      );
+      await service.markAnnouncementAsSeen(activeAnnouncement.id);
     }
   }
 

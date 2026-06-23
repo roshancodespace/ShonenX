@@ -138,3 +138,9 @@ final availableMangaSourcesProvider = FutureProvider<List<SourceInfo>>(
   },
   name: 'availableMangaSourcesProvider',
 );
+
+final allAvailableSourcesProvider = FutureProvider<List<SourceInfo>>((ref) async {
+  final animeSources = await ref.watch(availableAnimeSourcesProvider.future);
+  final mangaSources = await ref.watch(availableMangaSourcesProvider.future);
+  return [...animeSources, ...mangaSources];
+}, name: 'allAvailableSourcesProvider');

@@ -53,17 +53,10 @@ class PlayerSettingsScreen extends ConsumerWidget {
             SettingsSegmentedTile<PlayerType>(
               title: 'Player type',
               segments: [
-                ButtonSegment(
-                  value: PlayerType.mediakit,
-                  label: Text('MK (Best)'),
-                ),
+                ButtonSegment(value: PlayerType.mediakit, label: Text('MPV')),
                 ButtonSegment(
                   value: PlayerType.betterplayer,
-                  label: Text('BP (Light)'),
-                ),
-                ButtonSegment(
-                  value: PlayerType.videoplayer,
-                  label: Text('VP (Lightest)'),
+                  label: Text('Exoplayer'),
                 ),
               ],
               selected: {playerPrefs.playerType},

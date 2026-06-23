@@ -9,8 +9,7 @@ import 'package:shonenx/features/player/domain/gesture_prefs.dart';
 
 enum PlayerType {
   mediakit,
-  betterplayer,
-  videoplayer;
+  betterplayer;
 
   factory PlayerType.fromString(String? value) {
     return PlayerType.values.firstWhere(

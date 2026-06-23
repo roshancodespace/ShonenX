@@ -21,23 +21,24 @@ class _RemoteConfigEditorScreenState
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Stable
-  final _stableUpdateId = TextEditingController(text: '0');
-  final _stableVersion = TextEditingController(text: '1.0.0');
-  bool _stableForceUpdate = false;
-  final _stableMessage = TextEditingController();
-  final _stableApk = TextEditingController();
+  // App Config
+  bool _downloadsEnabled = true;
+  bool _applicationEnabled = true;
+  final _minimumVersion = TextEditingController(text: 'v2.0.0');
 
-  // Test
-  final _testUpdateId = TextEditingController(text: '0');
-  final _testVersion = TextEditingController(text: '1.0.0-beta');
-  bool _testForceUpdate = false;
-  final _testMessage = TextEditingController();
-  final _testApk = TextEditingController();
+  // Announcements (App)
+  final _appAnnId = TextEditingController(text: '1');
+  bool _appAnnEnabled = true;
+  final _appAnnTitle = TextEditingController(text: 'Test Announcement');
+  final _appAnnMessage = TextEditingController();
+  final _appAnnType = TextEditingController(text: 'info');
 
-  // Announcement
-  final _announcementId = TextEditingController();
-  final _announcementMessage = TextEditingController();
+  // Announcements (Website)
+  final _webAnnId = TextEditingController(text: '1');
+  bool _webAnnEnabled = true;
+  final _webAnnTitle = TextEditingController(text: 'Website Announcement');
+  final _webAnnMessage = TextEditingController();
+  final _webAnnType = TextEditingController(text: 'warning');
 
   // Sources
   final Map<String, bool> _sourceDisabledMap = {};
@@ -59,27 +60,28 @@ class _RemoteConfigEditorScreenState
     _originalConfig = currentConfig;
 
     if (currentConfig != null) {
-      if (currentConfig.stable != null) {
-        _stableUpdateId.text = currentConfig.stable!.updateId.toString();
-        _stableVersion.text = currentConfig.stable!.version;
-        _stableForceUpdate = currentConfig.stable!.forceUpdate;
-        _stableMessage.text = currentConfig.stable!.message;
-        _stableApk.text = currentConfig.stable!.apk;
+      _downloadsEnabled = currentConfig.downloadsEnabled;
+      _applicationEnabled = currentConfig.applicationEnabled;
+      _minimumVersion.text = currentConfig.minimumVersion;
+
+      if (currentConfig.announcements.app.isNotEmpty) {
+        final ann = currentConfig.announcements.app.first;
+        _appAnnId.text = ann.id.toString();
+        _appAnnEnabled = ann.enabled;
+        _appAnnTitle.text = ann.title;
+        _appAnnMessage.text = ann.message;
+        _appAnnType.text = ann.type;
       }
-      if (currentConfig.test != null) {
-        _testUpdateId.text = currentConfig.test!.updateId.toString();
-        _testVersion.text = currentConfig.test!.version;
-        _testForceUpdate = currentConfig.test!.forceUpdate;
-        _testMessage.text = currentConfig.test!.message;
-        _testApk.text = currentConfig.test!.apk;
+
+      if (currentConfig.announcements.website.isNotEmpty) {
+        final ann = currentConfig.announcements.website.first;
+        _webAnnId.text = ann.id.toString();
+        _webAnnEnabled = ann.enabled;
+        _webAnnTitle.text = ann.title;
+        _webAnnMessage.text = ann.message;
+        _webAnnType.text = ann.type;
       }
-      if (currentConfig.announcement != null) {
-        _announcementId.text = currentConfig.announcement!.id;
-        _announcementMessage.text = currentConfig.announcement!.message;
-      } else {
-        _announcementId.text = '';
-        _announcementMessage.text = '';
-      }
+
       _sourceDisabledMap.clear();
       for (final entry in currentConfig.sources.entries) {
         _sourceDisabledMap[entry.key] = entry.value.disabled;
@@ -91,22 +93,21 @@ class _RemoteConfigEditorScreenState
   @override
   void dispose() {
     _tabController.dispose();
-    _stableUpdateId.dispose();
-    _stableVersion.dispose();
-    _stableMessage.dispose();
-    _stableApk.dispose();
-    _testUpdateId.dispose();
-    _testVersion.dispose();
-    _testMessage.dispose();
-    _testApk.dispose();
-    _announcementId.dispose();
-    _announcementMessage.dispose();
+    _minimumVersion.dispose();
+    _appAnnId.dispose();
+    _appAnnTitle.dispose();
+    _appAnnMessage.dispose();
+    _appAnnType.dispose();
+    _webAnnId.dispose();
+    _webAnnTitle.dispose();
+    _webAnnMessage.dispose();
+    _webAnnType.dispose();
     super.dispose();
   }
 
   void _bumpVersion(TextEditingController controller, String type) {
     final text = controller.text;
-    final regex = RegExp(r'^(\d+)\.(\d+)\.(\d+)(.*)$');
+    final regex = RegExp(r'^v?(\d+)\.(\d+)\.(\d+)(.*)$');
     final match = regex.firstMatch(text);
     if (match != null) {
       int major = int.parse(match.group(1)!);
@@ -124,7 +125,7 @@ class _RemoteConfigEditorScreenState
       } else if (type == 'patch') {
         patch++;
       }
-      controller.text = '$major.$minor.$patch$suffix';
+      controller.text = 'v$major.$minor.$patch$suffix';
     } else {
       // Fallback if not semver
       if (type == 'patch') {
@@ -134,8 +135,6 @@ class _RemoteConfigEditorScreenState
   }
 
   void _generateAndShowJson() {
-    final currentConfig = ref.read(remoteConfigProvider);
-
     final Map<String, SourceConfig> sources = {};
     _sourceDisabledMap.forEach((key, value) {
       if (value) {
@@ -146,39 +145,30 @@ class _RemoteConfigEditorScreenState
       }
     });
 
-    // Auto-manage announcement ID
-    String? announcementId;
-    final messageText = _announcementMessage.text.trim();
-    if (messageText.isNotEmpty) {
-      if (currentConfig?.announcement?.message == messageText) {
-        // Unchanged, keep old ID
-        announcementId =
-            currentConfig?.announcement?.id ??
-            'msg-${DateTime.now().millisecondsSinceEpoch}';
-      } else {
-        // Changed, generate new ID so users see it again
-        announcementId = 'msg-${DateTime.now().millisecondsSinceEpoch}';
-      }
-    }
-
     final newConfig = RemoteConfig(
-      stable: ChannelConfig(
-        updateId: int.tryParse(_stableUpdateId.text) ?? 0,
-        version: _stableVersion.text.trim(),
-        forceUpdate: _stableForceUpdate,
-        message: _stableMessage.text.trim(),
-        apk: _stableApk.text.trim(),
+      downloadsEnabled: _downloadsEnabled,
+      applicationEnabled: _applicationEnabled,
+      minimumVersion: _minimumVersion.text.trim(),
+      announcements: AnnouncementsConfig(
+        app: [
+          Announcement(
+            id: int.tryParse(_appAnnId.text) ?? 1,
+            enabled: _appAnnEnabled,
+            title: _appAnnTitle.text.trim(),
+            message: _appAnnMessage.text.trim(),
+            type: _appAnnType.text.trim(),
+          ),
+        ],
+        website: [
+          Announcement(
+            id: int.tryParse(_webAnnId.text) ?? 1,
+            enabled: _webAnnEnabled,
+            title: _webAnnTitle.text.trim(),
+            message: _webAnnMessage.text.trim(),
+            type: _webAnnType.text.trim(),
+          ),
+        ],
       ),
-      test: ChannelConfig(
-        updateId: int.tryParse(_testUpdateId.text) ?? 0,
-        version: _testVersion.text.trim(),
-        forceUpdate: _testForceUpdate,
-        message: _testMessage.text.trim(),
-        apk: _testApk.text.trim(),
-      ),
-      announcement: announcementId != null
-          ? Announcement(id: announcementId, message: messageText)
-          : null,
       sources: sources,
     );
 
@@ -213,87 +203,6 @@ class _RemoteConfigEditorScreenState
         );
       },
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppScaffold(
-      title: 'Config Editor',
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.restore),
-          tooltip: 'Reset to Live Config',
-          onPressed: () {
-            _loadCurrentConfig();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Reset to live config')),
-            );
-          },
-        ),
-      ],
-      barBottom: TabBar(
-        controller: _tabController,
-        isScrollable: true,
-        tabAlignment: TabAlignment.start,
-        tabs: const [
-          Tab(text: 'Updates'),
-          Tab(text: 'Announcements'),
-          Tab(text: 'Sources'),
-        ],
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildUpdatesTab(),
-          _buildAnnouncementsTab(),
-          _buildSourcesTab(),
-        ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: FilledButton.icon(
-            onPressed: _generateAndShowJson,
-            icon: const Icon(Icons.data_object),
-            label: const Text('Generate JSON'),
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              textStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _confirmBumpUpdateId(TextEditingController controller) async {
-    final current = int.tryParse(controller.text) ?? 0;
-    final next = current + 1;
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Increment'),
-        content: Text('Increment Update ID from $current to $next?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Increment'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      controller.text = next.toString();
-    }
   }
 
   Future<void> _confirmBumpVersion(TextEditingController controller) async {
@@ -332,73 +241,85 @@ class _RemoteConfigEditorScreenState
     }
   }
 
-  Widget _buildUpdatesTab() {
+  @override
+  Widget build(BuildContext context) {
+    return AppScaffold(
+      title: 'Config Editor',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.restore),
+          tooltip: 'Reset to Live Config',
+          onPressed: () {
+            _loadCurrentConfig();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Reset to live config')),
+            );
+          },
+        ),
+      ],
+      barBottom: TabBar(
+        controller: _tabController,
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        tabs: const [
+          Tab(text: 'App Config'),
+          Tab(text: 'Announcements'),
+          Tab(text: 'Sources'),
+        ],
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildAppConfigTab(),
+          _buildAnnouncementsTab(),
+          _buildSourcesTab(),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: FilledButton.icon(
+            onPressed: _generateAndShowJson,
+            icon: const Icon(Icons.data_object),
+            label: const Text('Generate JSON'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppConfigTab() {
     return ListView(
       padding: const EdgeInsets.only(bottom: 100, top: 16),
       children: [
-        _buildSectionTitle('Stable Release'),
-        _CleanTextField(
-          label: 'Update ID',
-          controller: _stableUpdateId,
-          originalValue: _originalConfig?.stable?.updateId.toString() ?? '0',
-          keyboardType: TextInputType.number,
-          onBump: () => _confirmBumpUpdateId(_stableUpdateId),
-        ),
-        _CleanTextField(
-          label: 'Version',
-          controller: _stableVersion,
-          originalValue: _originalConfig?.stable?.version ?? '1.0.0',
-          onBump: () => _confirmBumpVersion(_stableVersion),
-        ),
-        _CleanTextField(
-          label: 'APK URL',
-          controller: _stableApk,
-          originalValue: _originalConfig?.stable?.apk ?? '',
-        ),
-        _CleanTextField(
-          label: 'Changelog',
-          controller: _stableMessage,
-          originalValue: _originalConfig?.stable?.message ?? '',
-          maxLines: 4,
+        _buildSectionTitle('Global Flags'),
+        _buildCleanSwitch(
+          title: 'Application Enabled',
+          value: _applicationEnabled,
+          originalValue: _originalConfig?.applicationEnabled ?? true,
+          onChanged: (v) => setState(() => _applicationEnabled = v),
+          isDestructive: true,
         ),
         _buildCleanSwitch(
-          title: 'Force Update',
-          value: _stableForceUpdate,
-          originalValue: _originalConfig?.stable?.forceUpdate ?? false,
-          onChanged: (v) => setState(() => _stableForceUpdate = v),
+          title: 'Downloads Enabled',
+          value: _downloadsEnabled,
+          originalValue: _originalConfig?.downloadsEnabled ?? true,
+          onChanged: (v) => setState(() => _downloadsEnabled = v),
         ),
-
         const SizedBox(height: 32),
-        _buildSectionTitle('Test / Beta Release'),
+        _buildSectionTitle('Force Update Policy'),
         _CleanTextField(
-          label: 'Update ID',
-          controller: _testUpdateId,
-          originalValue: _originalConfig?.test?.updateId.toString() ?? '0',
-          keyboardType: TextInputType.number,
-          onBump: () => _confirmBumpUpdateId(_testUpdateId),
-        ),
-        _CleanTextField(
-          label: 'Version',
-          controller: _testVersion,
-          originalValue: _originalConfig?.test?.version ?? '1.0.0-beta',
-          onBump: () => _confirmBumpVersion(_testVersion),
-        ),
-        _CleanTextField(
-          label: 'APK URL',
-          controller: _testApk,
-          originalValue: _originalConfig?.test?.apk ?? '',
-        ),
-        _CleanTextField(
-          label: 'Changelog',
-          controller: _testMessage,
-          originalValue: _originalConfig?.test?.message ?? '',
-          maxLines: 4,
-        ),
-        _buildCleanSwitch(
-          title: 'Force Update',
-          value: _testForceUpdate,
-          originalValue: _originalConfig?.test?.forceUpdate ?? false,
-          onChanged: (v) => setState(() => _testForceUpdate = v),
+          label: 'Minimum Version',
+          controller: _minimumVersion,
+          originalValue: _originalConfig?.minimumVersion ?? 'v2.0.0',
+          onBump: () => _confirmBumpVersion(_minimumVersion),
         ),
       ],
     );
@@ -408,12 +329,80 @@ class _RemoteConfigEditorScreenState
     return ListView(
       padding: const EdgeInsets.only(bottom: 100, top: 16),
       children: [
-        _buildSectionTitle('Global Announcement'),
+        _buildSectionTitle('App Announcement'),
+        _buildCleanSwitch(
+          title: 'Enabled',
+          value: _appAnnEnabled,
+          originalValue:
+              _originalConfig?.announcements.app.firstOrNull?.enabled ?? true,
+          onChanged: (v) => setState(() => _appAnnEnabled = v),
+        ),
+        _CleanTextField(
+          label: 'ID',
+          controller: _appAnnId,
+          originalValue:
+              _originalConfig?.announcements.app.firstOrNull?.id.toString() ??
+              '1',
+          keyboardType: TextInputType.number,
+        ),
+        _CleanTextField(
+          label: 'Title',
+          controller: _appAnnTitle,
+          originalValue:
+              _originalConfig?.announcements.app.firstOrNull?.title ?? '',
+        ),
+        _CleanTextField(
+          label: 'Type (info, warning)',
+          controller: _appAnnType,
+          originalValue:
+              _originalConfig?.announcements.app.firstOrNull?.type ?? 'info',
+        ),
         _CleanTextField(
           label: 'Message',
-          controller: _announcementMessage,
-          originalValue: _originalConfig?.announcement?.message ?? '',
-          maxLines: 6,
+          controller: _appAnnMessage,
+          originalValue:
+              _originalConfig?.announcements.app.firstOrNull?.message ?? '',
+          maxLines: 4,
+        ),
+
+        const SizedBox(height: 32),
+        _buildSectionTitle('Website Announcement'),
+        _buildCleanSwitch(
+          title: 'Enabled',
+          value: _webAnnEnabled,
+          originalValue:
+              _originalConfig?.announcements.website.firstOrNull?.enabled ??
+              true,
+          onChanged: (v) => setState(() => _webAnnEnabled = v),
+        ),
+        _CleanTextField(
+          label: 'ID',
+          controller: _webAnnId,
+          originalValue:
+              _originalConfig?.announcements.website.firstOrNull?.id
+                  .toString() ??
+              '1',
+          keyboardType: TextInputType.number,
+        ),
+        _CleanTextField(
+          label: 'Title',
+          controller: _webAnnTitle,
+          originalValue:
+              _originalConfig?.announcements.website.firstOrNull?.title ?? '',
+        ),
+        _CleanTextField(
+          label: 'Type (info, warning)',
+          controller: _webAnnType,
+          originalValue:
+              _originalConfig?.announcements.website.firstOrNull?.type ??
+              'warning',
+        ),
+        _CleanTextField(
+          label: 'Message',
+          controller: _webAnnMessage,
+          originalValue:
+              _originalConfig?.announcements.website.firstOrNull?.message ?? '',
+          maxLines: 4,
         ),
       ],
     );
@@ -487,7 +476,9 @@ class _RemoteConfigEditorScreenState
                 fontWeight: isModified ? FontWeight.bold : FontWeight.w500,
                 color: isModified
                     ? theme.colorScheme.primary
-                    : (isDestructive && value ? theme.colorScheme.error : null),
+                    : (isDestructive && !value
+                          ? theme.colorScheme.error
+                          : null),
               ),
             ),
             if (isModified) ...[

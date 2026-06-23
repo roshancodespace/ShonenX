@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/manual_match_sheet.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
-import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
+import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
@@ -127,7 +127,7 @@ mixin ContinueMediaMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
     ref
         .read(
-          sourcePreferenceProvider(
+          mediaPreferenceProvider(
             MatchArgs(mediaTitle: mediaTitle, type: mediaType),
           ).notifier,
         )
@@ -136,10 +136,7 @@ mixin ContinueMediaMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     final result = await showModalBottomSheet<bool>(
       context: context,
       useRootNavigator: true,
-      builder: (_) => ManualMatchSheet(
-        mediaTitle: mediaTitle,
-        type: mediaType,
-      ),
+      builder: (_) => ManualMatchSheet(mediaTitle: mediaTitle, type: mediaType),
     );
 
     if (result == true && mounted) {
@@ -198,6 +195,7 @@ mixin ContinueMediaMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
     final value = await showMenu<String>(
       context: context,
+      useRootNavigator: true,
       position: RelativeRect.fromRect(
         position & const Size(40, 40),
         Offset.zero & overlay.size,
@@ -218,7 +216,7 @@ mixin ContinueMediaMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       case 'clear':
         await ref
             .read(
-              sourcePreferenceProvider(
+              mediaPreferenceProvider(
                 MatchArgs(mediaTitle: mediaTitle, type: mediaType),
               ).notifier,
             )
@@ -235,19 +233,17 @@ mixin ContinueMediaMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         await onRemoveHistory();
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Removed from history')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Removed from history')));
         }
         break;
 
       case 'fix_match':
         await showModalBottomSheet(
           context: context,
-          builder: (_) => ManualMatchSheet(
-            mediaTitle: mediaTitle,
-            type: mediaType,
-          ),
+          builder: (_) =>
+              ManualMatchSheet(mediaTitle: mediaTitle, type: mediaType),
         );
         break;
     }

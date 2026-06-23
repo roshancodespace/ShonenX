@@ -208,10 +208,12 @@ P _notificationSubscriptionDeserializeProp<P>(
 const _NotificationSubscriptionmodeEnumValueMap = {
   r'nextOnly': r'nextOnly',
   r'entireSeason': r'entireSeason',
+  r'targetEpisode': r'targetEpisode',
 };
 const _NotificationSubscriptionmodeValueEnumMap = {
   r'nextOnly': SubscriptionMode.nextOnly,
   r'entireSeason': SubscriptionMode.entireSeason,
+  r'targetEpisode': SubscriptionMode.targetEpisode,
 };
 const _NotificationSubscriptiontypeEnumValueMap = {
   r'animeAiring': r'animeAiring',

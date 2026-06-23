@@ -10,7 +10,7 @@ class NotificationsSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final subscriptions = ref.watch(notificationSubscriptionsProvider);
+    final subscriptions = ref.watch(notificationSubscriptionsProvider).values.toList();
     final theme = Theme.of(context);
 
     final upcoming = subscriptions.where((s) {

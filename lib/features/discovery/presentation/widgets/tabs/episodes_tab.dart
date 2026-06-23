@@ -7,7 +7,7 @@ import 'package:shonenx/features/discovery/presentation/widgets/sheets/download_
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/manual_match_sheet.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
-import 'package:shonenx/features/discovery/providers/source_preference_provider.dart';
+import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
@@ -106,7 +106,7 @@ class EpisodesTabWidget extends ConsumerWidget {
                                     episode,
                                     ref
                                             .read(
-                                              sourcePreferenceProvider(
+                                              mediaPreferenceProvider(
                                                 MatchArgs(
                                                   mediaTitle: media
                                                       .title
@@ -212,7 +212,7 @@ class _EpisodesHeader extends ConsumerWidget {
 
     final sourceState = ref
         .watch(
-          sourcePreferenceProvider(
+          mediaPreferenceProvider(
             MatchArgs(mediaTitle: title, type: media.type),
           ),
         )
@@ -402,7 +402,7 @@ class _EpisodesHeader extends ConsumerWidget {
                             onTap: () {
                               ref
                                   .read(
-                                    sourcePreferenceProvider(
+                                    mediaPreferenceProvider(
                                       MatchArgs(
                                         mediaTitle: title,
                                         type: media.type,
@@ -581,7 +581,7 @@ class _EpisodesHeader extends ConsumerWidget {
                                   onTap: () {
                                     ref
                                         .read(
-                                          sourcePreferenceProvider(
+                                          mediaPreferenceProvider(
                                             MatchArgs(
                                               mediaTitle: title,
                                               type: media.type,

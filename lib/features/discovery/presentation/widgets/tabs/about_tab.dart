@@ -140,10 +140,9 @@ class _AiringBanner extends ConsumerWidget {
     final subType = media.type == MediaType.MANGA
         ? SubscriptionType.mangaChapter
         : SubscriptionType.animeAiring;
-    final subscription = ref
-        .watch(notificationSubscriptionsProvider)
-        .where((e) => e.type == subType && e.referenceId == media.id)
-        .firstOrNull;
+
+    final map = ref.watch(notificationSubscriptionsProvider);
+    final subscription = map['${subType.name}_${media.id}'];
 
     final bool isMissed =
         subscription != null &&
@@ -237,16 +236,32 @@ class _AiringBanner extends ConsumerWidget {
             ),
           ),
           if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)
-            IconButton(
-              icon: Icon(
-                subscription?.isEnabled == true
-                    ? Icons.notifications_active
-                    : Icons.notifications_outlined,
-                color: subscription?.isEnabled == true
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurfaceVariant,
-              ),
-              onPressed: () {
+            InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () async {
+                final notifier = ref.read(
+                  notificationSubscriptionsProvider.notifier,
+                );
+                await notifier.toggleSubscription(media);
+                final sub = notifier.getSubscription(subType, media.id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  if (sub != null && sub.isEnabled) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Subscribed to ${itemText} $episodeNum. You will be notified when it drops.',
+                        ),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Notifications disabled.')),
+                    );
+                  }
+                }
+              },
+              onLongPress: () {
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
@@ -255,6 +270,19 @@ class _AiringBanner extends ConsumerWidget {
                       NotificationSubscriptionSheet(media: media),
                 );
               },
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Icon(
+                  subscription?.isEnabled == true
+                      ? (subscription!.mode == SubscriptionMode.entireSeason
+                            ? Icons.notifications_active
+                            : Icons.notifications)
+                      : Icons.notifications_outlined,
+                  color: subscription?.isEnabled == true
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
         ],
       ),

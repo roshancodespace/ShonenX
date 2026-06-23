@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
-import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
@@ -68,32 +69,56 @@ class _TrackerConfig extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
+    final prefs = ref.watch(discoveryPrefsProvider);
+    final targetId = prefs.metadataTrackerId;
+
     final primaryTracker = ref.watch(primaryTrackerProvider);
+    final trackers = ref
+        .watch(availableTrackersProvider)
+        .whereType<RemoteTracker>()
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(
-            primaryTracker.type == TrackerType.anilist
-                ? Icons.analytics_outlined
-                : Icons.list_alt_outlined,
-          ),
-          title: Text(primaryTracker.type.displayName),
-          subtitle: const Text('Trending, search & details from your tracker'),
-          trailing: Icon(
-            Icons.check_circle_rounded,
+        Text(
+          'METADATA SOURCE',
+          style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.primary,
+            letterSpacing: 1.1,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
-          'Change your primary tracker in Settings → Tracking.',
+          'Select the source for trending feeds, search results, and metadata.',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        const SizedBox(height: 12),
+        RadioListTile<String?>(
+          contentPadding: EdgeInsets.zero,
+          value: null,
+          groupValue: targetId,
+          onChanged: (val) {
+            ref.read(discoveryPrefsProvider.notifier).setMetadataTrackerId(val);
+          },
+          title: Text('Auto (${primaryTracker.type.displayName})'),
+          subtitle: const Text('Matches your primary tracker'),
+        ),
+        for (final tracker in trackers)
+          RadioListTile<String?>(
+            contentPadding: EdgeInsets.zero,
+            value: tracker.type.id,
+            groupValue: targetId,
+            onChanged: (val) {
+              ref
+                  .read(discoveryPrefsProvider.notifier)
+                  .setMetadataTrackerId(val);
+            },
+            title: Text(tracker.type.displayName),
+          ),
       ],
     );
   }
@@ -137,7 +162,7 @@ class _SourceConfig extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         ref
-            .watch(availableAnimeSourcesProvider)
+            .watch(allAvailableSourcesProvider)
             .when(
               data: (sources) {
                 if (sources.isEmpty) {

@@ -51,17 +51,16 @@ dependencies:
       path: flutter_inappwebview
   flutter_local_notifications: ^20.1.0
   timezone: ^0.10.1
-  flutter_timezone: ^5.0.2
+  flutter_timezone: ^5.1.0
   screenshot: ^3.0.0
   window_manager: ^0.5.1
   url_launcher: ^6.3.0
   better_player:
     git:
       url: https://github.com/frostnova721/betterplayer.git
-  video_player: ^2.10.1
   html: ^0.15.6
   flutter_svg: ^2.2.4
-  dynamic_color: ^1.8.1
+  dynamic_system_colors: ^1.9.0
   permission_handler: ^11.3.1
   file_picker: ^8.1.4
   encrypt: ^5.0.3
@@ -75,6 +74,7 @@ dependencies:
   media_kit_libs_video: ^1.0.7
   scrollable_positioned_list: ^0.3.8
   share_plus: ^12.0.2
+  collection: ^1.19.1
 
 dev_dependencies:
   flutter_test:

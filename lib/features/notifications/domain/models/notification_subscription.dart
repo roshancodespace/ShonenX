@@ -11,6 +11,7 @@ enum SubscriptionType {
 enum SubscriptionMode {
   nextOnly,
   entireSeason,
+  targetEpisode,
 }
 
 @collection

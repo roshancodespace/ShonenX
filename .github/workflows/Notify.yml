@@ -52,6 +52,9 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call' || github.event.workflow_run.conclusion == 'success' }}
     
     steps:
+      # This step fixes the "not a git repository" crash
+      - uses: actions/checkout@v4
+
       - name: Set up Environment
         run: |
           if [ "${{ github.event_name }}" = "workflow_run" ]; then

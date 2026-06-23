@@ -266,7 +266,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: build/windows/x64/runner/Release
+          path: build/windows/x64/installer/Release
 
   create-release:
     needs: [resolve-release-tag, build-android, build-linux, build-windows]

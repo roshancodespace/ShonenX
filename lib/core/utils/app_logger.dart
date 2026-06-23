@@ -1,159 +1,176 @@
+import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart' as pp;
 
 class AppLogger {
-  // Config
+  AppLogger._();
+
   static final Logger _console = Logger(
     printer: PrettyPrinter(
       noBoxingByDefault: true,
       methodCount: 0,
       errorMethodCount: 5,
-      colors: true,
-      printEmojis: true,
+      colors: false,
+      printEmojis: false,
       dateTimeFormat: DateTimeFormat.none,
     ),
   );
 
   static File? _logFile;
-  static bool _isFileLoggingEnabled = false;
+  static IOSink? _logSink;
+  static bool _enabled = false;
 
-  // Strip colors before writing to file
   static final RegExp _ansiRegex = RegExp(r'\x1B\[[0-9;]*[mK]');
 
-  // ANSI Colors
-  static const String _reset = '\x1B[0m';
-  static const String _bold = '\x1B[1m';
-  static const String _red = '\x1B[31m';
-  static const String _green = '\x1B[32m';
-  static const String _yellow = '\x1B[33m';
-  static const String _cyan = '\x1B[36m';
-  static const String _blue = '\x1B[34m';
+  // ---------- ANSI ----------
+  static const _reset = '\x1B[0m';
+  static const _bold = '\x1B[1m';
 
-  /// Call in main() before runApp
+  static const _gray = '\x1B[90m';
+  static const _blue = '\x1B[34m';
+  static const _green = '\x1B[32m';
+  static const _yellow = '\x1B[33m';
+  static const _red = '\x1B[31m';
+  static const _magenta = '\x1B[35m';
+
+  // ---------- Init ----------
   static Future<void> init() async {
-    // if (!kDebugMode) return;
-
     try {
-      final dir = await getApplicationCacheDirectory();
+      final dir = await pp.getApplicationCacheDirectory();
       final path = p.join(dir.path, 'ShonenX', 'app_logs.txt');
 
       _logFile = File(path);
-      _clearLogFile(force: true);
-      await _logFile!.create(recursive: true); // create dir if missing
-      _isFileLoggingEnabled = true;
+      await _logFile!.create(recursive: true);
+      
+      await _logSink?.close();
+      _logSink = _logFile!.openWrite(mode: FileMode.write);
 
-      _writeLine('\n\n=== SESSION START: ${DateTime.now()} ===\n');
-      debugPrint('$_green✓ AppLogger ready: $path$_reset');
+      _enabled = true;
+
+      _writeLine('=== SESSION START: ${DateTime.now()} ===');
+
+      debugPrint('$_green✓ Logger ready: $path$_reset');
     } catch (e) {
-      debugPrint('$_red✗ AppLogger init failed: $e$_reset');
+      debugPrint('$_red✗ Logger init failed: $e$_reset');
     }
   }
 
-  // --- Standard Logging ---
+  // ---------- Scope ----------
+  static ScopedLogger scope(Object context) {
+    final name = context is String
+        ? context
+        : context is Type
+        ? context.toString()
+        : context.runtimeType.toString();
 
-  static void d(dynamic msg) {
+    return ScopedLogger._(name);
+  }
+
+  // ---------- Core logging (LEVEL COLORS HERE ONLY) ----------
+
+  static void d(String context, String msg) {
     if (!kDebugMode) return;
-    _console.d(msg);
-    _writeLine('[DEBUG] $msg');
+    final m = '$_gray$context $_gray$msg$_reset';
+    _console.d(m);
+    _write('[DEBUG]', '$context $msg');
   }
 
-  static void i(dynamic msg) {
-    _console.i(msg);
-    _writeLine('[INFO] $msg');
+  static void i(String context, String msg) {
+    final m = '$context $_blue$msg$_reset';
+    _console.i(m);
+    _write('[INFO]', '$context $msg');
   }
 
-  static void w(dynamic msg, [Object? error, StackTrace? stack]) {
-    _console.w(msg, error: error, stackTrace: stack);
-    _writeLine('[WARN] $msg ${error ?? ""} ${stack ?? ""}');
+  static void w(String context, String msg, [Object? e, StackTrace? s]) {
+    final m = '$context $_yellow$msg$_reset';
+    _console.w(m, error: e, stackTrace: s);
+    _write('[WARN]', '$context $msg ${e ?? ''} ${s ?? ''}');
   }
 
-  static void e(dynamic msg, [Object? error, StackTrace? stack]) {
-    if (error is StackTrace) error = {error};
-    _console.e(msg, error: error, stackTrace: stack);
-    _writeLine('[ERROR] $msg ${error ?? ""} ${stack ?? ""}');
+  static void s(String context, String msg) {
+    final m = '$context $_green$msg$_reset';
+    _console.i(m);
+    _write('[SUCCESS]', '$context $msg');
   }
 
-  static void v(dynamic msg) {
+  static void e(String context, String msg, [Object? e, StackTrace? s]) {
+    final m = '$context $_red$msg$_reset';
+    _console.e(m, error: e, stackTrace: s);
+    _write('[ERROR]', '$context $msg ${e ?? ''} ${s ?? ''}');
+  }
+
+  static void v(String context, String msg) {
     if (!kDebugMode) return;
-    _console.t(msg);
-    _writeLine('[VERBOSE] $msg');
-  }
-
-  // --- CLI / Custom Formatting ---
-
-  static void warning(String msg) {
-    if (!kDebugMode) return;
-    debugPrint('$_yellow⚠ $msg$_reset');
-    _writeLine('⚠ $msg');
-  }
-
-  static void section(String title) {
-    if (!kDebugMode) return;
-    debugPrint('\n$_bold$_cyan=== $title ===$_reset');
-    _writeLine('\n=== $title ===');
-  }
-
-  static void infoPair(String key, dynamic val) {
-    if (!kDebugMode) return;
-    debugPrint('$_blue$key:$_reset $val');
-    _writeLine('$key: $val');
-  }
-
-  static void success(String msg) {
-    if (!kDebugMode) return;
-    debugPrint('$_green✓ $msg$_reset');
-    _writeLine('✓ $msg');
-  }
-
-  static void fail(String msg) {
-    if (!kDebugMode) return;
-    debugPrint('$_red✗ $msg$_reset');
-    _writeLine('✗ $msg');
+    final m = '$_gray$context $_gray$msg$_reset';
+    _console.t(m);
+    _write('[VERBOSE]', '$context $msg');
   }
 
   static void raw(String msg) {
     if (!kDebugMode) return;
     debugPrint(msg);
-    _writeLine(msg);
+    _write('[RAW]', msg);
   }
 
-  // --- Helpers ---
+  // ---------- Internal ----------
+  static void _write(String level, String msg) {
+    if (!_enabled || _logSink == null) return;
+    _writeLine('$level $msg');
+  }
 
   static void _writeLine(String msg) {
-    if (!_isFileLoggingEnabled || _logFile == null) return;
-
     try {
       final clean = msg.replaceAll(_ansiRegex, '');
-      // Sync write prevents data loss during crash
-      _logFile!.writeAsStringSync(
-        '${DateTime.now().toIso8601String()}: $clean\n',
-        mode: FileMode.append,
-        flush: true,
-      );
+      _logSink!.writeln('${DateTime.now().toIso8601String()} $clean');
     } catch (e) {
       debugPrint('Log write failed: $e');
     }
   }
 
-  static void _clearLogFile({bool force = false}) {
-    if (!force && !_isFileLoggingEnabled || _logFile == null) return;
-
-    try {
-      _logFile!.writeAsStringSync('', mode: FileMode.write);
-    } catch (e) {
-      debugPrint('Log clear failed: $e');
-    }
-  }
-
-  // Getters
-  static String get bold => _bold;
+  // ---------- expose ----------
   static String get reset => _reset;
-  static String get green => _green;
-  static String get blue => _blue;
-  static String get red => _red;
-  static String get yellow => _yellow;
-  static String get cyan => _cyan;
+  static String get bold => _bold;
+  static String get magenta => _magenta;
+  static File? get logFile => _logFile;
+
+  static Future<String> getLogContent() async {
+    if (_logFile == null || !await _logFile!.exists()) {
+      return 'No logs available.';
+    }
+    return await _logFile!.readAsString();
+  }
+}
+
+class ScopedLogger {
+  final String _context;
+
+  const ScopedLogger._(this._context);
+
+  String get _ctx => '${AppLogger.magenta}[$_context]${AppLogger.reset}';
+
+  ScopedLogger child(String sub) => ScopedLogger._('$_context.$sub');
+
+  void d(String msg) => AppLogger.d(_ctx, msg);
+  void i(String msg) => AppLogger.i(_ctx, msg);
+  void w(String msg, [Object? e, StackTrace? s]) =>
+      AppLogger.w(_ctx, msg, e, s);
+  void e(String msg, [Object? e, StackTrace? s]) =>
+      AppLogger.e(_ctx, msg, e, s);
+  void v(String msg) => AppLogger.v(_ctx, msg);
+
+  void s(String msg) => AppLogger.s(_ctx, '✓ $msg');
+
+  void fail(String msg) => AppLogger.e(_ctx, '✗ $msg');
+
+  void warning(String msg) => AppLogger.w(_ctx, '⚠ $msg');
+
+  void section(String title) {
+    AppLogger.raw(
+      '\n${AppLogger.magenta}${AppLogger.bold}=== $_context | $title ===${AppLogger.reset}',
+    );
+  }
 }

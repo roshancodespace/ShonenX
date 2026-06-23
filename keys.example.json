@@ -3,6 +3,5 @@
     "ANILIST_CLIENT_SECRET": "mobile|desktop",
     "MAL_CLIENT_ID": "mobile|desktop",
     "MAL_CLIENT_SECRET": "mobile|desktop",
-    "API_URL": "",
     "COMMENTUM_API_URL": ""
 }

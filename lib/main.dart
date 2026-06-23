@@ -1,137 +1,117 @@
-import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
-
-import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:isar_community/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shonenx/app_initializer.dart';
+import 'package:shonenx/app_init.dart';
+import 'package:shonenx/core/database/database_provider.dart';
+import 'package:shonenx/core/providers/storage_provider.dart';
+import 'package:shonenx/core/providers/theme_prefs_provider.dart';
+import 'package:shonenx/core/providers/ui_prefs_provider.dart';
+import 'package:shonenx/core/router/app_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/remote_config/ui/remote_config_listener.dart';
+import 'package:shonenx/core/theme/app_theme.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
-import 'package:shonenx/shared/providers/settings/theme_notifier.dart';
-import 'package:shonenx/shared/providers/settings/ui_notifier.dart';
-import 'package:shonenx/router/router_config.dart';
+import 'package:shonenx/shared/widgets/global_background.dart';
 
-late Isar isar;
-late SharedPreferencesWithCache sharedPrefs;
-final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+final _log = AppLogger.scope('Main');
+final _riverpodLog = AppLogger.scope('RiverpodObserver');
 
-void main(List<String> args) async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppLogger.init();
 
-  try {
-    AppLogger.i('Starting app initialization');
-    await AppInitializer.initialize();
-  } catch (e) {
-    AppLogger.e('Error initializing app: $e');
-    runApp(
-      const MaterialApp(
-        home: Scaffold(body: Center(child: Text('Initialization failed'))),
-      ),
-    );
-    return;
-  }
+  final log = _log.child('main');
 
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      systemNavigationBarColor: Colors.transparent,
-      systemStatusBarContrastEnforced: false,
+  log.i('App starting');
+
+  final init = await AppInit().init();
+  log.i('AppInit completed');
+
+  final sharedPreference = await SharedPreferences.getInstance();
+  log.i('SharedPreferences ready');
+
+  runApp(
+    ProviderScope(
+      observers: [RiverpodLogger()],
+      overrides: [
+        databaseProvider.overrideWith((ref) => init.isar),
+        sharedPreferencesProvider.overrideWith((ref) => sharedPreference),
+      ],
+      child: const ShonenXApp(),
     ),
   );
-
-  runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends ConsumerWidget {
-  const MyApp({super.key});
+class ShonenXApp extends ConsumerWidget {
+  const ShonenXApp({super.key});
+
+  static final _log = AppLogger.scope(ShonenXApp);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeSettingsProvider);
-    final scale = ref.watch(uiSettingsProvider.select((s) => s.scale));
+    final log = _log.child('build');
+
+    final themePrefs = ref.watch(themePrefsProvider);
+    log.d('Theme changed: ${themePrefs.themeMode}');
+
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-        final ColorScheme? lightScheme =
-            (theme.useDynamicColors && lightDynamic != null)
-            ? lightDynamic
-            : null;
-        final ColorScheme? darkScheme =
-            (theme.useDynamicColors && darkDynamic != null)
-            ? darkDynamic
-            : null;
-
-        final lightTheme = FlexThemeData.light(
-          colorScheme: lightScheme,
-          swapColors: theme.swapColors,
-          blendLevel: theme.blendLevel,
-          scheme: lightScheme != null ? null : theme.flexSchemeEnum,
-          useMaterial3: theme.useMaterial3,
-          textTheme: GoogleFonts.montserratTextTheme(),
+        final lightTheme = AppTheme.light(
+          themePrefs,
+          themePrefs.useDynamic ? lightDynamic : null,
         );
-
-        final darkTheme = FlexThemeData.dark(
-          colorScheme: darkScheme,
-          swapColors: theme.swapColors,
-          blendLevel: theme.blendLevel,
-          scheme: darkScheme != null ? null : theme.flexSchemeEnum,
-          darkIsTrueBlack: theme.amoled,
-          useMaterial3: theme.useMaterial3,
-          textTheme: GoogleFonts.montserratTextTheme(),
+        final darkTheme = AppTheme.dark(
+          themePrefs,
+          themePrefs.useDynamic ? darkDynamic : null,
         );
-
-        final themeMode = theme.themeMode == 'light'
-            ? ThemeMode.light
-            : theme.themeMode == 'dark'
-            ? ThemeMode.dark
-            : ThemeMode.system;
 
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,
-          scaffoldMessengerKey: scaffoldMessengerKey,
-          routerConfig: routerConfig,
-          builder: (context, child) {
-            final mediaQuery = MediaQuery.of(context);
-            final scaledSize = mediaQuery.size / scale;
-            return MediaQuery(
-              data: mediaQuery.copyWith(
-                textScaler: TextScaler.linear(scale),
-                size: scaledSize,
-              ),
-              child: child!,
-            );
-          },
+          title: 'ShonenX',
+          themeMode: themePrefs.themeMode,
           theme: lightTheme,
           darkTheme: darkTheme,
-          themeMode: themeMode,
+          routerConfig: ref.watch(routerProvider),
+          builder: (context, child) {
+            if (child == null) return const SizedBox.shrink();
+
+            GlobalScale.uiScaleFactor = themePrefs.uiScaleFactor;
+            GlobalScale.uiRoundness = themePrefs.uiRoundness;
+
+            final textScaledChild = MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(themePrefs.fontScaleFactor),
+              ),
+              child: child,
+            );
+
+            return RemoteConfigListener(
+              child: GlobalBackground(child: textScaledChild),
+            );
+          },
         );
       },
     );
   }
 }
 
-void showAppSnackBar(
-  String title,
-  String message, {
-  ContentType type = ContentType.success,
-}) {
-  final messenger = scaffoldMessengerKey.currentState;
-  if (messenger != null) {
-    messenger
-      ..removeCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.fixed,
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          content: AwesomeSnackbarContent(
-            title: title,
-            message: message,
-            contentType: type,
-          ),
-        ),
-      );
+final class RiverpodLogger extends ProviderObserver {
+  static final _log = _riverpodLog;
+
+  @override
+  void didUpdateProvider(
+    ProviderObserverContext context,
+    Object? previousValue,
+    Object? newValue,
+  ) {
+    final providerName = context.provider.name ?? 'UnknownProvider';
+
+    if (providerName != 'episodeTabProvider') return;
+
+    final log = _log.child(providerName);
+
+    log.section('State Update');
+    log.i('Previous: $previousValue');
+    log.i('New: $newValue');
   }
 }

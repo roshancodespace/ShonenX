@@ -7,12 +7,18 @@ EXE_NAME="shonenx"
 ICON_URL="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/icons/app_icon-modified-2.png"
 INSTALL_DIR="$HOME/.local/share/ShonenX"
 
-# Set paths dynamically
+# Set paths dynamically based on environment
+IS_TERMUX=false
+SUDO="sudo"
 if [ -n "${TERMUX_VERSION:-}" ]; then
+    IS_TERMUX=true
+    SUDO="" # Termux runs as single-user, no sudo required
     BIN_DIR="$PREFIX/bin"
     DESKTOP_DIR=""
     ICON_DIR=""
 else
+    # Check if sudo exists on standard Linux systems
+    command -v sudo >/dev/null 2>&1 || SUDO=""
     BIN_DIR="$HOME/.local/bin"
     DESKTOP_DIR="$HOME/.local/share/applications"
     ICON_DIR="$HOME/.local/share/icons/hicolor/512x512/apps"
@@ -30,59 +36,35 @@ success() { echo -e "${GREEN}[✓] $1${NC}"; }
 warn() { echo -e "${YELLOW}[!] $1${NC}"; }
 error() { echo -e "${RED}[✗] $1${NC}"; exit 1; }
 
-bootstrap_deps() {
-    local missing=()
-    for cmd in curl jq unzip; do
-        if ! command -v "$cmd" >/dev/null 2>&1; then
-            missing+=("$cmd")
-        fi
-    done
-
-    # Install core tools if missing
-    if [ ${#missing[@]} -gt 0 ]; then
-        msg "Installing missing tools: ${missing[*]}..."
-        if command -v apt-get >/dev/null 2>&1; then
-            sudo apt-get update && sudo apt-get install -y "${missing[@]}"
-        elif command -v pacman >/dev/null 2>&1; then
-            sudo pacman -Sy --noconfirm "${missing[@]}"
-        elif command -v dnf >/dev/null 2>&1; then
-            sudo dnf install -y "${missing[@]}"
-        elif command -v zypper >/dev/null 2>&1; then
-            sudo zypper install -y "${missing[@]}"
-        elif [ -n "${TERMUX_VERSION:-}" ] && command -v pkg >/dev/null 2>&1; then
-            pkg install -y "${missing[@]}"
-        else
-            error "Install these manually first: ${missing[*]}"
-        fi
-    fi
-
-    # Check for libmpv / mpv shared library
+check_mpv() {
+    # Check if libmpv or mpv binary exists anywhere in system paths
     local has_mpv=0
     if ldconfig -p 2>/dev/null | grep -q "libmpv"; then has_mpv=1; fi
     if [ -f /usr/lib/libmpv.so ] || [ -f /usr/lib64/libmpv.so ] || [ -f /usr/local/lib/libmpv.so ] || [ -f "${PREFIX:-}/lib/libmpv.so" ]; then 
         has_mpv=1
     fi
+    if command -v mpv >/dev/null 2>&1; then has_mpv=1; fi
 
     if [ "$has_mpv" -eq 0 ]; then
-        msg "libmpv not found. Installing libmpv/mpv fallback..."
-        if command -v apt-get >/dev/null 2>&1; then
-            sudo apt-get install -y libmpv-dev || sudo apt-get install -y mpv
-        elif command -v pacman >/dev/null 2>&1; then
-            sudo pacman -S --noconfirm mpv
-        elif command -v dnf >/dev/null 2>&1; then
-            sudo dnf install -y mpv-libs || sudo dnf install -y mpv
-        elif command -v zypper >/dev/null 2>&1; then
-            sudo zypper install -y libmpv1 || sudo zypper install -y mpv
-        elif [ -n "${TERMUX_VERSION:-}" ] && command -v pkg >/dev/null 2>&1; then
+        msg "libmpv/mpv not found. Installing..."
+        if $IS_TERMUX && command -v pkg >/dev/null 2>&1; then
             pkg install -y mpv
+        elif command -v pacman >/dev/null 2>&1; then
+            $SUDO pacman -Sy --noconfirm mpv
+        elif command -v apt-get >/dev/null 2>&1; then
+            $SUDO apt-get update && ($SUDO apt-get install -y libmpv-dev || $SUDO apt-get install -y mpv)
+        elif command -v dnf >/dev/null 2>&1; then
+            $SUDO dnf install -y mpv-libs || $SUDO dnf install -y mpv
+        elif command -v zypper >/dev/null 2>&1; then
+            $SUDO zypper install -y libmpv1 || $SUDO zypper install -y mpv
         else
-            warn "Could not auto-install libmpv. Please ensure mpv/libmpv is installed manually."
+            warn "Could not auto-install mpv. Please install your distribution's mpv package manually."
         fi
     fi
 }
 
 setup_path() {
-    if [ -n "${TERMUX_VERSION:-}" ] || [[ ":$PATH:" == *":$BIN_DIR:"* ]]; then
+    if $IS_TERMUX || [[ ":$PATH:" == *":$BIN_DIR:"* ]]; then
         return
     fi
 
@@ -100,26 +82,23 @@ setup_path() {
                 success "Updated ~/.config/fish/config.fish"
             fi
         fi
-        warn "Restart your terminal or source your config to apply PATH updates."
+        warn "Restart your shell or source config to apply PATH updates."
     fi
 }
 
 install() {
-    bootstrap_deps
+    check_mpv
     
     msg "Checking latest release from GitHub..."
     local release_json
     release_json=$(curl -s "https://api.github.com/repos/$REPO/releases/latest")
     
+    # Pure string parsing via grep/sed instead of relying on jq
     local download_url
-    download_url=$(echo "$release_json" | jq -r '
-        .assets[] | 
-        select(.name | ascii_downcase | (contains("linux") and endswith(".zip"))) | 
-        .browser_download_url
-    ' | head -n 1)
+    download_url=$(echo "$release_json" | grep -o '"browser_download_url": "[^"]*' | grep -i "linux" | sed 's/"browser_download_url": "//' | head -n 1)
 
     local version
-    version=$(echo "$release_json" | jq -r '.tag_name')
+    version=$(echo "$release_json" | grep -o '"tag_name": "[^"]*' | sed 's/"tag_name": "//' | head -n 1)
 
     if [ -z "$download_url" ] || [ "$download_url" = "null" ]; then
         error "No linux zip asset found in release $version"
@@ -136,7 +115,7 @@ install() {
     unzip -q -o "$tmp_zip" -d "$INSTALL_DIR"
     rm -f "$tmp_zip"
 
-    # Flatten the directory if files are nested inside a 'linux' folder
+    # Flatten zip layout if nested inside 'linux/' directory
     if [ -d "$INSTALL_DIR/linux" ]; then
         find "$INSTALL_DIR/linux" -maxdepth 1 -mindepth 1 -exec mv -t "$INSTALL_DIR" {} +
         rmdir "$INSTALL_DIR/linux"
@@ -146,7 +125,7 @@ install() {
     exe_path=$(find "$INSTALL_DIR" -type f -name "$EXE_NAME" | head -n 1)
     
     if [ -z "$exe_path" ]; then
-        error "Executable '$EXE_NAME' not found in archive"
+        error "Executable '$EXE_NAME' not found in zip archive"
     fi
     chmod +x "$exe_path"
 
@@ -187,7 +166,7 @@ uninstall() {
         command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP_DIR" || true
     fi
 
-    success "Uninstalled successfully. Configuration metrics preserved."
+    success "Uninstalled successfully."
 }
 
 echo "ShonenX Launcher Utilities"

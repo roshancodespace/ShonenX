@@ -400,16 +400,24 @@ class _EpisodesHeader extends ConsumerWidget {
 
                           return InkWell(
                             onTap: () {
+                              final matchArgs = MatchArgs(
+                                mediaTitle: title,
+                                type: media.type,
+                              );
                               ref
-                                  .read(
-                                    mediaPreferenceProvider(
-                                      MatchArgs(
-                                        mediaTitle: title,
-                                        type: media.type,
-                                      ),
-                                    ).notifier,
-                                  )
+                                  .read(mediaPreferenceProvider(matchArgs).notifier)
                                   .updateSource(sourceInfo);
+                              ref.invalidate(matchedMediaProvider(matchArgs));
+                              ref.invalidate(episodesListProvider(matchArgs));
+                              if (media.sourceId != null) {
+                                ref.invalidate(
+                                  sourceEpisodesProvider((
+                                    providerId: media.id,
+                                    sourceId: media.sourceId!,
+                                    type: media.type,
+                                  )),
+                                );
+                              }
                               Navigator.pop(sheetContext);
                             },
                             child: Padding(
@@ -579,16 +587,24 @@ class _EpisodesHeader extends ConsumerWidget {
                               children: [
                                 InkWell(
                                   onTap: () {
+                                    final matchArgs = MatchArgs(
+                                      mediaTitle: title,
+                                      type: media.type,
+                                    );
                                     ref
-                                        .read(
-                                          mediaPreferenceProvider(
-                                            MatchArgs(
-                                              mediaTitle: title,
-                                              type: media.type,
-                                            ),
-                                          ).notifier,
-                                        )
+                                        .read(mediaPreferenceProvider(matchArgs).notifier)
                                         .updateSource(defaultVariant);
+                                    ref.invalidate(matchedMediaProvider(matchArgs));
+                                    ref.invalidate(episodesListProvider(matchArgs));
+                                    if (media.sourceId != null) {
+                                      ref.invalidate(
+                                        sourceEpisodesProvider((
+                                          providerId: media.id,
+                                          sourceId: media.sourceId!,
+                                          type: media.type,
+                                        )),
+                                      );
+                                    }
                                     Navigator.pop(sheetContext);
                                   },
                                   child: Padding(

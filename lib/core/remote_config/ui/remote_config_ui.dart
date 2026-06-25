@@ -18,6 +18,7 @@ class RemoteConfigUI {
       context: context,
       title: 'Update Required',
       enableDrag: false,
+      useRootNavigator: true,
       child: PopScope(
         canPop: false,
         child: Column(
@@ -62,6 +63,7 @@ class RemoteConfigUI {
       title: announcement.title.isNotEmpty
           ? announcement.title
           : 'Announcement',
+      useRootNavigator: true,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

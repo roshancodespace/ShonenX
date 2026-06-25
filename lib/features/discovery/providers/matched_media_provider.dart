@@ -93,11 +93,11 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
       return const MatchedMediaState();
     }
 
-    // Cache the match in SourcePreference to bypass matchmaker on next launch
+    // Cache the match in Isar DB to bypass matchmaker on next launch
     Future.microtask(() {
       ref
           .read(mediaPreferenceProvider(args).notifier)
-          .setManualOverrides(result.id, result.title.availableTitle);
+          .saveAutoMatch(result.id, result.title.availableTitle);
     });
 
     return MatchedMediaState(

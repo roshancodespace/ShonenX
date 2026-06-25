@@ -59,7 +59,9 @@ class RemoteConfigUI {
   }) async {
     await AppBottomSheet.show(
       context: context,
-      title: announcement.title.isNotEmpty ? announcement.title : 'Announcement',
+      title: announcement.title.isNotEmpty
+          ? announcement.title
+          : 'Announcement',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -95,6 +97,45 @@ class RemoteConfigUI {
             ),
             const SizedBox(height: 16),
           ],
+        ),
+      ),
+    );
+  }
+
+  static Widget buildApplicationDisabledScreen(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: cs.surface,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Icon(Icons.gpp_bad_rounded, size: 80, color: cs.error),
+              const SizedBox(height: 24),
+              Text(
+                'Service Unavailable',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: cs.onSurface,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'The application has been disabled by the administrator. Please check back later or update the application.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: cs.onSurfaceVariant,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

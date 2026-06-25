@@ -41,7 +41,13 @@ class RemoteConfigService {
 
   Future<void> fetchRemoteConfig() async {
     try {
-      final response = await http.get(Uri.parse(_configUrl));
+      final uri = Uri.parse(_configUrl).replace(
+        queryParameters: {'_t': DateTime.now().millisecondsSinceEpoch.toString()},
+      );
+      final response = await http.get(
+        uri,
+        headers: {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'},
+      );
       if (response.statusCode == 200) {
         final jsonStr = response.body;
 

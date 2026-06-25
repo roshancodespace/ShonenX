@@ -75,8 +75,8 @@ class ShonenXApp extends ConsumerWidget {
           builder: (context, child) {
             if (child == null) return const SizedBox.shrink();
 
-            GlobalScale.uiScaleFactor = themePrefs.uiScaleFactor;
-            GlobalScale.uiRoundness = themePrefs.uiRoundness;
+            GlobalUI.uiScaleFactor = themePrefs.uiScaleFactor;
+            GlobalUI.uiRoundness = themePrefs.uiRoundness;
 
             final textScaledChild = MediaQuery(
               data: MediaQuery.of(context).copyWith(

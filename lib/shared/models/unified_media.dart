@@ -33,6 +33,7 @@ class UnifiedMedia {
   final MediaTitle title;
   final String? format;
   final String? cover;
+  final double? score;
   final String? banner;
   final String? description;
   final List<MediaTag>? tags;
@@ -56,6 +57,7 @@ class UnifiedMedia {
     this.idMal,
     this.format,
     this.cover,
+    this.score,
     this.banner,
     this.description,
     this.tags = const [],

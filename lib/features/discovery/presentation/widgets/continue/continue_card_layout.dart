@@ -58,7 +58,7 @@ class ContinueCardLayout extends StatelessWidget {
         children: [
           Expanded(
             child: _buildThumbnailStack(
-              borderRadius: GlobalScale.uiRoundness,
+              borderRadius: GlobalUI.uiRoundness,
               badge: _buildBadge(
                 theme,
                 text: badgeType,
@@ -102,7 +102,7 @@ class ContinueCardLayout extends StatelessWidget {
       width: width,
       height: height,
       foregroundDecoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
           color: isActive
               ? cs.tertiary
@@ -112,7 +112,7 @@ class ContinueCardLayout extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.28)),
       ),
       child: Padding(
@@ -122,7 +122,7 @@ class ContinueCardLayout extends StatelessWidget {
           children: [
             Expanded(
               child: _buildThumbnailStack(
-                borderRadius: GlobalScale.uiRoundness,
+                borderRadius: GlobalUI.uiRoundness,
                 badge: _buildBadge(
                   theme,
                   text: badgeText,
@@ -213,10 +213,7 @@ class ContinueCardLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildThumbnailStack({
-    required double borderRadius,
-    Widget? badge,
-  }) {
+  Widget _buildThumbnailStack({required double borderRadius, Widget? badge}) {
     return Builder(
       builder: (context) {
         final theme = Theme.of(context);
@@ -226,67 +223,67 @@ class ContinueCardLayout extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-                if (thumbnailBuilder != null)
-                  thumbnailBuilder!(context, cs)
-                else if (imageUrl != null && imageUrl!.isNotEmpty)
-                  CachedNetworkImage(
-                    imageUrl: imageUrl!,
-                    fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => _buildFallbackImage(cs),
-                  )
-                else
-                  _buildFallbackImage(cs),
+              if (thumbnailBuilder != null)
+                thumbnailBuilder!(context, cs)
+              else if (imageUrl != null && imageUrl!.isNotEmpty)
+                CachedNetworkImage(
+                  imageUrl: imageUrl!,
+                  fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) => _buildFallbackImage(cs),
+                )
+              else
+                _buildFallbackImage(cs),
 
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        stops: const [0.45, 1],
-                        colors: [
-                          Colors.transparent,
-                          cs.scrim.withValues(alpha: 0.75),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: LinearProgressIndicator(
-                    value: progress.clamp(0, 1),
-                    minHeight: 4,
-                    backgroundColor: Colors.black26,
-                    valueColor: AlwaysStoppedAnimation(cs.primary),
-                  ),
-                ),
-
-                if (badge != null) badge,
-
-                AnimatedContainer(
-                  duration: Durations.short4,
+              Positioned.fill(
+                child: DecoratedBox(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(borderRadius),
-                    border: Border.all(
-                      color: isActive ? cs.tertiary : Colors.transparent,
-                      width: isActive ? 2.5 : 0.0,
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: const [0.45, 1],
+                      colors: [
+                        Colors.transparent,
+                        cs.scrim.withValues(alpha: 0.75),
+                      ],
                     ),
                   ),
                 ),
+              ),
 
-                if (isLoading)
-                  const ColoredBox(
-                    color: Colors.black45,
-                    child: Center(
-                      child: CircularProgressIndicator(strokeWidth: 2.4),
-                    ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: LinearProgressIndicator(
+                  value: progress.clamp(0, 1),
+                  minHeight: 4,
+                  backgroundColor: Colors.black26,
+                  valueColor: AlwaysStoppedAnimation(cs.primary),
+                ),
+              ),
+
+              if (badge != null) badge,
+
+              AnimatedContainer(
+                duration: Durations.short4,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  border: Border.all(
+                    color: isActive ? cs.tertiary : Colors.transparent,
+                    width: isActive ? 2.5 : 0.0,
                   ),
-              ],
-            ),
+                ),
+              ),
+
+              if (isLoading)
+                const ColoredBox(
+                  color: Colors.black45,
+                  child: Center(
+                    child: CircularProgressIndicator(strokeWidth: 2.4),
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );

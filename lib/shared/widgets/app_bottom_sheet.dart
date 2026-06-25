@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 
 class AppBottomSheet extends StatelessWidget {
   final String title;
@@ -136,7 +137,12 @@ class AppBottomSheet extends StatelessWidget {
 
     return Container(
       margin: EdgeInsets.only(bottom: bottomInset),
-      decoration: BoxDecoration(color: colorScheme.surfaceContainer),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(GlobalUI.uiRoundness),
+        ),
+      ),
       child: Padding(
         padding: padding,
         child: Column(

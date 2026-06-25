@@ -14,6 +14,7 @@ import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/core/providers/navbar_action_provider.dart';
 
 final _navBreakpoints = ResponsiveBreakpoints.defaults.copyWith(
   heightNormal: 750,
@@ -101,7 +102,16 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
                 ? Row(
                     children: [
                       _SideNavBar(navigationShell: widget.navigationShell),
-                      Expanded(child: widget.navigationShell),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            widget.navigationShell,
+                            _SideNavAttachment(
+                              navigationShell: widget.navigationShell,
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   )
                 : Stack(
@@ -130,14 +140,31 @@ const _destinations = [
   _NavDest(Icons.library_books_outlined, 'Library'),
 ];
 
-class _BottomNavBar extends StatelessWidget {
+class _BottomNavBar extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
   const _BottomNavBar({required this.navigationShell});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final r = context.responsive;
     final cs = Theme.of(context).colorScheme;
+    final navState = ref.watch(navBarProvider);
+
+    if (navState.customBar != null) {
+      return SafeArea(
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: navState.customBar!,
+          ),
+        ),
+      );
+    }
+
+    final activeAttachmentWidget = navState.topForBranch(
+      navigationShell.currentIndex,
+    );
 
     final barHeight = r.isPhone ? 68.0 : 80.0;
     final iconSize = r.isPhone ? 25.0 : 28.0;
@@ -150,97 +177,130 @@ class _BottomNavBar extends StatelessWidget {
         alignment: Alignment.bottomCenter,
         child: Padding(
           padding: EdgeInsets.only(bottom: r.height * 0.018),
-          child: Row(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                  child: Container(
-                    height: barHeight,
-                    padding: EdgeInsets.all(hPad),
-                    decoration: BoxDecoration(
-                      color: cs.surface.withValues(alpha: 0.75),
-                      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-                      border: Border.all(
-                        color: cs.outlineVariant.withValues(alpha: 0.45),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: List.generate(_destinations.length, (i) {
-                        final active = navigationShell.currentIndex == i;
-                        return InkWell(
-                          onTap: () => navigationShell.goBranch(i),
-                          borderRadius: BorderRadius.circular(itemRadius),
-                          focusColor: cs.primary.withValues(alpha: 0.2),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOutCubic,
-                            height: double.maxFinite,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: active ? 18 : 14,
-                            ),
-                            decoration: BoxDecoration(
-                              color: active ? cs.primary : Colors.transparent,
-                              borderRadius: BorderRadius.circular(itemRadius),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                AnimatedScale(
-                                  scale: active ? 1.15 : 1.0,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOutBack,
-                                  child: AnimatedOpacity(
-                                    opacity: active ? 1.0 : 0.55,
-                                    duration: const Duration(milliseconds: 250),
-                                    child: Icon(
-                                      _destinations[i].icon,
-                                      color: active
-                                          ? cs.onPrimary
-                                          : cs.onSurfaceVariant,
-                                      size: iconSize,
-                                    ),
-                                  ),
-                                ),
-                                ClipRect(
-                                  child: AnimatedSize(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeOutCubic,
-                                    child: active
-                                        ? Padding(
-                                            padding: const EdgeInsets.only(
-                                              left: 8,
-                                            ),
-                                            child: Text(
-                                              _destinations[i].label,
-                                              style: TextStyle(
-                                                fontSize: fontSize,
-                                                fontWeight: FontWeight.w600,
-                                                color: cs.onPrimary,
-                                              ),
-                                            ),
-                                          )
-                                        : const SizedBox.shrink(),
-                                  ),
-                                ),
-                              ],
-                            ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: activeAttachmentWidget != null
+                      ? KeyedSubtree(
+                          key: ValueKey(activeAttachmentWidget.hashCode),
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: activeAttachmentWidget,
                           ),
-                        );
-                      }),
-                    ),
-                  ),
+                        )
+                      : const SizedBox.shrink(key: ValueKey('empty_nav_att')),
                 ),
               ),
-              SizedBox(width: hPad + 4),
-              _DownloadButton(
-                colorScheme: cs,
-                size: barHeight,
-                iconSize: iconSize,
-                padding: hPad,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                      child: Container(
+                        height: barHeight,
+                        padding: EdgeInsets.all(hPad),
+                        decoration: BoxDecoration(
+                          color: cs.surface.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(
+                            GlobalUI.uiRoundness,
+                          ),
+                          border: Border.all(
+                            color: cs.outlineVariant.withValues(alpha: 0.45),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(_destinations.length, (i) {
+                            final active = navigationShell.currentIndex == i;
+                            return InkWell(
+                              onTap: () => navigationShell.goBranch(i),
+                              borderRadius: BorderRadius.circular(itemRadius),
+                              focusColor: cs.primary.withValues(alpha: 0.2),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOutCubic,
+                                height: double.maxFinite,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: active ? 18 : 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: active
+                                      ? cs.primary
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(
+                                    itemRadius,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    AnimatedScale(
+                                      scale: active ? 1.15 : 1.0,
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      curve: Curves.easeOutBack,
+                                      child: AnimatedOpacity(
+                                        opacity: active ? 1.0 : 0.55,
+                                        duration: const Duration(
+                                          milliseconds: 250,
+                                        ),
+                                        child: Icon(
+                                          _destinations[i].icon,
+                                          color: active
+                                              ? cs.onPrimary
+                                              : cs.onSurfaceVariant,
+                                          size: iconSize,
+                                        ),
+                                      ),
+                                    ),
+                                    ClipRect(
+                                      child: AnimatedSize(
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
+                                        curve: Curves.easeOutCubic,
+                                        child: active
+                                            ? Padding(
+                                                padding: const EdgeInsets.only(
+                                                  left: 8,
+                                                ),
+                                                child: Text(
+                                                  _destinations[i].label,
+                                                  style: TextStyle(
+                                                    fontSize: fontSize,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: cs.onPrimary,
+                                                  ),
+                                                ),
+                                              )
+                                            : const SizedBox.shrink(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: hPad + 4),
+                  _DownloadButton(
+                    colorScheme: cs,
+                    size: barHeight,
+                    iconSize: iconSize,
+                    padding: hPad,
+                  ),
+                ],
               ),
             ],
           ),
@@ -637,6 +697,42 @@ class _TallDownloadPillContent extends ConsumerWidget {
             cs: cs,
             heightTier: heightTier,
             forceHideLabel: hideLabel,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SideNavAttachment extends ConsumerWidget {
+  final StatefulNavigationShell navigationShell;
+  const _SideNavAttachment({required this.navigationShell});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final navState = ref.watch(navBarProvider);
+    if (navState.customBar != null) {
+      return SafeArea(
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: navState.customBar!,
+          ),
+        ),
+      );
+    }
+
+    final activeWidget = navState.topForBranch(navigationShell.currentIndex);
+
+    return SafeArea(
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            child: activeWidget ?? const SizedBox.shrink(),
           ),
         ),
       ),

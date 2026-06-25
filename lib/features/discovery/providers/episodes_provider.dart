@@ -17,7 +17,11 @@ class EpisodesListState {
   EpisodesListState({required this.source, required this.episodes});
 }
 
-typedef SourceEpisodeArgs = ({String providerId, String sourceId, MediaType type});
+typedef SourceEpisodeArgs = ({
+  String providerId,
+  String sourceId,
+  MediaType type,
+});
 
 final episodesListProvider =
     FutureProvider.family<EpisodesListState, MatchArgs>((ref, args) async {
@@ -25,9 +29,7 @@ final episodesListProvider =
       final title = args.mediaTitle;
 
       try {
-        // Todo: Optimize this shit
         final matchState = await ref.watch(matchedMediaProvider(args).future);
-
         final sourcePrefs = await ref.watch(
           mediaPreferenceProvider(args).future,
         );
@@ -103,17 +105,18 @@ final sourceEpisodesProvider =
           final mangaSource = ref.watch(mangaSourceProvider(sourceInfo));
           log.i('Fetching chapters directly from ${sourceInfo.name}');
           final chapters = await mangaSource.getChapters(args.providerId);
-          episodes = chapters.map((c) => UnifiedEpisode.fromChapter(c)).toList();
+          episodes = chapters
+              .map((c) => UnifiedEpisode.fromChapter(c))
+              .toList();
         }
 
         episodes.sort((a, b) => a.number.compareTo(b.number));
 
-        log.s('Fetched ${episodes.length} episodes/chapters from ${sourceInfo.name}');
-
-        return EpisodesListState(
-          source: sourceInfo,
-          episodes: episodes,
+        log.s(
+          'Fetched ${episodes.length} episodes/chapters from ${sourceInfo.name}',
         );
+
+        return EpisodesListState(source: sourceInfo, episodes: episodes);
       } catch (e, st) {
         log.e('Failed to fetch episodes for source ${args.sourceId}', [e, st]);
 

@@ -13,6 +13,9 @@ class HttpResponse {
   HttpResponse(this.statusCode, this.body, {this.headers});
 
   dynamic get json {
+    if (statusCode < 200 || statusCode >= 300) {
+      throw HttpException('HTTP $statusCode: $body');
+    }
     if (body.trimLeft().startsWith('<')) {
       throw Exception(
         'Expected JSON but received HTML (status $statusCode). '

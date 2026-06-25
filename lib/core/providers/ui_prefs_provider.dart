@@ -7,7 +7,7 @@ import 'package:shonenx/core/models/component_layout.dart';
 import 'package:shonenx/core/providers/storage_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
 
-class GlobalScale {
+class GlobalUI {
   static double uiScaleFactor = 1.0;
   static double uiRoundness = 12.0;
 }
@@ -24,8 +24,8 @@ enum MediaCardStyle {
 
   ComponentLayout get layout {
     return ComponentLayout(
-      width: _baseLayout.width * GlobalScale.uiScaleFactor,
-      height: _baseLayout.height * GlobalScale.uiScaleFactor,
+      width: _baseLayout.width * GlobalUI.uiScaleFactor,
+      height: _baseLayout.height * GlobalUI.uiScaleFactor,
     );
   }
 
@@ -61,8 +61,8 @@ enum ContinueWatchingStyle {
 
   ComponentLayout get layout {
     return ComponentLayout(
-      width: _baseLayout.width * GlobalScale.uiScaleFactor,
-      height: _baseLayout.height * GlobalScale.uiScaleFactor,
+      width: _baseLayout.width * GlobalUI.uiScaleFactor,
+      height: _baseLayout.height * GlobalUI.uiScaleFactor,
     );
   }
 
@@ -92,8 +92,8 @@ enum ContinueReadingStyle {
 
   ComponentLayout get layout {
     return ComponentLayout(
-      width: _baseLayout.width * GlobalScale.uiScaleFactor,
-      height: _baseLayout.height * GlobalScale.uiScaleFactor,
+      width: _baseLayout.width * GlobalUI.uiScaleFactor,
+      height: _baseLayout.height * GlobalUI.uiScaleFactor,
     );
   }
 

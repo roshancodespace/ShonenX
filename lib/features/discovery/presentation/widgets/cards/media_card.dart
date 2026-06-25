@@ -101,7 +101,7 @@ Widget _buildImage(
   BoxFit fit = BoxFit.cover,
 }) {
   final cs = theme.colorScheme;
-  final r = radius ?? GlobalScale.uiRoundness;
+  final r = radius ?? GlobalUI.uiRoundness;
 
   return Hero(
     tag: widget.tag,
@@ -204,7 +204,7 @@ class _ClassicCard extends StatelessWidget {
       width: layout.width,
       height: layout.height,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
           color: isActive ? cs.tertiary : Colors.transparent,
           width: isActive ? 2.5 : 1.0,
@@ -266,7 +266,7 @@ class _MinimalCard extends StatelessWidget {
       width: layout.width,
       height: layout.height,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
           color: isActive
               ? cs.tertiary
@@ -275,7 +275,7 @@ class _MinimalCard extends StatelessWidget {
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -349,7 +349,7 @@ class _ExpressiveCard extends StatelessWidget {
         height: layout.height,
         decoration: BoxDecoration(
           color: cs.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+          borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
           border: Border.all(
             color: isActive
                 ? cs.tertiary
@@ -417,7 +417,7 @@ class _MaterialCard extends StatelessWidget {
       width: layout.width,
       height: layout.height,
       foregroundDecoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
           color: isActive
               ? cs.tertiary
@@ -427,7 +427,7 @@ class _MaterialCard extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,7 +436,7 @@ class _MaterialCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(GlobalScale.uiRoundness),
+                  top: Radius.circular(GlobalUI.uiRoundness),
                 ),
                 child: _buildImage(
                   widget,
@@ -503,7 +503,7 @@ class _LiquidGlassCard extends StatelessWidget {
       width: layout.width,
       height: layout.height,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -592,7 +592,7 @@ class _LiquidGlassCard extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 140),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+                  borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
                   border: Border.all(
                     color: isActive
                         ? theme.colorScheme.onSurface.withValues(alpha: 0.8)

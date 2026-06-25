@@ -1,13 +1,19 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+import 'package:shonenx/core/providers/ui_prefs_provider.dart';
+import 'package:shonenx/core/remote_config/providers/remote_config_provider.dart';
+import 'package:shonenx/core/remote_config/ui/remote_config_ui.dart';
+import 'package:shonenx/core/router/app_router.dart';
 import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
-import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 
 final _navBreakpoints = ResponsiveBreakpoints.defaults.copyWith(
   heightNormal: 750,
@@ -15,9 +21,58 @@ final _navBreakpoints = ResponsiveBreakpoints.defaults.copyWith(
   heightTight: 500,
 );
 
-class ScaffoldWithNavBar extends StatelessWidget {
+class ScaffoldWithNavBar extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
   const ScaffoldWithNavBar({super.key, required this.navigationShell});
+
+  @override
+  ConsumerState<ScaffoldWithNavBar> createState() => _ScaffoldWithNavBarState();
+}
+
+class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkRemoteAnnouncements();
+    });
+  }
+
+  Future<void> _checkRemoteAnnouncements() async {
+    final config = await ref.read(remoteConfigStateProvider.future);
+    if (config == null || !config.applicationEnabled) return;
+    if (!mounted) return;
+
+    final service = ref.read(remoteConfigServiceProvider);
+    final navContext = rootNavigatorKey.currentContext;
+    if (navContext == null || !navContext.mounted) return;
+
+    // 1. Check Updates
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      if (service.shouldShowUpdate(packageInfo.version) && navContext.mounted) {
+        await RemoteConfigUI.showUpdateSheet(
+          navContext,
+          minimumVersion: config.minimumVersion,
+          onDownload: () =>
+              service.markUpdateAsDownloaded(config.minimumVersion),
+        );
+        return;
+      }
+    } catch (_) {}
+
+    if (!mounted || !navContext.mounted) return;
+
+    // 2. Check Announcements
+    final announcement = service.getActiveAppAnnouncement();
+    if (announcement != null) {
+      await RemoteConfigUI.showAnnouncementSheet(
+        navContext,
+        announcement: announcement,
+      );
+      await service.markAnnouncementAsSeen(announcement.id);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,11 +83,11 @@ class ScaffoldWithNavBar extends StatelessWidget {
         if (event is! KeyDownEvent) return;
         switch (event.logicalKey) {
           case LogicalKeyboardKey.digit1:
-            navigationShell.goBranch(0);
+            widget.navigationShell.goBranch(0);
           case LogicalKeyboardKey.digit2:
-            navigationShell.goBranch(1);
+            widget.navigationShell.goBranch(1);
           case LogicalKeyboardKey.digit3:
-            navigationShell.goBranch(2);
+            widget.navigationShell.goBranch(2);
           case LogicalKeyboardKey.digit4:
             context.push('/downloads');
         }
@@ -45,15 +100,15 @@ class ScaffoldWithNavBar extends StatelessWidget {
             body: r.isDesktop || r.isTabletLandscape
                 ? Row(
                     children: [
-                      _SideNavBar(navigationShell: navigationShell),
-                      Expanded(child: navigationShell),
+                      _SideNavBar(navigationShell: widget.navigationShell),
+                      Expanded(child: widget.navigationShell),
                     ],
                   )
                 : Stack(
                     fit: StackFit.expand,
                     children: [
-                      navigationShell,
-                      _BottomNavBar(navigationShell: navigationShell),
+                      widget.navigationShell,
+                      _BottomNavBar(navigationShell: widget.navigationShell),
                     ],
                   ),
           );

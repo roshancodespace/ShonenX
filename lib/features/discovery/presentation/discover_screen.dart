@@ -5,10 +5,16 @@ import 'package:shonenx/core/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/rows/horizontal_section.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/discovery/providers/category_search_provider.dart';
+import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/features/discovery/providers/search_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/core/providers/navbar_action_provider.dart';
+import 'package:shonenx/shared/widgets/media_switcher_overlay.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
+import 'package:shonenx/source_engine/models/source_info.dart';
+import 'package:shonenx/source_engine/source_engine_provider.dart';
+import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/features/discovery/providers/discovery_feed_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/advanced_search_sheet.dart';
 
@@ -86,10 +92,26 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
       vsync: this,
       initialIndex: widget.type == MediaType.ANIME ? 0 : 1,
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref
+            .read(navBarProvider.notifier)
+            .attachTop(
+              MediaSwitcherOverlay(controller: _tabController),
+              branchIndex: 1,
+            );
+      }
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        ref.read(navBarProvider.notifier).clearTop(branchIndex: 1);
+      } catch (_) {}
+    });
     _searchController.dispose();
     _tabController.dispose();
     super.dispose();
@@ -124,49 +146,66 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return AppScaffold(
-      title: null,
-      subtitle: null,
+      title: 'Discover',
+      subtitle: 'Find your next anime or manga',
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TabBar(
-              controller: _tabController,
-              dividerColor: Colors.transparent,
-              tabs: const [
-                Tab(text: 'Anime'),
-                Tab(text: 'Manga'),
-              ],
-            ),
-            const SizedBox(height: 10),
-            SearchBar(
-              constraints: BoxConstraints(minWidth: double.maxFinite),
-              controller: _searchController,
-              hintText: 'Search...',
-              leading: const Icon(Icons.search),
-              trailing: [
-                if (_query.isNotEmpty)
-                  IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() => _query = '');
-                    },
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 44,
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search anime or manga...',
+                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
-                IconButton(
-                  icon: const Icon(Icons.tune),
-                  tooltip: 'Advanced Filters',
-                  onPressed: () => _openAdvancedSearch(context),
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_query.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _query = '');
+                          },
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.tune, size: 20),
+                        tooltip: 'Advanced Filters',
+                        onPressed: () => _openAdvancedSearch(context),
+                      ),
+                    ],
+                  ),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest.withOpacity(
+                    0.6,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 0,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
-              ],
-              onSubmitted: (value) {
-                setState(() {
-                  _query = value.trim();
-                });
-              },
+                style: theme.textTheme.bodyMedium,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (value) {
+                  setState(() {
+                    _query = value.trim();
+                  });
+                },
+              ),
             ),
             if (_genres.isNotEmpty || _tags.isNotEmpty) ...[
               const SizedBox(height: 10),
@@ -186,7 +225,7 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
                             });
                           },
                           backgroundColor: theme.colorScheme.secondaryContainer,
-                          labelStyle: TextStyle(
+                          labelStyle: theme.textTheme.labelMedium?.copyWith(
                             color: theme.colorScheme.onSecondaryContainer,
                           ),
                           deleteIconColor:
@@ -209,7 +248,7 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
                             });
                           },
                           backgroundColor: theme.colorScheme.tertiaryContainer,
-                          labelStyle: TextStyle(
+                          labelStyle: theme.textTheme.labelMedium?.copyWith(
                             color: theme.colorScheme.onTertiaryContainer,
                           ),
                           deleteIconColor:
@@ -360,6 +399,12 @@ class _DiscoverTabFeedState extends ConsumerState<_DiscoverTabFeed> {
   @override
   Widget build(BuildContext context) {
     if (!_hasActiveFilters) {
+      final discoveryMode = ref.watch(
+        discoveryPrefsProvider.select((p) => p.mode),
+      );
+      if (discoveryMode == MetadataMode.source) {
+        return _DynamicSourceFeed(type: widget.type);
+      }
       return _DynamicGenreFeed(type: widget.type);
     }
 
@@ -611,6 +656,152 @@ class _GenreFeedRow extends ConsumerWidget {
         ),
       ),
       error: (e, _) => const SizedBox.shrink(),
+    );
+  }
+}
+
+final _sourceDiscoverFeedProvider = FutureProvider.autoDispose
+    .family<List<UnifiedMedia>, ({SourceInfo info, MediaType type})>((
+      ref,
+      arg,
+    ) async {
+      ref.keepAlive();
+      if (arg.type == MediaType.ANIME) {
+        final source = ref.read(animeSourceProvider(arg.info));
+        try {
+          final trending = await source.getTrending();
+          if (trending.isNotEmpty) return trending;
+        } catch (_) {}
+        return await source.search('', arg.type, page: 1);
+      } else {
+        final source = ref.read(mangaSourceProvider(arg.info));
+        try {
+          final trending = await source.getTrending();
+          if (trending.isNotEmpty) return trending;
+        } catch (_) {}
+        return await source.search('', arg.type, page: 1);
+      }
+    });
+
+class _DynamicSourceFeed extends ConsumerWidget {
+  final MediaType type;
+  const _DynamicSourceFeed({required this.type});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final prefs = ref.watch(discoveryPrefsProvider);
+    final sourcesAsync = type == MediaType.ANIME
+        ? ref.watch(availableAnimeSourcesProvider)
+        : ref.watch(availableMangaSourcesProvider);
+
+    return sourcesAsync.when(
+      data: (allSources) {
+        final active = allSources
+            .where((s) => prefs.activeSources.contains(s.id))
+            .toList();
+        if (active.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.extension_off_outlined,
+                    size: 48,
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No active ${type.name.toLowerCase()} sources',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Enable extension sources in Discovery settings.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.only(top: 10, bottom: 120),
+          itemCount: active.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _SourceFeedRow(type: type, info: active[index]),
+            );
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Failed to load sources: $e')),
+    );
+  }
+}
+
+class _SourceFeedRow extends ConsumerWidget {
+  final MediaType type;
+  final SourceInfo info;
+  const _SourceFeedRow({required this.type, required this.info});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final arg = (info: info, type: type);
+    final catalogState = ref.watch(_sourceDiscoverFeedProvider(arg));
+    final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
+
+    return catalogState.when(
+      data: (items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+
+        return HorizontalSection(
+          title: info.name,
+          height: style.layout.height,
+          onMoreTap: () => context.push('/discover?query=&type=${type.id}'),
+          data: AsyncValue.data(items),
+          itemBuilder: (context, item) {
+            return MediaCard(
+              tag: 'src-${info.id}-${item.id}',
+              format: item.format,
+              title: item.title.availableTitle,
+              imageUrl: item.cover ?? '',
+              style: style,
+              onTap: () => context.push(
+                '/details/${item.type.id}?tag=src-${info.id}-${item.id}',
+                extra: item,
+              ),
+            );
+          },
+        );
+      },
+      loading: () => SizedBox(
+        height: style.layout.height + 40,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Text(
+                info.name,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Expanded(child: Center(child: CircularProgressIndicator())),
+          ],
+        ),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

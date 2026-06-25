@@ -25,19 +25,26 @@ class _RemoteConfigListenerState extends ConsumerState<RemoteConfigListener> {
     _initRemoteConfig();
   }
 
+  String _getCurrentRoutePath() {
+    try {
+      final router = ref.read(routerProvider);
+      return router.routerDelegate.currentConfiguration.uri.path;
+    } catch (_) {
+      return '/splash';
+    }
+  }
+
   Future<void> _initRemoteConfig() async {
     final service = ref.read(remoteConfigServiceProvider);
     await service.init();
 
     if (!mounted) return;
 
-    await _checkUpdatesAndAnnouncements();
+    setState(() {
+      _initialized = true;
+    });
 
-    if (mounted) {
-      setState(() {
-        _initialized = true;
-      });
-    }
+    await _checkUpdatesAndAnnouncements();
   }
 
   Future<void> _checkUpdatesAndAnnouncements() async {
@@ -46,14 +53,26 @@ class _RemoteConfigListenerState extends ConsumerState<RemoteConfigListener> {
 
     if (config == null) return;
 
+    // 1. If application is disabled globally, build() replaces the entire app UI.
+    if (!config.applicationEnabled) return;
+
+    // Wait until splash screen / initial loading navigation completes so bottom sheets don't get dismissed by GoRouter
+    final stopwatch = Stopwatch()..start();
+    while (mounted && stopwatch.elapsed < const Duration(seconds: 8)) {
+      final path = _getCurrentRoutePath();
+      if (path != '/splash' && path != '/') {
+        break;
+      }
+      await Future.delayed(const Duration(milliseconds: 150));
+    }
+
+    // Brief delay to allow route transition animation to settle cleanly
+    await Future.delayed(const Duration(milliseconds: 350));
+
+    if (!mounted) return;
+
     final navContext = rootNavigatorKey.currentContext;
     if (navContext == null || !navContext.mounted) return;
-
-    // 1. Check if application is disabled globally
-    if (!config.applicationEnabled) {
-      await RemoteConfigUI.showApplicationDisabledSheet(navContext);
-      return; // Stop further checks since app is disabled
-    }
 
     // 2. Check for Updates
     try {
@@ -68,7 +87,7 @@ class _RemoteConfigListenerState extends ConsumerState<RemoteConfigListener> {
             service.markUpdateAsDownloaded(config.minimumVersion);
           },
         );
-        return; // Stop further checks since they are forced to update
+        return;
       }
     } catch (e) {
       // Ignore package info errors
@@ -89,6 +108,13 @@ class _RemoteConfigListenerState extends ConsumerState<RemoteConfigListener> {
 
   @override
   Widget build(BuildContext context) {
+    final service = ref.watch(remoteConfigServiceProvider);
+    final config = service.config;
+
+    if (config != null && !config.applicationEnabled) {
+      return RemoteConfigUI.buildApplicationDisabledScreen(context);
+    }
+
     return widget.child;
   }
 }

@@ -1,0 +1,268 @@
+name: Build ShonenX
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_android:
+        type: boolean
+        default: true
+      build_linux:
+        type: boolean
+        default: true
+      build_windows:
+        type: boolean
+        default: true
+
+jobs:
+  start_building:
+    runs-on: ubuntu-latest
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      # ── 0. Notify Telegram: Build Started ────────────────────────────────────
+      - name: Notify Telegram — Build Started
+        run: |
+          MSG_FILE=$(mktemp)
+          printf "🔨 *Build Started — ShonenX*\n"              >> "$MSG_FILE"
+
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d parse_mode="MarkdownV2" \
+            -d disable_web_page_preview=true \
+            --data-urlencode "text@${MSG_FILE}"
+
+          rm -f "$MSG_FILE"
+
+  build-android:
+    if: github.event.inputs.build_android == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Init specific submodule
+        run: git submodule update --init packages/anymex_extension_bridge
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: 'gradle'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.7
+          cache: true
+
+      - name: Decode keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=upload-keystore.jks
+          EOF
+
+      - name: Create env file
+        run: |
+          cat > keys.json <<EOF
+          {
+            "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
+            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
+            "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
+            "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}"
+          }
+          EOF
+
+      - name: Get Dependencies
+        run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
+
+      - name: Build APKs
+        run: flutter build apk --release --split-per-abi --dart-define-from-file=keys.json
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apks
+          path: build/app/outputs/flutter-apk/*.apk
+
+  build-linux:
+    if: github.event.inputs.build_linux == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo add-apt-repository universe
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libmpv-dev libasound2-dev webkit2gtk-4.1
+
+      - uses: actions/checkout@v4
+
+      - name: Init specific submodule
+        run: git submodule update --init packages/anymex_extension_bridge
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.7
+          cache: true
+
+      - name: Create env file
+        run: |
+          cat > keys.json <<EOF
+          {
+            "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
+            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
+            "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
+            "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}"
+          }
+          EOF
+
+      - name: Enable Linux config
+        run: flutter config --enable-linux-desktop
+      
+      - name: Get Dependencies
+        run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
+
+      - name: Build Linux app
+        run: flutter build linux --release --dart-define-from-file=keys.json
+      
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-bundle
+          path: build/linux/x64/release/bundle
+
+  build-windows:
+    if: github.event.inputs.build_windows == 'true'
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Init specific submodule
+        run: git submodule update --init packages/anymex_extension_bridge
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.7
+          cache: true
+
+      - name: Enable Windows config
+        run: flutter config --enable-windows-desktop
+
+      - name: Create env file
+        shell: bash
+        run: |
+          cat > keys.json <<EOF
+          {
+            "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
+            "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
+            "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
+            "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
+            "COMMENTUM_API_URL": "${{ secrets.COMMENTUM_API_URL }}"
+          }
+          EOF
+
+      - name: Get Dependencies
+        run: flutter pub upgrade
+
+      - name: Build Windows app
+        run: flutter build windows --release --dart-define-from-file=keys.json
+
+      - name: Build installer (InnoBundle)
+        run: dart run inno_bundle --release --no-app
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: build/windows/x64/installer/Release
+
+  upload:
+    needs: [start_building, build-android, build-linux, build-windows]
+    runs-on: ubuntu-latest
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      # ── Download Android artifacts ──────────────────────────────────────────────
+      - name: Download Android artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apks
+          path: artifacts/android
+
+      # ── Download Linux artifacts ────────────────────────────────────────────────
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-bundle
+          path: artifacts/linux
+
+      # ── Download Windows artifacts ──────────────────────────────────────────────
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          path: artifacts/windows
+
+      # ── Zip Linux bundle ────────────────────────────────────────────────────────
+      - name: Zip Linux bundle
+        run: |
+          cd artifacts
+          zip -r ShonenX-linux.zip linux
+
+      # ── Send files to Telegram ──────────────────────────────────────────────────
+      - name: Send files to Telegram
+        if: success()
+        run: |
+          CAPTION_FILE=$(mktemp)
+          printf "✅ *Build Successful — ShonenX*\n" > "$CAPTION_FILE"
+
+          find artifacts \
+            \( -name "*.apk" -o -name "*.zip" -o -name "*.exe" -o -name "*.msi" \) \
+            -type f | while read -r FILE; do
+
+            echo "Uploading $FILE"
+
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+              -F chat_id="${TELEGRAM_CHAT_ID}" \
+              -F parse_mode="MarkdownV2" \
+              -F "caption=<${CAPTION_FILE}" \
+              -F "document=@${FILE}"
+
+            # Caption only for first file
+            : > "$CAPTION_FILE"
+          done
+
+          rm -f "$CAPTION_FILE"
+
+      # ── 16. Failure notification ──────────────────────────────────────────────
+      - name: Send Failure Notification to Telegram
+        if: failure()
+        run: |
+          MSG_FILE=$(mktemp)
+          printf "❌ *Build Failed — ShonenX*\n"                    >> "$MSG_FILE"
+          # Standard file upload logic
+          if [ -f "kernel/build.log" ]; then
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+              -F chat_id="${TELEGRAM_CHAT_ID}" \
+              -F parse_mode="MarkdownV2" \
+              -F "caption=<${MSG_FILE}" \
+              -F "document=@kernel/build.log"
+          else
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              -d chat_id="${TELEGRAM_CHAT_ID}" \
+              -d parse_mode="MarkdownV2" \
+              -d disable_web_page_preview=true \
+              --data-urlencode "text@${MSG_FILE}"
+          fi
+
+          rm -f "$MSG_FILE"

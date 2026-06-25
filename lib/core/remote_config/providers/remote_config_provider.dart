@@ -12,3 +12,17 @@ final remoteConfigServiceProvider = Provider<RemoteConfigService>((ref) {
 final remoteConfigProvider = Provider<RemoteConfig?>((ref) {
   return ref.watch(remoteConfigServiceProvider).config;
 });
+
+class RemoteConfigNotifier extends AsyncNotifier<RemoteConfig?> {
+  @override
+  Future<RemoteConfig?> build() async {
+    final service = ref.read(remoteConfigServiceProvider);
+    await service.init();
+    return service.config;
+  }
+}
+
+final remoteConfigStateProvider =
+    AsyncNotifierProvider<RemoteConfigNotifier, RemoteConfig?>(
+      RemoteConfigNotifier.new,
+    );

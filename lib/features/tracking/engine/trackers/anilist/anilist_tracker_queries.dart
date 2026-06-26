@@ -37,7 +37,30 @@ class AnilistTrackerQueries {
       Viewer {
         id
         name
+        about
+        siteUrl
+        bannerImage
         avatar { large }
+        statistics {
+          anime {
+            count
+            episodesWatched
+            minutesWatched
+            meanScore
+            statuses { status count }
+          }
+          manga {
+            count
+            chaptersRead
+            meanScore
+            statuses { status count }
+          }
+        }
+        favourites {
+          anime(page: 1, perPage: 10) {
+            nodes { coverImage { large } }
+          }
+        }
       }
     }
   ''';

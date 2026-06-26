@@ -35,6 +35,7 @@ import "package:shonenx/features/notifications/presentation/notifications_settin
 import 'package:shonenx/features/settings/presentation/content_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/logs_screen.dart';
 import 'package:shonenx/features/settings/presentation/about_screen.dart';
+import 'package:shonenx/features/settings/presentation/troubleshoot_settings_screen.dart';
 import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/core/network/cf_client.dart';
@@ -85,6 +86,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/discover',
                 builder: (context, state) {
                   final query = state.uri.queryParameters['query'];
+                  final source = state.uri.queryParameters['source'];
                   final type = MediaType.values.firstWhere(
                     (e) => e.id == state.uri.queryParameters['type'],
                     orElse: () => MediaType.ANIME,
@@ -93,10 +95,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                   final tags = state.uri.queryParametersAll['tags'] ?? [];
 
                   return DiscoverScreen(
-                    query: query, 
+                    query: query,
+                    category: state.uri.queryParameters['category'],
                     type: type,
                     genres: genres,
                     tags: tags,
+                    source: source,
                   );
                 },
               ),
@@ -225,6 +229,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 },
               ),
             ],
+          ),
+          GoRoute(
+            path: 'troubleshoot',
+            builder: (context, state) => const TroubleshootSettingsScreen(),
           ),
           GoRoute(
             path: 'debug',

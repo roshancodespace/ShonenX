@@ -32,30 +32,38 @@ class MediaMatchService {
     );
 
     int getScore(UnifiedMedia m) {
-      int score = 0;
-      final eng =
-          m.title.english?.toLowerCase().replaceAll(nonAlphanumeric, '') ?? '';
-      final rom =
-          m.title.romaji?.toLowerCase().replaceAll(nonAlphanumeric, '') ?? '';
+      int maxScore = 0;
+      final candidates = [
+        m.title.english,
+        m.title.romaji,
+        m.title.native,
+        m.title.availableTitle,
+      ]
+          .where((t) => t != null && t.trim().isNotEmpty)
+          .map((t) => t!.toLowerCase().replaceAll(nonAlphanumeric, ''))
+          .toSet();
 
-      if (eng.isNotEmpty && eng == cleanTarget) {
-        score += 10;
-      } else if (eng.isNotEmpty && cleanTarget.contains(eng)) {
-        score += 5;
-      } else if (eng.isNotEmpty && eng.contains(cleanTarget)) {
-        score += 5;
-      }
+      final targets = [
+        cleanTarget,
+        if (cleanRomajiTarget != null) cleanRomajiTarget,
+      ];
 
-      if (cleanRomajiTarget != null) {
-        if (rom.isNotEmpty && rom == cleanRomajiTarget) {
-          score += 10;
-        } else if (rom.isNotEmpty && cleanRomajiTarget.contains(rom)) {
-          score += 5;
-        } else if (rom.isNotEmpty && rom.contains(cleanRomajiTarget)) {
-          score += 5;
+      for (final cand in candidates) {
+        if (cand.isEmpty) continue;
+        for (final tgt in targets) {
+          if (tgt.isEmpty) continue;
+          int currentScore = 0;
+          if (cand == tgt) {
+            currentScore = 10;
+          } else if (tgt.contains(cand) || cand.contains(tgt)) {
+            currentScore = 5;
+          }
+          if (currentScore > maxScore) {
+            maxScore = currentScore;
+          }
         }
       }
-      return score;
+      return maxScore;
     }
 
     results.sort((a, b) => getScore(b).compareTo(getScore(a)));

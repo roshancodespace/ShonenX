@@ -1,13 +1,20 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+import 'package:shonenx/core/providers/ui_prefs_provider.dart';
+import 'package:shonenx/core/remote_config/providers/remote_config_provider.dart';
+import 'package:shonenx/core/remote_config/ui/remote_config_ui.dart';
+import 'package:shonenx/core/router/app_router.dart';
 import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
-import 'package:shonenx/core/providers/ui_prefs_provider.dart';
+import 'package:shonenx/core/providers/navbar_action_provider.dart';
 
 final _navBreakpoints = ResponsiveBreakpoints.defaults.copyWith(
   heightNormal: 750,
@@ -15,9 +22,58 @@ final _navBreakpoints = ResponsiveBreakpoints.defaults.copyWith(
   heightTight: 500,
 );
 
-class ScaffoldWithNavBar extends StatelessWidget {
+class ScaffoldWithNavBar extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
   const ScaffoldWithNavBar({super.key, required this.navigationShell});
+
+  @override
+  ConsumerState<ScaffoldWithNavBar> createState() => _ScaffoldWithNavBarState();
+}
+
+class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkRemoteAnnouncements();
+    });
+  }
+
+  Future<void> _checkRemoteAnnouncements() async {
+    final config = await ref.read(remoteConfigStateProvider.future);
+    if (config == null || !config.applicationEnabled) return;
+    if (!mounted) return;
+
+    final service = ref.read(remoteConfigServiceProvider);
+    final navContext = rootNavigatorKey.currentContext;
+    if (navContext == null || !navContext.mounted) return;
+
+    // 1. Check Updates
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      if (service.shouldShowUpdate(packageInfo.version) && navContext.mounted) {
+        await RemoteConfigUI.showUpdateSheet(
+          navContext,
+          minimumVersion: config.minimumVersion,
+          onDownload: () =>
+              service.markUpdateAsDownloaded(config.minimumVersion),
+        );
+        return;
+      }
+    } catch (_) {}
+
+    if (!mounted || !navContext.mounted) return;
+
+    // 2. Check Announcements
+    final announcement = service.getActiveAppAnnouncement();
+    if (announcement != null) {
+      await RemoteConfigUI.showAnnouncementSheet(
+        navContext,
+        announcement: announcement,
+      );
+      await service.markAnnouncementAsSeen(announcement.id);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,11 +84,11 @@ class ScaffoldWithNavBar extends StatelessWidget {
         if (event is! KeyDownEvent) return;
         switch (event.logicalKey) {
           case LogicalKeyboardKey.digit1:
-            navigationShell.goBranch(0);
+            widget.navigationShell.goBranch(0);
           case LogicalKeyboardKey.digit2:
-            navigationShell.goBranch(1);
+            widget.navigationShell.goBranch(1);
           case LogicalKeyboardKey.digit3:
-            navigationShell.goBranch(2);
+            widget.navigationShell.goBranch(2);
           case LogicalKeyboardKey.digit4:
             context.push('/downloads');
         }
@@ -45,15 +101,24 @@ class ScaffoldWithNavBar extends StatelessWidget {
             body: r.isDesktop || r.isTabletLandscape
                 ? Row(
                     children: [
-                      _SideNavBar(navigationShell: navigationShell),
-                      Expanded(child: navigationShell),
+                      _SideNavBar(navigationShell: widget.navigationShell),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            widget.navigationShell,
+                            _SideNavAttachment(
+                              navigationShell: widget.navigationShell,
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   )
                 : Stack(
                     fit: StackFit.expand,
                     children: [
-                      navigationShell,
-                      _BottomNavBar(navigationShell: navigationShell),
+                      widget.navigationShell,
+                      _BottomNavBar(navigationShell: widget.navigationShell),
                     ],
                   ),
           );
@@ -75,119 +140,167 @@ const _destinations = [
   _NavDest(Icons.library_books_outlined, 'Library'),
 ];
 
-class _BottomNavBar extends StatelessWidget {
+class _BottomNavBar extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
   const _BottomNavBar({required this.navigationShell});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final r = context.responsive;
     final cs = Theme.of(context).colorScheme;
+    final navState = ref.watch(navBarProvider);
+
+    if (navState.customBar != null) {
+      return SafeArea(
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: navState.customBar!,
+          ),
+        ),
+      );
+    }
+
+    final activeAttachmentWidget = navState.topForBranch(
+      navigationShell.currentIndex,
+    );
 
     final barHeight = r.isPhone ? 68.0 : 80.0;
     final iconSize = r.isPhone ? 25.0 : 28.0;
     final fontSize = r.isPhone ? 14.5 : 16.0;
     final hPad = r.isPhone ? 6.0 : 10.5;
-    final itemRadius = GlobalScale.uiRoundness;
+    final itemRadius = GlobalUI.uiRoundness;
 
     return SafeArea(
       child: Align(
         alignment: Alignment.bottomCenter,
         child: Padding(
           padding: EdgeInsets.only(bottom: r.height * 0.018),
-          child: Row(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                  child: Container(
-                    height: barHeight,
-                    padding: EdgeInsets.all(hPad),
-                    decoration: BoxDecoration(
-                      color: cs.surface.withValues(alpha: 0.75),
-                      borderRadius: BorderRadius.circular(
-                        GlobalScale.uiRoundness,
-                      ),
-                      border: Border.all(
-                        color: cs.outlineVariant.withValues(alpha: 0.45),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: List.generate(_destinations.length, (i) {
-                        final active = navigationShell.currentIndex == i;
-                        return InkWell(
-                          onTap: () => navigationShell.goBranch(i),
-                          borderRadius: BorderRadius.circular(itemRadius),
-                          focusColor: cs.primary.withValues(alpha: 0.2),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOutCubic,
-                            height: double.maxFinite,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: active ? 18 : 14,
-                            ),
-                            decoration: BoxDecoration(
-                              color: active ? cs.primary : Colors.transparent,
-                              borderRadius: BorderRadius.circular(itemRadius),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                AnimatedScale(
-                                  scale: active ? 1.15 : 1.0,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOutBack,
-                                  child: AnimatedOpacity(
-                                    opacity: active ? 1.0 : 0.55,
-                                    duration: const Duration(milliseconds: 250),
-                                    child: Icon(
-                                      _destinations[i].icon,
-                                      color: active
-                                          ? cs.onPrimary
-                                          : cs.onSurfaceVariant,
-                                      size: iconSize,
-                                    ),
-                                  ),
-                                ),
-                                ClipRect(
-                                  child: AnimatedSize(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeOutCubic,
-                                    child: active
-                                        ? Padding(
-                                            padding: const EdgeInsets.only(
-                                              left: 8,
-                                            ),
-                                            child: Text(
-                                              _destinations[i].label,
-                                              style: TextStyle(
-                                                fontSize: fontSize,
-                                                fontWeight: FontWeight.w600,
-                                                color: cs.onPrimary,
-                                              ),
-                                            ),
-                                          )
-                                        : const SizedBox.shrink(),
-                                  ),
-                                ),
-                              ],
-                            ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: activeAttachmentWidget != null
+                      ? KeyedSubtree(
+                          key: ValueKey(activeAttachmentWidget.hashCode),
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: activeAttachmentWidget,
                           ),
-                        );
-                      }),
-                    ),
-                  ),
+                        )
+                      : const SizedBox.shrink(key: ValueKey('empty_nav_att')),
                 ),
               ),
-              SizedBox(width: hPad + 4),
-              _DownloadButton(
-                colorScheme: cs,
-                size: barHeight,
-                iconSize: iconSize,
-                padding: hPad,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                      child: Container(
+                        height: barHeight,
+                        padding: EdgeInsets.all(hPad),
+                        decoration: BoxDecoration(
+                          color: cs.surface.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(
+                            GlobalUI.uiRoundness,
+                          ),
+                          border: Border.all(
+                            color: cs.outlineVariant.withValues(alpha: 0.45),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(_destinations.length, (i) {
+                            final active = navigationShell.currentIndex == i;
+                            return InkWell(
+                              onTap: () => navigationShell.goBranch(i),
+                              borderRadius: BorderRadius.circular(itemRadius),
+                              focusColor: cs.primary.withValues(alpha: 0.2),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOutCubic,
+                                height: double.maxFinite,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: active ? 18 : 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: active
+                                      ? cs.primary
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(
+                                    itemRadius,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    AnimatedScale(
+                                      scale: active ? 1.15 : 1.0,
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      curve: Curves.easeOutBack,
+                                      child: AnimatedOpacity(
+                                        opacity: active ? 1.0 : 0.55,
+                                        duration: const Duration(
+                                          milliseconds: 250,
+                                        ),
+                                        child: Icon(
+                                          _destinations[i].icon,
+                                          color: active
+                                              ? cs.onPrimary
+                                              : cs.onSurfaceVariant,
+                                          size: iconSize,
+                                        ),
+                                      ),
+                                    ),
+                                    ClipRect(
+                                      child: AnimatedSize(
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
+                                        curve: Curves.easeOutCubic,
+                                        child: active
+                                            ? Padding(
+                                                padding: const EdgeInsets.only(
+                                                  left: 8,
+                                                ),
+                                                child: Text(
+                                                  _destinations[i].label,
+                                                  style: TextStyle(
+                                                    fontSize: fontSize,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: cs.onPrimary,
+                                                  ),
+                                                ),
+                                              )
+                                            : const SizedBox.shrink(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: hPad + 4),
+                  _DownloadButton(
+                    colorScheme: cs,
+                    size: barHeight,
+                    iconSize: iconSize,
+                    padding: hPad,
+                  ),
+                ],
               ),
             ],
           ),
@@ -232,7 +345,7 @@ class _DownloadButton extends ConsumerWidget {
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
@@ -240,7 +353,7 @@ class _DownloadButton extends ConsumerWidget {
           height: size,
           decoration: BoxDecoration(
             color: colorScheme.surface.withValues(alpha: 0.75),
-            borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
             border: Border.all(
               color: colorScheme.outlineVariant.withValues(alpha: 0.45),
             ),
@@ -359,7 +472,7 @@ class _SideNavBar extends StatelessWidget {
                       child: InkWell(
                         onTap: () => navigationShell.goBranch(i),
                         borderRadius: BorderRadius.circular(
-                          GlobalScale.uiRoundness,
+                          GlobalUI.uiRoundness,
                         ),
                         focusColor: cs.primary.withValues(alpha: 0.2),
                         child: AnimatedContainer(
@@ -369,7 +482,7 @@ class _SideNavBar extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: active ? cs.primary : Colors.transparent,
                             borderRadius: BorderRadius.circular(
-                              GlobalScale.uiRoundness,
+                              GlobalUI.uiRoundness,
                             ),
                           ),
                           child: _PillContent(
@@ -422,7 +535,7 @@ class _GlassPillContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
@@ -430,7 +543,7 @@ class _GlassPillContainer extends StatelessWidget {
           padding: EdgeInsets.all(padding),
           decoration: BoxDecoration(
             color: cs.surfaceContainerLow.withValues(alpha: 0.75),
-            borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
             border: Border.all(
               color: cs.outlineVariant.withValues(alpha: 0.45),
             ),
@@ -566,7 +679,7 @@ class _TallDownloadPillContent extends ConsumerWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(GlobalScale.uiRoundness),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         onTap: () => context.push('/downloads'),
         child: Badge(
           isLabelVisible: count > 0,
@@ -584,6 +697,42 @@ class _TallDownloadPillContent extends ConsumerWidget {
             cs: cs,
             heightTier: heightTier,
             forceHideLabel: hideLabel,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SideNavAttachment extends ConsumerWidget {
+  final StatefulNavigationShell navigationShell;
+  const _SideNavAttachment({required this.navigationShell});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final navState = ref.watch(navBarProvider);
+    if (navState.customBar != null) {
+      return SafeArea(
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: navState.customBar!,
+          ),
+        ),
+      );
+    }
+
+    final activeWidget = navState.topForBranch(navigationShell.currentIndex);
+
+    return SafeArea(
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            child: activeWidget ?? const SizedBox.shrink(),
           ),
         ),
       ),

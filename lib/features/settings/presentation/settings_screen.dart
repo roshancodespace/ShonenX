@@ -138,6 +138,12 @@ class SettingsScreen extends ConsumerWidget {
             title: 'Advanced',
             children: [
               SettingsNavTile(
+                icon: Icons.auto_fix_high_outlined,
+                title: 'Troubleshoot & Repair',
+                subtitle: 'Force fix missing episodes and broken matches',
+                onTap: () => context.push('/settings/troubleshoot'),
+              ),
+              SettingsNavTile(
                 icon: Icons.bug_report_outlined,
                 title: 'Debug',
                 subtitle: 'Test notifications and UI components',

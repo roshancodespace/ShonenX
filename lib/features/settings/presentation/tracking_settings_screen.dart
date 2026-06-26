@@ -8,9 +8,11 @@ import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
+import 'package:shonenx/features/tracking/presentation/widgets/tracker_profile_sheet.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
+import 'package:shonenx/shared/widgets/tracker_avatar.dart';
 
 class TrackingSettingsScreen extends ConsumerWidget {
   const TrackingSettingsScreen({super.key});
@@ -84,9 +86,13 @@ class TrackingSettingsScreen extends ConsumerWidget {
               final isPrimary =
                   prefs.primaryTracker == tracker.type && !prefs.isIncognito;
 
+              final localProfile = tracker.type.getProfile(ref);
               final profileName = isRemote
-                  ? tracker.type.getProfile(ref)?.username
-                  : 'Local Storage';
+                  ? localProfile?.username
+                  : (localProfile?.username != null &&
+                            localProfile!.username != 'Guest'
+                        ? localProfile.username
+                        : 'Guest');
 
               return AbsorbPointer(
                 absorbing: prefs.isIncognito,
@@ -112,11 +118,7 @@ class TrackingSettingsScreen extends ConsumerWidget {
                                   ),
                                   child: ClipOval(
                                     child: CachedNetworkImage(
-                                      imageUrl:
-                                          tracker.type
-                                              .getProfile(ref)
-                                              ?.avatarUrl ??
-                                          '',
+                                      imageUrl: localProfile?.avatarUrl ?? '',
                                       fit: BoxFit.cover,
                                       placeholder: (context, url) =>
                                           const CircularProgressIndicator(),
@@ -135,15 +137,22 @@ class TrackingSettingsScreen extends ConsumerWidget {
                                               .withValues(alpha: 0.7),
                                   ),
                                 )
-                        : Padding(
-                            padding: const EdgeInsets.only(left: 5),
-                            child: Icon(
-                              Icons.cloud_off,
-                              color: isPrimary
-                                  ? theme.colorScheme.primary
-                                  : null,
-                            ),
-                          ),
+                        : (localProfile?.avatarUrl != null
+                              ? ClipOval(
+                                  child: TrackerAvatarWidget(
+                                    imageUrl: localProfile!.avatarUrl,
+                                    size: 40,
+                                  ),
+                                )
+                              : Padding(
+                                  padding: const EdgeInsets.only(left: 5),
+                                  child: Icon(
+                                    Icons.cloud_off,
+                                    color: isPrimary
+                                        ? theme.colorScheme.primary
+                                        : null,
+                                  ),
+                                )),
                     title: Text(
                       '${tracker.type.displayName} ${isPrimary ? '(Primary)' : ''}',
                       style: TextStyle(fontWeight: FontWeight.bold),
@@ -153,7 +162,9 @@ class TrackingSettingsScreen extends ConsumerWidget {
                           ? (isLoggedIn
                                 ? 'Logged in as $profileName'
                                 : 'Not logged in')
-                          : 'Offline tracking database',
+                          : (localProfile != null
+                                ? 'Logged in as $profileName'
+                                : 'Offline tracking database'),
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         color: !isPrimary
@@ -161,7 +172,6 @@ class TrackingSettingsScreen extends ConsumerWidget {
                             : theme.colorScheme.onPrimaryContainer,
                       ),
                     ),
-
                     onTap: !prefs.isIncognito
                         ? () {
                             ref
@@ -169,32 +179,38 @@ class TrackingSettingsScreen extends ConsumerWidget {
                                 .setPrimaryTracker(tracker.type);
                           }
                         : null,
-                    trailing: !isRemote
-                        ? null
+                    trailing: !isRemote || isLoggedIn
+                        ? FilledButton.icon(
+                            style: IconButton.styleFrom(
+                              backgroundColor: theme
+                                  .colorScheme.surfaceContainerHighest,
+                              foregroundColor: theme.colorScheme.onSurface,
+                            ),
+                            onPressed: () => showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              useSafeArea: true,
+                              builder: (_) => TrackerProfileSheet(
+                                trackerType: tracker.type,
+                              ),
+                            ),
+                            icon: const Icon(Icons.edit_outlined, size: 18),
+                            label: const Text('Customize'),
+                          )
                         : FilledButton.icon(
                             style: IconButton.styleFrom(
-                              backgroundColor: !isLoggedIn
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.error,
-                              foregroundColor: !isLoggedIn
-                                  ? theme.colorScheme.onPrimary
-                                  : theme.colorScheme.onError,
+                              backgroundColor: theme.colorScheme.primary,
+                              foregroundColor: theme.colorScheme.onPrimary,
                             ),
                             onPressed: () {
                               if (isRemote) {
-                                if (isLoggedIn) {
-                                  ref
-                                      .read(authTokensProvider.notifier)
-                                      .logout(tracker);
-                                } else {
-                                  ref
-                                      .read(authTokensProvider.notifier)
-                                      .login(tracker);
-                                }
+                                ref
+                                    .read(authTokensProvider.notifier)
+                                    .login(tracker);
                               }
                             },
-                            icon: Icon(isLoggedIn ? Icons.logout : Icons.login),
-                            label: Text(isLoggedIn ? 'Logout' : 'Login'),
+                            icon: const Icon(Icons.login),
+                            label: const Text('Login'),
                           ),
                   ),
                 ),

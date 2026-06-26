@@ -138,6 +138,29 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
     _saveToDb();
   }
 
+  Future<void> saveAutoMatch(String matchedId, String matchedTitle) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    try {
+      final existing = await _isar.mediaPreferences.getByMediaTitle(
+        args.mediaTitle,
+      );
+      final pref =
+          existing ?? (MediaPreference()..mediaTitle = args.mediaTitle);
+
+      pref.preferredSourceId = currentState.sourceInfo.id;
+      pref.preferredSourceName = currentState.sourceInfo.name;
+      pref.preferredSourceType = currentState.sourceInfo.type.name;
+      pref.manualOverrideId = matchedId;
+      pref.manualOverrideTitle = matchedTitle;
+
+      await _isar.writeTxn(() async => await _isar.mediaPreferences.put(pref));
+    } catch (e, st) {
+      _log.e('Failed to save auto match', e, st);
+    }
+  }
+
   void setPreferredAiringTracker(TrackerType tracker) {
     final log = _log.child('setPreferredAiringTracker');
     log.i('Tracker → ${tracker.displayName}');

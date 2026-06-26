@@ -14,9 +14,14 @@ class RemoteConfig {
   });
 
   factory RemoteConfig.fromJson(Map<String, dynamic> json) {
+    final bool isAppEnabled = json['applicationEnabled'] as bool? ??
+        json['enabled'] as bool? ??
+        json['appEnabled'] as bool? ??
+        !(json['disabled'] as bool? ?? false);
+
     return RemoteConfig(
       downloadsEnabled: json['downloadsEnabled'] as bool? ?? true,
-      applicationEnabled: json['applicationEnabled'] as bool? ?? true,
+      applicationEnabled: isAppEnabled,
       minimumVersion: json['minimumVersion'] as String? ?? '',
       announcements: json['announcements'] != null
           ? AnnouncementsConfig.fromJson(json['announcements'])

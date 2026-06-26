@@ -11,24 +11,32 @@ class SearchArgs {
   final MediaType type;
   final List<String> genres;
   final List<String> tags;
+  final String? source;
 
   const SearchArgs({
     required this.query,
     required this.type,
     this.genres = const [],
     this.tags = const [],
+    this.source,
   });
 
   @override
-  int get hashCode =>
-      Object.hash(query, type, Object.hashAll(genres), Object.hashAll(tags));
+  int get hashCode => Object.hash(
+        query,
+        type,
+        source,
+        Object.hashAll(genres),
+        Object.hashAll(tags),
+      );
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! SearchArgs) return false;
 
-    if (query != other.query || type != other.type) return false;
+    if (query != other.query || type != other.type || source != other.source)
+      return false;
 
     if (genres.length != other.genres.length) return false;
     for (int i = 0; i < genres.length; i++) {
@@ -61,7 +69,10 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
   Future<PaginatedResult<UnifiedMedia>?> build() async {
     _currentPage = 1;
     _isFetchingNextPage = false;
-    if (arg.query.isEmpty && arg.genres.isEmpty && arg.tags.isEmpty)
+    if (arg.query.isEmpty &&
+        arg.genres.isEmpty &&
+        arg.tags.isEmpty &&
+        arg.source == null)
       return null;
     return _fetchPage(1);
   }
@@ -87,7 +98,10 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
             : availableMangaSourcesProvider.future,
       );
       final activeSources = allSources
-          .where((s) => prefs.activeSources.contains(s.id))
+          .where((s) =>
+              (arg.source != null
+                  ? s.id == arg.source
+                  : prefs.activeSources.contains(s.id)))
           .toList();
 
       if (activeSources.isEmpty) {

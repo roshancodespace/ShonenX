@@ -24,6 +24,7 @@ class DiscoverScreen extends StatelessWidget {
   final MediaType type;
   final List<String> genres;
   final List<String> tags;
+  final String? source;
 
   const DiscoverScreen({
     super.key,
@@ -32,6 +33,7 @@ class DiscoverScreen extends StatelessWidget {
     this.type = MediaType.ANIME,
     this.genres = const [],
     this.tags = const [],
+    this.source,
   });
 
   bool get hasCategory => category != null && category!.trim().isNotEmpty;
@@ -47,6 +49,7 @@ class DiscoverScreen extends StatelessWidget {
       type: type,
       initialGenres: genres,
       initialTags: tags,
+      source: source,
     );
   }
 }
@@ -56,6 +59,7 @@ class SearchDiscoverScreen extends ConsumerStatefulWidget {
   final MediaType type;
   final List<String> initialGenres;
   final List<String> initialTags;
+  final String? source;
 
   const SearchDiscoverScreen({
     super.key,
@@ -63,6 +67,7 @@ class SearchDiscoverScreen extends ConsumerStatefulWidget {
     required this.type,
     this.initialGenres = const [],
     this.initialTags = const [],
+    this.source,
   });
 
   @override
@@ -93,8 +98,20 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
       initialIndex: widget.type == MediaType.ANIME ? 0 : 1,
     );
 
+    _attachOverlay();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (ModalRoute.of(context)?.isCurrent == true) {
+      _attachOverlay();
+    }
+  }
+
+  void _attachOverlay() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
+      if (mounted && (ModalRoute.of(context)?.isCurrent ?? true)) {
         ref
             .read(navBarProvider.notifier)
             .attachTop(
@@ -107,11 +124,9 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      try {
-        ref.read(navBarProvider.notifier).clearTop(branchIndex: 1);
-      } catch (_) {}
-    });
+    try {
+      ref.read(navBarProvider.notifier).clearTop(branchIndex: 1);
+    } catch (_) {}
     _searchController.dispose();
     _tabController.dispose();
     super.dispose();
@@ -274,12 +289,14 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
                     query: _query,
                     genres: _genres,
                     tags: _tags,
+                    source: widget.source,
                   ),
                   _DiscoverTabFeed(
                     type: MediaType.MANGA,
                     query: _query,
                     genres: _genres,
                     tags: _tags,
+                    source: widget.source,
                   ),
                 ],
               ),
@@ -326,12 +343,14 @@ class _DiscoverTabFeed extends ConsumerStatefulWidget {
   final String query;
   final List<String> genres;
   final List<String> tags;
+  final String? source;
 
   const _DiscoverTabFeed({
     required this.type,
     required this.query,
     required this.genres,
     required this.tags,
+    this.source,
   });
 
   @override
@@ -347,12 +366,14 @@ class _DiscoverTabFeedState extends ConsumerState<_DiscoverTabFeed> {
     type: widget.type,
     genres: widget.genres,
     tags: widget.tags,
+    source: widget.source,
   );
 
   bool get _hasActiveFilters =>
       widget.query.isNotEmpty ||
       widget.genres.isNotEmpty ||
-      widget.tags.isNotEmpty;
+      widget.tags.isNotEmpty ||
+      widget.source != null;
 
   @override
   void initState() {
@@ -766,7 +787,8 @@ class _SourceFeedRow extends ConsumerWidget {
         return HorizontalSection(
           title: info.name,
           height: style.layout.height,
-          onMoreTap: () => context.push('/discover?query=&type=${type.id}'),
+          onMoreTap: () =>
+              context.push('/discover?source=${info.id}&type=${type.id}'),
           data: AsyncValue.data(items),
           itemBuilder: (context, item) {
             return MediaCard(

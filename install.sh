@@ -4,7 +4,7 @@ set -euo pipefail
 
 REPO="roshancodespace/ShonenX"
 EXE_NAME="shonenx"
-ICON_URL="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/icons/app_icon-modified-2.png"
+ICON_URL="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/images/desktop-icon.png"
 INSTALL_DIR="$HOME/.local/share/ShonenX"
 
 # Set paths dynamically based on environment

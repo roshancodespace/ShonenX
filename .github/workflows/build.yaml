@@ -34,9 +34,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Init specific submodule
-        run: git submodule update --init packages/anymex_extension_bridge
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_PAT }}
 
       - uses: actions/setup-java@v4
         with:
@@ -97,9 +97,9 @@ jobs:
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libmpv-dev libasound2-dev webkit2gtk-4.1
 
       - uses: actions/checkout@v4
-
-      - name: Init specific submodule
-        run: git submodule update --init packages/anymex_extension_bridge
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_PAT }}
 
       - uses: subosito/flutter-action@v2
         with:
@@ -120,7 +120,7 @@ jobs:
 
       - name: Enable Linux config
         run: flutter config --enable-linux-desktop
-      
+
       - name: Get Dependencies
         run: find . -name "pubspec.lock" -type f -delete && flutter pub upgrade
 
@@ -139,9 +139,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Init specific submodule
-        run: git submodule update --init packages/anymex_extension_bridge
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_PAT }}
 
       - uses: subosito/flutter-action@v2
         with:
@@ -180,7 +180,7 @@ jobs:
           path: build/windows/x64/installer/Release
 
   upload:
-    if: ${{ always() }}
+    if: always()
     needs: [start_building, build-android, build-linux, build-windows]
     runs-on: ubuntu-latest
     env:
@@ -203,7 +203,6 @@ jobs:
             -F chat_id="${TELEGRAM_CHAT_ID}" \
             -F parse_mode="Markdown" \
             -F text="❌ *Android Build Failed — ShonenX*"
-            
 
       - name: Send Linux Successful Build Notification to Telegram
         if: ${{ needs.build-linux.result == 'success' }}
@@ -220,7 +219,6 @@ jobs:
             -F chat_id="${TELEGRAM_CHAT_ID}" \
             -F parse_mode="Markdown" \
             -F text="❌ *Linux Build Failed — ShonenX*"
-            
 
       - name: Send Windows Successful Build Notification to Telegram
         if: ${{ needs.build-windows.result == 'success' }}

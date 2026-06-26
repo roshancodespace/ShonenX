@@ -180,14 +180,66 @@ jobs:
           path: build/windows/x64/installer/Release
 
   upload:
+    if: ${{ always() }}
     needs: [start_building, build-android, build-linux, build-windows]
     runs-on: ubuntu-latest
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
     steps:
+      # Failure Notification to Telegram
+      - name: Send Android Build Failure Notification to Telegram
+        if: ${{ needs.build-android.result == 'failure' }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F parse_mode="Markdown" \
+            -F text="❌ *Android Build Failed — ShonenX*"
+
+      - name: Send Linux Build Failure Notification to Telegram
+        if: ${{ needs.build-linux.result == 'failure' }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F parse_mode="Markdown" \
+            -F text="❌ *Linux Build Failed — ShonenX*"
+
+      - name: Send Windows Build Failure Notification to Telegram
+        if: ${{ needs.build-windows.result == 'failure' }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F parse_mode="Markdown" \
+            -F text="❌ *Windows Build Failed — ShonenX*"
+
+      # Successful Notification to Telegram
+      - name: Send Android Successful Build Notification to Telegram
+        if: ${{ needs.build-android.result == 'success' }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F parse_mode="Markdown" \
+            -F text="✅ *Android Build Successful — ShonenX*"
+
+      - name: Send Linux Successful Build Notification to Telegram
+        if: ${{ needs.build-linux.result == 'success' }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F parse_mode="Markdown" \
+            -F text="✅ *Linux Build Successful — ShonenX*"
+
+      - name: Send Windows Successful Build Notification to Telegram
+        if: ${{ needs.build-windows.result == 'success' }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F parse_mode="Markdown" \
+            -F text="✅ *Windows Build Successful — ShonenX*"
+
       # ── Download Android artifacts ──────────────────────────────────────────────
       - name: Download Android artifacts
+        if: ${{ needs.build-android.result == 'success' }}
         uses: actions/download-artifact@v4
         with:
           name: android-apks
@@ -195,6 +247,7 @@ jobs:
 
       # ── Download Linux artifacts ────────────────────────────────────────────────
       - name: Download Linux artifacts
+        if: ${{ needs.build-linux.result == 'success' }}
         uses: actions/download-artifact@v4
         with:
           name: linux-bundle
@@ -202,6 +255,7 @@ jobs:
 
       # ── Download Windows artifacts ──────────────────────────────────────────────
       - name: Download Windows artifacts
+        if: ${{ needs.build-windows.result == 'success' }}
         uses: actions/download-artifact@v4
         with:
           name: windows-installer
@@ -209,19 +263,20 @@ jobs:
 
       # ── Zip Linux bundle ────────────────────────────────────────────────────────
       - name: Zip Linux bundle
+        if: ${{ needs.build-linux.result == 'success' }}
         run: |
           cd artifacts
           zip -r ShonenX-linux.zip linux
 
       # ── Send files to Telegram ──────────────────────────────────────────────────
       - name: Send files to Telegram
-        if: success()
+        if: ${{ needs.build-android.result == 'success' || needs.build-linux.result == 'success' || needs.build-windows.result == 'success'}}
         run: |
           # Send notification first
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -F chat_id="${TELEGRAM_CHAT_ID}" \
             -F parse_mode="Markdown" \
-            -F text="✅ *Build Successful — ShonenX*"
+            -F text="✅ *Uploading Successful Build Files — ShonenX*"
 
           # Upload files
           find artifacts \
@@ -234,26 +289,3 @@ jobs:
               -F chat_id="${TELEGRAM_CHAT_ID}" \
               -F "document=@${FILE}"
           done
-
-      # ── 16. Failure notification ──────────────────────────────────────────────
-      - name: Send Failure Notification to Telegram
-        if: failure()
-        run: |
-          MSG_FILE=$(mktemp)
-          printf "❌ *Build Failed — ShonenX*\n"                    >> "$MSG_FILE"
-          # Standard file upload logic
-          if [ -f "kernel/build.log" ]; then
-            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
-              -F chat_id="${TELEGRAM_CHAT_ID}" \
-              -F parse_mode="MarkdownV2" \
-              -F "caption=<${MSG_FILE}" \
-              -F "document=@kernel/build.log"
-          else
-            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-              -d chat_id="${TELEGRAM_CHAT_ID}" \
-              -d parse_mode="MarkdownV2" \
-              -d disable_web_page_preview=true \
-              --data-urlencode "text@${MSG_FILE}"
-          fi
-
-          rm -f "$MSG_FILE"

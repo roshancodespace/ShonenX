@@ -15,10 +15,12 @@ import 'package:shonenx/features/discovery/providers/home_feed_provider.dart';
 import 'package:shonenx/features/discovery/providers/home_layout_provider.dart';
 import 'package:shonenx/features/library/providers/cloud_library_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+import 'package:shonenx/features/tracking/presentation/widgets/tracker_profile_sheet.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/shared/widgets/tracker_avatar.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -66,65 +68,79 @@ class HomeScreen extends ConsumerWidget {
 
                     return Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(
-                              ref.watch(
-                                themePrefsProvider.select((s) => s.uiRoundness),
-                              ),
-                            ),
-                            color: theme.colorScheme.primaryContainer,
-                          ),
-                          child: ClipOval(
-                            child: CachedNetworkImage(
-                              imageUrl:
-                                  profiles[primaryTrackerType]?.avatarUrl ?? '',
-                              width: 48,
-                              height: 48,
-                              fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) => Container(
-                                width: 48,
-                                height: 48,
-                                color: theme.colorScheme.primaryContainer,
-                                alignment: Alignment.center,
-                                child: Icon(
-                                  Icons.person_rounded,
-                                  color: theme.colorScheme.onPrimaryContainer,
-                                  size: 22,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Welcome back',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.2,
-                                ),
+                          child: GestureDetector(
+                            onTap: () => showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              useRootNavigator: true,
+                              useSafeArea: true,
+                              builder: (_) => TrackerProfileSheet(
+                                trackerType: primaryTrackerType,
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                profiles[primaryTrackerType]?.username ??
-                                    'Guest',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.1,
+                            ),
+                            behavior: HitTestBehavior.opaque,
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      ref.watch(
+                                        themePrefsProvider.select(
+                                          (s) => s.uiRoundness,
+                                        ),
+                                      ),
+                                    ),
+                                    color: theme.colorScheme.primaryContainer,
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadiusGeometry.circular(
+                                      GlobalUI.uiRoundness,
+                                    ),
+                                    child: TrackerAvatarWidget(
+                                      imageUrl: profiles[primaryTrackerType]
+                                          ?.avatarUrl,
+                                      size: 48,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'Welcome back',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.labelLarge
+                                            ?.copyWith(
+                                              color: theme.colorScheme.primary,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 0.2,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        profiles[primaryTrackerType]
+                                                ?.username ??
+                                            'Guest',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.titleLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                              height: 1.1,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         Row(

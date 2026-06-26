@@ -163,10 +163,52 @@ class AnilistTracker extends BaseTracker
         throw Exception('Viewer null');
       }
 
+      final stats = viewer['statistics'] as Map?;
+      final animeStats = stats?['anime'] as Map?;
+      final mangaStats = stats?['manga'] as Map?;
+
+      Map<String, int>? parseStatuses(List? list) {
+        if (list == null) return null;
+        final map = <String, int>{};
+        for (final item in list) {
+          if (item is Map) {
+            final st = item['status']?.toString();
+            final cnt = (item['count'] as num?)?.toInt() ?? 0;
+            if (st != null && cnt > 0) map[st] = cnt;
+          }
+        }
+        return map.isEmpty ? null : map;
+      }
+
+      List<String>? parseFavs(Map? favMap) {
+        final nodes = favMap?['anime']?['nodes'] as List?;
+        if (nodes == null) return null;
+        final res = <String>[];
+        for (final n in nodes) {
+          if (n is Map) {
+            final url = n['coverImage']?['large']?.toString();
+            if (url != null) res.add(url);
+          }
+        }
+        return res.isEmpty ? null : res;
+      }
+
       return TrackerProfile(
         id: viewer['id']?.toString() ?? '',
         username: viewer['name'] ?? '',
         avatarUrl: viewer['avatar']?['large'],
+        bannerUrl: viewer['bannerImage'],
+        bio: viewer['about'],
+        profileUrl: viewer['siteUrl'],
+        animeCount: (animeStats?['count'] as num?)?.toInt(),
+        episodesWatched: (animeStats?['episodesWatched'] as num?)?.toInt(),
+        minutesWatched: (animeStats?['minutesWatched'] as num?)?.toInt(),
+        meanScore: (animeStats?['meanScore'] as num?)?.toDouble(),
+        mangaCount: (mangaStats?['count'] as num?)?.toInt(),
+        chaptersRead: (mangaStats?['chaptersRead'] as num?)?.toInt(),
+        statusCounts: parseStatuses(animeStats?['statuses'] as List?),
+        lastSyncedAt: DateTime.now(),
+        favorites: parseFavs(viewer['favourites'] as Map?),
       );
     });
   }
@@ -292,7 +334,10 @@ class AnilistTracker extends BaseTracker
       final id = int.tryParse(trackingId);
       if (id == null) return;
 
-      final res = await fetchUserListItem(mediaId: trackingId, mediaType: mediaType);
+      final res = await fetchUserListItem(
+        mediaId: trackingId,
+        mediaType: mediaType,
+      );
       if (res == null) return;
 
       await _http.post(
@@ -300,6 +345,24 @@ class AnilistTracker extends BaseTracker
         body: {
           'query': AnilistTrackerQueries.deleteEntry,
           'variables': {'id': res.id},
+        },
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+    });
+  }
+
+  Future<void> updateBio(String bio) async {
+    final token = await _getToken();
+    if (token == null) return;
+    await executeApi('UPDATE_BIO', () async {
+      await _http.post(
+        'https://graphql.anilist.co',
+        body: {
+          'query': 'mutation (\$about: String) { UpdateUser(about: \$about) { id about } }',
+          'variables': {'about': bio},
         },
         headers: {
           'Authorization': 'Bearer $token',

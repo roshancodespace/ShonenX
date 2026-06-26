@@ -35,6 +35,7 @@ import "package:shonenx/features/notifications/presentation/notifications_settin
 import 'package:shonenx/features/settings/presentation/content_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/logs_screen.dart';
 import 'package:shonenx/features/settings/presentation/about_screen.dart';
+import 'package:shonenx/features/settings/presentation/troubleshoot_settings_screen.dart';
 import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/core/network/cf_client.dart';
@@ -228,6 +229,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 },
               ),
             ],
+          ),
+          GoRoute(
+            path: 'troubleshoot',
+            builder: (context, state) => const TroubleshootSettingsScreen(),
           ),
           GoRoute(
             path: 'debug',

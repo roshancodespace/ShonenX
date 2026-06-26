@@ -23,16 +23,10 @@ jobs:
       # ── 0. Notify Telegram: Build Started ────────────────────────────────────
       - name: Notify Telegram — Build Started
         run: |
-          MSG_FILE=$(mktemp)
-          printf "🔨 *Build Started — ShonenX*\n"              >> "$MSG_FILE"
-
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d chat_id="${TELEGRAM_CHAT_ID}" \
-            -d parse_mode="MarkdownV2" \
-            -d disable_web_page_preview=true \
-            --data-urlencode "text@${MSG_FILE}"
-
-          rm -f "$MSG_FILE"
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F parse_mode="Markdown" \
+            -F text="🔨 *Build Started — ShonenX*"
 
   build-android:
     if: github.event.inputs.build_android == 'true'

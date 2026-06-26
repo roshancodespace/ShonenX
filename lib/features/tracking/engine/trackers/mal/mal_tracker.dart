@@ -142,7 +142,7 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
     return executeApi('PROFILE', () async {
       final res = await _http.get(
         'https://api.myanimelist.net/v2/users/@me',
-        queryParameters: {'fields': 'picture'},
+        queryParameters: {'fields': 'picture,anime_statistics'},
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -151,10 +151,34 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
         throw Exception(body['message'] ?? 'Failed to fetch profile');
       }
 
+      final stats = body['anime_statistics'] as Map?;
+      final totalWatching = (stats?['num_items_watching'] as num?)?.toInt() ?? 0;
+      final totalCompleted = (stats?['num_items_completed'] as num?)?.toInt() ?? 0;
+      final totalOnHold = (stats?['num_items_on_hold'] as num?)?.toInt() ?? 0;
+      final totalDropped = (stats?['num_items_dropped'] as num?)?.toInt() ?? 0;
+      final totalPlan = (stats?['num_items_plan_to_watch'] as num?)?.toInt() ?? 0;
+      final totalAnime = totalWatching + totalCompleted + totalOnHold + totalDropped + totalPlan;
+
+      final username = body['name']?.toString() ?? '';
+
       return TrackerProfile(
         id: body['id']?.toString() ?? '',
-        username: body['name'] ?? '',
+        username: username,
         avatarUrl: body['picture'],
+        profileUrl: username.isNotEmpty ? 'https://myanimelist.net/profile/$username' : null,
+        animeCount: stats != null ? totalAnime : null,
+        episodesWatched: (stats?['num_episodes'] as num?)?.toInt(),
+        meanScore: (stats?['mean_score'] as num?)?.toDouble(),
+        statusCounts: stats != null
+            ? {
+                if (totalWatching > 0) 'CURRENT': totalWatching,
+                if (totalCompleted > 0) 'COMPLETED': totalCompleted,
+                if (totalOnHold > 0) 'PAUSED': totalOnHold,
+                if (totalDropped > 0) 'DROPPED': totalDropped,
+                if (totalPlan > 0) 'PLANNING': totalPlan,
+              }
+            : null,
+        lastSyncedAt: DateTime.now(),
       );
     });
   }

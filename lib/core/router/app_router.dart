@@ -85,6 +85,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/discover',
                 builder: (context, state) {
                   final query = state.uri.queryParameters['query'];
+                  final source = state.uri.queryParameters['source'];
                   final type = MediaType.values.firstWhere(
                     (e) => e.id == state.uri.queryParameters['type'],
                     orElse: () => MediaType.ANIME,
@@ -93,10 +94,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                   final tags = state.uri.queryParametersAll['tags'] ?? [];
 
                   return DiscoverScreen(
-                    query: query, 
+                    query: query,
+                    category: state.uri.queryParameters['category'],
                     type: type,
                     genres: genres,
                     tags: tags,
+                    source: source,
                   );
                 },
               ),

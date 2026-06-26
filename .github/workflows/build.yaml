@@ -223,9 +223,13 @@ jobs:
       - name: Send files to Telegram
         if: success()
         run: |
-          CAPTION_FILE=$(mktemp)
-          printf "✅ *Build Successful — ShonenX*\n" > "$CAPTION_FILE"
+          # Send notification first
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F parse_mode="Markdown" \
+            -F text="✅ *Build Successful — ShonenX*"
 
+          # Upload files
           find artifacts \
             \( -name "*.apk" -o -name "*.zip" -o -name "*.exe" -o -name "*.msi" \) \
             -type f | while read -r FILE; do
@@ -234,15 +238,8 @@ jobs:
 
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
               -F chat_id="${TELEGRAM_CHAT_ID}" \
-              -F parse_mode="MarkdownV2" \
-              -F "caption=<${CAPTION_FILE}" \
               -F "document=@${FILE}"
-
-            # Caption only for first file
-            : > "$CAPTION_FILE"
           done
-
-          rm -f "$CAPTION_FILE"
 
       # ── 16. Failure notification ──────────────────────────────────────────────
       - name: Send Failure Notification to Telegram

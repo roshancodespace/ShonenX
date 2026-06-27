@@ -70,6 +70,7 @@ final availableAnimeSourcesProvider = FutureProvider<List<SourceInfo>>(
             name: s.sourceInfo.name,
             type: SourceType.inbuilt,
             mediaType: MediaType.ANIME,
+            iconUrl: s.sourceInfo.iconUrl,
           ),
         )
         .toList();
@@ -91,7 +92,20 @@ final availableAnimeSourcesProvider = FutureProvider<List<SourceInfo>>(
           )
           .toList();
 
-      return [...inbuilt, ...extensions];
+      final allSources = [...inbuilt, ...extensions];
+      try {
+        final prefs = ref.read(sharedPreferencesProvider);
+        final order = prefs.getStringList('source_order_ANIME') ?? [];
+        if (order.isNotEmpty) {
+          final orderMap = {for (int i = 0; i < order.length; i++) order[i]: i};
+          allSources.sort((a, b) {
+            final indexA = orderMap[a.id] ?? 9999;
+            final indexB = orderMap[b.id] ?? 9999;
+            return indexA.compareTo(indexB);
+          });
+        }
+      } catch (_) {}
+      return allSources;
     } catch (e) {
       return inbuilt;
     }
@@ -131,7 +145,20 @@ final availableMangaSourcesProvider = FutureProvider<List<SourceInfo>>(
           )
           .toList();
 
-      return [...inbuilt, ...extensions];
+      final allSources = [...inbuilt, ...extensions];
+      try {
+        final prefs = ref.read(sharedPreferencesProvider);
+        final order = prefs.getStringList('source_order_MANGA') ?? [];
+        if (order.isNotEmpty) {
+          final orderMap = {for (int i = 0; i < order.length; i++) order[i]: i};
+          allSources.sort((a, b) {
+            final indexA = orderMap[a.id] ?? 9999;
+            final indexB = orderMap[b.id] ?? 9999;
+            return indexA.compareTo(indexB);
+          });
+        }
+      } catch (_) {}
+      return allSources;
     } catch (e) {
       return inbuilt;
     }
@@ -139,7 +166,9 @@ final availableMangaSourcesProvider = FutureProvider<List<SourceInfo>>(
   name: 'availableMangaSourcesProvider',
 );
 
-final allAvailableSourcesProvider = FutureProvider<List<SourceInfo>>((ref) async {
+final allAvailableSourcesProvider = FutureProvider<List<SourceInfo>>((
+  ref,
+) async {
   final animeSources = await ref.watch(availableAnimeSourcesProvider.future);
   final mangaSources = await ref.watch(availableMangaSourcesProvider.future);
   return [...animeSources, ...mangaSources];

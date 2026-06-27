@@ -8,7 +8,7 @@ import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
-import 'widgets/add_repo_sheet.dart';
+import 'widgets/manage_repos_sheet.dart';
 import 'widgets/sources_tab.dart';
 
 class ExtensionsSettingsScreen extends ConsumerStatefulWidget {
@@ -248,35 +248,13 @@ class _ExtensionsSettingsScreenState
             heroTag: 'add_repo_fab',
             backgroundColor: theme.colorScheme.primary,
             foregroundColor: theme.colorScheme.onPrimary,
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add Repo', style: TextStyle(fontSize: 13)),
-            onPressed: () {
-              final tabIndex = DefaultTabController.of(context).index;
-              final type = (tabIndex == 0 || tabIndex == 2)
-                  ? bridge.ItemType.anime
-                  : bridge.ItemType.manga;
-              _showAddRepoSheet(context, type);
-            },
+            icon: const Icon(Icons.storage_rounded, size: 18),
+            label: const Text('Manage Repos', style: TextStyle(fontSize: 13)),
+            onPressed: () => _showManageReposSheet(context),
           ),
         ),
       ],
     );
-  }
-
-  String? _parseRepoUrl(String input) {
-    input = input.trim();
-    if (input.isEmpty) return null;
-    if (input.startsWith('https://github.com/') && input.contains('/blob/')) {
-      return input
-          .replaceFirst(
-            'https://github.com/',
-            'https://raw.githubusercontent.com/',
-          )
-          .replaceFirst('/blob/', '/');
-    }
-    if (input.startsWith('https://raw.githubusercontent.com/')) return input;
-    if (input.startsWith('http') && input.endsWith('.json')) return input;
-    return null;
   }
 
   void _showGuideSheet(BuildContext context) {
@@ -319,7 +297,7 @@ class _ExtensionsSettingsScreenState
               ),
               const SizedBox(height: 8),
               const Text(
-                '1. Select your preferred extension ecosystem from the top toggle.\n2. Click the Add Repo button at the bottom and enter a valid repository URL.\n3. Once added, the available extensions will appear in the Available tab.\n4. Click the + icon to install an extension and start watching!',
+                '1. Select your preferred extension ecosystem from the top toggle.\n2. Click the Manage Repos button at the bottom to add or delete repository URLs.\n3. Once added, the available extensions will appear in the Available tab.\n4. Click the + icon to install an extension and start watching!',
               ),
               const SizedBox(height: 24),
               FilledButton(
@@ -333,40 +311,14 @@ class _ExtensionsSettingsScreenState
     );
   }
 
-  void _showAddRepoSheet(BuildContext context, bridge.ItemType type) {
+  void _showManageReposSheet(BuildContext context) {
     final manager = ref.watch(extensionManagerProvider);
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        return AddRepoSheet(
-          manager: manager,
-          onAdd: (url) async {
-            final parsedUrl = _parseRepoUrl(url);
-            if (parsedUrl == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text(
-                    'Invalid repository URL. Please provide a direct link to the index.min.json file.',
-                  ),
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-              return;
-            }
-            await manager.addRepo(parsedUrl, type);
-            if (context.mounted) Navigator.pop(context);
-            if (type == bridge.ItemType.anime) {
-              ref.invalidate(availableAnimeSourcesProvider);
-            } else {
-              ref.invalidate(availableMangaSourcesProvider);
-            }
-          },
-        );
-      },
+      builder: (context) => ManageReposSheet(manager: manager),
     );
   }
 }

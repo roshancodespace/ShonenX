@@ -3,6 +3,8 @@ import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get.dart';
+import 'package:shonenx/core/providers/storage_provider.dart';
 
 import 'package:shonenx/features/settings/presentation/source_settings_sheet.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -62,22 +64,43 @@ class SourcesTab extends ConsumerWidget {
           ? ref.watch(availableAnimeSourcesProvider)
           : ref.watch(availableMangaSourcesProvider);
 
-      return sourcesAsync.when(
-        data: (sources) {
-          final unified = sources
-              .map((s) => _UnifiedSource.fromSourceInfo(s))
-              .toList();
-          return _buildContent(context, ref, unified);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Error: $error')),
-      );
+      return Obx(() {
+        final installedRx = manager.getInstalledRx(type).value;
+        final installedIds = installedRx.map((e) => e.id ?? '').toSet();
+
+        return sourcesAsync.when(
+          data: (sources) {
+            final validSources = sources
+                .where(
+                  (s) =>
+                      s.type == SourceType.inbuilt ||
+                      installedIds.contains(s.id),
+                )
+                .toList();
+            final unified = validSources
+                .map((s) => _UnifiedSource.fromSourceInfo(s))
+                .toList();
+            return _buildContent(context, ref, unified);
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => Center(child: Text('Error: $error')),
+        );
+      });
     } else {
-      final available = manager.getAvailableRx(type).value;
-      final unified = available
-          .map((s) => _UnifiedSource.fromBridgeSource(s))
-          .toList();
-      return _buildContent(context, ref, unified);
+      return Obx(() {
+        final available = manager.getAvailableRx(type).value;
+        final installed = manager.getInstalledRx(type).value;
+        final installedIds = installed.map((e) => e.id ?? '').toSet();
+
+        final uninstalledAvailable = available
+            .where((s) => !installedIds.contains(s.id))
+            .toList();
+
+        final unified = uninstalledAvailable
+            .map((s) => _UnifiedSource.fromBridgeSource(s))
+            .toList();
+        return _buildContent(context, ref, unified);
+      });
     }
   }
 
@@ -207,7 +230,29 @@ class SourcesTab extends ConsumerWidget {
             itemBuilder: (context, langIndex) {
               final lang = sortedLangs[langIndex];
               final nameGroups = groupedByLang[lang]!;
-              final sortedNames = nameGroups.keys.toList()..sort();
+              final prefKey = type == bridge.ItemType.anime
+                  ? 'source_order_ANIME'
+                  : 'source_order_MANGA';
+              final prefs = ref.watch(sharedPreferencesProvider);
+              final order = prefs.getStringList(prefKey) ?? [];
+              final orderMap = {
+                for (int i = 0; i < order.length; i++) order[i]: i,
+              };
+
+              final sortedNames = nameGroups.keys.toList();
+              if (isInstalled && order.isNotEmpty) {
+                sortedNames.sort((a, b) {
+                  final minA = nameGroups[a]!
+                      .map((s) => orderMap[s.id] ?? 9999)
+                      .reduce((v, e) => v < e ? v : e);
+                  final minB = nameGroups[b]!
+                      .map((s) => orderMap[s.id] ?? 9999)
+                      .reduce((v, e) => v < e ? v : e);
+                  return minA.compareTo(minB);
+                });
+              } else {
+                sortedNames.sort();
+              }
 
               return Theme(
                 data: Theme.of(
@@ -242,55 +287,50 @@ class SourcesTab extends ConsumerWidget {
                       );
                     }
 
-                    return Padding(
-                      padding: const EdgeInsets.only(left: 16.0),
-                      child: Theme(
-                        data: Theme.of(
-                          context,
-                        ).copyWith(dividerColor: Colors.transparent),
-                        child: ExpansionTile(
-                          title: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  name,
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.w500),
-                                ),
+                    return Theme(
+                      data: Theme.of(
+                        context,
+                      ).copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding: const EdgeInsets.symmetric(horizontal: 10),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w500),
                               ),
-                              if (isInstalled)
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline),
-                                  onPressed: () => _uninstallVariantGroup(
-                                    context,
-                                    ref,
-                                    name,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          subtitle: Text(
-                            '${groupSources.length} variants',
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant
-                                      .withValues(alpha: 0.7),
-                                ),
-                          ),
-                          leading: CachedNetworkImage(
-                            imageUrl: groupSources.first.iconUrl ?? '',
-                            width: 40,
-                            height: 40,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) =>
-                                const Icon(Icons.extension, size: 40),
-                          ),
-                          children: groupSources
-                              .map((s) => _buildItem(context, ref, s, true))
-                              .toList(),
+                            ),
+                            if (isInstalled)
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () =>
+                                    _uninstallVariantGroup(context, ref, name),
+                              ),
+                          ],
                         ),
+                        subtitle: Text(
+                          '${groupSources.length} variants',
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant
+                                    .withValues(alpha: 0.7),
+                              ),
+                        ),
+                        leading: CachedNetworkImage(
+                          imageUrl: groupSources.first.iconUrl ?? '',
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) =>
+                              const Icon(Icons.extension, size: 40),
+                        ),
+                        children: groupSources
+                            .map((s) => _buildItem(context, ref, s, true))
+                            .toList(),
                       ),
                     );
                   }).toList(),
@@ -339,6 +379,74 @@ class SourcesTab extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (isInstalled && source.sourceInfo != null) ...[
+            Builder(
+              builder: (context) {
+                final prefKey = type == bridge.ItemType.anime
+                    ? 'source_order_ANIME'
+                    : 'source_order_MANGA';
+                final prefs = ref.watch(sharedPreferencesProvider);
+                final order = prefs.getStringList(prefKey) ?? [];
+                final availableList = type == bridge.ItemType.anime
+                    ? ref.watch(availableAnimeSourcesProvider).value
+                    : ref.watch(availableMangaSourcesProvider).value;
+                final isDefault = order.isNotEmpty
+                    ? order.first == source.id
+                    : (availableList != null &&
+                          availableList.isNotEmpty &&
+                          availableList.first.id == source.id);
+
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isDefault)
+                      Container(
+                        margin: const EdgeInsets.only(right: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'DEFAULT',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        ),
+                      ),
+                    IconButton(
+                      icon: Icon(
+                        isDefault
+                            ? Icons.push_pin_rounded
+                            : Icons.push_pin_outlined,
+                        size: 20,
+                        color: isDefault
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.6),
+                      ),
+                      tooltip: isDefault
+                          ? 'Pinned as Default Source'
+                          : 'Pin as Default Source',
+                      onPressed: () async {
+                        final newOrder = [
+                          source.id,
+                          ...order.where((id) => id != source.id),
+                        ];
+                        await prefs.setStringList(prefKey, newOrder);
+                        ref.invalidate(availableAnimeSourcesProvider);
+                        ref.invalidate(availableMangaSourcesProvider);
+                      },
+                    ),
+                  ],
+                );
+              },
+            ),
             _buildSettingsButton(context, ref, source.sourceInfo!),
             if (source.isInbuilt)
               Padding(
@@ -361,11 +469,8 @@ class SourcesTab extends ConsumerWidget {
               onPressed: () async {
                 if (source.bridgeSource != null) {
                   await manager.installSource(source.bridgeSource!);
-                  if (type == bridge.ItemType.anime) {
-                    ref.invalidate(availableAnimeSourcesProvider);
-                  } else {
-                    ref.invalidate(availableMangaSourcesProvider);
-                  }
+                  ref.invalidate(availableAnimeSourcesProvider);
+                  ref.invalidate(availableMangaSourcesProvider);
                 }
               },
             ),
@@ -428,11 +533,8 @@ class SourcesTab extends ConsumerWidget {
 
         await Future.wait(variants.map((e) => manager.uninstallSource(e)));
 
-        if (type == bridge.ItemType.anime) {
-          ref.invalidate(availableAnimeSourcesProvider);
-        } else {
-          ref.invalidate(availableMangaSourcesProvider);
-        }
+        ref.invalidate(availableAnimeSourcesProvider);
+        ref.invalidate(availableMangaSourcesProvider);
       },
     );
   }
@@ -454,11 +556,8 @@ class SourcesTab extends ConsumerWidget {
           final extSource = installed.firstWhere((e) => e.id == source.id);
           await manager.uninstallSource(extSource);
 
-          if (type == bridge.ItemType.anime) {
-            ref.invalidate(availableAnimeSourcesProvider);
-          } else {
-            ref.invalidate(availableMangaSourcesProvider);
-          }
+          ref.invalidate(availableAnimeSourcesProvider);
+          ref.invalidate(availableMangaSourcesProvider);
         } catch (_) {
           // Source not found in installed list, ignore or handle error
         }

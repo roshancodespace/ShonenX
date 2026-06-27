@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
+import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 
-class TopControls extends StatelessWidget {
+class TopControls extends ConsumerWidget {
   final bool showControls;
   final PlayerMode mode;
   final VideoEngine engine;
@@ -24,7 +26,7 @@ class TopControls extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AnimatedPositioned(
       duration: Durations.medium2,
       curve: Curves.fastEaseInToSlowEaseOut,
@@ -130,6 +132,33 @@ class TopControls extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
               ],
+              _buildActionIcon(
+                icon: switch (ref.watch(
+                  videoEngineStateProvider.select((s) => s.fit),
+                )) {
+                  BoxFit.contain => Icons.fit_screen_rounded,
+                  BoxFit.cover => Icons.aspect_ratio_rounded,
+                  _ => Icons.fullscreen_exit_rounded,
+                },
+                onTap: () {
+                  ref.read(videoEngineStateProvider.notifier).cycleFit();
+                  final newFit = ref.read(videoEngineStateProvider).fit;
+                  final label = switch (newFit) {
+                    BoxFit.contain => 'Fit Screen (Contain)',
+                    BoxFit.cover => 'Fill Screen (Cover)',
+                    _ => 'Stretch (Fill)',
+                  };
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Video Fit: $label'),
+                      duration: const Duration(milliseconds: 1200),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 16),
               _buildActionIcon(
                 icon: Icons.settings_outlined,
                 onTap: () {

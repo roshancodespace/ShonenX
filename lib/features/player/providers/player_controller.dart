@@ -103,7 +103,7 @@ class PlayerController extends Notifier<PlayerState> {
   String? _preferredServerId;
   ServerType? _preferredServerType;
   String? _preferredQuality;
-  String? _preferredSubtitleLang;
+  String? _preferredSubtitleLang = 'eng';
 
   @override
   PlayerState build() {
@@ -154,11 +154,7 @@ class PlayerController extends Notifier<PlayerState> {
   }
 
   Future<void> _loadOfflineData(PlayerModeOffline mode) async {
-    state = state.copyWith(
-      isLoading: true,
-      error: null,
-      activeEpisode: null,
-    );
+    state = state.copyWith(isLoading: true, error: null, activeEpisode: null);
 
     try {
       final activeStream = VideoStream(
@@ -179,12 +175,9 @@ class PlayerController extends Notifier<PlayerState> {
         isLoading: false,
       );
 
-      await ref.read(videoEngineProvider).initialize(
-        activeStream,
-        subtitle: null,
-        startAt: Duration.zero,
-      );
-
+      await ref
+          .read(videoEngineProvider)
+          .initialize(activeStream, subtitle: null, startAt: Duration.zero);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -236,7 +229,10 @@ class PlayerController extends Notifier<PlayerState> {
     if (_media == null) return;
     final episodes = await ref.read(
       episodesListProvider(
-        MatchArgs(mediaTitle: _media!.title.availableTitle, type: MediaType.ANIME),
+        MatchArgs(
+          mediaTitle: _media!.title.availableTitle,
+          type: MediaType.ANIME,
+        ),
       ).selectAsync((s) => s.episodes),
     );
     final targetNumber = state.activeEpisode!.number + (forward ? 1 : -1);
@@ -338,7 +334,7 @@ class PlayerController extends Notifier<PlayerState> {
       SubtitleTrack? activeSubtitle = subtitles.first;
       if (_preferredSubtitleLang != null && subtitles.isNotEmpty) {
         final subMatch = subtitles.firstWhereOrNull(
-          (s) => s.language == _preferredSubtitleLang,
+          (s) => s.language.toLowerCase().contains(_preferredSubtitleLang!),
         );
         if (subMatch != null) activeSubtitle = subMatch;
       }
@@ -387,9 +383,7 @@ class PlayerController extends Notifier<PlayerState> {
 
     try {
       final httpClient = ref.read(httpClientProvider);
-      final newQualities = <VideoStream>[
-        newStream.copyWith(quality: 'Auto'),
-      ];
+      final newQualities = <VideoStream>[newStream.copyWith(quality: 'Auto')];
 
       try {
         final parsedQualities = await httpClient.splitM3U8(
@@ -457,7 +451,8 @@ class PlayerController extends Notifier<PlayerState> {
     try {
       await engine.initialize(
         newQuality,
-        subtitle: ref.read(subtitlePrefsProvider).useCustomSubtitle ||
+        subtitle:
+            ref.read(subtitlePrefsProvider).useCustomSubtitle ||
                 state.activeSubtitle?.url.isEmpty == true
             ? null
             : state.activeSubtitle,

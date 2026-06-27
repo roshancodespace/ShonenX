@@ -11,8 +11,26 @@ DEFAULT_REPO="roshancodespace/ShonenX"
 EXE_NAME="shonenx"
 DEFAULT_ICON_URL="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/images/app_icon.png"
 INSTALL_DIR="$HOME/.local/share/ShonenX"
+CACHE_DIR="$HOME/.config/ShonenX"
+CACHE_FILE="$CACHE_DIR/installer.cache"
 REPO="$DEFAULT_REPO"
 ICON_INPUT="$DEFAULT_ICON_URL"
+
+load_cache() {
+    if [ -f "$CACHE_FILE" ]; then
+        source "$CACHE_FILE" 2>/dev/null || true
+    fi
+}
+
+save_cache() {
+    mkdir -p "$CACHE_DIR" 2>/dev/null || true
+    cat > "$CACHE_FILE" <<EOF
+REPO="$REPO"
+ICON_INPUT="$ICON_INPUT"
+EOF
+}
+
+load_cache
 
 IS_TERMUX=false
 SUDO="sudo"
@@ -385,6 +403,9 @@ draw_menu() {
         local icon="${MENU_ICONS[$i]}"
         local label="${MENU_LABELS[$i]}"
         local desc="${MENU_DESCS[$i]:-}"
+        if [ "${#desc}" -gt "$desc_w" ]; then
+            desc="${desc:0:$(( desc_w - 3 ))}..."
+        fi
         local num=$(( i + 1 ))
 
         # Clear the two lines for this item
@@ -421,6 +442,18 @@ draw_menu() {
     printf '%s  ^v / jk  Navigate    Enter  Select    q  Quit%s' "$S_DIM" "$S_RESET"
 }
 
+update_menu_descriptions() {
+    if [ "$REPO" != "$DEFAULT_REPO" ] || [ "$ICON_INPUT" != "$DEFAULT_ICON_URL" ]; then
+        if [ "$REPO" != "$DEFAULT_REPO" ]; then
+            MENU_DESCS[0]="Install latest release (cached: $REPO)"
+        else
+            MENU_DESCS[0]="Install latest release (cached custom icon)"
+        fi
+    else
+        MENU_DESCS[0]="Install latest release with defaults"
+    fi
+}
+
 run_menu() {
     local selected=0
     local count=${#MENU_LABELS[@]}
@@ -428,6 +461,7 @@ run_menu() {
     show_banner
 
     while true; do
+        update_menu_descriptions
         draw_menu "$selected"
         read_key
         case "$KEY" in
@@ -613,15 +647,15 @@ update_shell_config() {
     [ -f "$cfg" ] || return
     grep -q "# --- ShonenX Manager Start ---" "$cfg" && \
         sed -i '/# --- ShonenX Manager Start ---/,/# --- ShonenX Manager End ---/d' "$cfg"
-    cat << 'EOF' >> "$cfg"
+    cat << EOF >> "$cfg"
 
 # --- ShonenX Manager Start ---
 shonenx-manager() {
-    local url="https://raw.githubusercontent.com/roshancodespace/ShonenX/main/install.sh"
+    local url="https://raw.githubusercontent.com/${REPO}/main/install.sh"
     local tmp="/tmp/shonenx_install_latest.sh"
     echo -e "\033[0;36m\033[1m[*] Fetching latest ShonenX Manager...\033[0m"
-    if curl -sSL --connect-timeout 10 "$url" -o "$tmp" && [ -s "$tmp" ]; then
-        bash "$tmp" "$@"
+    if curl -sSL --connect-timeout 10 "\$url" -o "\$tmp" && [ -s "\$tmp" ]; then
+        bash "\$tmp" "\$@"
     else
         echo -e "\033[0;31m[[!!]] Failed to fetch installer.\033[0m"; return 1
     fi
@@ -634,12 +668,12 @@ setup_fish_function() {
     command -v fish >/dev/null 2>&1 || [ -d "$HOME/.config/fish" ] || return
     local fish_dir="$HOME/.config/fish/functions"
     mkdir -p "$fish_dir"
-    cat << 'EOF' > "$fish_dir/shonenx-manager.fish"
+    cat << EOF > "$fish_dir/shonenx-manager.fish"
 function shonenx-manager --description "ShonenX Remote Launcher"
-    set -l url "https://raw.githubusercontent.com/roshancodespace/ShonenX/main/install.sh"
+    set -l url "https://raw.githubusercontent.com/${REPO}/main/install.sh"
     set -l tmp "/tmp/shonenx_install_latest.sh"
-    if curl -sSL --connect-timeout 10 "$url" -o "$tmp"; and test -s "$tmp"
-        bash "$tmp" $argv
+    if curl -sSL --connect-timeout 10 "\$url" -o "\$tmp"; and test -s "\$tmp"
+        bash "\$tmp" \$argv
     else
         echo -e "\033[0;31m[[!!]] Failed to fetch installer.\033[0m"; return 1
     end
@@ -720,6 +754,7 @@ EOF
     setup_path
     # Silent manager refresh
     do_manager_quiet
+    save_cache
     log_panel_add ok "ShonenX $version installed -- run: $EXE_NAME"
 }
 
@@ -727,14 +762,14 @@ do_manager() {
     log_panel_add step "Installing shonenx-manager binary..."
     mkdir -p "$BIN_DIR"
     local manager_path="$BIN_DIR/shonenx-manager"
-    cat << 'EOF' > "$manager_path"
+    cat << EOF > "$manager_path"
 #!/usr/bin/env bash
 set -euo pipefail
-URL="https://raw.githubusercontent.com/roshancodespace/ShonenX/main/install.sh"
+URL="https://raw.githubusercontent.com/${REPO}/main/install.sh"
 TMP="/tmp/shonenx_install_latest.sh"
 echo -e "\033[0;36m\033[1m[*] Fetching latest ShonenX Manager...\033[0m"
-if curl -sSL --connect-timeout 10 "$URL" -o "$TMP" && [ -s "$TMP" ]; then
-    bash "$TMP" "$@"
+if curl -sSL --connect-timeout 10 "\$URL" -o "\$TMP" && [ -s "\$TMP" ]; then
+    bash "\$TMP" "\$@"
 else
     echo -e "\033[0;31m[[!!]] Failed to fetch installer.\033[0m"; exit 1
 fi
@@ -752,14 +787,14 @@ EOF
 do_manager_quiet() {
     mkdir -p "$BIN_DIR"
     local manager_path="$BIN_DIR/shonenx-manager"
-    cat << 'EOF' > "$manager_path"
+    cat << EOF > "$manager_path"
 #!/usr/bin/env bash
 set -euo pipefail
-URL="https://raw.githubusercontent.com/roshancodespace/ShonenX/main/install.sh"
+URL="https://raw.githubusercontent.com/${REPO}/main/install.sh"
 TMP="/tmp/shonenx_install_latest.sh"
 echo -e "\033[0;36m\033[1m[*] Fetching latest ShonenX Manager...\033[0m"
-if curl -sSL --connect-timeout 10 "$URL" -o "$TMP" && [ -s "$TMP" ]; then
-    bash "$TMP" "$@"
+if curl -sSL --connect-timeout 10 "\$URL" -o "\$TMP" && [ -s "\$TMP" ]; then
+    bash "\$TMP" "\$@"
 else
     echo -e "\033[0;31m[[!!]] Failed to fetch installer.\033[0m"; exit 1
 fi
@@ -771,6 +806,7 @@ EOF
 do_uninstall() {
     log_panel_add step "Removing application directory..."
     rm -rf "$INSTALL_DIR" && log_panel_add ok "Removed $INSTALL_DIR"
+    rm -f "$CACHE_FILE" && rmdir "$CACHE_DIR" 2>/dev/null || true
     rm -f "$BIN_DIR/$EXE_NAME"    && log_panel_add ok "Removed binary"
     rm -f "$BIN_DIR/shonenx-manager" && log_panel_add ok "Removed shonenx-manager"
 
@@ -796,6 +832,9 @@ do_uninstall() {
 tui_install() {
     draw_subscreen "  >>  QUICK INSTALL / UPDATE"
     log_panel_init
+    if [ "$REPO" != "$DEFAULT_REPO" ] || [ "$ICON_INPUT" != "$DEFAULT_ICON_URL" ]; then
+        log_panel_add info "Using cached custom configuration"
+    fi
     log_panel_add info "Starting installation from $REPO..."
     do_install && true || log_panel_add err "Installation failed -- check output above"
     local W; W=$(term_width)
@@ -812,15 +851,18 @@ tui_custom_install() {
     draw_subscreen "  ##   CUSTOM INSTALLATION"
     local W; W=$(term_width)
     local H; H=$(term_height)
+    local max_len=$(( W - 14 ))
 
     # Repo prompt
     cursor_move 5 3
-    printf '%s  Repository%s (format: username/repo)' "$S_BOLD" "$S_RESET"
+    printf '%s  Repository%s (user/repo, blank for current, "default" to reset)' "$S_BOLD" "$S_RESET"
     cursor_move 6 3
     printf '%s+%s%s%s+%s' "$C_BRIGHT_BLACK" "$(printf '%*s' $(( W - 8 )) '' | tr ' ' "$h")" "" "" "$S_RESET"
     cursor_move 7 3
     printf '%s| %s' "$C_BRIGHT_BLACK" "$S_RESET"
-    printf '%s%s%s' "$S_DIM" "$DEFAULT_REPO" "$S_RESET"
+    local display_repo="$REPO"
+    [ "${#display_repo}" -gt "$max_len" ] && display_repo="${display_repo:0:$((max_len - 3))}..."
+    printf '%s%s%s' "$S_DIM" "$display_repo" "$S_RESET"
     cursor_move 7 $(( W - 4 ))
     printf ' %s|%s' "$C_BRIGHT_BLACK" "$S_RESET"
     cursor_move 8 3
@@ -830,16 +872,22 @@ tui_custom_install() {
     cursor_show; stty echo
     read -r CUSTOM_REPO || true
     stty -echo 2>/dev/null || true; cursor_hide
-    [ -n "$CUSTOM_REPO" ] && REPO="$CUSTOM_REPO" || REPO="$DEFAULT_REPO"
+    if [ "$CUSTOM_REPO" = "default" ] || [ "$CUSTOM_REPO" = "reset" ]; then
+        REPO="$DEFAULT_REPO"
+    elif [ -n "$CUSTOM_REPO" ]; then
+        REPO="$CUSTOM_REPO"
+    fi
 
     # Icon prompt
     cursor_move 10 3
-    printf '%s  Icon URL or local path%s (leave blank for default)' "$S_BOLD" "$S_RESET"
+    printf '%s  Icon URL or path%s (blank for current, "default" to reset)' "$S_BOLD" "$S_RESET"
     cursor_move 11 3
-    printf '%s+%s%s+%s' "$C_BRIGHT_BLACK" "$(printf '%*s' $(( W - 8 )) '' | tr ' ' "$h")" "" "$S_RESET"
+    printf '%s+%s%s+%s' "$C_BRIGHT_BLACK" "$(printf '%*s' $(( W - 8 )) '' | tr ' ' "$h")" "" "" "$S_RESET"
     cursor_move 12 3
     printf '%s| %s' "$C_BRIGHT_BLACK" "$S_RESET"
-    printf '%s%s%s' "$S_DIM" "$DEFAULT_ICON_URL" "$S_RESET"
+    local display_icon="$ICON_INPUT"
+    [ "${#display_icon}" -gt "$max_len" ] && display_icon="${display_icon:0:$((max_len - 3))}..."
+    printf '%s%s%s' "$S_DIM" "$display_icon" "$S_RESET"
     cursor_move 12 $(( W - 4 ))
     printf ' %s|%s' "$C_BRIGHT_BLACK" "$S_RESET"
     cursor_move 13 3
@@ -849,7 +897,11 @@ tui_custom_install() {
     cursor_show; stty echo
     read -r CUSTOM_ICON || true
     stty -echo 2>/dev/null || true; cursor_hide
-    [ -n "$CUSTOM_ICON" ] && ICON_INPUT="$CUSTOM_ICON" || ICON_INPUT="$DEFAULT_ICON_URL"
+    if [ "$CUSTOM_ICON" = "default" ] || [ "$CUSTOM_ICON" = "reset" ]; then
+        ICON_INPUT="$DEFAULT_ICON_URL"
+    elif [ -n "$CUSTOM_ICON" ]; then
+        ICON_INPUT="$CUSTOM_ICON"
+    fi
 
     draw_subscreen "  ##   CUSTOM INSTALLATION"
     log_panel_init
@@ -901,6 +953,11 @@ tui_status() {
     cursor_move $(( row + 5 )) $(( col + 2 ))
     printf '%s Desktop  : %s' "$S_DIM" "$S_RESET"
     printf '%b' "$icon_status"
+
+    cursor_move $(( row + 6 )) $(( col + 2 ))
+    local repo_disp="$REPO"
+    [ "${#repo_disp}" -gt $(( cell_w - 14 )) ] && repo_disp="${repo_disp:0:$(( cell_w - 17 ))}..."
+    printf '%s Repo     : %s%s%s' "$S_DIM" "$C_BRIGHT_CYAN" "$repo_disp" "$S_RESET"
 
     # Panel 2: Shell Integration
     local col2=$(( col + cell_w + 2 ))

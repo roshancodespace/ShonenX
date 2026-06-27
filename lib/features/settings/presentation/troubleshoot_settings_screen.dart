@@ -1,11 +1,34 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/database/database_provider.dart';
 import 'package:shonenx/features/discovery/domain/media_preference.dart';
+import 'package:shonenx/features/downloads/domain/models/download_task.dart';
+import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
+import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
+import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+
+class _CleanupItem {
+  final String id;
+  final String title;
+  final String subtitle;
+  final DownloadTask? task;
+  final FileSystemEntity? entity;
+  bool selected;
+
+  _CleanupItem({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    this.task,
+    this.entity,
+    this.selected = true,
+  });
+}
 
 class TroubleshootSettingsScreen extends ConsumerStatefulWidget {
   const TroubleshootSettingsScreen({super.key});
@@ -19,6 +42,7 @@ class _TroubleshootSettingsScreenState
     extends ConsumerState<TroubleshootSettingsScreen> {
   int _mappingsCount = 0;
   int _trackerLinksCount = 0;
+  int _unfinishedDownloadsCount = 0;
   bool _isLoading = true;
 
   @override
@@ -33,16 +57,222 @@ class _TroubleshootSettingsScreenState
       final isar = ref.read(databaseProvider);
       final mappings = await isar.mediaPreferences.count();
       final trackerLinks = await isar.isarTrackerLinks.count();
+      final repo = ref.read(downloadRepositoryProvider);
+      final unfinishedTasks = await repo.getUnfinishedTasks();
       if (mounted) {
         setState(() {
           _mappingsCount = mappings;
           _trackerLinksCount = trackerLinks;
+          _unfinishedDownloadsCount = unfinishedTasks.length;
           _isLoading = false;
         });
       }
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _reviewAndClearDownloads() async {
+    final repo = ref.read(downloadRepositoryProvider);
+    final unfinishedTasks = await repo.getUnfinishedTasks();
+    final items = <_CleanupItem>[];
+    final seenPaths = <String>{};
+
+    for (final task in unfinishedTasks) {
+      String sub = 'Status: ${task.status.name}';
+      final file = File(task.savePath);
+      final partFile = File('${task.savePath}.part');
+      final lastSlash = task.savePath.lastIndexOf('/');
+      final dirPath = lastSlash != -1
+          ? task.savePath.substring(0, lastSlash)
+          : '';
+      final tempDir = Directory('$dirPath/.temp_${task.id}');
+
+      int size = 0;
+      if (await file.exists()) {
+        size += await file.length();
+        seenPaths.add(file.path);
+      }
+      if (await partFile.exists()) {
+        size += await partFile.length();
+        seenPaths.add(partFile.path);
+      }
+      if (await tempDir.exists()) {
+        seenPaths.add(tempDir.path);
+      }
+      if (size > 0) {
+        sub +=
+            ' · ${(size / (1024 * 1024)).toStringAsFixed(1)} MB partial data';
+      }
+
+      items.add(
+        _CleanupItem(
+          id: 'task_${task.id}',
+          title: task.fileName.isEmpty
+              ? 'Episode ${task.episodeNumber}'
+              : task.fileName,
+          subtitle: sub,
+          task: task,
+        ),
+      );
+    }
+
+    try {
+      final prefs = await ref.read(downloadPrefsProvider.future);
+      final dir = Directory(prefs.downloadPath);
+      if (await dir.exists()) {
+        await for (final entity in dir.list()) {
+          if (seenPaths.contains(entity.path)) continue;
+          final name = entity.path.split('/').last;
+          if (name.endsWith('.part') || name.startsWith('.temp_')) {
+            int size = 0;
+            if (entity is File) {
+              size = await entity.length();
+            }
+            items.add(
+              _CleanupItem(
+                id: 'file_${entity.path}',
+                title: 'Orphaned: $name',
+                subtitle: size > 0
+                    ? '${(size / (1024 * 1024)).toStringAsFixed(1)} MB temp file'
+                    : 'Incomplete temp folder',
+                entity: entity,
+              ),
+            );
+          }
+        }
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+    if (items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            'No unfinished downloads or orphaned temp files found.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final selectedCount = items.where((i) => i.selected).length;
+            final colors = Theme.of(context).colorScheme;
+
+            return AppBottomSheet(
+              title: 'Review Unfinished Downloads',
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Select unfinished queue tasks or incomplete temporary folders to permanently remove.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.45,
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        return CheckboxListTile(
+                          value: item.selected,
+                          activeColor: colors.primary,
+                          title: Text(
+                            item.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          subtitle: Text(
+                            item.subtitle,
+                            style: TextStyle(
+                              color: colors.onSurfaceVariant,
+                              fontSize: 12,
+                            ),
+                          ),
+                          onChanged: (val) {
+                            setSheetState(() => item.selected = val ?? false);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.tonal(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colors.error,
+                            foregroundColor: colors.onError,
+                          ),
+                          onPressed: selectedCount == 0
+                              ? null
+                              : () async {
+                                  Navigator.pop(context);
+                                  for (final item in items.where(
+                                    (i) => i.selected,
+                                  )) {
+                                    if (item.task != null) {
+                                      await ref
+                                          .read(
+                                            downloadManagerProvider.notifier,
+                                          )
+                                          .cancelDownload(item.task!.id);
+                                    } else if (item.entity != null) {
+                                      try {
+                                        await item.entity!.delete(
+                                          recursive: true,
+                                        );
+                                      } catch (_) {}
+                                    }
+                                  }
+                                  await _loadCounts();
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        behavior: SnackBarBehavior.floating,
+                                        content: Text(
+                                          'Cleaned up $selectedCount item(s).',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                          child: Text('Clean Up ($selectedCount)'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _clearMediaMappings() async {
@@ -190,6 +420,19 @@ class _TroubleshootSettingsScreenState
                   ),
                 ),
                 const SizedBox(height: 12),
+                SettingsSection(
+                  title: 'Storage & Downloads',
+                  children: [
+                    SettingsActionTile(
+                      icon: Icons.cleaning_services_rounded,
+                      title: 'Clean Incomplete Downloads',
+                      subtitle:
+                          'Review and purge $_unfinishedDownloadsCount unfinished tasks & orphaned temp folders',
+                      onTap: _reviewAndClearDownloads,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 SettingsSection(
                   title: 'Matching & Scrapers',
                   children: [

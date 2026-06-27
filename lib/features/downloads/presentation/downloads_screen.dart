@@ -255,9 +255,25 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
               ),
             ),
             const SizedBox(width: 8),
-            // Action buttons
             if (isDone)
-              Icon(Icons.check_rounded, size: 20, color: Colors.green)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.check_rounded,
+                    size: 20,
+                    color: Colors.green,
+                  ),
+                  const SizedBox(width: 8),
+                  _IconBtn(
+                    icon: Icons.delete_outline_rounded,
+                    color: colors.error,
+                    onPressed: () => ref
+                        .read(downloadManagerProvider.notifier)
+                        .cancelDownload(task.id),
+                  ),
+                ],
+              )
             else
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -271,23 +287,22 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
                           .pauseDownload(task.id),
                     ),
                   if (status == DownloadStatus.paused ||
-                      status == DownloadStatus.failed)
+                      status == DownloadStatus.failed ||
+                      status == DownloadStatus.canceled)
                     _IconBtn(
                       icon: Icons.play_arrow_rounded,
                       onPressed: () => ref
                           .read(downloadManagerProvider.notifier)
                           .startDownload(task),
                     ),
-                  if (!isCanceled) ...[
-                    const SizedBox(width: 4),
-                    _IconBtn(
-                      icon: Icons.close_rounded,
-                      color: colors.error,
-                      onPressed: () => ref
-                          .read(downloadManagerProvider.notifier)
-                          .cancelDownload(task.id),
-                    ),
-                  ],
+                  const SizedBox(width: 4),
+                  _IconBtn(
+                    icon: Icons.close_rounded,
+                    color: colors.error,
+                    onPressed: () => ref
+                        .read(downloadManagerProvider.notifier)
+                        .cancelDownload(task.id),
+                  ),
                 ],
               ),
           ],

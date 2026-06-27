@@ -7,6 +7,7 @@
 #include "generated_plugin_registrant.h"
 
 #include <anymex_extension_runtime_bridge/anymex_extension_runtime_bridge_plugin.h>
+#include <app_links/app_links_plugin_c_api.h>
 #include <dynamic_system_colors/dynamic_color_plugin_c_api.h>
 #include <flutter_inappwebview_windows/flutter_inappwebview_windows_plugin_c_api.h>
 #include <flutter_qjs/flutter_qjs_plugin.h>
@@ -27,6 +28,8 @@
 void RegisterPlugins(flutter::PluginRegistry* registry) {
   AnymexExtensionRuntimeBridgePluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("AnymexExtensionRuntimeBridgePlugin"));
+  AppLinksPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("AppLinksPluginCApi"));
   DynamicColorPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("DynamicColorPluginCApi"));
   FlutterInappwebviewWindowsPluginCApiRegisterWithRegistrar(

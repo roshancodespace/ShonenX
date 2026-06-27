@@ -1,6 +1,6 @@
 <div align="center">
 
-   <img src="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/icons/app_icon-modified-2.png" alt="ShonenX Logo" width="120"/>
+   <img src="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/images/app_icon.png" alt="ShonenX Logo" width="120"/>
 
 # ShonenX
 

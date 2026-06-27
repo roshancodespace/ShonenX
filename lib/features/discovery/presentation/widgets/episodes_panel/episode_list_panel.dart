@@ -8,8 +8,9 @@ import 'package:shonenx/features/discovery/providers/matched_media_provider.dart
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
-import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/features/reader/providers/preferred_scanlator_provider.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/sheets/batch_download_sheet.dart';
+import 'package:shonenx/source_engine/models/source_info.dart';
 
 export 'episode_tiles.dart' show EpisodeViewMode, EpisodeImageFadeDirection;
 
@@ -220,6 +221,24 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                     ),
 
                     const Spacer(),
+
+                    if (widget.media.type == MediaType.ANIME &&
+                        filtered.isNotEmpty)
+                      Tooltip(
+                        message: 'Batch Download',
+                        child: IconButton(
+                          onPressed: () => BatchDownloadSheet.show(
+                            context,
+                            filtered,
+                            widget.watchedProgress,
+                            state.source,
+                            widget.media,
+                          ),
+                          icon: const Icon(Icons.download_for_offline_outlined),
+                          iconSize: 20,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
 
                     // View mode toggle
                     _ViewModeToggle(

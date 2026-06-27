@@ -155,11 +155,12 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                         ),
                         const SizedBox(height: 12),
                         Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
+                          spacing: 5,
+                          runSpacing: 5,
                           children: data.genres
                               .map(
                                 (g) => FilterChip(
+                                  visualDensity: VisualDensity.compact,
                                   label: Text(g),
                                   selected: _selectedGenres.contains(g),
                                   onSelected: (_) => _toggleGenre(g),

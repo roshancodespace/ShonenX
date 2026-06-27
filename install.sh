@@ -9,7 +9,7 @@ set -euo pipefail
 # --- Config ------------------------------------------------
 DEFAULT_REPO="roshancodespace/ShonenX"
 EXE_NAME="shonenx"
-DEFAULT_ICON_URL="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/images/desktop-icon.png"
+DEFAULT_ICON_URL="https://raw.githubusercontent.com/roshancodespace/shonenx/main/assets/images/app_icon.png"
 INSTALL_DIR="$HOME/.local/share/ShonenX"
 REPO="$DEFAULT_REPO"
 ICON_INPUT="$DEFAULT_ICON_URL"

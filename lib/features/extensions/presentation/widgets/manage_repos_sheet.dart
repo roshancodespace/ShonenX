@@ -9,8 +9,15 @@ import 'package:shonenx/source_engine/source_registry.dart';
 
 class ManageReposSheet extends ConsumerStatefulWidget {
   final bridge.Extension manager;
+  final String? autoAddUrl;
+  final String? autoAddType;
 
-  const ManageReposSheet({super.key, required this.manager});
+  const ManageReposSheet({
+    super.key,
+    required this.manager,
+    this.autoAddUrl,
+    this.autoAddType,
+  });
 
   @override
   ConsumerState<ManageReposSheet> createState() => _ManageReposSheetState();
@@ -20,11 +27,21 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
   final _controller = TextEditingController();
   bool _isLoading = false;
   String? _clipboardText;
+  late String _selectedCategory;
 
   @override
   void initState() {
     super.initState();
+    _selectedCategory = widget.autoAddType?.toLowerCase() ?? 'both';
+    if (!['both', 'anime', 'manga'].contains(_selectedCategory)) {
+      _selectedCategory = 'both';
+    }
     _checkClipboard();
+
+    if (widget.autoAddUrl != null && widget.autoAddUrl!.isNotEmpty) {
+      _controller.text = widget.autoAddUrl!;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _addRepo());
+    }
   }
 
   @override
@@ -80,23 +97,48 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
 
     setState(() => _isLoading = true);
     try {
-      try {
-        await widget.manager.addRepo(parsedUrl, bridge.ItemType.anime);
-      } catch (_) {}
-      try {
-        await widget.manager.addRepo(parsedUrl, bridge.ItemType.manga);
-      } catch (_) {}
+      bool addedAnime = false;
+      bool addedManga = false;
+
+      if (_selectedCategory == 'both' || _selectedCategory == 'anime') {
+        try {
+          await widget.manager.addRepo(parsedUrl, bridge.ItemType.anime);
+          addedAnime = true;
+        } catch (_) {}
+      }
+      if (_selectedCategory == 'both' || _selectedCategory == 'manga') {
+        try {
+          await widget.manager.addRepo(parsedUrl, bridge.ItemType.manga);
+          addedManga = true;
+        } catch (_) {}
+      }
+
       _controller.clear();
       ref.invalidate(availableAnimeSourcesProvider);
       ref.invalidate(availableMangaSourcesProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Repository added successfully'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (addedAnime || addedManga) {
+          final typeLabel = addedAnime && addedManga
+              ? 'Anime & Manga'
+              : (addedAnime ? 'Anime' : 'Manga');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$typeLabel repository added successfully!'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Failed to add repository or already exists.',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -133,7 +175,6 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Add Repo Input Section
           TextField(
             controller: _controller,
             decoration: InputDecoration(
@@ -159,6 +200,38 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
             ),
             enabled: !_isLoading,
             onSubmitted: (_) => _addRepo(),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Repository Category',
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          SegmentedButton<String>(
+            style: SegmentedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            segments: const [
+              ButtonSegment(
+                value: 'both',
+                label: Text('Both', style: TextStyle(fontSize: 12)),
+              ),
+              ButtonSegment(
+                value: 'anime',
+                label: Text('Anime Only', style: TextStyle(fontSize: 12)),
+              ),
+              ButtonSegment(
+                value: 'manga',
+                label: Text('Manga Only', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+            selected: {_selectedCategory},
+            onSelectionChanged: _isLoading
+                ? null
+                : (sel) => setState(() => _selectedCategory = sel.first),
           ),
           const SizedBox(height: 8),
           if (_clipboardText != null && !_isLoading) ...[
@@ -333,17 +406,24 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
                                     theme.colorScheme.primaryContainer,
                                     theme.colorScheme.onPrimaryContainer,
                                   ),
-                                  if (isAnime)
+                                  if (isAnime && isManga)
                                     _buildBadge(
                                       context,
-                                      'ANIME',
+                                      'ANIME & MANGA',
+                                      Colors.purple.withValues(alpha: 0.2),
+                                      Colors.purple.shade800,
+                                    )
+                                  else if (isAnime)
+                                    _buildBadge(
+                                      context,
+                                      'ANIME ONLY',
                                       Colors.orange.withValues(alpha: 0.2),
                                       Colors.orange.shade800,
-                                    ),
-                                  if (isManga)
+                                    )
+                                  else if (isManga)
                                     _buildBadge(
                                       context,
-                                      'MANGA',
+                                      'MANGA ONLY',
                                       Colors.green.withValues(alpha: 0.2),
                                       Colors.green.shade800,
                                     ),

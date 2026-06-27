@@ -41,7 +41,7 @@ class _UnifiedSource {
       sourceInfo = null;
 }
 
-class SourcesTab extends ConsumerWidget {
+class SourcesTab extends ConsumerStatefulWidget {
   final bridge.Extension manager;
   final bridge.ItemType type;
   final String searchQuery;
@@ -58,14 +58,21 @@ class SourcesTab extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (isInstalled) {
-      final sourcesAsync = type == bridge.ItemType.anime
+  ConsumerState<SourcesTab> createState() => _SourcesTabState();
+}
+
+class _SourcesTabState extends ConsumerState<SourcesTab> {
+  final Set<String> _processingIds = {};
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.isInstalled) {
+      final sourcesAsync = widget.type == bridge.ItemType.anime
           ? ref.watch(availableAnimeSourcesProvider)
           : ref.watch(availableMangaSourcesProvider);
 
       return Obx(() {
-        final installedRx = manager.getInstalledRx(type).value;
+        final installedRx = widget.manager.getInstalledRx(widget.type).value;
         final installedIds = installedRx.map((e) => e.id ?? '').toSet();
 
         return sourcesAsync.when(
@@ -80,7 +87,7 @@ class SourcesTab extends ConsumerWidget {
             final unified = validSources
                 .map((s) => _UnifiedSource.fromSourceInfo(s))
                 .toList();
-            return _buildContent(context, ref, unified);
+            return _buildContent(context, unified);
           },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('Error: $error')),
@@ -88,8 +95,8 @@ class SourcesTab extends ConsumerWidget {
       });
     } else {
       return Obx(() {
-        final available = manager.getAvailableRx(type).value;
-        final installed = manager.getInstalledRx(type).value;
+        final available = widget.manager.getAvailableRx(widget.type).value;
+        final installed = widget.manager.getInstalledRx(widget.type).value;
         final installedIds = installed.map((e) => e.id ?? '').toSet();
 
         final uninstalledAvailable = available
@@ -99,28 +106,25 @@ class SourcesTab extends ConsumerWidget {
         final unified = uninstalledAvailable
             .map((s) => _UnifiedSource.fromBridgeSource(s))
             .toList();
-        return _buildContent(context, ref, unified);
+        return _buildContent(context, unified);
       });
     }
   }
 
-  Widget _buildContent(
-    BuildContext context,
-    WidgetRef ref,
-    List<_UnifiedSource> sources,
-  ) {
+  Widget _buildContent(BuildContext context, List<_UnifiedSource> sources) {
     var filteredSources = sources.where((s) {
       final name = s.name.toLowerCase();
       final id = s.id.toLowerCase();
-      final query = searchQuery.toLowerCase();
-      if (langFilter != 'All') {
+      final query = widget.searchQuery.toLowerCase();
+      if (widget.langFilter != 'All') {
         final sLang = s.lang ?? 'all';
-        if (sLang.toLowerCase() != langFilter.toLowerCase()) return false;
+        if (sLang.toLowerCase() != widget.langFilter.toLowerCase()) {
+          return false;
+        }
       }
       return name.contains(query) || id.contains(query);
     }).toList();
 
-    // Deduplicate by ID
     final Map<String, _UnifiedSource> uniqueSources = {};
     for (final s in filteredSources) {
       uniqueSources[s.id] = s;
@@ -143,19 +147,19 @@ class SourcesTab extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                searchQuery.isEmpty && langFilter == 'All'
-                    ? (isInstalled
+                widget.searchQuery.isEmpty && widget.langFilter == 'All'
+                    ? (widget.isInstalled
                           ? 'No extensions installed'
                           : 'No available extensions')
                     : 'No extensions found',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              if (!isInstalled &&
-                  searchQuery.isEmpty &&
-                  langFilter == 'All') ...[
+              if (!widget.isInstalled &&
+                  widget.searchQuery.isEmpty &&
+                  widget.langFilter == 'All') ...[
                 const SizedBox(height: 8),
                 Text(
-                  manager.id == 'mangayomi'
+                  widget.manager.id == 'mangayomi'
                       ? 'Add a Mangayomi repository to fetch and install extensions.'
                       : 'Add a Tachiyomi repository to fetch and install extensions.',
                   textAlign: TextAlign.center,
@@ -182,7 +186,6 @@ class SourcesTab extends ConsumerWidget {
       String groupLang = 'All';
 
       if (sources.length > 1) {
-        // Variant group
         final allVariant = sources
             .where(
               (s) =>
@@ -194,14 +197,12 @@ class SourcesTab extends ConsumerWidget {
           groupLang = allVariant.lang!;
         }
 
-        // Remove 'all' or 'multi' from sub-items so they don't appear in the expanded list
         sources.removeWhere(
           (s) =>
               s.lang?.toLowerCase() == 'all' ||
               s.lang?.toLowerCase() == 'multi',
         );
       } else {
-        // Single source
         groupLang = sources.first.lang ?? 'All';
       }
 
@@ -230,7 +231,7 @@ class SourcesTab extends ConsumerWidget {
             itemBuilder: (context, langIndex) {
               final lang = sortedLangs[langIndex];
               final nameGroups = groupedByLang[lang]!;
-              final prefKey = type == bridge.ItemType.anime
+              final prefKey = widget.type == bridge.ItemType.anime
                   ? 'source_order_ANIME'
                   : 'source_order_MANGA';
               final prefs = ref.watch(sharedPreferencesProvider);
@@ -240,7 +241,7 @@ class SourcesTab extends ConsumerWidget {
               };
 
               final sortedNames = nameGroups.keys.toList();
-              if (isInstalled && order.isNotEmpty) {
+              if (widget.isInstalled && order.isNotEmpty) {
                 sortedNames.sort((a, b) {
                   final minA = nameGroups[a]!
                       .map((s) => orderMap[s.id] ?? 9999)
@@ -279,13 +280,10 @@ class SourcesTab extends ConsumerWidget {
                     final groupSources = nameGroups[name]!;
 
                     if (groupSources.length == 1) {
-                      return _buildItem(
-                        context,
-                        ref,
-                        groupSources.first,
-                        false,
-                      );
+                      return _buildItem(context, groupSources.first, false);
                     }
+
+                    final isGroupProcessing = _processingIds.contains(name);
 
                     return Theme(
                       data: Theme.of(
@@ -302,12 +300,23 @@ class SourcesTab extends ConsumerWidget {
                                     ?.copyWith(fontWeight: FontWeight.w500),
                               ),
                             ),
-                            if (isInstalled)
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline),
-                                onPressed: () =>
-                                    _uninstallVariantGroup(context, ref, name),
-                              ),
+                            if (widget.isInstalled)
+                              isGroupProcessing
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(12),
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    )
+                                  : IconButton(
+                                      icon: const Icon(Icons.delete_outline),
+                                      onPressed: () =>
+                                          _uninstallVariantGroup(context, name),
+                                    ),
                           ],
                         ),
                         subtitle: Text(
@@ -329,7 +338,7 @@ class SourcesTab extends ConsumerWidget {
                               const Icon(Icons.extension, size: 40),
                         ),
                         children: groupSources
-                            .map((s) => _buildItem(context, ref, s, true))
+                            .map((s) => _buildItem(context, s, true))
                             .toList(),
                       ),
                     );
@@ -345,10 +354,11 @@ class SourcesTab extends ConsumerWidget {
 
   Widget _buildItem(
     BuildContext context,
-    WidgetRef ref,
     _UnifiedSource source,
     bool isSubItem,
   ) {
+    final isProcessing = _processingIds.contains(source.id);
+
     return SettingsActionTile(
       title: isSubItem
           ? (source.lang ?? (source.isInbuilt ? 'inbuilt' : 'all'))
@@ -378,15 +388,15 @@ class SourcesTab extends ConsumerWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (isInstalled && source.sourceInfo != null) ...[
+          if (widget.isInstalled && source.sourceInfo != null) ...[
             Builder(
               builder: (context) {
-                final prefKey = type == bridge.ItemType.anime
+                final prefKey = widget.type == bridge.ItemType.anime
                     ? 'source_order_ANIME'
                     : 'source_order_MANGA';
                 final prefs = ref.watch(sharedPreferencesProvider);
                 final order = prefs.getStringList(prefKey) ?? [];
-                final availableList = type == bridge.ItemType.anime
+                final availableList = widget.type == bridge.ItemType.anime
                     ? ref.watch(availableAnimeSourcesProvider).value
                     : ref.watch(availableMangaSourcesProvider).value;
                 final isDefault = order.isNotEmpty
@@ -447,7 +457,7 @@ class SourcesTab extends ConsumerWidget {
                 );
               },
             ),
-            _buildSettingsButton(context, ref, source.sourceInfo!),
+            _buildSettingsButton(context, source.sourceInfo!),
             if (source.isInbuilt)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -459,33 +469,41 @@ class SourcesTab extends ConsumerWidget {
                 ),
               )
             else if (!isSubItem)
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () => _uninstallSource(context, ref, source),
-              ),
-          ] else if (!isInstalled) ...[
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () async {
-                if (source.bridgeSource != null) {
-                  await manager.installSource(source.bridgeSource!);
-                  ref.invalidate(availableAnimeSourcesProvider);
-                  ref.invalidate(availableMangaSourcesProvider);
-                }
-              },
-            ),
+              isProcessing
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () => _uninstallSource(context, source),
+                    ),
+          ] else if (!widget.isInstalled) ...[
+            isProcessing
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () => _installSource(context, source),
+                  ),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildSettingsButton(
-    BuildContext context,
-    WidgetRef ref,
-    SourceInfo sourceInfo,
-  ) {
-    final sourceImpl = type == bridge.ItemType.anime
+  Widget _buildSettingsButton(BuildContext context, SourceInfo sourceInfo) {
+    final sourceImpl = widget.type == bridge.ItemType.anime
         ? ref.read(animeSourceProvider(sourceInfo)) as MediaSource
         : ref.read(mangaSourceProvider(sourceInfo)) as MediaSource;
 
@@ -514,11 +532,41 @@ class SourcesTab extends ConsumerWidget {
     );
   }
 
-  void _uninstallVariantGroup(
+  Future<void> _installSource(
     BuildContext context,
-    WidgetRef ref,
-    String name,
-  ) {
+    _UnifiedSource source,
+  ) async {
+    if (source.bridgeSource == null) return;
+    setState(() => _processingIds.add(source.id));
+    try {
+      await widget.manager.installSource(source.bridgeSource!);
+      ref.invalidate(availableAnimeSourcesProvider);
+      ref.invalidate(availableMangaSourcesProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${source.name} installed successfully!'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to install ${source.name}: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _processingIds.remove(source.id));
+    }
+  }
+
+  void _uninstallVariantGroup(BuildContext context, String name) {
     ConfirmationBottomSheet.show(
       context,
       title: 'Uninstall Extension',
@@ -526,24 +574,35 @@ class SourcesTab extends ConsumerWidget {
       confirmText: 'Uninstall',
       isDestructive: true,
       onConfirm: () async {
-        final installed = manager.getInstalledRx(type).value;
-        final variants = installed
-            .where((e) => (e.name ?? 'N/A') == name)
-            .toList();
+        setState(() => _processingIds.add(name));
+        try {
+          final installed = widget.manager.getInstalledRx(widget.type).value;
+          final variants = installed
+              .where((e) => (e.name ?? 'N/A') == name)
+              .toList();
 
-        await Future.wait(variants.map((e) => manager.uninstallSource(e)));
+          await Future.wait(
+            variants.map((e) => widget.manager.uninstallSource(e)),
+          );
 
-        ref.invalidate(availableAnimeSourcesProvider);
-        ref.invalidate(availableMangaSourcesProvider);
+          ref.invalidate(availableAnimeSourcesProvider);
+          ref.invalidate(availableMangaSourcesProvider);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Uninstalled all variants of $name'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        } finally {
+          if (mounted) setState(() => _processingIds.remove(name));
+        }
       },
     );
   }
 
-  void _uninstallSource(
-    BuildContext context,
-    WidgetRef ref,
-    _UnifiedSource source,
-  ) {
+  void _uninstallSource(BuildContext context, _UnifiedSource source) {
     ConfirmationBottomSheet.show(
       context,
       title: 'Uninstall Extension',
@@ -551,15 +610,25 @@ class SourcesTab extends ConsumerWidget {
       confirmText: 'Uninstall',
       isDestructive: true,
       onConfirm: () async {
-        final installed = manager.getInstalledRx(type).value;
+        setState(() => _processingIds.add(source.id));
         try {
+          final installed = widget.manager.getInstalledRx(widget.type).value;
           final extSource = installed.firstWhere((e) => e.id == source.id);
-          await manager.uninstallSource(extSource);
+          await widget.manager.uninstallSource(extSource);
 
           ref.invalidate(availableAnimeSourcesProvider);
           ref.invalidate(availableMangaSourcesProvider);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${source.name} uninstalled'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
         } catch (_) {
-          // Source not found in installed list, ignore or handle error
+        } finally {
+          if (mounted) setState(() => _processingIds.remove(source.id));
         }
       },
     );

@@ -65,6 +65,14 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <intent-filter android:label="Add Extension Repo">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="aniyomi" android:host="add-repo" />
+                <data android:scheme="tachiyomi" android:host="add-repo" />
+            </intent-filter>
         </activity>
 
         <provider

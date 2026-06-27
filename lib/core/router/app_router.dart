@@ -177,7 +177,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: 'extensions',
-            builder: (context, state) => const ExtensionsSettingsScreen(),
+            builder: (context, state) {
+              final autoAddUrl = state.uri.queryParameters['autoAddUrl'];
+              final autoAddType = state.uri.queryParameters['autoAddType'];
+              return ExtensionsSettingsScreen(
+                autoAddUrl: autoAddUrl,
+                autoAddType: autoAddType,
+              );
+            },
             routes: [
               GoRoute(
                 path: 'test',

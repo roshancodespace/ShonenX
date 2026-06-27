@@ -741,11 +741,12 @@ do_install() {
 Version=1.0
 Name=ShonenX
 Comment=Anilist & MAL Client for Anime and Manga
-Exec=$BIN_DIR/$EXE_NAME
+Exec=$BIN_DIR/$EXE_NAME %u
 Icon=$ICON_DIR/shonenx.png
 Terminal=false
 Type=Application
 Categories=Network;Entertainment;
+MimeType=x-scheme-handler/shonenx;x-scheme-handler/aniyomi;x-scheme-handler/tachiyomi;
 EOF
         command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP_DIR" || true
         log_panel_add ok "Desktop entry created"

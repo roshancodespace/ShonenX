@@ -12,7 +12,14 @@ import 'widgets/manage_repos_sheet.dart';
 import 'widgets/sources_tab.dart';
 
 class ExtensionsSettingsScreen extends ConsumerStatefulWidget {
-  const ExtensionsSettingsScreen({super.key});
+  final String? autoAddUrl;
+  final String? autoAddType;
+
+  const ExtensionsSettingsScreen({
+    super.key,
+    this.autoAddUrl,
+    this.autoAddType,
+  });
 
   @override
   ConsumerState<ExtensionsSettingsScreen> createState() =>
@@ -27,10 +34,32 @@ class _ExtensionsSettingsScreenState
   String _selectedLangFilter = 'All';
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.autoAddUrl != null && widget.autoAddUrl!.isNotEmpty) {
+        _showManageReposSheet(
+          context,
+          autoAddUrl: widget.autoAddUrl,
+          autoAddType: widget.autoAddType,
+        );
+      } else {
+        final manager = ref.read(extensionManagerProvider);
+        final animeRepos = manager.getReposRx(bridge.ItemType.anime).value;
+        final mangaRepos = manager.getReposRx(bridge.ItemType.manga).value;
+        if (animeRepos.isEmpty && mangaRepos.isEmpty) {
+          _showGuideSheet(context);
+        }
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -263,46 +292,76 @@ class _ExtensionsSettingsScreenState
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final cs = Theme.of(context).colorScheme;
         return AppBottomSheet(
           title: 'Extensions Guide',
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'This app supports installing external community extensions to fetch content from various sources.',
-                style: Theme.of(context).textTheme.bodyMedium,
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.tips_and_updates_rounded, color: cs.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Recommended: Use Aniyomi repositories for Anime streaming extensions, and Tachiyomi/Keiyoushi repositories for Manga reading.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
               Text(
-                'Repository Types',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                'Repository Types & Recommendations',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: cs.primary,
+                ),
               ),
               const SizedBox(height: 8),
               const Text(
-                '• Mangayomi: A modern extension ecosystem. Recommended for best compatibility.',
+                '• Aniyomi (Highly Recommended for Anime): High-speed video streaming extensions curated specifically for anime sources.',
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               const Text(
-                '• Tachiyomi / Aniyomi: The classic extension ecosystem. Available for backward compatibility.',
+                '• Tachiyomi / Keiyoushi (Recommended for Manga): Vast catalog of manga extensions with multi-language support.',
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                '• Mangayomi: All-in-one ecosystem supporting both anime and manga extensions seamlessly.',
               ),
               const SizedBox(height: 16),
               Text(
-                'How to use',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                'How to get & install extensions',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: cs.primary,
+                ),
               ),
               const SizedBox(height: 8),
               const Text(
-                '1. Select your preferred extension ecosystem from the top toggle.\n2. Click the Manage Repos button at the bottom to add or delete repository URLs.\n3. Once added, the available extensions will appear in the Available tab.\n4. Click the + icon to install an extension and start watching!',
+                '1. Toggle between Mangayomi or Tachiyomi/Aniyomi ecosystems at the bottom right.\n2. Tap "Manage Repos" to paste your repository index link or click deep links directly from browser.\n3. Switch to the Available tab to discover extensions.\n4. Tap the + icon to install an extension, then customize your sources!',
               ),
               const SizedBox(height: 24),
               FilledButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Got it!'),
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text('Got it!', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -311,14 +370,22 @@ class _ExtensionsSettingsScreenState
     );
   }
 
-  void _showManageReposSheet(BuildContext context) {
+  void _showManageReposSheet(
+    BuildContext context, {
+    String? autoAddUrl,
+    String? autoAddType,
+  }) {
     final manager = ref.watch(extensionManagerProvider);
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => ManageReposSheet(manager: manager),
+      builder: (context) => ManageReposSheet(
+        manager: manager,
+        autoAddUrl: autoAddUrl,
+        autoAddType: autoAddType,
+      ),
     );
   }
 }

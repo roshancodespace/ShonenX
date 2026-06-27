@@ -146,52 +146,7 @@ class MediaKitEngine implements VideoEngine {
           fit: fit,
           subtitleViewConfiguration: SubtitleViewConfiguration(
             padding: EdgeInsets.only(bottom: subtitlePrefs.bottomPadding),
-            style: TextStyle(
-              fontSize: responsiveFontSize,
-              color: Color(subtitlePrefs.fontColor),
-              backgroundColor: subtitlePrefs.backgroundColor == 0x00000000
-                  ? null
-                  : Color(subtitlePrefs.backgroundColor),
-              fontWeight: subtitlePrefs.bold
-                  ? FontWeight.w700
-                  : FontWeight.w500,
-              shadows: subtitlePrefs.outlineColor == 0x00000000
-                  ? null
-                  : [
-                      Shadow(
-                        offset: Offset(
-                          -subtitlePrefs.outlineSize,
-                          -subtitlePrefs.outlineSize,
-                        ),
-                        color: Color(subtitlePrefs.outlineColor),
-                        blurRadius: subtitlePrefs.outlineSize,
-                      ),
-                      Shadow(
-                        offset: Offset(
-                          subtitlePrefs.outlineSize,
-                          -subtitlePrefs.outlineSize,
-                        ),
-                        color: Color(subtitlePrefs.outlineColor),
-                        blurRadius: subtitlePrefs.outlineSize,
-                      ),
-                      Shadow(
-                        offset: Offset(
-                          subtitlePrefs.outlineSize,
-                          subtitlePrefs.outlineSize,
-                        ),
-                        color: Color(subtitlePrefs.outlineColor),
-                        blurRadius: subtitlePrefs.outlineSize,
-                      ),
-                      Shadow(
-                        offset: Offset(
-                          -subtitlePrefs.outlineSize,
-                          subtitlePrefs.outlineSize,
-                        ),
-                        color: Color(subtitlePrefs.outlineColor),
-                        blurRadius: subtitlePrefs.outlineSize,
-                      ),
-                    ],
-            ),
+            style: getSubtitleTextStyle(subtitlePrefs, responsiveFontSize),
           ),
         );
       },

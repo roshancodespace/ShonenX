@@ -237,7 +237,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
 
                         const SizedBox(width: 12),
 
-                        if (widget.playerState.subtitles.length > 1)
+                        if (widget.playerState.subtitles.isNotEmpty)
                           _buildBottomSheetTrigger(
                             context: context,
                             value: widget.playerState.activeSubtitle,
@@ -605,6 +605,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                 );
               },
         onLongPress: onLongPress,
+        onSecondaryTap: onLongPress,
         borderRadius: BorderRadius.circular(6),
         child: Container(
           alignment: Alignment.center,

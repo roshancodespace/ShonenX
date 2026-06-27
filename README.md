@@ -154,7 +154,7 @@ We provide a universal interactive installation script for Linux users. It will 
 
 Run the following command in your terminal:
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/roshancodespace/ShonenX/main/install.sh)
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/roshancodespace/ShonenX/main/install.sh)"
 ```
 *Note: You can run this same command again to uninstall ShonenX safely!*
 

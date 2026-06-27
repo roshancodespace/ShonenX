@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'dart:async';
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,12 +33,44 @@ class ScaffoldWithNavBar extends ConsumerStatefulWidget {
 }
 
 class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
+  late final AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
+
   @override
   void initState() {
     super.initState();
+    _initDeepLinks();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkRemoteAnnouncements();
     });
+  }
+
+  void _initDeepLinks() {
+    _appLinks = AppLinks();
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
+      _handleDeepLink(uri);
+    });
+    _appLinks.getInitialLink().then((uri) {
+      if (uri != null) _handleDeepLink(uri);
+    });
+  }
+
+  void _handleDeepLink(Uri uri) {
+    if (uri.scheme == 'aniyomi' || uri.scheme == 'tachiyomi') {
+      final url = uri.queryParameters['url'];
+      if (url != null && url.isNotEmpty) {
+        final isAnime = uri.scheme == 'aniyomi';
+        context.push(
+          '/settings/extensions?autoAddUrl=${Uri.encodeComponent(url)}&autoAddType=${isAnime ? "anime" : "manga"}',
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _checkRemoteAnnouncements() async {

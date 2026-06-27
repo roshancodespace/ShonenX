@@ -29,6 +29,8 @@ class EpisodesTabWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+
     final sourcesAsync = ref.watch(
       media.type == MediaType.ANIME
           ? availableAnimeSourcesProvider
@@ -40,7 +42,7 @@ class EpisodesTabWidget extends ConsumerWidget {
     }
 
     final sources = sourcesAsync.value ?? [];
-    
+
     if (sources.isEmpty) {
       return _NoExtensionsPlaceholder(mediaType: media.type);
     }
@@ -56,7 +58,14 @@ class EpisodesTabWidget extends ConsumerWidget {
     return Column(
       children: [
         StaggeredFadeIn(index: 0, child: _EpisodesHeader(media: media)),
-        const StaggeredFadeIn(index: 1, child: Divider()),
+        StaggeredFadeIn(
+          index: 1,
+          child: Container(
+            width: double.maxFinite,
+            height: 2,
+            color: cs.surfaceContainerHigh,
+          ),
+        ),
         Expanded(
           child: EpisodeListPanel(
             media: media,
@@ -237,7 +246,7 @@ class _EpisodesHeader extends ConsumerWidget {
     final sourceName = sourceState?.sourceInfo.name ?? 'Unknown';
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -293,8 +302,10 @@ class _EpisodesHeader extends ConsumerWidget {
               ],
             ),
           ),
-          _HeaderIconButton(
+          const SizedBox(width: 8),
+          _HeaderButton(
             icon: Icons.swap_horiz_rounded,
+            label: 'Source',
             onTap: () => _showSourceSelector(
               context,
               ref,
@@ -302,9 +313,10 @@ class _EpisodesHeader extends ConsumerWidget {
               sourceState?.sourceInfo,
             ),
           ),
-          const SizedBox(width: 4),
-          _HeaderIconButton(
-            icon: Icons.tune_rounded,
+          const SizedBox(width: 6),
+          _HeaderButton(
+            icon: Icons.help_outline_rounded,
+            label: 'Fix',
             onTap: () {
               showModalBottomSheet(
                 context: context,
@@ -405,7 +417,9 @@ class _EpisodesHeader extends ConsumerWidget {
                                 type: media.type,
                               );
                               ref
-                                  .read(mediaPreferenceProvider(matchArgs).notifier)
+                                  .read(
+                                    mediaPreferenceProvider(matchArgs).notifier,
+                                  )
                                   .updateSource(sourceInfo);
                               ref.invalidate(matchedMediaProvider(matchArgs));
                               ref.invalidate(episodesListProvider(matchArgs));
@@ -592,10 +606,18 @@ class _EpisodesHeader extends ConsumerWidget {
                                       type: media.type,
                                     );
                                     ref
-                                        .read(mediaPreferenceProvider(matchArgs).notifier)
+                                        .read(
+                                          mediaPreferenceProvider(
+                                            matchArgs,
+                                          ).notifier,
+                                        )
                                         .updateSource(defaultVariant);
-                                    ref.invalidate(matchedMediaProvider(matchArgs));
-                                    ref.invalidate(episodesListProvider(matchArgs));
+                                    ref.invalidate(
+                                      matchedMediaProvider(matchArgs),
+                                    );
+                                    ref.invalidate(
+                                      episodesListProvider(matchArgs),
+                                    );
                                     if (media.sourceId != null) {
                                       ref.invalidate(
                                         sourceEpisodesProvider((
@@ -771,25 +793,46 @@ class _EpisodesHeader extends ConsumerWidget {
   }
 }
 
-class _HeaderIconButton extends StatelessWidget {
+class _HeaderButton extends StatelessWidget {
   final IconData icon;
+  final String label;
   final VoidCallback onTap;
 
-  const _HeaderIconButton({required this.icon, required this.onTap});
+  const _HeaderButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
-    return IconButton(
-      onPressed: onTap,
-      style: IconButton.styleFrom(
-        backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.6),
-        foregroundColor: cs.onSurfaceVariant,
-        shape: const CircleBorder(),
-        padding: EdgeInsets.zero,
+    return Material(
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: cs.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      icon: Icon(icon, size: 20),
     );
   }
 }

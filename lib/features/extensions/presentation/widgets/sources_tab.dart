@@ -21,6 +21,7 @@ class _UnifiedSource {
   final String? lang;
   final String? iconUrl;
   final bool isInbuilt;
+  final bool isNsfw;
   final SourceInfo? sourceInfo;
   final bridge.Source? bridgeSource;
 
@@ -30,6 +31,7 @@ class _UnifiedSource {
       lang = sourceInfo.lang,
       iconUrl = sourceInfo.iconUrl,
       isInbuilt = sourceInfo.type == SourceType.inbuilt,
+      isNsfw = sourceInfo.isNsfw,
       bridgeSource = null;
 
   _UnifiedSource.fromBridgeSource(this.bridgeSource)
@@ -38,7 +40,32 @@ class _UnifiedSource {
       lang = bridgeSource.lang,
       iconUrl = bridgeSource.iconUrl,
       isInbuilt = false,
+      isNsfw = bridgeSource.isNsfw ?? false,
       sourceInfo = null;
+
+  bool get effectiveNsfw {
+    if (isNsfw) return true;
+    final lowerName = name.toLowerCase();
+    final lowerId = id.toLowerCase();
+    const keywords = [
+      '18+',
+      'nsfw',
+      'hentai',
+      'doujin',
+      'porn',
+      'xvideos',
+      'xnxx',
+      'hanime',
+      'nhentai',
+      'rule34',
+      'erotic',
+      'smut',
+    ];
+    for (final kw in keywords) {
+      if (lowerName.contains(kw) || lowerId.contains(kw)) return true;
+    }
+    return false;
+  }
 }
 
 class SourcesTab extends ConsumerStatefulWidget {
@@ -290,6 +317,14 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                         context,
                       ).copyWith(dividerColor: Colors.transparent),
                       child: ExpansionTile(
+                        backgroundColor:
+                            groupSources.any((s) => s.effectiveNsfw)
+                            ? Colors.red.withValues(alpha: 0.06)
+                            : null,
+                        collapsedBackgroundColor:
+                            groupSources.any((s) => s.effectiveNsfw)
+                            ? Colors.red.withValues(alpha: 0.06)
+                            : null,
                         tilePadding: const EdgeInsets.symmetric(horizontal: 10),
                         title: Row(
                           children: [
@@ -298,6 +333,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                                 name,
                                 style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(fontWeight: FontWeight.w500),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             if (widget.isInstalled)
@@ -320,13 +356,21 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                           ],
                         ),
                         subtitle: Text(
-                          '${groupSources.length} variants',
+                          groupSources.any((s) => s.effectiveNsfw)
+                              ? '18+ • ${groupSources.length} variants'
+                              : '${groupSources.length} variants',
                           style: Theme.of(context).textTheme.labelSmall
                               ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant
-                                    .withValues(alpha: 0.7),
+                                color: groupSources.any((s) => s.effectiveNsfw)
+                                    ? Colors.red.shade400
+                                    : Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant
+                                          .withValues(alpha: 0.7),
+                                fontWeight:
+                                    groupSources.any((s) => s.effectiveNsfw)
+                                    ? FontWeight.w600
+                                    : null,
                               ),
                         ),
                         leading: CachedNetworkImage(
@@ -365,13 +409,15 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                 .toUpperCase()
           : source.name,
       subtitle: isSubItem
-          ? source.id
+          ? (source.effectiveNsfw ? '18+ • ${source.id}' : source.id)
           : (source.lang != null && source.lang != 'all'
-                ? '${source.lang} • ${source.id}'
-                : source.id),
+                ? (source.effectiveNsfw
+                      ? '18+ • ${source.lang} • ${source.id}'
+                      : '${source.lang} • ${source.id}')
+                : (source.effectiveNsfw ? '18+ • ${source.id}' : source.id)),
       tileColor: source.isInbuilt
           ? Theme.of(context).colorScheme.secondaryContainer
-          : null,
+          : (source.effectiveNsfw ? Colors.red.withValues(alpha: 0.06) : null),
       foregroundColor: source.isInbuilt
           ? Theme.of(context).colorScheme.onSecondaryContainer
           : null,

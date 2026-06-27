@@ -127,7 +127,7 @@ class BetterPlayerEngine implements VideoEngine {
     _isBuffering = false;
 
     _controller.pause();
-    
+
     ref.read(videoEngineStateProvider.notifier).updateState(isBuffering: false);
 
     await _controller.setupDataSource(
@@ -150,7 +150,15 @@ class BetterPlayerEngine implements VideoEngine {
   }
 
   @override
-  Widget buildVideoView() => BetterPlayer(controller: _controller);
+  Widget buildVideoView() {
+    return Consumer(
+      builder: (context, ref, _) {
+        final fit = ref.watch(videoEngineStateProvider.select((s) => s.fit));
+        _controller.setOverriddenFit(fit);
+        return BetterPlayer(controller: _controller);
+      },
+    );
+  }
 
   @override
   Widget? buildSettingsView(BuildContext context) => null;

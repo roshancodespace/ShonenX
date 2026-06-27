@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/engine/better_player/better_player_engine.dart';
 import 'package:shonenx/features/player/engine/media_kit/media_kit_engine.dart';
@@ -11,6 +12,7 @@ class EngineState {
   final Duration buffer;
   final bool isPlaying;
   final bool isBuffering;
+  final BoxFit fit;
 
   const EngineState({
     this.position = Duration.zero,
@@ -18,6 +20,7 @@ class EngineState {
     this.buffer = Duration.zero,
     this.isPlaying = false,
     this.isBuffering = false,
+    this.fit = BoxFit.contain,
   });
 
   EngineState copyWith({
@@ -26,6 +29,7 @@ class EngineState {
     Duration? buffer,
     bool? isPlaying,
     bool? isBuffering,
+    BoxFit? fit,
   }) {
     return EngineState(
       position: position ?? this.position,
@@ -33,6 +37,7 @@ class EngineState {
       buffer: buffer ?? this.buffer,
       isPlaying: isPlaying ?? this.isPlaying,
       isBuffering: isBuffering ?? this.isBuffering,
+      fit: fit ?? this.fit,
     );
   }
 }
@@ -47,6 +52,7 @@ class EngineStateNotifier extends Notifier<EngineState> {
     Duration? buffer,
     bool? isPlaying,
     bool? isBuffering,
+    BoxFit? fit,
   }) {
     state = state.copyWith(
       position: position,
@@ -54,7 +60,21 @@ class EngineStateNotifier extends Notifier<EngineState> {
       buffer: buffer,
       isPlaying: isPlaying,
       isBuffering: isBuffering,
+      fit: fit,
     );
+  }
+
+  void setFit(BoxFit fit) {
+    updateState(fit: fit);
+  }
+
+  void cycleFit() {
+    final nextFit = switch (state.fit) {
+      BoxFit.contain => BoxFit.cover,
+      BoxFit.cover => BoxFit.fill,
+      _ => BoxFit.contain,
+    };
+    updateState(fit: nextFit);
   }
 }
 

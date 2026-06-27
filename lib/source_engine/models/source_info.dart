@@ -10,6 +10,7 @@ class SourceInfo {
   final String? iconUrl;
   final String? baseUrl;
   final String? lang;
+  final bool isNsfw;
 
   const SourceInfo({
     required this.id,
@@ -19,6 +20,7 @@ class SourceInfo {
     this.iconUrl,
     this.baseUrl,
     this.lang,
+    this.isNsfw = false,
   });
 
   @override
@@ -39,6 +41,7 @@ class SourceInfo {
         'mediaType': mediaType.name,
         'iconUrl': iconUrl,
         'lang': lang,
+        'isNsfw': isNsfw,
       };
 
   factory SourceInfo.fromMap(Map<String, dynamic> map) {
@@ -52,6 +55,7 @@ class SourceInfo {
       ),
       iconUrl: map['iconUrl'],
       lang: map['lang'],
+      isNsfw: map['isNsfw'] ?? false,
     );
   }
 }

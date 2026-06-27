@@ -88,6 +88,7 @@ final availableAnimeSourcesProvider = FutureProvider<List<SourceInfo>>(
               mediaType: MediaType.ANIME,
               iconUrl: ext.iconUrl,
               lang: ext.lang,
+              isNsfw: ext.isNsfw ?? false,
             ),
           )
           .toList();
@@ -141,6 +142,7 @@ final availableMangaSourcesProvider = FutureProvider<List<SourceInfo>>(
               mediaType: MediaType.MANGA,
               iconUrl: ext.iconUrl,
               lang: ext.lang,
+              isNsfw: ext.isNsfw ?? false,
             ),
           )
           .toList();

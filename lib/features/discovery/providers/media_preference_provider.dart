@@ -9,6 +9,8 @@ import 'package:shonenx/features/discovery/providers/matched_media_provider.dart
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 
+const Object _sentinel = Object();
+
 class MediaPreferenceState {
   final SourceInfo sourceInfo;
   final String? manualOverrideId;
@@ -26,19 +28,25 @@ class MediaPreferenceState {
 
   MediaPreferenceState copyWith({
     SourceInfo? sourceInfo,
-    String? manualOverrideId,
-    String? manualOverrideTitle,
-    TrackerType? preferredAiringTracker,
-    String? manualAiringTrackerId,
+    Object? manualOverrideId = _sentinel,
+    Object? manualOverrideTitle = _sentinel,
+    Object? preferredAiringTracker = _sentinel,
+    Object? manualAiringTrackerId = _sentinel,
   }) {
     return MediaPreferenceState(
       sourceInfo: sourceInfo ?? this.sourceInfo,
-      manualOverrideId: manualOverrideId ?? this.manualOverrideId,
-      manualOverrideTitle: manualOverrideTitle ?? this.manualOverrideTitle,
-      preferredAiringTracker:
-          preferredAiringTracker ?? this.preferredAiringTracker,
-      manualAiringTrackerId:
-          manualAiringTrackerId ?? this.manualAiringTrackerId,
+      manualOverrideId: manualOverrideId == _sentinel
+          ? this.manualOverrideId
+          : manualOverrideId as String?,
+      manualOverrideTitle: manualOverrideTitle == _sentinel
+          ? this.manualOverrideTitle
+          : manualOverrideTitle as String?,
+      preferredAiringTracker: preferredAiringTracker == _sentinel
+          ? this.preferredAiringTracker
+          : preferredAiringTracker as TrackerType?,
+      manualAiringTrackerId: manualAiringTrackerId == _sentinel
+          ? this.manualAiringTrackerId
+          : manualAiringTrackerId as String?,
     );
   }
 }
@@ -156,6 +164,13 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
       pref.manualOverrideTitle = matchedTitle;
 
       await _isar.writeTxn(() async => await _isar.mediaPreferences.put(pref));
+
+      state = AsyncData(
+        currentState.copyWith(
+          manualOverrideId: matchedId,
+          manualOverrideTitle: matchedTitle,
+        ),
+      );
     } catch (e, st) {
       _log.e('Failed to save auto match', e, st);
     }
@@ -165,9 +180,7 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
     final log = _log.child('setPreferredAiringTracker');
     log.i('Tracker → ${tracker.displayName}');
 
-    state = AsyncData(
-      state.value!.copyWith(preferredAiringTracker: tracker),
-    );
+    state = AsyncData(state.value!.copyWith(preferredAiringTracker: tracker));
 
     _saveToDb();
   }

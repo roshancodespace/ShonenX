@@ -69,8 +69,6 @@ class UiSettingsScreen extends ConsumerWidget {
             ],
           ),
 
-          const Divider(height: 1, indent: 10, endIndent: 10),
-
           SettingsSection(
             title: 'Media Cards',
             children: [
@@ -105,8 +103,6 @@ class UiSettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
-
-          const Divider(height: 1, indent: 10, endIndent: 10),
 
           SettingsSection(
             title: 'Episodes',

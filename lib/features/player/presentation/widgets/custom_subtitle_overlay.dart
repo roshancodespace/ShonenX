@@ -31,7 +31,10 @@ class CustomSubtitleOverlay extends ConsumerWidget {
         if (activeCue == null) return const SizedBox.shrink();
 
         final screenWidth = MediaQuery.sizeOf(context).width;
-        final responsiveFontSize = getResponsiveSubtitleSize(screenWidth, prefs.fontSize);
+        final responsiveFontSize = getResponsiveSubtitleSize(
+          screenWidth,
+          prefs.fontSize,
+        );
 
         return Positioned(
           bottom: prefs.bottomPadding, // Configurable bottom padding
@@ -45,51 +48,7 @@ class CustomSubtitleOverlay extends ConsumerWidget {
                 child: Text(
                   activeCue.text,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: responsiveFontSize,
-                    color: prefs.color,
-                    backgroundColor: prefs.backgroundColor == 0x00000000
-                        ? null
-                        : prefs.bg,
-                    fontWeight: prefs.bold ? FontWeight.w700 : FontWeight.w500,
-                    shadows: prefs.outlineColor == 0x00000000
-                        ? null
-                        : [
-                            // Outline effect using configurable size
-                            Shadow(
-                              offset: Offset(
-                                -prefs.outlineSize,
-                                -prefs.outlineSize,
-                              ),
-                              color: prefs.outline,
-                              blurRadius: prefs.outlineSize,
-                            ),
-                            Shadow(
-                              offset: Offset(
-                                prefs.outlineSize,
-                                -prefs.outlineSize,
-                              ),
-                              color: prefs.outline,
-                              blurRadius: prefs.outlineSize,
-                            ),
-                            Shadow(
-                              offset: Offset(
-                                prefs.outlineSize,
-                                prefs.outlineSize,
-                              ),
-                              color: prefs.outline,
-                              blurRadius: prefs.outlineSize,
-                            ),
-                            Shadow(
-                              offset: Offset(
-                                -prefs.outlineSize,
-                                prefs.outlineSize,
-                              ),
-                              color: prefs.outline,
-                              blurRadius: prefs.outlineSize,
-                            ),
-                          ],
-                  ),
+                  style: getSubtitleTextStyle(prefs, responsiveFontSize),
                 ),
               ),
             ),

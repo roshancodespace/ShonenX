@@ -54,44 +54,14 @@ class SubtitleSettingsSheet extends ConsumerWidget {
             child: AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
-              style: TextStyle(
-                fontSize: responsiveFontSize.clamp(10.0, 100.0),
-                color: Color(prefs.fontColor),
-                backgroundColor: prefs.backgroundColor == 0x00000000
-                    ? null
-                    : Color(prefs.backgroundColor),
-                fontWeight: prefs.bold ? FontWeight.w700 : FontWeight.w500,
-                height: 1.3,
-                shadows: prefs.outlineColor == 0x00000000
-                    ? null
-                    : [
-                        Shadow(
-                          offset: Offset(
-                            -prefs.outlineSize,
-                            -prefs.outlineSize,
-                          ),
-                          blurRadius: prefs.outlineSize,
-                          color: Color(prefs.outlineColor),
-                        ),
-                        Shadow(
-                          offset: Offset(prefs.outlineSize, -prefs.outlineSize),
-                          blurRadius: prefs.outlineSize,
-                          color: Color(prefs.outlineColor),
-                        ),
-                        Shadow(
-                          offset: Offset(prefs.outlineSize, prefs.outlineSize),
-                          blurRadius: prefs.outlineSize,
-                          color: Color(prefs.outlineColor),
-                        ),
-                        Shadow(
-                          offset: Offset(-prefs.outlineSize, prefs.outlineSize),
-                          blurRadius: prefs.outlineSize,
-                          color: Color(prefs.outlineColor),
-                        ),
-                      ],
+              style: getSubtitleTextStyle(
+                prefs,
+                responsiveFontSize.clamp(10.0, 100.0),
               ),
               textAlign: TextAlign.center,
-              child: const Text('Ore wa kaizoku ou ni naru!'),
+              child: const Text(
+                'Ore wa kaizoku ou ni naru!\n(I will become the Pirate King!)',
+              ),
             ),
           ),
 
@@ -159,6 +129,23 @@ class SubtitleSettingsSheet extends ConsumerWidget {
                       letterSpacing: 0.5,
                     ),
                   ),
+                ),
+
+                SettingsDropdownTile<String>(
+                  icon: Icons.font_download_outlined,
+                  title: 'Font Family',
+                  value: prefs.fontFamily,
+                  items: kSubtitleFonts
+                      .map(
+                        (font) =>
+                            DropdownMenuItem(value: font, child: Text(font)),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      notifier.updatePrefs(prefs.copyWith(fontFamily: value));
+                    }
+                  },
                 ),
 
                 SettingsSliderTile(
@@ -273,7 +260,7 @@ class SubtitleSettingsSheet extends ConsumerWidget {
                       SettingsSliderTile(
                         icon: Icons.line_weight_rounded,
                         title: 'Outline Size',
-                        subtitle: 'Thickness of the text shadow',
+                        subtitle: 'Thickness of the stroke border',
                         value: prefs.outlineSize,
                         min: 0.0,
                         max: 5.0,
@@ -282,6 +269,41 @@ class SubtitleSettingsSheet extends ConsumerWidget {
                         onChanged: (value) {
                           notifier.updatePrefs(
                             prefs.copyWith(outlineSize: value),
+                          );
+                        },
+                      ),
+                      SettingsActionTile(
+                        icon: Icons.blur_on_rounded,
+                        title: 'Drop Shadow Color',
+                        trailing: _ColorIndicator(
+                          colorValue: prefs.shadowColor,
+                        ),
+                        onTap: () {
+                          _showColorSheet(
+                            context,
+                            title: 'Drop Shadow Color',
+                            currentValue: prefs.shadowColor,
+                            options: const [0x00000000, 0x80000000, 0xFF000000],
+                            onChanged: (value) {
+                              notifier.updatePrefs(
+                                prefs.copyWith(shadowColor: value),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      SettingsSliderTile(
+                        icon: Icons.blur_linear_rounded,
+                        title: 'Drop Shadow Blur',
+                        subtitle: 'Softness of drop shadow behind text',
+                        value: prefs.shadowBlur,
+                        min: 0.0,
+                        max: 10.0,
+                        divisions: 20,
+                        label: prefs.shadowBlur.toStringAsFixed(1),
+                        onChanged: (value) {
+                          notifier.updatePrefs(
+                            prefs.copyWith(shadowBlur: value),
                           );
                         },
                       ),
@@ -297,6 +319,51 @@ class SubtitleSettingsSheet extends ConsumerWidget {
                         onChanged: (value) {
                           notifier.updatePrefs(
                             prefs.copyWith(bottomPadding: value),
+                          );
+                        },
+                      ),
+                      SettingsSliderTile(
+                        icon: Icons.space_bar_rounded,
+                        title: 'Letter Spacing',
+                        subtitle: 'Space between character letters',
+                        value: prefs.letterSpacing,
+                        min: -2.0,
+                        max: 5.0,
+                        divisions: 14,
+                        label: '${prefs.letterSpacing.toStringAsFixed(1)}px',
+                        onChanged: (value) {
+                          notifier.updatePrefs(
+                            prefs.copyWith(letterSpacing: value),
+                          );
+                        },
+                      ),
+                      SettingsSliderTile(
+                        icon: Icons.notes_rounded,
+                        title: 'Word Spacing',
+                        subtitle: 'Space between words',
+                        value: prefs.wordSpacing,
+                        min: -3.0,
+                        max: 10.0,
+                        divisions: 26,
+                        label: '${prefs.wordSpacing.toStringAsFixed(1)}px',
+                        onChanged: (value) {
+                          notifier.updatePrefs(
+                            prefs.copyWith(wordSpacing: value),
+                          );
+                        },
+                      ),
+                      SettingsSliderTile(
+                        icon: Icons.format_line_spacing_rounded,
+                        title: 'Line Height',
+                        subtitle: 'Vertical gap between subtitle lines',
+                        value: prefs.lineHeight,
+                        min: 0.8,
+                        max: 2.0,
+                        divisions: 24,
+                        label: '${prefs.lineHeight.toStringAsFixed(2)}x',
+                        onChanged: (value) {
+                          notifier.updatePrefs(
+                            prefs.copyWith(lineHeight: value),
                           );
                         },
                       ),

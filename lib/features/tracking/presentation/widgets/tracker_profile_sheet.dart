@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -554,12 +555,12 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
               itemBuilder: (_, idx) {
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(6),
-                  child: Image.network(
-                    profile.favorites![idx],
+                  child: CachedNetworkImage(
+                    imageUrl: profile.favorites![idx],
                     width: 58,
                     height: 84,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    errorWidget: (_, __, ___) => Container(
                       width: 58,
                       height: 84,
                       color: cs.surfaceContainerHighest,

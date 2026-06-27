@@ -210,7 +210,11 @@ class BetterPlayerEngine implements VideoEngine {
   @override
   Future<void> dispose() async {
     _progressTimer?.cancel();
-    _controller.dispose();
+    try {
+      _controller.pause();
+      _controller.videoPlayerController?.pause();
+      _controller.dispose(forceDispose: true);
+    } catch (_) {}
   }
 
   @override

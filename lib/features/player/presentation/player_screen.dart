@@ -77,6 +77,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   @override
   void dispose() {
     _controlsTimer?.cancel();
+    try {
+      ref.read(videoEngineProvider).dispose();
+    } catch (_) {}
 
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.edgeToEdge,
@@ -112,6 +115,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
+          try {
+            engine.pause();
+          } catch (_) {}
           controller.captureExitThumbnail();
           context.pop();
         }

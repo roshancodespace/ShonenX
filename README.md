@@ -193,6 +193,35 @@ Contributions are welcome! Feel free to inspect the code, compile from source, o
 
 ---
 
+## 👥 Contributors
+
+Thanks to everyone who has contributed to ShonenX!
+
+<a href="https://github.com/roshancodespace/ShonenX/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=roshancodespace/ShonenX" />
+</a>
+
+---
+
+---
+
+## ⭐ Star History
+
+<a href="https://www.star-history.com/#roshancodespace/ShonenX">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://api.star-history.com/svg?repos=roshancodespace/ShonenX&type=Date&theme=dark" />
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://api.star-history.com/svg?repos=roshancodespace/ShonenX&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=roshancodespace/ShonenX&type=Date" />
+  </picture>
+</a>
+
+
+---
+
 ## 📞 Support
 
 **Developer**: Roshan Kumar Sharma  

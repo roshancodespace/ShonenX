@@ -23,11 +23,23 @@ class DownloadRepository {
     return await _isar.downloadTasks.getByUrl(url);
   }
 
+  Future<DownloadTask?> getTaskById(Id id) async {
+    return await _isar.downloadTasks.get(id);
+  }
+
   Future<List<DownloadTask>> getPendingOrPausedTasks() async {
     return await _isar.downloadTasks
         .filter()
         .statusBetween(DownloadStatus.pending, DownloadStatus.paused)
         .sortByCreatedAtDesc()
+        .findAll();
+  }
+
+  Future<List<DownloadTask>> getUnfinishedTasks() async {
+    return await _isar.downloadTasks
+        .filter()
+        .not()
+        .statusEqualTo(DownloadStatus.completed)
         .findAll();
   }
 

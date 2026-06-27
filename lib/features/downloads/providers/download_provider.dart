@@ -105,16 +105,39 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
   }
 
   Future<void> pauseDownload(int taskId) async {
-    await _activeEngines[taskId]?.pause();
+    final engine = _activeEngines[taskId];
+    if (engine != null) {
+      await engine.pause();
+    } else {
+      final task = await repo.getTaskById(taskId);
+      if (task != null && task.status == DownloadStatus.pending) {
+        task.status = DownloadStatus.paused;
+        await repo.putTask(task);
+      }
+    }
     await NotificationService.instance.cancelDownloadNotification(taskId);
     _activeEngines.remove(taskId);
     _processQueue(); // Start next in queue if available
   }
 
   Future<void> cancelDownload(int taskId) async {
-    await _activeEngines[taskId]?.cancel();
+    final engine = _activeEngines[taskId];
+    if (engine != null) {
+      await engine.cancel();
+    }
     _activeEngines.remove(taskId);
     await NotificationService.instance.cancelDownloadNotification(taskId);
+
+    final task = await repo.getTaskById(taskId);
+    if (task != null) {
+      try {
+        final f = File(task.savePath);
+        if (await f.exists()) await f.delete();
+        final temp = File('${task.savePath}.part');
+        if (await temp.exists()) await temp.delete();
+      } catch (_) {}
+      await repo.deleteTask(taskId);
+    }
     _processQueue(); // Start next in queue if available
   }
 

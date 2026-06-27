@@ -57,11 +57,15 @@ class OneDMService {
       componentName: _downloaderComponent,
       data: url,
       arguments: {
-        if (fileName != null)
+        if (fileName != null) ...{
+          'title': fileName,
+          'name': fileName,
+          'filename': fileName,
           'extra_filename': fileName,
+          'com.android.extra.filename': fileName,
+        },
 
-        if (headers != null)
-          'android.media.intent.extra.HTTP_HEADERS': headers,
+        if (headers != null) 'android.media.intent.extra.HTTP_HEADERS': headers,
       },
     );
 

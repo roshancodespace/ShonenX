@@ -132,6 +132,7 @@ class MediaKitEngine implements VideoEngine {
   Widget buildVideoView() {
     return Consumer(
       builder: (context, ref, _) {
+        final fit = ref.watch(videoEngineStateProvider.select((s) => s.fit));
         final subtitlePrefs = ref.watch(subtitlePrefsProvider);
         final screenWidth = MediaQuery.sizeOf(context).width;
         final responsiveFontSize = getResponsiveSubtitleSize(
@@ -142,6 +143,7 @@ class MediaKitEngine implements VideoEngine {
         return Video(
           controller: _controller,
           controls: NoVideoControls,
+          fit: fit,
           subtitleViewConfiguration: SubtitleViewConfiguration(
             padding: EdgeInsets.only(bottom: subtitlePrefs.bottomPadding),
             style: TextStyle(

@@ -165,11 +165,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   ),
                 ),
               ),
-              if (playerState.isLoading)
-                const Center(
-                  child: CircularProgressIndicator(color: Colors.red),
-                )
-              else if (playerState.error != null)
+              if (playerState.error != null)
                 Center(
                   child: Text(
                     playerState.error!,

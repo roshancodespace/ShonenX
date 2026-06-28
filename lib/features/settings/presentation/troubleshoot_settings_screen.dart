@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/caching/cache_manager.dart';
-import 'package:shonenx/core/database/database_provider.dart';
+import 'package:shonenx/shared/providers/database_provider.dart';
 import 'package:shonenx/features/discovery/domain/media_preference.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';

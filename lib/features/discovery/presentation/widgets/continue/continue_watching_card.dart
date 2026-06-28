@@ -4,7 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/core/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/utils/image_headers.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_media_mixin.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';

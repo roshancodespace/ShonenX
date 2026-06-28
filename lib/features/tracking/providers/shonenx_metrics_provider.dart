@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
-import 'package:shonenx/core/database/database_provider.dart';
+import 'package:shonenx/shared/providers/database_provider.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 

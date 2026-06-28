@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/providers/storage_provider.dart';
+import 'package:shonenx/shared/providers/storage_provider.dart';
 
 class ThemePrefsState {
   final ThemeMode themeMode;

@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/database/database_provider.dart';
+import 'package:shonenx/shared/providers/database_provider.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/http_x.dart';
 import 'package:shonenx/core/services/notification_service.dart';

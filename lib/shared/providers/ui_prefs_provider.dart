@@ -3,8 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shonenx/core/models/component_layout.dart';
-import 'package:shonenx/core/providers/storage_provider.dart';
+import 'package:shonenx/shared/models/component_layout.dart';
+import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
 
 class GlobalUI {

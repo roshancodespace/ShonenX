@@ -1,4 +1,4 @@
-import 'package:shonenx/core/providers/content_prefs_provider.dart';
+import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 
 class AnilistTrackerQueries {
   static const String search = '''

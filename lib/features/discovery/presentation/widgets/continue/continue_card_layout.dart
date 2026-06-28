@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:shonenx/core/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 
 class ContinueCardLayout extends StatelessWidget {
   final bool isWideBanner;

@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/core/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 
 class AppBottomSheet extends StatelessWidget {
   final String title;
   final Widget child;
-  final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry headerPadding;
+  final EdgeInsetsGeometry contentPadding;
   final List<Widget>? actions;
 
   const AppBottomSheet({
     super.key,
     required this.title,
     required this.child,
-    this.padding = const EdgeInsets.fromLTRB(20, 12, 20, 20),
+    this.headerPadding = const EdgeInsets.symmetric(horizontal: 16),
+    this.contentPadding = const EdgeInsets.fromLTRB(16, 12, 16, 16),
     this.actions,
   });
 
@@ -24,7 +26,15 @@ class AppBottomSheet extends StatelessWidget {
     bool useRootNavigator = false,
     bool enableDrag = true,
     bool useSafeArea = true,
-    EdgeInsetsGeometry padding = const EdgeInsets.fromLTRB(20, 12, 20, 20),
+    EdgeInsetsGeometry headerPadding = const EdgeInsets.symmetric(
+      horizontal: 16,
+    ),
+    EdgeInsetsGeometry contentPadding = const EdgeInsets.fromLTRB(
+      16,
+      12,
+      16,
+      16,
+    ),
   }) {
     return showModalBottomSheet<T>(
       context: context,
@@ -34,7 +44,12 @@ class AppBottomSheet extends StatelessWidget {
       useSafeArea: useSafeArea,
       backgroundColor: Colors.transparent,
       builder: (_) {
-        return AppBottomSheet(title: title, padding: padding, child: child);
+        return AppBottomSheet(
+          title: title,
+          headerPadding: headerPadding,
+          contentPadding: contentPadding,
+          child: child,
+        );
       },
     );
   }
@@ -55,7 +70,15 @@ class AppBottomSheet extends StatelessWidget {
     bool useRootNavigator = false,
     bool enableDrag = true,
     bool useSafeArea = true,
-    EdgeInsetsGeometry padding = const EdgeInsets.fromLTRB(20, 12, 20, 20),
+    EdgeInsetsGeometry headerPadding = const EdgeInsets.symmetric(
+      horizontal: 16,
+    ),
+    EdgeInsetsGeometry contentPadding = const EdgeInsets.fromLTRB(
+      16,
+      12,
+      16,
+      16,
+    ),
   }) {
     return show<T>(
       context: context,
@@ -64,66 +87,67 @@ class AppBottomSheet extends StatelessWidget {
       useRootNavigator: useRootNavigator,
       enableDrag: enableDrag,
       useSafeArea: useSafeArea,
-      padding: padding,
+      headerPadding: headerPadding,
+      contentPadding: contentPadding,
       child: Builder(
         builder: (sheetContext) {
-          return SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: items.map((item) {
-                final isSelected = item == selectedValue;
-                final subtitle = subtitleBuilder?.call(item);
+          return ListView.builder(
+            shrinkWrap: true,
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              final isSelected = item == selectedValue;
+              final subtitle = subtitleBuilder?.call(item);
 
-                return ListTile(
-                  leading: leadingBuilder?.call(item, isSelected),
-                  title: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          itemLabel(item),
-                          style: TextStyle(
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+              return ListTile(
+                leading: leadingBuilder?.call(item, isSelected),
+                title: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        itemLabel(item),
+                        style: TextStyle(
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      if (badgeBuilder != null) ...[
-                        const SizedBox(width: 10),
-                        badgeBuilder(item) ?? const SizedBox.shrink(),
-                      ],
+                    ),
+                    if (badgeBuilder != null) ...[
+                      const SizedBox(width: 10),
+                      badgeBuilder(item) ?? const SizedBox.shrink(),
                     ],
-                  ),
-                  subtitle: subtitle != null
-                      ? Text(
-                          subtitle,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(
-                              sheetContext,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        )
-                      : null,
-                  trailing:
-                      trailingBuilder?.call(item, isSelected) ??
-                      (isSelected
-                          ? Icon(
-                              Icons.check_rounded,
-                              color: Theme.of(sheetContext).colorScheme.primary,
-                            )
-                          : null),
-                  onTap: () {
-                    onChanged(item);
+                  ],
+                ),
+                subtitle: subtitle != null
+                    ? Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(
+                            sheetContext,
+                          ).colorScheme.onSurfaceVariant,
+                        ),
+                      )
+                    : null,
+                trailing:
+                    trailingBuilder?.call(item, isSelected) ??
+                    (isSelected
+                        ? Icon(
+                            Icons.check_rounded,
+                            color: Theme.of(sheetContext).colorScheme.primary,
+                          )
+                        : null),
+                onTap: () {
+                  onChanged(item);
 
-                    if (closeOnSelect) {
-                      sheetContext.pop(item);
-                    }
-                  },
-                );
-              }).toList(),
-            ),
+                  if (closeOnSelect) {
+                    sheetContext.pop(item);
+                  }
+                },
+              );
+            },
           );
         },
       ),
@@ -143,24 +167,24 @@ class AppBottomSheet extends StatelessWidget {
           top: Radius.circular(GlobalUI.uiRoundness),
         ),
       ),
-      child: Padding(
-        padding: padding,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                height: 4,
-                width: 40,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(4),
-                ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              height: 4,
+              width: 40,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(4),
               ),
             ),
-            Row(
+          ),
+          Padding(
+            padding: headerPadding,
+            child: Row(
               children: [
                 Expanded(
                   child: Text(
@@ -185,10 +209,12 @@ class AppBottomSheet extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Flexible(child: child),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          Flexible(
+            child: Padding(padding: contentPadding, child: child),
+          ),
+        ],
       ),
     );
   }

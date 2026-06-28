@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import 'package:shonenx/core/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/remote_config/providers/remote_config_provider.dart';
 import 'package:shonenx/core/remote_config/ui/remote_config_ui.dart';
 import 'package:shonenx/core/router/app_router.dart';
@@ -16,7 +16,7 @@ import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
-import 'package:shonenx/core/providers/navbar_action_provider.dart';
+import 'package:shonenx/shared/providers/navbar_action_provider.dart';
 
 final _navBreakpoints = ResponsiveBreakpoints.defaults.copyWith(
   heightNormal: 750,

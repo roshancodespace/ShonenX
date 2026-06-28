@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/core/providers/ui_prefs_provider.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/rows/horizontal_section.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/discovery/providers/category_search_provider.dart';
@@ -9,7 +9,7 @@ import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.da
 import 'package:shonenx/features/discovery/providers/search_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
-import 'package:shonenx/core/providers/navbar_action_provider.dart';
+import 'package:shonenx/shared/providers/navbar_action_provider.dart';
 import 'package:shonenx/shared/widgets/media_switcher_overlay.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';

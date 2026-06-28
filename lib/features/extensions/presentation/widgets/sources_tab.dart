@@ -4,7 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
-import 'package:shonenx/core/providers/storage_provider.dart';
+import 'package:shonenx/shared/providers/storage_provider.dart';
 
 import 'package:shonenx/features/settings/presentation/source_settings_sheet.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';

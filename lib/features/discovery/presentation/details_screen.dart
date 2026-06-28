@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/core/providers/theme_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/features/auth/providers/auth_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/about_tab.dart';
+import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/episodes_tab.dart';
 import 'package:shonenx/features/discovery/providers/details_provider.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
@@ -44,6 +46,47 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   late final FocusNode _keyboardFocusNode;
+  double _pullProgress = 0.0;
+  double _accumulatedOverscroll = 0.0;
+
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) return false;
+
+    final maxScroll = notification.metrics.maxScrollExtent;
+    final pixels = notification.metrics.pixels;
+
+    if (notification is OverscrollNotification &&
+        notification.metrics.extentBefore == 0 &&
+        notification.overscroll < 0) {
+      _accumulatedOverscroll += -notification.overscroll;
+      final progress = (_accumulatedOverscroll / 180.0).clamp(0.0, 1.0);
+      if (progress != _pullProgress) {
+        setState(() => _pullProgress = progress);
+      }
+    } else if (notification is ScrollUpdateNotification) {
+      if (pixels < 0) {
+        final progress = (-pixels / 180.0).clamp(0.0, 1.0);
+        if (progress != _pullProgress) {
+          setState(() => _pullProgress = progress);
+        }
+      } else if (_pullProgress > 0 || _accumulatedOverscroll > 0) {
+        _accumulatedOverscroll = 0.0;
+        if (_pullProgress != 0.0) setState(() => _pullProgress = 0.0);
+      }
+    } else if (notification is ScrollEndNotification) {
+      final shouldTrigger = _pullProgress >= 1.0;
+      _accumulatedOverscroll = 0.0;
+      if (_pullProgress != 0.0) {
+        setState(() => _pullProgress = 0.0);
+      }
+      if (shouldTrigger) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showCommentsSheet(context, widget.media);
+        });
+      }
+    }
+    return false;
+  }
 
   @override
   void initState() {
@@ -116,169 +159,252 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
         detailsState.value?.merge(widget.media) ?? widget.media;
 
     return AppScaffold(
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          SliverAppBar(
-            automaticallyImplyLeading: false,
-            expandedHeight: 350.0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new),
-              onPressed: () => context.pop(),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: EdgeInsets.zero,
-              background: Stack(
-                children: [
-                  Positioned.fill(
-                    child: CachedNetworkImage(
-                      imageUrl: displayMedia.banner ?? displayMedia.cover ?? '',
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) =>
-                          const Center(child: CircularProgressIndicator()),
-                      errorWidget: (_, __, ___) =>
-                          const Center(child: Icon(Icons.error)),
-                    ),
+      body: NotificationListener<ScrollNotification>(
+        onNotification: _onScrollNotification,
+        child: Stack(
+          children: [
+            NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                SliverAppBar(
+                  automaticallyImplyLeading: false,
+                  expandedHeight: 350.0,
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new),
+                    onPressed: () => context.pop(),
                   ),
-                  Positioned.fill(
-                    child: Container(
-                      padding: const EdgeInsets.only(bottom: 5),
-                      margin: const EdgeInsets.only(top: 10),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          stops: const [0, 0.5, 1],
-                          colors: [
-                            Colors.transparent,
-                            theme.scaffoldBackgroundColor.withValues(
-                              alpha: 0.8,
+                  flexibleSpace: FlexibleSpaceBar(
+                    titlePadding: EdgeInsets.zero,
+                    background: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: CachedNetworkImage(
+                            imageUrl:
+                                displayMedia.banner ?? displayMedia.cover ?? '',
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => const Center(
+                              child: CircularProgressIndicator(),
                             ),
-                            theme.scaffoldBackgroundColor,
-                          ],
+                            errorWidget: (_, __, ___) =>
+                                const Center(child: Icon(Icons.error)),
+                          ),
                         ),
-                      ),
-                      alignment: Alignment.bottomLeft,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: SizedBox(
-                              width: 112,
-                              child: AspectRatio(
-                                aspectRatio: 2 / 3,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(
-                                    uiRoundness,
+                        Positioned.fill(
+                          child: Container(
+                            padding: const EdgeInsets.only(bottom: 5),
+                            margin: const EdgeInsets.only(top: 10),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                stops: const [0, 0.5, 1],
+                                colors: [
+                                  Colors.transparent,
+                                  theme.scaffoldBackgroundColor.withValues(
+                                    alpha: 0.8,
                                   ),
-                                  child: Hero(
-                                    tag: widget.tag,
-                                    child: CachedNetworkImage(
-                                      imageUrl: displayMedia.cover ?? '',
-                                      fit: BoxFit.cover,
-                                      placeholder: (context, url) => Container(
-                                        color:
-                                            colorScheme.surfaceContainerHighest,
+                                  theme.scaffoldBackgroundColor,
+                                ],
+                              ),
+                            ),
+                            alignment: Alignment.bottomLeft,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: SizedBox(
+                                    width: 112,
+                                    child: AspectRatio(
+                                      aspectRatio: 2 / 3,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(
+                                          uiRoundness,
+                                        ),
+                                        child: Hero(
+                                          tag: widget.tag,
+                                          child: CachedNetworkImage(
+                                            imageUrl: displayMedia.cover ?? '',
+                                            fit: BoxFit.cover,
+                                            placeholder: (context, url) =>
+                                                Container(
+                                                  color: colorScheme
+                                                      .surfaceContainerHighest,
+                                                ),
+                                            errorWidget: (_, __, ___) =>
+                                                const Icon(Icons.error),
+                                          ),
+                                        ),
                                       ),
-                                      errorWidget: (_, __, ___) =>
-                                          const Icon(Icons.error),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: 10.0,
-                                right: 10.0,
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    displayMedia.title.availableTitle,
-                                    style: textTheme.titleLarge,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  if (displayMedia.title.native != null ||
-                                      displayMedia.title.romaji != null)
-                                    Text(
-                                      displayMedia.title.native ??
-                                          displayMedia.title.romaji ??
-                                          '',
-                                      style: textTheme.labelLarge?.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(
+                                      bottom: 10.0,
+                                      right: 10.0,
                                     ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    '${displayMedia.episodes ?? '?'} ${widget.mediaType == MediaType.MANGA ? 'CHPS' : 'EPS'} | ${displayMedia.status?.toUpperCase() ?? 'UNKNOWN'}',
-                                    style: textTheme.labelLarge?.copyWith(
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Wrap(
-                                    spacing: 3.0,
-                                    runSpacing: 3.0,
-                                    alignment: WrapAlignment.start,
-                                    children: [
-                                      for (final genre
-                                          in displayMedia.genres ?? [])
-                                        Chip(
-                                          materialTapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                          side: BorderSide.none,
-                                          color: WidgetStatePropertyAll(
-                                            colorScheme.surfaceContainerHighest,
-                                          ),
-                                          labelPadding: EdgeInsets.zero,
-                                          label: Text(
-                                            genre,
-                                            style: textTheme.bodySmall
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          displayMedia.title.availableTitle,
+                                          style: textTheme.titleLarge,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if (displayMedia.title.native != null ||
+                                            displayMedia.title.romaji != null)
+                                          Text(
+                                            displayMedia.title.native ??
+                                                displayMedia.title.romaji ??
+                                                '',
+                                            style: textTheme.labelLarge
                                                 ?.copyWith(
                                                   color: colorScheme
                                                       .onSurfaceVariant,
                                                 ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          '${displayMedia.episodes ?? '?'} ${widget.mediaType == MediaType.MANGA ? 'CHPS' : 'EPS'} | ${displayMedia.status?.toUpperCase() ?? 'UNKNOWN'}',
+                                          style: textTheme.labelLarge?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
                                           ),
                                         ),
-                                    ],
+                                        const SizedBox(height: 10),
+                                        Wrap(
+                                          spacing: 3.0,
+                                          runSpacing: 3.0,
+                                          alignment: WrapAlignment.start,
+                                          children: [
+                                            for (final genre
+                                                in displayMedia.genres ?? [])
+                                              Chip(
+                                                materialTapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                                side: BorderSide.none,
+                                                color: WidgetStatePropertyAll(
+                                                  colorScheme
+                                                      .surfaceContainerHighest,
+                                                ),
+                                                labelPadding: EdgeInsets.zero,
+                                                label: Text(
+                                                  genre,
+                                                  style: textTheme.bodySmall
+                                                      ?.copyWith(
+                                                        color: colorScheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
+                  actions: [
+                    const _DownloadAppBarButton(),
+                    _CommentsAppBarButton(
+                      media: displayMedia,
+                      uiRoundness: uiRoundness,
+                    ),
+                    const SizedBox(width: 4),
+                    _TrackerAppBarButton(
+                      media: displayMedia,
+                      uiRoundness: uiRoundness,
+                    ),
+                  ],
+                ),
+              ],
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  AboutTabWidget(
+                    media: displayMedia,
+                    onEpisodesTabRequested: () => _tabController.animateTo(1),
+                    uiRoundness: uiRoundness,
+                  ),
+                  EpisodesTabWidget(media: displayMedia),
                 ],
               ),
             ),
-            actions: [
-              const _DownloadAppBarButton(),
-              _TrackerAppBarButton(
-                media: displayMedia,
-                uiRoundness: uiRoundness,
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 12,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: AnimatedSlide(
+                  duration: const Duration(milliseconds: 200),
+                  offset: Offset(0, _pullProgress > 0.05 ? 0.0 : -3.0),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 150),
+                    opacity: _pullProgress > 0.05 ? 1.0 : 0.0,
+                    child: IgnorePointer(
+                      child: Container(
+                        width: 54,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox(
+                              width: 40,
+                              height: 40,
+                              child: CircularProgressIndicator(
+                                value: _pullProgress,
+                                strokeWidth: 3.5,
+                                backgroundColor: theme
+                                    .colorScheme
+                                    .onSurfaceVariant
+                                    .withValues(alpha: 0.2),
+                                valueColor: AlwaysStoppedAnimation(
+                                  _pullProgress >= 1.0
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              _pullProgress >= 1.0
+                                  ? Icons.forum_rounded
+                                  : Icons.chat_bubble_outline_rounded,
+                              color: _pullProgress >= 1.0
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurface,
+                              size: 22,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ],
-          ),
-        ],
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            AboutTabWidget(
-              media: displayMedia,
-              onEpisodesTabRequested: () => _tabController.animateTo(1),
-              uiRoundness: uiRoundness,
             ),
-            EpisodesTabWidget(media: displayMedia),
           ],
         ),
       ),
@@ -297,6 +423,9 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                 break;
               case LogicalKeyboardKey.digit2:
                 _tabController.animateTo(1);
+                break;
+              case LogicalKeyboardKey.digit3:
+                _showCommentsSheet(context, displayMedia);
                 break;
             }
           },
@@ -541,4 +670,43 @@ class _DownloadAppBarButton extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _CommentsAppBarButton extends StatelessWidget {
+  final UnifiedMedia media;
+  final double uiRoundness;
+
+  const _CommentsAppBarButton({required this.media, required this.uiRoundness});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(right: 2),
+      child: IconButton.filledTonal(
+        tooltip: 'Discussion',
+        style: IconButton.styleFrom(
+          backgroundColor: theme.colorScheme.secondaryContainer,
+          foregroundColor: theme.colorScheme.onSecondaryContainer,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(uiRoundness),
+          ),
+        ),
+        icon: const Icon(Icons.forum_rounded, size: 18),
+        onPressed: () => _showCommentsSheet(context, media),
+      ),
+    );
+  }
+}
+
+void _showCommentsSheet(BuildContext context, UnifiedMedia media) {
+  AppBottomSheet.show(
+    context: context,
+    title: 'Discussion',
+    contentPadding: EdgeInsets.zero,
+    child: SizedBox(
+      height: MediaQuery.of(context).size.height * 0.78,
+      child: CommentsTabWidget(media: media),
+    ),
+  );
 }

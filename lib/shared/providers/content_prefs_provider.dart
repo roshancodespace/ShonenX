@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/providers/storage_provider.dart';
+import 'package:shonenx/shared/providers/storage_provider.dart';
 
 enum AdultContentMode {
   safe('Safe'),

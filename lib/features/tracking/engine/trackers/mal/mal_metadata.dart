@@ -1,7 +1,7 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:shonenx/core/network/http_client.dart';
-import 'package:shonenx/core/providers/content_prefs_provider.dart';
+import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/core/utils/env.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';

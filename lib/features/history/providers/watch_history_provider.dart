@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/core/database/database_provider.dart';
+import 'package:shonenx/shared/providers/database_provider.dart';
 import 'package:shonenx/features/history/data/watch_history_repository.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 

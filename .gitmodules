@@ -4,3 +4,6 @@
 [submodule "packages/anymex_extension_bridge"]
 	path = packages/anymex_extension_bridge
 	url = https://github.com/roshancodespace/AnymeXExtensionRuntimeBridge
+[submodule "packages/commentum_client"]
+	path = packages/commentum_client
+	url = https://github.com/commentum/commentum_client

@@ -6,7 +6,7 @@ import 'package:shonenx/features/library/providers/library_view_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
-import 'package:shonenx/core/providers/navbar_action_provider.dart';
+import 'package:shonenx/shared/providers/navbar_action_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/media_switcher_overlay.dart';

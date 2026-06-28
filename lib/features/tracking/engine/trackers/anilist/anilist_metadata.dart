@@ -1,7 +1,7 @@
 import 'dart:developer';
 
 import 'package:shonenx/core/network/http_client.dart';
-import 'package:shonenx/core/providers/content_prefs_provider.dart';
+import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/features/tracking/engine/base_tracker.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/shared/models/unified_media.dart';

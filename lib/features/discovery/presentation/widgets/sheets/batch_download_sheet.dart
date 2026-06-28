@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/core/services/one_dm_service.dart';
 import 'package:shonenx/core/utils/device_info.dart';
 import 'package:shonenx/core/utils/http_x.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
@@ -269,6 +270,10 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
     final prefServerType = _selectedServer?.type;
     final prefQuality = _selectedStream?.quality;
 
+    final List<String> oneDmUrls = [];
+    final List<String> oneDmFileNames = [];
+    Map<String, String>? oneDmHeaders;
+
     while (_currentIndex < total) {
       if (!mounted || _currentStep != _BatchStep.queueing) break;
       final ep = sorted[_currentIndex];
@@ -363,20 +368,34 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
           await dir.create(recursive: true);
         }
 
-        final task = DownloadTask()
-          ..url = matchedStream.url
-          ..mediaId = widget.media.id
-          ..headersMap = matchedStream.headers
-          ..episodeNumber = ep.number
-          ..savePath = '$targetDir/$fileName'
-          ..fileName = fileName;
+        if (prefs.useOneDM) {
+          oneDmUrls.add(matchedStream.url);
+          oneDmFileNames.add(fileName);
+          oneDmHeaders ??= matchedStream.headers;
+        } else {
+          final task = DownloadTask()
+            ..url = matchedStream.url
+            ..mediaId = widget.media.id
+            ..headersMap = matchedStream.headers
+            ..episodeNumber = ep.number
+            ..savePath = '$targetDir/$fileName'
+            ..fileName = fileName;
 
-        await ref.read(downloadManagerProvider.notifier).startDownload(task);
+          await ref.read(downloadManagerProvider.notifier).startDownload(task);
+        }
         _successCount++;
         _currentIndex++;
       } catch (e) {
         _currentIndex++;
       }
+    }
+
+    if (prefs.useOneDM && oneDmUrls.isNotEmpty) {
+      await OneDMService.instance.downloadBatch(
+        urls: oneDmUrls,
+        fileNames: oneDmFileNames,
+        headers: oneDmHeaders,
+      );
     }
 
     if (mounted && _currentIndex >= total) {

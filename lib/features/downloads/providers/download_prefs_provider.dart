@@ -54,6 +54,7 @@ class DownloadPrefs {
   final bool useOneDM;
   final bool wifiOnly;
   final int concurrentDownloads;
+  final int concurrentSegments;
   final DuplicateAction duplicateAction;
   final bool autoDeleteWatched;
 
@@ -64,6 +65,7 @@ class DownloadPrefs {
     this.useOneDM = false,
     this.wifiOnly = true,
     this.concurrentDownloads = 2,
+    this.concurrentSegments = 4,
     this.duplicateAction = DuplicateAction.skip,
     this.autoDeleteWatched = false,
   });
@@ -75,6 +77,7 @@ class DownloadPrefs {
     bool? useOneDM,
     bool? wifiOnly,
     int? concurrentDownloads,
+    int? concurrentSegments,
     DuplicateAction? duplicateAction,
     bool? autoDeleteWatched,
   }) {
@@ -85,6 +88,7 @@ class DownloadPrefs {
       useOneDM: useOneDM ?? this.useOneDM,
       wifiOnly: wifiOnly ?? this.wifiOnly,
       concurrentDownloads: concurrentDownloads ?? this.concurrentDownloads,
+      concurrentSegments: concurrentSegments ?? this.concurrentSegments,
       duplicateAction: duplicateAction ?? this.duplicateAction,
       autoDeleteWatched: autoDeleteWatched ?? this.autoDeleteWatched,
     );
@@ -98,6 +102,7 @@ class DownloadPrefs {
       useOneDM: map['useOneDM'] ?? false,
       wifiOnly: map['wifiOnly'] ?? true,
       concurrentDownloads: map['concurrentDownloads'] ?? 2,
+      concurrentSegments: map['concurrentSegments'] ?? 4,
       duplicateAction: DuplicateAction.fromString(map['duplicateAction']),
       autoDeleteWatched: map['autoDeleteWatched'] ?? false,
     );
@@ -111,6 +116,7 @@ class DownloadPrefs {
       'useOneDM': useOneDM,
       'wifiOnly': wifiOnly,
       'concurrentDownloads': concurrentDownloads,
+      'concurrentSegments': concurrentSegments,
       'duplicateAction': duplicateAction.name,
       'autoDeleteWatched': autoDeleteWatched,
     };
@@ -147,6 +153,7 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
       useOneDM: false,
       wifiOnly: true,
       concurrentDownloads: 2,
+      concurrentSegments: 4,
       duplicateAction: DuplicateAction.skip,
       autoDeleteWatched: false,
     );
@@ -188,6 +195,12 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
     await prefs.setString(_key, jsonEncode(state.value!.toMap()));
   }
 
+  Future<void> setConcurrentSegments(int value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    state = AsyncData(state.value!.copyWith(concurrentSegments: value));
+    await prefs.setString(_key, jsonEncode(state.value!.toMap()));
+  }
+
   Future<void> setDuplicateAction(DuplicateAction value) async {
     final prefs = ref.read(sharedPreferencesProvider);
     state = AsyncData(state.value!.copyWith(duplicateAction: value));
@@ -198,6 +211,152 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
     final prefs = ref.read(sharedPreferencesProvider);
     state = AsyncData(state.value!.copyWith(autoDeleteWatched: value));
     await prefs.setString(_key, jsonEncode(state.value!.toMap()));
+  }
+
+  Future<String> getDefaultDownloadPath() async {
+    if (Platform.isAndroid) {
+      return '/storage/emulated/0/Download/ShonenX';
+    } else {
+      final docDir = await getApplicationDocumentsDirectory();
+      return '${docDir.path}/ShonenX/Downloads';
+    }
+  }
+
+  Future<int> resetAndMigrateStorage({required bool moveFiles}) async {
+    final newPath = await getDefaultDownloadPath();
+    return migrateStorageToPath(newPath, moveFiles: moveFiles);
+  }
+
+  Future<int> migrateStorageToPath(
+    String newPath, {
+    required bool moveFiles,
+  }) async {
+    final oldPath = state.value?.downloadPath;
+    int movedCount = 0;
+
+    if (moveFiles && oldPath != null && oldPath != newPath) {
+      try {
+        final oldDir = Directory(oldPath);
+        if (await oldDir.exists()) {
+          final newDir = Directory(newPath);
+          if (!await newDir.exists()) {
+            await newDir.create(recursive: true);
+          }
+
+          final entities = await oldDir.list(recursive: true).toList();
+          for (final entity in entities) {
+            if (entity is File &&
+                (entity.path.endsWith('.mp4') || entity.path.endsWith('.ts'))) {
+              final relPath = entity.path.substring(oldPath.length);
+              final targetFilePath = '$newPath$relPath';
+              final lastSlash = targetFilePath.lastIndexOf('/');
+              if (lastSlash != -1) {
+                final targetFileDir = Directory(
+                  targetFilePath.substring(0, lastSlash),
+                );
+                if (!await targetFileDir.exists()) {
+                  await targetFileDir.create(recursive: true);
+                }
+              }
+              try {
+                await entity.rename(targetFilePath);
+                movedCount++;
+              } catch (_) {
+                try {
+                  await entity.copy(targetFilePath);
+                  await entity.delete();
+                  movedCount++;
+                } catch (_) {}
+              }
+            }
+          }
+        }
+      } catch (_) {
+        // Ignore file listing or permission errors to ensure path is always updated below
+      }
+    }
+
+    await setDownloadPath(newPath);
+    return movedCount;
+  }
+
+  Future<List<File>> getMigratableFiles() async {
+    final oldPath = state.value?.downloadPath;
+    if (oldPath == null) return [];
+    final oldDir = Directory(oldPath);
+    if (!await oldDir.exists()) return [];
+
+    final files = <File>[];
+    try {
+      final entities = await oldDir.list(recursive: true).toList();
+      for (final entity in entities) {
+        if (entity is File) {
+          final pathLower = entity.path.toLowerCase();
+          if (pathLower.contains('/node_modules/') ||
+              pathLower.contains('/.pnpm/') ||
+              pathLower.contains('/.git/') ||
+              pathLower.contains('/.local/') ||
+              pathLower.contains('/.cache/') ||
+              pathLower.contains('/.pub-cache/') ||
+              pathLower.contains('/.zsh-cache')) {
+            continue;
+          }
+          if (pathLower.endsWith('.mp4') || pathLower.endsWith('.mkv')) {
+            files.add(entity);
+          }
+        }
+      }
+    } catch (_) {}
+    return files;
+  }
+
+  Future<int> migrateSelectedFiles(
+    String newPath,
+    List<File> filesToMove,
+  ) async {
+    final oldPath = state.value?.downloadPath ?? '';
+    int movedCount = 0;
+
+    final newDir = Directory(newPath);
+    if (!await newDir.exists()) {
+      await newDir.create(recursive: true);
+    }
+
+    for (final entity in filesToMove) {
+      if (await entity.exists()) {
+        String relPath = '';
+        if (oldPath.isNotEmpty && entity.path.startsWith(oldPath)) {
+          relPath = entity.path.substring(oldPath.length);
+        } else {
+          relPath = '/${entity.uri.pathSegments.last}';
+        }
+        if (!relPath.startsWith('/')) relPath = '/$relPath';
+
+        final targetFilePath = '$newPath$relPath';
+        final lastSlash = targetFilePath.lastIndexOf('/');
+        if (lastSlash != -1) {
+          final targetFileDir = Directory(
+            targetFilePath.substring(0, lastSlash),
+          );
+          if (!await targetFileDir.exists()) {
+            await targetFileDir.create(recursive: true);
+          }
+        }
+        try {
+          await entity.rename(targetFilePath);
+          movedCount++;
+        } catch (_) {
+          try {
+            await entity.copy(targetFilePath);
+            await entity.delete();
+            movedCount++;
+          } catch (_) {}
+        }
+      }
+    }
+
+    await setDownloadPath(newPath);
+    return movedCount;
   }
 }
 

@@ -212,7 +212,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
             StaggeredFadeIn(
               index: 2,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 0, 4, 5),
+                padding: const EdgeInsets.fromLTRB(10, 5, 4, 5),
                 child: Row(
                   children: [
                     Text(

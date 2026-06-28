@@ -23,8 +23,11 @@ class M3U8DownloadEngine implements DownloadEngine {
   bool _paused = false;
   bool _isRunning = false;
 
+  final int concurrentSegments;
+
   M3U8DownloadEngine({
     required this.task,
+    this.concurrentSegments = 4,
     required this.onProgress,
     required this.onStatus,
   });
@@ -43,6 +46,7 @@ class M3U8DownloadEngine implements DownloadEngine {
         url: task.url,
         savePath: task.savePath,
         headers: task.headersMap,
+        concurrentSegments: concurrentSegments,
         sendPort: _receivePort.sendPort,
       );
 
@@ -124,6 +128,7 @@ class _M3U8TaskConfig {
   final String url;
   final String savePath;
   final Map<String, String> headers;
+  final int concurrentSegments;
   final SendPort sendPort;
 
   _M3U8TaskConfig({
@@ -131,6 +136,7 @@ class _M3U8TaskConfig {
     required this.url,
     required this.savePath,
     required this.headers,
+    this.concurrentSegments = 4,
     required this.sendPort,
   });
 }
@@ -159,7 +165,7 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
 
     if (segments.isEmpty) throw Exception("Empty playlist");
 
-    final batchSize = 3;
+    final batchSize = task.concurrentSegments > 0 ? task.concurrentSegments : 4;
     int completedSegments = 0;
     int totalSegments = segments.length;
     DateTime lastLog = DateTime.now();

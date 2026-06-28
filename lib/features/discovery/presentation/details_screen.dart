@@ -52,7 +52,6 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
   bool _onScrollNotification(ScrollNotification notification) {
     if (notification.metrics.axis != Axis.vertical) return false;
 
-    final maxScroll = notification.metrics.maxScrollExtent;
     final pixels = notification.metrics.pixels;
 
     if (notification is OverscrollNotification &&

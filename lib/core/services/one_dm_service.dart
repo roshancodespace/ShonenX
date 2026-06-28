@@ -73,4 +73,37 @@ class OneDMService {
 
     return true;
   }
+
+  Future<bool> downloadBatch({
+    required List<String> urls,
+    required List<String> fileNames,
+    Map<String, String>? headers,
+  }) async {
+    if (!Platform.isAndroid || urls.isEmpty) {
+      return false;
+    }
+
+    final package = await getInstalledPackage();
+
+    if (package == null) {
+      return false;
+    }
+
+    final intent = AndroidIntent(
+      action: 'android.intent.action.VIEW',
+      package: package,
+      componentName: _downloaderComponent,
+      data: urls.first,
+      arguments: {
+        'url_list': urls,
+        'url_list.filename': fileNames,
+        if (headers != null) 'android.media.intent.extra.HTTP_HEADERS': headers,
+      },
+    );
+
+    await intent.launch();
+
+    return true;
+  }
 }
+

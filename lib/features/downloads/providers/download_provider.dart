@@ -33,6 +33,13 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
 
   @override
   Future<DownloadManagerNotifier> build() async {
+    final unfinished = await repo.getUnfinishedTasks();
+    for (final t in unfinished) {
+      if (t.status == DownloadStatus.downloading) {
+        t.status = DownloadStatus.pending;
+        await repo.putTask(t);
+      }
+    }
     _processQueue();
     return this;
   }
@@ -83,8 +90,9 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
     // Deduplicate by URL
     final existing = await repo.getTaskByUrl(task.url);
     if (existing != null) {
-      if (existing.status == DownloadStatus.downloading ||
-          existing.status == DownloadStatus.pending) {
+      if ((existing.status == DownloadStatus.downloading ||
+           existing.status == DownloadStatus.pending) &&
+          _activeEngines.containsKey(existing.id)) {
         return; // already running
       }
       
@@ -110,7 +118,9 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
       await engine.pause();
     } else {
       final task = await repo.getTaskById(taskId);
-      if (task != null && task.status == DownloadStatus.pending) {
+      if (task != null &&
+          (task.status == DownloadStatus.pending ||
+           task.status == DownloadStatus.downloading)) {
         task.status = DownloadStatus.paused;
         await repo.putTask(task);
       }
@@ -228,8 +238,10 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
     }
     
     if (isHLS) {
+      final prefs = await ref.read(downloadPrefsProvider.future);
       return M3U8DownloadEngine(
         task: task,
+        concurrentSegments: prefs.concurrentSegments,
         onProgress: onProgress,
         onStatus: onStatus,
       );

@@ -337,22 +337,13 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
     final task = widget.task;
     final name =
         task.status.name[0].toUpperCase() + task.status.name.substring(1);
-    if (task.status == DownloadStatus.completed ||
-        task.status == DownloadStatus.canceled) {
+    if (task.status == DownloadStatus.completed) {
+      return '$name · ${_mb(task.totalBytes > 0 ? task.totalBytes : task.downloadedBytes)} MB';
+    }
+    if (task.status == DownloadStatus.canceled) {
       return name;
     }
-
-    final isM3U8 =
-        task.isM3u8 ||
-        task.url.contains('.m3u8') ||
-        (task.totalBytes > 0 && task.totalBytes < 10000);
-    if (isM3U8) {
-      final pct = (task.progress * 100).toStringAsFixed(0);
-      return task.totalBytes > 0
-          ? '$name · $pct% · ${task.downloadedBytes}/${task.totalBytes} segs $_etaText'
-          : '$name · ${task.downloadedBytes} segs $_etaText';
-    }
-    if (task.totalBytes > 0) {
+    if (task.totalBytes > 0 && !task.isM3u8 && !task.url.contains('.m3u8')) {
       final pct = (task.progress * 100).toStringAsFixed(0);
       return '$name · $pct% · ${_mb(task.downloadedBytes)}/${_mb(task.totalBytes)} MB $_etaText';
     }
@@ -360,18 +351,31 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
   }
 
   String get _etaText {
-    if (widget.task.status != DownloadStatus.downloading || _speedBps <= 0)
+    if (widget.task.status != DownloadStatus.downloading || _speedBps <= 0) {
       return '';
+    }
     if (widget.task.totalBytes > 0 &&
         !widget.task.isM3u8 &&
         !widget.task.url.contains('.m3u8')) {
       final remainingBytes =
           widget.task.totalBytes - widget.task.downloadedBytes;
       final seconds = remainingBytes / _speedBps;
-      if (seconds.isInfinite || seconds.isNaN) return '';
-      return '· ${_formatDuration(Duration(seconds: seconds.toInt()))}';
+      if (seconds.isInfinite || seconds.isNaN) {
+        return '· ${_formatSpeed(_speedBps)}';
+      }
+      return '· ${_formatSpeed(_speedBps)} · ${_formatDuration(Duration(seconds: seconds.toInt()))}';
     }
-    return '· ${_mb(_speedBps.toInt())} MB/s';
+    return '· ${_formatSpeed(_speedBps)}';
+  }
+
+  String _formatSpeed(double speedBps) {
+    if (speedBps >= 1024 * 1024) {
+      return '${(speedBps / (1024 * 1024)).toStringAsFixed(1)} MB/s';
+    } else if (speedBps >= 1024) {
+      return '${(speedBps / 1024).toStringAsFixed(1)} KB/s';
+    } else {
+      return '${speedBps.toInt()} B/s';
+    }
   }
 
   String _formatDuration(Duration d) {
@@ -379,8 +383,7 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
     if (d.inHours > 0) parts.add('${d.inHours}h');
     if (d.inMinutes.remainder(60) > 0)
       parts.add('${d.inMinutes.remainder(60)}m');
-    if (d.inSeconds.remainder(60) > 0 || parts.isEmpty)
-      parts.add('${d.inSeconds.remainder(60)}s');
+    parts.add('${d.inSeconds.remainder(60)}s');
     return parts.join(' ');
   }
 

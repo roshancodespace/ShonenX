@@ -122,8 +122,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Init specific submodule
-        run: git submodule update --init packages/anymex_extension_bridge
+      - name: Init specific submodules
+        run: |
+          git submodule update --init packages/anymex_extension_bridge
+          git submodule update --init packages/commentum_client
 
       - uses: actions/setup-java@v4
         with:
@@ -186,8 +188,10 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Init specific submodule
-        run: git submodule update --init packages/anymex_extension_bridge
+      - name: Init specific submodules
+        run: |
+          git submodule update --init packages/anymex_extension_bridge
+          git submodule update --init packages/commentum_client
 
       - uses: subosito/flutter-action@v2
         with:
@@ -229,8 +233,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Init specific submodule
-        run: git submodule update --init packages/anymex_extension_bridge
+      - name: Init specific submodules
+        run: |
+          git submodule update --init packages/anymex_extension_bridge
+          git submodule update --init packages/commentum_client
 
       - uses: subosito/flutter-action@v2
         with:

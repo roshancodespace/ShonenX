@@ -72,6 +72,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="aniyomi" android:host="add-repo" />
                 <data android:scheme="tachiyomi" android:host="add-repo" />
+                <data android:scheme="mangayomi" android:host="add-repo" />
             </intent-filter>
         </activity>
 

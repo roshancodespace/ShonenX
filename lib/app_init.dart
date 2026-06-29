@@ -26,6 +26,9 @@ import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
 import 'package:window_manager/window_manager.dart';
 
 class AppInit {
+  static bool isBridgeInitialized = false;
+  static String? pendingDeepLink;
+
   late final ScopedLogger _log = AppLogger.scope(AppInit);
 
   late final CacheManager cacheManager;
@@ -65,9 +68,9 @@ class AppInit {
         final env = Platform.environment;
         final desktop = env['XDG_CURRENT_DESKTOP']?.toLowerCase() ?? '';
         final session = env['DESKTOP_SESSION']?.toLowerCase() ?? '';
-        
-        if (desktop.contains('hyprland') || 
-            session.contains('hyprland') || 
+
+        if (desktop.contains('hyprland') ||
+            session.contains('hyprland') ||
             env.containsKey('HYPRLAND_INSTANCE_SIGNATURE') ||
             desktop.contains('niri') ||
             session.contains('niri')) {
@@ -124,17 +127,22 @@ class AppInit {
       // Perform migration from MediaSourcePreference to MediaPreference
       final oldPrefsCount = await isar.mediaSourcePreferences.count();
       if (oldPrefsCount > 0) {
-        log.i('Migrating $oldPrefsCount MediaSourcePreferences to MediaPreferences...');
+        log.i(
+          'Migrating $oldPrefsCount MediaSourcePreferences to MediaPreferences...',
+        );
         final oldPrefs = await isar.mediaSourcePreferences.where().findAll();
-        
-        final newPrefs = oldPrefs.map((old) => MediaPreference()
-          ..mediaTitle = old.mediaTitle
-          ..preferredSourceId = old.preferredSourceId
-          ..preferredSourceName = old.preferredSourceName
-          ..preferredSourceType = old.preferredSourceType
-          ..manualOverrideId = old.manualOverrideId
-          ..manualOverrideTitle = old.manualOverrideTitle
-        ).toList();
+
+        final newPrefs = oldPrefs
+            .map(
+              (old) => MediaPreference()
+                ..mediaTitle = old.mediaTitle
+                ..preferredSourceId = old.preferredSourceId
+                ..preferredSourceName = old.preferredSourceName
+                ..preferredSourceType = old.preferredSourceType
+                ..manualOverrideId = old.manualOverrideId
+                ..manualOverrideTitle = old.manualOverrideTitle,
+            )
+            .toList();
 
         await isar.writeTxn(() async {
           await isar.mediaPreferences.putAll(newPrefs);
@@ -186,6 +194,8 @@ class AppInit {
     } catch (e, st) {
       log.e('BRIDGE INIT FAILED', e, st);
       rethrow;
+    } finally {
+      isBridgeInitialized = true;
     }
   }
 

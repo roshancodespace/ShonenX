@@ -63,6 +63,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
       if (!mounted) return;
 
+      final pendingLink = AppInit.pendingDeepLink;
+      if (pendingLink != null) {
+        AppInit.pendingDeepLink = null;
+        context.go(pendingLink);
+        return;
+      }
+
       final onboardingComplete = ref.read(onboardingProvider);
       if (onboardingComplete) {
         context.go('/home');
@@ -77,6 +84,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           behavior: SnackBarBehavior.floating,
         ),
       );
+
+      final pendingLink = AppInit.pendingDeepLink;
+      if (pendingLink != null) {
+        AppInit.pendingDeepLink = null;
+        context.go(pendingLink);
+        return;
+      }
 
       // Still proceed to home even if bridge fails, so app isn't bricked
       final onboardingComplete = ref.read(onboardingProvider);

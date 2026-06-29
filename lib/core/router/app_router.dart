@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/app_init.dart';
 import 'package:shonenx/core/router/complex_extra_codec.dart';
 import 'package:shonenx/core/router/scaffold_with_nav_bar.dart';
 import 'package:shonenx/features/discovery/presentation/details_screen.dart';
@@ -65,11 +66,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           uri.path.contains('add-repo')) {
         final url = uri.queryParameters['url'];
         final isAnime = uri.scheme == 'aniyomi';
-        if (url != null && url.isNotEmpty && url != '()') {
-          return '/settings/extensions?autoAddUrl=${Uri.encodeComponent(url)}&autoAddType=${isAnime ? "anime" : "manga"}';
-        } else {
-          return '/settings/extensions';
+        final target = (url != null)
+            ? '/settings/extensions?autoAddUrl=${Uri.encodeComponent(url)}&autoAddType=${isAnime ? "anime" : "manga"}'
+            : '/settings/extensions';
+
+        if (!AppInit.isBridgeInitialized) {
+          AppInit.pendingDeepLink = target;
+          return '/splash';
         }
+        return target;
       }
       return null;
     },

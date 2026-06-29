@@ -29,8 +29,26 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
   Comment? _replyingTo;
   bool _isSubmitting = false;
 
-  String get _mediaId => widget.media.idMal ?? widget.media.id;
-  String get _mediaProvider => widget.media.idMal != null ? 'mal' : 'anilist';
+  String get _mediaProvider {
+    final active = ref.read(commentumAuthServiceProvider).activeProvider;
+    if (active == CommentumProvider.myanimelist && widget.media.idMal != null) {
+      return 'mal';
+    }
+    if (active == CommentumProvider.anilist) {
+      return 'anilist';
+    }
+    if (widget.media.idMal != null && widget.media.id == widget.media.idMal) {
+      return 'mal';
+    }
+    return 'anilist';
+  }
+
+  String get _mediaId {
+    if (_mediaProvider == 'mal' && widget.media.idMal != null) {
+      return widget.media.idMal!;
+    }
+    return widget.media.id;
+  }
 
   CommentsArgs get _args =>
       CommentsArgs(mediaId: _mediaId, mediaProvider: _mediaProvider);
@@ -533,7 +551,11 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
           IconButton(
             visualDensity: VisualDensity.compact,
             onPressed: () => ref.invalidate(commentsProvider(_args)),
-            icon: Icon(Icons.refresh_rounded, size: 20, color: cs.onSurfaceVariant),
+            icon: Icon(
+              Icons.refresh_rounded,
+              size: 20,
+              color: cs.onSurfaceVariant,
+            ),
             tooltip: 'Refresh Comments',
           ),
           const SizedBox(width: 4),
@@ -619,7 +641,11 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
           IconButton(
             visualDensity: VisualDensity.compact,
             onPressed: () => ref.invalidate(commentsProvider(_args)),
-            icon: Icon(Icons.refresh_rounded, size: 20, color: cs.onSurfaceVariant),
+            icon: Icon(
+              Icons.refresh_rounded,
+              size: 20,
+              color: cs.onSurfaceVariant,
+            ),
             tooltip: 'Refresh Comments',
           ),
           const SizedBox(width: 4),

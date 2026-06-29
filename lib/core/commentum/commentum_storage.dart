@@ -34,6 +34,21 @@ class CommentumTokenStorage implements CommentumStorage {
   Future<void> clearAll() async {
     for (final provider in CommentumProvider.values) {
       await deleteToken(provider);
+      await deleteProviderToken(provider);
     }
   }
+
+  String _providerKey(CommentumProvider p) => 'commentum_provider_token_${p.name}';
+
+  @override
+  Future<void> saveProviderToken(CommentumProvider provider, String token) =>
+      _storage.write(key: _providerKey(provider), value: token);
+
+  @override
+  Future<String?> getProviderToken(CommentumProvider provider) =>
+      _storage.read(key: _providerKey(provider));
+
+  @override
+  Future<void> deleteProviderToken(CommentumProvider provider) =>
+      _storage.delete(key: _providerKey(provider));
 }

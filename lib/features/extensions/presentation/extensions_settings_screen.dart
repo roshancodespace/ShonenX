@@ -60,7 +60,6 @@ class _ExtensionsSettingsScreenState
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -358,10 +357,15 @@ class _ExtensionsSettingsScreenState
               FilledButton(
                 onPressed: () => Navigator.pop(context),
                 style: FilledButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text('Got it!', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Got it!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),

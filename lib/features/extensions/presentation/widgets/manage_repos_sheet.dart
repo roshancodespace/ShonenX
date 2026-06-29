@@ -38,7 +38,8 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
     }
     _checkClipboard();
 
-    if (widget.autoAddUrl != null && widget.autoAddUrl!.isNotEmpty) {
+    if (widget.autoAddUrl != null &&
+        widget.autoAddUrl!.isNotEmpty) {
       _controller.text = widget.autoAddUrl!;
       WidgetsBinding.instance.addPostFrameCallback((_) => _addRepo());
     }

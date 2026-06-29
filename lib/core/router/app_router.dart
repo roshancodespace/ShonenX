@@ -56,6 +56,23 @@ final routerProvider = Provider<GoRouter>((ref) {
     errorBuilder: (context, state) => Scaffold(
       body: Center(child: Text('Route not found: ${state.uri.toString()}')),
     ),
+    redirect: (context, state) {
+      final uri = state.uri;
+      if (((uri.scheme == 'aniyomi' ||
+                  uri.scheme == 'tachiyomi' ||
+                  uri.scheme == 'mangayomi') &&
+              uri.host == 'add-repo') ||
+          uri.path.contains('add-repo')) {
+        final url = uri.queryParameters['url'];
+        final isAnime = uri.scheme == 'aniyomi';
+        if (url != null && url.isNotEmpty && url != '()') {
+          return '/settings/extensions?autoAddUrl=${Uri.encodeComponent(url)}&autoAddType=${isAnime ? "anime" : "manga"}';
+        } else {
+          return '/settings/extensions';
+        }
+      }
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/splash',
@@ -285,7 +302,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 orElse: () => MediaType.ANIME,
               );
               final mediaId = state.pathParameters['mediaId']!;
-              return ContinueHistoryItemsScreen(type: mediaType, mediaId: mediaId);
+              return ContinueHistoryItemsScreen(
+                type: mediaType,
+                mediaId: mediaId,
+              );
             },
           ),
         ],

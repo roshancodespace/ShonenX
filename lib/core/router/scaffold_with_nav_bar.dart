@@ -56,14 +56,26 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
   }
 
   void _handleDeepLink(Uri uri) {
-    if (uri.scheme == 'aniyomi' || uri.scheme == 'tachiyomi') {
+    if ((uri.scheme == 'aniyomi' ||
+            uri.scheme == 'tachiyomi' ||
+            uri.scheme == 'mangayomi' ||
+            uri.scheme == 'shonenx') &&
+        uri.host == 'add-repo') {
       final url = uri.queryParameters['url'];
-      if (url != null && url.isNotEmpty) {
-        final isAnime = uri.scheme == 'aniyomi';
-        context.push(
-          '/settings/extensions?autoAddUrl=${Uri.encodeComponent(url)}&autoAddType=${isAnime ? "anime" : "manga"}',
-        );
-      }
+      final isAnime = uri.scheme == 'aniyomi';
+      final target = (url != null && url.isNotEmpty && url != '()')
+          ? '/settings/extensions?autoAddUrl=${Uri.encodeComponent(url)}&autoAddType=${isAnime ? "anime" : "manga"}'
+          : '/settings/extensions';
+
+      try {
+        final currentUri = GoRouterState.of(context).uri;
+        if (currentUri.path == '/settings/extensions' &&
+            currentUri.queryParameters['autoAddUrl'] == url) {
+          return;
+        }
+      } catch (_) {}
+
+      context.push(target);
     }
   }
 

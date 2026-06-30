@@ -74,6 +74,10 @@ class ContinueReadingResolver {
         ),
         episode: chapter,
         sourceInfo: sourceInfo,
+        startPosition:
+            entry.positionPage > 0 && entry.positionPage < entry.totalPages
+            ? entry.positionPage
+            : 1,
       ),
     );
   }

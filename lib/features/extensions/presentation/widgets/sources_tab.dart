@@ -588,7 +588,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
       await widget.manager.installSource(source.bridgeSource!);
       ref.invalidate(availableAnimeSourcesProvider);
       ref.invalidate(availableMangaSourcesProvider);
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${source.name} installed successfully!'),
@@ -598,7 +598,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to install ${source.name}: $e'),

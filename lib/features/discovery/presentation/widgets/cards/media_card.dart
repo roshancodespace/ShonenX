@@ -543,9 +543,6 @@ class _LiquidGlassCard extends StatelessWidget {
                         horizontal: 10,
                         vertical: 5,
                       ),
-                      alignment: Alignment.topLeft,
-                      isDark: true,
-                      refraction: Offset.zero,
                       child: Text(
                         widget.format!,
                         style: const TextStyle(

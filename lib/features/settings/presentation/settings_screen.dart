@@ -126,6 +126,12 @@ class SettingsScreen extends ConsumerWidget {
                 onTap: () => context.push('/settings/cache'),
               ),
               SettingsNavTile(
+                icon: Icons.system_update_outlined,
+                title: 'Updates',
+                subtitle: 'Check for updates and pre-release preferences',
+                onTap: () => context.push('/settings/updates'),
+              ),
+              SettingsNavTile(
                 icon: Icons.info_outline_rounded,
                 title: 'About',
                 subtitle: 'Version, developer, and links',

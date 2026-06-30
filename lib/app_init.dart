@@ -60,28 +60,36 @@ class AppInit {
 
   Future<void> _initWindowManager() async {
     final log = _log.child('_initWindowManager');
+
     try {
       await windowManager.ensureInitialized();
 
       bool isTilingWm = false;
+
       if (Platform.isLinux) {
         final env = Platform.environment;
         final desktop = env['XDG_CURRENT_DESKTOP']?.toLowerCase() ?? '';
         final session = env['DESKTOP_SESSION']?.toLowerCase() ?? '';
 
-        if (desktop.contains('hyprland') ||
+        isTilingWm =
+            desktop.contains('hyprland') ||
             session.contains('hyprland') ||
             env.containsKey('HYPRLAND_INSTANCE_SIGNATURE') ||
             desktop.contains('niri') ||
-            session.contains('niri')) {
-          isTilingWm = true;
-        }
+            session.contains('niri');
       }
 
       final windowOptions = WindowOptions(
         center: true,
-        backgroundColor: Colors.transparent,
-        titleBarStyle: isTilingWm ? TitleBarStyle.hidden : null,
+
+        backgroundColor: Platform.isWindows
+            ? const Color(0xFF000000)
+            : Colors.transparent,
+
+        titleBarStyle: (Platform.isWindows || isTilingWm)
+            ? TitleBarStyle.hidden
+            : null,
+
         windowButtonVisibility: Platform.isLinux && !isTilingWm,
       );
 

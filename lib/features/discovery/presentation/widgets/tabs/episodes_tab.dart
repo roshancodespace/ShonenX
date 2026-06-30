@@ -8,6 +8,7 @@ import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/e
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/manual_match_sheet.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
+import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
@@ -22,6 +23,7 @@ import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/models/source_setting.dart';
 import 'package:shonenx/features/settings/presentation/source_settings_sheet.dart';
+import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 
 class EpisodesTabWidget extends ConsumerWidget {
   final UnifiedMedia media;
@@ -55,6 +57,11 @@ class EpisodesTabWidget extends ConsumerWidget {
     );
     final watchedProgress = trackingState.value?.progress.toDouble() ?? 0;
 
+    final watchHistoryEntries =
+        ref.watch(historyEpisodesProvider(media.id)).value ?? [];
+    final readHistoryEntries =
+        ref.watch(historyChaptersProvider(media.id)).value ?? [];
+
     return Column(
       children: [
         StaggeredFadeIn(index: 0, child: _EpisodesHeader(media: media)),
@@ -73,21 +80,52 @@ class EpisodesTabWidget extends ConsumerWidget {
             useScrollController: false,
             onEpisodeTap: (UnifiedEpisode episode, SourceInfo sourceInfo) {
               if (media.type == MediaType.MANGA) {
+                final historyEntry = readHistoryEntries
+                    .where((e) => e.chapterNumber == episode.number)
+                    .firstOrNull;
+
+                final int startPosition;
+                if (historyEntry != null &&
+                    historyEntry.positionPage > 0 &&
+                    historyEntry.positionPage < historyEntry.totalPages) {
+                  startPosition = historyEntry.positionPage;
+                } else {
+                  startPosition = 1;
+                }
+
                 context.push(
                   '/reader',
                   extra: ReaderModeOnline(
                     media: media,
                     episode: episode,
                     sourceInfo: sourceInfo,
+                    startPosition: startPosition,
                   ),
                 );
               } else {
+                final historyEntry = watchHistoryEntries
+                    .where((e) => e.episodeNumber == episode.number)
+                    .firstOrNull;
+
+                final Duration? startPosition;
+                if (historyEntry != null &&
+                    historyEntry.positionInMilliseconds > 0 &&
+                    historyEntry.positionInMilliseconds <
+                        historyEntry.durationInMilliseconds) {
+                  startPosition = Duration(
+                    milliseconds: historyEntry.positionInMilliseconds,
+                  );
+                } else {
+                  startPosition = null;
+                }
+
                 context.push(
                   '/player',
                   extra: PlayerModeOnline(
                     media: media,
                     episode: episode,
                     sourceInfo: sourceInfo,
+                    startPosition: startPosition,
                   ),
                 );
               }

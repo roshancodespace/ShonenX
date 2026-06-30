@@ -61,7 +61,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       mediaTitle: widget.mode.media.title.availableTitle,
       type: widget.mode.media.type,
     );
-    _pageController = PageController(initialPage: _currentPage);
+    _currentPage = widget.mode.startPosition;
+    _pageController = PageController(initialPage: _currentPage - 1);
   }
 
   @override

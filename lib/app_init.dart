@@ -81,9 +81,8 @@ class AppInit {
       final windowOptions = WindowOptions(
         center: true,
         backgroundColor: Colors.transparent,
-        skipTaskbar: false,
-        titleBarStyle: isTilingWm ? TitleBarStyle.hidden : TitleBarStyle.normal,
-        windowButtonVisibility: !isTilingWm,
+        titleBarStyle: isTilingWm ? TitleBarStyle.hidden : null,
+        windowButtonVisibility: Platform.isLinux && !isTilingWm,
       );
 
       await windowManager.waitUntilReadyToShow(windowOptions, () async {

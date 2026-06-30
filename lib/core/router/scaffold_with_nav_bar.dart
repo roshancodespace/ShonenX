@@ -11,6 +11,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/remote_config/providers/remote_config_provider.dart';
 import 'package:shonenx/core/remote_config/ui/remote_config_ui.dart';
+import 'package:shonenx/core/updates/services/update_service.dart';
+import 'package:shonenx/core/updates/ui/update_ui.dart';
 import 'package:shonenx/core/router/app_router.dart';
 import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
@@ -87,30 +89,38 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
 
   Future<void> _checkRemoteAnnouncements() async {
     final config = await ref.read(remoteConfigStateProvider.future);
-    if (config == null || !config.applicationEnabled) return;
+    if (config != null && !config.applicationEnabled) return;
     if (!mounted) return;
 
-    final service = ref.read(remoteConfigServiceProvider);
     final navContext = rootNavigatorKey.currentContext;
     if (navContext == null || !navContext.mounted) return;
 
-    // 1. Check Updates
+    // 1. Check GitHub Release Updates
     try {
-      final packageInfo = await PackageInfo.fromPlatform();
-      if (service.shouldShowUpdate(packageInfo.version) && navContext.mounted) {
-        await RemoteConfigUI.showUpdateSheet(
-          navContext,
-          minimumVersion: config.minimumVersion,
-          onDownload: () =>
-              service.markUpdateAsDownloaded(config.minimumVersion),
-        );
-        return;
+      final updatePrefs = ref.read(updatePrefsProvider);
+      if (updatePrefs.autoCheckOnStartup) {
+        final updateService = ref.read(updateServiceProvider);
+        final release = await updateService.checkForUpdate();
+        if (release != null && navContext.mounted) {
+          await UpdateUI.showReleaseUpdateSheet(
+            navContext,
+            release: release,
+            onDismiss: () => ref
+                .read(updatePrefsProvider.notifier)
+                .setLastDismissedReleaseId(release.id),
+            onDownload: () => ref
+                .read(updatePrefsProvider.notifier)
+                .setLastSeenReleaseId(release.id),
+          );
+          return;
+        }
       }
     } catch (_) {}
 
     if (!mounted || !navContext.mounted) return;
 
     // 2. Check Announcements
+    final service = ref.read(remoteConfigServiceProvider);
     final announcement = service.getActiveAppAnnouncement();
     if (announcement != null) {
       await RemoteConfigUI.showAnnouncementSheet(

@@ -173,7 +173,7 @@ class AppBottomSheet extends StatelessWidget {
         children: [
           Center(
             child: Container(
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: const EdgeInsets.only(top: 16),
               height: 4,
               width: 40,
               decoration: BoxDecoration(

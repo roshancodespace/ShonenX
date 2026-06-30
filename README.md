@@ -65,9 +65,7 @@ dependencies:
   go_router: ^14.7.1
   media_kit: ^1.2.6
   media_kit_video: ^2.0.1
-  graphql: ^5.2.3
   isar_community: ^3.3.0
-  dio: ^5.9.0
   flex_color_scheme: ^8.4.0
 ```
 
@@ -203,8 +201,6 @@ Thanks to everyone who has contributed to ShonenX!
 
 ---
 
----
-
 ## ⭐ Star History
 
 <a href="https://www.star-history.com/#roshancodespace/ShonenX">
@@ -218,7 +214,6 @@ Thanks to everyone who has contributed to ShonenX!
     <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=roshancodespace/ShonenX&type=Date" />
   </picture>
 </a>
-
 
 ---
 

@@ -36,10 +36,12 @@ import "package:shonenx/features/notifications/presentation/notifications_settin
 import 'package:shonenx/features/settings/presentation/content_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/logs_screen.dart';
 import 'package:shonenx/features/settings/presentation/about_screen.dart';
+import 'package:shonenx/features/settings/presentation/update_settings_screen.dart';
 import 'package:shonenx/features/settings/presentation/troubleshoot_settings_screen.dart';
 import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/core/network/cf_client.dart';
+
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _homeNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'home');
@@ -270,6 +272,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'logs',
             builder: (context, state) => const LogsScreen(),
+          ),
+          GoRoute(
+            path: 'updates',
+            builder: (context, state) => const UpdateSettingsScreen(),
           ),
           GoRoute(
             path: 'about',

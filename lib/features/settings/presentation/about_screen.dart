@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -66,6 +67,12 @@ class AboutScreen extends ConsumerWidget {
           SettingsSection(
             title: 'Links',
             children: [
+              SettingsActionTile(
+                icon: Icons.system_update_outlined,
+                title: 'Check for Updates',
+                subtitle: 'Update settings and pre-release options',
+                onTap: () => context.push('/settings/updates'),
+              ),
               SettingsActionTile(
                 icon: Icons.code_rounded,
                 title: 'GitHub',

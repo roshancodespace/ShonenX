@@ -9,6 +9,7 @@ class AdvancedSearchSheet extends ConsumerStatefulWidget {
   final MediaType type;
   final List<String> initialGenres;
   final List<String> initialTags;
+  final String? sourceId;
   final void Function(String query, List<String> genres, List<String> tags)
   onApply;
 
@@ -18,6 +19,7 @@ class AdvancedSearchSheet extends ConsumerStatefulWidget {
     required this.type,
     required this.initialGenres,
     required this.initialTags,
+    this.sourceId,
     required this.onApply,
   });
 
@@ -85,7 +87,9 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tagsState = ref.watch(metadataTagsProvider);
+    final tagsState = ref.watch(
+      discoveryFiltersProvider((type: widget.type, sourceId: widget.sourceId)),
+    );
     final tagQuery = _tagQueryController.text.trim().toLowerCase();
 
     return AppBottomSheet(

@@ -9,7 +9,7 @@ import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/e
 
 class GlobalUI {
   static double uiScaleFactor = 1.0;
-  static double uiRoundness = 12.0;
+  static double uiRoundness = 6.0;
 }
 
 enum MediaCardStyle {

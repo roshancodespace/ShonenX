@@ -114,11 +114,13 @@ abstract class BaseSourceAdapter implements MediaSource {
     int page = 1,
     bool isAdult = false,
     List<String> sort = const ['SEARCH_MATCH'],
+    List<String> genres = const [],
+    List<String> tags = const [],
   }) async {
     final methodLog = log.child('search');
     try {
-      methodLog.i('query=$query page=$page');
-      final results = await source.methods.search(query, page, []);
+      methodLog.i('query=$query page=$page genres=$genres tags=$tags');
+      final results = await source.methods.search(query, page, [...genres, ...tags]);
       methodLog.d('results=${results.list.length}');
 
       return results.list

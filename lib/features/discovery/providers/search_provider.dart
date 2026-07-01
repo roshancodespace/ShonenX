@@ -23,12 +23,12 @@ class SearchArgs {
 
   @override
   int get hashCode => Object.hash(
-        query,
-        type,
-        source,
-        Object.hashAll(genres),
-        Object.hashAll(tags),
-      );
+    query,
+    type,
+    source,
+    Object.hashAll(genres),
+    Object.hashAll(tags),
+  );
 
   @override
   bool operator ==(Object other) {
@@ -98,10 +98,11 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
             : availableMangaSourcesProvider.future,
       );
       final activeSources = allSources
-          .where((s) =>
-              (arg.source != null
-                  ? s.id == arg.source
-                  : prefs.activeSources.contains(s.id)))
+          .where(
+            (s) => (arg.source != null
+                ? s.id == arg.source
+                : prefs.activeSources.contains(s.id)),
+          )
           .toList();
 
       if (activeSources.isEmpty) {
@@ -113,7 +114,13 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
           final source = arg.type == MediaType.ANIME
               ? ref.read(animeSourceProvider(info))
               : ref.read(mangaSourceProvider(info));
-          return await source.search(arg.query, arg.type, page: page);
+          return await source.search(
+            arg.query,
+            arg.type,
+            page: page,
+            genres: arg.genres,
+            tags: arg.tags,
+          );
         } catch (_) {
           return <UnifiedMedia>[];
         }

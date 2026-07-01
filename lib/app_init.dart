@@ -86,9 +86,7 @@ class AppInit {
             ? const Color(0xFF000000)
             : Colors.transparent,
 
-        titleBarStyle: (Platform.isWindows || isTilingWm)
-            ? TitleBarStyle.hidden
-            : null,
+        titleBarStyle: isTilingWm ? TitleBarStyle.hidden : null,
 
         windowButtonVisibility: Platform.isLinux && !isTilingWm,
       );

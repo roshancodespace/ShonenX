@@ -6,6 +6,7 @@ import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.da
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
@@ -169,19 +170,61 @@ class _SourceConfig extends ConsumerWidget {
                   return const _EmptySourcesState();
                 }
 
+                final animeSources = sources
+                    .where((s) => s.mediaType == MediaType.ANIME)
+                    .toList();
+                final mangaSources = sources
+                    .where((s) => s.mediaType == MediaType.MANGA)
+                    .toList();
+
                 return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (final source in sources)
-                      _SourceTile(
-                        key: ValueKey(source.id),
-                        source: source,
-                        isActive: activeSources.contains(source.id),
-                        onToggle: () {
-                          ref
-                              .read(discoveryPrefsProvider.notifier)
-                              .toggleSource(source.id);
-                        },
+                    if (animeSources.isNotEmpty) ...[
+                      Text(
+                        'ANIME SOURCES',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.secondary,
+                          letterSpacing: 1.0,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
+                      const SizedBox(height: 6),
+                      for (final source in animeSources)
+                        _SourceTile(
+                          key: ValueKey('anime-${source.id}'),
+                          source: source,
+                          isActive: activeSources.contains(source.id),
+                          onToggle: () {
+                            ref
+                                .read(discoveryPrefsProvider.notifier)
+                                .toggleSource(source.id);
+                          },
+                        ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (mangaSources.isNotEmpty) ...[
+                      Text(
+                        'MANGA SOURCES',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.secondary,
+                          letterSpacing: 1.0,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      for (final source in mangaSources)
+                        _SourceTile(
+                          key: ValueKey('manga-${source.id}'),
+                          source: source,
+                          isActive: activeSources.contains(source.id),
+                          onToggle: () {
+                            ref
+                                .read(discoveryPrefsProvider.notifier)
+                                .toggleSource(source.id);
+                          },
+                        ),
+                    ],
                   ],
                 );
               },

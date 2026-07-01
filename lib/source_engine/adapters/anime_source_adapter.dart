@@ -85,4 +85,14 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
       return [];
     }
   }
+
+  @override
+  Future<List<String>> getFilterGenres() async {
+    return [];
+  }
+
+  @override
+  Future<List<String>> getFilterTags() async {
+    return [];
+  }
 }

@@ -68,4 +68,14 @@ class MangaSourceAdapter extends BaseSourceAdapter implements MangaSource {
       return [];
     }
   }
+
+  @override
+  Future<List<String>> getFilterGenres() async {
+    return [];
+  }
+
+  @override
+  Future<List<String>> getFilterTags() async {
+    return [];
+  }
 }

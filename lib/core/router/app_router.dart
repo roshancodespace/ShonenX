@@ -148,12 +148,26 @@ final routerProvider = Provider<GoRouter>((ref) {
             (e) => e.id == state.pathParameters['mediaType'],
           );
           final tag = state.uri.queryParameters['tag'];
-          final media = state.extra as UnifiedMedia;
+
+          UnifiedMedia media;
+          int initialTabIndex = 0;
+          Object? autoPlayMode;
+
+          if (state.extra is Map) {
+            final map = state.extra as Map;
+            media = map['media'] as UnifiedMedia;
+            initialTabIndex = (map['initialTabIndex'] as int?) ?? 0;
+            autoPlayMode = map['autoPlayMode'];
+          } else {
+            media = state.extra as UnifiedMedia;
+          }
 
           return DetailsScreen(
             media: media,
             mediaType: mediaType,
             tag: tag ?? 'details',
+            initialTabIndex: initialTabIndex,
+            autoPlayMode: autoPlayMode,
           );
         },
       ),

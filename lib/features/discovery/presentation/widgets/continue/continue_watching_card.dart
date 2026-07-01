@@ -52,7 +52,14 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
             .read(continueWatchingResolverProvider)
             .resolve(widget.entry);
         if (!mounted) return;
-        context.push('/player', extra: result.mode);
+        context.push(
+          '/details/${result.mode.media.type.id}',
+          extra: {
+            'media': result.mode.media,
+            'initialTabIndex': 1,
+            'autoPlayMode': result.mode,
+          },
+        );
       },
       mediaType: MediaType.ANIME,
       mediaTitle: widget.entry.animeTitle,

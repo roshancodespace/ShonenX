@@ -553,7 +553,7 @@ class _PaginatedMediaGrid extends ConsumerWidget {
           children: [
             GridView.builder(
               controller: scrollController,
-              padding: const EdgeInsets.only(bottom: 120, top: 10),
+              padding: const EdgeInsets.only(bottom: 150, top: 10),
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: style.layout.width + 10,
                 mainAxisExtent: style.layout.height,

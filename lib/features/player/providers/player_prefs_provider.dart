@@ -23,20 +23,25 @@ enum PlayerType {
 class PlayerPrefsState {
   final PlayerType playerType;
   final GesturePrefs gesturePrefs;
+  final bool showShortcutsSheetOnStart;
 
   const PlayerPrefsState({
     this.playerType = PlayerType.mediakit,
     this.gesturePrefs = const GesturePrefs(),
+    this.showShortcutsSheetOnStart = true,
   });
 
   PlayerPrefsState copyWith({
     AniSkipPrefs? aniSkipPrefs,
     PlayerType? playerType,
     GesturePrefs? gesturePrefs,
+    bool? showShortcutsSheetOnStart,
   }) {
     return PlayerPrefsState(
       playerType: playerType ?? this.playerType,
       gesturePrefs: gesturePrefs ?? this.gesturePrefs,
+      showShortcutsSheetOnStart:
+          showShortcutsSheetOnStart ?? this.showShortcutsSheetOnStart,
     );
   }
 
@@ -46,6 +51,7 @@ class PlayerPrefsState {
       gesturePrefs: map['gesturePrefs'] != null
           ? GesturePrefs.fromMap(map['gesturePrefs'])
           : const GesturePrefs(),
+      showShortcutsSheetOnStart: map['showShortcutsSheetOnStart'] ?? true,
     );
   }
 
@@ -53,6 +59,7 @@ class PlayerPrefsState {
     return {
       'playerType': playerType.name,
       'gesturePrefs': gesturePrefs.toMap(),
+      'showShortcutsSheetOnStart': showShortcutsSheetOnStart,
     };
   }
 
@@ -88,6 +95,11 @@ class PlayerPrefsNotifier extends Notifier<PlayerPrefsState> {
 
   void updateGesturePrefs(GesturePrefs gesturePrefs) {
     state = state.copyWith(gesturePrefs: gesturePrefs);
+    _saveDb();
+  }
+
+  void toggleShowShortcutsSheetOnStart(bool value) {
+    state = state.copyWith(showShortcutsSheetOnStart: value);
     _saveDb();
   }
 

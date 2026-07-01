@@ -20,6 +20,15 @@ class WatchHistoryRepository {
     });
   }
 
+  Future<void> deleteByAnimeId(String animeId) async {
+    await _isar.writeTxn(() async {
+      await _isar.watchHistoryEntrys
+          .filter()
+          .animeIdEqualTo(animeId)
+          .deleteAll();
+    });
+  }
+
   Stream<List<WatchHistoryEntry>> watchHistory({int limit = 10}) {
     return _isar.watchHistoryEntrys
         .where()
@@ -37,7 +46,10 @@ class WatchHistoryRepository {
         .watch(fireImmediately: true);
   }
 
-  Stream<List<WatchHistoryEntry>> watchHistoryForAnime(String animeId, {int limit = 50}) {
+  Stream<List<WatchHistoryEntry>> watchHistoryForAnime(
+    String animeId, {
+    int limit = 50,
+  }) {
     return _isar.watchHistoryEntrys
         .filter()
         .animeIdEqualTo(animeId)

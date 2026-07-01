@@ -47,7 +47,15 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
         final result = await ref
             .read(continueReadingResolverProvider)
             .resolve(widget.entry);
-        if (mounted) context.push('/reader', extra: result.mode);
+        if (!mounted) return;
+        context.push(
+          '/details/${result.mode.media.type.id}',
+          extra: {
+            'media': result.mode.media,
+            'initialTabIndex': 1,
+            'autoPlayMode': result.mode,
+          },
+        );
       },
       mediaType: MediaType.MANGA,
       mediaTitle: widget.entry.mangaTitle,

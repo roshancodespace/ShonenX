@@ -22,6 +22,8 @@ import 'package:shonenx/features/tracking/presentation/widgets/tracker_manager_s
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/features/player/domain/player_mode.dart';
+import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -30,12 +32,16 @@ class DetailsScreen extends ConsumerStatefulWidget {
   final String tag;
   final MediaType mediaType;
   final UnifiedMedia media;
+  final int initialTabIndex;
+  final Object? autoPlayMode;
 
   const DetailsScreen({
     super.key,
     required this.tag,
     required this.mediaType,
     required this.media,
+    this.initialTabIndex = 0,
+    this.autoPlayMode,
   });
 
   @override
@@ -90,11 +96,21 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this, initialIndex: 0);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialTabIndex.clamp(0, 1),
+    );
     _keyboardFocusNode = FocusNode();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _autoLinkPrimaryTracker();
+      if (!mounted) return;
+      if (widget.autoPlayMode is PlayerMode) {
+        context.push('/player', extra: widget.autoPlayMode);
+      } else if (widget.autoPlayMode is ReaderModeOnline) {
+        context.push('/reader', extra: widget.autoPlayMode);
+      }
     });
   }
 

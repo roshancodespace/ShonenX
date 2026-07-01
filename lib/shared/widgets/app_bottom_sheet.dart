@@ -43,6 +43,12 @@ class AppBottomSheet extends StatelessWidget {
       enableDrag: enableDrag,
       useSafeArea: useSafeArea,
       backgroundColor: Colors.transparent,
+      sheetAnimationStyle: AnimationStyle(
+        duration: const Duration(milliseconds: 380),
+        reverseDuration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutQuart,
+        reverseCurve: Curves.easeInCubic,
+      ),
       builder: (_) {
         return AppBottomSheet(
           title: title,
@@ -98,25 +104,45 @@ class AppBottomSheet extends StatelessWidget {
               final item = items[index];
               final isSelected = item == selectedValue;
               final subtitle = subtitleBuilder?.call(item);
-
               return ListTile(
-                leading: leadingBuilder?.call(item, isSelected),
+                selected: isSelected,
+                selectedTileColor: Theme.of(
+                  sheetContext,
+                ).colorScheme.primary.withValues(alpha: 0.1),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                leading:
+                    leadingBuilder?.call(item, isSelected) ??
+                    (isSelected
+                        ? Icon(
+                            Icons.radio_button_checked_rounded,
+                            color: Theme.of(sheetContext).colorScheme.primary,
+                          )
+                        : Icon(
+                            Icons.radio_button_unchecked_rounded,
+                            color: Theme.of(
+                              sheetContext,
+                            ).colorScheme.onSurfaceVariant,
+                          )),
                 title: Row(
                   children: [
-                    Expanded(
+                    Flexible(
                       child: Text(
                         itemLabel(item),
                         style: TextStyle(
                           fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isSelected
+                              ? Theme.of(sheetContext).colorScheme.primary
+                              : Theme.of(sheetContext).colorScheme.onSurface,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (badgeBuilder != null) ...[
-                      const SizedBox(width: 10),
-                      badgeBuilder(item) ?? const SizedBox.shrink(),
+                      const SizedBox(width: 8),
+                      badgeBuilder(item)!,
                     ],
                   ],
                 ),
@@ -159,62 +185,79 @@ class AppBottomSheet extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return Container(
-      margin: EdgeInsets.only(bottom: bottomInset),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(GlobalUI.uiRoundness),
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.32, end: 0.0),
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeOutBack,
+      builder: (context, tilt, child) {
+        return Transform(
+          alignment: Alignment.bottomCenter,
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.0018)
+            ..rotateX(tilt),
+          child: child,
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: bottomInset),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainer,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(GlobalUI.uiRoundness),
+          ),
         ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 16),
-              height: 4,
-              width: 40,
-              decoration: BoxDecoration(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 16),
+                height: 4,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: headerPadding,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
+            Padding(
+              padding: headerPadding,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                if (actions != null) ...[...actions!, const SizedBox(width: 8)],
-                IconButton.filledTonal(
-                  style: IconButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: colorScheme.onPrimary,
+                  if (actions != null) ...[
+                    ...actions!,
+                    const SizedBox(width: 8),
+                  ],
+                  IconButton.filledTonal(
+                    style: IconButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                    ),
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: () => context.pop(),
                   ),
-                  icon: const Icon(Icons.close, size: 20),
-                  onPressed: () => context.pop(),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Flexible(
-            child: Padding(padding: contentPadding, child: child),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Flexible(
+              child: Padding(padding: contentPadding, child: child),
+            ),
+          ],
+        ),
       ),
     );
   }

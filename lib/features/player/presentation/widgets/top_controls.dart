@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
+import 'package:shonenx/features/player/presentation/widgets/keyboard_shortcuts_sheet.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
@@ -160,6 +161,11 @@ class TopControls extends ConsumerWidget {
               ),
               const SizedBox(width: 16),
               _buildActionIcon(
+                icon: Icons.keyboard_alt_outlined,
+                onTap: () => KeyboardShortcutsSheet.show(context),
+              ),
+              const SizedBox(width: 16),
+              _buildActionIcon(
                 icon: Icons.settings_outlined,
                 onTap: () {
                   if (engine.buildSettingsView(context) == null) return;
@@ -187,16 +193,6 @@ class TopControls extends ConsumerWidget {
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(8.0),
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
         child: Icon(icon, color: Colors.white, size: 24),
       ),
     );

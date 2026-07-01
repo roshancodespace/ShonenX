@@ -9,6 +9,7 @@ import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 
 class PlayerGestureOverlay extends ConsumerStatefulWidget {
   final VoidCallback onToggleControls;
+  final VoidCallback? onRightClick;
   final void Function(Duration) onSeek;
   final void Function(double) onSetSpeed;
   final double baseSpeed;
@@ -16,6 +17,7 @@ class PlayerGestureOverlay extends ConsumerStatefulWidget {
   const PlayerGestureOverlay({
     super.key,
     required this.onToggleControls,
+    this.onRightClick,
     required this.onSeek,
     required this.onSetSpeed,
     this.baseSpeed = 1.0,
@@ -28,8 +30,8 @@ class PlayerGestureOverlay extends ConsumerStatefulWidget {
 
 class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
   int _lastTapTime = 0;
-  int _showSeekOverlay = 0;
-  Timer? _seekOverlayTimer;
+  int _accumulatedSeekSeconds = 0;
+  Timer? _seekAccumulationTimer;
 
   bool _isLeftSwipe = false;
   bool _isDragging = false;
@@ -58,9 +60,25 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
     } catch (_) {}
   }
 
+  void _triggerSeek(int seconds) {
+    widget.onSeek(Duration(seconds: seconds));
+    setState(() {
+      _accumulatedSeekSeconds += seconds;
+    });
+
+    _seekAccumulationTimer?.cancel();
+    _seekAccumulationTimer = Timer(const Duration(milliseconds: 600), () {
+      if (mounted) {
+        setState(() {
+          _accumulatedSeekSeconds = 0;
+        });
+      }
+    });
+  }
+
   @override
   void dispose() {
-    _seekOverlayTimer?.cancel();
+    _seekAccumulationTimer?.cancel();
     try {
       if (Platform.isAndroid) {
         ScreenBrightness.instance.resetApplicationScreenBrightness();
@@ -97,37 +115,36 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
 
                 return GestureDetector(
                   behavior: HitTestBehavior.translucent,
+                  onSecondaryTapUp: (_) => widget.onRightClick?.call(),
                   onTapUp: (details) {
                     final now = DateTime.now().millisecondsSinceEpoch;
                     final dx = details.localPosition.dx;
+                    final isLeft = dx < activeWidth * prefs.doubleTapWidth;
+                    final isRight =
+                        dx > activeWidth * (1.0 - prefs.doubleTapWidth);
 
-                    if (now - _lastTapTime < 300) {
-                      if (dx < activeWidth * prefs.doubleTapWidth) {
-                        setState(() => _showSeekOverlay = -1);
-                        widget.onSeek(const Duration(seconds: -10));
-                      } else if (dx >
-                          activeWidth * (1.0 - prefs.doubleTapWidth)) {
-                        setState(() => _showSeekOverlay = 1);
-                        widget.onSeek(const Duration(seconds: 10));
-                      } else {
-                        // Double tap in middle dead zone does nothing, maybe toggle controls
-                        widget.onToggleControls();
-                        _lastTapTime = now;
+                    if (_accumulatedSeekSeconds != 0) {
+                      if (isLeft) {
+                        _triggerSeek(-10);
+                        return;
+                      } else if (isRight) {
+                        _triggerSeek(10);
                         return;
                       }
+                    }
 
-                      _seekOverlayTimer?.cancel();
-                      _seekOverlayTimer = Timer(
-                        const Duration(milliseconds: 500),
-                        () {
-                          if (mounted) setState(() => _showSeekOverlay = 0);
-                        },
-                      );
-
+                    if (now - _lastTapTime < 300) {
+                      if (isLeft) {
+                        _triggerSeek(-10);
+                      } else if (isRight) {
+                        _triggerSeek(10);
+                      } else {
+                        widget.onToggleControls();
+                      }
                       _lastTapTime = 0;
                     } else {
-                      widget.onToggleControls();
                       _lastTapTime = now;
+                      widget.onToggleControls();
                     }
                   },
                   onVerticalDragStart: (details) {
@@ -206,171 +223,219 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
           ),
         ),
 
-        if (_showSeekOverlay != 0)
-          AnimatedAlign(
-            alignment: _showSeekOverlay == -1
-                ? Alignment.centerLeft
-                : Alignment.centerRight,
-            duration: const Duration(milliseconds: 200),
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 150),
-              opacity: _showSeekOverlay != 0 ? 1 : 0,
-              child: Container(
-                width: MediaQuery.of(context).size.width * 0.35,
-                height: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: _showSeekOverlay == -1
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Stack(
+              children: [
+                if (_accumulatedSeekSeconds != 0)
+                  AnimatedAlign(
+                    alignment: _accumulatedSeekSeconds < 0
                         ? Alignment.centerLeft
                         : Alignment.centerRight,
-                    end: _showSeekOverlay == -1
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.35),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  _showSeekOverlay == -1
-                      ? Icons.replay_10_rounded
-                      : Icons.forward_10_rounded,
-                  size: 50,
-                  color: Colors.white.withValues(alpha: 0.9),
-                ),
-              ),
-            ),
-          ),
-        if (_isDragging)
-          Align(
-            alignment: _isLeftSwipe
-                ? Alignment.centerLeft
-                : Alignment.centerRight,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 40),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 24),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(
-                  alpha: 0.5,
-                ),
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${((_isLeftSwipe ? _brightness : _volume) * 100).toInt()}%',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    height: 140,
-                    width: 32,
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(100),
-                      border: Border.all(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        width: 1,
-                      ),
-                    ),
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: FractionallySizedBox(
-                        heightFactor: _isLeftSwipe ? _brightness : _volume,
-                        widthFactor: 1.0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
-                            borderRadius: BorderRadius.circular(100),
+                    duration: const Duration(milliseconds: 200),
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 150),
+                      opacity: _accumulatedSeekSeconds != 0 ? 1 : 0,
+                      child: Container(
+                        width: MediaQuery.of(context).size.width * 0.35,
+                        height: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: _accumulatedSeekSeconds < 0
+                                ? Alignment.centerLeft
+                                : Alignment.centerRight,
+                            end: _accumulatedSeekSeconds < 0
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.35),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: TweenAnimationBuilder<double>(
+                          key: ValueKey(_accumulatedSeekSeconds),
+                          tween: Tween<double>(begin: 0.82, end: 1.0),
+                          duration: const Duration(milliseconds: 160),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, scale, child) {
+                            return Transform.scale(scale: scale, child: child);
+                          },
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _accumulatedSeekSeconds < 0
+                                    ? Icons.fast_rewind_rounded
+                                    : Icons.fast_forward_rounded,
+                                size: 46,
+                                color: Colors.white.withValues(alpha: 0.95),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '${_accumulatedSeekSeconds > 0 ? "+" : ""}$_accumulatedSeekSeconds seconds',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Icon(
-                    _isLeftSwipe
-                        ? Icons.light_mode_rounded
-                        : (_volume <= 0.0
-                              ? Icons.volume_mute_rounded
-                              : (_volume < 0.5
-                                    ? Icons.volume_down_rounded
-                                    : Icons.volume_up_rounded)),
-                    color: Colors.white,
-                    size: 26,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        if (_isSpeedScrubbing)
-          Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 40),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 24),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(
-                  alpha: 0.5,
-                ),
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    speedText,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    height: 140,
-                    width: 32,
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(100),
-                      border: Border.all(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        width: 1,
+                if (_isDragging)
+                  Align(
+                    alignment: _isLeftSwipe
+                        ? Alignment.centerLeft
+                        : Alignment.centerRight,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 40),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 24,
                       ),
-                    ),
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: FractionallySizedBox(
-                        heightFactor: _currentSpeed / 3.0,
-                        widthFactor: 1.0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
-                            borderRadius: BorderRadius.circular(100),
-                          ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.5,
                         ),
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${((_isLeftSwipe ? _brightness : _volume) * 100).toInt()}%',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            height: 140,
+                            width: 32,
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.15,
+                              ),
+                              borderRadius: BorderRadius.circular(100),
+                              border: Border.all(
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.1,
+                                ),
+                                width: 1,
+                              ),
+                            ),
+                            child: Align(
+                              alignment: Alignment.bottomCenter,
+                              child: FractionallySizedBox(
+                                heightFactor: _isLeftSwipe
+                                    ? _brightness
+                                    : _volume,
+                                widthFactor: 1.0,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(100),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Icon(
+                            _isLeftSwipe
+                                ? Icons.light_mode_rounded
+                                : (_volume <= 0.0
+                                      ? Icons.volume_mute_rounded
+                                      : (_volume < 0.5
+                                            ? Icons.volume_down_rounded
+                                            : Icons.volume_up_rounded)),
+                            color: Colors.white,
+                            size: 26,
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  const Icon(
-                    Icons.speed_rounded,
-                    color: Colors.white,
-                    size: 26,
+                if (_isSpeedScrubbing)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 40),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 24,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.5,
+                        ),
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            speedText,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            height: 140,
+                            width: 32,
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.15,
+                              ),
+                              borderRadius: BorderRadius.circular(100),
+                              border: Border.all(
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.1,
+                                ),
+                                width: 1,
+                              ),
+                            ),
+                            child: Align(
+                              alignment: Alignment.bottomCenter,
+                              child: FractionallySizedBox(
+                                heightFactor: _currentSpeed / 3.0,
+                                widthFactor: 1.0,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(100),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Icon(
+                            Icons.speed_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ],
-              ),
+              ],
             ),
           ),
+        ),
       ],
     );
   }

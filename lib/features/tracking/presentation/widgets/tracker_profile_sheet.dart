@@ -14,6 +14,7 @@ import 'package:shonenx/features/tracking/providers/shonenx_metrics_provider.dar
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -86,26 +87,28 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
 
   void _pasteUrl() {
     final controller = TextEditingController(text: _avatarPath ?? '');
-    showDialog(
+    AppDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Image URL'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'https://example.com/avatar.png',
-          ),
+      title: 'Image URL',
+      icon: Icon(
+        Icons.link_rounded,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+      actions: [
+        TextButton(onPressed: () => context.pop(), child: const Text('Cancel')),
+        FilledButton(
+          onPressed: () {
+            setState(() => _avatarPath = controller.text.trim());
+            context.pop();
+          },
+          child: const Text('Set'),
         ),
-        actions: [
-          TextButton(onPressed: () => ctx.pop(), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () {
-              setState(() => _avatarPath = controller.text.trim());
-              ctx.pop();
-            },
-            child: const Text('Set'),
-          ),
-        ],
+      ],
+      child: TextField(
+        controller: controller,
+        decoration: const InputDecoration(
+          hintText: 'https://example.com/avatar.png',
+        ),
       ),
     );
   }
@@ -158,94 +161,54 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
   }
 
   void _showInfoDialog(BuildContext context) {
-    showDialog(
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    AppDialog.show(
       context: context,
-      builder: (ctx) {
-        final theme = Theme.of(ctx);
-        final cs = theme.colorScheme;
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.info_outline_rounded),
-              SizedBox(width: 8),
-              Text('Rankings & Telemetry'),
-            ],
+      title: 'Rankings & Telemetry',
+      icon: Icon(Icons.info_outline_rounded, color: cs.primary),
+      maxWidth: 520,
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Got it'),
+        ),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Otaku Rank Progression',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
           ),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Otaku Rank Progression',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Titles unlock automatically as your watched episode count grows:',
-                  style: TextStyle(fontSize: 13),
-                ),
-                const SizedBox(height: 12),
-                _rankTier(
-                  theme,
-                  cs,
-                  'Mythic Otaku God',
-                  '3,000+ Episodes',
-                  true,
-                ),
-                _rankTier(
-                  theme,
-                  cs,
-                  'Grandmaster Watcher',
-                  '1,500+ Episodes',
-                  false,
-                ),
-                _rankTier(
-                  theme,
-                  cs,
-                  'Elite Anime Veteran',
-                  '1,000+ Episodes',
-                  false,
-                ),
-                _rankTier(theme, cs, 'Seasoned Otaku', '500+ Episodes', false),
-                _rankTier(
-                  theme,
-                  cs,
-                  'Dedicated Enthusiast',
-                  '100+ Episodes',
-                  false,
-                ),
-                _rankTier(
-                  theme,
-                  cs,
-                  'Apprentice Watcher',
-                  '20+ Episodes',
-                  false,
-                ),
-                _rankTier(theme, cs, 'Novice Explorer', '1+ Episodes', false),
-                const SizedBox(height: 18),
-                const Divider(),
-                const SizedBox(height: 12),
-                const Text(
-                  'On-Device Local Telemetry',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Metrics (Sessions, Playtime, Series, Chapters) are compiled purely from your local database on this device. Zero telemetry leaves your device.',
-                  style: TextStyle(fontSize: 13),
-                ),
-              ],
-            ),
+          const SizedBox(height: 6),
+          const Text(
+            'Titles unlock automatically as your watched episode count grows:',
+            style: TextStyle(fontSize: 13),
           ),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Got it'),
-            ),
-          ],
-        );
-      },
+          const SizedBox(height: 12),
+          _rankTier(theme, cs, 'Mythic Otaku God', '3,000+ Episodes', true),
+          _rankTier(theme, cs, 'Grandmaster Watcher', '1,500+ Episodes', false),
+          _rankTier(theme, cs, 'Elite Anime Veteran', '1,000+ Episodes', false),
+          _rankTier(theme, cs, 'Seasoned Otaku', '500+ Episodes', false),
+          _rankTier(theme, cs, 'Dedicated Enthusiast', '100+ Episodes', false),
+          _rankTier(theme, cs, 'Apprentice Watcher', '20+ Episodes', false),
+          _rankTier(theme, cs, 'Novice Explorer', '1+ Episodes', false),
+          const SizedBox(height: 18),
+          const Divider(),
+          const SizedBox(height: 12),
+          const Text(
+            'On-Device Local Telemetry',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Metrics (Sessions, Playtime, Series, Chapters) are compiled purely from your local database on this device. Zero telemetry leaves your device.',
+            style: TextStyle(fontSize: 13),
+          ),
+        ],
+      ),
     );
   }
 

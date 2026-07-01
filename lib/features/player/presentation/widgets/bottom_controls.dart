@@ -30,6 +30,7 @@ class BottomControls extends ConsumerStatefulWidget {
   final PlayerMode mode;
   final bool? isFullScreen;
   final VoidCallback? onToggleFullScreen;
+  final VoidCallback? onShowEpisodePanel;
 
   const BottomControls({
     super.key,
@@ -43,6 +44,7 @@ class BottomControls extends ConsumerStatefulWidget {
     required this.mode,
     this.isFullScreen,
     this.onToggleFullScreen,
+    this.onShowEpisodePanel,
   });
 
   @override
@@ -304,7 +306,13 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                           const SizedBox(width: 12),
                           _buildActionIcon(
                             Icons.format_list_bulleted_rounded,
-                            () => _showEpisodePanel(context),
+                            () {
+                              if (widget.onShowEpisodePanel != null) {
+                                widget.onShowEpisodePanel!();
+                              } else {
+                                _showEpisodePanel(context);
+                              }
+                            },
                           ),
                         ],
                       ],
@@ -334,7 +342,14 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (widget.playerState.activeServer != null)
+                        if (widget.playerState.activeServer != null &&
+                            widget.playerState.servers.length > 1 &&
+                            widget.playerState.servers.any(
+                              (e) => e.type == ServerType.sub,
+                            ) &&
+                            widget.playerState.servers.any(
+                              (e) => e.type == ServerType.dub,
+                            ))
                           _buildActionButton(
                             displayText:
                                 widget.playerState.activeServer?.type ==

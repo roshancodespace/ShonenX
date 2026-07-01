@@ -8,15 +8,19 @@ import 'package:go_router/go_router.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/presentation/widgets/bottom_controls.dart';
 import 'package:shonenx/features/player/presentation/widgets/center_controls.dart';
 import 'package:shonenx/features/player/presentation/widgets/custom_subtitle_overlay.dart';
 import 'package:shonenx/features/player/presentation/widgets/gesture_overlay.dart';
+import 'package:shonenx/features/player/presentation/widgets/keyboard_shortcuts_sheet.dart';
+import 'package:shonenx/features/player/presentation/widgets/player_keyboard_listener.dart';
 import 'package:shonenx/features/player/presentation/widgets/top_controls.dart';
 import 'package:shonenx/features/player/providers/aniskip_provider.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
+import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
@@ -36,6 +40,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   Timer? _controlsTimer;
 
   bool _isFullScreen = false;
+  bool _isEpisodePanelOpen = false;
+  Offset? _lastHoverPosition;
 
   static const _controlsAutoHideDuration = Duration(seconds: 3);
 
@@ -73,6 +79,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           .read(playerControllerProvider.notifier)
           .initialize(widget.mode, screenshot: _screenshotController);
       _showControlsTemporarily();
+      if (ref.read(playerPrefsProvider).showShortcutsSheetOnStart && mounted) {
+        KeyboardShortcutsSheet.show(context);
+      }
     });
   }
 
@@ -166,27 +175,71 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     }
   }
 
-  KeyEventResult _handleKeyEvent(KeyEvent event, VideoEngine engine) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+  void _onMouseHover(PointerHoverEvent event) {
+    if (_lastHoverPosition == event.position) return;
+    _lastHoverPosition = event.position;
+    _showControlsTemporarily();
+  }
 
-    final isPlaying = ref.read(videoEngineStateProvider).isPlaying;
-
-    if (event.logicalKey == LogicalKeyboardKey.space) {
-      isPlaying ? engine.pause() : engine.play();
-      _showControlsTemporarily();
-      return KeyEventResult.handled;
-    } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-      engine.seekRelative(const Duration(seconds: 10));
-      return KeyEventResult.handled;
-    } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-      engine.seekRelative(const Duration(seconds: -10));
-      return KeyEventResult.handled;
-    } else if (event.logicalKey == LogicalKeyboardKey.keyF) {
-      _toggleFullScreen();
-      return KeyEventResult.handled;
+  void _toggleEpisodePanel() {
+    if (widget.mode is! PlayerModeOnline) return;
+    if (_isEpisodePanelOpen) {
+      Navigator.of(context).pop();
+      return;
     }
-
-    return KeyEventResult.ignored;
+    _isEpisodePanelOpen = true;
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Episodes',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (_, __, ___) => Align(
+        alignment: Alignment.centerRight,
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.38,
+          height: double.infinity,
+          child: Material(
+            color: Theme.of(context).colorScheme.surface,
+            child: Column(
+              children: [
+                Expanded(
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final currentEpisode = ref.watch(
+                        playerControllerProvider.select((s) => s.activeEpisode),
+                      );
+                      if (currentEpisode == null) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      return EpisodeListPanel(
+                        media: (widget.mode as PlayerModeOnline).media,
+                        currentEpisodeNumber: currentEpisode.number,
+                        onEpisodeTap: (episode, sourceInfo) {
+                          Navigator.of(context).pop();
+                          ref
+                              .read(playerControllerProvider.notifier)
+                              .loadEpisode(episode);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      transitionBuilder: (_, anim, __, child) => SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(1, 0),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+        child: child,
+      ),
+    ).then((_) {
+      if (mounted) setState(() => _isEpisodePanelOpen = false);
+    });
   }
 
   void _handlePop(
@@ -284,6 +337,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         mode: widget.mode,
         isFullScreen: _isFullScreen,
         onToggleFullScreen: _toggleFullScreen,
+        onShowEpisodePanel: _toggleEpisodePanel,
         onToggleLockControls: () =>
             setState(() => _lockControls = !_lockControls),
       ),
@@ -304,34 +358,54 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           _handlePop(didPop, engine, controller),
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: Focus(
-          autofocus: true,
-          onKeyEvent: (node, event) => _handleKeyEvent(event, engine),
-          child: Stack(
-            children: [
-              _buildVideoLayer(engine, playerState),
-              if (playerState.error != null)
-                _buildErrorOverlay(playerState.error!),
-              Positioned.fill(
-                child: PlayerGestureOverlay(
-                  onToggleControls: _toggleControls,
-                  onSeek: engine.seekRelative,
-                  onSetSpeed: engine.setSpeed,
+        body: PlayerKeyboardListener(
+          engine: engine,
+          controller: controller,
+          onUserInteraction: _showControlsTemporarily,
+          onToggleFullScreen: _toggleFullScreen,
+          onToggleEpisodePanel: _toggleEpisodePanel,
+          onShowShortcutsGuide: () => KeyboardShortcutsSheet.show(context),
+          onExit: () {
+            if (_isEpisodePanelOpen) {
+              Navigator.of(context).pop();
+            } else if (_isFullScreen) {
+              _toggleFullScreen();
+            } else {
+              context.pop();
+            }
+          },
+          child: MouseRegion(
+            cursor: _showControls
+                ? SystemMouseCursors.basic
+                : SystemMouseCursors.none,
+            onHover: _onMouseHover,
+            child: Stack(
+              children: [
+                _buildVideoLayer(engine, playerState),
+                if (playerState.error != null)
+                  _buildErrorOverlay(playerState.error!),
+                Positioned.fill(
+                  child: PlayerGestureOverlay(
+                    onToggleControls: _toggleControls,
+                    onRightClick: _toggleEpisodePanel,
+                    onSeek: engine.seekRelative,
+                    onSetSpeed: engine.setSpeed,
+                  ),
                 ),
-              ),
-              if (playerState.activeSubtitle != null)
-                const CustomSubtitleOverlay(),
-              if (_lockControls)
-                _buildLockedOverlay()
-              else
-                ..._buildControlsLayer(
-                  theme: theme,
-                  engine: engine,
-                  playerState: playerState,
-                  controller: controller,
-                  aniSkipArgs: aniSkipArgs,
-                ),
-            ],
+                if (playerState.activeSubtitle != null)
+                  const CustomSubtitleOverlay(),
+                if (_lockControls)
+                  _buildLockedOverlay()
+                else
+                  ..._buildControlsLayer(
+                    theme: theme,
+                    engine: engine,
+                    playerState: playerState,
+                    controller: controller,
+                    aniSkipArgs: aniSkipArgs,
+                  ),
+              ],
+            ),
           ),
         ),
       ),

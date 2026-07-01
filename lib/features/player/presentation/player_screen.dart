@@ -49,8 +49,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   AniSkipArgs? _getAniSkipArgs(VideoEngine engine) {
     if (widget.mode is PlayerModeOnline) {
       final onlineMode = widget.mode as PlayerModeOnline;
+      final idMalStr = onlineMode.media.idMal;
+      if (idMalStr == null || idMalStr.isEmpty) return null;
+      final malId = int.tryParse(idMalStr);
+      if (malId == null) return null;
       return AniSkipArgs(
-        idMal: int.parse(onlineMode.media.idMal!),
+        idMal: malId,
         episodeNumber: onlineMode.episode.number,
         episodeLength: engine.currentDuration.inSeconds,
       );

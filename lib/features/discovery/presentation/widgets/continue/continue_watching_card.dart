@@ -72,6 +72,18 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
       position: position,
       mediaType: MediaType.ANIME,
       mediaTitle: widget.entry.animeTitle,
+      onViewDetails: () {
+        context.push(
+          '/details/anime',
+          extra: UnifiedMedia(
+            id: widget.entry.animeId,
+            title: MediaTitle(english: widget.entry.animeTitle),
+            type: MediaType.ANIME,
+            cover: widget.entry.cover ?? widget.entry.thumbnailUrl,
+            banner: widget.entry.banner,
+          ),
+        );
+      },
       onRemoveHistory: () =>
           ref.read(watchHistoryRepositoryProvider).deleteEntry(widget.entry.id),
     );

@@ -190,6 +190,7 @@ mixin ContinueMediaMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     required MediaType mediaType,
     required String mediaTitle,
     required Future<void> Function() onRemoveHistory,
+    VoidCallback? onViewDetails,
   }) async {
     final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
 
@@ -200,19 +201,58 @@ mixin ContinueMediaMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         position & const Size(40, 40),
         Offset.zero & overlay.size,
       ),
-      items: const [
-        PopupMenuItem(value: 'clear', child: Text('Clear Source Preference')),
-        PopupMenuItem(
-          value: 'remove_history',
-          child: Text('Remove from History'),
+      items: [
+        if (onViewDetails != null)
+          const PopupMenuItem(
+            value: 'details',
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 18),
+                SizedBox(width: 8),
+                Text('Open Details (No Play)'),
+              ],
+            ),
+          ),
+        const PopupMenuItem(
+          value: 'clear',
+          child: Row(
+            children: [
+              Icon(Icons.layers_clear_outlined, size: 18),
+              SizedBox(width: 8),
+              Text('Clear Source Preference'),
+            ],
+          ),
         ),
-        PopupMenuItem(value: 'fix_match', child: Text('Fix Match')),
+        const PopupMenuItem(
+          value: 'remove_history',
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, size: 18),
+              SizedBox(width: 8),
+              Text('Remove from History'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'fix_match',
+          child: Row(
+            children: [
+              Icon(Icons.build_circle_outlined, size: 18),
+              SizedBox(width: 8),
+              Text('Fix Match'),
+            ],
+          ),
+        ),
       ],
     );
 
     if (value == null || !mounted) return;
 
     switch (value) {
+      case 'details':
+        onViewDetails?.call();
+        break;
+
       case 'clear':
         await ref
             .read(

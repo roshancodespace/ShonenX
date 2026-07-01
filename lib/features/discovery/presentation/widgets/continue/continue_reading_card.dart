@@ -68,6 +68,18 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
       position: position,
       mediaType: MediaType.MANGA,
       mediaTitle: widget.entry.mangaTitle,
+      onViewDetails: () {
+        context.push(
+          '/details/manga',
+          extra: UnifiedMedia(
+            id: widget.entry.mangaId,
+            title: MediaTitle(english: widget.entry.mangaTitle),
+            type: MediaType.MANGA,
+            cover: widget.entry.cover,
+            banner: widget.entry.banner,
+          ),
+        );
+      },
       onRemoveHistory: () =>
           ref.read(readHistoryRepositoryProvider).deleteEntry(widget.entry.id),
     );

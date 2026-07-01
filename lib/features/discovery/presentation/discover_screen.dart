@@ -553,7 +553,7 @@ class _PaginatedMediaGrid extends ConsumerWidget {
           children: [
             GridView.builder(
               controller: scrollController,
-              padding: const EdgeInsets.only(bottom: 150, top: 10),
+              padding: const EdgeInsets.only(bottom: 200, top: 10),
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: style.layout.width + 10,
                 mainAxisExtent: style.layout.height,
@@ -610,11 +610,11 @@ class _DynamicGenreFeed extends ConsumerWidget {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.only(top: 10, bottom: 120),
+          padding: const EdgeInsets.only(top: 10, bottom: 200),
           itemCount: genres.length,
           itemBuilder: (context, index) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: 5),
               child: _GenreFeedRow(type: type, genre: genres[index]),
             );
           },

@@ -41,11 +41,13 @@ class LibraryGridWidget extends ConsumerWidget {
                 scrollInfo.metrics.pixels >=
                     scrollInfo.metrics.maxScrollExtent - 200) {
               ref
-                  .read(cloudLibraryProvider((
-                    status: viewState.status,
-                    trackerType: null,
-                    mediaType: viewState.mediaType,
-                  )).notifier)
+                  .read(
+                    cloudLibraryProvider((
+                      status: viewState.status,
+                      trackerType: null,
+                      mediaType: viewState.mediaType,
+                    )).notifier,
+                  )
                   .loadMore();
             }
             return false;
@@ -64,22 +66,27 @@ class LibraryGridWidget extends ConsumerWidget {
 
               if (isCloud) {
                 ref
-                    .read(cloudLibraryProvider((
-                      status: viewState.status,
-                      trackerType: null,
-                      mediaType: viewState.mediaType,
-                    )).notifier)
+                    .read(
+                      cloudLibraryProvider((
+                        status: viewState.status,
+                        trackerType: null,
+                        mediaType: viewState.mediaType,
+                      )).notifier,
+                    )
                     .refresh();
               } else {
-                ref.invalidate(localLibraryListProvider((
-                  status: viewState.status,
-                  mediaType: viewState.mediaType,
-                )));
+                ref.invalidate(
+                  localLibraryListProvider((
+                    status: viewState.status,
+                    mediaType: viewState.mediaType,
+                  )),
+                );
               }
             },
             child: Padding(
               padding: const EdgeInsets.all(10.0),
               child: GridView.builder(
+                padding: const EdgeInsets.only(bottom: 200),
                 gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: cardStyle.layout.width + 10,
                   mainAxisExtent: cardStyle.layout.height,
@@ -87,12 +94,8 @@ class LibraryGridWidget extends ConsumerWidget {
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
                 ),
-                itemCount: entries.length + 5,
+                itemCount: entries.length,
                 itemBuilder: (context, index) {
-                  if (index >= entries.length) {
-                    return const SizedBox();
-                  }
-
                   final entry = entries[index];
 
                   return MediaCard(

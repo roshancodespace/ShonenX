@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
+import 'package:shonenx/features/player/presentation/widgets/better_player/better_player_settings.dart';
+import 'package:shonenx/features/player/presentation/widgets/media_kit/media_kit_settings.dart';
+import 'package:shonenx/features/player/presentation/widgets/video_player/video_player_settings.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/gesture_settings_sheet.dart';
@@ -16,9 +19,10 @@ class PlayerSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final playerPrefs = ref.watch(playerPrefsProvider);
+    final prefsNotifier = ref.read(playerPrefsProvider.notifier);
+
     final aniskipPrefs = ref.watch(aniskipPrefsProvider);
     final aniskipPrefsNotifier = ref.read(aniskipPrefsProvider.notifier);
-    final prefsNotifier = ref.read(playerPrefsProvider.notifier);
 
     return AppScaffold(
       title: 'Player',
@@ -49,22 +53,63 @@ class PlayerSettingsScreen extends ConsumerWidget {
                 )
                 .toList(),
           ),
-          if (Platform.isAndroid)
-            SettingsSegmentedTile<PlayerType>(
-              title: 'Player type',
-              segments: [
-                ButtonSegment(value: PlayerType.mediakit, label: Text('MPV')),
-                ButtonSegment(
-                  value: PlayerType.betterplayer,
-                  label: Text('Exoplayer'),
-                ),
-              ],
-              selected: {playerPrefs.playerType},
-              onSelectionChanged: (Set<PlayerType> selection) =>
-                  prefsNotifier.changePlayer(selection.first),
-            ),
           SettingsSection(
-            title: 'Subtitles',
+            title: 'Video Engine & Preferences',
+            children: [
+              SettingsSelectionTile(
+                title: 'MPV (MediaKit)',
+                subtitle:
+                    'Feature-rich engine with advanced subtitle & shader support',
+                isSelected: playerPrefs.playerType == PlayerType.mediakit,
+                onSelect: () => prefsNotifier.changePlayer(PlayerType.mediakit),
+                customizeLabel: 'Settings',
+                customizeIcon: Icons.settings_outlined,
+                onCustomize: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => const MediaKitSettings(),
+                  );
+                },
+              ),
+              SettingsSelectionTile(
+                title: 'MDK (FVP)',
+                subtitle:
+                    'High performance engine with fast hardware seeking & custom buffers',
+                isSelected: playerPrefs.playerType == PlayerType.mdk,
+                onSelect: () => prefsNotifier.changePlayer(PlayerType.mdk),
+                customizeLabel: 'Settings',
+                customizeIcon: Icons.settings_outlined,
+                onCustomize: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => const MdkVideoPlayerSettings(),
+                  );
+                },
+              ),
+              if (Platform.isAndroid)
+                SettingsSelectionTile(
+                  title: 'ExoPlayer',
+                  subtitle:
+                      'Official Android player engine optimized for HLS & caching',
+                  isSelected: playerPrefs.playerType == PlayerType.betterplayer,
+                  onSelect: () =>
+                      prefsNotifier.changePlayer(PlayerType.betterplayer),
+                  customizeLabel: 'Settings',
+                  customizeIcon: Icons.settings_outlined,
+                  onCustomize: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      builder: (_) => const BetterPlayerSettings(),
+                    );
+                  },
+                ),
+            ],
+          ),
+          SettingsSection(
+            title: 'Subtitles & Gestures',
             children: [
               SettingsActionTile(
                 icon: Icons.subtitles_rounded,
@@ -78,11 +123,6 @@ class PlayerSettingsScreen extends ConsumerWidget {
                   );
                 },
               ),
-            ],
-          ),
-          SettingsSection(
-            title: 'Gestures',
-            children: [
               SettingsActionTile(
                 icon: Icons.gesture_rounded,
                 title: 'Gesture Area',
@@ -98,54 +138,6 @@ class PlayerSettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
-          // if (prefs.playerType == PlayerType.mediakit)
-          //   SettingsSection(
-          //     title: 'Mediakit Config',
-          //     children: [
-          //       SettingsSwitchTile(
-          //         icon: Icons.memory,
-          //         title: 'HW Accleration',
-          //         value: prefs.mediaKitConfig.enableHardwareAcceleration,
-          //         onChanged: (value) => prefsNotifier.updateMediaKitConfig(
-          //           prefs.mediaKitConfig.copyWith(
-          //             enableHardwareAcceleration: value,
-          //           ),
-          //         ),
-          //       ),
-          //       SettingsSwitchTile(
-          //         icon: Icons.warning_amber,
-          //         title: 'Boost Volume',
-          //         value: prefs.mediaKitConfig.boostVolume,
-          //         onChanged: (value) => prefsNotifier.updateMediaKitConfig(
-          //           prefs.mediaKitConfig.copyWith(boostVolume: value),
-          //         ),
-          //       ),
-          //       SettingsSwitchTile(
-          //         icon: Icons.network_check,
-          //         title: 'Low Latency',
-          //         value: prefs.mediaKitConfig.enableLowLatency,
-          //         onChanged: (value) => prefsNotifier.updateMediaKitConfig(
-          //           prefs.mediaKitConfig.copyWith(boostVolume: value),
-          //         ),
-          //       ),
-          //       SettingsDropdownTile<AudioChannel>(
-          //         icon: Icons.audiotrack_outlined,
-          //         title: 'Audio Channel',
-          //         value: prefs.mediaKitConfig.audioChannel,
-          //         items: AudioChannel.values
-          //             .map(
-          //               (s) => DropdownMenuItem<AudioChannel>(
-          //                 value: s,
-          //                 child: Text(s.value),
-          //               ),
-          //             )
-          //             .toList(),
-          //         onChanged: (value) => prefsNotifier.updateMediaKitConfig(
-          //           prefs.mediaKitConfig.copyWith(audioChannel: value),
-          //         ),
-          //       ),
-          //     ],
-          //   ),
         ],
       ),
     );

@@ -37,6 +37,23 @@ class MediaKitEngine implements VideoEngine {
       await player.setProperty('volume-max', '200');
       if (_disposed) return;
       await _player.setVolume(prefs.boostVolume ? 140 : 100);
+      if (_disposed) return;
+
+      await player.setProperty('cache-secs', prefs.maxBuffer.inSeconds.toString());
+      await player.setProperty('demuxer-readahead-secs', prefs.maxBuffer.inSeconds.toString());
+
+      if (prefs.rawConfiguration.isNotEmpty) {
+        for (final line in prefs.rawConfiguration.split('\n')) {
+          final trimmed = line.trim();
+          if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
+          final parts = trimmed.split('=');
+          if (parts.length == 2) {
+            await player.setProperty(parts[0].trim(), parts[1].trim());
+          } else if (parts.length == 1) {
+            await player.setProperty(parts[0].trim(), 'yes');
+          }
+        }
+      }
     } catch (_) {}
   }
 

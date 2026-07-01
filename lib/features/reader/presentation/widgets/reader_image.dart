@@ -35,7 +35,7 @@ class ReaderImage extends StatelessWidget {
       fit: fit,
       width: double.infinity,
       progressIndicatorBuilder: (context, url, progress) => SizedBox(
-        height: 300,
+        height: MediaQuery.of(context).size.height,
         child: Center(
           child: CircularProgressIndicator(
             value: progress.progress,
@@ -44,7 +44,7 @@ class ReaderImage extends StatelessWidget {
         ),
       ),
       errorWidget: (context, url, error) => SizedBox(
-        height: 300,
+        height: MediaQuery.of(context).size.height,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

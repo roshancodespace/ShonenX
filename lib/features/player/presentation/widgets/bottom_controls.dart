@@ -28,6 +28,8 @@ class BottomControls extends ConsumerStatefulWidget {
   final ThemeData theme;
   final AniSkipArgs? aniskipArgs;
   final PlayerMode mode;
+  final bool? isFullScreen;
+  final VoidCallback? onToggleFullScreen;
 
   const BottomControls({
     super.key,
@@ -39,6 +41,8 @@ class BottomControls extends ConsumerStatefulWidget {
     required this.theme,
     this.aniskipArgs,
     required this.mode,
+    this.isFullScreen,
+    this.onToggleFullScreen,
   });
 
   @override
@@ -61,10 +65,25 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
   }
 
   void _toggleFullScreen() async {
+    if (widget.onToggleFullScreen != null) {
+      widget.onToggleFullScreen!();
+      return;
+    }
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       bool isFull = await windowManager.isFullScreen();
-      await windowManager.setFullScreen(!isFull);
-      if (mounted) setState(() => _isFullScreen = !isFull);
+      if (isFull) {
+        await windowManager.setFullScreen(false);
+        if (Platform.isWindows) {
+          await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+        }
+        if (mounted) setState(() => _isFullScreen = false);
+      } else {
+        if (Platform.isWindows) {
+          await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+        }
+        await windowManager.setFullScreen(true);
+        if (mounted) setState(() => _isFullScreen = true);
+      }
     }
   }
 
@@ -433,7 +452,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                             Platform.isMacOS) ...[
                           const SizedBox(width: 14),
                           _buildActionIcon(
-                            _isFullScreen
+                            (widget.isFullScreen ?? _isFullScreen)
                                 ? Icons.fullscreen_exit_rounded
                                 : Icons.fullscreen_rounded,
                             _toggleFullScreen,

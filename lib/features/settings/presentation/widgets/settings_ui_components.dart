@@ -368,3 +368,69 @@ class SettingsDropdownTile<T> extends StatelessWidget {
     );
   }
 }
+
+class SettingsSelectionTile extends StatelessWidget {
+  final Widget? leading;
+  final String title;
+  final String subtitle;
+  final bool isSelected;
+  final VoidCallback? onSelect;
+  final VoidCallback? onCustomize;
+  final String customizeLabel;
+  final IconData customizeIcon;
+
+  const SettingsSelectionTile({
+    super.key,
+    this.leading,
+    required this.title,
+    required this.subtitle,
+    required this.isSelected,
+    this.onSelect,
+    this.onCustomize,
+    this.customizeLabel = 'Customize',
+    this.customizeIcon = Icons.edit_outlined,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      selected: isSelected,
+      selectedTileColor:
+          theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+      selectedColor: theme.colorScheme.primary,
+      leading: leading ??
+          Icon(
+            isSelected ? Icons.check_circle_rounded : Icons.circle_outlined,
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+          color: isSelected ? theme.colorScheme.onPrimaryContainer : null,
+        ),
+      ),
+      onTap: onSelect,
+      trailing: onCustomize != null
+          ? FilledButton.icon(
+              style: IconButton.styleFrom(
+                backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                foregroundColor: theme.colorScheme.onSurface,
+              ),
+              onPressed: onCustomize,
+              icon: Icon(customizeIcon, size: 18),
+              label: Text(customizeLabel),
+            )
+          : null,
+    );
+  }
+}

@@ -26,6 +26,7 @@ class MediaKitPrefs {
   final Duration maxBuffer;
   final MediaKitAudioChannel audioChannel;
   final bool boostVolume;
+  final String rawConfiguration;
 
   const MediaKitPrefs({
     this.enableHardwareAcceleration = true,
@@ -34,6 +35,7 @@ class MediaKitPrefs {
     this.maxBuffer = const Duration(seconds: 30),
     this.audioChannel = MediaKitAudioChannel.stereo,
     this.boostVolume = false,
+    this.rawConfiguration = '',
   });
 
   MediaKitPrefs copyWith({
@@ -43,6 +45,7 @@ class MediaKitPrefs {
     Duration? maxBuffer,
     MediaKitAudioChannel? audioChannel,
     bool? boostVolume,
+    String? rawConfiguration,
   }) {
     return MediaKitPrefs(
       enableHardwareAcceleration:
@@ -52,6 +55,7 @@ class MediaKitPrefs {
       maxBuffer: maxBuffer ?? this.maxBuffer,
       audioChannel: audioChannel ?? this.audioChannel,
       boostVolume: boostVolume ?? this.boostVolume,
+      rawConfiguration: rawConfiguration ?? this.rawConfiguration,
     );
   }
 
@@ -64,7 +68,8 @@ class MediaKitPrefs {
             other.minBuffer == minBuffer &&
             other.maxBuffer == maxBuffer &&
             other.audioChannel == audioChannel &&
-            other.boostVolume == boostVolume);
+            other.boostVolume == boostVolume &&
+            other.rawConfiguration == rawConfiguration);
   }
 
   @override
@@ -75,6 +80,7 @@ class MediaKitPrefs {
     maxBuffer,
     audioChannel,
     boostVolume,
+    rawConfiguration,
   );
 
   @override
@@ -85,7 +91,8 @@ class MediaKitPrefs {
         'minBuffer: $minBuffer, '
         'maxBuffer: $maxBuffer, '
         'audioChannel: $audioChannel, '
-        'boostVolume: $boostVolume'
+        'boostVolume: $boostVolume, '
+        'rawConfiguration: $rawConfiguration'
         ')';
   }
 
@@ -99,6 +106,7 @@ class MediaKitPrefs {
         map['audioChannel'] as String?,
       ),
       boostVolume: map['boostVolume'] ?? false,
+      rawConfiguration: map['rawConfiguration'] ?? '',
     );
   }
 
@@ -110,6 +118,7 @@ class MediaKitPrefs {
       'maxBufferMs': maxBuffer.inMilliseconds,
       'audioChannel': audioChannel.value,
       'boostVolume': boostVolume,
+      'rawConfiguration': rawConfiguration,
     };
   }
 
@@ -118,3 +127,4 @@ class MediaKitPrefs {
 
   String toJson() => jsonEncode(toMap());
 }
+

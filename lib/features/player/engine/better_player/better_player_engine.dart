@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/http_x.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
+import 'package:shonenx/features/player/providers/exo_player_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
+import 'package:shonenx/features/player/presentation/widgets/better_player/better_player_settings.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 
 class BetterPlayerEngine implements VideoEngine {
@@ -61,62 +63,46 @@ class BetterPlayerEngine implements VideoEngine {
 
   void _attachEventListener() {
     _controller.addEventsListener((event) {
-      switch (event.betterPlayerEventType) {
-        case BetterPlayerEventType.initialized:
-          _isBuffering = false;
-          ref
-              .read(videoEngineStateProvider.notifier)
-              .updateState(isBuffering: false);
-          _emitState();
-          break;
-        case BetterPlayerEventType.play:
-          ref
-              .read(videoEngineStateProvider.notifier)
-              .updateState(isPlaying: true);
-          break;
-        case BetterPlayerEventType.pause:
-          ref
-              .read(videoEngineStateProvider.notifier)
-              .updateState(isPlaying: false);
-          break;
-        case BetterPlayerEventType.bufferingStart:
-          _isBuffering = true;
-          ref
-              .read(videoEngineStateProvider.notifier)
-              .updateState(isBuffering: true);
-          break;
-        case BetterPlayerEventType.bufferingEnd:
-          _isBuffering = false;
-          ref
-              .read(videoEngineStateProvider.notifier)
-              .updateState(isBuffering: false);
-          _emitState();
-          break;
-        case BetterPlayerEventType.finished:
-          ref
-              .read(videoEngineStateProvider.notifier)
-              .updateState(isPlaying: false);
-          break;
-        default:
-          break;
+      if (event.betterPlayerEventType == BetterPlayerEventType.bufferingStart) {
+        _isBuffering = true;
+        ref
+            .read(videoEngineStateProvider.notifier)
+            .updateState(isBuffering: true);
+      } else if (event.betterPlayerEventType ==
+          BetterPlayerEventType.bufferingEnd) {
+        _isBuffering = false;
+        ref
+            .read(videoEngineStateProvider.notifier)
+            .updateState(isBuffering: false);
+      } else if (event.betterPlayerEventType ==
+          BetterPlayerEventType.finished) {
+        ref
+            .read(videoEngineStateProvider.notifier)
+            .updateState(isPlaying: false);
+      } else if (event.betterPlayerEventType == BetterPlayerEventType.play) {
+        ref
+            .read(videoEngineStateProvider.notifier)
+            .updateState(isPlaying: true);
+      } else if (event.betterPlayerEventType == BetterPlayerEventType.pause) {
+        ref
+            .read(videoEngineStateProvider.notifier)
+            .updateState(isPlaying: false);
       }
     });
   }
 
   void _emitState() {
     final value = _controller.videoPlayerController?.value;
-    if (value == null) return;
-
-    final buffered = value.buffered;
-
-    ref
-        .read(videoEngineStateProvider.notifier)
-        .updateState(
-          position: value.position,
-          duration: value.duration,
-          buffer: buffered.isNotEmpty ? buffered.last.end : Duration.zero,
-          isPlaying: value.isPlaying,
-        );
+    if (value != null) {
+      ref
+          .read(videoEngineStateProvider.notifier)
+          .updateState(
+            position: value.position,
+            duration: value.duration,
+            isPlaying: value.isPlaying,
+            isBuffering: value.isBuffering,
+          );
+    }
   }
 
   @override
@@ -131,6 +117,8 @@ class BetterPlayerEngine implements VideoEngine {
 
     ref.read(videoEngineStateProvider.notifier).updateState(isBuffering: false);
 
+    final exoPrefs = ref.read(exoPlayerPrefsProvider);
+
     await _controller.setupDataSource(
       BetterPlayerDataSource.network(
         stream.url,
@@ -138,7 +126,13 @@ class BetterPlayerEngine implements VideoEngine {
         videoFormat: await _http.isHLS(stream.url, headers: stream.headers)
             ? BetterPlayerVideoFormat.hls
             : null,
-        cacheConfiguration: BetterPlayerCacheConfiguration(useCache: true),
+        cacheConfiguration: BetterPlayerCacheConfiguration(useCache: exoPrefs.useCache),
+        bufferingConfiguration: BetterPlayerBufferingConfiguration(
+          minBufferMs: 1000,
+          maxBufferMs: exoPrefs.bufferCapacityMs,
+          bufferForPlaybackMs: 1000,
+          bufferForPlaybackAfterRebufferMs: 2000,
+        ),
       ),
     );
 
@@ -162,7 +156,8 @@ class BetterPlayerEngine implements VideoEngine {
   }
 
   @override
-  Widget? buildSettingsView(BuildContext context) => null;
+  Widget? buildSettingsView(BuildContext context) =>
+      BetterPlayerSettings(controller: _controller);
 
   @override
   Future<void> play() => _controller.play();

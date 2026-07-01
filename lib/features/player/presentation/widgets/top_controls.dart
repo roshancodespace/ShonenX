@@ -93,7 +93,7 @@ class TopControls extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       playerState.activeEpisode?.title ??
-                          (mode is PlayerModeOffline ? 'Offline File' : 'N/A'),
+                          'Episode ${playerState.activeEpisode?.number ?? (mode is PlayerModeOffline ? 'Offline File' : 'N/A')}',
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 13,

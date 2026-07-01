@@ -74,6 +74,8 @@ dependencies:
   collection: ^1.19.1
   app_links: ^6.4.1
   flutter_launcher_icons: ^0.14.4
+  video_player: ^2.10.1
+  fvp: ^0.37.3
 
 dev_dependencies:
   flutter_test:

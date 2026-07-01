@@ -2,8 +2,6 @@ import 'dart:io';
 
 import 'package:anymex_extension_runtime_bridge/Settings/KvStore.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart';
-// import 'package:dartotsu_extension_bridge/Mangayomi/Eval/dart/model/source_preference.dart';
-// import 'package:dartotsu_extension_bridge/dartotsu_extension_bridge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
@@ -24,6 +22,7 @@ import 'package:shonenx/features/library/domain/models/library_entry.dart';
 import 'package:shonenx/features/notifications/domain/models/notification_subscription.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:fvp/fvp.dart' as fvp;
 
 class AppInit {
   static bool isBridgeInitialized = false;
@@ -44,8 +43,8 @@ class AppInit {
       log.s('Window manager initialized');
     }
 
-    MediaKit.ensureInitialized();
-    log.s('MediaKit initialized');
+    await _initVideoEngines();
+    log.s('Video engines initialized');
 
     await _initDatabase();
     log.s('Database initialized');
@@ -225,5 +224,15 @@ class AppInit {
       await Directory(dbDir).create(recursive: true);
       return Directory(dbDir);
     }
+  }
+
+  static Future<void> _initVideoEngines() async {
+    final log = AppLogger.scope('AppInit').child('initVideoEngines');
+
+    MediaKit.ensureInitialized();
+    log.i('MediaKit initialized');
+
+    fvp.registerWith();
+    log.i('FVP backend initialized');
   }
 }

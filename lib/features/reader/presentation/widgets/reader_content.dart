@@ -17,6 +17,7 @@ class ReaderContent extends ConsumerWidget {
   final AsyncValue<ReaderState> stateAsync;
   final ReaderPrefState prefs;
   final Color textColor;
+  final int initialPage;
   final ItemScrollController itemScrollController;
   final ItemPositionsListener itemPositionsListener;
   final PageController pageController;
@@ -32,6 +33,7 @@ class ReaderContent extends ConsumerWidget {
     required this.stateAsync,
     required this.prefs,
     required this.textColor,
+    required this.initialPage,
     required this.itemScrollController,
     required this.itemPositionsListener,
     required this.pageController,
@@ -128,6 +130,10 @@ class ReaderContent extends ConsumerWidget {
   Widget _buildWebtoonList(List<ChapterPage> pages) {
     return ScrollablePositionedList.builder(
       itemCount: pages.length,
+      initialScrollIndex: initialPage.clamp(
+        0,
+        pages.isEmpty ? 0 : pages.length - 1,
+      ),
       itemScrollController: itemScrollController,
       itemPositionsListener: itemPositionsListener,
       itemBuilder: (context, index) {

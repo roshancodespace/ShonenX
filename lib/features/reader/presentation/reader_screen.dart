@@ -61,8 +61,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       mediaTitle: widget.mode.media.title.availableTitle,
       type: widget.mode.media.type,
     );
-    _currentPage = widget.mode.startPosition;
-    _pageController = PageController(initialPage: _currentPage - 1);
+    _currentPage = widget.mode.startPosition > 0
+        ? widget.mode.startPosition - 1
+        : 0;
+    _pageController = PageController(initialPage: _currentPage);
   }
 
   @override
@@ -96,7 +98,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   void _onWebtoonScroll() {
     final positions = _itemPositionsListener.itemPositions.value;
-    if (positions.isEmpty) return;
+    if (positions.isEmpty || _totalPages == 0) return;
 
     var current = positions
         .where((p) => p.itemTrailingEdge > 0)
@@ -124,13 +126,15 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   void _saveHistory() {
     if (_totalPages == 0) return;
 
+    final savedPageNumber = _currentPage + 1;
+
     final entry = ReadHistoryEntry()
       ..chapterNumber = widget.mode.episode.number
       ..mangaId = widget.mode.media.id
       ..mangaTitle = widget.mode.media.title.availableTitle
       ..cover = widget.mode.media.cover
       ..banner = widget.mode.media.banner
-      ..positionPage = _currentPage
+      ..positionPage = savedPageNumber
       ..totalPages = _totalPages
       ..lastUpdated = DateTime.now();
 
@@ -140,7 +144,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         .processReading(
           media: widget.mode.media,
           chapterNumber: widget.mode.episode.number,
-          positionPage: _currentPage,
+          positionPage: savedPageNumber,
           totalPages: _totalPages,
         );
   }
@@ -315,6 +319,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   stateAsync: readerStateAsync,
                   prefs: readerPrefs,
                   textColor: themeInfo.textColor,
+                  initialPage: _currentPage,
                   itemScrollController: _itemScrollController,
                   itemPositionsListener: _itemPositionsListener,
                   pageController: _pageController,

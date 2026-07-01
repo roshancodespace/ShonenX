@@ -91,6 +91,11 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin flutter_web_auth_2, com.linusu.flutter_web_auth_2.FlutterWebAuth2Plugin", e);
     }
     try {
+      flutterEngine.getPlugins().add(new com.mediadevkit.fvp.FvpPlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin fvp, com.mediadevkit.fvp.FvpPlugin", e);
+    }
+    try {
       flutterEngine.getPlugins().add(new com.zaihui.installplugin.InstallPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin install_plugin, com.zaihui.installplugin.InstallPlugin", e);
@@ -159,6 +164,11 @@ public final class GeneratedPluginRegistrant {
       flutterEngine.getPlugins().add(new io.flutter.plugins.urllauncher.UrlLauncherPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin url_launcher_android, io.flutter.plugins.urllauncher.UrlLauncherPlugin", e);
+    }
+    try {
+      flutterEngine.getPlugins().add(new io.flutter.plugins.videoplayer.VideoPlayerPlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin video_player_android, io.flutter.plugins.videoplayer.VideoPlayerPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new com.kurenai7968.volume_controller.VolumeControllerPlugin());

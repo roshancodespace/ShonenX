@@ -26,8 +26,12 @@ class VideoPlayerEngine implements VideoEngine {
     SubtitleTrack? subtitle,
     Duration? startAt,
   }) async {
+    ref
+        .read(videoEngineStateProvider.notifier)
+        .updateState(isBuffering: true, isPlaying: false);
+
     _controller?.removeListener(_listener);
-    _controller?.dispose();
+    await _controller?.dispose();
 
     _controller = VideoPlayerController.networkUrl(
       Uri.parse(stream.url),
@@ -87,7 +91,7 @@ class VideoPlayerEngine implements VideoEngine {
           duration: value.duration,
           buffer: bufferDuration,
           isPlaying: value.isPlaying,
-          isBuffering: value.isBuffering,
+          isBuffering: value.isBuffering || !value.isInitialized,
         );
   }
 
@@ -98,20 +102,23 @@ class VideoPlayerEngine implements VideoEngine {
         final fit = ref.watch(videoEngineStateProvider.select((s) => s.fit));
 
         if (_controller == null || !_controller!.value.isInitialized) {
-          return const Center(child: CircularProgressIndicator());
+          return const ColoredBox(color: Colors.black);
         }
 
         final size = _controller!.value.size;
         final aspectWidth = size.width > 0 ? size.width : 16.0;
         final aspectHeight = size.height > 0 ? size.height : 9.0;
 
-        return SizedBox.expand(
-          child: FittedBox(
-            fit: fit,
-            child: SizedBox(
-              width: aspectWidth,
-              height: aspectHeight,
-              child: VideoPlayer(_controller!),
+        return ColoredBox(
+          color: Colors.black,
+          child: SizedBox.expand(
+            child: FittedBox(
+              fit: fit,
+              child: SizedBox(
+                width: aspectWidth,
+                height: aspectHeight,
+                child: VideoPlayer(_controller!),
+              ),
             ),
           ),
         );
@@ -151,8 +158,10 @@ class VideoPlayerEngine implements VideoEngine {
   }
 
   @override
-  Future<void> changeQuality(VideoStream newStream) async =>
-      initialize(newStream);
+  Future<void> changeQuality(VideoStream newStream) async {
+    final currentPos = _controller?.value.position;
+    await initialize(newStream, startAt: currentPos);
+  }
 
   @override
   Future<void> setSubtitle(SubtitleTrack? subtitle) async {

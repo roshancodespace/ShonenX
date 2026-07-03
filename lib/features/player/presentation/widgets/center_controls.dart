@@ -29,6 +29,9 @@ class CenterControls extends ConsumerStatefulWidget {
 class _CenterControlsState extends ConsumerState<CenterControls> {
   @override
   Widget build(BuildContext context) {
+    if (widget.playerState.error != null) {
+      return const SizedBox.shrink();
+    }
     final theme = Theme.of(context);
 
     final media = widget.controller.media;

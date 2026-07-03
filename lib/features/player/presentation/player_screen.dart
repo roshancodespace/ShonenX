@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:screenshot/screenshot.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
@@ -71,6 +72,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   @override
   void initState() {
     super.initState();
+    try {
+      WakelockPlus.enable();
+    } catch (_) {}
     _initSystemUI();
     _initDesktopWindowState();
 
@@ -106,6 +110,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   @override
   void dispose() {
+    try {
+      WakelockPlus.disable();
+    } catch (_) {}
     _controlsTimer?.cancel();
     _disposeSystemUI();
 
@@ -259,32 +266,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   Widget _buildVideoLayer(VideoEngine engine, PlayerState playerState) {
     return Center(
       child: Offstage(
-        offstage: playerState.isLoading || playerState.error != null,
+        offstage: playerState.isLoading,
         child: Screenshot(
           controller: _screenshotController,
           child: engine.buildVideoView(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorOverlay(String error) {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.black87,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
-        ),
-        child: Text(
-          error,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-          textAlign: TextAlign.center,
         ),
       ),
     );
@@ -352,6 +337,135 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     final engine = ref.watch(videoEngineProvider);
     final aniSkipArgs = _getAniSkipArgs(engine);
 
+    ref.listen(playerControllerProvider.select((s) => s.error), (prev, next) {
+      if (next != null && next != prev && mounted) {
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: const Color(0xFF1E1E24),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (sheetCtx) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.error_outline_rounded,
+                          color: Colors.redAccent,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Playback Error',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Failed to load media stream',
+                              style: TextStyle(
+                                color: Colors.white60,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black26,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: Text(
+                      next,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'We recommend selecting a different video server, changing the extension source, or trying another episode.',
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(sheetCtx),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.white24),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: const Text(
+                            'Dismiss',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      if (widget.mode is PlayerModeOnline) ...[
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: FilledButton.icon(
+                            onPressed: () {
+                              Navigator.pop(sheetCtx);
+                              _toggleEpisodePanel();
+                            },
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            icon: const Icon(Icons.playlist_play_rounded),
+                            label: const Text('Change Source / Episode'),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    });
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) =>
@@ -382,8 +496,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             child: Stack(
               children: [
                 _buildVideoLayer(engine, playerState),
-                if (playerState.error != null)
-                  _buildErrorOverlay(playerState.error!),
                 Positioned.fill(
                   child: PlayerGestureOverlay(
                     onToggleControls: _toggleControls,

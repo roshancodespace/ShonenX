@@ -126,12 +126,11 @@ class BetterPlayerEngine implements VideoEngine {
         videoFormat: await _http.isHLS(stream.url, headers: stream.headers)
             ? BetterPlayerVideoFormat.hls
             : null,
-        cacheConfiguration: BetterPlayerCacheConfiguration(useCache: exoPrefs.useCache),
+        cacheConfiguration: BetterPlayerCacheConfiguration(
+          useCache: exoPrefs.useCache,
+        ),
         bufferingConfiguration: BetterPlayerBufferingConfiguration(
-          minBufferMs: 1000,
           maxBufferMs: exoPrefs.bufferCapacityMs,
-          bufferForPlaybackMs: 1000,
-          bufferForPlaybackAfterRebufferMs: 2000,
         ),
       ),
     );

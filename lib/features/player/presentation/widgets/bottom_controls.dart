@@ -256,7 +256,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                           () => widget.onToggleLockControls(),
                         ),
 
-                        const SizedBox(width: 5),
+                        const SizedBox(width: 12),
 
                         if (widget.playerState.subtitles.isNotEmpty)
                           _buildBottomSheetTrigger(

@@ -15,6 +15,7 @@ class TopControls extends ConsumerWidget {
   final PlayerState playerState;
   final PlayerController controller;
   final VoidCallback onBack;
+  final VoidCallback? onComments;
 
   const TopControls({
     super.key,
@@ -24,6 +25,7 @@ class TopControls extends ConsumerWidget {
     required this.playerState,
     required this.controller,
     required this.onBack,
+    this.onComments,
   });
 
   @override
@@ -62,7 +64,7 @@ class TopControls extends ConsumerWidget {
                 icon: Icons.arrow_back_ios_new_rounded,
                 onTap: onBack,
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 6),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,7 +81,7 @@ class TopControls extends ConsumerWidget {
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
+                        letterSpacing: 1,
                         shadows: [
                           Shadow(
                             offset: Offset(0, 1),
@@ -113,7 +115,7 @@ class TopControls extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 6),
               if (mode is PlayerModeOnline &&
                   playerState.qualities.length > 1) ...[
                 _buildQualityButton(
@@ -131,7 +133,14 @@ class TopControls extends ConsumerWidget {
                     );
                   },
                 ),
-                const SizedBox(width: 5),
+                const SizedBox(width: 6),
+              ],
+              if (mode is PlayerModeOnline && onComments != null) ...[
+                _buildActionIcon(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  onTap: onComments!,
+                ),
+                const SizedBox(width: 6),
               ],
               _buildActionIcon(
                 icon: switch (ref.watch(
@@ -159,14 +168,14 @@ class TopControls extends ConsumerWidget {
                   );
                 },
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 6),
               _buildActionIcon(
                 icon: Icons.keyboard_alt_outlined,
                 onTap: () => KeyboardShortcutsSheet.show(context),
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 6),
               _buildActionIcon(
-                icon: Icons.settings_outlined,
+                icon: Icons.video_settings_outlined,
                 onTap: () {
                   if (engine.buildSettingsView(context) == null) return;
                   showModalBottomSheet(
@@ -223,7 +232,7 @@ class TopControls extends ConsumerWidget {
             const Icon(
               Icons.keyboard_arrow_down_rounded,
               color: Colors.white70,
-              size: 5,
+              size: 6,
             ),
           ],
         ),

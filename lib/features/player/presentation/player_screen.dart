@@ -23,6 +23,8 @@ import 'package:shonenx/features/player/providers/aniskip_provider.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
+import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
+import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   final PlayerMode mode;
@@ -249,6 +251,26 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     });
   }
 
+  void _showCommentsSheet() {
+    if (widget.mode is! PlayerModeOnline) return;
+    final media = (widget.mode as PlayerModeOnline).media;
+    final activeEpisode = ref.read(playerControllerProvider).activeEpisode;
+
+    AppBottomSheet.show(
+      context: context,
+      title: 'Episode ${activeEpisode?.number ?? 1} Discussion',
+      contentPadding: EdgeInsets.zero,
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.78,
+        child: CommentsTabWidget(
+          media: media,
+          initialEpisodeNumber: activeEpisode?.number.toInt(),
+          forceEpisodeFilter: true,
+        ),
+      ),
+    );
+  }
+
   void _handlePop(
     bool didPop,
     VideoEngine engine,
@@ -304,6 +326,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         playerState: playerState,
         controller: controller,
         onBack: context.pop,
+        onComments: _showCommentsSheet,
       ),
       CenterControls(
         showControls: _showControls,
@@ -339,128 +362,93 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
     ref.listen(playerControllerProvider.select((s) => s.error), (prev, next) {
       if (next != null && next != prev && mounted) {
-        showModalBottomSheet(
+        AppBottomSheet.show(
           context: context,
-          backgroundColor: const Color(0xFF1E1E24),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          builder: (sheetCtx) => SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+          title: 'Playback Error',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
                   Container(
-                    width: 40,
-                    height: 4,
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(2),
+                      color: Colors.redAccent.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.error_outline_rounded,
+                      color: Colors.redAccent,
+                      size: 24,
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.redAccent.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.error_outline_rounded,
-                          color: Colors.redAccent,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Playback Error',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              'Failed to load media stream',
-                              style: TextStyle(
-                                color: Colors.white60,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.black26,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white10),
-                    ),
+                  const SizedBox(width: 12),
+                  const Expanded(
                     child: Text(
-                      next,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
+                      'Failed to load media stream',
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'We recommend selecting a different video server, changing the extension source, or trying another episode.',
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(sheetCtx),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.white24),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: const Text(
-                            'Dismiss',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      if (widget.mode is PlayerModeOnline) ...[
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: FilledButton.icon(
-                            onPressed: () {
-                              Navigator.pop(sheetCtx);
-                              _toggleEpisodePanel();
-                            },
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            icon: const Icon(Icons.playlist_play_rounded),
-                            label: const Text('Change Source / Episode'),
-                          ),
-                        ),
-                      ],
-                    ],
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: Text(
+                  next,
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'We recommend selecting a different video server, changing the extension source, or trying another episode.',
+                style: TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.white24),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text(
+                        'Dismiss',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  if (widget.mode is PlayerModeOnline) ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _toggleEpisodePanel();
+                        },
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        icon: const Icon(Icons.playlist_play_rounded),
+                        label: const Text('Change Source / Episode'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
           ),
         );
       }

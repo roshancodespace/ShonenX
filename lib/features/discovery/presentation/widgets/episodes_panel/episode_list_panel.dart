@@ -80,22 +80,8 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     final viewMode = ref.watch(
       uiPrefsProvider.select((s) => s.episodeViewMode),
     );
-    final episodesAsync = widget.media.sourceId != null
-        ? ref.watch(
-            sourceEpisodesProvider((
-              providerId: widget.media.id,
-              sourceId: widget.media.sourceId!,
-              type: widget.media.type,
-            )),
-          )
-        : ref.watch(
-            episodesListProvider(
-              MatchArgs(
-                mediaTitle: widget.media.title.availableTitle,
-                type: widget.media.type,
-              ),
-            ),
-          );
+    final matchArgs = MatchArgs.fromMedia(widget.media);
+    final episodesAsync = ref.watch(episodesListProvider(matchArgs));
 
     return episodesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -124,22 +110,17 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () {
-                  ref.invalidate(
-                    matchedMediaProvider(
-                      MatchArgs(
-                        mediaTitle: widget.media.title.availableTitle,
+                  ref.invalidate(matchedMediaProvider(matchArgs));
+                  ref.invalidate(episodesListProvider(matchArgs));
+                  if (widget.media.sourceId != null) {
+                    ref.invalidate(
+                      sourceEpisodesProvider((
+                        providerId: widget.media.id,
+                        sourceId: widget.media.sourceId!,
                         type: widget.media.type,
-                      ),
-                    ),
-                  );
-                  ref.invalidate(
-                    episodesListProvider(
-                      MatchArgs(
-                        mediaTitle: widget.media.title.availableTitle,
-                        type: widget.media.type,
-                      ),
-                    ),
-                  );
+                      )),
+                    );
+                  }
                 },
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Retry Search'),

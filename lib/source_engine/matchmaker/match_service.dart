@@ -20,7 +20,7 @@ class MediaMatchService {
     }
 
     if (results.isEmpty) {
-      throw Exception('No results found for $cleanTitle');
+      return null;
     }
 
     final target = cleanTitle.toLowerCase();

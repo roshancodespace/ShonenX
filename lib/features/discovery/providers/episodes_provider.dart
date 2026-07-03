@@ -29,10 +29,23 @@ final episodesListProvider =
       final title = args.mediaTitle;
 
       try {
-        final matchState = await ref.watch(matchedMediaProvider(args).future);
         final sourcePrefs = await ref.watch(
           mediaPreferenceProvider(args).future,
         );
+
+        if (args.sourceId != null &&
+            args.providerId != null &&
+            sourcePrefs.sourceInfo.id == args.sourceId) {
+          return ref.watch(
+            sourceEpisodesProvider((
+              providerId: args.providerId!,
+              sourceId: args.sourceId!,
+              type: args.type,
+            )).future,
+          );
+        }
+
+        final matchState = await ref.watch(matchedMediaProvider(args).future);
 
         final sourceImpl = args.type == MediaType.ANIME
             ? ref.watch(animeSourceProvider(sourcePrefs.sourceInfo))

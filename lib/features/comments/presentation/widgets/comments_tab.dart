@@ -17,8 +17,15 @@ import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 
 class CommentsTabWidget extends ConsumerStatefulWidget {
   final UnifiedMedia media;
+  final int? initialEpisodeNumber;
+  final bool forceEpisodeFilter;
 
-  const CommentsTabWidget({super.key, required this.media});
+  const CommentsTabWidget({
+    super.key,
+    required this.media,
+    this.initialEpisodeNumber,
+    this.forceEpisodeFilter = false,
+  });
 
   @override
   ConsumerState<CommentsTabWidget> createState() => _CommentsTabWidgetState();
@@ -28,6 +35,13 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
   final TextEditingController _contentController = TextEditingController();
   Comment? _replyingTo;
   bool _isSubmitting = false;
+  int? _selectedEpisodeNumber;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedEpisodeNumber = widget.initialEpisodeNumber;
+  }
 
   String get _mediaProvider {
     final active = ref.read(commentumAuthServiceProvider).activeProvider;
@@ -50,8 +64,11 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
     return widget.media.id;
   }
 
-  CommentsArgs get _args =>
-      CommentsArgs(mediaId: _mediaId, mediaProvider: _mediaProvider);
+  CommentsArgs get _args => CommentsArgs(
+    mediaId: _mediaId,
+    mediaProvider: _mediaProvider,
+    episodeNumber: _selectedEpisodeNumber,
+  );
 
   @override
   void dispose() {
@@ -183,20 +200,20 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
     AppBottomSheet.show(
       context: context,
       title: 'Comment Accounts',
-      child: ListView(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (loggedIn.isNotEmpty) ...[
             Padding(
-              padding: const EdgeInsets.only(bottom: 8, left: 4),
+              padding: const EdgeInsets.only(left: 4, bottom: 8),
               child: Text(
                 'CONNECTED',
                 style: TextStyle(
                   fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: cs.primary,
-                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                  letterSpacing: 1.0,
                 ),
               ),
             ),
@@ -210,164 +227,265 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
                       profile.username.isNotEmpty &&
                       profile.username != 'Guest';
 
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: p == active
-                          ? cs.primaryContainer.withValues(alpha: 0.4)
-                          : cs.surfaceContainerHighest.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(16),
-                      border: p == active
-                          ? Border.all(
-                              color: cs.primary.withValues(alpha: 0.5),
-                              width: 1.5,
-                            )
-                          : null,
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 2,
+                  final isActive = p == active;
+
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: isActive
+                        ? null
+                        : () {
+                            authService.switchAccount(p);
+                            context.pop();
+                            setState(() {});
+                          },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 10,
                       ),
-                      leading: CircleAvatar(
-                        radius: 20,
-                        backgroundImage: profile?.avatarUrl != null
-                            ? NetworkImage(profile!.avatarUrl!)
-                            : null,
-                        backgroundColor: p == active
-                            ? cs.primaryContainer
-                            : cs.surfaceContainerHighest,
-                        child: profile?.avatarUrl == null
-                            ? Icon(
-                                Icons.person_rounded,
-                                size: 20,
-                                color: p == active
-                                    ? cs.onPrimaryContainer
-                                    : cs.onSurfaceVariant,
-                              )
-                            : null,
-                      ),
-                      title: Text(
-                        hasValidProfile ? profile.username : p.displayName,
-                        style: TextStyle(
-                          fontWeight: p == active
-                              ? FontWeight.w700
-                              : FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                      ),
-                      subtitle: Text(
-                        p.displayName,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.8),
-                        ),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      child: Row(
                         children: [
-                          if (p == active)
-                            Container(
-                              margin: const EdgeInsets.only(right: 8),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: cs.primary,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                'Active',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: cs.onPrimary,
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundImage: profile?.avatarUrl != null
+                                ? NetworkImage(profile!.avatarUrl!)
+                                : null,
+                            backgroundColor: cs.surfaceContainerHighest,
+                            child: profile?.avatarUrl == null
+                                ? Icon(
+                                    Icons.person_rounded,
+                                    size: 18,
+                                    color: cs.onSurfaceVariant,
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      hasValidProfile
+                                          ? profile.username
+                                          : p.displayName,
+                                      style: TextStyle(
+                                        fontWeight: isActive
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                        fontSize: 14,
+                                        color: cs.onSurface,
+                                      ),
+                                    ),
+                                    if (isActive) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: BoxDecoration(
+                                          color: cs.primary,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
-                              ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  p.displayName,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: cs.onSurfaceVariant.withValues(
+                                      alpha: 0.8,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
+                          ),
                           IconButton(
                             icon: Icon(
                               Icons.logout_rounded,
-                              size: 20,
-                              color: cs.error,
+                              size: 18,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.6),
                             ),
+                            splashRadius: 18,
                             tooltip: 'Log Out',
                             onPressed: () =>
                                 _confirmLogout(context, authService, p),
                           ),
                         ],
                       ),
-                      onTap: p == active
-                          ? null
-                          : () {
-                              authService.switchAccount(p);
-                              context.pop();
-                              setState(() {});
-                            },
                     ),
                   );
                 },
               ),
           ],
           if (available.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            if (loggedIn.isNotEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Divider(height: 1),
+              ),
             Padding(
-              padding: const EdgeInsets.only(bottom: 8, left: 4),
+              padding: const EdgeInsets.only(left: 4, top: 8, bottom: 8),
               child: Text(
                 'CONNECT MORE',
                 style: TextStyle(
                   fontSize: 11,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-                  letterSpacing: 1.2,
+                  letterSpacing: 1.0,
                 ),
               ),
             ),
             for (final provider in available)
-              Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 2,
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  context.pop();
+                  _handleConnect(provider);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 10,
                   ),
-                  leading: CircleAvatar(
-                    radius: 20,
-                    backgroundColor: cs.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.add_link_rounded,
-                      size: 20,
-                      color: cs.onSurfaceVariant,
-                    ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: cs.surfaceContainerLow,
+                        child: Icon(
+                          Icons.add_link_rounded,
+                          size: 18,
+                          color: cs.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Connect ${provider.displayName}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            color: cs.onSurface,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                      ),
+                    ],
                   ),
-                  title: Text(
-                    'Connect ${provider.displayName}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                  subtitle: const Text(
-                    'Link account to comment',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  trailing: Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 16,
-                    color: cs.onSurfaceVariant,
-                  ),
-                  onTap: () {
-                    context.pop();
-                    _handleConnect(provider);
-                  },
                 ),
               ),
           ],
+        ],
+      ),
+    );
+  }
+
+  void _showEpisodePickerSheet(BuildContext context) {
+    final maxEps = widget.media.episodes ?? 100;
+    final controller = TextEditingController(
+      text: _selectedEpisodeNumber?.toString() ?? '',
+    );
+
+    AppBottomSheet.show(
+      context: context,
+      title: 'Select Episode Discussion',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: 'Enter episode number (1 - $maxEps)...',
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onSubmitted: (val) {
+                      final num = int.tryParse(val);
+                      if (num != null && num > 0) {
+                        context.pop();
+                        setState(() => _selectedEpisodeNumber = num);
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: () {
+                    final num = int.tryParse(controller.text);
+                    if (num != null && num > 0) {
+                      context.pop();
+                      setState(() => _selectedEpisodeNumber = num);
+                    }
+                  },
+                  child: const Text('Go'),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 240,
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 5,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 1.5,
+              ),
+              itemCount: maxEps,
+              itemBuilder: (ctx, idx) {
+                final epNum = idx + 1;
+                final isSelected = _selectedEpisodeNumber == epNum;
+                return InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () {
+                    context.pop();
+                    setState(() => _selectedEpisodeNumber = epNum);
+                  },
+                  child: Container(
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$epNum',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -396,6 +514,80 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
           height: 1,
           color: cs.outlineVariant.withValues(alpha: 0.2),
         ),
+        if (!widget.forceEpisodeFilter)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            color: cs.surfaceContainerLow,
+            child: Row(
+              children: [
+                Icon(Icons.filter_list_rounded, size: 16, color: cs.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'Filter:',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        FilterChip(
+                          visualDensity: VisualDensity.compact,
+                          label: const Text('All Series'),
+                          selected: _selectedEpisodeNumber == null,
+                          onSelected: (_) {
+                            setState(() => _selectedEpisodeNumber = null);
+                          },
+                        ),
+                        const SizedBox(width: 6),
+                        ActionChip(
+                          visualDensity: VisualDensity.compact,
+                          avatar: Icon(
+                            _selectedEpisodeNumber != null
+                                ? Icons.numbers_rounded
+                                : Icons.add_rounded,
+                            size: 14,
+                          ),
+                          label: Text(
+                            _selectedEpisodeNumber != null
+                                ? 'Ep $_selectedEpisodeNumber'
+                                : 'Select Episode',
+                          ),
+                          onPressed: () => _showEpisodePickerSheet(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: cs.surfaceContainerLow,
+            child: Row(
+              children: [
+                Icon(Icons.filter_alt_rounded, size: 18, color: cs.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Episode ${_selectedEpisodeNumber ?? widget.initialEpisodeNumber} Discussion',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         Expanded(
           child: commentsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),

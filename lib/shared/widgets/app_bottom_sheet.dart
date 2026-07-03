@@ -188,7 +188,7 @@ class AppBottomSheet extends StatelessWidget {
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.32, end: 0.0),
       duration: const Duration(milliseconds: 380),
-      curve: Curves.easeOutBack,
+      curve: Curves.easeInOut,
       builder: (context, tilt, child) {
         return Transform(
           alignment: Alignment.bottomCenter,

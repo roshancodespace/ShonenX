@@ -6,18 +6,24 @@ import 'package:shonenx/core/commentum/commentum_client.dart';
 class CommentsArgs {
   final String mediaId;
   final String mediaProvider;
+  final int? episodeNumber;
 
-  const CommentsArgs({required this.mediaId, required this.mediaProvider});
+  const CommentsArgs({
+    required this.mediaId,
+    required this.mediaProvider,
+    this.episodeNumber,
+  });
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is CommentsArgs &&
           other.mediaId == mediaId &&
-          other.mediaProvider == mediaProvider;
+          other.mediaProvider == mediaProvider &&
+          other.episodeNumber == episodeNumber;
 
   @override
-  int get hashCode => Object.hash(mediaId, mediaProvider);
+  int get hashCode => Object.hash(mediaId, mediaProvider, episodeNumber);
 }
 
 class CommentsState {
@@ -70,6 +76,7 @@ class CommentsNotifier extends AsyncNotifier<CommentsState> {
       final response = await _client.listComments(
         mediaId: arg.mediaId,
         limit: 20,
+        episodeNumber: arg.episodeNumber,
       );
       return CommentsState(
         comments: response.data,
@@ -96,6 +103,7 @@ class CommentsNotifier extends AsyncNotifier<CommentsState> {
         mediaId: arg.mediaId,
         limit: 20,
         cursor: current.nextCursor,
+        episodeNumber: arg.episodeNumber,
       );
 
       final updatedComments = [...current.comments, ...response.data];
@@ -121,6 +129,7 @@ class CommentsNotifier extends AsyncNotifier<CommentsState> {
       mediaId: arg.mediaId,
       mediaProvider: arg.mediaProvider,
       content: content,
+      episodeNumber: arg.episodeNumber,
     );
 
     final current = state.value;

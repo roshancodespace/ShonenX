@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/updates/models/github_release.dart';
 import 'package:shonenx/core/updates/services/update_service.dart';
 import 'package:shonenx/core/updates/ui/linux_update_widget.dart';
+import 'package:shonenx/core/updates/ui/android_update_widget.dart';
 import 'package:shonenx/core/updates/ui/update_ui.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -189,7 +190,15 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
                 label: const Text('GitHub'),
               ),
               const SizedBox(width: 10),
-              if (release.downloadUrl != null || release.htmlUrl.isNotEmpty)
+              if (Platform.isAndroid)
+                FilledButton.icon(
+                  onPressed: () =>
+                      AndroidUpdateWidget.show(context, release: release),
+                  icon: const Icon(Icons.install_mobile_rounded, size: 18),
+                  label: const Text('In-App Install'),
+                )
+              else if (release.downloadUrl != null ||
+                  release.htmlUrl.isNotEmpty)
                 FilledButton.icon(
                   onPressed: () async {
                     final url = Uri.parse(
@@ -253,7 +262,8 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
                   SettingsActionTile(
                     icon: Icons.terminal_rounded,
                     title: 'Open Linux Update Manager',
-                    subtitle: 'Interactive installer, custom repo/icon config, and live terminal output',
+                    subtitle:
+                        'Interactive installer, custom repo/icon config, and live terminal output',
                     onTap: () => LinuxUpdateWidget.show(context),
                   ),
                 ],

@@ -251,8 +251,8 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
                     ],
                   ),
                   filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withOpacity(
-                    0.6,
+                  fillColor: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.6,
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,

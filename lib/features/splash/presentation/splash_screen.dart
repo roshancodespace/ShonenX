@@ -205,7 +205,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                 '“${_currentQuote.quote}”',
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
-                                      color: cs.onSurface.withOpacity(0.88),
+                                      color: cs.onSurface.withValues(
+                                        alpha: 0.88,
+                                      ),
                                       fontStyle: FontStyle.italic,
                                       height: 1.4,
                                       letterSpacing: 0.2,
@@ -217,7 +219,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                 '— ${_currentQuote.formattedAuthor}',
                                 style: Theme.of(context).textTheme.labelSmall
                                     ?.copyWith(
-                                      color: cs.primary.withOpacity(0.95),
+                                      color: cs.primary.withValues(alpha: 0.95),
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: 0.5,
                                     ),

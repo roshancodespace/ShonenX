@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 
 class ReleaseAsset {
   final String name;
@@ -42,6 +43,65 @@ class GitHubRelease {
     required this.htmlUrl,
     required this.assets,
   });
+
+  Future<ReleaseAsset?> getBestAsset() async {
+    if (assets.isEmpty) return null;
+    if (Platform.isLinux) {
+      for (final a in assets) {
+        final name = a.name.toLowerCase();
+        if (name.contains('linux') &&
+            (name.endsWith('.zip') ||
+                name.endsWith('.tar.gz') ||
+                name.endsWith('.appimage'))) {
+          return a;
+        }
+      }
+    } else if (Platform.isWindows) {
+      for (final a in assets) {
+        final name = a.name.toLowerCase();
+        if (name.endsWith('.exe') ||
+            (name.contains('win') && name.endsWith('.zip'))) {
+          return a;
+        }
+      }
+    } else if (Platform.isAndroid) {
+      try {
+        final deviceInfo = DeviceInfoPlugin();
+        final androidInfo = await deviceInfo.androidInfo;
+        final supportedAbis = androidInfo.supportedAbis.map((e) => e.toLowerCase()).toList();
+
+        for (final abi in supportedAbis) {
+          String searchKey = abi;
+          if (abi.contains('arm64')) {
+            searchKey = 'arm64';
+          } else if (abi.contains('armeabi-v7a') || abi.contains('v7a')) searchKey = 'v7a';
+          else if (abi.contains('x86_64')) searchKey = 'x86_64';
+          else if (abi.contains('x86')) searchKey = 'x86';
+
+          for (final a in assets) {
+            final name = a.name.toLowerCase();
+            if (name.endsWith('.apk') && name.contains(searchKey)) {
+              return a;
+            }
+          }
+        }
+
+        for (final a in assets) {
+          final name = a.name.toLowerCase();
+          if (name.endsWith('.apk') && (name.contains('universal') || (!name.contains('arm64') && !name.contains('v7a') && !name.contains('x86')))) {
+            return a;
+          }
+        }
+      } catch (_) {}
+
+      for (final a in assets) {
+        if (a.name.toLowerCase().endsWith('.apk')) {
+          return a;
+        }
+      }
+    }
+    return assets.first;
+  }
 
   String? get downloadUrl {
     if (assets.isEmpty) return null;

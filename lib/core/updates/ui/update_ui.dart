@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/updates/models/github_release.dart';
 import 'package:shonenx/core/updates/ui/linux_update_widget.dart';
+import 'package:shonenx/core/updates/ui/android_update_widget.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -103,18 +104,32 @@ class UpdateUI {
                 child: const Text('Later'),
               ),
               const SizedBox(width: 8),
-              FilledButton.icon(
-                onPressed: () async {
-                  onDownload();
-                  context.pop();
-                  final url = Uri.parse(release.downloadUrl ?? release.htmlUrl);
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url, mode: LaunchMode.externalApplication);
-                  }
-                },
-                icon: const Icon(Icons.download_rounded),
-                label: const Text('Download Archive'),
-              ),
+              if (Platform.isAndroid)
+                FilledButton.icon(
+                  onPressed: () {
+                    context.pop();
+                    AndroidUpdateWidget.show(
+                      context,
+                      release: release,
+                      onDownloadStarted: onDownload,
+                    );
+                  },
+                  icon: const Icon(Icons.install_mobile_rounded),
+                  label: const Text('In-App Download & Install'),
+                )
+              else
+                FilledButton.icon(
+                  onPressed: () async {
+                    onDownload();
+                    context.pop();
+                    final url = Uri.parse(release.downloadUrl ?? release.htmlUrl);
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  icon: const Icon(Icons.download_rounded),
+                  label: const Text('Download Archive'),
+                ),
             ],
           ),
         ],

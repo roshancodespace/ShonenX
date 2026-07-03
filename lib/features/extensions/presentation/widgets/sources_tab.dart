@@ -14,6 +14,7 @@ import 'package:shonenx/source_engine/models/source_setting.dart';
 import 'package:shonenx/source_engine/providers/media_source.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
+import 'runtime_setup_sheet.dart';
 
 class _UnifiedSource {
   final String id;
@@ -159,6 +160,10 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
     filteredSources = uniqueSources.values.toList();
 
     if (filteredSources.isEmpty) {
+      final isRuntimeReady =
+          bridge.AnymeXRuntimeBridge.controller.isReady.value;
+      final isBridgeManager = widget.manager.id != 'mangayomi';
+
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -166,7 +171,9 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.extension_off_outlined,
+                isBridgeManager && !isRuntimeReady
+                    ? Icons.build_circle_outlined
+                    : Icons.extension_off_outlined,
                 size: 64,
                 color: Theme.of(
                   context,
@@ -174,21 +181,41 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
               ),
               const SizedBox(height: 16),
               Text(
-                widget.searchQuery.isEmpty && widget.langFilter == 'All'
-                    ? (widget.isInstalled
-                          ? 'No extensions installed'
-                          : 'No available extensions')
-                    : 'No extensions found',
-                style: Theme.of(context).textTheme.titleLarge,
+                isBridgeManager && !isRuntimeReady
+                    ? 'Runtime Bridge Required'
+                    : (widget.searchQuery.isEmpty && widget.langFilter == 'All'
+                          ? (widget.isInstalled
+                                ? 'No extensions installed'
+                                : 'No available extensions')
+                          : 'No extensions found'),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
-              if (!widget.isInstalled &&
+              const SizedBox(height: 8),
+              if (isBridgeManager && !isRuntimeReady) ...[
+                Text(
+                  'Aniyomi and CloudStream extensions require the Runtime Bridge to be installed and initialized.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: () => showRuntimeSetupSheet(context, ref),
+                  icon: const Icon(Icons.download_rounded),
+                  label: const Text('Setup Runtime Bridge'),
+                ),
+              ] else if (!widget.isInstalled &&
                   widget.searchQuery.isEmpty &&
                   widget.langFilter == 'All') ...[
-                const SizedBox(height: 8),
                 Text(
                   widget.manager.id == 'mangayomi'
                       ? 'Add a Mangayomi repository to fetch and install extensions.'
-                      : 'Add a Tachiyomi repository to fetch and install extensions.',
+                      : (widget.manager.id.contains('cloudstream')
+                            ? 'Add a CloudStream repository to fetch and install extensions.'
+                            : 'Add a Tachiyomi repository to fetch and install extensions.'),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,

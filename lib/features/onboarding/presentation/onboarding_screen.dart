@@ -15,6 +15,9 @@ import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/source_engine/providers/inbuilt_sources_provider.dart';
 import 'package:shonenx/shared/widgets/permission_sheet.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
+import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
+    as bridge;
+import 'package:shonenx/features/extensions/presentation/widgets/runtime_setup_sheet.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -348,14 +351,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildExtensionsPage(ThemeData theme, ColorScheme cs) {
     final inbuiltCount = ref.watch(inbuiltAnimeSourcesProvider).length;
+    final isRuntimeReady = bridge.AnymeXRuntimeBridge.controller.isReady.value;
 
     final String description;
     if (inbuiltCount > 0) {
       description =
-          'ShonenX currently includes $inbuiltCount inbuilt source(s) out of the box. You can significantly expand your library using community-built extensions.';
+          'ShonenX includes $inbuiltCount inbuilt source(s) out of the box. You can significantly expand your library using community-built extensions.';
     } else {
       description =
-          'ShonenX relies entirely on powerful community-built extensions to fetch content. You must install extensions later in settings to start watching.';
+          'ShonenX relies on powerful community-built extensions to fetch content. You can install extensions later in settings to start watching.';
     }
 
     return _buildPageLayout(
@@ -365,40 +369,80 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       theme: theme,
       cs: cs,
       customWidget: Padding(
-        padding: const EdgeInsets.only(top: 24),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        padding: const EdgeInsets.only(top: 20),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, color: cs.primary, size: 20),
-                  const SizedBox(width: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: cs.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Extension Ecosystems',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: cs.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   Text(
-                    'Extension Support Guide',
+                    '• Mangayomi: All-in-one ecosystem supported natively.\n• Aniyomi & CloudStream: Advanced streaming & reading ecosystems available via our Runtime Bridge.\n\nNote: ShonenX uses a minimal customized fork of AnymeXExtensionRuntimeBridge originally created by RyanYuuki.',
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: cs.primary,
+                      fontSize: 13,
+                      color: cs.onSurfaceVariant,
+                      height: 1.4,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                '• Android: Supports both Mangayomi and Tachiyomi/Aniyomi extensions.\n• Desktop: Only Mangayomi extensions are supported.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: cs.onSurfaceVariant,
-                  height: 1.5,
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => setState(() {
+                showRuntimeSetupSheet(
+                  context,
+                  ref,
+                  onComplete: () {
+                    if (mounted) setState(() {});
+                  },
+                );
+              }),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
-            ],
-          ),
+              icon: Icon(
+                isRuntimeReady
+                    ? Icons.check_circle_rounded
+                    : Icons.download_rounded,
+                color: isRuntimeReady ? Colors.green : cs.primary,
+              ),
+              label: Text(
+                isRuntimeReady
+                    ? 'Runtime Bridge Installed (Tap to Manage)'
+                    : 'Setup Aniyomi & CloudStream Runtime',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isRuntimeReady ? Colors.green : cs.primary,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -452,7 +496,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   msg = 'Permissions Denied';
                 }
               } else {
-                msg = notifGranted ? 'Notifications Enabled!' : 'Notifications Denied';
+                msg = notifGranted
+                    ? 'Notifications Enabled!'
+                    : 'Notifications Denied';
               }
 
               ScaffoldMessenger.of(context).showSnackBar(

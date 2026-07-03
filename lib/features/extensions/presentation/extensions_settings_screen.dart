@@ -9,6 +9,7 @@ import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
 import 'widgets/manage_repos_sheet.dart';
+import 'widgets/runtime_setup_sheet.dart';
 import 'widgets/sources_tab.dart';
 
 class ExtensionsSettingsScreen extends ConsumerStatefulWidget {
@@ -259,12 +260,30 @@ class _ExtensionsSettingsScreenState
                 value: 'aniyomi',
                 label: Text('Tachiyomi', style: TextStyle(fontSize: 12)),
               ),
+              ButtonSegment(
+                value: 'cloudstream',
+                label: Text('CloudStream', style: TextStyle(fontSize: 12)),
+              ),
             ],
             selected: {manager.id.replaceAll('-desktop', '')},
             onSelectionChanged: (selected) {
-              ref
-                  .read(extensionManagerProvider.notifier)
-                  .setManager(selected.first);
+              final target = selected.first;
+              if ((target == 'aniyomi' || target == 'cloudstream') &&
+                  !bridge.AnymeXRuntimeBridge.controller.isReady.value) {
+                showRuntimeSetupSheet(
+                  context,
+                  ref,
+                  onComplete: () {
+                    ref
+                        .read(extensionManagerProvider.notifier)
+                        .setManager(target);
+                    ref.invalidate(availableAnimeSourcesProvider);
+                    ref.invalidate(availableMangaSourcesProvider);
+                  },
+                );
+                return;
+              }
+              ref.read(extensionManagerProvider.notifier).setManager(target);
               ref.invalidate(availableAnimeSourcesProvider);
               ref.invalidate(availableMangaSourcesProvider);
             },
@@ -292,6 +311,9 @@ class _ExtensionsSettingsScreenState
       backgroundColor: Colors.transparent,
       builder: (context) {
         final cs = Theme.of(context).colorScheme;
+        final isRuntimeReady =
+            bridge.AnymeXRuntimeBridge.controller.isReady.value;
+
         return AppBottomSheet(
           title: 'Extensions Guide',
           child: Column(
@@ -323,6 +345,44 @@ class _ExtensionsSettingsScreenState
               ),
               const SizedBox(height: 16),
               Text(
+                'Runtime Bridge Requirement',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: cs.primary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'IMPORTANT: Aniyomi and CloudStream will NOT work without loading the Runtime Bridge first. Separation is intentional — it avoids bundling heavy native dependencies directly into the app.\n\nShonenX uses a minimal customized fork of AnymeXExtensionRuntimeBridge originally created by RyanYuuki.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  height: 1.4,
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  showRuntimeSetupSheet(context, ref);
+                },
+                icon: Icon(
+                  isRuntimeReady
+                      ? Icons.check_circle_rounded
+                      : Icons.download_rounded,
+                  color: isRuntimeReady ? Colors.green : cs.primary,
+                ),
+                label: Text(
+                  isRuntimeReady
+                      ? 'Runtime Bridge Installed (Tap to Manage)'
+                      : 'Setup Aniyomi & CloudStream Runtime',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isRuntimeReady ? Colors.green : cs.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
                 'Repository Types & Recommendations',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
@@ -339,21 +399,13 @@ class _ExtensionsSettingsScreenState
               ),
               const SizedBox(height: 6),
               const Text(
-                '• Mangayomi: All-in-one ecosystem supporting both anime and manga extensions seamlessly.',
+                '• CloudStream: Rich ecosystem of video streaming extensions.',
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                '• Mangayomi: All-in-one ecosystem supporting both anime and manga extensions out of the box.',
               ),
               const SizedBox(height: 16),
-              Text(
-                'How to get & install extensions',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: cs.primary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '1. Toggle between Mangayomi or Tachiyomi/Aniyomi ecosystems at the bottom right.\n2. Tap "Manage Repos" to paste your repository index link or click deep links directly from browser.\n3. Switch to the Available tab to discover extensions.\n4. Tap the + icon to install an extension, then customize your sources!',
-              ),
-              const SizedBox(height: 24),
               FilledButton(
                 onPressed: () => Navigator.pop(context),
                 style: FilledButton.styleFrom(

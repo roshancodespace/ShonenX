@@ -166,11 +166,6 @@ class AppInit {
     final log = AppLogger.scope('AppInit').child('setupBridge');
 
     try {
-      // await DartotsuExtensionBridge().init(instance, 'ShonenX');
-      // After initialization, register the bridged managers
-      // final extManager = Get.find<ExtensionManager>();
-      // await extManager.onRuntimeBridgeInitialization();
-
       await AnymeXExtensionBridge.init(
         getDirectory: AnymeXExtensionBridge.defaultGetDirectory(
           baseDirectory: await getDatabaseDirectory('ShonenX'),
@@ -179,10 +174,6 @@ class AppInit {
       );
 
       await AnymeXRuntimeBridge.checkAndInitialize();
-
-      if (!AnymeXRuntimeBridge.controller.isReady.value) {
-        await AnymeXRuntimeBridge.setupRuntime();
-      }
 
       final extManager = Get.find<ExtensionManager>();
 

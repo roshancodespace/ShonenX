@@ -1,7 +1,5 @@
 import 'dart:io';
 
-import 'package:anymex_extension_runtime_bridge/Services/Aniyomi/AniyomiExtensions.dart';
-import 'package:anymex_extension_runtime_bridge/Services/AniyomiDesktop/DesktopAniyomiExtensions.dart';
 import 'package:anymex_extension_runtime_bridge/Services/Mangayomi/MangayomiExtensions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
@@ -30,31 +28,40 @@ class ExtensionManagerNotifier extends Notifier<bridge.Extension> {
   bridge.Extension build() {
     final saved = _storage.getString(_key);
 
-    if (saved == 'aniyomi' || saved == 'aniyomi-desktop') {
-      return Platform.isAndroid
-          ? _manager.get<AniyomiExtensions>()
-          : _manager.get<DesktopAniyomiExtensions>();
+    if (saved == 'cloudstream' || saved == 'cloudstream-desktop') {
+      final ext = _manager.findById(
+        Platform.isAndroid ? 'cloudstream' : 'cloudstream-desktop',
+      );
+      if (ext != null) return ext;
+    }
+
+    if (saved == 'aniyomi' || saved == 'aniyomi-desktop' || saved == null) {
+      final ext = _manager.findById(
+        Platform.isAndroid ? 'aniyomi' : 'aniyomi-desktop',
+      );
+      if (ext != null) return ext;
     }
 
     return _manager.get<MangayomiExtensions>();
   }
 
   void setManager(String id) {
-    final effectiveId = (!Platform.isAndroid && id == 'aniyomi')
-        ? 'aniyomi-desktop'
-        : id;
+    String effectiveId = id;
+    if (!Platform.isAndroid) {
+      if (id == 'aniyomi') effectiveId = 'aniyomi-desktop';
+      if (id == 'cloudstream') effectiveId = 'cloudstream-desktop';
+    }
 
     if (state.id == effectiveId) {
       return;
     }
 
-    final newExtension = id.contains('mangayomi')
-        ? _manager.get<MangayomiExtensions>()
-        : (Platform.isAndroid
-              ? _manager.get<AniyomiExtensions>()
-              : _manager.get<DesktopAniyomiExtensions>());
-
-    state = newExtension;
+    final ext = _manager.findById(effectiveId);
+    if (ext != null) {
+      state = ext;
+    } else {
+      state = _manager.get<MangayomiExtensions>();
+    }
     _storage.setString(_key, effectiveId);
   }
 }

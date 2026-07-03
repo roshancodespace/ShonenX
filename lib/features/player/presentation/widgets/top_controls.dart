@@ -62,7 +62,7 @@ class TopControls extends ConsumerWidget {
                 icon: Icons.arrow_back_ios_new_rounded,
                 onTap: onBack,
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 5),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,7 +113,7 @@ class TopControls extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 5),
               if (mode is PlayerModeOnline &&
                   playerState.qualities.length > 1) ...[
                 _buildQualityButton(
@@ -131,7 +131,7 @@ class TopControls extends ConsumerWidget {
                     );
                   },
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 5),
               ],
               _buildActionIcon(
                 icon: switch (ref.watch(
@@ -159,12 +159,12 @@ class TopControls extends ConsumerWidget {
                   );
                 },
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 5),
               _buildActionIcon(
                 icon: Icons.keyboard_alt_outlined,
                 onTap: () => KeyboardShortcutsSheet.show(context),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 5),
               _buildActionIcon(
                 icon: Icons.settings_outlined,
                 onTap: () {
@@ -223,7 +223,7 @@ class TopControls extends ConsumerWidget {
             const Icon(
               Icons.keyboard_arrow_down_rounded,
               color: Colors.white70,
-              size: 16,
+              size: 5,
             ),
           ],
         ),

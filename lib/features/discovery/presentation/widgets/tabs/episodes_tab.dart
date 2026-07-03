@@ -159,6 +159,8 @@ class EpisodesTabWidget extends ConsumerWidget {
                                                       .title
                                                       .availableTitle,
                                                   type: media.type,
+                                                  sourceId: media.sourceId,
+                                                  providerId: media.id,
                                                 ),
                                               ),
                                             )
@@ -257,17 +259,15 @@ class _EpisodesHeader extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final sourceState = ref
-        .watch(
-          mediaPreferenceProvider(
-            MatchArgs(mediaTitle: title, type: media.type),
-          ),
-        )
-        .value;
-
-    final matchedMediaState = ref.watch(
-      matchedMediaProvider(MatchArgs(mediaTitle: title, type: media.type)),
+    final matchArgs = MatchArgs(
+      mediaTitle: title,
+      type: media.type,
+      sourceId: media.sourceId,
+      providerId: media.id,
     );
+    final sourceState = ref.watch(mediaPreferenceProvider(matchArgs)).value;
+
+    final matchedMediaState = ref.watch(matchedMediaProvider(matchArgs));
 
     final String matchedTitle;
     final bool hasError = matchedMediaState.hasError;
@@ -453,6 +453,8 @@ class _EpisodesHeader extends ConsumerWidget {
                               final matchArgs = MatchArgs(
                                 mediaTitle: title,
                                 type: media.type,
+                                sourceId: media.sourceId,
+                                providerId: media.id,
                               );
                               ref
                                   .read(
@@ -566,21 +568,17 @@ class _EpisodesHeader extends ConsumerWidget {
                                                 ),
                                           ).then((_) {
                                             if (selected) {
-                                              ref.invalidate(
-                                                matchedMediaProvider(
-                                                  MatchArgs(
-                                                    mediaTitle: title,
-                                                    type: media.type,
-                                                  ),
-                                                ),
+                                              final matchArgs = MatchArgs(
+                                                mediaTitle: title,
+                                                type: media.type,
+                                                sourceId: media.sourceId,
+                                                providerId: media.id,
                                               );
                                               ref.invalidate(
-                                                episodesListProvider(
-                                                  MatchArgs(
-                                                    mediaTitle: title,
-                                                    type: media.type,
-                                                  ),
-                                                ),
+                                                matchedMediaProvider(matchArgs),
+                                              );
+                                              ref.invalidate(
+                                                episodesListProvider(matchArgs),
                                               );
                                               if (media.sourceId != null) {
                                                 ref.invalidate(
@@ -642,6 +640,8 @@ class _EpisodesHeader extends ConsumerWidget {
                                     final matchArgs = MatchArgs(
                                       mediaTitle: title,
                                       type: media.type,
+                                      sourceId: media.sourceId,
+                                      providerId: media.id,
                                     );
                                     ref
                                         .read(
@@ -759,20 +759,20 @@ class _EpisodesHeader extends ConsumerWidget {
                                                       ),
                                                 ).then((_) {
                                                   if (hasSelectedVariant) {
+                                                    final matchArgs = MatchArgs(
+                                                      mediaTitle: title,
+                                                      type: media.type,
+                                                      sourceId: media.sourceId,
+                                                      providerId: media.id,
+                                                    );
                                                     ref.invalidate(
                                                       matchedMediaProvider(
-                                                        MatchArgs(
-                                                          mediaTitle: title,
-                                                          type: media.type,
-                                                        ),
+                                                        matchArgs,
                                                       ),
                                                     );
                                                     ref.invalidate(
                                                       episodesListProvider(
-                                                        MatchArgs(
-                                                          mediaTitle: title,
-                                                          type: media.type,
-                                                        ),
+                                                        matchArgs,
                                                       ),
                                                     );
                                                     if (media.sourceId !=

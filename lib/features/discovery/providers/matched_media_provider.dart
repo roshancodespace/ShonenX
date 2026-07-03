@@ -40,18 +40,36 @@ class MatchedMediaState {
 class MatchArgs {
   final String mediaTitle;
   final MediaType type;
+  final String? sourceId;
+  final String? providerId;
 
-  const MatchArgs({required this.mediaTitle, required this.type});
+  const MatchArgs({
+    required this.mediaTitle,
+    required this.type,
+    this.sourceId,
+    this.providerId,
+  });
+
+  factory MatchArgs.fromMedia(UnifiedMedia media) {
+    return MatchArgs(
+      mediaTitle: media.title.availableTitle,
+      type: media.type,
+      sourceId: media.sourceId,
+      providerId: media.id,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is MatchArgs &&
           mediaTitle == other.mediaTitle &&
-          type == other.type;
+          type == other.type &&
+          sourceId == other.sourceId &&
+          providerId == other.providerId;
 
   @override
-  int get hashCode => Object.hash(mediaTitle, type);
+  int get hashCode => Object.hash(mediaTitle, type, sourceId, providerId);
 }
 
 final matchedMediaProvider =
@@ -76,6 +94,17 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
         matchedMedia: MatchedMedia(
           id: prefs.manualOverrideId!,
           title: prefs.manualOverrideTitle!,
+        ),
+      );
+    }
+
+    if (args.sourceId != null &&
+        args.providerId != null &&
+        prefs.sourceInfo.id == args.sourceId) {
+      return MatchedMediaState(
+        matchedMedia: MatchedMedia(
+          id: args.providerId!,
+          title: args.mediaTitle,
         ),
       );
     }

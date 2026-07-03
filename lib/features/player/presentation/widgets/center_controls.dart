@@ -5,7 +5,6 @@ import 'package:shonenx/features/discovery/providers/matched_media_provider.dart
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
-import 'package:shonenx/shared/models/unified_media.dart';
 
 class CenterControls extends ConsumerStatefulWidget {
   final bool showControls;
@@ -32,13 +31,15 @@ class _CenterControlsState extends ConsumerState<CenterControls> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final episodes =
-        ref.watch(
-          episodesListProvider(
-            MatchArgs(mediaTitle: widget.mediaTitle, type: MediaType.ANIME),
-          ).select((s) => s.value?.episodes),
-        ) ??
-        [];
+    final media = widget.controller.media;
+    final episodes = media != null
+        ? ref.watch(
+                episodesListProvider(
+                  MatchArgs.fromMedia(media),
+                ).select((s) => s.value?.episodes),
+              ) ??
+              []
+        : [];
     final isFirst = episodes.isEmpty
         ? true
         : widget.playerState.activeEpisode?.number == episodes.first.number;

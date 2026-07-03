@@ -85,6 +85,7 @@ class PlayerState {
 class PlayerController extends Notifier<PlayerState> {
   Timer? _progressTimer;
   UnifiedMedia? _media;
+  UnifiedMedia? get media => _media;
   AnimeSource? _source;
   late ScreenshotController _screenshot;
 
@@ -229,10 +230,7 @@ class PlayerController extends Notifier<PlayerState> {
     if (_media == null) return;
     final episodes = await ref.read(
       episodesListProvider(
-        MatchArgs(
-          mediaTitle: _media!.title.availableTitle,
-          type: MediaType.ANIME,
-        ),
+        MatchArgs.fromMedia(_media!),
       ).selectAsync((s) => s.episodes),
     );
     final targetNumber = state.activeEpisode!.number + (forward ? 1 : -1);

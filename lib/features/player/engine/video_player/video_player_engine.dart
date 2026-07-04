@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:shonenx/app_init.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/http_x.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:video_player/video_player.dart';
+import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/providers/mdk_prefs_provider.dart';
@@ -33,6 +36,16 @@ class VideoPlayerEngine implements VideoEngine {
     _controller?.removeListener(_listener);
     await _controller?.dispose();
 
+    final mdkPrefs = ref.read(mdkPrefsProvider);
+    final isDesktop = !Platform.isAndroid && !Platform.isIOS;
+    final useFvp = mdkPrefs.backend == 'fvp' || isDesktop;
+
+    if (useFvp) {
+      registerWith();
+    } else if (AppInit.defaultVideoPlayerPlatform != null) {
+      VideoPlayerPlatform.instance = AppInit.defaultVideoPlayerPlatform!;
+    }
+
     _controller = VideoPlayerController.networkUrl(
       Uri.parse(stream.url),
       httpHeaders: stream.headers ?? {},
@@ -44,27 +57,28 @@ class VideoPlayerEngine implements VideoEngine {
 
     await _controller?.initialize();
 
-    try {
-      final mdkPrefs = ref.read(mdkPrefsProvider);
-      if (mdkPrefs.decoderPriority != 'Auto') {
-        _controller?.setVideoDecoders([mdkPrefs.decoderPriority]);
-      }
-      _controller?.setBufferRange(
-        min: 1000,
-        max: mdkPrefs.bufferCapacityMs,
-        drop: mdkPrefs.dropFrames,
-      );
-      if (mdkPrefs.rawConfiguration.isNotEmpty) {
-        for (final line in mdkPrefs.rawConfiguration.split('\n')) {
-          final trimmed = line.trim();
-          if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
-          final parts = trimmed.split('=');
-          if (parts.length == 2) {
-            _controller?.setProperty(parts[0].trim(), parts[1].trim());
+    if (useFvp) {
+      try {
+        if (mdkPrefs.decoderPriority != 'Auto') {
+          _controller?.setVideoDecoders([mdkPrefs.decoderPriority]);
+        }
+        _controller?.setBufferRange(
+          min: 1000,
+          max: mdkPrefs.bufferCapacityMs,
+          drop: mdkPrefs.dropFrames,
+        );
+        if (mdkPrefs.rawConfiguration.isNotEmpty) {
+          for (final line in mdkPrefs.rawConfiguration.split('\n')) {
+            final trimmed = line.trim();
+            if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
+            final parts = trimmed.split('=');
+            if (parts.length == 2) {
+              _controller?.setProperty(parts[0].trim(), parts[1].trim());
+            }
           }
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
 
     if (subtitle != null) {
       await setSubtitle(subtitle);

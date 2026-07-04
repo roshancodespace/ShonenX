@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
@@ -14,7 +15,11 @@ class MediaKitPrefsNotifier extends Notifier<MediaKitPrefs> {
     if (json != null) {
       return MediaKitPrefs.fromJson(json);
     }
-    return const MediaKitPrefs();
+    String defaultHwdec = 'auto-copy';
+    try {
+      if (Platform.isAndroid || Platform.isIOS) defaultHwdec = 'auto-safe';
+    } catch (_) {}
+    return MediaKitPrefs(hwdec: defaultHwdec);
   }
 
   void updatePrefs(MediaKitPrefs newPrefs) {

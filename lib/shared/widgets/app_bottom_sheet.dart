@@ -14,7 +14,7 @@ class AppBottomSheet extends StatelessWidget {
     required this.title,
     required this.child,
     this.headerPadding = const EdgeInsets.symmetric(horizontal: 16),
-    this.contentPadding = const EdgeInsets.fromLTRB(16, 12, 16, 16),
+    this.contentPadding = const EdgeInsets.fromLTRB(16, 0, 16, 16),
     this.actions,
   });
 

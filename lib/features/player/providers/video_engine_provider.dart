@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/features/player/engine/better_player/better_player_engine.dart';
 import 'package:shonenx/features/player/engine/media_kit/media_kit_engine.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/engine/video_player/video_player_engine.dart';
@@ -98,12 +97,7 @@ final videoEngineProvider = Provider.autoDispose<VideoEngine>((ref) {
 
       ref.onDispose(engine.dispose);
       return engine;
-    case PlayerType.betterplayer:
-      final engine = BetterPlayerEngine(ref);
-
-      ref.onDispose(engine.dispose);
-      return engine;
-    case PlayerType.mdk:
+    case PlayerType.videoPlayer:
       final engine = VideoPlayerEngine(ref);
 
       ref.onDispose(engine.dispose);

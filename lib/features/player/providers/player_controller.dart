@@ -105,6 +105,7 @@ class PlayerController extends Notifier<PlayerState> {
   ServerType? _preferredServerType;
   String? _preferredQuality;
   String? _preferredSubtitleLang = 'eng';
+  String? _preferredAudioLang;
 
   @override
   PlayerState build() {
@@ -118,6 +119,28 @@ class PlayerController extends Notifier<PlayerState> {
         _applyNativeSubtitle(state.activeSubtitle);
       }
     });
+
+    ref.listen(
+      videoEngineStateProvider.select((s) => s.audioTracks),
+      (prev, current) {
+        if (_preferredAudioLang != null && current.isNotEmpty) {
+          final match = current.firstWhereOrNull(
+            (t) =>
+                t.language?.toLowerCase().contains(
+                      _preferredAudioLang!.toLowerCase(),
+                    ) ==
+                    true ||
+                t.label.toLowerCase().contains(
+                      _preferredAudioLang!.toLowerCase(),
+                    ) ==
+                    true,
+          );
+          if (match != null) {
+            ref.read(videoEngineProvider).setAudioTrack(match);
+          }
+        }
+      },
+    );
 
     return const PlayerState();
   }
@@ -472,6 +495,15 @@ class PlayerController extends Notifier<PlayerState> {
 
     state = state.copyWith(activeSubtitle: newSubtitle, error: null);
     await _applyNativeSubtitle(newSubtitle);
+  }
+
+  Future<void> changeAudioTrack(AudioTrack track) async {
+    if (track.language != null && track.language!.isNotEmpty) {
+      _preferredAudioLang = track.language;
+    } else if (track.id != 'auto' && track.id != 'no') {
+      _preferredAudioLang = track.label;
+    }
+    await ref.read(videoEngineProvider).setAudioTrack(track);
   }
 
   void setupAutoSkipListener(AniSkipArgs? args) {

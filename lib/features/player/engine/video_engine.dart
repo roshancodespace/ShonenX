@@ -13,6 +13,7 @@ abstract class VideoEngine {
   Future<void> seekRelative(Duration offset);
   Future<void> changeQuality(VideoStream newStream);
   Future<void> setSubtitle(SubtitleTrack? subtitle);
+  Future<void> setAudioTrack(AudioTrack track);
   Future<void> setSpeed(double speed);
 
   Future<void> dispose();

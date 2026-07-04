@@ -6,6 +6,7 @@ import 'package:shonenx/features/player/engine/video_player/video_player_engine.
 import 'package:shonenx/features/player/providers/media_kit_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/video_player_prefs_provider.dart';
+import 'package:shonenx/shared/models/video_stream.dart';
 
 class EngineState {
   final Duration position;
@@ -14,6 +15,8 @@ class EngineState {
   final bool isPlaying;
   final bool isBuffering;
   final BoxFit fit;
+  final List<AudioTrack> audioTracks;
+  final AudioTrack? activeAudioTrack;
 
   const EngineState({
     this.position = Duration.zero,
@@ -22,6 +25,8 @@ class EngineState {
     this.isPlaying = false,
     this.isBuffering = false,
     this.fit = BoxFit.contain,
+    this.audioTracks = const [AudioTrack.auto],
+    this.activeAudioTrack = AudioTrack.auto,
   });
 
   EngineState copyWith({
@@ -31,6 +36,8 @@ class EngineState {
     bool? isPlaying,
     bool? isBuffering,
     BoxFit? fit,
+    List<AudioTrack>? audioTracks,
+    AudioTrack? activeAudioTrack,
   }) {
     return EngineState(
       position: position ?? this.position,
@@ -39,6 +46,8 @@ class EngineState {
       isPlaying: isPlaying ?? this.isPlaying,
       isBuffering: isBuffering ?? this.isBuffering,
       fit: fit ?? this.fit,
+      audioTracks: audioTracks ?? this.audioTracks,
+      activeAudioTrack: activeAudioTrack ?? this.activeAudioTrack,
     );
   }
 }
@@ -54,6 +63,8 @@ class EngineStateNotifier extends Notifier<EngineState> {
     bool? isPlaying,
     bool? isBuffering,
     BoxFit? fit,
+    List<AudioTrack>? audioTracks,
+    AudioTrack? activeAudioTrack,
   }) {
     state = state.copyWith(
       position: position,
@@ -62,6 +73,8 @@ class EngineStateNotifier extends Notifier<EngineState> {
       isPlaying: isPlaying,
       isBuffering: isBuffering,
       fit: fit,
+      audioTracks: audioTracks,
+      activeAudioTrack: activeAudioTrack,
     );
   }
 

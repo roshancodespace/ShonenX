@@ -118,7 +118,8 @@ class VideoPlayerEngine implements VideoEngine {
   }
 
   @override
-  Widget? buildSettingsView(BuildContext context) => const VideoPlayerSettings();
+  Widget? buildSettingsView(BuildContext context) =>
+      const VideoPlayerSettings();
 
   @override
   Future<void> play() async {
@@ -170,6 +171,11 @@ class VideoPlayerEngine implements VideoEngine {
     } catch (_) {
       await _controller!.setClosedCaptionFile(null);
     }
+  }
+
+  @override
+  Future<void> setAudioTrack(AudioTrack track) async {
+    throw UnimplementedError("Not supported by video_player");
   }
 
   @override

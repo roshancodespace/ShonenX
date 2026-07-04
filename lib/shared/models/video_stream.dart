@@ -34,3 +34,29 @@ class SubtitleTrack {
 
   static const none = SubtitleTrack(url: '', language: 'Off');
 }
+
+class AudioTrack {
+  final String id;
+  final String label;
+  final String? language;
+
+  const AudioTrack({
+    required this.id,
+    required this.label,
+    this.language,
+  });
+
+  static const auto = AudioTrack(id: 'auto', label: 'Auto');
+  static const none = AudioTrack(id: 'no', label: 'Off');
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AudioTrack &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          label == other.label;
+
+  @override
+  int get hashCode => id.hashCode ^ label.hashCode;
+}

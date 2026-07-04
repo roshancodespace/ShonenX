@@ -338,12 +338,22 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
     final name =
         task.status.name[0].toUpperCase() + task.status.name.substring(1);
     if (task.status == DownloadStatus.completed) {
-      return '$name · ${_mb(task.totalBytes > 0 ? task.totalBytes : task.downloadedBytes)} MB';
+      final segText = task.totalSegments > 0
+          ? ' (${task.totalSegments} seg)'
+          : '';
+      return '$name · ${_mb(task.totalBytes > 0 ? task.totalBytes : task.downloadedBytes)} MB$segText';
     }
     if (task.status == DownloadStatus.canceled) {
       return name;
     }
-    if (task.totalBytes > 0 && !task.isM3u8 && !task.url.contains('.m3u8')) {
+    final isHls =
+        task.isM3u8 || task.url.contains('.m3u8') || task.totalSegments > 0;
+    if (isHls && task.totalSegments > 0) {
+      final pct = (task.progress * 100).toStringAsFixed(0);
+      final totalMb = task.totalBytes > 0 ? '/${_mb(task.totalBytes)}' : '';
+      return '$name · $pct% (${task.downloadedSegments}/${task.totalSegments} seg) · ${_mb(task.downloadedBytes)}$totalMb MB $_etaText';
+    }
+    if (task.totalBytes > 0) {
       final pct = (task.progress * 100).toStringAsFixed(0);
       return '$name · $pct% · ${_mb(task.downloadedBytes)}/${_mb(task.totalBytes)} MB $_etaText';
     }
@@ -354,11 +364,12 @@ class _DownloadTileState extends ConsumerState<_DownloadTile> {
     if (widget.task.status != DownloadStatus.downloading || _speedBps <= 0) {
       return '';
     }
-    if (widget.task.totalBytes > 0 &&
-        !widget.task.isM3u8 &&
-        !widget.task.url.contains('.m3u8')) {
+    if (widget.task.totalBytes > 0) {
       final remainingBytes =
           widget.task.totalBytes - widget.task.downloadedBytes;
+      if (remainingBytes <= 0) {
+        return '· ${_formatSpeed(_speedBps)}';
+      }
       final seconds = remainingBytes / _speedBps;
       if (seconds.isInfinite || seconds.isNaN) {
         return '· ${_formatSpeed(_speedBps)}';

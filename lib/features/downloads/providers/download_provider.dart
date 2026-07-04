@@ -170,10 +170,18 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
           ({
             required int downloadedBytes,
             required int totalBytes,
+            int? downloadedSegments,
+            int? totalSegments,
             required double progress,
           }) async {
             task.downloadedBytes = downloadedBytes;
             task.totalBytes = totalBytes;
+            if (downloadedSegments != null) {
+              task.downloadedSegments = downloadedSegments;
+            }
+            if (totalSegments != null) {
+              task.totalSegments = totalSegments;
+            }
             task.progress = progress;
             task.updatedAt = DateTime.now();
             await repo.putTask(task);
@@ -199,20 +207,24 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
             _activeEngines.remove(task.id);
             await repo.deleteTask(task.id);
             _processQueue();
+            break;
           case DownloadStatus.failed:
             await notif.showDownloadFailed(id: task.id, title: notifTitle);
             _activeEngines.remove(task.id);
             await repo.deleteTask(task.id);
             _processQueue();
+            break;
           case DownloadStatus.canceled:
             await notif.cancelDownloadNotification(task.id);
             _activeEngines.remove(task.id);
             await repo.deleteTask(task.id);
             _processQueue();
+            break;
           case DownloadStatus.paused:
             await notif.cancelDownloadNotification(task.id);
             _activeEngines.remove(task.id);
             _processQueue();
+            break;
           default:
             break;
         }
@@ -242,6 +254,7 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
       return M3U8DownloadEngine(
         task: task,
         concurrentSegments: prefs.concurrentSegments,
+        remuxerPreference: prefs.remuxerPreference,
         onProgress: onProgress,
         onStatus: onStatus,
       );

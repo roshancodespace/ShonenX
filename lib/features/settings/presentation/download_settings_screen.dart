@@ -218,6 +218,26 @@ class DownloadSettingsScreen extends ConsumerWidget {
                     },
                   ),
                 ],
+                if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) ...[
+                  SettingsDropdownTile<RemuxerPreference>(
+                    icon: Icons.auto_fix_high_outlined,
+                    title: 'HLS Remuxer Preference',
+                    value: prefs.remuxerPreference,
+                    items: RemuxerPreference.values
+                        .map(
+                          (f) => DropdownMenuItem(
+                            value: f,
+                            child: Text(f.displayName),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        prefsNotifier.setRemuxerPreference(value);
+                      }
+                    },
+                  ),
+                ],
               ],
             ),
           ],

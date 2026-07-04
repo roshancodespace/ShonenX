@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/domain/gesture_prefs.dart';
+import 'package:shonenx/shared/models/video_server.dart';
 
 enum PlayerType {
   mediakit,
@@ -23,11 +24,19 @@ class PlayerPrefsState {
   final PlayerType playerType;
   final GesturePrefs gesturePrefs;
   final bool showShortcutsSheetOnStart;
+  final String defaultQuality;
+  final String defaultAudioLang;
+  final String defaultSubtitleLang;
+  final ServerType defaultServerType;
 
   const PlayerPrefsState({
     this.playerType = PlayerType.mediakit,
     this.gesturePrefs = const GesturePrefs(),
     this.showShortcutsSheetOnStart = true,
+    this.defaultQuality = '1080p',
+    this.defaultAudioLang = 'eng',
+    this.defaultSubtitleLang = 'eng',
+    this.defaultServerType = ServerType.sub,
   });
 
   PlayerPrefsState copyWith({
@@ -35,12 +44,20 @@ class PlayerPrefsState {
     PlayerType? playerType,
     GesturePrefs? gesturePrefs,
     bool? showShortcutsSheetOnStart,
+    String? defaultQuality,
+    String? defaultAudioLang,
+    String? defaultSubtitleLang,
+    ServerType? defaultServerType,
   }) {
     return PlayerPrefsState(
       playerType: playerType ?? this.playerType,
       gesturePrefs: gesturePrefs ?? this.gesturePrefs,
       showShortcutsSheetOnStart:
           showShortcutsSheetOnStart ?? this.showShortcutsSheetOnStart,
+      defaultQuality: defaultQuality ?? this.defaultQuality,
+      defaultAudioLang: defaultAudioLang ?? this.defaultAudioLang,
+      defaultSubtitleLang: defaultSubtitleLang ?? this.defaultSubtitleLang,
+      defaultServerType: defaultServerType ?? this.defaultServerType,
     );
   }
 
@@ -51,6 +68,15 @@ class PlayerPrefsState {
           ? GesturePrefs.fromMap(map['gesturePrefs'])
           : const GesturePrefs(),
       showShortcutsSheetOnStart: map['showShortcutsSheetOnStart'] ?? true,
+      defaultQuality: map['defaultQuality'] ?? '1080p',
+      defaultAudioLang: map['defaultAudioLang'] ?? 'eng',
+      defaultSubtitleLang: map['defaultSubtitleLang'] ?? 'eng',
+      defaultServerType: map['defaultServerType'] != null
+          ? ServerType.values.firstWhere(
+              (e) => e.name == map['defaultServerType'],
+              orElse: () => ServerType.sub,
+            )
+          : ServerType.sub,
     );
   }
 
@@ -59,6 +85,10 @@ class PlayerPrefsState {
       'playerType': playerType.name,
       'gesturePrefs': gesturePrefs.toMap(),
       'showShortcutsSheetOnStart': showShortcutsSheetOnStart,
+      'defaultQuality': defaultQuality,
+      'defaultAudioLang': defaultAudioLang,
+      'defaultSubtitleLang': defaultSubtitleLang,
+      'defaultServerType': defaultServerType.name,
     };
   }
 
@@ -99,6 +129,26 @@ class PlayerPrefsNotifier extends Notifier<PlayerPrefsState> {
 
   void toggleShowShortcutsSheetOnStart(bool value) {
     state = state.copyWith(showShortcutsSheetOnStart: value);
+    _saveDb();
+  }
+
+  void setDefaultQuality(String quality) {
+    state = state.copyWith(defaultQuality: quality);
+    _saveDb();
+  }
+
+  void setDefaultAudioLang(String lang) {
+    state = state.copyWith(defaultAudioLang: lang);
+    _saveDb();
+  }
+
+  void setDefaultSubtitleLang(String lang) {
+    state = state.copyWith(defaultSubtitleLang: lang);
+    _saveDb();
+  }
+
+  void setDefaultServerType(ServerType type) {
+    state = state.copyWith(defaultServerType: type);
     _saveDb();
   }
 

@@ -185,78 +185,80 @@ class AppBottomSheet extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0.32, end: 0.0),
-      duration: const Duration(milliseconds: 380),
-      curve: Curves.easeInOut,
-      builder: (context, tilt, child) {
-        return Transform(
-          alignment: Alignment.bottomCenter,
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.0018)
-            ..rotateX(tilt),
-          child: child,
-        );
-      },
-      child: Container(
-        margin: EdgeInsets.only(bottom: bottomInset),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainer,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(GlobalUI.uiRoundness),
+    return SafeArea(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0.32, end: 0.0),
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeInOut,
+        builder: (context, tilt, child) {
+          return Transform(
+            alignment: Alignment.bottomCenter,
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.0018)
+              ..rotateX(tilt),
+            child: child,
+          );
+        },
+        child: Container(
+          margin: EdgeInsets.only(bottom: bottomInset),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainer,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(GlobalUI.uiRoundness),
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 16),
-                height: 4,
-                width: 40,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 16),
+                  height: 4,
+                  width: 40,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: headerPadding,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
+              Padding(
+                padding: headerPadding,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  if (actions != null) ...[
-                    ...actions!,
-                    const SizedBox(width: 8),
+                    if (actions != null) ...[
+                      ...actions!,
+                      const SizedBox(width: 8),
+                    ],
+                    IconButton.filledTonal(
+                      style: IconButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                      ),
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: () => context.pop(),
+                    ),
                   ],
-                  IconButton.filledTonal(
-                    style: IconButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: colorScheme.onPrimary,
-                    ),
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () => context.pop(),
-                  ),
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Flexible(
-              child: Padding(padding: contentPadding, child: child),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Flexible(
+                child: Padding(padding: contentPadding, child: child),
+              ),
+            ],
+          ),
         ),
       ),
     );

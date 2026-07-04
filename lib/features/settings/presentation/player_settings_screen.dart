@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
@@ -76,7 +74,8 @@ class PlayerSettingsScreen extends ConsumerWidget {
                 subtitle:
                     'Official OS / FVP engine with backend switching & buffer customization',
                 isSelected: playerPrefs.playerType == PlayerType.videoPlayer,
-                onSelect: () => prefsNotifier.changePlayer(PlayerType.videoPlayer),
+                onSelect: () =>
+                    prefsNotifier.changePlayer(PlayerType.videoPlayer),
                 customizeLabel: 'Settings',
                 customizeIcon: Icons.settings_outlined,
                 onCustomize: () {

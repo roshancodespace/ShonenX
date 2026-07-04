@@ -41,7 +41,37 @@ class VideoPlayerEngine implements VideoEngine {
     final useFvp = mdkPrefs.backend == 'fvp' || isDesktop;
 
     if (useFvp) {
-      registerWith();
+      final playerOpts = <String, String>{
+        'avformat.strict': 'experimental',
+        'avformat.safe': '0',
+        'avio.reconnect': '1',
+        'avio.reconnect_delay_max': '7',
+        'avformat.rtsp_transport': 'tcp',
+        'avformat.extension_picky': '0',
+        'avformat.allowed_segment_extensions': 'ALL',
+      };
+      if (mdkPrefs.rawConfiguration.isNotEmpty) {
+        for (final line in mdkPrefs.rawConfiguration.split('\n')) {
+          final trimmed = line.trim();
+          if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
+          final parts = trimmed.split('=');
+          if (parts.length == 2) {
+            playerOpts[parts[0].trim()] = parts[1].trim();
+          }
+        }
+      }
+
+      registerWith(
+        options: {
+          'platforms': ['windows', 'macos', 'linux', 'android', 'ios'],
+          'fastSeek': mdkPrefs.enableFastSeek,
+          if (mdkPrefs.decoderPriority != 'Auto')
+            'video.decoders': [mdkPrefs.decoderPriority, 'auto'],
+          'player': playerOpts,
+        },
+      );
+      // Wait for MDK async setup (_setupMdk scheduled via Future.delayed(0)) to complete before creating player
+      await Future.delayed(const Duration(milliseconds: 50));
     } else if (AppInit.defaultVideoPlayerPlatform != null) {
       VideoPlayerPlatform.instance = AppInit.defaultVideoPlayerPlatform!;
     }

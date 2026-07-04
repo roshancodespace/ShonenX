@@ -11,6 +11,7 @@ import 'package:shonenx/features/discovery/providers/matched_media_provider.dart
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
+import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_provider.dart';
@@ -114,33 +115,53 @@ class PlayerController extends Notifier<PlayerState> {
       _progressTimer?.cancel();
     });
 
+    final prefs = ref.read(playerPrefsProvider);
+    _preferredQuality = prefs.defaultQuality;
+    _preferredSubtitleLang = prefs.defaultSubtitleLang;
+    _preferredAudioLang = prefs.defaultAudioLang;
+    _preferredServerType = prefs.defaultServerType == ServerType.unknown
+        ? null
+        : prefs.defaultServerType;
+
     ref.listen(subtitlePrefsProvider, (prev, current) {
       if (prev?.useCustomSubtitle != current.useCustomSubtitle) {
         _applyNativeSubtitle(state.activeSubtitle);
       }
     });
 
-    ref.listen(
-      videoEngineStateProvider.select((s) => s.audioTracks),
-      (prev, current) {
-        if (_preferredAudioLang != null && current.isNotEmpty) {
-          final match = current.firstWhereOrNull(
-            (t) =>
-                t.language?.toLowerCase().contains(
-                      _preferredAudioLang!.toLowerCase(),
-                    ) ==
-                    true ||
-                t.label.toLowerCase().contains(
-                      _preferredAudioLang!.toLowerCase(),
-                    ) ==
-                    true,
-          );
-          if (match != null) {
-            ref.read(videoEngineProvider).setAudioTrack(match);
-          }
+    ref.listen(videoEngineStateProvider.select((s) => s.audioTracks), (
+      prev,
+      current,
+    ) {
+      if (_preferredAudioLang != null &&
+          _preferredAudioLang != 'Auto' &&
+          current.isNotEmpty) {
+        final match = current.firstWhereOrNull(
+          (t) =>
+              t.language?.toLowerCase().contains(
+                    _preferredAudioLang!.toLowerCase(),
+                  ) ==
+                  true ||
+              t.label.toLowerCase().contains(
+                    _preferredAudioLang!.toLowerCase(),
+                  ) ==
+                  true ||
+              _preferredAudioLang!.toLowerCase().contains(
+                    t.language?.toLowerCase() ?? '---',
+                  ) ==
+                  true ||
+              _preferredAudioLang!.toLowerCase().contains(
+                    t.label.toLowerCase(),
+                  ) ==
+                  true,
+        );
+        if (match != null) {
+          ref.read(videoEngineProvider).setAudioTrack(match);
         }
-      },
-    );
+      } else if (_preferredAudioLang == 'Auto') {
+        ref.read(videoEngineProvider).setAudioTrack(AudioTrack.auto);
+      }
+    });
 
     return const PlayerState();
   }
@@ -217,6 +238,7 @@ class PlayerController extends Notifier<PlayerState> {
 
     _preferredServerId = newServer.id;
     _preferredServerType = newServer.type;
+    ref.read(playerPrefsProvider.notifier).setDefaultServerType(newServer.type);
 
     final currentPos = ref.read(videoEngineProvider).currentPosition;
     await _loadData(
@@ -261,12 +283,27 @@ class PlayerController extends Notifier<PlayerState> {
     await loadEpisode(episodes.firstWhere((e) => e.number == targetNumber));
   }
 
+  bool _matchesQuality(String candidate, String target) {
+    final c = candidate.toLowerCase();
+    final t = target.toLowerCase();
+    if (c == t) return true;
+    if (t == 'auto') return c == 'auto';
+    if (c == 'auto') return false;
+
+    final cleanTarget = t.replaceAll('p', '').trim();
+    if (cleanTarget.isNotEmpty && c.contains(cleanTarget)) {
+      return true;
+    }
+    return c.contains(t) || t.contains(c);
+  }
+
   Future<void> _loadData(
     UnifiedEpisode episode, {
     VideoServer? server,
     Duration? startPosition,
     bool force = false,
   }) async {
+    if (_source == null) return;
     state = state.copyWith(
       isLoading: true,
       error: null,
@@ -308,9 +345,9 @@ class PlayerController extends Notifier<PlayerState> {
 
       // Video Stream (mirror) Selection
       VideoStream activeStream = streams.first;
-      if (_preferredQuality != null) {
+      if (_preferredQuality != null && _preferredQuality != 'Auto') {
         final qualityMatch = streams.firstWhereOrNull(
-          (s) => s.quality == _preferredQuality,
+          (s) => _matchesQuality(s.quality, _preferredQuality!),
         );
         if (qualityMatch != null) activeStream = qualityMatch;
       }
@@ -342,9 +379,9 @@ class PlayerController extends Notifier<PlayerState> {
 
       // Select active quality from parsed list
       VideoStream activeQuality = qualitiesList.first;
-      if (_preferredQuality != null) {
+      if (_preferredQuality != null && _preferredQuality != 'Auto') {
         final qualityMatch = qualitiesList.firstWhereOrNull(
-          (s) => s.quality == _preferredQuality,
+          (s) => _matchesQuality(s.quality, _preferredQuality!),
         );
         if (qualityMatch != null) activeQuality = qualityMatch;
       }
@@ -353,11 +390,21 @@ class PlayerController extends Notifier<PlayerState> {
 
       // Subtitle Selection
       SubtitleTrack? activeSubtitle = subtitles.first;
-      if (_preferredSubtitleLang != null && subtitles.isNotEmpty) {
+      if (_preferredSubtitleLang != null &&
+          _preferredSubtitleLang != 'Off' &&
+          subtitles.isNotEmpty) {
         final subMatch = subtitles.firstWhereOrNull(
-          (s) => s.language.toLowerCase().contains(_preferredSubtitleLang!),
+          (s) =>
+              s.language.toLowerCase().contains(
+                _preferredSubtitleLang!.toLowerCase(),
+              ) ||
+              _preferredSubtitleLang!.toLowerCase().contains(
+                s.language.toLowerCase(),
+              ),
         );
         if (subMatch != null) activeSubtitle = subMatch;
+      } else if (_preferredSubtitleLang == 'Off') {
+        activeSubtitle = SubtitleTrack.none;
       }
 
       state = state.copyWith(
@@ -424,9 +471,9 @@ class PlayerController extends Notifier<PlayerState> {
       } catch (_) {}
 
       VideoStream activeQuality = newQualities.first;
-      if (_preferredQuality != null) {
+      if (_preferredQuality != null && _preferredQuality != 'Auto') {
         final qualityMatch = newQualities.firstWhereOrNull(
-          (s) => s.quality == _preferredQuality,
+          (s) => _matchesQuality(s.quality, _preferredQuality!),
         );
         if (qualityMatch != null) activeQuality = qualityMatch;
       }
@@ -459,6 +506,9 @@ class PlayerController extends Notifier<PlayerState> {
     }
 
     _preferredQuality = newQuality.quality;
+    ref
+        .read(playerPrefsProvider.notifier)
+        .setDefaultQuality(newQuality.quality);
 
     final engine = ref.read(videoEngineProvider);
     final currentPos = engine.currentPosition;
@@ -491,6 +541,12 @@ class PlayerController extends Notifier<PlayerState> {
   Future<void> changeSubtitle(SubtitleTrack? newSubtitle) async {
     if (newSubtitle != null && newSubtitle.url.isNotEmpty) {
       _preferredSubtitleLang = newSubtitle.language;
+      ref
+          .read(playerPrefsProvider.notifier)
+          .setDefaultSubtitleLang(newSubtitle.language);
+    } else if (newSubtitle != null) {
+      _preferredSubtitleLang = 'Off';
+      ref.read(playerPrefsProvider.notifier).setDefaultSubtitleLang('Off');
     }
 
     state = state.copyWith(activeSubtitle: newSubtitle, error: null);
@@ -500,8 +556,15 @@ class PlayerController extends Notifier<PlayerState> {
   Future<void> changeAudioTrack(AudioTrack track) async {
     if (track.language != null && track.language!.isNotEmpty) {
       _preferredAudioLang = track.language;
+      ref
+          .read(playerPrefsProvider.notifier)
+          .setDefaultAudioLang(track.language!);
     } else if (track.id != 'auto' && track.id != 'no') {
       _preferredAudioLang = track.label;
+      ref.read(playerPrefsProvider.notifier).setDefaultAudioLang(track.label);
+    } else if (track.id == 'auto') {
+      _preferredAudioLang = 'Auto';
+      ref.read(playerPrefsProvider.notifier).setDefaultAudioLang('Auto');
     }
     await ref.read(videoEngineProvider).setAudioTrack(track);
   }

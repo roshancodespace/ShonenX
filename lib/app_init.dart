@@ -22,10 +22,8 @@ import 'package:shonenx/features/library/domain/models/library_entry.dart';
 import 'package:shonenx/features/notifications/domain/models/notification_subscription.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
 class AppInit {
-  static VideoPlayerPlatform? defaultVideoPlayerPlatform;
   static bool isBridgeInitialized = false;
   static String? pendingDeepLink;
 
@@ -223,10 +221,5 @@ class AppInit {
 
     MediaKit.ensureInitialized();
     log.i('MediaKit initialized');
-
-    defaultVideoPlayerPlatform = VideoPlayerPlatform.instance;
-    log.i(
-      'Default OS VideoPlayerPlatform stored (${defaultVideoPlayerPlatform?.runtimeType})',
-    );
   }
 }

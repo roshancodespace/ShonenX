@@ -1,8 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/presentation/widgets/media_kit/media_kit_settings.dart';
-import 'package:shonenx/features/player/presentation/widgets/video_player/video_player_settings.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/gesture_settings_sheet.dart';
@@ -69,23 +69,14 @@ class PlayerSettingsScreen extends ConsumerWidget {
                   );
                 },
               ),
-              SettingsSelectionTile(
-                title: 'Video Player',
-                subtitle:
-                    'Official OS / FVP engine with backend switching & buffer customization',
-                isSelected: playerPrefs.playerType == PlayerType.videoPlayer,
-                onSelect: () =>
-                    prefsNotifier.changePlayer(PlayerType.videoPlayer),
-                customizeLabel: 'Settings',
-                customizeIcon: Icons.settings_outlined,
-                onCustomize: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => const MdkVideoPlayerSettings(),
-                  );
-                },
-              ),
+              if (Platform.isAndroid)
+                SettingsSelectionTile(
+                  title: 'Video Player (ExoPlayer)',
+                  subtitle: 'Official Android native video rendering engine',
+                  isSelected: playerPrefs.playerType == PlayerType.videoPlayer,
+                  onSelect: () =>
+                      prefsNotifier.changePlayer(PlayerType.videoPlayer),
+                ),
             ],
           ),
           SettingsSection(

@@ -30,37 +30,27 @@ class MediaKitSettings extends ConsumerWidget {
             ),
             SettingsDropdownTile<String>(
               icon: Icons.memory_outlined,
-              title: 'Hardware decoder mode (hwdec)',
+              title: 'Hardware Decoder',
               value: prefs.hwdec,
               items: const [
                 DropdownMenuItem(
                   value: 'auto-copy',
-                  child: Text(
-                    'auto-copy (Recommended for Desktop - Fixes glitches)',
-                  ),
+                  child: Text('Auto Copy (Recommended)'),
                 ),
-                DropdownMenuItem(
-                  value: 'auto-safe',
-                  child: Text('auto-safe (Recommended for Mobile)'),
-                ),
+                DropdownMenuItem(value: 'auto-safe', child: Text('Auto Safe')),
                 DropdownMenuItem(
                   value: 'auto',
-                  child: Text(
-                    'auto (Direct texture - Fast but may glitch on D3D11)',
-                  ),
+                  child: Text('Auto (Best Performance)'),
                 ),
                 DropdownMenuItem(
                   value: 'd3d11va-copy',
-                  child: Text('d3d11va-copy (DirectX 11 Copy Mode)'),
+                  child: Text('DirectX 11 Copy'),
                 ),
                 DropdownMenuItem(
                   value: 'dxva2-copy',
-                  child: Text('dxva2-copy (DirectX 9/10 Copy Mode)'),
+                  child: Text('DirectX Legacy Copy'),
                 ),
-                DropdownMenuItem(
-                  value: 'no',
-                  child: Text('no (Software / CPU Decoding)'),
-                ),
+                DropdownMenuItem(value: 'no', child: Text('Software Decoding')),
               ],
               onChanged: (value) {
                 if (value != null) {

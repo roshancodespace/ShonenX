@@ -17,3 +17,13 @@ String formatCountdown(DateTime target) {
 
   return parts.isEmpty ? '0M' : parts.join(' ');
 }
+
+String trimText(String? text, {int maxLength = 100, String suffix = '...'}) {
+  if (text == null || text.isEmpty) return '';
+
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return '${text.substring(0, maxLength).trim()}$suffix';
+}

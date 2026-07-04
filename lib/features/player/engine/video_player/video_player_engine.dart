@@ -1,19 +1,13 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:shonenx/app_init.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/http_x.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:video_player/video_player.dart';
-import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/features/player/providers/mdk_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
-import 'package:shonenx/features/player/presentation/widgets/video_player/video_player_settings.dart';
-import 'package:fvp/fvp.dart';
 
 class VideoPlayerEngine implements VideoEngine {
   VideoPlayerController? _controller;
@@ -36,46 +30,6 @@ class VideoPlayerEngine implements VideoEngine {
     _controller?.removeListener(_listener);
     await _controller?.dispose();
 
-    final mdkPrefs = ref.read(mdkPrefsProvider);
-    final isDesktop = !Platform.isAndroid && !Platform.isIOS;
-    final useFvp = mdkPrefs.backend == 'fvp' || isDesktop;
-
-    if (useFvp) {
-      final playerOpts = <String, String>{
-        'avformat.strict': 'experimental',
-        'avformat.safe': '0',
-        'avio.reconnect': '1',
-        'avio.reconnect_delay_max': '7',
-        'avformat.rtsp_transport': 'tcp',
-        'avformat.extension_picky': '0',
-        'avformat.allowed_segment_extensions': 'ALL',
-      };
-      if (mdkPrefs.rawConfiguration.isNotEmpty) {
-        for (final line in mdkPrefs.rawConfiguration.split('\n')) {
-          final trimmed = line.trim();
-          if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
-          final parts = trimmed.split('=');
-          if (parts.length == 2) {
-            playerOpts[parts[0].trim()] = parts[1].trim();
-          }
-        }
-      }
-
-      registerWith(
-        options: {
-          'platforms': ['windows', 'macos', 'linux', 'android', 'ios'],
-          'fastSeek': mdkPrefs.enableFastSeek,
-          if (mdkPrefs.decoderPriority != 'Auto')
-            'video.decoders': [mdkPrefs.decoderPriority, 'auto'],
-          'player': playerOpts,
-        },
-      );
-      // Wait for MDK async setup (_setupMdk scheduled via Future.delayed(0)) to complete before creating player
-      await Future.delayed(const Duration(milliseconds: 50));
-    } else if (AppInit.defaultVideoPlayerPlatform != null) {
-      VideoPlayerPlatform.instance = AppInit.defaultVideoPlayerPlatform!;
-    }
-
     _controller = VideoPlayerController.networkUrl(
       Uri.parse(stream.url),
       httpHeaders: stream.headers ?? {},
@@ -86,29 +40,6 @@ class VideoPlayerEngine implements VideoEngine {
     _controller?.addListener(_listener);
 
     await _controller?.initialize();
-
-    if (useFvp) {
-      try {
-        if (mdkPrefs.decoderPriority != 'Auto') {
-          _controller?.setVideoDecoders([mdkPrefs.decoderPriority]);
-        }
-        _controller?.setBufferRange(
-          min: 1000,
-          max: mdkPrefs.bufferCapacityMs,
-          drop: mdkPrefs.dropFrames,
-        );
-        if (mdkPrefs.rawConfiguration.isNotEmpty) {
-          for (final line in mdkPrefs.rawConfiguration.split('\n')) {
-            final trimmed = line.trim();
-            if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
-            final parts = trimmed.split('=');
-            if (parts.length == 2) {
-              _controller?.setProperty(parts[0].trim(), parts[1].trim());
-            }
-          }
-        }
-      } catch (_) {}
-    }
 
     if (subtitle != null) {
       await setSubtitle(subtitle);
@@ -172,8 +103,7 @@ class VideoPlayerEngine implements VideoEngine {
 
   @override
   Widget? buildSettingsView(BuildContext context) {
-    if (_controller == null || !_controller!.value.isInitialized) return null;
-    return MdkVideoPlayerSettings(controller: _controller!);
+    return null;
   }
 
   @override
@@ -188,11 +118,7 @@ class VideoPlayerEngine implements VideoEngine {
 
   @override
   Future<void> seekTo(Duration position) async {
-    try {
-      await _controller?.fastSeekTo(position);
-    } catch (_) {
-      await _controller?.seekTo(position);
-    }
+    await _controller?.seekTo(position);
   }
 
   @override
@@ -211,10 +137,25 @@ class VideoPlayerEngine implements VideoEngine {
   Future<void> setSubtitle(SubtitleTrack? subtitle) async {
     if (_controller == null) return;
     if (subtitle == null || subtitle.url.isEmpty) {
-      _controller!.setSubtitleTracks([]);
+      await _controller!.setClosedCaptionFile(null);
       return;
     }
-    _controller!.setExternalSubtitle(subtitle.url);
+    try {
+      final response = await _http.get(subtitle.url);
+      if (response.statusCode == 200) {
+        final content = response.body;
+        ClosedCaptionFile captionFile;
+        if (subtitle.url.toLowerCase().endsWith('.vtt') ||
+            content.contains('WEBVTT')) {
+          captionFile = WebVTTCaptionFile(content);
+        } else {
+          captionFile = SubRipCaptionFile(content);
+        }
+        await _controller!.setClosedCaptionFile(Future.value(captionFile));
+      }
+    } catch (_) {
+      await _controller!.setClosedCaptionFile(null);
+    }
   }
 
   @override

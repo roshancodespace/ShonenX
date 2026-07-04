@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/utils/formatting.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
@@ -384,7 +385,8 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                             context: context,
                             value: widget.playerState.activeServer,
                             items: widget.playerState.servers,
-                            itemLabel: (s) => '[ ${s.id} ] ${s.name}',
+                            itemLabel: (s) =>
+                                '[ ${trimText(s.id, maxLength: 30)} ] ${s.name}',
                             onChanged: (v) {
                               widget.controller.changeServer(v);
                             },
@@ -407,25 +409,27 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                                 return null;
                               }
 
-                              final isDub = s.type == ServerType.dub;
-
                               return Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 6,
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isDub
+                                  color: s.type == ServerType.dub
                                       ? theme.colorScheme.primary
                                       : theme.colorScheme.secondary,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  isDub ? 'DUB' : 'SUB',
+                                  s.type == ServerType.dub
+                                      ? 'DUB'
+                                      : s.type == ServerType.sub
+                                      ? 'SUB'
+                                      : '',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w700,
-                                    color: isDub
+                                    color: s.type == ServerType.dub
                                         ? theme.colorScheme.onPrimary
                                         : theme.colorScheme.onSecondary,
                                   ),

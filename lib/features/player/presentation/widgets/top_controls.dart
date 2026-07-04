@@ -137,7 +137,7 @@ class TopControls extends ConsumerWidget {
               ],
               if (mode is PlayerModeOnline && onComments != null) ...[
                 _buildActionIcon(
-                  icon: Icons.chat_bubble_outline_rounded,
+                  icon: Icons.comment_outlined,
                   onTap: onComments!,
                 ),
                 const SizedBox(width: 6),

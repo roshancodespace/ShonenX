@@ -304,6 +304,9 @@ class PlayerController extends Notifier<PlayerState> {
     bool force = false,
   }) async {
     if (_source == null) return;
+    if (state.activeEpisode?.id != episode.id) {
+      _alreadyAutoSkipped.clear();
+    }
     state = state.copyWith(
       isLoading: true,
       error: null,
@@ -593,8 +596,6 @@ class PlayerController extends Notifier<PlayerState> {
                   .read(videoEngineProvider)
                   .seekTo(Duration(seconds: skip.endTime.ceil()));
             }
-          } else {
-            _alreadyAutoSkipped.remove(skip.type);
           }
         }
       },

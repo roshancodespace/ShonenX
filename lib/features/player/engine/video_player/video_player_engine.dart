@@ -99,6 +99,11 @@ class VideoPlayerEngine implements VideoEngine {
         final size = _controller!.value.size;
         final aspectWidth = size.width > 0 ? size.width : 16.0;
         final aspectHeight = size.height > 0 ? size.height : 9.0;
+        final aspectRatio = aspectWidth / aspectHeight;
+
+        final screenWidth = MediaQuery.sizeOf(context).width;
+        final boxWidth = screenWidth > 0 ? screenWidth : 1280.0;
+        final boxHeight = boxWidth / aspectRatio;
 
         return ColoredBox(
           color: Colors.black,
@@ -106,8 +111,8 @@ class VideoPlayerEngine implements VideoEngine {
             child: FittedBox(
               fit: fit,
               child: SizedBox(
-                width: aspectWidth,
-                height: aspectHeight,
+                width: boxWidth,
+                height: boxHeight,
                 child: VideoPlayer(_controller!),
               ),
             ),

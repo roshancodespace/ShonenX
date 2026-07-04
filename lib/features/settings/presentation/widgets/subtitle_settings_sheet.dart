@@ -41,7 +41,7 @@ class SubtitleSettingsSheet extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
             decoration: const BoxDecoration(
               image: DecorationImage(
                 image: CachedNetworkImageProvider(
@@ -51,17 +51,58 @@ class SubtitleSettingsSheet extends ConsumerWidget {
                 alignment: Alignment(0, -0.5),
               ),
             ),
-            child: AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              style: getSubtitleTextStyle(
-                prefs,
-                responsiveFontSize.clamp(10.0, 100.0),
-              ),
-              textAlign: TextAlign.center,
-              child: const Text(
-                'Ore wa kaizoku ou ni naru!\n(I will become the Pirate King!)',
-              ),
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children:
+                  [
+                        'Ore wa kaizoku ou ni naru!',
+                        '(I will become the Pirate King!)',
+                      ]
+                      .map(
+                        (line) => AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOut,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: prefs.padding * 1.5,
+                            vertical: prefs.padding * 0.5,
+                          ),
+                          decoration: prefs.backgroundColor != 0x00000000
+                              ? BoxDecoration(
+                                  color: prefs.bg,
+                                  borderRadius: BorderRadius.circular(4.0),
+                                )
+                              : null,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              if (getSubtitleStrokeStyle(
+                                    prefs,
+                                    responsiveFontSize.clamp(10.0, 100.0),
+                                  ) !=
+                                  null)
+                                Text(
+                                  line,
+                                  textAlign: TextAlign.center,
+                                  style: getSubtitleStrokeStyle(
+                                    prefs,
+                                    responsiveFontSize.clamp(10.0, 100.0),
+                                  ),
+                                ),
+                              Text(
+                                line,
+                                textAlign: TextAlign.center,
+                                style: getSubtitleTextStyle(
+                                  prefs,
+                                  responsiveFontSize.clamp(10.0, 100.0),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
             ),
           ),
 
@@ -320,6 +361,19 @@ class SubtitleSettingsSheet extends ConsumerWidget {
                           notifier.updatePrefs(
                             prefs.copyWith(bottomPadding: value),
                           );
+                        },
+                      ),
+                      SettingsSliderTile(
+                        icon: Icons.padding_rounded,
+                        title: 'Background Padding',
+                        subtitle: 'Padding around background container',
+                        value: prefs.padding,
+                        min: 0,
+                        max: 30,
+                        divisions: 15,
+                        label: '${prefs.padding.round()}px',
+                        onChanged: (value) {
+                          notifier.updatePrefs(prefs.copyWith(padding: value));
                         },
                       ),
                       SettingsSliderTile(

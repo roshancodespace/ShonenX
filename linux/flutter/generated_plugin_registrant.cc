@@ -11,7 +11,6 @@
 #include <flutter_qjs/flutter_qjs_plugin.h>
 #include <flutter_secure_storage_linux/flutter_secure_storage_linux_plugin.h>
 #include <flutter_timezone/flutter_timezone_plugin.h>
-#include <fvp/fvp_plugin.h>
 #include <gtk/gtk_plugin.h>
 #include <isar_community_flutter_libs/isar_flutter_libs_plugin.h>
 #include <media_kit_libs_linux/media_kit_libs_linux_plugin.h>
@@ -39,9 +38,6 @@ void fl_register_plugins(FlPluginRegistry* registry) {
   g_autoptr(FlPluginRegistrar) flutter_timezone_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "FlutterTimezonePlugin");
   flutter_timezone_plugin_register_with_registrar(flutter_timezone_registrar);
-  g_autoptr(FlPluginRegistrar) fvp_registrar =
-      fl_plugin_registry_get_registrar_for_plugin(registry, "FvpPlugin");
-  fvp_plugin_register_with_registrar(fvp_registrar);
   g_autoptr(FlPluginRegistrar) gtk_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "GtkPlugin");
   gtk_plugin_register_with_registrar(gtk_registrar);

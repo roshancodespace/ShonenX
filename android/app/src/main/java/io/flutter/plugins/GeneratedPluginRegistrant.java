@@ -86,11 +86,6 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin flutter_web_auth_2, com.linusu.flutter_web_auth_2.FlutterWebAuth2Plugin", e);
     }
     try {
-      flutterEngine.getPlugins().add(new com.mediadevkit.fvp.FvpPlugin());
-    } catch (Exception e) {
-      Log.e(TAG, "Error registering plugin fvp, com.mediadevkit.fvp.FvpPlugin", e);
-    }
-    try {
       flutterEngine.getPlugins().add(new com.zaihui.installplugin.InstallPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin install_plugin, com.zaihui.installplugin.InstallPlugin", e);

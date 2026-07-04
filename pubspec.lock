@@ -706,14 +706,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.0"
-  fvp:
-    dependency: "direct main"
-    description:
-      name: fvp
-      sha256: ac06c5ecdf65abb2ce413c9ca6c73fd74bff7c394879c17a98d6b94056b71c52
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.37.3"
   get:
     dependency: "direct main"
     description:

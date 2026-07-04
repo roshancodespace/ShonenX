@@ -18,6 +18,7 @@ class SubtitlePrefs {
   final double letterSpacing;
   final double wordSpacing;
   final double lineHeight;
+  final double padding;
 
   const SubtitlePrefs({
     this.useCustomSubtitle = true,
@@ -36,6 +37,7 @@ class SubtitlePrefs {
     this.letterSpacing = 0.0,
     this.wordSpacing = 0.0,
     this.lineHeight = 1.15,
+    this.padding = 8.0,
   });
 
   SubtitlePrefs copyWith({
@@ -55,6 +57,7 @@ class SubtitlePrefs {
     double? letterSpacing,
     double? wordSpacing,
     double? lineHeight,
+    double? padding,
   }) {
     return SubtitlePrefs(
       useCustomSubtitle: useCustomSubtitle ?? this.useCustomSubtitle,
@@ -73,6 +76,7 @@ class SubtitlePrefs {
       letterSpacing: letterSpacing ?? this.letterSpacing,
       wordSpacing: wordSpacing ?? this.wordSpacing,
       lineHeight: lineHeight ?? this.lineHeight,
+      padding: padding ?? this.padding,
     );
   }
 
@@ -100,6 +104,7 @@ class SubtitlePrefs {
       letterSpacing: map['letterSpacing']?.toDouble() ?? 0.0,
       wordSpacing: map['wordSpacing']?.toDouble() ?? 0.0,
       lineHeight: map['lineHeight']?.toDouble() ?? 1.15,
+      padding: map['padding']?.toDouble() ?? 8.0,
     );
   }
 
@@ -121,6 +126,7 @@ class SubtitlePrefs {
       'letterSpacing': letterSpacing,
       'wordSpacing': wordSpacing,
       'lineHeight': lineHeight,
+      'padding': padding,
     };
   }
 
@@ -140,7 +146,10 @@ List<Shadow>? getSubtitleShadows(SubtitlePrefs prefs) {
   final shadows = <Shadow>[];
 
   // Drop Shadow
-  if (prefs.shadowColor != 0x00000000 && (prefs.shadowOffsetX != 0 || prefs.shadowOffsetY != 0 || prefs.shadowBlur != 0)) {
+  if (prefs.shadowColor != 0x00000000 &&
+      (prefs.shadowOffsetX != 0 ||
+          prefs.shadowOffsetY != 0 ||
+          prefs.shadowBlur != 0)) {
     shadows.add(
       Shadow(
         offset: Offset(prefs.shadowOffsetX, prefs.shadowOffsetY),
@@ -148,22 +157,6 @@ List<Shadow>? getSubtitleShadows(SubtitlePrefs prefs) {
         color: Color(prefs.shadowColor),
       ),
     );
-  }
-
-  // Outline (Stroke Effect via 8-directional 0.0 blur offsets)
-  if (prefs.outlineColor != 0x00000000 && prefs.outlineSize > 0) {
-    final size = prefs.outlineSize;
-    final color = Color(prefs.outlineColor);
-    shadows.addAll([
-      Shadow(offset: Offset(-size, 0), blurRadius: 0.0, color: color),
-      Shadow(offset: Offset(size, 0), blurRadius: 0.0, color: color),
-      Shadow(offset: Offset(0, -size), blurRadius: 0.0, color: color),
-      Shadow(offset: Offset(0, size), blurRadius: 0.0, color: color),
-      Shadow(offset: Offset(-size, -size), blurRadius: 0.0, color: color),
-      Shadow(offset: Offset(size, -size), blurRadius: 0.0, color: color),
-      Shadow(offset: Offset(-size, size), blurRadius: 0.0, color: color),
-      Shadow(offset: Offset(size, size), blurRadius: 0.0, color: color),
-    ]);
   }
 
   return shadows.isEmpty ? null : shadows;
@@ -184,19 +177,59 @@ TextStyle getSubtitleTextStyle(SubtitlePrefs prefs, double responsiveFontSize) {
   final baseStyle = TextStyle(
     fontSize: responsiveFontSize,
     color: prefs.color,
-    backgroundColor: prefs.backgroundColor == 0x00000000 ? null : prefs.bg,
     fontWeight: prefs.bold ? FontWeight.w700 : FontWeight.w500,
     height: prefs.lineHeight,
     letterSpacing: prefs.letterSpacing,
     wordSpacing: prefs.wordSpacing,
-    shadows: getSubtitleShadows(prefs),
+    shadows: (prefs.outlineColor != 0x00000000 && prefs.outlineSize > 0)
+        ? null
+        : getSubtitleShadows(prefs),
   );
 
   if (prefs.fontFamily == 'Default') {
     return baseStyle;
   }
   try {
-    return GoogleFonts.getFont(prefs.fontFamily, textStyle: baseStyle);
+    final googleStyle = GoogleFonts.getFont(prefs.fontFamily);
+    return baseStyle.copyWith(
+      fontFamily: googleStyle.fontFamily,
+      fontFamilyFallback: googleStyle.fontFamilyFallback,
+    );
+  } catch (_) {
+    return baseStyle;
+  }
+}
+
+TextStyle? getSubtitleStrokeStyle(
+  SubtitlePrefs prefs,
+  double responsiveFontSize,
+) {
+  if (prefs.outlineColor == 0x00000000 || prefs.outlineSize <= 0) return null;
+
+  final baseStyle = TextStyle(
+    fontSize: responsiveFontSize,
+    fontWeight: prefs.bold ? FontWeight.w700 : FontWeight.w500,
+    height: prefs.lineHeight,
+    letterSpacing: prefs.letterSpacing,
+    wordSpacing: prefs.wordSpacing,
+    shadows: getSubtitleShadows(prefs),
+    foreground: Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = prefs.outlineSize * 2.0
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = prefs.outline,
+  );
+
+  if (prefs.fontFamily == 'Default') {
+    return baseStyle;
+  }
+  try {
+    final googleStyle = GoogleFonts.getFont(prefs.fontFamily);
+    return baseStyle.copyWith(
+      fontFamily: googleStyle.fontFamily,
+      fontFamilyFallback: googleStyle.fontFamilyFallback,
+    );
   } catch (_) {
     return baseStyle;
   }

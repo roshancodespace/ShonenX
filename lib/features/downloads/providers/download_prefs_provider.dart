@@ -47,6 +47,27 @@ enum DuplicateAction {
   }
 }
 
+enum RemuxerPreference {
+  auto,
+  builtin;
+
+  String get displayName {
+    switch (this) {
+      case RemuxerPreference.auto:
+        return 'Auto (FFmpeg if available)';
+      case RemuxerPreference.builtin:
+        return 'Built-in (TS Concatenation)';
+    }
+  }
+
+  factory RemuxerPreference.fromString(String? value) {
+    return RemuxerPreference.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => RemuxerPreference.auto,
+    );
+  }
+}
+
 class DownloadPrefs {
   final String downloadPath;
   final FileNameFormat fileNameFormat;
@@ -57,6 +78,7 @@ class DownloadPrefs {
   final int concurrentSegments;
   final DuplicateAction duplicateAction;
   final bool autoDeleteWatched;
+  final RemuxerPreference remuxerPreference;
 
   const DownloadPrefs({
     required this.downloadPath,
@@ -68,6 +90,7 @@ class DownloadPrefs {
     this.concurrentSegments = 4,
     this.duplicateAction = DuplicateAction.skip,
     this.autoDeleteWatched = false,
+    this.remuxerPreference = RemuxerPreference.auto,
   });
 
   DownloadPrefs copyWith({
@@ -80,6 +103,7 @@ class DownloadPrefs {
     int? concurrentSegments,
     DuplicateAction? duplicateAction,
     bool? autoDeleteWatched,
+    RemuxerPreference? remuxerPreference,
   }) {
     return DownloadPrefs(
       downloadPath: downloadPath ?? this.downloadPath,
@@ -91,6 +115,7 @@ class DownloadPrefs {
       concurrentSegments: concurrentSegments ?? this.concurrentSegments,
       duplicateAction: duplicateAction ?? this.duplicateAction,
       autoDeleteWatched: autoDeleteWatched ?? this.autoDeleteWatched,
+      remuxerPreference: remuxerPreference ?? this.remuxerPreference,
     );
   }
 
@@ -105,6 +130,7 @@ class DownloadPrefs {
       concurrentSegments: map['concurrentSegments'] ?? 4,
       duplicateAction: DuplicateAction.fromString(map['duplicateAction']),
       autoDeleteWatched: map['autoDeleteWatched'] ?? false,
+      remuxerPreference: RemuxerPreference.fromString(map['remuxerPreference']),
     );
   }
 
@@ -119,6 +145,7 @@ class DownloadPrefs {
       'concurrentSegments': concurrentSegments,
       'duplicateAction': duplicateAction.name,
       'autoDeleteWatched': autoDeleteWatched,
+      'remuxerPreference': remuxerPreference.name,
     };
   }
 }
@@ -156,6 +183,7 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
       concurrentSegments: 4,
       duplicateAction: DuplicateAction.skip,
       autoDeleteWatched: false,
+      remuxerPreference: RemuxerPreference.auto,
     );
   }
 
@@ -210,6 +238,12 @@ class DownloadPrefsNotifier extends AsyncNotifier<DownloadPrefs> {
   Future<void> setAutoDeleteWatched(bool value) async {
     final prefs = ref.read(sharedPreferencesProvider);
     state = AsyncData(state.value!.copyWith(autoDeleteWatched: value));
+    await prefs.setString(_key, jsonEncode(state.value!.toMap()));
+  }
+
+  Future<void> setRemuxerPreference(RemuxerPreference value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    state = AsyncData(state.value!.copyWith(remuxerPreference: value));
     await prefs.setString(_key, jsonEncode(state.value!.toMap()));
   }
 

@@ -18,26 +18,14 @@ class DownloadHeader {
 
   DownloadHeader();
 
-  DownloadHeader.create({
-    required this.key,
-    required this.value,
-  });
+  DownloadHeader.create({required this.key, required this.value});
 
-  factory DownloadHeader.fromMapEntry(
-    MapEntry<String, String> entry,
-  ) {
-    return DownloadHeader.create(
-      key: entry.key,
-      value: entry.value,
-    );
+  factory DownloadHeader.fromMapEntry(MapEntry<String, String> entry) {
+    return DownloadHeader.create(key: entry.key, value: entry.value);
   }
 
-  static List<DownloadHeader> fromMap(
-    Map<String, String> map,
-  ) {
-    return map.entries
-        .map(DownloadHeader.fromMapEntry)
-        .toList();
+  static List<DownloadHeader> fromMap(Map<String, String> map) {
+    return map.entries.map(DownloadHeader.fromMapEntry).toList();
   }
 
   MapEntry<String, String> toMapEntry() {
@@ -67,6 +55,11 @@ class DownloadTask {
   double progress = 0.0;
   int totalBytes = 0;
   int downloadedBytes = 0;
+
+  @ignore
+  int downloadedSegments = 0;
+  @ignore
+  int totalSegments = 0;
 
   DateTime createdAt = DateTime.now();
   DateTime updatedAt = DateTime.now();

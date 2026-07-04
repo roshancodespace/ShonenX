@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/engine/download_engine.dart';
+import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 
 class M3U8DownloadEngine implements DownloadEngine {
   final DownloadTask task;
@@ -24,10 +25,12 @@ class M3U8DownloadEngine implements DownloadEngine {
   bool _isRunning = false;
 
   final int concurrentSegments;
+  final RemuxerPreference remuxerPreference;
 
   M3U8DownloadEngine({
     required this.task,
     this.concurrentSegments = 4,
+    this.remuxerPreference = RemuxerPreference.auto,
     required this.onProgress,
     required this.onStatus,
   });
@@ -47,6 +50,7 @@ class M3U8DownloadEngine implements DownloadEngine {
         savePath: task.savePath,
         headers: task.headersMap,
         concurrentSegments: concurrentSegments,
+        remuxerPreference: remuxerPreference.name,
         sendPort: _receivePort.sendPort,
       );
 
@@ -60,10 +64,16 @@ class M3U8DownloadEngine implements DownloadEngine {
           if (type == 'progress') {
             final downloaded = msg['downloadedBytes'] as int;
             final total = msg['totalBytes'] as int;
+            final downloadedSegs = msg['downloadedSegments'] as int? ?? 0;
+            final totalSegs = msg['totalSegments'] as int? ?? 0;
             onProgress(
               downloadedBytes: downloaded,
               totalBytes: total,
-              progress: total > 0 ? downloaded / total : 0.0,
+              downloadedSegments: downloadedSegs,
+              totalSegments: totalSegs,
+              progress: total > 0
+                  ? downloaded / total
+                  : (totalSegs > 0 ? downloadedSegs / totalSegs : 0.0),
             );
           } else if (type == 'status') {
             final statusStr = msg['status'] as String;
@@ -129,6 +139,7 @@ class _M3U8TaskConfig {
   final String savePath;
   final Map<String, String> headers;
   final int concurrentSegments;
+  final String remuxerPreference;
   final SendPort sendPort;
 
   _M3U8TaskConfig({
@@ -137,6 +148,7 @@ class _M3U8TaskConfig {
     required this.savePath,
     required this.headers,
     this.concurrentSegments = 4,
+    this.remuxerPreference = 'auto',
     required this.sendPort,
   });
 }
@@ -168,12 +180,14 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
     final batchSize = task.concurrentSegments > 0 ? task.concurrentSegments : 4;
     int completedSegments = 0;
     int totalSegments = segments.length;
+    int totalDownloadedBytes = 0;
     DateTime lastLog = DateTime.now();
 
     for (var s in segments) {
       final f = File(p.join(tempDir.path, '${s.fileIndex}.ts'));
       if (f.existsSync() && f.lengthSync() > 0) {
         completedSegments++;
+        totalDownloadedBytes += f.lengthSync();
       }
     }
 
@@ -202,14 +216,20 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
               : bytes;
           await file.writeAsBytes(data);
           completedSegments++;
+          totalDownloadedBytes += data.length;
         }),
       );
 
       if (DateTime.now().difference(lastLog).inMilliseconds > 1000) {
+        final estTotal = completedSegments > 0
+            ? (totalDownloadedBytes ~/ completedSegments) * totalSegments
+            : 0;
         task.sendPort.send({
           'type': 'progress',
-          'downloadedBytes': completedSegments,
-          'totalBytes': totalSegments,
+          'downloadedBytes': totalDownloadedBytes,
+          'totalBytes': estTotal,
+          'downloadedSegments': completedSegments,
+          'totalSegments': totalSegments,
         });
         lastLog = DateTime.now();
       }
@@ -217,8 +237,9 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
 
     if (isCancelled) throw Exception("Cancelled");
 
-    final output = File(task.savePath);
-    final sink = output.openWrite();
+    final tempStitchedPath = p.join(tempDir.path, 'stitched.ts');
+    final stitchedFile = File(tempStitchedPath);
+    final sink = stitchedFile.openWrite();
 
     for (var s in segments) {
       final f = File(p.join(tempDir.path, '${s.fileIndex}.ts'));
@@ -232,12 +253,42 @@ Future<void> _m3u8Worker(_M3U8TaskConfig task) async {
     }
 
     await sink.close();
+
+    bool remuxed = false;
+    if (task.remuxerPreference == 'auto' &&
+        (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
+      try {
+        final check = await Process.run('ffmpeg', ['-version']);
+        if (check.exitCode == 0) {
+          final res = await Process.run('ffmpeg', [
+            '-y',
+            '-i',
+            tempStitchedPath,
+            '-c',
+            'copy',
+            task.savePath,
+          ]);
+          if (res.exitCode == 0 && File(task.savePath).existsSync()) {
+            remuxed = true;
+          }
+        }
+      } catch (_) {
+        remuxed = false;
+      }
+    }
+
+    if (!remuxed) {
+      await stitchedFile.copy(task.savePath);
+    }
+
     await tempDir.delete(recursive: true);
 
     task.sendPort.send({
       'type': 'progress',
-      'downloadedBytes': totalSegments,
-      'totalBytes': totalSegments,
+      'downloadedBytes': totalDownloadedBytes,
+      'totalBytes': totalDownloadedBytes,
+      'downloadedSegments': totalSegments,
+      'totalSegments': totalSegments,
     });
     task.sendPort.send({'type': 'status', 'status': 'completed'});
   } catch (e) {

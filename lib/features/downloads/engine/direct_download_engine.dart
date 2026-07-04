@@ -74,6 +74,8 @@ class DirectDownloadEngine implements DownloadEngine {
           onProgress(
             downloadedBytes: downloaded,
             totalBytes: total,
+            downloadedSegments: 0,
+            totalSegments: 0,
             progress: total > 0 ? downloaded / total : -1.0,
           );
         }
@@ -84,6 +86,8 @@ class DirectDownloadEngine implements DownloadEngine {
         onProgress(
           downloadedBytes: downloaded,
           totalBytes: total > 0 ? total : downloaded,
+          downloadedSegments: 0,
+          totalSegments: 0,
           progress: 1.0,
         );
       }

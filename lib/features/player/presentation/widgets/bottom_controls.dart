@@ -128,6 +128,16 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     final isCompact = mediaQuery.size.width < 450;
     final isVeryCompact = mediaQuery.size.width < 350;
 
+    final audioTracks = ref.watch(
+      videoEngineStateProvider.select((s) => s.audioTracks),
+    );
+    final activeAudioTrack = ref.watch(
+      videoEngineStateProvider.select((s) => s.activeAudioTrack),
+    );
+    final actualAudioCount = audioTracks
+        .where((t) => t.id != 'auto' && t.id != 'no')
+        .length;
+
     return AnimatedPositioned(
       duration: Durations.medium2,
       curve: Curves.fastEaseInToSlowEaseOut,
@@ -302,6 +312,36 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                                   : const Icon(Icons.subtitles_outlined),
                             ),
                           ),
+
+                        if (actualAudioCount > 0) ...[
+                          const SizedBox(width: 12),
+                          _buildBottomSheetTrigger<AudioTrack>(
+                            context: context,
+                            value: activeAudioTrack,
+                            items: audioTracks,
+                            itemLabel: (s) => s.label,
+                            onChanged: (v) {
+                              widget.controller.changeAudioTrack(v);
+                            },
+                            withBadge: false,
+                            displayText: 'Audio',
+                            displayWidget: Badge(
+                              label: Text(actualAudioCount.toString()),
+                              isLabelVisible: actualAudioCount > 0,
+                              backgroundColor: widget.theme.colorScheme.primary,
+                              textColor: widget.theme.colorScheme.onPrimary,
+                              child: activeAudioTrack?.id == 'no'
+                                  ? const Icon(
+                                      Icons.volume_off_outlined,
+                                      color: Colors.white,
+                                    )
+                                  : const Icon(
+                                      Icons.audiotrack_outlined,
+                                      color: Colors.white,
+                                    ),
+                            ),
+                          ),
+                        ],
 
                         if (widget.mode is PlayerModeOnline) ...[
                           const SizedBox(width: 12),

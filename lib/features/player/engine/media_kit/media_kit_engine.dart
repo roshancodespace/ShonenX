@@ -39,8 +39,14 @@ class MediaKitEngine implements VideoEngine {
       await _player.setVolume(prefs.boostVolume ? 140 : 100);
       if (_disposed) return;
 
-      await player.setProperty('cache-secs', prefs.maxBuffer.inSeconds.toString());
-      await player.setProperty('demuxer-readahead-secs', prefs.maxBuffer.inSeconds.toString());
+      await player.setProperty(
+        'cache-secs',
+        prefs.maxBuffer.inSeconds.toString(),
+      );
+      await player.setProperty(
+        'demuxer-readahead-secs',
+        prefs.maxBuffer.inSeconds.toString(),
+      );
 
       if (prefs.rawConfiguration.isNotEmpty) {
         for (final line in prefs.rawConfiguration.split('\n')) {
@@ -105,7 +111,36 @@ class MediaKitEngine implements VideoEngine {
               .updateState(isBuffering: buffering);
         }
       }),
+      _player.stream.tracks.listen((tracks) {
+        if (!_disposed) {
+          final audioList = tracks.audio.map((t) => _mapAudioTrack(t)).toList();
+          ref
+              .read(videoEngineStateProvider.notifier)
+              .updateState(audioTracks: audioList);
+        }
+      }),
+      _player.stream.track.listen((track) {
+        if (!_disposed) {
+          ref
+              .read(videoEngineStateProvider.notifier)
+              .updateState(activeAudioTrack: _mapAudioTrack(track.audio));
+        }
+      }),
     ]);
+
+    Future.microtask(() {
+      if (!_disposed) {
+        final initialAudioList = _player.state.tracks.audio
+            .map((t) => _mapAudioTrack(t))
+            .toList();
+        ref
+            .read(videoEngineStateProvider.notifier)
+            .updateState(
+              audioTracks: initialAudioList,
+              activeAudioTrack: _mapAudioTrack(_player.state.track.audio),
+            );
+      }
+    });
   }
 
   Future<void> _waitUntilReady(Future<void> Function() onReady) async {
@@ -214,6 +249,46 @@ class MediaKitEngine implements VideoEngine {
       await _player.setSubtitleTrack(
         SubtitleTrack.uri(subtitle.url, language: subtitle.language),
       );
+    }
+  }
+
+  stream.AudioTrack _mapAudioTrack(AudioTrack track) {
+    if (track.id == 'auto') return stream.AudioTrack.auto;
+    if (track.id == 'no') return stream.AudioTrack.none;
+
+    final title = track.title?.trim();
+    final lang = track.language?.trim();
+
+    String label;
+    if (title != null && title.isNotEmpty) {
+      if (lang != null &&
+          lang.isNotEmpty &&
+          !title.toLowerCase().contains(lang.toLowerCase())) {
+        label = '$title ($lang)';
+      } else {
+        label = title;
+      }
+    } else if (lang != null && lang.isNotEmpty) {
+      label = lang.toUpperCase();
+    } else {
+      label = 'Track ${track.id}';
+    }
+
+    return stream.AudioTrack(id: track.id, label: label, language: lang);
+  }
+
+  @override
+  Future<void> setAudioTrack(stream.AudioTrack track) async {
+    if (track.id == 'auto') {
+      await _player.setAudioTrack(AudioTrack.auto());
+    } else if (track.id == 'no') {
+      await _player.setAudioTrack(AudioTrack.no());
+    } else {
+      final target = _player.state.tracks.audio.firstWhere(
+        (t) => t.id == track.id,
+        orElse: () => AudioTrack.auto(),
+      );
+      await _player.setAudioTrack(target);
     }
   }
 

@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
 class MdkPrefs {
+  final String backend;
   final bool enableFastSeek;
   final String decoderPriority;
   final int bufferCapacityMs;
@@ -8,6 +10,7 @@ class MdkPrefs {
   final String rawConfiguration;
 
   const MdkPrefs({
+    this.backend = 'default',
     this.enableFastSeek = true,
     this.decoderPriority = 'Auto',
     this.bufferCapacityMs = 15000,
@@ -16,6 +19,7 @@ class MdkPrefs {
   });
 
   MdkPrefs copyWith({
+    String? backend,
     bool? enableFastSeek,
     String? decoderPriority,
     int? bufferCapacityMs,
@@ -23,6 +27,7 @@ class MdkPrefs {
     String? rawConfiguration,
   }) {
     return MdkPrefs(
+      backend: backend ?? this.backend,
       enableFastSeek: enableFastSeek ?? this.enableFastSeek,
       decoderPriority: decoderPriority ?? this.decoderPriority,
       bufferCapacityMs: bufferCapacityMs ?? this.bufferCapacityMs,
@@ -35,6 +40,7 @@ class MdkPrefs {
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other is MdkPrefs &&
+            other.backend == backend &&
             other.enableFastSeek == enableFastSeek &&
             other.decoderPriority == decoderPriority &&
             other.bufferCapacityMs == bufferCapacityMs &&
@@ -44,6 +50,7 @@ class MdkPrefs {
 
   @override
   int get hashCode => Object.hash(
+    backend,
     enableFastSeek,
     decoderPriority,
     bufferCapacityMs,
@@ -52,7 +59,15 @@ class MdkPrefs {
   );
 
   factory MdkPrefs.fromMap(Map<String, dynamic> map) {
+    String defaultBackend = 'default';
+    try {
+      if (!Platform.isAndroid && !Platform.isIOS) {
+        defaultBackend = 'fvp';
+      }
+    } catch (_) {}
+
     return MdkPrefs(
+      backend: map['backend'] ?? defaultBackend,
       enableFastSeek: map['enableFastSeek'] ?? true,
       decoderPriority: map['decoderPriority'] ?? 'Auto',
       bufferCapacityMs: map['bufferCapacityMs'] ?? 15000,
@@ -63,6 +78,7 @@ class MdkPrefs {
 
   Map<String, dynamic> toMap() {
     return {
+      'backend': backend,
       'enableFastSeek': enableFastSeek,
       'decoderPriority': decoderPriority,
       'bufferCapacityMs': bufferCapacityMs,

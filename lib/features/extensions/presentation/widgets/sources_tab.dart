@@ -93,6 +93,26 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
   final Set<String> _processingIds = {};
 
   @override
+  void initState() {
+    super.initState();
+    _checkRuntimeIfNeeded();
+  }
+
+  Future<void> _checkRuntimeIfNeeded() async {
+    final isBridgeManager =
+        widget.manager.id.contains('aniyomi') ||
+        widget.manager.id.contains('cloudstream') ||
+        widget.manager.id.contains('kotatsu');
+    if (isBridgeManager &&
+        !bridge.AnymeXRuntimeBridge.controller.isReady.value) {
+      final loaded = await bridge.AnymeXRuntimeBridge.isLoaded();
+      if (!loaded) {
+        await bridge.AnymeXRuntimeBridge.checkAndInitialize();
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (widget.isInstalled) {
       final sourcesAsync = widget.type == bridge.ItemType.anime
@@ -162,7 +182,10 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
     if (filteredSources.isEmpty) {
       final isRuntimeReady =
           bridge.AnymeXRuntimeBridge.controller.isReady.value;
-      final isBridgeManager = widget.manager.id != 'mangayomi';
+      final isBridgeManager =
+          widget.manager.id.contains('aniyomi') ||
+          widget.manager.id.contains('cloudstream') ||
+          widget.manager.id.contains('kotatsu');
 
       return Center(
         child: Padding(
@@ -170,57 +193,124 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                isBridgeManager && !isRuntimeReady
-                    ? Icons.build_circle_outlined
-                    : Icons.extension_off_outlined,
-                size: 64,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                isBridgeManager && !isRuntimeReady
-                    ? 'Runtime Bridge Required'
-                    : (widget.searchQuery.isEmpty && widget.langFilter == 'All'
-                          ? (widget.isInstalled
-                                ? 'No extensions installed'
-                                : 'No available extensions')
-                          : 'No extensions found'),
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
               if (isBridgeManager && !isRuntimeReady) ...[
-                Text(
-                  'Aniyomi and CloudStream extensions require the Runtime Bridge to be installed and initialized.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.extension_rounded,
+                        size: 56,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Runtime Bridge Required',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Aniyomi, CloudStream, and Kotatsu extensions require the AnymeX Runtime Bridge to be installed and initialized.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: () =>
+                                showRuntimeSetupSheet(context, ref),
+                            icon: const Icon(Icons.download_rounded, size: 18),
+                            label: const Text('Setup Runtime Bridge'),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 14,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              await bridge
+                                  .AnymeXRuntimeBridge.checkAndInitialize();
+                              ref.invalidate(availableAnimeSourcesProvider);
+                              ref.invalidate(availableMangaSourcesProvider);
+                            },
+                            icon: const Icon(Icons.refresh_rounded, size: 18),
+                            label: const Text('Recheck'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                FilledButton.icon(
-                  onPressed: () => showRuntimeSetupSheet(context, ref),
-                  icon: const Icon(Icons.download_rounded),
-                  label: const Text('Setup Runtime Bridge'),
+              ] else ...[
+                Icon(
+                  Icons.extension_off_outlined,
+                  size: 64,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                 ),
-              ] else if (!widget.isInstalled &&
-                  widget.searchQuery.isEmpty &&
-                  widget.langFilter == 'All') ...[
+                const SizedBox(height: 16),
                 Text(
-                  widget.manager.id == 'mangayomi'
-                      ? 'Add a Mangayomi repository to fetch and install extensions.'
-                      : (widget.manager.id.contains('cloudstream')
-                            ? 'Add a CloudStream repository to fetch and install extensions.'
-                            : 'Add a Tachiyomi repository to fetch and install extensions.'),
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                  widget.searchQuery.isEmpty && widget.langFilter == 'All'
+                      ? (widget.isInstalled
+                            ? 'No extensions installed'
+                            : 'No available extensions')
+                      : 'No extensions found',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 8),
+                if (!widget.isInstalled &&
+                    widget.searchQuery.isEmpty &&
+                    widget.langFilter == 'All') ...[
+                  Text(
+                    widget.manager.id == 'mangayomi'
+                        ? 'Add a Mangayomi repository to fetch and install extensions.'
+                        : (widget.manager.id.contains('cloudstream')
+                              ? 'Add a CloudStream repository to fetch and install extensions.'
+                              : 'Add a Tachiyomi repository to fetch and install extensions.'),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ],
             ],
           ),

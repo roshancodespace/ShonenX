@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 enum MediaKitAudioChannel {
   stereo('stereo'),
@@ -21,6 +22,8 @@ enum MediaKitAudioChannel {
 
 class MediaKitPrefs {
   final bool enableHardwareAcceleration;
+  final String hwdec;
+  final String vo;
   final bool enableLowLatency;
   final Duration minBuffer;
   final Duration maxBuffer;
@@ -30,6 +33,8 @@ class MediaKitPrefs {
 
   const MediaKitPrefs({
     this.enableHardwareAcceleration = true,
+    this.hwdec = 'auto-copy',
+    this.vo = 'auto',
     this.enableLowLatency = false,
     this.minBuffer = const Duration(seconds: 5),
     this.maxBuffer = const Duration(seconds: 30),
@@ -40,6 +45,8 @@ class MediaKitPrefs {
 
   MediaKitPrefs copyWith({
     bool? enableHardwareAcceleration,
+    String? hwdec,
+    String? vo,
     bool? enableLowLatency,
     Duration? minBuffer,
     Duration? maxBuffer,
@@ -50,6 +57,8 @@ class MediaKitPrefs {
     return MediaKitPrefs(
       enableHardwareAcceleration:
           enableHardwareAcceleration ?? this.enableHardwareAcceleration,
+      hwdec: hwdec ?? this.hwdec,
+      vo: vo ?? this.vo,
       enableLowLatency: enableLowLatency ?? this.enableLowLatency,
       minBuffer: minBuffer ?? this.minBuffer,
       maxBuffer: maxBuffer ?? this.maxBuffer,
@@ -64,6 +73,8 @@ class MediaKitPrefs {
     return identical(this, other) ||
         (other is MediaKitPrefs &&
             other.enableHardwareAcceleration == enableHardwareAcceleration &&
+            other.hwdec == hwdec &&
+            other.vo == vo &&
             other.enableLowLatency == enableLowLatency &&
             other.minBuffer == minBuffer &&
             other.maxBuffer == maxBuffer &&
@@ -75,6 +86,8 @@ class MediaKitPrefs {
   @override
   int get hashCode => Object.hash(
     enableHardwareAcceleration,
+    hwdec,
+    vo,
     enableLowLatency,
     minBuffer,
     maxBuffer,
@@ -87,6 +100,8 @@ class MediaKitPrefs {
   String toString() {
     return 'MediaKitPrefs('
         'hwAccel: $enableHardwareAcceleration, '
+        'hwdec: $hwdec, '
+        'vo: $vo, '
         'lowLatency: $enableLowLatency, '
         'minBuffer: $minBuffer, '
         'maxBuffer: $maxBuffer, '
@@ -97,8 +112,15 @@ class MediaKitPrefs {
   }
 
   factory MediaKitPrefs.fromMap(Map<String, dynamic> map) {
+    String defaultHwdec = 'auto-copy';
+    try {
+      if (Platform.isAndroid || Platform.isIOS) defaultHwdec = 'auto-safe';
+    } catch (_) {}
+
     return MediaKitPrefs(
       enableHardwareAcceleration: map['enableHardwareAcceleration'] ?? true,
+      hwdec: map['hwdec'] ?? defaultHwdec,
+      vo: map['vo'] ?? 'auto',
       enableLowLatency: map['enableLowLatency'] ?? false,
       minBuffer: Duration(milliseconds: map['minBufferMs'] ?? 5000),
       maxBuffer: Duration(milliseconds: map['maxBufferMs'] ?? 30000),
@@ -113,6 +135,8 @@ class MediaKitPrefs {
   Map<String, dynamic> toMap() {
     return {
       'enableHardwareAcceleration': enableHardwareAcceleration,
+      'hwdec': hwdec,
+      'vo': vo,
       'enableLowLatency': enableLowLatency,
       'minBufferMs': minBuffer.inMilliseconds,
       'maxBufferMs': maxBuffer.inMilliseconds,

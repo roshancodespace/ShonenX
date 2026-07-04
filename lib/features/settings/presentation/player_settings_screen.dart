@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
-import 'package:shonenx/features/player/presentation/widgets/better_player/better_player_settings.dart';
 import 'package:shonenx/features/player/presentation/widgets/media_kit/media_kit_settings.dart';
 import 'package:shonenx/features/player/presentation/widgets/video_player/video_player_settings.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
@@ -57,9 +56,9 @@ class PlayerSettingsScreen extends ConsumerWidget {
             title: 'Video Engine & Preferences',
             children: [
               SettingsSelectionTile(
-                title: 'MPV (MediaKit)',
+                title: 'Media Kit (MPV)',
                 subtitle:
-                    'Feature-rich engine with advanced subtitle & shader support',
+                    'Standalone player engine with advanced subtitle & shader support',
                 isSelected: playerPrefs.playerType == PlayerType.mediakit,
                 onSelect: () => prefsNotifier.changePlayer(PlayerType.mediakit),
                 customizeLabel: 'Settings',
@@ -73,11 +72,11 @@ class PlayerSettingsScreen extends ConsumerWidget {
                 },
               ),
               SettingsSelectionTile(
-                title: 'MDK (FVP)',
+                title: 'Video Player',
                 subtitle:
-                    'High performance engine with fast hardware seeking & custom buffers',
-                isSelected: playerPrefs.playerType == PlayerType.mdk,
-                onSelect: () => prefsNotifier.changePlayer(PlayerType.mdk),
+                    'Official OS / FVP engine with backend switching & buffer customization',
+                isSelected: playerPrefs.playerType == PlayerType.videoPlayer,
+                onSelect: () => prefsNotifier.changePlayer(PlayerType.videoPlayer),
                 customizeLabel: 'Settings',
                 customizeIcon: Icons.settings_outlined,
                 onCustomize: () {
@@ -88,24 +87,6 @@ class PlayerSettingsScreen extends ConsumerWidget {
                   );
                 },
               ),
-              if (Platform.isAndroid)
-                SettingsSelectionTile(
-                  title: 'ExoPlayer',
-                  subtitle:
-                      'Official Android player engine optimized for HLS & caching',
-                  isSelected: playerPrefs.playerType == PlayerType.betterplayer,
-                  onSelect: () =>
-                      prefsNotifier.changePlayer(PlayerType.betterplayer),
-                  customizeLabel: 'Settings',
-                  customizeIcon: Icons.settings_outlined,
-                  onCustomize: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      builder: (_) => const BetterPlayerSettings(),
-                    );
-                  },
-                ),
             ],
           ),
           SettingsSection(

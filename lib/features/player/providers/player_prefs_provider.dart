@@ -9,14 +9,13 @@ import 'package:shonenx/features/player/domain/gesture_prefs.dart';
 
 enum PlayerType {
   mediakit,
-  betterplayer,
-  mdk;
+  videoPlayer;
 
   factory PlayerType.fromString(String? value) {
-    return PlayerType.values.firstWhere(
-      (e) => e.name == value,
-      orElse: () => PlayerType.mediakit,
-    );
+    if (value == 'betterplayer' || value == 'mdk' || value == 'videoPlayer') {
+      return PlayerType.videoPlayer;
+    }
+    return PlayerType.mediakit;
   }
 }
 

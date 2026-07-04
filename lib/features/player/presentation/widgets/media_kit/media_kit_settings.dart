@@ -28,6 +28,70 @@ class MediaKitSettings extends ConsumerWidget {
                 prefs.copyWith(enableHardwareAcceleration: value),
               ),
             ),
+            SettingsDropdownTile<String>(
+              icon: Icons.memory_outlined,
+              title: 'Hardware decoder mode (hwdec)',
+              value: prefs.hwdec,
+              items: const [
+                DropdownMenuItem(
+                  value: 'auto-copy',
+                  child: Text(
+                    'auto-copy (Recommended for Desktop - Fixes glitches)',
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: 'auto-safe',
+                  child: Text('auto-safe (Recommended for Mobile)'),
+                ),
+                DropdownMenuItem(
+                  value: 'auto',
+                  child: Text(
+                    'auto (Direct texture - Fast but may glitch on D3D11)',
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: 'd3d11va-copy',
+                  child: Text('d3d11va-copy (DirectX 11 Copy Mode)'),
+                ),
+                DropdownMenuItem(
+                  value: 'dxva2-copy',
+                  child: Text('dxva2-copy (DirectX 9/10 Copy Mode)'),
+                ),
+                DropdownMenuItem(
+                  value: 'no',
+                  child: Text('no (Software / CPU Decoding)'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  prefsNotifier.updatePrefs(prefs.copyWith(hwdec: value));
+                }
+              },
+            ),
+            SettingsDropdownTile<String>(
+              icon: Icons.tv_rounded,
+              title: 'Video output driver (vo)',
+              value: prefs.vo,
+              items: const [
+                DropdownMenuItem(
+                  value: 'auto',
+                  child: Text('auto (Platform default)'),
+                ),
+                DropdownMenuItem(
+                  value: 'libmpv',
+                  child: Text('libmpv (Desktop default)'),
+                ),
+                DropdownMenuItem(
+                  value: 'gpu',
+                  child: Text('gpu (Android default)'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  prefsNotifier.updatePrefs(prefs.copyWith(vo: value));
+                }
+              },
+            ),
             SettingsSwitchTile(
               icon: Icons.timeline,
               title: 'Enable low latency',
@@ -41,10 +105,22 @@ class MediaKitSettings extends ConsumerWidget {
               title: 'Minimum pre-buffer',
               value: prefs.minBuffer,
               items: const [
-                DropdownMenuItem(value: Duration(seconds: 3), child: Text('3 seconds')),
-                DropdownMenuItem(value: Duration(seconds: 5), child: Text('5 seconds')),
-                DropdownMenuItem(value: Duration(seconds: 10), child: Text('10 seconds')),
-                DropdownMenuItem(value: Duration(seconds: 15), child: Text('15 seconds')),
+                DropdownMenuItem(
+                  value: Duration(seconds: 3),
+                  child: Text('3 seconds'),
+                ),
+                DropdownMenuItem(
+                  value: Duration(seconds: 5),
+                  child: Text('5 seconds'),
+                ),
+                DropdownMenuItem(
+                  value: Duration(seconds: 10),
+                  child: Text('10 seconds'),
+                ),
+                DropdownMenuItem(
+                  value: Duration(seconds: 15),
+                  child: Text('15 seconds'),
+                ),
               ],
               onChanged: (value) {
                 if (value != null) {
@@ -57,10 +133,22 @@ class MediaKitSettings extends ConsumerWidget {
               title: 'Maximum buffer capacity',
               value: prefs.maxBuffer,
               items: const [
-                DropdownMenuItem(value: Duration(seconds: 15), child: Text('15 seconds')),
-                DropdownMenuItem(value: Duration(seconds: 30), child: Text('30 seconds')),
-                DropdownMenuItem(value: Duration(seconds: 60), child: Text('60 seconds')),
-                DropdownMenuItem(value: Duration(seconds: 120), child: Text('120 seconds')),
+                DropdownMenuItem(
+                  value: Duration(seconds: 15),
+                  child: Text('15 seconds'),
+                ),
+                DropdownMenuItem(
+                  value: Duration(seconds: 30),
+                  child: Text('30 seconds'),
+                ),
+                DropdownMenuItem(
+                  value: Duration(seconds: 60),
+                  child: Text('60 seconds'),
+                ),
+                DropdownMenuItem(
+                  value: Duration(seconds: 120),
+                  child: Text('120 seconds'),
+                ),
               ],
               onChanged: (value) {
                 if (value != null) {
@@ -77,7 +165,9 @@ class MediaKitSettings extends ConsumerWidget {
                   .toList(),
               onChanged: (value) {
                 if (value != null) {
-                  prefsNotifier.updatePrefs(prefs.copyWith(audioChannel: value));
+                  prefsNotifier.updatePrefs(
+                    prefs.copyWith(audioChannel: value),
+                  );
                 }
               },
             ),

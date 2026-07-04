@@ -61,7 +61,14 @@ class MediaKitEngine implements VideoEngine {
 
   MediaKitEngine(this.prefs, this.ref) {
     _player = Player();
-    _controller = VideoController(_player);
+    _controller = VideoController(
+      _player,
+      configuration: VideoControllerConfiguration(
+        hwdec: prefs.hwdec,
+        enableHardwareAcceleration: prefs.enableHardwareAcceleration,
+        vo: prefs.vo != 'auto' ? prefs.vo : null,
+      ),
+    );
     updatePrefs(prefs);
 
     _subscriptions.addAll([

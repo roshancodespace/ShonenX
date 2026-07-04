@@ -167,34 +167,87 @@ class SettingsActionTile extends StatelessWidget {
     final theme = Theme.of(context);
     final color = isDestructive ? theme.colorScheme.error : foregroundColor;
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
-      tileColor: tileColor,
-      textColor: color,
-      iconColor: color,
-      leading:
-          leading ??
-          (icon != null
-              ? Icon(
-                  icon,
-                  color: color ?? accentColor ?? theme.colorScheme.primary,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isVertical = constraints.maxWidth < 600 && trailing != null;
+
+        if (isVertical) {
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
+            tileColor: tileColor,
+            textColor: color,
+            iconColor: color,
+            leading:
+                leading ??
+                (icon != null
+                    ? Icon(
+                        icon,
+                        color:
+                            color ?? accentColor ?? theme.colorScheme.primary,
+                      )
+                    : null),
+            title: Text(
+              title,
+              style: TextStyle(fontWeight: FontWeight.w600, color: color),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (subtitle != null) ...[
+                  Text(
+                    subtitle!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                ],
+                if (subtitle == null) const SizedBox(height: 4),
+                trailing!,
+              ],
+            ),
+            onTap: onTap,
+          );
+        }
+
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
+          tileColor: tileColor,
+          textColor: color,
+          iconColor: color,
+          leading:
+              leading ??
+              (icon != null
+                  ? Icon(
+                      icon,
+                      color: color ?? accentColor ?? theme.colorScheme.primary,
+                    )
+                  : null),
+          title: Text(
+            title,
+            style: TextStyle(fontWeight: FontWeight.w600, color: color),
+          ),
+          subtitle: subtitle != null
+              ? Text(
+                  subtitle!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 )
-              : null),
-      title: Text(
-        title,
-        style: TextStyle(fontWeight: FontWeight.w600, color: color),
-      ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            )
-          : null,
-      trailing: trailing,
-      onTap: onTap,
+              : null,
+          trailing: trailing != null
+              ? ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: constraints.maxWidth * 0.5,
+                  ),
+                  child: trailing,
+                )
+              : null,
+          onTap: onTap,
+        );
+      },
     );
   }
 }
@@ -236,12 +289,15 @@ class SettingsSegmentedTile<T> extends StatelessWidget {
             ),
             const SizedBox(height: 12),
           ],
-          SegmentedButton<T>(
-            segments: segments,
-            selected: selected,
-            onSelectionChanged: onSelectionChanged,
-            style: SegmentedButton.styleFrom(
-              visualDensity: VisualDensity.adaptivePlatformDensity,
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SegmentedButton<T>(
+              segments: segments,
+              selected: selected,
+              onSelectionChanged: onSelectionChanged,
+              style: SegmentedButton.styleFrom(
+                visualDensity: VisualDensity.adaptivePlatformDensity,
+              ),
             ),
           ),
         ],
@@ -353,18 +409,54 @@ class SettingsDropdownTile<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
-      leading: Icon(icon, color: theme.colorScheme.primary),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      trailing: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          value: value,
-          items: items,
-          onChanged: onChanged,
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isVertical = constraints.maxWidth < 600;
+
+        if (isVertical) {
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
+            leading: Icon(icon, color: theme.colorScheme.primary),
+            title: Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<T>(
+                  value: value,
+                  isExpanded: true,
+                  items: items,
+                  onChanged: onChanged,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
+          leading: Icon(icon, color: theme.colorScheme.primary),
+          title: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          trailing: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.55),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<T>(
+                value: value,
+                isExpanded: true,
+                items: items,
+                onChanged: onChanged,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -395,42 +487,103 @@ class SettingsSelectionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      selected: isSelected,
-      selectedTileColor:
-          theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-      selectedColor: theme.colorScheme.primary,
-      leading: leading ??
-          Icon(
-            isSelected ? Icons.check_circle_rounded : Icons.circle_outlined,
-            color: isSelected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurfaceVariant,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isVertical = constraints.maxWidth < 600 && onCustomize != null;
+
+        final button = onCustomize != null
+            ? FilledButton.icon(
+                style: IconButton.styleFrom(
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  foregroundColor: theme.colorScheme.onSurface,
+                ),
+                onPressed: onCustomize,
+                icon: Icon(customizeIcon, size: 18),
+                label: Text(customizeLabel),
+              )
+            : null;
+
+        if (isVertical) {
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            selected: isSelected,
+            selectedTileColor: theme.colorScheme.primaryContainer.withValues(
+              alpha: 0.3,
+            ),
+            selectedColor: theme.colorScheme.primary,
+            leading:
+                leading ??
+                Icon(
+                  isSelected
+                      ? Icons.check_circle_rounded
+                      : Icons.circle_outlined,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+            title: Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontWeight: isSelected
+                        ? FontWeight.w700
+                        : FontWeight.normal,
+                    color: isSelected
+                        ? theme.colorScheme.onPrimaryContainer
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                button!,
+              ],
+            ),
+            onTap: onSelect,
+          );
+        }
+
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          selected: isSelected,
+          selectedTileColor: theme.colorScheme.primaryContainer.withValues(
+            alpha: 0.3,
           ),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
-          color: isSelected ? theme.colorScheme.onPrimaryContainer : null,
-        ),
-      ),
-      onTap: onSelect,
-      trailing: onCustomize != null
-          ? FilledButton.icon(
-              style: IconButton.styleFrom(
-                backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                foregroundColor: theme.colorScheme.onSurface,
+          selectedColor: theme.colorScheme.primary,
+          leading:
+              leading ??
+              Icon(
+                isSelected ? Icons.check_circle_rounded : Icons.circle_outlined,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
               ),
-              onPressed: onCustomize,
-              icon: Icon(customizeIcon, size: 18),
-              label: Text(customizeLabel),
-            )
-          : null,
+          title: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(
+            subtitle,
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+              color: isSelected ? theme.colorScheme.onPrimaryContainer : null,
+            ),
+          ),
+          onTap: onSelect,
+          trailing: button != null
+              ? ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: constraints.maxWidth * 0.45,
+                  ),
+                  child: button,
+                )
+              : null,
+        );
+      },
     );
   }
 }

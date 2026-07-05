@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/remote_config/providers/remote_config_provider.dart';
@@ -58,16 +57,69 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
   }
 
   void _handleDeepLink(Uri uri) {
-    if ((uri.scheme == 'aniyomi' ||
-            uri.scheme == 'tachiyomi' ||
-            uri.scheme == 'mangayomi' ||
-            uri.scheme == 'shonenx') &&
-        uri.host == 'add-repo') {
-      final url = uri.queryParameters['url'];
-      final isAnime = uri.scheme == 'aniyomi';
-      final target = (url != null && url.isNotEmpty && url != '()')
-          ? '/settings/extensions?autoAddUrl=${Uri.encodeComponent(url)}&autoAddType=${isAnime ? "anime" : "manga"}'
-          : '/settings/extensions';
+    final scheme = uri.scheme.toLowerCase();
+    final host = uri.host.toLowerCase();
+
+    if ((scheme == 'aniyomi' ||
+            scheme == 'tachiyomi' ||
+            scheme == 'mangayomi' ||
+            scheme.contains('cloudstream') ||
+            scheme == 'kotatsu' ||
+            scheme == 'sora' ||
+            scheme == 'shonenx') &&
+        (host == 'add-repo' ||
+            host == 'add-repository' ||
+            scheme == 'cloudstreamrepo' ||
+            uri.queryParameters.containsKey('url'))) {
+      String? url = uri.queryParameters['url'];
+      String? managerId;
+      String? type;
+
+      if (scheme == 'aniyomi') {
+        managerId = 'aniyomi';
+        type = 'anime';
+      } else if (scheme == 'tachiyomi') {
+        managerId = 'aniyomi';
+        type = 'manga';
+      } else if (scheme == 'mangayomi') {
+        managerId = 'mangayomi';
+      } else if (scheme.contains('cloudstream')) {
+        managerId = 'cloudstream';
+        if (url == null &&
+            host.isNotEmpty &&
+            host != 'add-repo' &&
+            host != 'add-repository') {
+          url = uri.toString().replaceFirst(
+            RegExp(
+              r'^cloudstreamrepo://|^cloudstream://',
+              caseSensitive: false,
+            ),
+            '',
+          );
+          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://$url';
+          }
+        }
+      } else if (scheme == 'kotatsu') {
+        managerId = 'kotatsu';
+        type = 'manga';
+      } else if (scheme == 'sora') {
+        managerId = 'sora';
+        type = 'novel';
+      } else if (scheme == 'shonenx' && host == 'add-repo') {
+        managerId = uri.queryParameters['manager'] ?? 'aniyomi';
+        type = uri.queryParameters['type'];
+      }
+
+      final targetUri = Uri(
+        path: '/settings/extensions',
+        queryParameters: {
+          if (url != null && url.isNotEmpty && url != '()') 'autoAddUrl': url,
+          if (managerId != null) 'autoAddManager': managerId,
+          if (type != null) 'autoAddType': type,
+        },
+      );
+      final target = targetUri.toString();
 
       try {
         final currentUri = GoRouterState.of(context).uri;

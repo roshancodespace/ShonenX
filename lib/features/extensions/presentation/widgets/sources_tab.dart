@@ -1,6 +1,7 @@
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
@@ -70,7 +71,7 @@ class _UnifiedSource {
 }
 
 class SourcesTab extends ConsumerStatefulWidget {
-  final bridge.Extension manager;
+  final String engineFilter;
   final bridge.ItemType type;
   final String searchQuery;
   final String langFilter;
@@ -78,7 +79,7 @@ class SourcesTab extends ConsumerStatefulWidget {
 
   const SourcesTab({
     super.key,
-    required this.manager,
+    this.engineFilter = 'All',
     required this.type,
     required this.searchQuery,
     required this.langFilter,
@@ -99,11 +100,11 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
   }
 
   Future<void> _checkRuntimeIfNeeded() async {
-    final isBridgeManager =
-        widget.manager.id.contains('aniyomi') ||
-        widget.manager.id.contains('cloudstream') ||
-        widget.manager.id.contains('kotatsu');
-    if (isBridgeManager &&
+    final isBridgeFilter =
+        widget.engineFilter == 'Tachiyomi' ||
+        widget.engineFilter == 'CloudStream' ||
+        widget.engineFilter == 'Kotatsu';
+    if (isBridgeFilter &&
         !bridge.AnymeXRuntimeBridge.controller.isReady.value) {
       final loaded = await bridge.AnymeXRuntimeBridge.isLoaded();
       if (!loaded) {
@@ -115,12 +116,19 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
   @override
   Widget build(BuildContext context) {
     if (widget.isInstalled) {
-      final sourcesAsync = widget.type == bridge.ItemType.anime
-          ? ref.watch(availableAnimeSourcesProvider)
-          : ref.watch(availableMangaSourcesProvider);
+      final sourcesAsync = switch (widget.type) {
+        bridge.ItemType.anime => ref.watch(availableAnimeSourcesProvider),
+        bridge.ItemType.manga => ref.watch(availableMangaSourcesProvider),
+        bridge.ItemType.novel => ref.watch(availableNovelSourcesProvider),
+      };
 
       return Obx(() {
-        final installedRx = widget.manager.getInstalledRx(widget.type).value;
+        final bridgeManager = Get.find<bridge.ExtensionManager>();
+        final installedRx = switch (widget.type) {
+          bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
+          bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
+          bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
+        };
         final installedIds = installedRx.map((e) => e.id ?? '').toSet();
 
         return sourcesAsync.when(
@@ -143,13 +151,28 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
       });
     } else {
       return Obx(() {
-        final available = widget.manager.getAvailableRx(widget.type).value;
-        final installed = widget.manager.getInstalledRx(widget.type).value;
+        final bridgeManager = Get.find<bridge.ExtensionManager>();
+        final available = switch (widget.type) {
+          bridge.ItemType.anime => bridgeManager.availableAnimeExtensions,
+          bridge.ItemType.manga => bridgeManager.availableMangaExtensions,
+          bridge.ItemType.novel => bridgeManager.availableNovelExtensions,
+        };
+        final installed = switch (widget.type) {
+          bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
+          bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
+          bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
+        };
         final installedIds = installed.map((e) => e.id ?? '').toSet();
 
-        final uninstalledAvailable = available
-            .where((s) => !installedIds.contains(s.id))
-            .toList();
+        final enabledManagers = ref.watch(enabledExtensionManagersProvider);
+        final uninstalledAvailable = available.where((s) {
+          if (installedIds.contains(s.id)) return false;
+          final mId = (s.managerId ?? bridge.getSourceManager(s).id).replaceAll(
+            '-desktop',
+            '',
+          );
+          return enabledManagers.contains(mId);
+        }).toList();
 
         final unified = uninstalledAvailable
             .map((s) => _UnifiedSource.fromBridgeSource(s))
@@ -170,6 +193,39 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
           return false;
         }
       }
+      if (widget.engineFilter != 'All') {
+        String mId = '';
+        if (s.sourceInfo != null) {
+          if (s.isInbuilt) {
+            if (widget.engineFilter != 'Mangayomi') return false;
+            mId = 'mangayomi';
+          } else {
+            final bridgeManager = Get.find<bridge.ExtensionManager>();
+            final allInst = [
+              ...bridgeManager.installedAnimeExtensions,
+              ...bridgeManager.installedMangaExtensions,
+              ...bridgeManager.installedNovelExtensions,
+            ];
+            final match = allInst.firstWhereOrNull(
+              (e) => e.id == s.id || e.name == s.name,
+            );
+            if (match != null) {
+              mId = (match.managerId ?? bridge.getSourceManager(match).id)
+                  .replaceAll('-desktop', '');
+            }
+          }
+        } else if (s.bridgeSource != null) {
+          mId =
+              (s.bridgeSource!.managerId ??
+                      bridge.getSourceManager(s.bridgeSource!).id)
+                  .replaceAll('-desktop', '');
+        }
+        String targetId = widget.engineFilter.toLowerCase();
+        if (targetId == 'tachiyomi') targetId = 'aniyomi';
+        if (mId.isNotEmpty && !mId.toLowerCase().contains(targetId)) {
+          return false;
+        }
+      }
       return name.contains(query) || id.contains(query);
     }).toList();
 
@@ -182,10 +238,10 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
     if (filteredSources.isEmpty) {
       final isRuntimeReady =
           bridge.AnymeXRuntimeBridge.controller.isReady.value;
-      final isBridgeManager =
-          widget.manager.id.contains('aniyomi') ||
-          widget.manager.id.contains('cloudstream') ||
-          widget.manager.id.contains('kotatsu');
+      final isBridgeFilter =
+          widget.engineFilter == 'Tachiyomi' ||
+          widget.engineFilter == 'CloudStream' ||
+          widget.engineFilter == 'Kotatsu';
 
       return Center(
         child: Padding(
@@ -193,43 +249,41 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (isBridgeManager && !isRuntimeReady) ...[
+              if (isBridgeFilter && !isRuntimeReady) ...[
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: Theme.of(
                       context,
-                    ).colorScheme.primaryContainer.withValues(alpha: 0.25),
+                    ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: Theme.of(
                         context,
-                      ).colorScheme.primary.withValues(alpha: 0.3),
+                      ).colorScheme.primary.withValues(alpha: 0.5),
                     ),
                   ),
                   child: Column(
                     children: [
                       Icon(
-                        Icons.extension_rounded,
-                        size: 56,
+                        Icons.extension_off_rounded,
+                        size: 48,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Runtime Bridge Required',
+                        'Engine Not Ready',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                       Text(
-                        'Aniyomi, CloudStream, and Kotatsu extensions require the AnymeX Runtime Bridge to be installed and initialized.',
+                        'This engine requires a runtime component to execute extensions. It may take a moment to initialize or require setup.',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          height: 1.4,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -258,6 +312,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                                   .AnymeXRuntimeBridge.checkAndInitialize();
                               ref.invalidate(availableAnimeSourcesProvider);
                               ref.invalidate(availableMangaSourcesProvider);
+                              ref.invalidate(availableNovelSourcesProvider);
                             },
                             icon: const Icon(Icons.refresh_rounded, size: 18),
                             label: const Text('Recheck'),
@@ -278,11 +333,11 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                 ),
               ] else ...[
                 Icon(
-                  Icons.extension_off_outlined,
+                  widget.isInstalled
+                      ? Icons.extension_off_outlined
+                      : Icons.search_off_outlined,
                   size: 64,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  color: Theme.of(context).colorScheme.outline,
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -300,11 +355,13 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                     widget.searchQuery.isEmpty &&
                     widget.langFilter == 'All') ...[
                   Text(
-                    widget.manager.id == 'mangayomi'
+                    widget.engineFilter == 'Mangayomi'
                         ? 'Add a Mangayomi repository to fetch and install extensions.'
-                        : (widget.manager.id.contains('cloudstream')
+                        : (widget.engineFilter == 'CloudStream'
                               ? 'Add a CloudStream repository to fetch and install extensions.'
-                              : 'Add a Tachiyomi repository to fetch and install extensions.'),
+                              : (widget.engineFilter == 'Tachiyomi'
+                                    ? 'Add a Tachiyomi repository to fetch and install extensions.'
+                                    : 'Add repositories via Manage Repos to fetch and install extensions across all enabled engines.')),
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -702,7 +759,9 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
     if (source.bridgeSource == null) return;
     setState(() => _processingIds.add(source.id));
     try {
-      await widget.manager.installSource(source.bridgeSource!);
+      await bridge
+          .getSourceManager(source.bridgeSource!)
+          .installSource(source.bridgeSource!);
       ref.invalidate(availableAnimeSourcesProvider);
       ref.invalidate(availableMangaSourcesProvider);
       if (context.mounted) {
@@ -739,13 +798,18 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
       onConfirm: () async {
         setState(() => _processingIds.add(name));
         try {
-          final installed = widget.manager.getInstalledRx(widget.type).value;
+          final bridgeManager = Get.find<bridge.ExtensionManager>();
+          final installed = switch (widget.type) {
+            bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
+            bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
+            bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
+          };
           final variants = installed
               .where((e) => (e.name ?? 'N/A') == name)
               .toList();
 
           await Future.wait(
-            variants.map((e) => widget.manager.uninstallSource(e)),
+            variants.map((e) => bridge.getSourceManager(e).uninstallSource(e)),
           );
 
           ref.invalidate(availableAnimeSourcesProvider);
@@ -775,9 +839,14 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
       onConfirm: () async {
         setState(() => _processingIds.add(source.id));
         try {
-          final installed = widget.manager.getInstalledRx(widget.type).value;
+          final bridgeManager = Get.find<bridge.ExtensionManager>();
+          final installed = switch (widget.type) {
+            bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
+            bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
+            bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
+          };
           final extSource = installed.firstWhere((e) => e.id == source.id);
-          await widget.manager.uninstallSource(extSource);
+          await bridge.getSourceManager(extSource).uninstallSource(extSource);
 
           ref.invalidate(availableAnimeSourcesProvider);
           ref.invalidate(availableMangaSourcesProvider);

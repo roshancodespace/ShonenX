@@ -682,11 +682,17 @@ EOF
 }
 
 do_install() {
+    local target_tag="${1:-}"
     check_mpv
 
     log_panel_add step "Querying GitHub releases for $REPO..."
     local release_json
-    release_json=$(curl -s "https://api.github.com/repos/$REPO/releases/latest")
+    if [ -n "$target_tag" ] && [ "$target_tag" != "latest" ]; then
+        log_panel_add step "Fetching release $target_tag..."
+        release_json=$(curl -s "https://api.github.com/repos/$REPO/releases/tags/$target_tag")
+    else
+        release_json=$(curl -s "https://api.github.com/repos/$REPO/releases/latest")
+    fi
 
     if echo "$release_json" | grep -q '"message": "Not Found"'; then
         log_panel_add err "Repository '$REPO' not found or has no releases"
@@ -829,15 +835,185 @@ do_uninstall() {
     log_panel_add ok "ShonenX fully uninstalled"
 }
 
+# --- Release Selector --------------------------------------
+SELECTED_RELEASE_TAG=""
+
+tui_select_release() {
+    local target_repo="$1"
+    draw_subscreen "  >>  SELECT RELEASE TO INSTALL"
+    local W; W=$(term_width)
+    local H; H=$(term_height)
+
+    cursor_move 5 3
+    printf '%s[*] Fetching available releases from %s...%s' "$C_BRIGHT_CYAN" "$target_repo" "$S_RESET"
+
+    local releases_json
+    releases_json=$(curl -s "https://api.github.com/repos/$target_repo/releases?per_page=10")
+
+    # Clear loading message
+    cursor_move 5 3
+    printf '%*s' $(( W - 6 )) ''
+
+    # Parse releases
+    local parsed
+    if command -v jq >/dev/null 2>&1; then
+        parsed=$(echo "$releases_json" | jq -r '.[] | "\(.tag_name)\t\(.prerelease)\t\(.name)"' 2>/dev/null || true)
+    elif command -v python3 >/dev/null 2>&1; then
+        parsed=$(python3 -c '
+import sys, json
+try:
+    for r in json.load(sys.stdin):
+        print(f"{r.get(\"tag_name\",\"\")}\t{r.get(\"prerelease\",False)}\t{r.get(\"name\",\"\")}")
+except Exception:
+    pass
+' <<< "$releases_json" || true)
+    else
+        parsed=$(echo "$releases_json" | grep -E '"tag_name":|"prerelease":|"name":' | awk '
+        /"tag_name":/ { tag=$2; gsub(/["|,]/, "", tag); }
+        /"prerelease":/ { pre=$2; gsub(/["|,]/, "", pre); }
+        /"name":/ {
+            name=$0; sub(/[^"]*"name": *"/, "", name); sub(/".*/, "", name);
+            if (tag != "") { print tag "\t" pre "\t" name; tag=""; pre=""; }
+        }' || true)
+    fi
+
+    if [ -z "$parsed" ]; then
+        cursor_move 5 3
+        printf '%s[!!] Could not fetch releases list. Defaulting to latest stable...%s' "$C_BRIGHT_YELLOW" "$S_RESET"
+        sleep 1.5
+        SELECTED_RELEASE_TAG="latest"
+        return 0
+    fi
+
+    local tags=() pres=() names=()
+    while IFS=$'\t' read -r t p n; do
+        if [ -n "$t" ]; then
+            tags+=("$t")
+            pres+=("$p")
+            names+=("$n")
+        fi
+    done <<< "$parsed"
+
+    local count=${#tags[@]}
+    if [ "$count" -eq 0 ]; then
+        SELECTED_RELEASE_TAG="latest"
+        return 0
+    fi
+
+    local selected=0
+    local box_col=3
+    local box_w=$(( W - 6 ))
+    local box_row=5
+    local box_h=$(( count * 2 + 3 ))
+
+    draw_thin_box "$box_row" "$box_col" "$box_w" "$box_h" "$C_BRIGHT_BLACK"
+    cursor_move "$box_row" $(( box_col + 2 ))
+    printf '%s AVAILABLE RELEASES %s' "$C_BRIGHT_BLACK" "$S_RESET"
+
+    local inner_w=$(( box_w - 4 ))
+    local badge_w=17
+    local tag_w=15
+    local name_w=$(( inner_w - badge_w - tag_w - 8 ))
+    [ "$name_w" -lt 10 ] && name_w=10
+
+    while true; do
+        for (( i = 0; i < count; i++ )); do
+            local item_row=$(( box_row + 1 + i * 2 ))
+            local tag="${tags[$i]}"
+            local pre="${pres[$i]}"
+            local name="${names[$i]:-}"
+            [ "${#name}" -gt "$name_w" ] && name="${name:0:$(( name_w - 3 ))}..."
+
+            local badge="" badge_color="$C_BRIGHT_GREEN"
+            if [ "$i" -eq 0 ]; then
+                if [ "$pre" = "true" ] || [ "$pre" = "True" ] || [ "$pre" = "1" ]; then
+                    badge="[Latest Pre-rel]"
+                    badge_color="$C_BRIGHT_YELLOW"
+                else
+                    badge="[Latest Stable]"
+                    badge_color="$C_BRIGHT_GREEN"
+                fi
+            else
+                if [ "$pre" = "true" ] || [ "$pre" = "True" ] || [ "$pre" = "1" ]; then
+                    badge="[Pre-release]"
+                    badge_color="$C_BRIGHT_YELLOW"
+                else
+                    badge="[Stable]"
+                    badge_color="$C_CYAN"
+                fi
+            fi
+
+            local num=$(( i + 1 ))
+            cursor_move "$item_row" $(( box_col + 1 ))
+            printf '%*s' $(( box_w - 2 )) ''
+            cursor_move $(( item_row + 1 )) $(( box_col + 1 ))
+            printf '%*s' $(( box_w - 2 )) ''
+
+            if [ "$i" -eq "$selected" ]; then
+                cursor_move "$item_row" $(( box_col + 1 ))
+                printf '%s%s' "$S_REVERSE" "$C_BRIGHT_MAGENTA"
+                printf ' %s  %-*s  %-*s  %-*s ' \
+                    "$num" "$badge_w" "$badge" "$tag_w" "$tag" "$name_w" "$name"
+                printf '%s' "$S_RESET"
+            else
+                cursor_move "$item_row" $(( box_col + 2 ))
+                printf '%s%s%s  ' "$S_DIM" "$num" "$S_RESET"
+                printf '%s%-*s%s  ' "$badge_color" "$badge_w" "$badge" "$S_RESET"
+                printf '%s%-*s%s  ' "$C_BRIGHT_WHITE" "$tag_w" "$tag" "$S_RESET"
+                printf '%s%-*s%s' "$S_DIM" "$name_w" "$name" "$S_RESET"
+            fi
+        done
+
+        local footer_row=$(( H - 2 ))
+        cursor_move "$footer_row" "$box_col"
+        printf '%*s' "$box_w" ''
+        cursor_move "$footer_row" "$box_col"
+        printf '%s  ^v / jk  Navigate    Enter  Select (%s)    q  Cancel%s' "$S_DIM" "${tags[$selected]}" "$S_RESET"
+
+        read_key
+        case "$KEY" in
+            $'\x1b[A'|k|K)
+                (( selected-- )) || true
+                [ "$selected" -lt 0 ] && selected=$(( count - 1 ))
+                ;;
+            $'\x1b[B'|j|J)
+                (( selected++ )) || true
+                [ "$selected" -ge "$count" ] && selected=0
+                ;;
+            1) [ "$count" -ge 1 ] && { selected=0; break; } ;;
+            2) [ "$count" -ge 2 ] && { selected=1; break; } ;;
+            3) [ "$count" -ge 3 ] && { selected=2; break; } ;;
+            4) [ "$count" -ge 4 ] && { selected=3; break; } ;;
+            5) [ "$count" -ge 5 ] && { selected=4; break; } ;;
+            6) [ "$count" -ge 6 ] && { selected=5; break; } ;;
+            7) [ "$count" -ge 7 ] && { selected=6; break; } ;;
+            8) [ "$count" -ge 8 ] && { selected=7; break; } ;;
+            9) [ "$count" -ge 9 ] && { selected=8; break; } ;;
+            q|Q|$'\x1b') return 1 ;;
+            $'\n'|$'\r'|'') break ;;
+        esac
+    done
+
+    SELECTED_RELEASE_TAG="${tags[$selected]}"
+    return 0
+}
+
 # --- TUI Screens -------------------------------------------
 tui_install() {
+    if ! tui_select_release "$REPO"; then
+        show_banner
+        return
+    fi
     draw_subscreen "  >>  QUICK INSTALL / UPDATE"
     log_panel_init
     if [ "$REPO" != "$DEFAULT_REPO" ] || [ "$ICON_INPUT" != "$DEFAULT_ICON_URL" ]; then
         log_panel_add info "Using cached custom configuration"
     fi
+    if [ "$SELECTED_RELEASE_TAG" != "latest" ] && [ -n "$SELECTED_RELEASE_TAG" ]; then
+        log_panel_add info "Selected release : $SELECTED_RELEASE_TAG"
+    fi
     log_panel_add info "Starting installation from $REPO..."
-    do_install && true || log_panel_add err "Installation failed -- check output above"
+    do_install "$SELECTED_RELEASE_TAG" && true || log_panel_add err "Installation failed -- check output above"
     local W; W=$(term_width)
     local H; H=$(term_height)
     cursor_move $(( H - 1 )) 3
@@ -904,12 +1080,21 @@ tui_custom_install() {
         ICON_INPUT="$CUSTOM_ICON"
     fi
 
+    if ! tui_select_release "$REPO"; then
+        show_banner
+        return
+    fi
     draw_subscreen "  ##   CUSTOM INSTALLATION"
     log_panel_init
     log_panel_add info "Repository : $REPO"
     log_panel_add info "Icon       : $ICON_INPUT"
+    if [ "$SELECTED_RELEASE_TAG" != "latest" ] && [ -n "$SELECTED_RELEASE_TAG" ]; then
+        log_panel_add info "Release    : $SELECTED_RELEASE_TAG"
+    else
+        log_panel_add info "Release    : Latest"
+    fi
     log_panel_add step "Starting custom installation..."
-    do_install && true || log_panel_add err "Installation failed"
+    do_install "$SELECTED_RELEASE_TAG" && true || log_panel_add err "Installation failed"
     cursor_move $(( H - 1 )) 3
     printf '%s  Done! Press any key to return...%s' "$C_BRIGHT_GREEN" "$S_RESET"
     cursor_show; read_key; cursor_hide
@@ -1061,6 +1246,7 @@ if [ $# -gt 0 ]; then
             --install)     ACTION="install";   shift ;;
             --repo)        REPO="$2";          shift 2 ;;
             --icon)        ICON_INPUT="$2";    shift 2 ;;
+            --tag|--release) SELECTED_RELEASE_TAG="$2"; shift 2 ;;
             --manager)     ACTION="manager";   shift ;;
             --uninstall)   ACTION="uninstall"; shift ;;
             --status)      ACTION="status";    shift ;;
@@ -1069,6 +1255,7 @@ if [ $# -gt 0 ]; then
                 printf '  --install           Quick install\n'
                 printf '  --repo <user/repo>  Custom repository\n'
                 printf '  --icon <path|url>   Custom icon\n'
+                printf '  --tag, --release    Specify release tag (e.g. v1.9.0-beta)\n'
                 printf '  --manager           Setup shonenx-manager\n'
                 printf '  --uninstall         Remove ShonenX\n'
                 printf '  --status            Check install status\n'
@@ -1081,7 +1268,7 @@ if [ $# -gt 0 ]; then
     case "$ACTION" in
         install)
             LOG_LINES=()
-            do_install
+            do_install "$SELECTED_RELEASE_TAG"
             ;;
         manager)
             LOG_LINES=()
@@ -1099,8 +1286,8 @@ if [ $# -gt 0 ]; then
             printf '\n'
             ;;
         *)
-            if [ "$REPO" != "$DEFAULT_REPO" ] || [ "$ICON_INPUT" != "$DEFAULT_ICON_URL" ]; then
-                LOG_LINES=(); do_install
+            if [ "$REPO" != "$DEFAULT_REPO" ] || [ "$ICON_INPUT" != "$DEFAULT_ICON_URL" ] || [ -n "$SELECTED_RELEASE_TAG" ]; then
+                LOG_LINES=(); do_install "$SELECTED_RELEASE_TAG"
             else
                 printf 'No action specified. Use --help.\n'
             fi

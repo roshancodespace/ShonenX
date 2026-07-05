@@ -250,7 +250,7 @@ class _TroubleshootSettingsScreenState
                                     }
                                   }
                                   await _loadCounts();
-                                  if (mounted) {
+                                  if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         behavior: SnackBarBehavior.floating,

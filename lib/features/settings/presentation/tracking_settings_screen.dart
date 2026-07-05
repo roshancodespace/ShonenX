@@ -129,8 +129,8 @@ class TrackingSettingsScreen extends ConsumerWidget {
                                 )
                               : Padding(
                                   padding: const EdgeInsets.only(left: 5),
-                                  child: SvgIcon(
-                                    tracker.type.iconSvgString,
+                                  child: tracker.type.getIconWidget(
+                                    size: 24,
                                     color: isPrimary
                                         ? theme.colorScheme.primary
                                         : theme.colorScheme.onSurface
@@ -182,8 +182,8 @@ class TrackingSettingsScreen extends ConsumerWidget {
                     trailing: !isRemote || isLoggedIn
                         ? FilledButton.icon(
                             style: IconButton.styleFrom(
-                              backgroundColor: theme
-                                  .colorScheme.surfaceContainerHighest,
+                              backgroundColor:
+                                  theme.colorScheme.surfaceContainerHighest,
                               foregroundColor: theme.colorScheme.onSurface,
                             ),
                             onPressed: () => showModalBottomSheet(

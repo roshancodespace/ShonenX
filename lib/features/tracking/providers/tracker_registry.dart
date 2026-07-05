@@ -5,6 +5,7 @@ import 'package:shonenx/features/tracking/engine/trackers/local/local_tracker.da
 import 'package:shonenx/features/tracking/engine/trackers/mal/mal_tracker.dart';
 import 'package:shonenx/features/tracking/engine/tracking_service.dart';
 import 'package:shonenx/features/tracking/engine/trackers/anilist/anilist_tracker.dart';
+import 'package:shonenx/features/tracking/engine/trackers/kitsu/kitsu_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
@@ -14,6 +15,7 @@ final availableTrackersProvider = Provider<List<TrackingService>>(
   (ref) => [
     AnilistTracker(ref),
     MalTracker(ref),
+    KitsuTracker(ref),
     LocalTracker(ref.watch(databaseProvider)),
   ],
 );

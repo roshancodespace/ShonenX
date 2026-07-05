@@ -19,10 +19,7 @@ import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 class TrackerManagerSheet extends ConsumerWidget {
   final UnifiedMedia media;
 
-  const TrackerManagerSheet({
-    super.key,
-    required this.media,
-  });
+  const TrackerManagerSheet({super.key, required this.media});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -134,10 +131,11 @@ class _LoginTrackerRow extends ConsumerWidget {
           shape: BoxShape.circle,
           color: cs.surfaceContainerHighest,
         ),
-        child: Icon(
-          Icons.lock_outline_rounded,
-          size: 20,
-          color: cs.onSurfaceVariant,
+        child: Center(
+          child: tracker.type.getIconWidget(
+            size: 20,
+            color: cs.onSurfaceVariant,
+          ),
         ),
       ),
       title: Text(
@@ -250,7 +248,11 @@ class _LinkedTrackerRow extends ConsumerWidget {
                             if (isLocal) {
                               ref.invalidate(
                                 mediaTrackingProvider(
-                                  TrackingQuery(tracker.type, media.id, media.type),
+                                  TrackingQuery(
+                                    tracker.type,
+                                    media.id,
+                                    media.type,
+                                  ),
                                 ),
                               );
                             }
@@ -310,10 +312,11 @@ class _LinkedTrackerRow extends ConsumerWidget {
               shape: BoxShape.circle,
               color: cs.errorContainer,
             ),
-            child: Icon(
-              Icons.error_outline_rounded,
-              color: cs.onErrorContainer,
-              size: 20,
+            child: Center(
+              child: tracker.type.getIconWidget(
+                size: 20,
+                color: cs.onErrorContainer,
+              ),
             ),
           ),
           title: Text(
@@ -327,7 +330,9 @@ class _LinkedTrackerRow extends ConsumerWidget {
             icon: Icons.refresh_rounded,
             onTap: () {
               ref.invalidate(
-                mediaTrackingProvider(TrackingQuery(tracker.type, media.id, media.type)),
+                mediaTrackingProvider(
+                  TrackingQuery(tracker.type, media.id, media.type),
+                ),
               );
             },
           ),
@@ -432,10 +437,11 @@ class _LinkedTrackerRow extends ConsumerWidget {
               shape: BoxShape.circle,
               color: cs.primaryContainer,
             ),
-            child: Icon(
-              Icons.bookmark_added_rounded,
-              size: 20,
-              color: cs.onPrimaryContainer,
+            child: Center(
+              child: tracker.type.getIconWidget(
+                size: 20,
+                color: cs.onPrimaryContainer,
+              ),
             ),
           ),
           title: Text(
@@ -448,7 +454,7 @@ class _LinkedTrackerRow extends ConsumerWidget {
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              'Ep ${listItem.progress.toInt()} • ${listItem.status.displayName}',
+              '${media.type == MediaType.MANGA ? "Ch" : "Ep"} ${listItem.progress.toInt()} • ${listItem.status.getLabelForMedia(media.type)}',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: cs.onSurfaceVariant.withValues(alpha: 0.78),
               ),

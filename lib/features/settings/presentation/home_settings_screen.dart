@@ -307,8 +307,10 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
               items: TrackedStatus.values
                   .where((e) => e != TrackedStatus.unknown)
                   .map(
-                    (e) =>
-                        DropdownMenuItem(value: e, child: Text(e.displayName)),
+                    (e) => DropdownMenuItem(
+                      value: e,
+                      child: Text(e.getLabelForMedia(_selectedMediaType)),
+                    ),
                   )
                   .toList(),
               onChanged: (val) {
@@ -602,7 +604,7 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
                     .map(
                       (e) => DropdownMenuItem(
                         value: e,
-                        child: Text(e.displayName),
+                        child: Text(e.getLabelForMedia(_selectedMediaType)),
                       ),
                     )
                     .toList(),

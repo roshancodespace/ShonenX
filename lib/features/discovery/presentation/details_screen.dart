@@ -535,7 +535,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
         } else if (isTrackerLinked || tracker.type == TrackerType.local) {
           if (listItem != null) {
             label =
-                'Ep ${listItem.progress.toInt()} • ${listItem.status.displayName}';
+                '${media.type == MediaType.MANGA ? "Ch" : "Ep"} ${listItem.progress.toInt()} • ${listItem.status.getLabelForMedia(media.type)}';
             icon = Icons.bookmark_added;
           } else {
             label = 'Add to ${tracker.type.displayName}';

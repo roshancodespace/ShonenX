@@ -108,6 +108,7 @@ class TrackingPrefsNotifier extends Notifier<TrackingPrefsState> {
           enabledTrackers: {
             TrackerType.anilist: true,
             TrackerType.myanimelist: true,
+            TrackerType.kitsu: true,
           },
         );
       }
@@ -116,6 +117,7 @@ class TrackingPrefsNotifier extends Notifier<TrackingPrefsState> {
         enabledTrackers: {
           TrackerType.anilist: true,
           TrackerType.myanimelist: true,
+          TrackerType.kitsu: true,
         },
       );
     }

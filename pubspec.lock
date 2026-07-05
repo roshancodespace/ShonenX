@@ -1018,7 +1018,7 @@ packages:
     source: git
     version: "1.0.5"
   media_kit_libs_windows_video:
-    dependency: transitive
+    dependency: "direct main"
     description:
       path: "libs/windows/media_kit_libs_windows_video"
       ref: "11d02cb804b8faf944137834a1b0ac80880a4079"

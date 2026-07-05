@@ -130,7 +130,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           AppInit.pendingDeepLink = target;
           return '/splash';
         }
-        return target;
+        AppInit.pendingDeepLink = target;
+        return '/home';
       }
       return null;
     },

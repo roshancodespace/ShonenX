@@ -18,6 +18,7 @@ import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/providers/navbar_action_provider.dart';
+import 'package:shonenx/app_init.dart';
 
 final _navBreakpoints = ResponsiveBreakpoints.defaults.copyWith(
   heightNormal: 750,
@@ -43,7 +44,27 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     _initDeepLinks();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkRemoteAnnouncements();
+      _checkPendingDeepLink();
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant ScaffoldWithNavBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _checkPendingDeepLink();
+  }
+
+  void _checkPendingDeepLink() {
+    final pendingLink = AppInit.pendingDeepLink;
+    if (pendingLink != null) {
+      AppInit.pendingDeepLink = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.push('/settings');
+          context.push(pendingLink);
+        }
+      });
+    }
   }
 
   void _initDeepLinks() {
@@ -129,6 +150,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
         }
       } catch (_) {}
 
+      context.push('/settings');
       context.push(target);
     }
   }

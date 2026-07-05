@@ -11,6 +11,8 @@ import 'package:shonenx/source_engine/source_registry.dart';
 
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 
+import 'package:shonenx/features/extensions/providers/extensions_provider.dart';
+import 'widgets/extension_guide_sheet.dart';
 import 'widgets/manage_repos_sheet.dart';
 import 'widgets/runtime_setup_sheet.dart';
 import 'widgets/sources_tab.dart';
@@ -56,7 +58,7 @@ class _ExtensionsSettingsScreenState
         final animeRepos = manager.getReposRx(bridge.ItemType.anime).value;
         final mangaRepos = manager.getReposRx(bridge.ItemType.manga).value;
         if (animeRepos.isEmpty && mangaRepos.isEmpty) {
-          _showGuideSheet(context);
+          ExtensionGuideSheet.show(context);
         }
       }
     });
@@ -169,7 +171,7 @@ class _ExtensionsSettingsScreenState
       preferredSize: const Size.fromHeight(40),
       child: Expanded(
         child: Obx(() {
-          final countInstalledAnime = getSourcesTabCount(
+          final countInstalledAnime = ExtensionsService.getSourcesTabCount(
             type: bridge.ItemType.anime,
             isInstalled: true,
             engineFilter: _selectedEngineFilter,
@@ -180,7 +182,7 @@ class _ExtensionsSettingsScreenState
             novelSources: novelSources,
             enabledManagers: enabledManagers.toList(),
           );
-          final countInstalledManga = getSourcesTabCount(
+          final countInstalledManga = ExtensionsService.getSourcesTabCount(
             type: bridge.ItemType.manga,
             isInstalled: true,
             engineFilter: _selectedEngineFilter,
@@ -191,7 +193,7 @@ class _ExtensionsSettingsScreenState
             novelSources: novelSources,
             enabledManagers: enabledManagers.toList(),
           );
-          final countInstalledNovel = getSourcesTabCount(
+          final countInstalledNovel = ExtensionsService.getSourcesTabCount(
             type: bridge.ItemType.novel,
             isInstalled: true,
             engineFilter: _selectedEngineFilter,
@@ -202,7 +204,7 @@ class _ExtensionsSettingsScreenState
             novelSources: novelSources,
             enabledManagers: enabledManagers.toList(),
           );
-          final countAvailableAnime = getSourcesTabCount(
+          final countAvailableAnime = ExtensionsService.getSourcesTabCount(
             type: bridge.ItemType.anime,
             isInstalled: false,
             engineFilter: _selectedEngineFilter,
@@ -211,9 +213,9 @@ class _ExtensionsSettingsScreenState
             animeSources: animeSources,
             mangaSources: mangaSources,
             novelSources: novelSources,
-            enabledManagers: enabledManagers.toList().toList(),
+            enabledManagers: enabledManagers.toList(),
           );
-          final countAvailableManga = getSourcesTabCount(
+          final countAvailableManga = ExtensionsService.getSourcesTabCount(
             type: bridge.ItemType.manga,
             isInstalled: false,
             engineFilter: _selectedEngineFilter,
@@ -222,9 +224,9 @@ class _ExtensionsSettingsScreenState
             animeSources: animeSources,
             mangaSources: mangaSources,
             novelSources: novelSources,
-            enabledManagers: enabledManagers.toList().toList(),
+            enabledManagers: enabledManagers.toList(),
           );
-          final countAvailableNovel = getSourcesTabCount(
+          final countAvailableNovel = ExtensionsService.getSourcesTabCount(
             type: bridge.ItemType.novel,
             isInstalled: false,
             engineFilter: _selectedEngineFilter,
@@ -233,7 +235,7 @@ class _ExtensionsSettingsScreenState
             animeSources: animeSources,
             mangaSources: mangaSources,
             novelSources: novelSources,
-            enabledManagers: enabledManagers.toList().toList(),
+            enabledManagers: enabledManagers.toList(),
           );
 
           return TabBar(
@@ -361,29 +363,14 @@ class _ExtensionsSettingsScreenState
       ),
       IconButton(
         icon: const Icon(Icons.info_outline),
-        onPressed: () => _showGuideSheet(context),
+        onPressed: () => ExtensionGuideSheet.show(context),
       ),
       const SizedBox(width: 10),
     ];
   }
 
   Widget _buildLanguageFilter() {
-    final Set<String> langs = {'All'};
-    try {
-      final bridgeManager = Get.find<bridge.ExtensionManager>();
-      for (final e in [
-        ...bridgeManager.availableAnimeExtensions,
-        ...bridgeManager.installedAnimeExtensions,
-        ...bridgeManager.availableMangaExtensions,
-        ...bridgeManager.installedMangaExtensions,
-        ...bridgeManager.availableNovelExtensions,
-        ...bridgeManager.installedNovelExtensions,
-      ]) {
-        if (e.lang != null) langs.add(e.lang!);
-      }
-    } catch (_) {}
-
-    final sortedLangs = langs.toList()..sort();
+    final sortedLangs = ExtensionsService.getAvailableLanguages();
 
     return PopupMenuButton<String>(
       icon: Icon(
@@ -561,128 +548,6 @@ class _ExtensionsSettingsScreenState
               ),
             );
           },
-        );
-      },
-    );
-  }
-
-  void _showGuideSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final cs = Theme.of(context).colorScheme;
-        final isRuntimeReady =
-            bridge.AnymeXRuntimeBridge.controller.isReady.value;
-
-        return AppBottomSheet(
-          title: 'Extensions Guide',
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.tips_and_updates_rounded, color: cs.primary),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Recommended: Use Aniyomi repositories for Anime streaming extensions, and Tachiyomi/Keiyoushi repositories for Manga reading.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: cs.onSurface,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Runtime Bridge Requirement',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: cs.primary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'IMPORTANT: Aniyomi and CloudStream will NOT work without loading the Runtime Bridge first. Separation is intentional — it avoids bundling heavy native dependencies directly into the app.\n\nShonenX uses a minimal customized fork of AnymeXExtensionRuntimeBridge originally created by RyanYuuki.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  height: 1.4,
-                  color: cs.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  showRuntimeSetupSheet(context, ref);
-                },
-                icon: Icon(
-                  isRuntimeReady
-                      ? Icons.check_circle_rounded
-                      : Icons.download_rounded,
-                  color: isRuntimeReady ? Colors.green : cs.primary,
-                ),
-                label: Text(
-                  isRuntimeReady
-                      ? 'Runtime Bridge Installed (Tap to Manage)'
-                      : 'Setup Aniyomi & CloudStream Runtime',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: isRuntimeReady ? Colors.green : cs.primary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Repository Types & Recommendations',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: cs.primary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '• Aniyomi (Highly Recommended for Anime): High-speed video streaming extensions curated specifically for anime sources.',
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                '• Tachiyomi / Keiyoushi (Recommended for Manga): Vast catalog of manga extensions with multi-language support.',
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                '• CloudStream: Rich ecosystem of video streaming extensions.',
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                '• Mangayomi: All-in-one ecosystem supporting both anime and manga extensions out of the box.',
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => Navigator.pop(context),
-                style: FilledButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                child: const Text(
-                  'Got it!',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
         );
       },
     );

@@ -68,6 +68,17 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
         ref.invalidate(extensionManagerProvider);
         ref.invalidate(availableAnimeSourcesProvider);
         ref.invalidate(availableMangaSourcesProvider);
+        if (mounted && force) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Runtime updated! Please restart ShonenX for changes to take effect.',
+              ),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
         widget.onComplete?.call();
       }
     } catch (e) {
@@ -346,7 +357,67 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              size: 18,
+                              color: cs.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Runtime Updates (e.g. v1.9.0)',
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.onSurface,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => launchUrl(
+                                Uri.parse(
+                                  'https://github.com/RyanYuuki/AnymeXExtensionRuntimeBridge/releases',
+                                ),
+                                mode: LaunchMode.externalApplication,
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text(
+                                'Check Releases',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Force update fetches the latest release from GitHub. Always restart ShonenX after updating!',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(

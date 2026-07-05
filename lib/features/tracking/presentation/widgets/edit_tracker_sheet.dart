@@ -102,7 +102,7 @@ class _EditTrackerSheetState extends ConsumerState<EditTrackerSheet> {
                 .map(
                   (s) => DropdownMenuItem<TrackedStatus>(
                     value: s,
-                    child: Text(s.displayName),
+                    child: Text(s.getLabelForMedia(widget.media.type)),
                   ),
                 )
                 .toList(),

@@ -160,22 +160,125 @@ class _ExtensionsSettingsScreenState
   }
 
   PreferredSizeWidget _buildTabBar() {
-    return const PreferredSize(
-      preferredSize: Size.fromHeight(40),
+    final animeSources = ref.watch(availableAnimeSourcesProvider).value ?? [];
+    final mangaSources = ref.watch(availableMangaSourcesProvider).value ?? [];
+    final novelSources = ref.watch(availableNovelSourcesProvider).value ?? [];
+    final enabledManagers = ref.watch(enabledExtensionManagersProvider);
+
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(40),
       child: Expanded(
-        child: TabBar(
-          isScrollable: true,
-          indicatorSize: TabBarIndicatorSize.tab,
-          indicatorAnimation: TabIndicatorAnimation.linear,
-          tabs: [
-            Tab(text: 'Installed Anime'),
-            Tab(text: 'Installed Manga'),
-            Tab(text: 'Installed Novel'),
-            Tab(text: 'Available Anime'),
-            Tab(text: 'Available Manga'),
-            Tab(text: 'Available Novel'),
-          ],
-        ),
+        child: Obx(() {
+          final countInstalledAnime = getSourcesTabCount(
+            type: bridge.ItemType.anime,
+            isInstalled: true,
+            engineFilter: _selectedEngineFilter,
+            searchQuery: _searchQuery,
+            langFilter: _selectedLangFilter,
+            animeSources: animeSources,
+            mangaSources: mangaSources,
+            novelSources: novelSources,
+            enabledManagers: enabledManagers.toList(),
+          );
+          final countInstalledManga = getSourcesTabCount(
+            type: bridge.ItemType.manga,
+            isInstalled: true,
+            engineFilter: _selectedEngineFilter,
+            searchQuery: _searchQuery,
+            langFilter: _selectedLangFilter,
+            animeSources: animeSources,
+            mangaSources: mangaSources,
+            novelSources: novelSources,
+            enabledManagers: enabledManagers.toList(),
+          );
+          final countInstalledNovel = getSourcesTabCount(
+            type: bridge.ItemType.novel,
+            isInstalled: true,
+            engineFilter: _selectedEngineFilter,
+            searchQuery: _searchQuery,
+            langFilter: _selectedLangFilter,
+            animeSources: animeSources,
+            mangaSources: mangaSources,
+            novelSources: novelSources,
+            enabledManagers: enabledManagers.toList(),
+          );
+          final countAvailableAnime = getSourcesTabCount(
+            type: bridge.ItemType.anime,
+            isInstalled: false,
+            engineFilter: _selectedEngineFilter,
+            searchQuery: _searchQuery,
+            langFilter: _selectedLangFilter,
+            animeSources: animeSources,
+            mangaSources: mangaSources,
+            novelSources: novelSources,
+            enabledManagers: enabledManagers.toList().toList(),
+          );
+          final countAvailableManga = getSourcesTabCount(
+            type: bridge.ItemType.manga,
+            isInstalled: false,
+            engineFilter: _selectedEngineFilter,
+            searchQuery: _searchQuery,
+            langFilter: _selectedLangFilter,
+            animeSources: animeSources,
+            mangaSources: mangaSources,
+            novelSources: novelSources,
+            enabledManagers: enabledManagers.toList().toList(),
+          );
+          final countAvailableNovel = getSourcesTabCount(
+            type: bridge.ItemType.novel,
+            isInstalled: false,
+            engineFilter: _selectedEngineFilter,
+            searchQuery: _searchQuery,
+            langFilter: _selectedLangFilter,
+            animeSources: animeSources,
+            mangaSources: mangaSources,
+            novelSources: novelSources,
+            enabledManagers: enabledManagers.toList().toList(),
+          );
+
+          return TabBar(
+            isScrollable: true,
+            indicatorSize: TabBarIndicatorSize.tab,
+            indicatorAnimation: TabIndicatorAnimation.linear,
+            tabs: [
+              _buildTab('Installed Anime', countInstalledAnime),
+              _buildTab('Installed Manga', countInstalledManga),
+              _buildTab('Installed Novel', countInstalledNovel),
+              _buildTab('Available Anime', countAvailableAnime),
+              _buildTab('Available Manga', countAvailableManga),
+              _buildTab('Available Novel', countAvailableNovel),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildTab(String text, int count) {
+    final countStr = count > 100 ? '100+' : count.toString();
+    final cs = Theme.of(context).colorScheme;
+    return Tab(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(text),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: cs.primaryContainer,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              countStr,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: cs.onPrimaryContainer,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -397,93 +500,60 @@ class _ExtensionsSettingsScreenState
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
+                  Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
+                      horizontal: 10,
+                      vertical: 4,
                     ),
-                    decoration: BoxDecoration(
-                      color: cs.primaryContainer.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          color: cs.primary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Enable or disable extension engines. Enabled engines will appear in your catalogs and discovery feeds.',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: cs.onSurface, height: 1.3),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      'Enable or disable extension engines. Enabled engines will appear in your catalogs and discovery feeds.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        height: 1.3,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  ...engines.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final e = entry.value;
+                  const SizedBox(height: 12),
+                  ...engines.map((e) {
                     final id = e.$1;
                     final title = e.$2;
                     final desc = e.$3;
                     final icon = e.$4;
                     final isEnabled = enabled.contains(id);
 
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (index > 0)
-                          Divider(
-                            height: 1,
-                            thickness: 1,
-                            color: cs.outlineVariant.withValues(alpha: 0.25),
-                          ),
-                        SettingsSwitchTile(
-                          icon: icon,
-                          title: title,
-                          subtitle: desc,
-                          value: isEnabled,
-                          onChanged: (val) {
-                            if (val &&
-                                (id == 'aniyomi' ||
-                                    id == 'cloudstream' ||
-                                    id == 'kotatsu')) {
-                              if (!bridge
-                                  .AnymeXRuntimeBridge
-                                  .controller
-                                  .isReady
-                                  .value) {
-                                showRuntimeSetupSheet(
-                                  context,
-                                  ref,
-                                  onComplete: () {
-                                    notifier.toggleManager(id, true);
-                                    ref.invalidate(
-                                      availableAnimeSourcesProvider,
-                                    );
-                                    ref.invalidate(
-                                      availableMangaSourcesProvider,
-                                    );
-                                    ref.invalidate(
-                                      availableNovelSourcesProvider,
-                                    );
-                                  },
-                                );
-                                return;
-                              }
-                            }
-                            notifier.toggleManager(id, val);
-                            ref.invalidate(availableAnimeSourcesProvider);
-                            ref.invalidate(availableMangaSourcesProvider);
-                            ref.invalidate(availableNovelSourcesProvider);
-                          },
-                        ),
-                      ],
+                    return SettingsSwitchTile(
+                      icon: icon,
+                      title: title,
+                      subtitle: desc,
+                      value: isEnabled,
+                      onChanged: (val) {
+                        if (val &&
+                            (id == 'aniyomi' ||
+                                id == 'cloudstream' ||
+                                id == 'kotatsu')) {
+                          if (!bridge
+                              .AnymeXRuntimeBridge
+                              .controller
+                              .isReady
+                              .value) {
+                            showRuntimeSetupSheet(
+                              context,
+                              ref,
+                              onComplete: () {
+                                notifier.toggleManager(id, true);
+                                ref.invalidate(availableAnimeSourcesProvider);
+                                ref.invalidate(availableMangaSourcesProvider);
+                                ref.invalidate(availableNovelSourcesProvider);
+                              },
+                            );
+                            return;
+                          }
+                        }
+                        notifier.toggleManager(id, val);
+                        ref.invalidate(availableAnimeSourcesProvider);
+                        ref.invalidate(availableMangaSourcesProvider);
+                        ref.invalidate(availableNovelSourcesProvider);
+                      },
                     );
                   }),
                   const SizedBox(height: 16),

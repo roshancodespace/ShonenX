@@ -73,7 +73,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     }
 
     return AppScaffold(
-      title: viewState.status.displayName,
+      title: viewState.status.getLabelForMedia(viewState.mediaType),
       subtitle: 'From Library',
       actions: [
         if (ref.watch(trackingPrefsProvider.select((s) => s.primaryTracker)) !=

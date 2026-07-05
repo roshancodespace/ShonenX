@@ -746,7 +746,7 @@ Icon=$ICON_DIR/shonenx.png
 Terminal=false
 Type=Application
 Categories=Network;Entertainment;
-MimeType=x-scheme-handler/shonenx;x-scheme-handler/aniyomi;x-scheme-handler/tachiyomi;
+MimeType=x-scheme-handler/shonenx;x-scheme-handler/aniyomi;x-scheme-handler/tachiyomi;x-scheme-handler/cloudstream;x-scheme-handler/cloudstreamrepo;x-scheme-handler/kotatsu;x-scheme-handler/sora;
 EOF
         command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP_DIR" || true
         log_panel_add ok "Desktop entry created"

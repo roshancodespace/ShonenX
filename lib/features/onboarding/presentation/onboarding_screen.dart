@@ -303,8 +303,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     )
                   : Padding(
                       padding: const EdgeInsets.all(4.0),
-                      child: SvgIcon(
-                        tracker.type.iconSvgString,
+                      child: tracker.type.getIconWidget(
                         color: cs.onSurface,
                         size: 32,
                       ),

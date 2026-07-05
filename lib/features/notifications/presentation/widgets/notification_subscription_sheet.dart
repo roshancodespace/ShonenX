@@ -492,6 +492,10 @@ class _NotificationSubscriptionSheetState
                           value: TrackerType.myanimelist,
                           child: Text('MyAnimeList (Fallback)'),
                         ),
+                        DropdownMenuItem(
+                          value: TrackerType.kitsu,
+                          child: Text('Kitsu'),
+                        ),
                       ],
                       onChanged: (val) {
                         if (val != null) {

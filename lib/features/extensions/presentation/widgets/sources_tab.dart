@@ -866,3 +866,140 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
     );
   }
 }
+
+List<_UnifiedSource> _getFilteredUnifiedSources({
+  required bridge.ItemType type,
+  required bool isInstalled,
+  required String engineFilter,
+  required String searchQuery,
+  required String langFilter,
+  required List<SourceInfo> animeSources,
+  required List<SourceInfo> mangaSources,
+  required List<SourceInfo> novelSources,
+  required List<String> enabledManagers,
+}) {
+  final bridgeManager = Get.find<bridge.ExtensionManager>();
+  List<_UnifiedSource> unified = [];
+
+  if (isInstalled) {
+    final sources = switch (type) {
+      bridge.ItemType.anime => animeSources,
+      bridge.ItemType.manga => mangaSources,
+      bridge.ItemType.novel => novelSources,
+    };
+    final installedRx = switch (type) {
+      bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
+      bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
+      bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
+    };
+    final installedIds = installedRx.map((e) => e.id ?? '').toSet();
+    final validSources = sources
+        .where(
+          (s) => s.type == SourceType.inbuilt || installedIds.contains(s.id),
+        )
+        .toList();
+    unified = validSources
+        .map((s) => _UnifiedSource.fromSourceInfo(s))
+        .toList();
+  } else {
+    final available = switch (type) {
+      bridge.ItemType.anime => bridgeManager.availableAnimeExtensions,
+      bridge.ItemType.manga => bridgeManager.availableMangaExtensions,
+      bridge.ItemType.novel => bridgeManager.availableNovelExtensions,
+    };
+    final installed = switch (type) {
+      bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
+      bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
+      bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
+    };
+    final installedIds = installed.map((e) => e.id ?? '').toSet();
+
+    final uninstalledAvailable = available.where((s) {
+      if (installedIds.contains(s.id)) return false;
+      final mId = (s.managerId ?? bridge.getSourceManager(s).id).replaceAll(
+        '-desktop',
+        '',
+      );
+      return enabledManagers.contains(mId);
+    }).toList();
+
+    unified = uninstalledAvailable
+        .map((s) => _UnifiedSource.fromBridgeSource(s))
+        .toList();
+  }
+
+  var filteredSources = unified.where((s) {
+    final name = s.name.toLowerCase();
+    final id = s.id.toLowerCase();
+    final query = searchQuery.toLowerCase();
+    if (langFilter != 'All') {
+      final sLang = s.lang ?? 'all';
+      if (sLang.toLowerCase() != langFilter.toLowerCase()) {
+        return false;
+      }
+    }
+    if (engineFilter != 'All') {
+      String mId = '';
+      if (s.sourceInfo != null) {
+        if (s.isInbuilt) {
+          if (engineFilter != 'Mangayomi') return false;
+          mId = 'mangayomi';
+        } else {
+          final allInst = [
+            ...bridgeManager.installedAnimeExtensions,
+            ...bridgeManager.installedMangaExtensions,
+            ...bridgeManager.installedNovelExtensions,
+          ];
+          final match = allInst.firstWhereOrNull(
+            (e) => e.id == s.id || e.name == s.name,
+          );
+          if (match != null) {
+            mId = (match.managerId ?? bridge.getSourceManager(match).id)
+                .replaceAll('-desktop', '');
+          }
+        }
+      } else if (s.bridgeSource != null) {
+        mId =
+            (s.bridgeSource!.managerId ??
+                    bridge.getSourceManager(s.bridgeSource!).id)
+                .replaceAll('-desktop', '');
+      }
+      String targetId = engineFilter.toLowerCase();
+      if (targetId == 'tachiyomi') targetId = 'aniyomi';
+      if (mId.isNotEmpty && !mId.toLowerCase().contains(targetId)) {
+        return false;
+      }
+    }
+    return name.contains(query) || id.contains(query);
+  }).toList();
+
+  final Map<String, _UnifiedSource> uniqueSources = {};
+  for (final s in filteredSources) {
+    uniqueSources[s.id] = s;
+  }
+  return uniqueSources.values.toList();
+}
+
+int getSourcesTabCount({
+  required bridge.ItemType type,
+  required bool isInstalled,
+  required String engineFilter,
+  required String searchQuery,
+  required String langFilter,
+  required List<SourceInfo> animeSources,
+  required List<SourceInfo> mangaSources,
+  required List<SourceInfo> novelSources,
+  required List<String> enabledManagers,
+}) {
+  return _getFilteredUnifiedSources(
+    type: type,
+    isInstalled: isInstalled,
+    engineFilter: engineFilter,
+    searchQuery: searchQuery,
+    langFilter: langFilter,
+    animeSources: animeSources,
+    mangaSources: mangaSources,
+    novelSources: novelSources,
+    enabledManagers: enabledManagers,
+  ).length;
+}

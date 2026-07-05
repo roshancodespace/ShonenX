@@ -73,6 +73,11 @@
                 <data android:scheme="aniyomi" android:host="add-repo" />
                 <data android:scheme="tachiyomi" android:host="add-repo" />
                 <data android:scheme="mangayomi" android:host="add-repo" />
+                <data android:scheme="cloudstream" android:host="add-repo" />
+                <data android:scheme="cloudstream" android:host="add-repository" />
+                <data android:scheme="cloudstreamrepo" />
+                <data android:scheme="kotatsu" android:host="add-repo" />
+                <data android:scheme="sora" android:host="add-repo" />
             </intent-filter>
         </activity>
 

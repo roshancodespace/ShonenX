@@ -8,15 +8,17 @@ import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
 class ManageReposSheet extends ConsumerStatefulWidget {
-  final bridge.Extension manager;
+  final bridge.Extension? manager;
   final String? autoAddUrl;
   final String? autoAddType;
+  final String? autoAddManager;
 
   const ManageReposSheet({
     super.key,
-    required this.manager,
+    this.manager,
     this.autoAddUrl,
     this.autoAddType,
+    this.autoAddManager,
   });
 
   @override
@@ -28,18 +30,48 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
   bool _isLoading = false;
   String? _clipboardText;
   late String _selectedCategory;
+  late String _selectedEngineId;
 
   @override
   void initState() {
     super.initState();
     _selectedCategory = widget.autoAddType?.toLowerCase() ?? 'both';
-    if (!['both', 'anime', 'manga'].contains(_selectedCategory)) {
+    if (!['both', 'anime', 'manga', 'novel'].contains(_selectedCategory)) {
       _selectedCategory = 'both';
     }
+
+    if (widget.autoAddManager != null &&
+        ['aniyomi', 'mangayomi', 'cloudstream', 'kotatsu', 'sora'].contains(
+          widget.autoAddManager,
+        )) {
+      _selectedEngineId = widget.autoAddManager!;
+    } else if (widget.autoAddUrl != null) {
+      final lower = widget.autoAddUrl!.toLowerCase();
+      if (lower.contains('cloudstream')) {
+        _selectedEngineId = 'cloudstream';
+      } else if (lower.contains('kotatsu')) {
+        _selectedEngineId = 'kotatsu';
+      } else if (lower.contains('sora')) {
+        _selectedEngineId = 'sora';
+      } else if (lower.contains('mangayomi')) {
+        _selectedEngineId = 'mangayomi';
+      } else {
+        _selectedEngineId =
+            widget.manager?.id.replaceAll('-desktop', '') ?? 'aniyomi';
+      }
+    } else {
+      _selectedEngineId =
+          widget.manager?.id.replaceAll('-desktop', '') ?? 'aniyomi';
+    }
+    if (!['aniyomi', 'mangayomi', 'cloudstream', 'kotatsu', 'sora'].contains(
+      _selectedEngineId,
+    )) {
+      _selectedEngineId = 'aniyomi';
+    }
+
     _checkClipboard();
 
-    if (widget.autoAddUrl != null &&
-        widget.autoAddUrl!.isNotEmpty) {
+    if (widget.autoAddUrl != null && widget.autoAddUrl!.isNotEmpty) {
       _controller.text = widget.autoAddUrl!;
       WidgetsBinding.instance.addPostFrameCallback((_) => _addRepo());
     }
@@ -73,9 +105,10 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
           )
           .replaceFirst('/blob/', '/');
     }
-    if (input.startsWith('https://raw.githubusercontent.com/')) return input;
-    if (input.startsWith('http') && input.endsWith('.json')) return input;
-    return null;
+    if (!input.startsWith('http://') && !input.startsWith('https://')) {
+      return 'https://$input';
+    }
+    return input;
   }
 
   Future<void> _addRepo() async {
@@ -86,9 +119,7 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
     if (parsedUrl == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-            'Invalid repository URL. Please provide a direct link to the index.min.json file.',
-          ),
+          content: const Text('Invalid repository URL.'),
           backgroundColor: Theme.of(context).colorScheme.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -98,33 +129,57 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
 
     setState(() => _isLoading = true);
     try {
-      bool addedAnime = false;
-      bool addedManga = false;
+      final bridgeManager = Get.find<bridge.ExtensionManager>();
+      final targetManager =
+          bridgeManager.findById(_selectedEngineId) ??
+          bridgeManager.findById('$_selectedEngineId-desktop');
 
+      if (targetManager == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Engine $_selectedEngineId is not available or registered.',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+
+      bool added = false;
       if (_selectedCategory == 'both' || _selectedCategory == 'anime') {
         try {
-          await widget.manager.addRepo(parsedUrl, bridge.ItemType.anime);
-          addedAnime = true;
+          await targetManager.addRepo(parsedUrl, bridge.ItemType.anime);
+          added = true;
         } catch (_) {}
       }
       if (_selectedCategory == 'both' || _selectedCategory == 'manga') {
         try {
-          await widget.manager.addRepo(parsedUrl, bridge.ItemType.manga);
-          addedManga = true;
+          await targetManager.addRepo(parsedUrl, bridge.ItemType.manga);
+          added = true;
+        } catch (_) {}
+      }
+      if (_selectedCategory == 'both' || _selectedCategory == 'novel') {
+        try {
+          await targetManager.addRepo(parsedUrl, bridge.ItemType.novel);
+          added = true;
         } catch (_) {}
       }
 
       _controller.clear();
       ref.invalidate(availableAnimeSourcesProvider);
       ref.invalidate(availableMangaSourcesProvider);
+      ref.invalidate(availableNovelSourcesProvider);
       if (mounted) {
-        if (addedAnime || addedManga) {
-          final typeLabel = addedAnime && addedManga
-              ? 'Anime & Manga'
-              : (addedAnime ? 'Anime' : 'Manga');
+        if (added) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('$typeLabel repository added successfully!'),
+              content: Text(
+                'Repository added to ${_getEngineName(_selectedEngineId)} successfully!',
+              ),
               backgroundColor: Theme.of(context).colorScheme.primary,
               behavior: SnackBarBehavior.floating,
             ),
@@ -146,36 +201,104 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
     }
   }
 
-  Future<void> _removeRepo(String url) async {
+  Future<void> _removeRepo(String url, String managerId) async {
     try {
-      await widget.manager.removeRepo(url, bridge.ItemType.anime);
+      final bridgeManager = Get.find<bridge.ExtensionManager>();
+      final targetManager =
+          bridgeManager.findById(managerId) ??
+          bridgeManager.findById('$managerId-desktop');
+      if (targetManager != null) {
+        try {
+          await targetManager.removeRepo(url, bridge.ItemType.anime);
+        } catch (_) {}
+        try {
+          await targetManager.removeRepo(url, bridge.ItemType.manga);
+        } catch (_) {}
+        try {
+          await targetManager.removeRepo(url, bridge.ItemType.novel);
+        } catch (_) {}
+      }
+      ref.invalidate(availableAnimeSourcesProvider);
+      ref.invalidate(availableMangaSourcesProvider);
+      ref.invalidate(availableNovelSourcesProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Repository removed'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (_) {}
-    try {
-      await widget.manager.removeRepo(url, bridge.ItemType.manga);
-    } catch (_) {}
-    ref.invalidate(availableAnimeSourcesProvider);
-    ref.invalidate(availableMangaSourcesProvider);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Repository removed'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+  }
+
+  String _getEngineName(String id) {
+    switch (id.replaceAll('-desktop', '')) {
+      case 'mangayomi':
+        return 'Mangayomi';
+      case 'aniyomi':
+        return 'Tachiyomi / Aniyomi';
+      case 'cloudstream':
+        return 'CloudStream';
+      case 'kotatsu':
+        return 'Kotatsu';
+      case 'sora':
+        return 'Sora';
+      default:
+        return id.toUpperCase();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isMangayomi = widget.manager.id == 'mangayomi';
 
     return AppBottomSheet(
-      title: isMangayomi ? 'Manage Mangayomi Repos' : 'Manage Tachiyomi Repos',
+      title: 'Manage Extension Repositories',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(
+            'Target Engine',
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String>(
+            value: _selectedEngineId,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: 'aniyomi',
+                child: Text('Tachiyomi / Aniyomi'),
+              ),
+              DropdownMenuItem(value: 'mangayomi', child: Text('Mangayomi')),
+              DropdownMenuItem(
+                value: 'cloudstream',
+                child: Text('CloudStream'),
+              ),
+              DropdownMenuItem(value: 'kotatsu', child: Text('Kotatsu')),
+              DropdownMenuItem(value: 'sora', child: Text('Sora')),
+            ],
+            onChanged:
+                _isLoading
+                    ? null
+                    : (val) {
+                      if (val != null) setState(() => _selectedEngineId = val);
+                    },
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: _controller,
             decoration: InputDecoration(
@@ -195,9 +318,7 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              helperText: isMangayomi
-                  ? 'Format: https://.../index.min.json'
-                  : 'Format: https://.../index.json',
+              helperText: 'Enter direct URL or raw repository link',
             ),
             enabled: !_isLoading,
             onSubmitted: (_) => _addRepo(),
@@ -213,26 +334,31 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
           const SizedBox(height: 6),
           SegmentedButton<String>(
             style: SegmentedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
             ),
             segments: const [
               ButtonSegment(
                 value: 'both',
-                label: Text('Both', style: TextStyle(fontSize: 12)),
+                label: Text('All', style: TextStyle(fontSize: 11)),
               ),
               ButtonSegment(
                 value: 'anime',
-                label: Text('Anime Only', style: TextStyle(fontSize: 12)),
+                label: Text('Anime', style: TextStyle(fontSize: 11)),
               ),
               ButtonSegment(
                 value: 'manga',
-                label: Text('Manga Only', style: TextStyle(fontSize: 12)),
+                label: Text('Manga', style: TextStyle(fontSize: 11)),
+              ),
+              ButtonSegment(
+                value: 'novel',
+                label: Text('Novel', style: TextStyle(fontSize: 11)),
               ),
             ],
             selected: {_selectedCategory},
-            onSelectionChanged: _isLoading
-                ? null
-                : (sel) => setState(() => _selectedCategory = sel.first),
+            onSelectionChanged:
+                _isLoading
+                    ? null
+                    : (sel) => setState(() => _selectedCategory = sel.first),
           ),
           const SizedBox(height: 8),
           if (_clipboardText != null && !_isLoading) ...[
@@ -276,29 +402,30 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.cloud_download_outlined, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Add Repository',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: theme.colorScheme.onPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
+              child:
+                  _isLoading
+                      ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
                         ),
-                      ],
-                    ),
+                      )
+                      : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.cloud_download_outlined, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Add Repository',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: theme.colorScheme.onPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
             ),
           ),
           const SizedBox(height: 24),
@@ -310,154 +437,136 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          Obx(() {
-            final animeRepos = widget.manager
-                .getReposRx(bridge.ItemType.anime)
-                .value;
-            final mangaRepos = widget.manager
-                .getReposRx(bridge.ItemType.manga)
-                .value;
+          Builder(
+            builder: (context) {
+              final bridgeManager = Get.find<bridge.ExtensionManager>();
+              final allManagers = bridgeManager.managers;
+              final List<(bridge.Repo, String)> reposWithManager = [];
+              final urls = <String>{};
 
-            final animeUrls = animeRepos.map((r) => r.url).toSet();
-            final mangaUrls = mangaRepos.map((r) => r.url).toSet();
+              for (final m in allManagers) {
+                final mId = m.id.replaceAll('-desktop', '');
+                final aRepos = m.getReposRx(bridge.ItemType.anime).value;
+                final mRepos = m.getReposRx(bridge.ItemType.manga).value;
+                final nRepos = m.getReposRx(bridge.ItemType.novel).value;
+                for (final r in [...aRepos, ...mRepos, ...nRepos]) {
+                  if (urls.add(r.url)) {
+                    reposWithManager.add((r, r.managerId ?? mId));
+                  }
+                }
+              }
 
-            final Map<String, bridge.Repo> uniqueRepos = {};
-            for (final r in [...animeRepos, ...mangaRepos]) {
-              uniqueRepos[r.url] = r;
-            }
-
-            final repos = uniqueRepos.values.toList();
-
-            if (repos.isEmpty) {
-              return Container(
-                padding: const EdgeInsets.all(24),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.3,
+              if (reposWithManager.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(24),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.3,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'No repositories added yet.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  child: Text(
+                    'No repositories added yet.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-              );
-            }
+                );
+              }
 
-            return ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 280),
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: repos.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final repo = repos[index];
-                  final uri = Uri.tryParse(repo.url);
-                  final hostname = uri?.host ?? 'Custom Repo';
-                  final isAnime = animeUrls.contains(repo.url);
-                  final isManga = mangaUrls.contains(repo.url);
+              return ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 280),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: reposWithManager.length,
+                  separatorBuilder:
+                      (context, index) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final item = reposWithManager[index];
+                    final repo = item.$1;
+                    final mId = item.$2;
+                    final uri = Uri.tryParse(repo.url);
+                    final hostname = uri?.host ?? 'Custom Repo';
 
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant.withValues(
-                          alpha: 0.5,
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: theme.colorScheme.outlineVariant.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                       ),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.folder_shared_outlined,
-                          color: theme.colorScheme.primary,
-                          size: 26,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                repo.name ?? hostname,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 4,
-                                children: [
-                                  _buildBadge(
-                                    context,
-                                    isMangayomi ? 'MANGAYOMI' : 'TACHIYOMI',
-                                    theme.colorScheme.primaryContainer,
-                                    theme.colorScheme.onPrimaryContainer,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.folder_shared_outlined,
+                            color: theme.colorScheme.primary,
+                            size: 26,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  repo.name ?? hostname,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                  if (isAnime && isManga)
-                                    _buildBadge(
-                                      context,
-                                      'ANIME & MANGA',
-                                      Colors.purple.withValues(alpha: 0.2),
-                                      Colors.purple.shade800,
-                                    )
-                                  else if (isAnime)
-                                    _buildBadge(
-                                      context,
-                                      'ANIME ONLY',
-                                      Colors.orange.withValues(alpha: 0.2),
-                                      Colors.orange.shade800,
-                                    )
-                                  else if (isManga)
-                                    _buildBadge(
-                                      context,
-                                      'MANGA ONLY',
-                                      Colors.green.withValues(alpha: 0.2),
-                                      Colors.green.shade800,
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                repo.url,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontSize: 11,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                                const SizedBox(height: 4),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 4,
+                                  children: [
+                                    _buildBadge(
+                                      context,
+                                      _getEngineName(mId).toUpperCase(),
+                                      theme.colorScheme.primaryContainer,
+                                      theme.colorScheme.onPrimaryContainer,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  repo.url,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    fontSize: 11,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.delete_outline_rounded,
-                            color: theme.colorScheme.error,
+                          IconButton(
+                            icon: Icon(
+                              Icons.delete_outline_rounded,
+                              color: theme.colorScheme.error,
+                            ),
+                            tooltip: 'Remove Repository',
+                            onPressed: () => _removeRepo(repo.url, mId),
                           ),
-                          tooltip: 'Remove Repository',
-                          onPressed: () => _removeRepo(repo.url),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            );
-          }),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
         ],
       ),
     );

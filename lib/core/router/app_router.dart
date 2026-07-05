@@ -61,16 +61,70 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
     redirect: (context, state) {
       final uri = state.uri;
-      if (((uri.scheme == 'aniyomi' ||
-                  uri.scheme == 'tachiyomi' ||
-                  uri.scheme == 'mangayomi') &&
-              uri.host == 'add-repo') ||
+      final scheme = uri.scheme.toLowerCase();
+      final host = uri.host.toLowerCase();
+
+      if (((scheme == 'aniyomi' ||
+                  scheme == 'tachiyomi' ||
+                  scheme == 'mangayomi' ||
+                  scheme.contains('cloudstream') ||
+                  scheme == 'kotatsu' ||
+                  scheme == 'sora' ||
+                  scheme == 'shonenx') &&
+              (host == 'add-repo' ||
+                  host == 'add-repository' ||
+                  scheme == 'cloudstreamrepo' ||
+                  uri.queryParameters.containsKey('url'))) ||
           uri.path.contains('add-repo')) {
-        final url = uri.queryParameters['url'];
-        final isAnime = uri.scheme == 'aniyomi';
-        final target = (url != null)
-            ? '/settings/extensions?autoAddUrl=${Uri.encodeComponent(url)}&autoAddType=${isAnime ? "anime" : "manga"}'
-            : '/settings/extensions';
+        String? url = uri.queryParameters['url'];
+        String? managerId;
+        String? type;
+
+        if (scheme == 'aniyomi') {
+          managerId = 'aniyomi';
+          type = 'anime';
+        } else if (scheme == 'tachiyomi') {
+          managerId = 'aniyomi';
+          type = 'manga';
+        } else if (scheme == 'mangayomi') {
+          managerId = 'mangayomi';
+        } else if (scheme.contains('cloudstream')) {
+          managerId = 'cloudstream';
+          if (url == null &&
+              host.isNotEmpty &&
+              host != 'add-repo' &&
+              host != 'add-repository') {
+            url = uri.toString().replaceFirst(
+              RegExp(
+                r'^cloudstreamrepo://|^cloudstream://',
+                caseSensitive: false,
+              ),
+              '',
+            );
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+              url = 'https://$url';
+            }
+          }
+        } else if (scheme == 'kotatsu') {
+          managerId = 'kotatsu';
+          type = 'manga';
+        } else if (scheme == 'sora') {
+          managerId = 'sora';
+          type = 'novel';
+        } else if (scheme == 'shonenx' && host == 'add-repo') {
+          managerId = uri.queryParameters['manager'] ?? 'aniyomi';
+          type = uri.queryParameters['type'];
+        }
+
+        final targetUri = Uri(
+          path: '/settings/extensions',
+          queryParameters: {
+            if (url != null && url.isNotEmpty && url != '()') 'autoAddUrl': url,
+            if (managerId != null) 'autoAddManager': managerId,
+            if (type != null) 'autoAddType': type,
+          },
+        );
+        final target = targetUri.toString();
 
         if (!AppInit.isBridgeInitialized) {
           AppInit.pendingDeepLink = target;
@@ -218,9 +272,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final autoAddUrl = state.uri.queryParameters['autoAddUrl'];
               final autoAddType = state.uri.queryParameters['autoAddType'];
+              final autoAddManager = state.uri.queryParameters['autoAddManager'];
               return ExtensionsSettingsScreen(
                 autoAddUrl: autoAddUrl,
                 autoAddType: autoAddType,
+                autoAddManager: autoAddManager,
               );
             },
             routes: [

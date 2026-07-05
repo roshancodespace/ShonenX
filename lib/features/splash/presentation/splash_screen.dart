@@ -110,7 +110,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         final pendingLink = AppInit.pendingDeepLink;
         if (pendingLink != null) {
           AppInit.pendingDeepLink = null;
-          context.go(pendingLink);
+          final onboardingComplete = ref.read(onboardingProvider);
+          if (onboardingComplete) {
+            context.go('/home');
+          } else {
+            context.go('/onboarding');
+          }
+          context.push('/settings');
+          context.push(pendingLink);
         } else {
           final onboardingComplete = ref.read(onboardingProvider);
           if (onboardingComplete) {

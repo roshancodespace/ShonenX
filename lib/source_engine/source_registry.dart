@@ -133,6 +133,16 @@ final availableAnimeSourcesProvider = FutureProvider<List<SourceInfo>>(
     try {
       final enabledManagers = ref.watch(enabledExtensionManagersProvider);
       final bridgeManager = Get.find<bridge.ExtensionManager>();
+      final worker1 = ever(bridgeManager.installedAnimeExtensions, (_) {
+        ref.invalidateSelf();
+      });
+      final worker2 = ever(bridgeManager.availableAnimeExtensions, (_) {
+        ref.invalidateSelf();
+      });
+      ref.onDispose(() {
+        worker1.dispose();
+        worker2.dispose();
+      });
       final extensionsRaw = bridgeManager.installedAnimeExtensions
           .where((ext) {
             final mId = (ext.managerId ?? bridge.getSourceManager(ext).id)
@@ -197,6 +207,16 @@ final availableMangaSourcesProvider = FutureProvider<List<SourceInfo>>(
     try {
       final enabledManagers = ref.watch(enabledExtensionManagersProvider);
       final bridgeManager = Get.find<bridge.ExtensionManager>();
+      final worker1 = ever(bridgeManager.installedMangaExtensions, (_) {
+        ref.invalidateSelf();
+      });
+      final worker2 = ever(bridgeManager.availableMangaExtensions, (_) {
+        ref.invalidateSelf();
+      });
+      ref.onDispose(() {
+        worker1.dispose();
+        worker2.dispose();
+      });
       final extensionsRaw = bridgeManager.installedMangaExtensions
           .where((ext) {
             final mId = (ext.managerId ?? bridge.getSourceManager(ext).id)
@@ -251,6 +271,16 @@ final availableNovelSourcesProvider = FutureProvider<List<SourceInfo>>(
     try {
       final enabledManagers = ref.watch(enabledExtensionManagersProvider);
       final bridgeManager = Get.find<bridge.ExtensionManager>();
+      final worker1 = ever(bridgeManager.installedNovelExtensions, (_) {
+        ref.invalidateSelf();
+      });
+      final worker2 = ever(bridgeManager.availableNovelExtensions, (_) {
+        ref.invalidateSelf();
+      });
+      ref.onDispose(() {
+        worker1.dispose();
+        worker2.dispose();
+      });
       final extensionsRaw = bridgeManager.installedNovelExtensions
           .where((ext) {
             final mId = (ext.managerId ?? bridge.getSourceManager(ext).id)

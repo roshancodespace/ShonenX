@@ -1,74 +1,20 @@
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
-import 'package:shonenx/shared/providers/storage_provider.dart';
-
+import 'package:shonenx/features/extensions/models/unified_source.dart';
+import 'package:shonenx/features/extensions/providers/extensions_provider.dart';
 import 'package:shonenx/features/settings/presentation/source_settings_sheet.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
-import 'package:shonenx/shared/widgets/confirmation_bottom_sheet.dart';
+import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/models/source_setting.dart';
 import 'package:shonenx/source_engine/providers/media_source.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 import 'runtime_setup_sheet.dart';
-
-class _UnifiedSource {
-  final String id;
-  final String name;
-  final String? lang;
-  final String? iconUrl;
-  final bool isInbuilt;
-  final bool isNsfw;
-  final SourceInfo? sourceInfo;
-  final bridge.Source? bridgeSource;
-
-  _UnifiedSource.fromSourceInfo(this.sourceInfo)
-    : id = sourceInfo!.id,
-      name = sourceInfo.name,
-      lang = sourceInfo.lang,
-      iconUrl = sourceInfo.iconUrl,
-      isInbuilt = sourceInfo.type == SourceType.inbuilt,
-      isNsfw = sourceInfo.isNsfw,
-      bridgeSource = null;
-
-  _UnifiedSource.fromBridgeSource(this.bridgeSource)
-    : id = bridgeSource!.id ?? '',
-      name = bridgeSource.name ?? 'N/A',
-      lang = bridgeSource.lang,
-      iconUrl = bridgeSource.iconUrl,
-      isInbuilt = false,
-      isNsfw = bridgeSource.isNsfw ?? false,
-      sourceInfo = null;
-
-  bool get effectiveNsfw {
-    if (isNsfw) return true;
-    final lowerName = name.toLowerCase();
-    final lowerId = id.toLowerCase();
-    const keywords = [
-      '18+',
-      'nsfw',
-      'hentai',
-      'doujin',
-      'porn',
-      'xvideos',
-      'xnxx',
-      'hanime',
-      'nhentai',
-      'rule34',
-      'erotic',
-      'smut',
-    ];
-    for (final kw in keywords) {
-      if (lowerName.contains(kw) || lowerId.contains(kw)) return true;
-    }
-    return false;
-  }
-}
 
 class SourcesTab extends ConsumerStatefulWidget {
   final String engineFilter;
@@ -91,8 +37,6 @@ class SourcesTab extends ConsumerStatefulWidget {
 }
 
 class _SourcesTabState extends ConsumerState<SourcesTab> {
-  final Set<String> _processingIds = {};
-
   @override
   void initState() {
     super.initState();
@@ -122,120 +66,63 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
         bridge.ItemType.novel => ref.watch(availableNovelSourcesProvider),
       };
 
-      return Obx(() {
-        final bridgeManager = Get.find<bridge.ExtensionManager>();
-        final installedRx = switch (widget.type) {
-          bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
-          bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
-          bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
-        };
-        final installedIds = installedRx.map((e) => e.id ?? '').toSet();
+      return sourcesAsync.when(
+        data: (sources) {
+          final animeSources = widget.type == bridge.ItemType.anime
+              ? sources
+              : <SourceInfo>[];
+          final mangaSources = widget.type == bridge.ItemType.manga
+              ? sources
+              : <SourceInfo>[];
+          final novelSources = widget.type == bridge.ItemType.novel
+              ? sources
+              : <SourceInfo>[];
+          final enabledManagers = ref.watch(enabledExtensionManagersProvider);
 
-        return sourcesAsync.when(
-          data: (sources) {
-            final validSources = sources
-                .where(
-                  (s) =>
-                      s.type == SourceType.inbuilt ||
-                      installedIds.contains(s.id),
-                )
-                .toList();
-            final unified = validSources
-                .map((s) => _UnifiedSource.fromSourceInfo(s))
-                .toList();
-            return _buildContent(context, unified);
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('Error: $error')),
-        );
-      });
+          final unified = ExtensionsService.getFilteredSources(
+            type: widget.type,
+            isInstalled: true,
+            engineFilter: widget.engineFilter,
+            searchQuery: widget.searchQuery,
+            langFilter: widget.langFilter,
+            animeSources: animeSources,
+            mangaSources: mangaSources,
+            novelSources: novelSources,
+            enabledManagers: enabledManagers.toList(),
+          );
+          return _buildContent(context, unified);
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(child: Text('Error: $error')),
+      );
     } else {
       return Obx(() {
-        final bridgeManager = Get.find<bridge.ExtensionManager>();
-        final available = switch (widget.type) {
-          bridge.ItemType.anime => bridgeManager.availableAnimeExtensions,
-          bridge.ItemType.manga => bridgeManager.availableMangaExtensions,
-          bridge.ItemType.novel => bridgeManager.availableNovelExtensions,
-        };
-        final installed = switch (widget.type) {
-          bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
-          bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
-          bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
-        };
-        final installedIds = installed.map((e) => e.id ?? '').toSet();
-
+        final animeSources =
+            ref.watch(availableAnimeSourcesProvider).value ?? [];
+        final mangaSources =
+            ref.watch(availableMangaSourcesProvider).value ?? [];
+        final novelSources =
+            ref.watch(availableNovelSourcesProvider).value ?? [];
         final enabledManagers = ref.watch(enabledExtensionManagersProvider);
-        final uninstalledAvailable = available.where((s) {
-          if (installedIds.contains(s.id)) return false;
-          final mId = (s.managerId ?? bridge.getSourceManager(s).id).replaceAll(
-            '-desktop',
-            '',
-          );
-          return enabledManagers.contains(mId);
-        }).toList();
 
-        final unified = uninstalledAvailable
-            .map((s) => _UnifiedSource.fromBridgeSource(s))
-            .toList();
+        final unified = ExtensionsService.getFilteredSources(
+          type: widget.type,
+          isInstalled: false,
+          engineFilter: widget.engineFilter,
+          searchQuery: widget.searchQuery,
+          langFilter: widget.langFilter,
+          animeSources: animeSources,
+          mangaSources: mangaSources,
+          novelSources: novelSources,
+          enabledManagers: enabledManagers.toList(),
+        );
         return _buildContent(context, unified);
       });
     }
   }
 
-  Widget _buildContent(BuildContext context, List<_UnifiedSource> sources) {
-    var filteredSources = sources.where((s) {
-      final name = s.name.toLowerCase();
-      final id = s.id.toLowerCase();
-      final query = widget.searchQuery.toLowerCase();
-      if (widget.langFilter != 'All') {
-        final sLang = s.lang ?? 'all';
-        if (sLang.toLowerCase() != widget.langFilter.toLowerCase()) {
-          return false;
-        }
-      }
-      if (widget.engineFilter != 'All') {
-        String mId = '';
-        if (s.sourceInfo != null) {
-          if (s.isInbuilt) {
-            if (widget.engineFilter != 'Mangayomi') return false;
-            mId = 'mangayomi';
-          } else {
-            final bridgeManager = Get.find<bridge.ExtensionManager>();
-            final allInst = [
-              ...bridgeManager.installedAnimeExtensions,
-              ...bridgeManager.installedMangaExtensions,
-              ...bridgeManager.installedNovelExtensions,
-            ];
-            final match = allInst.firstWhereOrNull(
-              (e) => e.id == s.id || e.name == s.name,
-            );
-            if (match != null) {
-              mId = (match.managerId ?? bridge.getSourceManager(match).id)
-                  .replaceAll('-desktop', '');
-            }
-          }
-        } else if (s.bridgeSource != null) {
-          mId =
-              (s.bridgeSource!.managerId ??
-                      bridge.getSourceManager(s.bridgeSource!).id)
-                  .replaceAll('-desktop', '');
-        }
-        String targetId = widget.engineFilter.toLowerCase();
-        if (targetId == 'tachiyomi') targetId = 'aniyomi';
-        if (mId.isNotEmpty && !mId.toLowerCase().contains(targetId)) {
-          return false;
-        }
-      }
-      return name.contains(query) || id.contains(query);
-    }).toList();
-
-    final Map<String, _UnifiedSource> uniqueSources = {};
-    for (final s in filteredSources) {
-      uniqueSources[s.id] = s;
-    }
-    filteredSources = uniqueSources.values.toList();
-
-    if (filteredSources.isEmpty) {
+  Widget _buildContent(BuildContext context, List<UnifiedSource> sources) {
+    if (sources.isEmpty) {
       final isRuntimeReady =
           bridge.AnymeXRuntimeBridge.controller.isReady.value;
       final isBridgeFilter =
@@ -375,207 +262,297 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
       );
     }
 
-    final Map<String, List<_UnifiedSource>> groupedByName = {};
-    for (final s in filteredSources) {
-      groupedByName.putIfAbsent(s.name, () => []).add(s);
+    final prefKey = widget.type == bridge.ItemType.anime
+        ? 'source_order_ANIME'
+        : (widget.type == bridge.ItemType.manga
+              ? 'source_order_MANGA'
+              : 'source_order_NOVEL');
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final order = prefs.getStringList(prefKey) ?? [];
+
+    final groupedByLang = ExtensionsService.groupSourcesByLanguage(
+      sources,
+      widget.isInstalled,
+      order,
+    );
+    final sortedLangs = groupedByLang.keys.toList();
+
+    final outdatedSources = widget.isInstalled
+        ? sources.where((s) => s.hasUpdate).toList()
+        : <UnifiedSource>[];
+    final outdatedGroups = <String, List<UnifiedSource>>{};
+    for (final s in outdatedSources) {
+      outdatedGroups.putIfAbsent(s.name, () => []).add(s);
     }
 
-    final Map<String, Map<String, List<_UnifiedSource>>> groupedByLang = {};
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref
+            .read(extensionsControllerProvider.notifier)
+            .refreshAll(context);
+      },
+      child: CustomScrollView(
+        slivers: [
+          if (widget.isInstalled && outdatedSources.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+              sliver: SliverToBoxAdapter(
+                child: Theme(
+                  data: Theme.of(
+                    context,
+                  ).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    initiallyExpanded: true,
+                    title: Row(
+                      children: [
+                        Icon(
+                          Icons.system_update_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Updates Available (${outdatedSources.length})',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () => ref
+                              .read(extensionsControllerProvider.notifier)
+                              .updateAllSources(context),
+                          icon: const Icon(Icons.update, size: 16),
+                          label: const Text(
+                            'Update All',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 10,
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ],
+                    ),
+                    children: outdatedGroups.keys.map((name) {
+                      final groupSources = outdatedGroups[name]!;
+                      if (groupSources.length == 1) {
+                        return _buildItem(context, groupSources.first, false);
+                      }
+                      return _buildGroupTile(context, name, groupSources);
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 120),
+            sliver: SliverList.builder(
+              itemCount: sortedLangs.length,
+              itemBuilder: (context, langIndex) {
+                final lang = sortedLangs[langIndex];
+                final nameGroups = groupedByLang[lang]!;
+                final sortedNames = nameGroups.keys.toList();
 
-    for (final name in groupedByName.keys) {
-      final sources = groupedByName[name]!;
-      String groupLang = 'All';
+                return Theme(
+                  data: Theme.of(
+                    context,
+                  ).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    initiallyExpanded: langIndex == 0,
+                    title: Text(
+                      lang,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    subtitle: Text(
+                      '${nameGroups.length} extensions',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                      ),
+                    ),
+                    children: sortedNames.map((name) {
+                      final groupSources = nameGroups[name]!;
 
-      if (sources.length > 1) {
-        final allVariant = sources
-            .where(
-              (s) =>
-                  s.lang?.toLowerCase() == 'all' ||
-                  s.lang?.toLowerCase() == 'multi',
-            )
-            .firstOrNull;
-        if (allVariant != null) {
-          groupLang = allVariant.lang!;
-        }
+                      if (groupSources.length == 1) {
+                        return _buildItem(context, groupSources.first, false);
+                      }
 
-        sources.removeWhere(
-          (s) =>
-              s.lang?.toLowerCase() == 'all' ||
-              s.lang?.toLowerCase() == 'multi',
-        );
-      } else {
-        groupLang = sources.first.lang ?? 'All';
-      }
+                      return _buildGroupTile(context, name, groupSources);
+                    }).toList(),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-      final displayLang =
-          (groupLang.toLowerCase() == 'all' ||
-              groupLang.toLowerCase() == 'multi')
-          ? 'All'
-          : groupLang.toUpperCase();
+  Widget _buildGroupTile(
+    BuildContext context,
+    String name,
+    List<UnifiedSource> groupSources,
+  ) {
+    final isGroupProcessing = ref
+        .watch(extensionsControllerProvider)
+        .contains(name);
 
-      groupedByLang.putIfAbsent(displayLang, () => {})[name] = sources;
-    }
-
-    final sortedLangs = groupedByLang.keys.toList()
-      ..sort((a, b) {
-        if (a == 'All') return -1;
-        if (b == 'All') return 1;
-        return a.compareTo(b);
-      });
-
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 120),
-          sliver: SliverList.builder(
-            itemCount: sortedLangs.length,
-            itemBuilder: (context, langIndex) {
-              final lang = sortedLangs[langIndex];
-              final nameGroups = groupedByLang[lang]!;
-              final prefKey = widget.type == bridge.ItemType.anime
-                  ? 'source_order_ANIME'
-                  : 'source_order_MANGA';
-              final prefs = ref.watch(sharedPreferencesProvider);
-              final order = prefs.getStringList(prefKey) ?? [];
-              final orderMap = {
-                for (int i = 0; i < order.length; i++) order[i]: i,
-              };
-
-              final sortedNames = nameGroups.keys.toList();
-              if (widget.isInstalled && order.isNotEmpty) {
-                sortedNames.sort((a, b) {
-                  final minA = nameGroups[a]!
-                      .map((s) => orderMap[s.id] ?? 9999)
-                      .reduce((v, e) => v < e ? v : e);
-                  final minB = nameGroups[b]!
-                      .map((s) => orderMap[s.id] ?? 9999)
-                      .reduce((v, e) => v < e ? v : e);
-                  return minA.compareTo(minB);
-                });
-              } else {
-                sortedNames.sort();
-              }
-
-              return Theme(
-                data: Theme.of(
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        backgroundColor: groupSources.any((s) => s.effectiveNsfw)
+            ? Colors.red.withValues(alpha: 0.06)
+            : null,
+        collapsedBackgroundColor: groupSources.any((s) => s.effectiveNsfw)
+            ? Colors.red.withValues(alpha: 0.06)
+            : null,
+        tilePadding: const EdgeInsets.symmetric(horizontal: 10),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                name,
+                style: Theme.of(
                   context,
-                ).copyWith(dividerColor: Colors.transparent),
-                child: ExpansionTile(
-                  initiallyExpanded: langIndex == 0,
-                  title: Text(
-                    lang,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  subtitle: Text(
-                    '${nameGroups.length} extensions',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  children: sortedNames.map((name) {
-                    final groupSources = nameGroups[name]!;
-
-                    if (groupSources.length == 1) {
-                      return _buildItem(context, groupSources.first, false);
-                    }
-
-                    final isGroupProcessing = _processingIds.contains(name);
-
-                    return Theme(
-                      data: Theme.of(
-                        context,
-                      ).copyWith(dividerColor: Colors.transparent),
-                      child: ExpansionTile(
-                        backgroundColor:
-                            groupSources.any((s) => s.effectiveNsfw)
-                            ? Colors.red.withValues(alpha: 0.06)
-                            : null,
-                        collapsedBackgroundColor:
-                            groupSources.any((s) => s.effectiveNsfw)
-                            ? Colors.red.withValues(alpha: 0.06)
-                            : null,
-                        tilePadding: const EdgeInsets.symmetric(horizontal: 10),
-                        title: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                name,
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w500),
-                                overflow: TextOverflow.ellipsis,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (widget.isInstalled)
+              isGroupProcessing
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (groupSources.any((s) => s.hasUpdate))
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: InkWell(
+                              onTap: () => ref
+                                  .read(extensionsControllerProvider.notifier)
+                                  .updateVariantGroup(
+                                    context,
+                                    name,
+                                    widget.type,
+                                  ),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.primary
+                                        .withValues(alpha: 0.4),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.arrow_upward_rounded,
+                                      size: 13,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'UPDATE',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            if (widget.isInstalled)
-                              isGroupProcessing
-                                  ? const Padding(
-                                      padding: EdgeInsets.all(12),
-                                      child: SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                    )
-                                  : IconButton(
-                                      icon: const Icon(Icons.delete_outline),
-                                      onPressed: () =>
-                                          _uninstallVariantGroup(context, name),
-                                    ),
-                          ],
-                        ),
-                        subtitle: Text(
-                          groupSources.any((s) => s.effectiveNsfw)
-                              ? '18+ • ${groupSources.length} variants'
-                              : '${groupSources.length} variants',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: groupSources.any((s) => s.effectiveNsfw)
-                                    ? Colors.red.shade400
-                                    : Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant
-                                          .withValues(alpha: 0.7),
-                                fontWeight:
-                                    groupSources.any((s) => s.effectiveNsfw)
-                                    ? FontWeight.w600
-                                    : null,
+                          ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () => ref
+                              .read(extensionsControllerProvider.notifier)
+                              .uninstallVariantGroup(
+                                context,
+                                name,
+                                widget.type,
                               ),
                         ),
-                        leading: CachedNetworkImage(
-                          imageUrl: groupSources.first.iconUrl ?? '',
-                          width: 40,
-                          height: 40,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) =>
-                              const Icon(Icons.extension, size: 40),
-                        ),
-                        children: groupSources
-                            .map((s) => _buildItem(context, s, true))
-                            .toList(),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              );
-            },
+                      ],
+                    ),
+          ],
+        ),
+        subtitle: Text(
+          groupSources.any((s) => s.effectiveNsfw)
+              ? '18+ • ${groupSources.length} variants'
+              : '${groupSources.length} variants',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: groupSources.any((s) => s.effectiveNsfw)
+                ? Colors.red.shade400
+                : Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+            fontWeight: groupSources.any((s) => s.effectiveNsfw)
+                ? FontWeight.w600
+                : null,
           ),
         ),
-      ],
+        leading: CachedNetworkImage(
+          imageUrl: groupSources.first.iconUrl ?? '',
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          errorWidget: (_, __, ___) => const Icon(Icons.extension, size: 40),
+        ),
+        children: groupSources
+            .map((s) => _buildItem(context, s, true))
+            .toList(),
+      ),
     );
   }
 
   Widget _buildItem(
     BuildContext context,
-    _UnifiedSource source,
+    UnifiedSource source,
     bool isSubItem,
   ) {
-    final isProcessing = _processingIds.contains(source.id);
+    final isProcessing = ref
+        .watch(extensionsControllerProvider)
+        .contains(source.id);
+    final controller = ref.read(extensionsControllerProvider.notifier);
 
     return SettingsActionTile(
       title: isSubItem
@@ -611,19 +588,16 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
           if (widget.isInstalled && source.sourceInfo != null) ...[
             Builder(
               builder: (context) {
-                final prefKey = widget.type == bridge.ItemType.anime
-                    ? 'source_order_ANIME'
-                    : 'source_order_MANGA';
-                final prefs = ref.watch(sharedPreferencesProvider);
-                final order = prefs.getStringList(prefKey) ?? [];
                 final availableList = widget.type == bridge.ItemType.anime
                     ? ref.watch(availableAnimeSourcesProvider).value
-                    : ref.watch(availableMangaSourcesProvider).value;
-                final isDefault = order.isNotEmpty
-                    ? order.first == source.id
-                    : (availableList != null &&
-                          availableList.isNotEmpty &&
-                          availableList.first.id == source.id);
+                    : (widget.type == bridge.ItemType.manga
+                          ? ref.watch(availableMangaSourcesProvider).value
+                          : ref.watch(availableNovelSourcesProvider).value);
+                final isDefault = controller.isDefaultSource(
+                  source,
+                  widget.type,
+                  availableList,
+                );
 
                 return Row(
                   mainAxisSize: MainAxisSize.min,
@@ -663,15 +637,8 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                       tooltip: isDefault
                           ? 'Pinned as Default Source'
                           : 'Pin as Default Source',
-                      onPressed: () async {
-                        final newOrder = [
-                          source.id,
-                          ...order.where((id) => id != source.id),
-                        ];
-                        await prefs.setStringList(prefKey, newOrder);
-                        ref.invalidate(availableAnimeSourcesProvider);
-                        ref.invalidate(availableMangaSourcesProvider);
-                      },
+                      onPressed: () =>
+                          controller.setDefaultSource(source, widget.type),
                     ),
                   ],
                 );
@@ -688,20 +655,71 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                   ),
                 ),
               )
-            else if (!isSubItem)
-              isProcessing
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+            else if (isProcessing)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else ...[
+              if (source.hasUpdate)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: InkWell(
+                    onTap: () =>
+                        controller.updateSource(context, source, widget.type),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
                       ),
-                    )
-                  : IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () => _uninstallSource(context, source),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.arrow_upward_rounded,
+                            size: 13,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            source.versionLast != null
+                                ? 'UPDATE ${source.versionLast}'
+                                : 'UPDATE',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: Theme.of(context).colorScheme.primary,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                  ),
+                ),
+              if (!isSubItem)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () =>
+                      controller.uninstallSource(context, source, widget.type),
+                ),
+            ],
           ] else if (!widget.isInstalled) ...[
             isProcessing
                 ? const Padding(
@@ -714,7 +732,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                   )
                 : IconButton(
                     icon: const Icon(Icons.add),
-                    onPressed: () => _installSource(context, source),
+                    onPressed: () => controller.installSource(context, source),
                   ),
           ],
         ],
@@ -751,255 +769,4 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
       },
     );
   }
-
-  Future<void> _installSource(
-    BuildContext context,
-    _UnifiedSource source,
-  ) async {
-    if (source.bridgeSource == null) return;
-    setState(() => _processingIds.add(source.id));
-    try {
-      await bridge
-          .getSourceManager(source.bridgeSource!)
-          .installSource(source.bridgeSource!);
-      ref.invalidate(availableAnimeSourcesProvider);
-      ref.invalidate(availableMangaSourcesProvider);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${source.name} installed successfully!'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to install ${source.name}: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _processingIds.remove(source.id));
-    }
-  }
-
-  void _uninstallVariantGroup(BuildContext context, String name) {
-    ConfirmationBottomSheet.show(
-      context,
-      title: 'Uninstall Extension',
-      message: 'Are you sure you want to uninstall all variants of $name?',
-      confirmText: 'Uninstall',
-      isDestructive: true,
-      onConfirm: () async {
-        setState(() => _processingIds.add(name));
-        try {
-          final bridgeManager = Get.find<bridge.ExtensionManager>();
-          final installed = switch (widget.type) {
-            bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
-            bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
-            bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
-          };
-          final variants = installed
-              .where((e) => (e.name ?? 'N/A') == name)
-              .toList();
-
-          await Future.wait(
-            variants.map((e) => bridge.getSourceManager(e).uninstallSource(e)),
-          );
-
-          ref.invalidate(availableAnimeSourcesProvider);
-          ref.invalidate(availableMangaSourcesProvider);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Uninstalled all variants of $name'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
-        } finally {
-          if (mounted) setState(() => _processingIds.remove(name));
-        }
-      },
-    );
-  }
-
-  void _uninstallSource(BuildContext context, _UnifiedSource source) {
-    ConfirmationBottomSheet.show(
-      context,
-      title: 'Uninstall Extension',
-      message: 'Are you sure you want to uninstall ${source.name}?',
-      confirmText: 'Uninstall',
-      isDestructive: true,
-      onConfirm: () async {
-        setState(() => _processingIds.add(source.id));
-        try {
-          final bridgeManager = Get.find<bridge.ExtensionManager>();
-          final installed = switch (widget.type) {
-            bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
-            bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
-            bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
-          };
-          final extSource = installed.firstWhere((e) => e.id == source.id);
-          await bridge.getSourceManager(extSource).uninstallSource(extSource);
-
-          ref.invalidate(availableAnimeSourcesProvider);
-          ref.invalidate(availableMangaSourcesProvider);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${source.name} uninstalled'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
-        } catch (_) {
-        } finally {
-          if (mounted) setState(() => _processingIds.remove(source.id));
-        }
-      },
-    );
-  }
-}
-
-List<_UnifiedSource> _getFilteredUnifiedSources({
-  required bridge.ItemType type,
-  required bool isInstalled,
-  required String engineFilter,
-  required String searchQuery,
-  required String langFilter,
-  required List<SourceInfo> animeSources,
-  required List<SourceInfo> mangaSources,
-  required List<SourceInfo> novelSources,
-  required List<String> enabledManagers,
-}) {
-  final bridgeManager = Get.find<bridge.ExtensionManager>();
-  List<_UnifiedSource> unified = [];
-
-  if (isInstalled) {
-    final sources = switch (type) {
-      bridge.ItemType.anime => animeSources,
-      bridge.ItemType.manga => mangaSources,
-      bridge.ItemType.novel => novelSources,
-    };
-    final installedRx = switch (type) {
-      bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
-      bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
-      bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
-    };
-    final installedIds = installedRx.map((e) => e.id ?? '').toSet();
-    final validSources = sources
-        .where(
-          (s) => s.type == SourceType.inbuilt || installedIds.contains(s.id),
-        )
-        .toList();
-    unified = validSources
-        .map((s) => _UnifiedSource.fromSourceInfo(s))
-        .toList();
-  } else {
-    final available = switch (type) {
-      bridge.ItemType.anime => bridgeManager.availableAnimeExtensions,
-      bridge.ItemType.manga => bridgeManager.availableMangaExtensions,
-      bridge.ItemType.novel => bridgeManager.availableNovelExtensions,
-    };
-    final installed = switch (type) {
-      bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
-      bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
-      bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
-    };
-    final installedIds = installed.map((e) => e.id ?? '').toSet();
-
-    final uninstalledAvailable = available.where((s) {
-      if (installedIds.contains(s.id)) return false;
-      final mId = (s.managerId ?? bridge.getSourceManager(s).id).replaceAll(
-        '-desktop',
-        '',
-      );
-      return enabledManagers.contains(mId);
-    }).toList();
-
-    unified = uninstalledAvailable
-        .map((s) => _UnifiedSource.fromBridgeSource(s))
-        .toList();
-  }
-
-  var filteredSources = unified.where((s) {
-    final name = s.name.toLowerCase();
-    final id = s.id.toLowerCase();
-    final query = searchQuery.toLowerCase();
-    if (langFilter != 'All') {
-      final sLang = s.lang ?? 'all';
-      if (sLang.toLowerCase() != langFilter.toLowerCase()) {
-        return false;
-      }
-    }
-    if (engineFilter != 'All') {
-      String mId = '';
-      if (s.sourceInfo != null) {
-        if (s.isInbuilt) {
-          if (engineFilter != 'Mangayomi') return false;
-          mId = 'mangayomi';
-        } else {
-          final allInst = [
-            ...bridgeManager.installedAnimeExtensions,
-            ...bridgeManager.installedMangaExtensions,
-            ...bridgeManager.installedNovelExtensions,
-          ];
-          final match = allInst.firstWhereOrNull(
-            (e) => e.id == s.id || e.name == s.name,
-          );
-          if (match != null) {
-            mId = (match.managerId ?? bridge.getSourceManager(match).id)
-                .replaceAll('-desktop', '');
-          }
-        }
-      } else if (s.bridgeSource != null) {
-        mId =
-            (s.bridgeSource!.managerId ??
-                    bridge.getSourceManager(s.bridgeSource!).id)
-                .replaceAll('-desktop', '');
-      }
-      String targetId = engineFilter.toLowerCase();
-      if (targetId == 'tachiyomi') targetId = 'aniyomi';
-      if (mId.isNotEmpty && !mId.toLowerCase().contains(targetId)) {
-        return false;
-      }
-    }
-    return name.contains(query) || id.contains(query);
-  }).toList();
-
-  final Map<String, _UnifiedSource> uniqueSources = {};
-  for (final s in filteredSources) {
-    uniqueSources[s.id] = s;
-  }
-  return uniqueSources.values.toList();
-}
-
-int getSourcesTabCount({
-  required bridge.ItemType type,
-  required bool isInstalled,
-  required String engineFilter,
-  required String searchQuery,
-  required String langFilter,
-  required List<SourceInfo> animeSources,
-  required List<SourceInfo> mangaSources,
-  required List<SourceInfo> novelSources,
-  required List<String> enabledManagers,
-}) {
-  return _getFilteredUnifiedSources(
-    type: type,
-    isInstalled: isInstalled,
-    engineFilter: engineFilter,
-    searchQuery: searchQuery,
-    langFilter: langFilter,
-    animeSources: animeSources,
-    mangaSources: mangaSources,
-    novelSources: novelSources,
-    enabledManagers: enabledManagers,
-  ).length;
 }

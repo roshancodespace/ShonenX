@@ -27,16 +27,19 @@ dependencies:
     path: packages/commentum_client
   media_kit:
     git:
-      url: https://github.com/Schnitzel5/media-kit.git
-      path: media_kit
+      url: https://github.com/Predidit/media-kit.git
+      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
+      path: ./media_kit
   media_kit_video:
     git:
-      url: https://github.com/Schnitzel5/media-kit.git
-      path: media_kit_video
+      url: https://github.com/Predidit/media-kit.git
+      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
+      path: ./media_kit_video
   media_kit_libs_video:
     git:
-      url: https://github.com/Schnitzel5/media-kit.git
-      path: libs/universal/media_kit_libs_video
+      url: https://github.com/Predidit/media-kit.git
+      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
+      path: ./libs/universal/media_kit_libs_video
   get: ^4.7.3
   google_fonts: ^8.0.2
   shared_preferences: ^2.5.5

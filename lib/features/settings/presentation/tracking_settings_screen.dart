@@ -11,7 +11,6 @@ import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart
 import 'package:shonenx/features/tracking/presentation/widgets/tracker_profile_sheet.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
-import 'package:shonenx/shared/widgets/svg_icon.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
 
 class TrackingSettingsScreen extends ConsumerWidget {

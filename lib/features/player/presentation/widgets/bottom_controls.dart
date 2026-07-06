@@ -282,11 +282,40 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                               showModalBottomSheet(
                                 context: context,
                                 isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                constraints: const BoxConstraints(
+                                  maxWidth: double.infinity,
+                                ),
                                 builder: (context) {
-                                  return SubtitleSettingsSheet();
+                                  return const SubtitleSettingsSheet();
                                 },
                               );
                             },
+                            actions: [
+                              IconButton.filledTonal(
+                                tooltip: 'Customize Subtitles',
+                                style: IconButton.styleFrom(
+                                  backgroundColor:
+                                      widget.theme.colorScheme.primary,
+                                  foregroundColor:
+                                      widget.theme.colorScheme.onPrimary,
+                                ),
+                                icon: const Icon(Icons.tune_rounded, size: 18),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    constraints: const BoxConstraints(
+                                      maxWidth: double.infinity,
+                                    ),
+                                    builder: (context) =>
+                                        const SubtitleSettingsSheet(),
+                                  );
+                                },
+                              ),
+                            ],
                             isDisabled: widget.playerState.subtitles.isEmpty,
                             withBadge: false,
                             displayText: 'Subtitles',
@@ -662,6 +691,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
     Widget? displayWidget,
     bool isHighlighted = false,
     Widget? Function(T)? badgeBuilder,
+    List<Widget>? actions,
   }) {
     return Badge(
       label: Text(items.length.toString()),
@@ -680,6 +710,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                   itemLabel: itemLabel,
                   badgeBuilder: badgeBuilder,
                   onChanged: onChanged,
+                  actions: actions,
                 );
               },
         onLongPress: onLongPress,

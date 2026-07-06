@@ -22,6 +22,7 @@ class AppBottomSheet extends StatelessWidget {
     required BuildContext context,
     required String title,
     required Widget child,
+    List<Widget>? actions,
     bool isScrollControlled = true,
     bool useRootNavigator = false,
     bool enableDrag = true,
@@ -52,6 +53,7 @@ class AppBottomSheet extends StatelessWidget {
       builder: (_) {
         return AppBottomSheet(
           title: title,
+          actions: actions,
           headerPadding: headerPadding,
           contentPadding: contentPadding,
           child: child,
@@ -67,6 +69,7 @@ class AppBottomSheet extends StatelessWidget {
     required String Function(T item) itemLabel,
     required void Function(T item) onChanged,
     T? selectedValue,
+    List<Widget>? actions,
     Widget? Function(T item)? badgeBuilder,
     Widget? Function(T item, bool isSelected)? leadingBuilder,
     Widget? Function(T item, bool isSelected)? trailingBuilder,
@@ -89,6 +92,7 @@ class AppBottomSheet extends StatelessWidget {
     return show<T>(
       context: context,
       title: title,
+      actions: actions,
       isScrollControlled: isScrollControlled,
       useRootNavigator: useRootNavigator,
       enableDrag: enableDrag,

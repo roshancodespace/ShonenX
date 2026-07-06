@@ -180,18 +180,18 @@ class TopControls extends ConsumerWidget {
                 onTap: () => _showPlayerOptionsMenu(context),
               ),
               const SizedBox(width: 6),
-              _buildActionIcon(
-                icon: Icons.video_settings_outlined,
-                onTap: () {
-                  if (engine.buildSettingsView(context) == null) return;
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    useSafeArea: true,
-                    builder: (context) => engine.buildSettingsView(context)!,
-                  );
-                },
-              ),
+              if (engine.buildSettingsView(context) != null)
+                _buildActionIcon(
+                  icon: Icons.video_settings_outlined,
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      useSafeArea: true,
+                      builder: (context) => engine.buildSettingsView(context)!,
+                    );
+                  },
+                ),
             ],
           ),
         ),

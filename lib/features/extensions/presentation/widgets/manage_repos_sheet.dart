@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
+import 'package:shonenx/core/utils/snackbar_utils.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
@@ -41,9 +42,13 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
     }
 
     if (widget.autoAddManager != null &&
-        ['aniyomi', 'mangayomi', 'cloudstream', 'kotatsu', 'sora'].contains(
-          widget.autoAddManager,
-        )) {
+        [
+          'aniyomi',
+          'mangayomi',
+          'cloudstream',
+          'kotatsu',
+          'sora',
+        ].contains(widget.autoAddManager)) {
       _selectedEngineId = widget.autoAddManager!;
     } else if (widget.autoAddUrl != null) {
       final lower = widget.autoAddUrl!.toLowerCase();
@@ -63,9 +68,13 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
       _selectedEngineId =
           widget.manager?.id.replaceAll('-desktop', '') ?? 'aniyomi';
     }
-    if (!['aniyomi', 'mangayomi', 'cloudstream', 'kotatsu', 'sora'].contains(
-      _selectedEngineId,
-    )) {
+    if (![
+      'aniyomi',
+      'mangayomi',
+      'cloudstream',
+      'kotatsu',
+      'sora',
+    ].contains(_selectedEngineId)) {
       _selectedEngineId = 'aniyomi';
     }
 
@@ -79,6 +88,7 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
 
   @override
   void dispose() {
+    SnackbarUtils.dismissCurrent();
     _controller.dispose();
     super.dispose();
   }
@@ -111,19 +121,27 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
     return input;
   }
 
+  void _showSnackBar(
+    String message, {
+    bool isError = false,
+    bool isSuccess = false,
+    BuildContext? ctx,
+  }) {
+    SnackbarUtils.show(
+      ctx ?? context,
+      message,
+      isError: isError,
+      isSuccess: isSuccess,
+    );
+  }
+
   Future<void> _addRepo() async {
     final url = _controller.text.trim();
     if (url.isEmpty) return;
 
     final parsedUrl = _parseRepoUrl(url);
     if (parsedUrl == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Invalid repository URL.'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _showSnackBar('Invalid repository URL.', isError: true);
       return;
     }
 
@@ -135,17 +153,10 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
           bridgeManager.findById('$_selectedEngineId-desktop');
 
       if (targetManager == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Engine $_selectedEngineId is not available or registered.',
-              ),
-              backgroundColor: Theme.of(context).colorScheme.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
+        _showSnackBar(
+          'Engine $_selectedEngineId is not available or registered.',
+          isError: true,
+        );
         return;
       }
 
@@ -175,24 +186,14 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
       ref.invalidate(availableNovelSourcesProvider);
       if (mounted) {
         if (added) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Repository added to ${_getEngineName(_selectedEngineId)} successfully!',
-              ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
+          _showSnackBar(
+            'Repository added to ${_getEngineName(_selectedEngineId)} successfully!',
+            isSuccess: true,
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Failed to add repository or already exists.',
-              ),
-              backgroundColor: Theme.of(context).colorScheme.error,
-              behavior: SnackBarBehavior.floating,
-            ),
+          _showSnackBar(
+            'Failed to add repository or already exists.',
+            isError: true,
           );
         }
       }
@@ -202,6 +203,7 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
   }
 
   Future<void> _removeRepo(String url, String managerId) async {
+    setState(() => _isLoading = true);
     try {
       final bridgeManager = Get.find<bridge.ExtensionManager>();
       final targetManager =
@@ -222,14 +224,15 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
       ref.invalidate(availableMangaSourcesProvider);
       ref.invalidate(availableNovelSourcesProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Repository removed'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _showSnackBar('Repository removed');
       }
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) {
+        _showSnackBar('Failed to remove repository', isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   String _getEngineName(String id) {
@@ -291,12 +294,11 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
               DropdownMenuItem(value: 'kotatsu', child: Text('Kotatsu')),
               DropdownMenuItem(value: 'sora', child: Text('Sora')),
             ],
-            onChanged:
-                _isLoading
-                    ? null
-                    : (val) {
-                      if (val != null) setState(() => _selectedEngineId = val);
-                    },
+            onChanged: _isLoading
+                ? null
+                : (val) {
+                    if (val != null) setState(() => _selectedEngineId = val);
+                  },
           ),
           const SizedBox(height: 12),
           TextField(
@@ -355,10 +357,9 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
               ),
             ],
             selected: {_selectedCategory},
-            onSelectionChanged:
-                _isLoading
-                    ? null
-                    : (sel) => setState(() => _selectedCategory = sel.first),
+            onSelectionChanged: _isLoading
+                ? null
+                : (sel) => setState(() => _selectedCategory = sel.first),
           ),
           const SizedBox(height: 8),
           if (_clipboardText != null && !_isLoading) ...[
@@ -402,30 +403,29 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child:
-                  _isLoading
-                      ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                      : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.cloud_download_outlined, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Add Repository',
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: theme.colorScheme.onPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
                       ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.cloud_download_outlined, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Add Repository',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.onPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ),
           const SizedBox(height: 24),
@@ -437,136 +437,133 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          Builder(
-            builder: (context) {
-              final bridgeManager = Get.find<bridge.ExtensionManager>();
-              final allManagers = bridgeManager.managers;
-              final List<(bridge.Repo, String)> reposWithManager = [];
-              final urls = <String>{};
+          Obx(() {
+            final bridgeManager = Get.find<bridge.ExtensionManager>();
+            final allManagers = bridgeManager.managers;
+            final List<(bridge.Repo, String)> reposWithManager = [];
+            final urls = <String>{};
 
-              for (final m in allManagers) {
-                final mId = m.id.replaceAll('-desktop', '');
-                final aRepos = m.getReposRx(bridge.ItemType.anime).value;
-                final mRepos = m.getReposRx(bridge.ItemType.manga).value;
-                final nRepos = m.getReposRx(bridge.ItemType.novel).value;
-                for (final r in [...aRepos, ...mRepos, ...nRepos]) {
-                  if (urls.add(r.url)) {
-                    reposWithManager.add((r, r.managerId ?? mId));
-                  }
+            for (final m in allManagers) {
+              final mId = m.id.replaceAll('-desktop', '');
+              final aRepos = m.getReposRx(bridge.ItemType.anime).value;
+              final mRepos = m.getReposRx(bridge.ItemType.manga).value;
+              final nRepos = m.getReposRx(bridge.ItemType.novel).value;
+              for (final r in [...aRepos, ...mRepos, ...nRepos]) {
+                if (urls.add(r.url)) {
+                  reposWithManager.add((r, r.managerId ?? mId));
                 }
               }
+            }
 
-              if (reposWithManager.isEmpty) {
-                return Container(
-                  padding: const EdgeInsets.all(24),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.3,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
+            if (reposWithManager.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(24),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.3,
                   ),
-                  child: Text(
-                    'No repositories added yet.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'No repositories added yet.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                );
-              }
-
-              return ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 280),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: reposWithManager.length,
-                  separatorBuilder:
-                      (context, index) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final item = reposWithManager[index];
-                    final repo = item.$1;
-                    final mId = item.$2;
-                    final uri = Uri.tryParse(repo.url);
-                    final hostname = uri?.host ?? 'Custom Repo';
-
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest
-                            .withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: theme.colorScheme.outlineVariant.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.folder_shared_outlined,
-                            color: theme.colorScheme.primary,
-                            size: 26,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  repo.name ?? hostname,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 4),
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 4,
-                                  children: [
-                                    _buildBadge(
-                                      context,
-                                      _getEngineName(mId).toUpperCase(),
-                                      theme.colorScheme.primaryContainer,
-                                      theme.colorScheme.onPrimaryContainer,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  repo.url,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                    fontSize: 11,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.delete_outline_rounded,
-                              color: theme.colorScheme.error,
-                            ),
-                            tooltip: 'Remove Repository',
-                            onPressed: () => _removeRepo(repo.url, mId),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
                 ),
               );
-            },
-          ),
+            }
+
+            return ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 280),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: reposWithManager.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final item = reposWithManager[index];
+                  final repo = item.$1;
+                  final mId = item.$2;
+                  final uri = Uri.tryParse(repo.url);
+                  final hostname = uri?.host ?? 'Custom Repo';
+
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.folder_shared_outlined,
+                          color: theme.colorScheme.primary,
+                          size: 26,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                repo.name ?? hostname,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
+                                children: [
+                                  _buildBadge(
+                                    context,
+                                    _getEngineName(mId).toUpperCase(),
+                                    theme.colorScheme.primaryContainer,
+                                    theme.colorScheme.onPrimaryContainer,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                repo.url,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: 11,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.delete_outline_rounded,
+                            color: theme.colorScheme.error,
+                          ),
+                          tooltip: 'Remove Repository',
+                          onPressed: () => _removeRepo(repo.url, mId),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            );
+          }),
         ],
       ),
     );

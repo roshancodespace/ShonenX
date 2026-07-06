@@ -266,7 +266,12 @@ jobs:
         run: flutter pub upgrade
 
       - name: Build Windows app
-        run: flutter build windows --release --dart-define-from-file=keys.json
+        shell: bash
+        run: |
+          flutter build windows --release --dart-define-from-file=keys.json || {
+            echo "First build failed (likely due to media_kit libmpv download race condition). Retrying..."
+            flutter build windows --release --dart-define-from-file=keys.json
+          }
 
       - name: Build installer (InnoBundle)
         run: dart run inno_bundle --release --no-app
@@ -284,6 +289,10 @@ jobs:
     if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download Android artifacts
         uses: actions/download-artifact@v4
         with:
@@ -307,13 +316,98 @@ jobs:
           cd artifacts
           zip -r ShonenX-linux.zip linux
 
+      - name: Generate Release Notes
+        id: release_notes
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CURRENT_TAG: ${{ needs.resolve-release-tag.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          if git rev-parse -q --verify "refs/tags/$CURRENT_TAG" >/dev/null; then
+            PREV_TAG=$(git describe --tags --abbrev=0 "refs/tags/$CURRENT_TAG^" 2>/dev/null || true)
+          else
+            PREV_TAG=$(git describe --tags --abbrev=0 HEAD 2>/dev/null || true)
+          fi
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "Comparing $PREV_TAG..HEAD"
+            COMMITS=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)")
+            COMPARE_LINK="https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${CURRENT_TAG}"
+          else
+            echo "No previous tag found, getting recent commits"
+            COMMITS=$(git log --pretty=format:"- %s (%h)" -n 30)
+            COMPARE_LINK=""
+          fi
+
+          echo "Commits to format:"
+          echo "$COMMITS"
+
+          NOTES=""
+          if [ -n "$GEMINI_API_KEY" ]; then
+            PROMPT="You are a professional software release manager. Format the following git commit messages into minimal, clean, professional Markdown release notes for version ${CURRENT_TAG}.
+
+          Rules:
+          1. Keep it minimal and professional.
+          2. Group related changes logically (e.g., Features, Bug Fixes, Improvements, Refactoring) if applicable, or just use clean bullet points.
+          3. DO NOT deviate significantly from what the commit messages say. Do not invent features or exaggerate changes.
+          4. Avoid using too many emojis (at most 1-2 subtle section icons, or none at all).
+          5. Return ONLY the Markdown text for the release notes without any introductory or concluding remarks from the AI.
+
+          Commits:
+          ${COMMITS}"
+
+            PAYLOAD=$(jq -n --arg prompt "$PROMPT" '{contents: [{parts: [{"text": $prompt}]}]}')
+
+            call_gemini() {
+              local model="$1"
+              curl -s -X POST \
+                "https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}" \
+                -H "Content-Type: application/json" \
+                -d "$PAYLOAD"
+            }
+
+            for MODEL in "gemini-2.5-flash" "gemini-3.5-flash" "gemini-2.5-pro" "gemini-1.5-flash"; do
+              echo "Trying Gemini model: $MODEL..."
+              RESPONSE=$(call_gemini "$MODEL")
+              NOTES=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
+              if [ -n "$NOTES" ]; then
+                echo "Successfully generated release notes using $MODEL"
+                break
+              else
+                echo "Model $MODEL failed or returned empty. Response: $RESPONSE"
+              fi
+            done
+          else
+            echo "GEMINI_API_KEY secret is not set. Falling back to default commit list."
+          fi
+
+          if [ -z "$NOTES" ]; then
+            echo "Using fallback commit list for release notes."
+            NOTES="## What's Changed
+
+          $COMMITS"
+          fi
+
+          if [ -n "$COMPARE_LINK" ]; then
+            NOTES="$NOTES
+
+          ---
+          **Full Changelog**: $COMPARE_LINK"
+          fi
+
+          echo "$NOTES" > release_notes.md
+          echo "Generated release_notes.md:"
+          cat release_notes.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.resolve-release-tag.outputs.tag_name }}
           name: ${{ needs.resolve-release-tag.outputs.tag_name }}
           prerelease: ${{ needs.resolve-release-tag.outputs.is_prerelease == 'true' }}
-          generate_release_notes: true
+          body_path: release_notes.md
           files: |
             artifacts/android/*.apk
             artifacts/ShonenX-linux.zip

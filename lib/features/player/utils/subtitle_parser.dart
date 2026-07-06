@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class SubtitleCue {
@@ -22,7 +23,8 @@ class SubtitleParser {
     try {
       final response = await http.get(Uri.parse(url), headers: headers);
       if (response.statusCode == 200) {
-        return parseString(response.body);
+        final content = utf8.decode(response.bodyBytes, allowMalformed: true);
+        return parseString(content);
       }
     } catch (_) {}
     return [];
@@ -62,11 +64,7 @@ class SubtitleParser {
 
         if (timeLineIndex != -1 && timeLineIndex < lines.length - 1) {
           final textLines = lines.sublist(timeLineIndex + 1);
-          // Clean up formatting tags like <b>, <i>, <font>
-          final cleanText = textLines
-              .join('\n')
-              .replaceAll(RegExp(r'<[^>]*>'), '')
-              .trim();
+          final cleanText = cleanSubtitleText(textLines.join('\n'));
 
           if (cleanText.isNotEmpty) {
             cues.add(SubtitleCue(start: start, end: end, text: cleanText));
@@ -76,6 +74,48 @@ class SubtitleParser {
     }
 
     return cues;
+  }
+
+  static String cleanSubtitleText(String text) {
+    var cleaned = text;
+    // Remove HTML tags
+    cleaned = cleaned.replaceAll(RegExp(r'<[^>]*>'), '');
+    // Remove ASS style/override tags e.g. {\an8}, {\pos(400,500)}
+    cleaned = cleaned.replaceAll(RegExp(r'\{[^}]*\}'), '');
+    // Replace ASS newline \N with actual newline
+    cleaned = cleaned.replaceAll(RegExp(r'\\N', caseSensitive: false), '\n');
+
+    // Fix UTF-8 decoded as Latin-1 Mojibake & common ellipsis symbols
+    cleaned = cleaned
+        .replaceAll('â€¦', '...')
+        .replaceAll('…', '...')
+        .replaceAll('â€™', "'")
+        .replaceAll('â‘', "'")
+        .replaceAll('â€²', "'")
+        .replaceAll('â€œ', '"')
+        .replaceAll('â€', '"')
+        .replaceAll('â€"', '-')
+        .replaceAll('â€”', '-');
+
+    // Decode common HTML entities
+    cleaned = cleaned
+        .replaceAll('&hellip;', '...')
+        .replaceAll('&#8230;', '...')
+        .replaceAll('&#x2026;', '...')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&#38;', '&')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#34;', '"')
+        .replaceAll('&apos;', "'")
+        .replaceAll('&#39;', "'")
+        .replaceAll('&lt;', '<')
+        .replaceAll('&#60;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&#62;', '>')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&#160;', ' ');
+
+    return cleaned.trim();
   }
 
   static Duration _parseDuration(

@@ -48,7 +48,7 @@ class CustomSubtitleOverlay extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
-                  children: activeCue.text
+                  children: SubtitleParser.cleanSubtitleText(activeCue.text)
                       .split('\n')
                       .map((l) => l.replaceAll('\r', ''))
                       .where((l) => l.trim().isNotEmpty)

@@ -295,6 +295,7 @@ TextStyle getSubtitleStrokeStyleInShadowForm(
     letterSpacing: prefs.letterSpacing,
     wordSpacing: prefs.wordSpacing,
     shadows: combinedShadows.isEmpty ? null : combinedShadows,
+    backgroundColor: Color(prefs.backgroundColor),
   );
 
   if (prefs.fontFamily == 'Default') {

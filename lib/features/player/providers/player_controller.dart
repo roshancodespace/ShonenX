@@ -37,6 +37,7 @@ class PlayerState {
   final VideoStream? activeQuality;
   final SubtitleTrack? activeSubtitle;
   final UnifiedEpisode? activeEpisode;
+  final double playbackSpeed;
   final bool isLoading;
   final String? error;
 
@@ -50,6 +51,7 @@ class PlayerState {
     this.activeSubtitle,
     this.activeStream,
     this.activeQuality,
+    this.playbackSpeed = 1.0,
     this.isLoading = true,
     this.error,
   });
@@ -64,6 +66,7 @@ class PlayerState {
     VideoStream? activeQuality,
     SubtitleTrack? activeSubtitle,
     UnifiedEpisode? activeEpisode,
+    double? playbackSpeed,
     bool? isLoading,
     Object? error = _keepError,
   }) {
@@ -77,6 +80,7 @@ class PlayerState {
       activeQuality: activeQuality ?? this.activeQuality,
       activeSubtitle: activeSubtitle ?? this.activeSubtitle,
       activeEpisode: activeEpisode ?? this.activeEpisode,
+      playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       isLoading: isLoading ?? this.isLoading,
       error: identical(error, _keepError) ? this.error : error as String?,
     );
@@ -570,6 +574,11 @@ class PlayerController extends Notifier<PlayerState> {
       ref.read(playerPrefsProvider.notifier).setDefaultAudioLang('Auto');
     }
     await ref.read(videoEngineProvider).setAudioTrack(track);
+  }
+
+  Future<void> changeSpeed(double speed) async {
+    state = state.copyWith(playbackSpeed: speed);
+    await ref.read(videoEngineProvider).setSpeed(speed);
   }
 
   void setupAutoSkipListener(AniSkipArgs? args) {

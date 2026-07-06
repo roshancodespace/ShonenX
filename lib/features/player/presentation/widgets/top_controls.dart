@@ -5,6 +5,7 @@ import 'package:shonenx/features/player/presentation/widgets/keyboard_shortcuts_
 import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
+import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings_sheet.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 
@@ -175,6 +176,11 @@ class TopControls extends ConsumerWidget {
               ),
               const SizedBox(width: 6),
               _buildActionIcon(
+                icon: Icons.tune_rounded,
+                onTap: () => _showPlayerOptionsMenu(context),
+              ),
+              const SizedBox(width: 6),
+              _buildActionIcon(
                 icon: Icons.video_settings_outlined,
                 onTap: () {
                   if (engine.buildSettingsView(context) == null) return;
@@ -189,6 +195,87 @@ class TopControls extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showPlayerOptionsMenu(BuildContext context) {
+    AppBottomSheet.show(
+      context: context,
+      title: 'Player Options',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: Icon(
+              Icons.subtitles_outlined,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            title: const Text(
+              'Subtitle Customization',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              'Adjust font, colors, size, and background',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            onTap: () {
+              Navigator.of(context).pop();
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                constraints: const BoxConstraints(maxWidth: double.infinity),
+                builder: (context) => const SubtitleSettingsSheet(),
+              );
+            },
+          ),
+          const SizedBox(height: 4),
+          ListTile(
+            leading: Icon(
+              Icons.speed_rounded,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            title: const Text(
+              'Playback Speed',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              playerState.playbackSpeed == 1.0
+                  ? 'Normal (1.0x)'
+                  : '${playerState.playbackSpeed}x',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            onTap: () {
+              Navigator.of(context).pop();
+              AppBottomSheet.showSelector<double>(
+                context: context,
+                title: 'Playback Speed',
+                items: const [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0],
+                selectedValue: playerState.playbackSpeed,
+                itemLabel: (speed) =>
+                    speed == 1.0 ? 'Normal (1.0x)' : '${speed}x',
+                onChanged: (speed) {
+                  controller.changeSpeed(speed);
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }

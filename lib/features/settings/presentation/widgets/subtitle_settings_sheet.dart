@@ -5,6 +5,7 @@ import 'package:shonenx/core/utils/responsive.dart';
 import 'package:shonenx/features/player/domain/subtitle_prefs.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 class SubtitleSettingsSheet extends ConsumerStatefulWidget {
@@ -206,7 +207,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       width: width,
       decoration: BoxDecoration(
         color: cs.surfaceContainer,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(
           color: cs.outlineVariant.withValues(alpha: 0.3),
           width: 1,
@@ -268,8 +269,8 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
           Divider(color: cs.outlineVariant.withValues(alpha: 0.3), height: 1),
           Expanded(
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(20),
+              borderRadius: BorderRadius.vertical(
+                bottom: Radius.circular(GlobalUI.uiRoundness),
               ),
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -296,7 +297,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
                 color: cs.surfaceContainerHigh.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
                 border: Border.all(
                   color: cs.outlineVariant.withValues(alpha: 0.4),
                 ),

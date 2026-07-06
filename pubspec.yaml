@@ -28,19 +28,18 @@ dependencies:
   media_kit:
     git:
       url: https://github.com/Predidit/media-kit.git
-      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
+      ref: main
       path: ./media_kit
   media_kit_video:
     git:
       url: https://github.com/Predidit/media-kit.git
-      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
+      ref: main
       path: ./media_kit_video
   media_kit_libs_video:
     git:
       url: https://github.com/Predidit/media-kit.git
-      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
+      ref: main
       path: ./libs/universal/media_kit_libs_video
-  media_kit_libs_windows_video: ^1.0.11
   get: ^4.7.3
   google_fonts: ^8.0.2
   shared_preferences: ^2.5.5
@@ -83,48 +82,43 @@ dependency_overrides:
   media_kit:
     git:
       url: https://github.com/Predidit/media-kit.git
-      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
+      ref: main
       path: ./media_kit
   media_kit_video:
     git:
       url: https://github.com/Predidit/media-kit.git
-      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
+      ref: main
       path: ./media_kit_video
   media_kit_libs_video:
     git:
       url: https://github.com/Predidit/media-kit.git
-      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
+      ref: main
       path: ./libs/universal/media_kit_libs_video
   media_kit_libs_linux:
     git:
       url: https://github.com/Predidit/media-kit.git
-      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
+      ref: main
       path: ./libs/linux/media_kit_libs_linux
   media_kit_libs_ios_video:
     git:
       url: https://github.com/Predidit/media-kit.git
-      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
+      ref: main
       path: ./libs/ios/media_kit_libs_ios_video
   media_kit_libs_android_video:
     git:
       url: https://github.com/Predidit/media-kit.git
-      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
+      ref: main
       path: ./libs/android/media_kit_libs_android_video
   media_kit_libs_windows_video:
     git:
       url: https://github.com/Predidit/media-kit.git
-      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
+      ref: main
       path: ./libs/windows/media_kit_libs_windows_video
   media_kit_libs_macos_video:
     git:
       url: https://github.com/Predidit/media-kit.git
-      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
+      ref: main
       path: ./libs/macos/media_kit_libs_macos_video
-  media_kit_libs_ohos:
-    git:
-      url: https://github.com/Predidit/media-kit.git
-      ref: 11d02cb804b8faf944137834a1b0ac80880a4079
-      path: ./libs/ohos/media_kit_libs_ohos
 
 dev_dependencies:
   flutter_test:

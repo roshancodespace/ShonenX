@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shonenx/features/player/domain/media_kit_prefs.dart';
@@ -205,7 +206,11 @@ class MediaKitEngine implements VideoEngine {
           fit: fit,
           subtitleViewConfiguration: SubtitleViewConfiguration(
             padding: EdgeInsets.only(bottom: subtitlePrefs.bottomPadding),
-            style: getSubtitleTextStyle(subtitlePrefs, responsiveFontSize),
+            style: getSubtitleStrokeStyleInShadowForm(
+              subtitlePrefs,
+              responsiveFontSize,
+            ),
+            textScaler: TextScaler.linear(subtitlePrefs.fontSize / 1.2),
           ),
         );
       },

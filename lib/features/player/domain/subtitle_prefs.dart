@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -162,6 +163,49 @@ List<Shadow>? getSubtitleShadows(SubtitlePrefs prefs) {
   return shadows.isEmpty ? null : shadows;
 }
 
+List<Shadow>? getSubtitleStrokeShadows(SubtitlePrefs prefs) {
+  if (prefs.outlineColor == 0x00000000 || prefs.outlineSize <= 0) return null;
+
+  final double strokeRadius = prefs.outlineSize * 1.2;
+  final color = prefs.outline;
+  final shadows = <Shadow>[];
+  final int outerPoints = strokeRadius > 2.5 ? 24 : 16;
+  for (int i = 0; i < outerPoints; i++) {
+    final angle = (2 * math.pi * i) / outerPoints;
+    shadows.add(
+      Shadow(
+        offset: Offset(
+          strokeRadius * math.cos(angle),
+          strokeRadius * math.sin(angle),
+        ),
+        blurRadius: 0,
+        color: color,
+      ),
+    );
+  }
+
+  // Add an inner ring only when the outline is thick enough to need center filling.
+  if (strokeRadius > 1.5) {
+    final double innerRadius = strokeRadius * 0.5;
+    final int innerPoints = outerPoints ~/ 2;
+    for (int i = 0; i < innerPoints; i++) {
+      final angle = (2 * math.pi * i) / innerPoints;
+      shadows.add(
+        Shadow(
+          offset: Offset(
+            innerRadius * math.cos(angle),
+            innerRadius * math.sin(angle),
+          ),
+          blurRadius: 0,
+          color: color,
+        ),
+      );
+    }
+  }
+
+  return shadows.isEmpty ? null : shadows;
+}
+
 const kSubtitleFonts = [
   'Default',
   'Roboto',
@@ -219,6 +263,38 @@ TextStyle? getSubtitleStrokeStyle(
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..color = prefs.outline,
+  );
+
+  if (prefs.fontFamily == 'Default') {
+    return baseStyle;
+  }
+  try {
+    final googleStyle = GoogleFonts.getFont(prefs.fontFamily);
+    return baseStyle.copyWith(
+      fontFamily: googleStyle.fontFamily,
+      fontFamilyFallback: googleStyle.fontFamilyFallback,
+    );
+  } catch (_) {
+    return baseStyle;
+  }
+}
+
+TextStyle getSubtitleStrokeStyleInShadowForm(
+  SubtitlePrefs prefs,
+  double responsiveFontSize,
+) {
+  final dropShadows = getSubtitleShadows(prefs) ?? [];
+  final strokeShadows = getSubtitleStrokeShadows(prefs) ?? [];
+  final combinedShadows = <Shadow>[...dropShadows, ...strokeShadows];
+
+  final baseStyle = TextStyle(
+    fontSize: responsiveFontSize,
+    color: prefs.color,
+    fontWeight: prefs.bold ? FontWeight.w700 : FontWeight.w500,
+    height: prefs.lineHeight,
+    letterSpacing: prefs.letterSpacing,
+    wordSpacing: prefs.wordSpacing,
+    shadows: combinedShadows.isEmpty ? null : combinedShadows,
   );
 
   if (prefs.fontFamily == 'Default') {

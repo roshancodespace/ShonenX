@@ -5,7 +5,6 @@ import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/engine/video_player/video_player_engine.dart';
 import 'package:shonenx/features/player/providers/media_kit_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
-import 'package:shonenx/features/player/providers/video_player_prefs_provider.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 
 class EngineState {
@@ -112,13 +111,7 @@ final videoEngineProvider = Provider.autoDispose<VideoEngine>((ref) {
       ref.onDispose(engine.dispose);
       return engine;
     case PlayerType.videoPlayer:
-      final prefs = ref.read(videoPlayerPrefsProvider);
-      final engine = VideoPlayerEngine(prefs, ref);
-
-      ref.listen(videoPlayerPrefsProvider, (previous, next) async {
-        await engine.updatePrefs(next);
-      });
-
+      final engine = VideoPlayerEngine(ref);
       ref.onDispose(engine.dispose);
       return engine;
   }

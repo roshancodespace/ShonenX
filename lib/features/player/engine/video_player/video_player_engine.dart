@@ -7,22 +7,17 @@ import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:video_player/video_player.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/features/player/domain/video_player_prefs.dart';
-import 'package:shonenx/features/player/presentation/widgets/video_player/video_player_settings.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 
 class VideoPlayerEngine implements VideoEngine {
   VideoPlayerController? _controller;
-  VideoPlayerPrefs prefs;
   final Ref ref;
 
   static final HTTP _http = HTTP();
 
-  VideoPlayerEngine(this.prefs, this.ref);
+  VideoPlayerEngine(this.ref);
 
-  Future<void> updatePrefs(VideoPlayerPrefs newPrefs) async {
-    prefs = newPrefs;
-  }
+  Future<void> updatePrefs() async {}
 
   @override
   Future<void> initialize(
@@ -38,9 +33,6 @@ class VideoPlayerEngine implements VideoEngine {
     await _controller?.dispose();
 
     final headers = <String, String>{...?stream.headers};
-    if (prefs.userAgent != 'Default') {
-      headers['User-Agent'] = prefs.userAgent;
-    }
 
     _controller = VideoPlayerController.networkUrl(
       Uri.parse(stream.url),
@@ -48,10 +40,6 @@ class VideoPlayerEngine implements VideoEngine {
       formatHint: await _http.isHLS(stream.url, headers: headers)
           ? VideoFormat.hls
           : null,
-      videoPlayerOptions: VideoPlayerOptions(
-        mixWithOthers: prefs.mixWithOthers,
-        allowBackgroundPlayback: prefs.allowBackgroundPlayback,
-      ),
     );
     _controller?.addListener(_listener);
 
@@ -123,8 +111,7 @@ class VideoPlayerEngine implements VideoEngine {
   }
 
   @override
-  Widget? buildSettingsView(BuildContext context) =>
-      const VideoPlayerSettings();
+  Widget? buildSettingsView(BuildContext context) => null;
 
   @override
   Future<void> play() async {

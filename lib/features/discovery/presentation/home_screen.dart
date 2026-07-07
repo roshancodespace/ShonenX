@@ -17,6 +17,8 @@ import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/presentation/widgets/tracker_profile_sheet.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
+import 'package:shonenx/source_engine/models/source_info.dart';
+import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
@@ -35,6 +37,7 @@ class HomeScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async {
           ref.read(homeFeedProvider.notifier).refresh();
+          ref.invalidate(singleSourceFeedProvider);
           for (final section in sections) {
             if (section.type == HomeSectionType.libraryStatus &&
                 section.targetTracker != TrackerType.local) {
@@ -258,28 +261,104 @@ class HomeScreen extends ConsumerWidget {
     AsyncValue<HomeFeedState> feedState,
     MediaType mediaType,
   ) {
-    return feedState.when(
-      data: (feed) {
-        if (feed.groups.isEmpty) return const SizedBox.shrink();
+    return Consumer(
+      builder: (context, ref, _) {
+        final prefs = ref.watch(discoveryPrefsProvider);
+        if (prefs.mode == MetadataMode.source) {
+          return _buildSourceSectionRows(context, ref, mediaType, prefs);
+        }
 
-        final filteredGroups = feed.groups.where((g) {
-          if (g.items.isEmpty) return false;
-          return g.items.first.type == mediaType;
-        }).toList();
+        return feedState.when(
+          data: (feed) {
+            if (feed.groups.isEmpty) return const SizedBox.shrink();
 
-        if (filteredGroups.isEmpty) return const SizedBox.shrink();
+            final filteredGroups = feed.groups.where((g) {
+              if (g.items.isEmpty) return false;
+              return g.items.first.type == mediaType;
+            }).toList();
+
+            if (filteredGroups.isEmpty) return const SizedBox.shrink();
+
+            return Column(
+              children: filteredGroups
+                  .map(
+                    (group) => _buildFeedRow(context, group.title, group.items),
+                  )
+                  .toList(),
+            );
+          },
+          loading: () => const SizedBox(
+            height: 200,
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, _) => const SizedBox.shrink(),
+        );
+      },
+    );
+  }
+
+  Widget _buildSourceSectionRows(
+    BuildContext context,
+    WidgetRef ref,
+    MediaType mediaType,
+    DiscoveryPrefs prefs,
+  ) {
+    final allSourcesAsync = mediaType == MediaType.ANIME
+        ? ref.watch(availableAnimeSourcesProvider)
+        : ref.watch(availableMangaSourcesProvider);
+
+    return allSourcesAsync.when(
+      data: (allSources) {
+        final activeSources = allSources
+            .where((s) => prefs.activeSources.contains(s.id))
+            .toList();
+
+        if (activeSources.isEmpty) return const SizedBox.shrink();
 
         return Column(
-          children: filteredGroups
-              .map((group) => _buildFeedRow(context, group.title, group.items))
-              .toList(),
+          children: activeSources.map((info) {
+            final title =
+                '${info.name} (${mediaType == MediaType.ANIME ? "Anime" : "Manga"})';
+            return _buildSingleSourceRow(context, ref, info, mediaType, title);
+          }).toList(),
         );
       },
       loading: () => const SizedBox(
-        height: 200,
+        height: 150,
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildSingleSourceRow(
+    BuildContext context,
+    WidgetRef ref,
+    SourceInfo info,
+    MediaType mediaType,
+    String title,
+  ) {
+    final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
+    final sourceData = ref.watch(singleSourceFeedProvider((info, mediaType)));
+
+    return HorizontalSection<UnifiedMedia>(
+      title: title,
+      height: style.layout.height,
+      onMoreTap: () => context.push('/category/$title?type=${mediaType.id}'),
+      data: sourceData,
+      itemBuilder: (context, item) {
+        return MediaCard(
+          tag: '$title-${item.id}',
+          format: item.format,
+          title: item.title.availableTitle,
+          imageUrl: item.cover ?? '',
+          style: style,
+          onTap: () => context.push(
+            '/details/${item.type.id}?tag=$title-${item.id}',
+            extra: item,
+          ),
+        );
+      },
     );
   }
 

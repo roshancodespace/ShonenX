@@ -123,438 +123,275 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
     final controller = bridge.AnymeXRuntimeBridge.controller;
 
     return AppBottomSheet(
-      title: 'Extension Runtime Setup',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  cs.primaryContainer.withValues(alpha: 0.4),
-                  cs.secondaryContainer.withValues(alpha: 0.25),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: cs.primary.withValues(alpha: 0.35)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      title: 'Runtime Bridge Setup',
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
               children: [
-                Row(
+                Icon(Icons.extension_rounded, color: cs.primary, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AnymeX Runtime (${Platform.operatingSystem.toUpperCase()})',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'Required for Aniyomi, CloudStream & Kotatsu extensions.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 16),
+
+            Obx(() {
+              final isDownloading = controller.isDownloading.value;
+              final isReady = controller.isReady.value;
+              final error = controller.error.value;
+              final status = controller.status.value;
+              final progress = controller.downloadProgress.value;
+              final sizeInfo = controller.sizeInfo.value;
+
+              if (isDownloading) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: cs.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.extension_rounded,
-                        color: cs.primary,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'AnymeX Runtime Bridge',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: cs.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Architecture: ${Platform.operatingSystem.toUpperCase()}',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: cs.onSurfaceVariant,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            status,
+                            style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
+                        ),
+                        if (sizeInfo.isNotEmpty)
+                          Text(
+                            sizeInfo,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
                     ),
+                    const SizedBox(height: 12),
+                    LinearProgressIndicator(
+                      value: progress > 0 ? progress : null,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    const SizedBox(height: 16),
                   ],
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
+                );
+              }
+
+              if (error.isNotEmpty) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildBadge(context, 'Aniyomi (Anime & Manga)'),
-                    _buildBadge(context, 'CloudStream (Movies & TV)'),
-                    _buildBadge(context, 'Kotatsu (Manga)'),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'IMPORTANT: Aniyomi, CloudStream, and Kotatsu extensions require the Runtime Bridge to execute source parsers. Separation is intentional — it avoids bundling heavy native dependencies directly into the app.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    height: 1.45,
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.code_rounded, size: 20, color: cs.onSurfaceVariant),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'ShonenX uses a minimal customized fork of AnymeXExtensionRuntimeBridge originally created by RyanYuuki.',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                  tooltip: 'Open GitHub Repository',
-                  onPressed: () => launchUrl(
-                    Uri.parse(
-                      'https://github.com/RyanYuuki/AnymeXExtensionRuntimeBridge',
-                    ),
-                    mode: LaunchMode.externalApplication,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Obx(() {
-            final isDownloading = controller.isDownloading.value;
-            final isReady = controller.isReady.value;
-            final error = controller.error.value;
-            final status = controller.status.value;
-            final progress = controller.downloadProgress.value;
-            final sizeInfo = controller.sizeInfo.value;
-
-            if (isDownloading) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          status,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (sizeInfo.isNotEmpty)
-                        Text(
-                          sizeInfo,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: cs.onSurfaceVariant,
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  LinearProgressIndicator(
-                    value: progress > 0 ? progress : null,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              );
-            }
-
-            if (error.isNotEmpty) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: cs.errorContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
+                    Text(
                       error,
-                      style: TextStyle(
-                        color: cs.onErrorContainer,
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: cs.error, fontSize: 13),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: () => _startSetup(force: true),
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Retry Setup'),
-                  ),
-                ],
-              );
-            }
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () => _startSetup(force: true),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Retry Setup'),
+                    ),
+                  ],
+                );
+              }
 
-            if (isReady) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: Colors.green.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    child: const Row(
+              if (isReady) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.check_circle_rounded,
                           color: Colors.green,
-                          size: 26,
+                          size: 24,
                         ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Runtime Bridge Ready',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              SizedBox(height: 2),
-                              Text(
-                                'All native extension ecosystems are initialized.',
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Runtime Installed & Active',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () => launchUrl(
+                            Uri.parse(
+                              'https://github.com/RyanYuuki/AnymeXExtensionRuntimeBridge/releases',
+                            ),
+                            mode: LaunchMode.externalApplication,
+                          ),
+                          icon: const Icon(Icons.open_in_new_rounded, size: 14),
+                          label: const Text(
+                            'Releases',
+                            style: TextStyle(fontSize: 12),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Always restart ShonenX after force updating the runtime.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 20),
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              size: 18,
-                              color: cs.primary,
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _startSetup(force: true),
+                            icon: const Icon(Icons.system_update_alt_rounded),
+                            label: const Text('Force Update'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Runtime Updates (e.g. v1.9.0)',
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.onSurface,
-                                ),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () => launchUrl(
-                                Uri.parse(
-                                  'https://github.com/RyanYuuki/AnymeXExtensionRuntimeBridge/releases',
-                                ),
-                                mode: LaunchMode.externalApplication,
-                              ),
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Check Releases',
-                                style: TextStyle(fontSize: 12),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Force update fetches the latest release from GitHub. Always restart ShonenX after updating!',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: cs.onSurfaceVariant,
-                            height: 1.35,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: const Text('Done'),
                           ),
                         ),
                       ],
                     ),
+                  ],
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  FilledButton.icon(
+                    onPressed: () => _startSetup(),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    icon: const Icon(Icons.download_rounded),
+                    label: const Text(
+                      'Download & Setup Runtime',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _startSetup(force: true),
-                          icon: const Icon(Icons.system_update_alt_rounded),
-                          label: const Text('Force Update'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      if (Platform.isAndroid) ...[
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _pickLocalApk,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            icon: const Icon(
+                              Icons.folder_open_rounded,
+                              size: 18,
+                            ),
+                            label: const Text(
+                              'Select APK',
+                              style: TextStyle(fontSize: 13),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Done',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            }
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                FilledButton.icon(
-                  onPressed: () => _startSetup(),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  icon: const Icon(Icons.download_rounded),
-                  label: const Text(
-                    'Download & Setup Runtime',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    if (Platform.isAndroid) ...[
+                        const SizedBox(width: 10),
+                      ],
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: _pickLocalApk,
+                          onPressed: () async {
+                            controller.updateStatus("Scanning disk...");
+                            await bridge
+                                .AnymeXRuntimeBridge.checkAndInitialize();
+                            if (!controller.isReady.value) {
+                              controller.setError(
+                                "No existing runtime found on disk.",
+                              );
+                            } else {
+                              final extManager =
+                                  Get.find<bridge.ExtensionManager>();
+                              await extManager.onRuntimeBridgeInitialization(
+                                force: false,
+                              );
+                              ref.invalidate(extensionManagerProvider);
+                              ref.invalidate(availableAnimeSourcesProvider);
+                              ref.invalidate(availableMangaSourcesProvider);
+                              widget.onComplete?.call();
+                            }
+                          },
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                          icon: const Icon(Icons.folder_open_rounded, size: 18),
+                          icon: const Icon(Icons.search_rounded, size: 18),
                           label: const Text(
-                            'Select Local APK',
+                            'Scan Disk',
                             style: TextStyle(fontSize: 13),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
                     ],
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          controller.updateStatus(
-                            "Scanning disk for runtime...",
-                          );
-                          await bridge.AnymeXRuntimeBridge.checkAndInitialize();
-                          if (!controller.isReady.value) {
-                            controller.setError(
-                              "No existing runtime found on disk.",
-                            );
-                          } else {
-                            final extManager =
-                                Get.find<bridge.ExtensionManager>();
-                            await extManager.onRuntimeBridgeInitialization(
-                              force: false,
-                            );
-                            ref.invalidate(extensionManagerProvider);
-                            ref.invalidate(availableAnimeSourcesProvider);
-                            ref.invalidate(availableMangaSourcesProvider);
-                            widget.onComplete?.call();
-                          }
-                        },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: const Icon(Icons.search_rounded, size: 18),
-                        label: const Text(
-                          'Scan Disk',
-                          style: TextStyle(fontSize: 13),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
+                ],
+              );
+            }),
+            const SizedBox(height: 16),
+            Center(
+              child: InkWell(
+                onTap: () => launchUrl(
+                  Uri.parse(
+                    'https://github.com/RyanYuuki/AnymeXExtensionRuntimeBridge',
+                  ),
+                  mode: LaunchMode.externalApplication,
                 ),
-              ],
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBadge(BuildContext context, String text) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: cs.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: cs.primary.withValues(alpha: 0.25)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: cs.primary,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Text(
+                    'Powered by AnymeXExtensionRuntimeBridge (RyanYuuki)',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: cs.outline,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

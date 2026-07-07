@@ -15,6 +15,12 @@ class OnboardingNotifier extends Notifier<bool> {
     await prefs.setBool(_key, true);
     state = true;
   }
+
+  Future<void> resetOnboarding() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_key, false);
+    state = false;
+  }
 }
 
 final onboardingProvider = NotifierProvider<OnboardingNotifier, bool>(() {

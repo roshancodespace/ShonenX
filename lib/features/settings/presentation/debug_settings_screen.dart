@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/services/notification_service.dart';
+import 'package:shonenx/features/onboarding/providers/onboarding_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
@@ -15,6 +17,29 @@ class DebugSettingsScreen extends ConsumerWidget {
       title: 'Debug Settings',
       body: ListView(
         children: [
+          SettingsSection(
+            title: 'App State & Onboarding',
+            children: [
+              SettingsActionTile(
+                icon: Icons.restart_alt_rounded,
+                title: 'Reset Onboarding Status',
+                subtitle: 'Mark onboarding as incomplete and launch screen',
+                onTap: () {
+                  ref.read(onboardingProvider.notifier).resetOnboarding();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Onboarding status reset!'),
+                      action: SnackBarAction(
+                        label: 'Launch Now',
+                        onPressed: () => context.go('/onboarding'),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+
           SettingsSection(
             title: 'UI Feedback',
             children: [

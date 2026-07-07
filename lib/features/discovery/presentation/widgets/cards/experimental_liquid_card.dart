@@ -75,6 +75,17 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
     final borderSaturation =
         (configMap['borderSaturation'] as num?)?.toDouble() ?? 1.6;
 
+    final cardRoundness = GlobalUI.uiRoundness;
+    final badgeRoundness = cardRoundness == 0
+        ? 0.0
+        : (cardRoundness * 0.55).clamp(4.0, 16.0);
+    final titleRoundness = cardRoundness == 0
+        ? 0.0
+        : (cardRoundness * 0.75).clamp(4.0, 20.0);
+    final orbRoundness = cardRoundness == 0
+        ? 0.0
+        : (cardRoundness * 0.9).clamp(4.0, 22.0);
+
     // Calculate subtle 3D tilt transformation based on mouse/pointer position
     final matrix = Matrix4.identity();
     if (active && enable3dTilt) {
@@ -110,7 +121,7 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
               width: w,
               height: h,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+                borderRadius: BorderRadius.circular(cardRoundness),
                 boxShadow: active
                     ? [
                         BoxShadow(
@@ -135,7 +146,7 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
                       ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+                borderRadius: BorderRadius.circular(cardRoundness),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -172,7 +183,7 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
                         smoothness: smoothness,
                         style: LiquidGlassStyle(
                           shape: LiquidGlassShape.squircle(
-                            cornerRadius: 22,
+                            cornerRadius: cardRoundness,
                             borderType: OpticalBorder(
                               borderSaturation: borderSaturation,
                               ambientIntensity: 1.2,
@@ -198,9 +209,9 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
                                 top: 10,
                                 left: 10,
                                 child: LiquidGlassLens(
-                                  style: const LiquidGlassStyle(
+                                  style: LiquidGlassStyle(
                                     shape: LiquidGlassShape.squircle(
-                                      cornerRadius: 12,
+                                      cornerRadius: badgeRoundness,
                                     ),
                                   ),
                                   child: Padding(
@@ -227,9 +238,9 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
                                 top: 10,
                                 right: 10,
                                 child: LiquidGlassLens(
-                                  style: const LiquidGlassStyle(
+                                  style: LiquidGlassStyle(
                                     shape: LiquidGlassShape.squircle(
-                                      cornerRadius: 12,
+                                      cornerRadius: badgeRoundness,
                                     ),
                                   ),
                                   child: Padding(
@@ -243,9 +254,9 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
                                 top: 10,
                                 right: 10,
                                 child: LiquidGlassLens(
-                                  style: const LiquidGlassStyle(
+                                  style: LiquidGlassStyle(
                                     shape: LiquidGlassShape.squircle(
-                                      cornerRadius: 12,
+                                      cornerRadius: badgeRoundness,
                                     ),
                                   ),
                                   child: Padding(
@@ -316,10 +327,9 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
                                       height: 44,
                                       child: LiquidGlassLens(
                                         style: LiquidGlassStyle(
-                                          shape:
-                                              const LiquidGlassShape.squircle(
-                                                cornerRadius: 22,
-                                              ),
+                                          shape: LiquidGlassShape.squircle(
+                                            cornerRadius: orbRoundness,
+                                          ),
                                           refraction: LiquidGlassRefraction(
                                             distortion: distortion * 1.5,
                                             distortionWidth: 18,
@@ -359,11 +369,11 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
                               right: 10,
                               bottom: 10,
                               child: LiquidGlassLens(
-                                style: const LiquidGlassStyle(
+                                style: LiquidGlassStyle(
                                   shape: LiquidGlassShape.squircle(
-                                    cornerRadius: 16,
+                                    cornerRadius: titleRoundness,
                                   ),
-                                  appearance: LiquidGlassAppearance(
+                                  appearance: const LiquidGlassAppearance(
                                     color: Color(0x22000000),
                                   ),
                                 ),
@@ -397,9 +407,7 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(
-                              GlobalUI.uiRoundness,
-                            ),
+                            borderRadius: BorderRadius.circular(cardRoundness),
                             border: Border.all(
                               color: active
                                   ? Colors.white.withValues(alpha: 0.65)

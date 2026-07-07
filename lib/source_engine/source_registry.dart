@@ -74,22 +74,24 @@ final enabledExtensionManagersProvider =
 class EnabledExtensionManagersNotifier extends Notifier<Set<String>> {
   SharedPreferences get _storage => ref.read(sharedPreferencesProvider);
   static const _key = 'enabledExtensionManagers';
-  static const _allDefault = {
-    'mangayomi',
-    'aniyomi',
-    'aniyomi-desktop',
-    'cloudstream',
-    'cloudstream-desktop',
-    'kotatsu',
-    'kotatsu-desktop',
-    'sora',
-  };
+  static const _defaultStandalone = {'mangayomi', 'sora'};
 
   @override
   Set<String> build() {
     final saved = _storage.getStringList(_key);
-    if (saved == null) return _allDefault;
-    return saved.toSet();
+    final Set<String> initial = saved != null
+        ? saved.toSet()
+        : _defaultStandalone;
+
+    if (!bridge.AnymeXRuntimeBridge.controller.isReady.value) {
+      final filtered = initial.where((id) {
+        final base = id.replaceAll('-desktop', '');
+        return base != 'aniyomi' && base != 'cloudstream' && base != 'kotatsu';
+      }).toSet();
+      return filtered.isEmpty ? _defaultStandalone : filtered;
+    }
+
+    return initial;
   }
 
   void toggleManager(String managerId, bool enabled) {
@@ -143,16 +145,14 @@ final availableAnimeSourcesProvider = FutureProvider<List<SourceInfo>>(
         worker1.dispose();
         worker2.dispose();
       });
-      final extensionsRaw = bridgeManager.installedAnimeExtensions
-          .where((ext) {
-            final mId = (ext.managerId ?? bridge.getSourceManager(ext).id)
-                .replaceAll('-desktop', '');
-            return enabledManagers.contains(mId) ||
-                enabledManagers.contains(
-                  ext.managerId ?? bridge.getSourceManager(ext).id,
-                );
-          })
-          .toList();
+      final extensionsRaw = bridgeManager.installedAnimeExtensions.where((ext) {
+        final mId = (ext.managerId ?? bridge.getSourceManager(ext).id)
+            .replaceAll('-desktop', '');
+        return enabledManagers.contains(mId) ||
+            enabledManagers.contains(
+              ext.managerId ?? bridge.getSourceManager(ext).id,
+            );
+      }).toList();
 
       final extensions = extensionsRaw
           .map(
@@ -217,16 +217,14 @@ final availableMangaSourcesProvider = FutureProvider<List<SourceInfo>>(
         worker1.dispose();
         worker2.dispose();
       });
-      final extensionsRaw = bridgeManager.installedMangaExtensions
-          .where((ext) {
-            final mId = (ext.managerId ?? bridge.getSourceManager(ext).id)
-                .replaceAll('-desktop', '');
-            return enabledManagers.contains(mId) ||
-                enabledManagers.contains(
-                  ext.managerId ?? bridge.getSourceManager(ext).id,
-                );
-          })
-          .toList();
+      final extensionsRaw = bridgeManager.installedMangaExtensions.where((ext) {
+        final mId = (ext.managerId ?? bridge.getSourceManager(ext).id)
+            .replaceAll('-desktop', '');
+        return enabledManagers.contains(mId) ||
+            enabledManagers.contains(
+              ext.managerId ?? bridge.getSourceManager(ext).id,
+            );
+      }).toList();
 
       final extensions = extensionsRaw
           .map(
@@ -281,16 +279,14 @@ final availableNovelSourcesProvider = FutureProvider<List<SourceInfo>>(
         worker1.dispose();
         worker2.dispose();
       });
-      final extensionsRaw = bridgeManager.installedNovelExtensions
-          .where((ext) {
-            final mId = (ext.managerId ?? bridge.getSourceManager(ext).id)
-                .replaceAll('-desktop', '');
-            return enabledManagers.contains(mId) ||
-                enabledManagers.contains(
-                  ext.managerId ?? bridge.getSourceManager(ext).id,
-                );
-          })
-          .toList();
+      final extensionsRaw = bridgeManager.installedNovelExtensions.where((ext) {
+        final mId = (ext.managerId ?? bridge.getSourceManager(ext).id)
+            .replaceAll('-desktop', '');
+        return enabledManagers.contains(mId) ||
+            enabledManagers.contains(
+              ext.managerId ?? bridge.getSourceManager(ext).id,
+            );
+      }).toList();
 
       final extensions = extensionsRaw
           .map(

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
@@ -22,6 +23,35 @@ class HomeFeedState {
   List<UnifiedMedia> get trending =>
       groups.isNotEmpty ? groups.first.items : [];
 }
+
+final singleSourceFeedProvider = FutureProvider.family<
+  List<UnifiedMedia>,
+  (SourceInfo, MediaType)
+>((ref, arg) async {
+  final info = arg.$1;
+  final mediaType = arg.$2;
+
+  try {
+    final source = mediaType == MediaType.ANIME
+        ? ref.read(animeSourceProvider(info))
+        : ref.read(mangaSourceProvider(info));
+
+    var items = await source.getTrending();
+    if (items.isEmpty) {
+      items = await source.search('', mediaType);
+    }
+    return items;
+  } catch (e) {
+    try {
+      final source = mediaType == MediaType.ANIME
+          ? ref.read(animeSourceProvider(info))
+          : ref.read(mangaSourceProvider(info));
+      return await source.search('', mediaType);
+    } catch (_) {
+      return const [];
+    }
+  }
+});
 
 final homeFeedProvider = AsyncNotifierProvider<HomeFeedNotifier, HomeFeedState>(
   () => HomeFeedNotifier(),
@@ -43,10 +73,16 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
   Future<HomeFeedState> _buildTrackerFeed() async {
     final tracker = ref.watch(metadataSourceProvider);
     final adultMode = ref.watch(contentPrefsProvider).adultContentMode;
-    
-    final animeResult = await tracker.getTrending(type: MediaType.ANIME, adultMode: adultMode);
-    final mangaResult = await tracker.getTrending(type: MediaType.MANGA, adultMode: adultMode);
-    
+
+    final animeResult = await tracker.getTrending(
+      type: MediaType.ANIME,
+      adultMode: adultMode,
+    );
+    final mangaResult = await tracker.getTrending(
+      type: MediaType.MANGA,
+      adultMode: adultMode,
+    );
+
     return HomeFeedState(
       groups: [
         if (animeResult.items.isNotEmpty)
@@ -58,8 +94,12 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
   }
 
   Future<HomeFeedState> _buildSourceFeed(DiscoveryPrefs prefs) async {
-    final allAnimeSources = await ref.watch(availableAnimeSourcesProvider.future);
-    final allMangaSources = await ref.watch(availableMangaSourcesProvider.future);
+    final allAnimeSources = await ref.watch(
+      availableAnimeSourcesProvider.future,
+    );
+    final allMangaSources = await ref.watch(
+      availableMangaSourcesProvider.future,
+    );
 
     final activeAnimeSources = allAnimeSources
         .where((s) => prefs.activeSources.contains(s.id))
@@ -76,10 +116,19 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     final animeFutures = activeAnimeSources.map((info) async {
       try {
         final source = ref.read(animeSourceProvider(info));
-        final items = await source.getTrending();
+        var items = await source.getTrending();
+        if (items.isEmpty) {
+          items = await source.search('', MediaType.ANIME);
+        }
         return FeedGroup(title: '${info.name} (Anime)', items: items);
       } catch (_) {
-        return FeedGroup(title: info.name, items: const []);
+        try {
+          final source = ref.read(animeSourceProvider(info));
+          final items = await source.search('', MediaType.ANIME);
+          return FeedGroup(title: '${info.name} (Anime)', items: items);
+        } catch (_) {
+          return FeedGroup(title: info.name, items: const []);
+        }
       }
     });
 
@@ -87,10 +136,19 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     final mangaFutures = activeMangaSources.map((info) async {
       try {
         final source = ref.read(mangaSourceProvider(info));
-        final items = await source.getTrending();
+        var items = await source.getTrending();
+        if (items.isEmpty) {
+          items = await source.search('', MediaType.MANGA);
+        }
         return FeedGroup(title: '${info.name} (Manga)', items: items);
       } catch (_) {
-        return FeedGroup(title: info.name, items: const []);
+        try {
+          final source = ref.read(mangaSourceProvider(info));
+          final items = await source.search('', MediaType.MANGA);
+          return FeedGroup(title: '${info.name} (Manga)', items: items);
+        } catch (_) {
+          return FeedGroup(title: info.name, items: const []);
+        }
       }
     });
 

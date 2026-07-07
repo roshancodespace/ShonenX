@@ -150,7 +150,7 @@ abstract class BaseSourceAdapter implements MediaSource {
       final results = await source.methods.getPopular(page);
       methodLog.d('results=${results.list.length}');
 
-      return results.list
+      final list = results.list
           .map(
             (e) => UnifiedMedia(
               id: '${e.url!}|${e.title!}',
@@ -163,9 +163,17 @@ abstract class BaseSourceAdapter implements MediaSource {
             ),
           )
           .toList();
+
+      if (list.isNotEmpty) return list;
+      methodLog.i('getTrending returned empty, falling back to search("")');
+      return await search('', mediaType, page: page);
     } catch (e, st) {
-      methodLog.e('getTrending failed', e, st);
-      return [];
+      methodLog.e('getTrending failed, falling back to search("")', e, st);
+      try {
+        return await search('', mediaType, page: page);
+      } catch (_) {
+        return [];
+      }
     }
   }
 

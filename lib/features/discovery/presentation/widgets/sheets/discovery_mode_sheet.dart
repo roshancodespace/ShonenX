@@ -20,44 +20,46 @@ class DiscoveryModeSheet extends ConsumerWidget {
 
     return AppBottomSheet(
       title: 'Discovery Mode',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SettingsSegmentedTile<MetadataMode>(
-            padding: EdgeInsets.zero,
-            segments: const [
-              ButtonSegment(
-                value: MetadataMode.tracker,
-                label: Text('Tracker'),
-                icon: Icon(Icons.cloud_outlined),
-              ),
-              ButtonSegment(
-                value: MetadataMode.source,
-                label: Text('Sources'),
-                icon: Icon(Icons.extension_outlined),
-              ),
-            ],
-            selected: {prefs.mode},
-            onSelectionChanged: (value) {
-              ref.read(discoveryPrefsProvider.notifier).setMode(value.first);
-            },
-          ),
-          const SizedBox(height: 18),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 280),
-            switchInCurve: Curves.easeOutQuart,
-            switchOutCurve: Curves.easeInQuart,
-            child: prefs.mode == MetadataMode.tracker
-                ? const _TrackerConfig(key: ValueKey('tracker'))
-                : _SourceConfig(
-                    key: const ValueKey('source'),
-                    activeSources: prefs.activeSources,
-                  ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton(onPressed: context.pop, child: const Text('Done')),
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SettingsSegmentedTile<MetadataMode>(
+              padding: EdgeInsets.zero,
+              segments: const [
+                ButtonSegment(
+                  value: MetadataMode.tracker,
+                  label: Text('Tracker'),
+                  icon: Icon(Icons.cloud_outlined),
+                ),
+                ButtonSegment(
+                  value: MetadataMode.source,
+                  label: Text('Sources'),
+                  icon: Icon(Icons.extension_outlined),
+                ),
+              ],
+              selected: {prefs.mode},
+              onSelectionChanged: (value) {
+                ref.read(discoveryPrefsProvider.notifier).setMode(value.first);
+              },
+            ),
+            const SizedBox(height: 18),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 280),
+              switchInCurve: Curves.easeOutQuart,
+              switchOutCurve: Curves.easeInQuart,
+              child: prefs.mode == MetadataMode.tracker
+                  ? const _TrackerConfig(key: ValueKey('tracker'))
+                  : _SourceConfig(
+                      key: const ValueKey('source'),
+                      activeSources: prefs.activeSources,
+                    ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(onPressed: context.pop, child: const Text('Done')),
+          ],
+        ),
       ),
     );
   }

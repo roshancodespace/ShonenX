@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shonenx/shared/models/component_layout.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
@@ -17,7 +18,8 @@ enum MediaCardStyle {
   minimal(ComponentLayout(width: 120, height: 180)),
   expressive(ComponentLayout(width: 140, height: 230)),
   material(ComponentLayout(width: 135, height: 210)),
-  liquidGlass(ComponentLayout(width: 140, height: 210));
+  liquidGlass(ComponentLayout(width: 140, height: 210)),
+  experimentalLiquid(ComponentLayout(width: 145, height: 220));
 
   final ComponentLayout _baseLayout;
   const MediaCardStyle(this._baseLayout);
@@ -48,6 +50,8 @@ enum MediaCardStyle {
         return 'Material';
       case MediaCardStyle.liquidGlass:
         return 'Liquid Glass';
+      case MediaCardStyle.experimentalLiquid:
+        return 'Experimental Liquid';
     }
   }
 }
@@ -115,16 +119,29 @@ enum ContinueReadingStyle {
 }
 
 class UiPrefState {
+  static const Map<String, dynamic> defaultExperimentalConfig = {
+    'enableMetaball': true,
+    'interactiveOrb': true,
+    'enable3dTilt': true,
+    'smoothness': 46.0,
+    'distortion': 0.15,
+    'magnification': 1.06,
+    'chromaticAberration': 0.006,
+    'borderSaturation': 1.6,
+  };
+
   final MediaCardStyle cardStyle;
   final ContinueWatchingStyle continueWatchingStyle;
   final ContinueReadingStyle continueReadingStyle;
   final EpisodeViewMode episodeViewMode;
+  final Map<String, dynamic> experimentalConfig;
 
   const UiPrefState({
     this.cardStyle = MediaCardStyle.classic,
     this.continueWatchingStyle = ContinueWatchingStyle.classic,
     this.continueReadingStyle = ContinueReadingStyle.classic,
     this.episodeViewMode = EpisodeViewMode.classic,
+    this.experimentalConfig = defaultExperimentalConfig,
   });
 
   UiPrefState copyWith({
@@ -132,6 +149,7 @@ class UiPrefState {
     ContinueWatchingStyle? continueWatchingStyle,
     ContinueReadingStyle? continueReadingStyle,
     EpisodeViewMode? episodeViewMode,
+    Map<String, dynamic>? experimentalConfig,
   }) {
     return UiPrefState(
       cardStyle: cardStyle ?? this.cardStyle,
@@ -139,6 +157,7 @@ class UiPrefState {
           continueWatchingStyle ?? this.continueWatchingStyle,
       continueReadingStyle: continueReadingStyle ?? this.continueReadingStyle,
       episodeViewMode: episodeViewMode ?? this.episodeViewMode,
+      experimentalConfig: experimentalConfig ?? this.experimentalConfig,
     );
   }
 
@@ -147,6 +166,7 @@ class UiPrefState {
     'continueWatchingStyle': continueWatchingStyle.name,
     'continueReadingStyle': continueReadingStyle.name,
     'episodeViewMode': episodeViewMode.name,
+    'experimentalConfig': experimentalConfig,
   };
 
   factory UiPrefState.fromJson(Map<String, dynamic> json) {
@@ -167,12 +187,15 @@ class UiPrefState {
         (e) => e.name == json['episodeViewMode'],
         orElse: () => EpisodeViewMode.classic,
       ),
+      experimentalConfig: (json['experimentalConfig'] is Map)
+          ? Map<String, dynamic>.from(json['experimentalConfig'] as Map)
+          : defaultExperimentalConfig,
     );
   }
 
   @override
   String toString() =>
-      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode)';
+      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode, experimentalConfig: $experimentalConfig)';
 
   @override
   bool operator ==(Object other) {
@@ -181,7 +204,8 @@ class UiPrefState {
         other.cardStyle == cardStyle &&
         other.continueWatchingStyle == continueWatchingStyle &&
         other.continueReadingStyle == continueReadingStyle &&
-        other.episodeViewMode == episodeViewMode;
+        other.episodeViewMode == episodeViewMode &&
+        mapEquals(other.experimentalConfig, experimentalConfig);
   }
 
   @override
@@ -190,6 +214,7 @@ class UiPrefState {
     continueWatchingStyle,
     continueReadingStyle,
     episodeViewMode,
+    experimentalConfig,
   );
 }
 
@@ -212,6 +237,20 @@ class UiPrefsNotifier extends Notifier<UiPrefState> {
 
   void updateCardStyle(MediaCardStyle style) {
     state = state.copyWith(cardStyle: style);
+    _saveDb();
+  }
+
+  void updateExperimentalConfig(Map<String, dynamic> newValues) {
+    state = state.copyWith(
+      experimentalConfig: {...state.experimentalConfig, ...newValues},
+    );
+    _saveDb();
+  }
+
+  void resetExperimentalConfig() {
+    state = state.copyWith(
+      experimentalConfig: UiPrefState.defaultExperimentalConfig,
+    );
     _saveDb();
   }
 

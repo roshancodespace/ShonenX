@@ -78,6 +78,7 @@ dependencies:
   video_player: ^2.10.1
   wakelock_plus: ^1.3.3
   video_player_platform_interface: ^6.7.0
+  liquid_glass_easy: ^3.2.2
 
 dependency_overrides:
   media_kit:
@@ -131,6 +132,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  shaders:
+    - assets/shaders/liquid_glass.frag
 
 inno_bundle:
   id: 17cd6e7b-cedc-43b7-86b1-4de6ab23dd4d

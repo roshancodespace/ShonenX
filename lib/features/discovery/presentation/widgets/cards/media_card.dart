@@ -4,6 +4,7 @@ import 'package:shonenx/shared/models/component_layout.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/utils/focus_hover_detector.dart';
 import 'package:shonenx/shared/widgets/liquid_glass.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/cards/experimental_liquid_card.dart';
 
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,7 @@ class MediaCard extends ConsumerWidget {
   final String imageUrl;
   final VoidCallback onTap;
   final MediaCardStyle style;
+  final Map<String, dynamic>? config;
 
   const MediaCard({
     super.key,
@@ -26,6 +28,7 @@ class MediaCard extends ConsumerWidget {
     required this.imageUrl,
     required this.onTap,
     this.style = MediaCardStyle.classic,
+    this.config,
   });
 
   @override
@@ -48,6 +51,11 @@ class MediaCard extends ConsumerWidget {
 
       builder: (context, isFocused, isHovered) {
         final isActive = isFocused || isHovered;
+        final activeConfig =
+            config ??
+            (style == MediaCardStyle.experimentalLiquid
+                ? ref.watch(uiPrefsProvider).experimentalConfig
+                : null);
 
         final child = switch (style) {
           MediaCardStyle.classic => _ClassicCard(
@@ -84,6 +92,14 @@ class MediaCard extends ConsumerWidget {
             isActive: isActive,
             layout: layout,
           ),
+
+          MediaCardStyle.experimentalLiquid => ExperimentalLiquidCard(
+            widget: this,
+            theme: theme,
+            isActive: isActive,
+            layout: layout,
+            config: activeConfig,
+          ),
         };
 
         return child;
@@ -92,7 +108,7 @@ class MediaCard extends ConsumerWidget {
   }
 }
 
-Widget _buildImage(
+Widget buildCardImage(
   MediaCard widget,
   ThemeData theme, {
   required double width,
@@ -143,7 +159,7 @@ class _FormatBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: cs.primaryContainer,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         format.toUpperCase(),
@@ -215,7 +231,7 @@ class _ClassicCard extends StatelessWidget {
         children: [
           Stack(
             children: [
-              _buildImage(
+              buildCardImage(
                 widget,
                 theme,
                 width: layout.width,
@@ -279,7 +295,7 @@ class _MinimalCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            _buildImage(
+            buildCardImage(
               widget,
               theme,
               width: layout.width,
@@ -355,6 +371,7 @@ class _ExpressiveCard extends StatelessWidget {
                 ? cs.tertiary
                 : cs.outlineVariant.withValues(alpha: 0.28),
             width: isActive ? 2.5 : 1.0,
+            strokeAlign: BorderSide.strokeAlignOutside,
           ),
         ),
         padding: const EdgeInsets.all(5),
@@ -363,12 +380,12 @@ class _ExpressiveCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                _buildImage(
+                buildCardImage(
                   widget,
                   theme,
                   width: double.maxFinite,
                   height: imageHeight,
-                  radius: 22,
+                  radius: GlobalUI.uiRoundness * 0.8,
                 ),
                 _TopOverlay(format: widget.format, badge: widget.badge),
               ],
@@ -438,7 +455,7 @@ class _MaterialCard extends StatelessWidget {
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(GlobalUI.uiRoundness),
                 ),
-                child: _buildImage(
+                child: buildCardImage(
                   widget,
                   theme,
                   width: layout.width,
@@ -499,49 +516,67 @@ class _LiquidGlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
       width: layout.width,
       height: layout.height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+        boxShadow: isActive
+            ? [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.20),
+                  blurRadius: 24,
+                  spreadRadius: 1,
+                ),
+              ]
+            : null,
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         child: Stack(
           fit: StackFit.expand,
           children: [
-            _buildImage(
+            buildCardImage(
               widget,
               theme,
               width: layout.width,
               height: layout.height,
               radius: 0,
             ),
+
+            // Bottom cinematic fade
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
+                    stops: const [0.0, 0.65, 1.0],
                     colors: [
                       Colors.transparent,
-                      Colors.black.withValues(alpha: 0.16),
+                      Colors.black.withValues(alpha: 0.08),
+                      Colors.black.withValues(alpha: 0.28),
                     ],
                   ),
                 ),
               ),
             ),
+
+            // Format badge
             Positioned(
-              top: 10,
-              left: 10,
-              right: 10,
+              top: 12,
+              left: 12,
+              right: 12,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (widget.format != null)
                     LiquidGlass(
-                      image: CachedNetworkImageProvider(widget.imageUrl),
-                      radius: 999,
+                      radius: GlobalUI.uiRoundness * 0.4,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
+                        horizontal: 12,
+                        vertical: 6,
                       ),
                       child: Text(
                         widget.format!,
@@ -553,24 +588,24 @@ class _LiquidGlassCard extends StatelessWidget {
                         ),
                       ),
                     ),
+
                   const Spacer(),
+
                   if (widget.badge != null) widget.badge!,
                 ],
               ),
             ),
+
+            // Title liquid panel
             Positioned(
-              left: 10,
-              right: 10,
-              bottom: 10,
+              left: 14,
+              right: 14,
+              bottom: 14,
               child: LiquidGlass(
-                image: CachedNetworkImageProvider(widget.imageUrl),
-                radius: 28,
-                alignment: Alignment.bottomCenter,
-                isDark: true,
-                refraction: Offset.zero,
+                radius: GlobalUI.uiRoundness * 0.6,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
+                  horizontal: 16,
+                  vertical: 14,
                 ),
                 child: Text(
                   widget.title,
@@ -585,16 +620,20 @@ class _LiquidGlassCard extends StatelessWidget {
                 ),
               ),
             ),
+
+            // Active state border
             Positioned.fill(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 140),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-                  border: Border.all(
-                    color: isActive
-                        ? theme.colorScheme.onSurface.withValues(alpha: 0.8)
-                        : Colors.transparent,
-                    width: isActive ? 2.5 : 0.0,
+              child: IgnorePointer(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+                    border: Border.all(
+                      color: isActive
+                          ? Colors.white.withValues(alpha: 0.55)
+                          : Colors.transparent,
+                      width: isActive ? 1.8 : 0,
+                    ),
                   ),
                 ),
               ),

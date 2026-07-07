@@ -138,50 +138,52 @@ class UiSettingsScreen extends ConsumerWidget {
       child: Consumer(
         builder: (_, r, __) {
           final currentPrefs = r.watch(themePrefsProvider);
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SettingsSliderTile(
-                title: 'Border Roundness',
-                subtitle: 'Corner roundness across the app',
-                value: currentPrefs.uiRoundness,
-                min: 0.0,
-                max: 32.0,
-                divisions: 32,
-                label: currentPrefs.uiRoundness.toStringAsFixed(1),
-                icon: Icons.rounded_corner_outlined,
-                onChanged: (v) => themeNotifier.updateTheme(
-                  (s) => s.copyWith(uiRoundness: v),
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SettingsSliderTile(
+                  title: 'Border Roundness',
+                  subtitle: 'Corner roundness across the app',
+                  value: currentPrefs.uiRoundness,
+                  min: 0.0,
+                  max: 32.0,
+                  divisions: 32,
+                  label: currentPrefs.uiRoundness.toStringAsFixed(1),
+                  icon: Icons.rounded_corner_outlined,
+                  onChanged: (v) => themeNotifier.updateTheme(
+                    (s) => s.copyWith(uiRoundness: v),
+                  ),
                 ),
-              ),
-              SettingsSliderTile(
-                title: 'Font Scale',
-                subtitle: 'Scale text size globally',
-                value: currentPrefs.fontScaleFactor,
-                min: 0.8,
-                max: 1.5,
-                divisions: 7,
-                label: '${(currentPrefs.fontScaleFactor * 100).toInt()}%',
-                icon: Icons.format_size_outlined,
-                onChanged: (v) => themeNotifier.updateTheme(
-                  (s) => s.copyWith(fontScaleFactor: v),
+                SettingsSliderTile(
+                  title: 'Font Scale',
+                  subtitle: 'Scale text size globally',
+                  value: currentPrefs.fontScaleFactor,
+                  min: 0.8,
+                  max: 1.5,
+                  divisions: 7,
+                  label: '${(currentPrefs.fontScaleFactor * 100).toInt()}%',
+                  icon: Icons.format_size_outlined,
+                  onChanged: (v) => themeNotifier.updateTheme(
+                    (s) => s.copyWith(fontScaleFactor: v),
+                  ),
                 ),
-              ),
-              SettingsSliderTile(
-                title: 'Widget Scale',
-                subtitle: 'Scale the size of media cards',
-                value: currentPrefs.uiScaleFactor,
-                min: 0.8,
-                max: 1.5,
-                divisions: 7,
-                label: '${(currentPrefs.uiScaleFactor * 100).toInt()}%',
-                icon: Icons.aspect_ratio_outlined,
-                onChanged: (v) => themeNotifier.updateTheme(
-                  (s) => s.copyWith(uiScaleFactor: v),
+                SettingsSliderTile(
+                  title: 'Widget Scale',
+                  subtitle: 'Scale the size of media cards',
+                  value: currentPrefs.uiScaleFactor,
+                  min: 0.8,
+                  max: 1.5,
+                  divisions: 7,
+                  label: '${(currentPrefs.uiScaleFactor * 100).toInt()}%',
+                  icon: Icons.aspect_ratio_outlined,
+                  onChanged: (v) => themeNotifier.updateTheme(
+                    (s) => s.copyWith(uiScaleFactor: v),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-            ],
+                const SizedBox(height: 12),
+              ],
+            ),
           );
         },
       ),
@@ -203,40 +205,246 @@ class UiSettingsScreen extends ConsumerWidget {
         builder: (_, r, _) {
           final current = r.watch(uiPrefsProvider.select((s) => s.cardStyle));
 
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: SizedBox(
-                  width: current.layout.width,
-                  height: current.layout.height,
-                  child: MediaCard(
-                    title: 'Demon Slayer: Kimetsu No Yaiba',
-                    tag: 'ui-card-preview',
-                    format: 'TV',
-                    imageUrl:
-                        'https://m.media-amazon.com/images/M/MV5BM2IyN2E0NjctYWU2ZC00ZDc4LThiOTQtODAyOGNkZWM0M2E1XkEyXkFqcGc@._V1_.jpg',
-                    onTap: () {},
-                    style: current,
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: SizedBox(
+                    width: current.layout.width,
+                    height: current.layout.height,
+                    child: MediaCard(
+                      title: 'Demon Slayer: Kimetsu No Yaiba',
+                      tag: 'ui-card-preview',
+                      format: 'TV',
+                      imageUrl:
+                          'https://m.media-amazon.com/images/M/MV5BM2IyN2E0NjctYWU2ZC00ZDc4LThiOTQtODAyOGNkZWM0M2E1XkEyXkFqcGc@._V1_.jpg',
+                      onTap: () {},
+                      style: current,
+                    ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 14),
-              const Divider(height: 1),
-              const SizedBox(height: 4),
+                if (current == MediaCardStyle.experimentalLiquid) ...[
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showExperimentalEditorSheet(
+                        context,
+                        ref,
+                        notifier,
+                        theme,
+                      );
+                    },
+                    icon: const Icon(Icons.tune_rounded, size: 16),
+                    label: const Text('Customize & Optimize for Device'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                ],
 
-              ...MediaCardStyle.values.map(
-                (style) => _SelectionTile(
-                  selected: current == style,
-                  icon: Icons.style_outlined,
-                  title: style.displayName,
-                  subtitle: _cardStyleDesc(style),
-                  selectedColor: cs.primary,
-                  onTap: () => notifier.updateCardStyle(style),
+                const SizedBox(height: 14),
+                const Divider(height: 1),
+                const SizedBox(height: 4),
+
+                ...MediaCardStyle.values.map(
+                  (style) => _SelectionTile(
+                    selected: current == style,
+                    icon: Icons.style_outlined,
+                    title: style.displayName,
+                    subtitle: _cardStyleDesc(style),
+                    selectedColor: cs.primary,
+                    onTap: () => notifier.updateCardStyle(style),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showExperimentalEditorSheet(
+    BuildContext context,
+    WidgetRef ref,
+    UiPrefsNotifier notifier,
+    ThemeData theme,
+  ) {
+    AppBottomSheet.show(
+      context: context,
+      title: 'Liquid Glass Live Editor',
+      child: Consumer(
+        builder: (_, r, _) {
+          final config = r.watch(
+            uiPrefsProvider.select((s) => s.experimentalConfig),
+          );
+
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Device Optimization & Physics',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => notifier.resetExperimentalConfig(),
+                      icon: const Icon(Icons.refresh_rounded, size: 16),
+                      label: const Text(
+                        'Reset to Defaults',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                Center(
+                  child: SizedBox(
+                    width: MediaCardStyle.experimentalLiquid.layout.width,
+                    height: MediaCardStyle.experimentalLiquid.layout.height,
+                    child: MediaCard(
+                      title: 'Demon Slayer: Kimetsu No Yaiba',
+                      tag: 'ui-editor-preview',
+                      format: 'TV',
+                      imageUrl:
+                          'https://m.media-amazon.com/images/M/MV5BM2IyN2E0NjctYWU2ZC00ZDc4LThiOTQtODAyOGNkZWM0M2E1XkEyXkFqcGc@._V1_.jpg',
+                      onTap: () {},
+                      style: MediaCardStyle.experimentalLiquid,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+                const Divider(height: 1),
+
+                SettingsSwitchTile(
+                  icon: Icons.bubble_chart_rounded,
+                  title: 'Enable Metaball Orb',
+                  subtitle: 'Floating liquid lens orb inside the glass card',
+                  value: config['enableMetaball'] != false,
+                  onChanged: (val) => notifier.updateExperimentalConfig({
+                    'enableMetaball': val,
+                  }),
+                ),
+
+                if (config['enableMetaball'] != false)
+                  SettingsSwitchTile(
+                    icon: Icons.track_changes_rounded,
+                    title: 'Interactive Tracking Orb',
+                    subtitle:
+                        'Floating metaball tracks pointer and finger movement',
+                    value: config['interactiveOrb'] != false,
+                    onChanged: (val) => notifier.updateExperimentalConfig({
+                      'interactiveOrb': val,
+                    }),
+                  ),
+
+                SettingsSwitchTile(
+                  icon: Icons.crop_rotate,
+                  title: '3D Hover Tilt Perspective',
+                  subtitle: 'Card tilts in 3D space on mouse hover or touch',
+                  value: config['enable3dTilt'] != false,
+                  onChanged: (val) =>
+                      notifier.updateExperimentalConfig({'enable3dTilt': val}),
+                ),
+
+                if (config['enableMetaball'] != false)
+                  SettingsSliderTile(
+                    icon: Icons.blur_on_rounded,
+                    title: 'Metaball Smoothness (Performance)',
+                    subtitle: 'Lower for better GPU performance on older devices',
+                    value: (config['smoothness'] as num?)?.toDouble() ?? 46.0,
+                    min: 15.0,
+                    max: 75.0,
+                    divisions: 12,
+                    label: ((config['smoothness'] as num?)?.toDouble() ?? 46.0)
+                        .round()
+                        .toString(),
+                    onChanged: (val) =>
+                        notifier.updateExperimentalConfig({'smoothness': val}),
+                  ),
+
+                SettingsSliderTile(
+                  icon: Icons.water_drop_outlined,
+                  title: 'Refraction Distortion',
+                  subtitle: 'Intensity of glass light bending effect',
+                  value: (config['distortion'] as num?)?.toDouble() ?? 0.15,
+                  min: 0.0,
+                  max: 0.40,
+                  divisions: 20,
+                  label: ((config['distortion'] as num?)?.toDouble() ?? 0.15)
+                      .toStringAsFixed(2),
+                  onChanged: (val) =>
+                      notifier.updateExperimentalConfig({'distortion': val}),
+                ),
+
+                SettingsSliderTile(
+                  icon: Icons.zoom_in_rounded,
+                  title: 'Lens Magnification',
+                  subtitle: 'Zoom effect through the glass lens',
+                  value: (config['magnification'] as num?)?.toDouble() ?? 1.06,
+                  min: 1.0,
+                  max: 1.25,
+                  divisions: 25,
+                  label:
+                      '${(((config['magnification'] as num?)?.toDouble() ?? 1.06) - 1.0) * 100 ~/ 1}%',
+                  onChanged: (val) =>
+                      notifier.updateExperimentalConfig({'magnification': val}),
+                ),
+
+                SettingsSliderTile(
+                  icon: Icons.lens_blur_rounded,
+                  title: 'Chromatic Aberration',
+                  subtitle: 'RGB color splitting on lens refraction edges',
+                  value:
+                      (config['chromaticAberration'] as num?)?.toDouble() ??
+                      0.006,
+                  min: 0.0,
+                  max: 0.02,
+                  divisions: 20,
+                  label:
+                      ((config['chromaticAberration'] as num?)?.toDouble() ??
+                              0.006)
+                          .toStringAsFixed(3),
+                  onChanged: (val) => notifier.updateExperimentalConfig({
+                    'chromaticAberration': val,
+                  }),
+                ),
+
+                SettingsSliderTile(
+                  icon: Icons.highlight_outlined,
+                  title: 'Optical Border Saturation',
+                  subtitle: 'Brightness and vibrancy of glass edge border',
+                  value:
+                      (config['borderSaturation'] as num?)?.toDouble() ?? 1.6,
+                  min: 0.0,
+                  max: 3.0,
+                  divisions: 30,
+                  label:
+                      '${(((config['borderSaturation'] as num?)?.toDouble() ?? 1.6) * 100).round()}%',
+                  onChanged: (val) => notifier.updateExperimentalConfig({
+                    'borderSaturation': val,
+                  }),
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -260,33 +468,35 @@ class UiSettingsScreen extends ConsumerWidget {
             uiPrefsProvider.select((s) => s.continueWatchingStyle),
           );
 
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: ContinueWatchingItem(
-                  style: current,
-                  progress: 0.72,
-                  entry: _previewHistoryEntry,
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: ContinueWatchingItem(
+                    style: current,
+                    progress: 0.72,
+                    entry: _previewHistoryEntry,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 14),
-              const Divider(height: 1),
-              const SizedBox(height: 4),
+                const SizedBox(height: 14),
+                const Divider(height: 1),
+                const SizedBox(height: 4),
 
-              ...ContinueWatchingStyle.values.map(
-                (style) => _SelectionTile(
-                  selected: current == style,
-                  icon: _cwStyleIcon(style),
-                  title: style.displayName,
-                  subtitle: _cwStyleDesc(style),
-                  selectedColor: cs.primary,
-                  onTap: () => notifier.updateContinueWatchingStyle(style),
+                ...ContinueWatchingStyle.values.map(
+                  (style) => _SelectionTile(
+                    selected: current == style,
+                    icon: _cwStyleIcon(style),
+                    title: style.displayName,
+                    subtitle: _cwStyleDesc(style),
+                    selectedColor: cs.primary,
+                    onTap: () => notifier.updateContinueWatchingStyle(style),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),
@@ -310,33 +520,35 @@ class UiSettingsScreen extends ConsumerWidget {
             uiPrefsProvider.select((s) => s.continueReadingStyle),
           );
 
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: ContinueReadingItem(
-                  style: current,
-                  progress: 0.7,
-                  entry: _previewReadHistoryEntry,
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: ContinueReadingItem(
+                    style: current,
+                    progress: 0.7,
+                    entry: _previewReadHistoryEntry,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 14),
-              const Divider(height: 1),
-              const SizedBox(height: 4),
+                const SizedBox(height: 14),
+                const Divider(height: 1),
+                const SizedBox(height: 4),
 
-              ...ContinueReadingStyle.values.map(
-                (style) => _SelectionTile(
-                  selected: current == style,
-                  icon: _crStyleIcon(style),
-                  title: style.displayName,
-                  subtitle: _crStyleDesc(style),
-                  selectedColor: cs.primary,
-                  onTap: () => notifier.updateContinueReadingStyle(style),
+                ...ContinueReadingStyle.values.map(
+                  (style) => _SelectionTile(
+                    selected: current == style,
+                    icon: _crStyleIcon(style),
+                    title: style.displayName,
+                    subtitle: _crStyleDesc(style),
+                    selectedColor: cs.primary,
+                    onTap: () => notifier.updateContinueReadingStyle(style),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),
@@ -360,29 +572,31 @@ class UiSettingsScreen extends ConsumerWidget {
             uiPrefsProvider.select((s) => s.episodeViewMode),
           );
 
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: _EpisodeViewModePreview(mode: current),
-              ),
-
-              const SizedBox(height: 14),
-              const Divider(height: 1),
-              const SizedBox(height: 4),
-
-              ...EpisodeViewMode.values.map(
-                (mode) => _SelectionTile(
-                  selected: current == mode,
-                  icon: _episodeModeIcon(mode),
-                  title: _episodeModeLabel(mode),
-                  subtitle: _episodeModeDesc(mode),
-                  selectedColor: cs.primary,
-                  onTap: () => notifier.updateEpisodeViewMode(mode),
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: _EpisodeViewModePreview(mode: current),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 14),
+                const Divider(height: 1),
+                const SizedBox(height: 4),
+
+                ...EpisodeViewMode.values.map(
+                  (mode) => _SelectionTile(
+                    selected: current == mode,
+                    icon: _episodeModeIcon(mode),
+                    title: _episodeModeLabel(mode),
+                    subtitle: _episodeModeDesc(mode),
+                    selectedColor: cs.primary,
+                    onTap: () => notifier.updateEpisodeViewMode(mode),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -395,6 +609,8 @@ class UiSettingsScreen extends ConsumerWidget {
     MediaCardStyle.expressive => 'Tall card with bold typography',
     MediaCardStyle.material => 'Material You elevated card',
     MediaCardStyle.liquidGlass => 'Frosted glass finish',
+    MediaCardStyle.experimentalLiquid =>
+      'iOS 26 Liquid Glass with real-time metaball refraction & lens physics',
   };
 
   static String _cwStyleDesc(ContinueWatchingStyle s) => switch (s) {

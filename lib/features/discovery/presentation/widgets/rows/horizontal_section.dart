@@ -58,6 +58,7 @@ class HorizontalSection<T> extends StatelessWidget {
               }
 
               return ListView.separated(
+                clipBehavior: Clip.none,
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 itemCount: items.length,

@@ -3,11 +3,13 @@ class UnifiedChapter {
   final double number;
   final String? title;
   final String? scanlator;
+  final String? airDate;
 
   const UnifiedChapter({
     required this.id, 
     required this.number, 
     this.title, 
     this.scanlator,
+    this.airDate
   });
 }

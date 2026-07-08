@@ -118,10 +118,13 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
     final epTitle = widget.entry.chapterTitle;
     final subtitleText = 'CH $cleanNum${epTitle != null ? ' • $epTitle' : ''}';
 
-    return ContinueCardLayout(
+    final baseLayout = style.baseLayout;
+    final layout = style.layout;
+
+    final card = ContinueCardLayout(
       isWideBanner: style == ContinueReadingStyle.wideBanner,
-      width: style.layout.width,
-      height: style.layout.height,
+      width: baseLayout.width,
+      height: baseLayout.height,
       isActive: isActive,
       isLoading: isLoading,
       title: widget.entry.mangaTitle,
@@ -134,6 +137,28 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
       imageUrl: widget.entry.banner ?? widget.entry.cover,
       fallbackIcon: Icons.menu_book_rounded,
       badgeType: 'READING',
+    );
+
+    final currentTextScale = MediaQuery.of(context).textScaler.scale(1.0);
+    final scaleFactor = layout.width / baseLayout.width;
+    final normalizedCard = MediaQuery(
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: TextScaler.linear(currentTextScale / scaleFactor)),
+      child: card,
+    );
+
+    return SizedBox(
+      width: layout.width,
+      height: layout.height,
+      child: FittedBox(
+        fit: BoxFit.fill,
+        child: SizedBox(
+          width: baseLayout.width,
+          height: baseLayout.height,
+          child: normalizedCard,
+        ),
+      ),
     );
   }
 }

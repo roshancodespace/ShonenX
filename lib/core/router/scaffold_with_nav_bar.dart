@@ -296,10 +296,11 @@ class _BottomNavBar extends ConsumerWidget {
       navigationShell.currentIndex,
     );
 
-    final barHeight = r.isPhone ? 68.0 : 80.0;
-    final iconSize = r.isPhone ? 25.0 : 28.0;
+    final uiScale = GlobalUI.uiScaleFactor.clamp(0.85, 1.25);
+    final barHeight = (r.isPhone ? 68.0 : 80.0) * uiScale;
+    final iconSize = (r.isPhone ? 25.0 : 28.0) * uiScale;
     final fontSize = r.isPhone ? 14.5 : 16.0;
-    final hPad = r.isPhone ? 6.0 : 10.5;
+    final hPad = (r.isPhone ? 6.0 : 10.5) * uiScale;
     final itemRadius = GlobalUI.uiRoundness;
 
     return SafeArea(

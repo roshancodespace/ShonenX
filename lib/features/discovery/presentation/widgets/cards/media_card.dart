@@ -57,52 +57,73 @@ class MediaCard extends ConsumerWidget {
                 ? ref.watch(uiPrefsProvider).experimentalConfig
                 : null);
 
+        final baseLayout = style.baseLayout;
         final child = switch (style) {
           MediaCardStyle.classic => _ClassicCard(
             widget: this,
             theme: theme,
             isActive: isActive,
-            layout: layout,
+            layout: baseLayout,
           ),
 
           MediaCardStyle.minimal => _MinimalCard(
             widget: this,
             theme: theme,
             isActive: isActive,
-            layout: layout,
+            layout: baseLayout,
           ),
 
           MediaCardStyle.expressive => _ExpressiveCard(
             widget: this,
             theme: theme,
             isActive: isActive,
-            layout: layout,
+            layout: baseLayout,
           ),
 
           MediaCardStyle.material => _MaterialCard(
             widget: this,
             theme: theme,
             isActive: isActive,
-            layout: layout,
+            layout: baseLayout,
           ),
 
           MediaCardStyle.liquidGlass => _LiquidGlassCard(
             widget: this,
             theme: theme,
             isActive: isActive,
-            layout: layout,
+            layout: baseLayout,
           ),
 
           MediaCardStyle.experimentalLiquid => ExperimentalLiquidCard(
             widget: this,
             theme: theme,
             isActive: isActive,
-            layout: layout,
+            layout: baseLayout,
             config: activeConfig,
           ),
         };
 
-        return child;
+        final currentTextScale = MediaQuery.of(context).textScaler.scale(1.0);
+        final scaleFactor = layout.width / baseLayout.width;
+        final normalizedChild = MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(currentTextScale / scaleFactor),
+          ),
+          child: child,
+        );
+
+        return SizedBox(
+          width: layout.width,
+          height: layout.height,
+          child: FittedBox(
+            fit: BoxFit.fill,
+            child: SizedBox(
+              width: baseLayout.width,
+              height: baseLayout.height,
+              child: normalizedChild,
+            ),
+          ),
+        );
       },
     );
   }

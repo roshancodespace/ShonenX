@@ -109,6 +109,33 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
         return const PaginatedResult(items: [], hasNextPage: false);
       }
 
+      // If viewing a specific source without query/genres/tags, try trending first
+      if (arg.source != null &&
+          arg.query.isEmpty &&
+          arg.genres.isEmpty &&
+          arg.tags.isEmpty &&
+          activeSources.length == 1) {
+        final info = activeSources.first;
+        try {
+          final source = arg.type == MediaType.ANIME
+              ? ref.read(animeSourceProvider(info))
+              : ref.read(mangaSourceProvider(info));
+          List<UnifiedMedia> items = [];
+          try {
+            items = await source.getTrending(page: page);
+          } catch (_) {}
+          if (items.isEmpty) {
+            items = await source.search('', arg.type, page: page);
+          }
+          return PaginatedResult(
+            items: items,
+            hasNextPage: items.isNotEmpty && items.length >= 8,
+          );
+        } catch (_) {
+          return const PaginatedResult(items: [], hasNextPage: false);
+        }
+      }
+
       final futures = activeSources.map((info) async {
         try {
           final source = arg.type == MediaType.ANIME
@@ -129,7 +156,10 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
       final results = await Future.wait(futures);
       final merged = results.expand((list) => list).toList();
 
-      return PaginatedResult(items: merged, hasNextPage: false);
+      return PaginatedResult(
+        items: merged,
+        hasNextPage: merged.isNotEmpty && merged.length >= 8,
+      );
     }
   }
 
@@ -143,14 +173,19 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
 
     try {
       final newPageResult = await _fetchPage(_currentPage);
+      final newItems = newPageResult.items;
+      final hasNext = newPageResult.hasNextPage && newItems.isNotEmpty;
       state = AsyncData(
         PaginatedResult(
-          items: [...currentData.items, ...newPageResult.items],
-          hasNextPage: newPageResult.hasNextPage,
+          items: [...currentData.items, ...newItems],
+          hasNextPage: hasNext,
         ),
       );
     } catch (e, _) {
       _currentPage--;
+      state = AsyncData(
+        PaginatedResult(items: currentData.items, hasNextPage: false),
+      );
     } finally {
       _isFetchingNextPage = false;
     }

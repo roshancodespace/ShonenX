@@ -55,7 +55,8 @@ class MatchArgs {
       mediaTitle: media.title.availableTitle,
       type: media.type,
       sourceId: media.sourceId,
-      providerId: media.id,
+      providerId:
+          media.providerId ?? (media.sourceId != null ? media.id : null),
     );
   }
 

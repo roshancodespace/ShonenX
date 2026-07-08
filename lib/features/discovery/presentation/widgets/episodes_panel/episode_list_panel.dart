@@ -86,7 +86,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     if (widget.media.sourceId != null) {
       ref.invalidate(
         sourceEpisodesProvider((
-          providerId: widget.media.id,
+          providerId: widget.media.providerId ?? widget.media.id,
           sourceId: widget.media.sourceId!,
           type: widget.media.type,
         )),

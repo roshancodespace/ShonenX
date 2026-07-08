@@ -43,7 +43,10 @@ class ContinueReadingResolver {
             : null) ??
         prefState.sourceInfo;
 
-    final overrideId = prefState.manualOverrideId ?? entry.providerId;
+    final rawOverride = prefState.manualOverrideId ?? entry.providerId;
+    final overrideId = (rawOverride != null && rawOverride != entry.mangaId)
+        ? rawOverride
+        : null;
 
     UnifiedEpisode? chapter;
 
@@ -82,9 +85,9 @@ class ContinueReadingResolver {
           idMal: entry.mangaIdMal,
           cover: entry.cover,
           banner: entry.banner,
-          sourceId: sourceInfo.id,
-          sourceName: sourceInfo.name,
-          providerId: overrideId ?? entry.mangaId,
+          sourceId: null,
+          sourceName: null,
+          providerId: overrideId,
           type: MediaType.MANGA,
           title: MediaTitle(english: entry.mangaTitle),
         ),

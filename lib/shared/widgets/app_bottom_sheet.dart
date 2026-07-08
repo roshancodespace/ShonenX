@@ -32,7 +32,7 @@ class AppBottomSheet extends StatelessWidget {
     ),
     EdgeInsetsGeometry contentPadding = const EdgeInsets.fromLTRB(
       16,
-      12,
+      0,
       16,
       16,
     ),
@@ -84,7 +84,7 @@ class AppBottomSheet extends StatelessWidget {
     ),
     EdgeInsetsGeometry contentPadding = const EdgeInsets.fromLTRB(
       16,
-      12,
+      0,
       16,
       16,
     ),

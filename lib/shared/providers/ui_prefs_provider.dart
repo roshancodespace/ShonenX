@@ -128,6 +128,14 @@ class UiPrefState {
     'magnification': 1.06,
     'chromaticAberration': 0.006,
     'borderSaturation': 1.6,
+    'enableLuminousBorder': true,
+    'borderGlowIntensity': 0.65,
+    'borderWidth': 2.0,
+    'cardTintOpacity': 0.10,
+    'lensAppearanceTint': 0.13,
+    'enableBadgeLens': true,
+    'enableCardShadow': false,
+    'animationSpeed': 1.0,
   };
 
   final MediaCardStyle cardStyle;
@@ -188,7 +196,10 @@ class UiPrefState {
         orElse: () => EpisodeViewMode.classic,
       ),
       experimentalConfig: (json['experimentalConfig'] is Map)
-          ? Map<String, dynamic>.from(json['experimentalConfig'] as Map)
+          ? {
+              ...defaultExperimentalConfig,
+              ...Map<String, dynamic>.from(json['experimentalConfig'] as Map),
+            }
           : defaultExperimentalConfig,
     );
   }

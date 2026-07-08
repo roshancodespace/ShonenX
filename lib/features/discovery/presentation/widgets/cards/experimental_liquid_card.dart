@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
@@ -32,26 +31,9 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
   bool _isHovered = false;
   bool _isPressed = false;
 
-  late final double _phaseX;
-  late final double _phaseY;
-  late final double _speedFactor;
-  late final double _radiusX;
-  late final double _radiusY;
-  late final int _freqX;
-  late final int _freqY;
-
   @override
   void initState() {
     super.initState();
-    final rand = math.Random();
-    _phaseX = rand.nextDouble() * 2 * math.pi;
-    _phaseY = rand.nextDouble() * 2 * math.pi;
-    _speedFactor = 0.65 + rand.nextDouble() * 0.7;
-    _radiusX = 0.18 + rand.nextDouble() * 0.14;
-    _radiusY = 0.18 + rand.nextDouble() * 0.14;
-    _freqX = rand.nextBool() ? 1 : 2;
-    _freqY = rand.nextBool() ? 2 : 3;
-
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 10),
@@ -101,8 +83,6 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
         (configMap['lensAppearanceTint'] as num?)?.toDouble() ?? 0.13;
     final enableBadgeLens = configMap['enableBadgeLens'] != false;
     final enableCardShadow = configMap['enableCardShadow'] == true;
-    final animationSpeed =
-        (configMap['animationSpeed'] as num?)?.toDouble() ?? 1.0;
 
     final cardRoundness = GlobalUI.uiRoundness;
     final badgeRoundness = cardRoundness == 0
@@ -115,10 +95,9 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
         ? 0.0
         : (cardRoundness * 0.9).clamp(4.0, 22.0);
 
-    // Calculate subtle 3D tilt transformation based on mouse/pointer position
     final matrix = Matrix4.identity();
     if (active && enable3dTilt) {
-      matrix.setEntry(3, 2, 0.001); // 3D perspective
+      matrix.setEntry(3, 2, 0.001);
       final rotateY = (_pointer.dx - 0.5) * 0.16;
       final rotateX = (0.5 - _pointer.dy) * 0.16;
       matrix.rotateY(rotateY);
@@ -144,108 +123,140 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
           scale: _isPressed ? 0.96 : (active ? 1.04 : 1.0),
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
-          child: Transform(
-            transform: matrix,
-            alignment: Alignment.center,
-            child: Container(
-              width: w,
-              height: h,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(cardRoundness),
-                boxShadow: enableCardShadow
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(
-                            alpha: active ? 0.35 : 0.2,
+          child: RepaintBoundary(
+            child: Transform(
+              transform: matrix,
+              alignment: Alignment.center,
+              child: Container(
+                width: w,
+                height: h,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(cardRoundness),
+                  boxShadow: enableCardShadow
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(
+                              alpha: active ? 0.35 : 0.2,
+                            ),
+                            blurRadius: active ? 16 : 10,
+                            offset: Offset(0, active ? 6 : 4),
                           ),
-                          blurRadius: active ? 16 : 10,
-                          offset: Offset(0, active ? 6 : 4),
-                        ),
-                      ]
-                    : const [],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(cardRoundness),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // Background layer wrapped in LiquidGlassView for Skia/Impeller auto-resolution
-                    LiquidGlassView(
-                      backgroundWidget: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          buildCardImage(
-                            widget.widget,
-                            widget.theme,
-                            width: w,
-                            height: h,
-                            radius: 0,
-                          ),
-                          // Cinematic gradient overlay for contrast and depth
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                stops: const [0.0, 0.55, 1.0],
-                                colors: [
-                                  Colors.black.withValues(alpha: 0.15),
-                                  Colors.transparent,
-                                  Colors.black.withValues(alpha: 0.55),
-                                ],
+                        ]
+                      : const [],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(cardRoundness),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      LiquidGlassView(
+                        backgroundWidget: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            RepaintBoundary(
+                              child: buildCardImage(
+                                widget.widget,
+                                widget.theme,
+                                width: w,
+                                height: h,
+                                radius: 0,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      child: LiquidGlassBlender(
-                        smoothness: smoothness,
-                        style: LiquidGlassStyle(
-                          shape: LiquidGlassShape.squircle(
-                            cornerRadius: cardRoundness,
-                            borderType: OpticalBorder(
-                              borderSaturation: borderSaturation,
-                              ambientIntensity: 1.2,
-                              borderSolidity: 0.1,
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  stops: const [0.0, 0.55, 1.0],
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.15),
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.55),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                          appearance: LiquidGlassAppearance(
-                            color: Colors.white.withValues(
-                              alpha: cardTintOpacity,
-                            ),
-                            saturation: 1.15,
-                          ),
-                          refraction: LiquidGlassRefraction(
-                            distortion: distortion,
-                            distortionWidth: 24,
-                            magnification: magnification,
-                            chromaticAberration: chromaticAberration,
-                          ),
+                          ],
                         ),
-                        child: IgnorePointer(
-                          child: Stack(
-                            children: [
-                              // 1. Top-Left Format Badge Lens
-                              if (widget.widget.format != null)
-                                Positioned(
-                                  top: 10,
-                                  left: 10,
-                                  child: enableBadgeLens
-                                      ? LiquidGlassLens(
-                                          style: LiquidGlassStyle(
-                                            shape: LiquidGlassShape.squircle(
-                                              cornerRadius: badgeRoundness,
-                                            ),
-                                            appearance: LiquidGlassAppearance(
-                                              color: Colors.black.withValues(
-                                                alpha: lensAppearanceTint,
+                        child: LiquidGlassBlender(
+                          smoothness: smoothness,
+                          style: LiquidGlassStyle(
+                            shape: LiquidGlassShape.squircle(
+                              cornerRadius: cardRoundness,
+                              borderType: OpticalBorder(
+                                borderSaturation: borderSaturation,
+                                ambientIntensity: 1.2,
+                                borderSolidity: 0.1,
+                              ),
+                            ),
+                            appearance: LiquidGlassAppearance(
+                              color: Colors.white.withValues(
+                                alpha: cardTintOpacity,
+                              ),
+                              saturation: 1.15,
+                            ),
+                            refraction: LiquidGlassRefraction(
+                              distortion: distortion,
+                              distortionWidth: 24,
+                              magnification: magnification,
+                              chromaticAberration: chromaticAberration,
+                            ),
+                          ),
+                          child: IgnorePointer(
+                            child: Stack(
+                              children: [
+                                if (widget.widget.format != null)
+                                  Positioned(
+                                    top: 10,
+                                    left: 10,
+                                    child: enableBadgeLens
+                                        ? LiquidGlassLens(
+                                            style: LiquidGlassStyle(
+                                              shape: LiquidGlassShape.squircle(
+                                                cornerRadius: badgeRoundness,
+                                              ),
+                                              appearance: LiquidGlassAppearance(
+                                                color: Colors.black.withValues(
+                                                  alpha: lensAppearanceTint,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          child: Padding(
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 5,
+                                                  ),
+                                              child: Text(
+                                                widget.widget.format!,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 10,
+                                                  letterSpacing: 0.4,
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        : Container(
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 10,
                                               vertical: 5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.65,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    badgeRoundness,
+                                                  ),
+                                              border: Border.all(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.18,
+                                                ),
+                                                width: 0.6,
+                                              ),
                                             ),
                                             child: Text(
                                               widget.widget.format!,
@@ -257,328 +268,198 @@ class _ExperimentalLiquidCardState extends State<ExperimentalLiquidCard>
                                               ),
                                             ),
                                           ),
-                                        )
-                                      : Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 5,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.6,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              badgeRoundness,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.18,
-                                              ),
-                                              width: 0.6,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            widget.widget.format!,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 10,
-                                              letterSpacing: 0.4,
-                                            ),
-                                          ),
-                                        ),
-                                ),
+                                  ),
 
-                              // 2. Top-Right Badge or Live Indicator Lens
-                              if (widget.widget.badge != null)
-                                Positioned(
-                                  top: 10,
-                                  right: 10,
-                                  child: enableBadgeLens
-                                      ? LiquidGlassLens(
-                                          style: LiquidGlassStyle(
-                                            shape: LiquidGlassShape.squircle(
-                                              cornerRadius: badgeRoundness,
-                                            ),
-                                            appearance: LiquidGlassAppearance(
-                                              color: Colors.black.withValues(
-                                                alpha: lensAppearanceTint,
+                                if (widget.widget.badge != null)
+                                  Positioned(
+                                    top: 10,
+                                    right: 10,
+                                    child: enableBadgeLens
+                                        ? LiquidGlassLens(
+                                            style: LiquidGlassStyle(
+                                              shape: LiquidGlassShape.squircle(
+                                                cornerRadius: badgeRoundness,
+                                              ),
+                                              appearance: LiquidGlassAppearance(
+                                                color: Colors.black.withValues(
+                                                  alpha: lensAppearanceTint,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          child: Padding(
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(4),
+                                              child: widget.widget.badge!,
+                                            ),
+                                          )
+                                        : Container(
                                             padding: const EdgeInsets.all(4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.6,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    badgeRoundness,
+                                                  ),
+                                              border: Border.all(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.18,
+                                                ),
+                                                width: 0.6,
+                                              ),
+                                            ),
                                             child: widget.widget.badge!,
                                           ),
-                                        )
-                                      : Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.6,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              badgeRoundness,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.18,
-                                              ),
-                                              width: 0.6,
-                                            ),
-                                          ),
-                                          child: widget.widget.badge!,
-                                        ),
-                                )
-                              else
-                                Positioned(
-                                  top: 10,
-                                  right: 10,
-                                  child: enableBadgeLens
-                                      ? LiquidGlassLens(
-                                          style: LiquidGlassStyle(
-                                            shape: LiquidGlassShape.squircle(
-                                              cornerRadius: badgeRoundness,
-                                            ),
-                                            appearance: LiquidGlassAppearance(
-                                              color: Colors.black.withValues(
-                                                alpha: lensAppearanceTint,
-                                              ),
-                                            ),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Container(
-                                                  width: 6,
-                                                  height: 6,
-                                                  decoration:
-                                                      const BoxDecoration(
-                                                        color: Color(
-                                                          0xFF00E676,
-                                                        ),
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                ),
-                                                const SizedBox(width: 4),
-                                                const Text(
-                                                  'EXP',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.w800,
-                                                    fontSize: 9,
-                                                    letterSpacing: 0.5,
+                                  ),
+
+                                if (enableMetaball && active)
+                                  AnimatedBuilder(
+                                    animation: _controller,
+                                    builder: (context, _) {
+                                      final targetX = interactiveOrb
+                                          ? _pointer.dx * w
+                                          : w * 0.55;
+                                      final targetY = interactiveOrb
+                                          ? _pointer.dy * h
+                                          : h * 0.45;
+
+                                      final leftPos = (targetX - 22).clamp(
+                                        6.0,
+                                        w - 50.0,
+                                      );
+                                      final topPos = (targetY - 22).clamp(
+                                        6.0,
+                                        h - 50.0,
+                                      );
+
+                                      return Positioned(
+                                        left: leftPos,
+                                        top: topPos,
+                                        child: RepaintBoundary(
+                                          child: SizedBox(
+                                            width: 44,
+                                            height: 44,
+                                            child: LiquidGlassLens(
+                                              style: LiquidGlassStyle(
+                                                shape:
+                                                    LiquidGlassShape.squircle(
+                                                      cornerRadius:
+                                                          orbRoundness,
+                                                    ),
+                                                appearance: LiquidGlassAppearance(
+                                                  color: Colors.white.withValues(
+                                                    alpha:
+                                                        (lensAppearanceTint *
+                                                                0.7)
+                                                            .clamp(0.0, 0.35),
                                                   ),
                                                 ),
-                                              ],
-                                            ),
-                                          ),
-                                        )
-                                      : Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.6,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              badgeRoundness,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.18,
+                                                refraction:
+                                                    LiquidGlassRefraction(
+                                                      distortion:
+                                                          distortion * 1.5,
+                                                      distortionWidth: 18,
+                                                      magnification:
+                                                          magnification + 0.1,
+                                                      chromaticAberration:
+                                                          chromaticAberration *
+                                                          1.3,
+                                                    ),
                                               ),
-                                              width: 0.6,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Container(
-                                                width: 6,
-                                                height: 6,
-                                                decoration: const BoxDecoration(
-                                                  color: Color(0xFF00E676),
-                                                  shape: BoxShape.circle,
+                                              child: Center(
+                                                child: AnimatedRotation(
+                                                  turns: active
+                                                      ? 0.0
+                                                      : _controller.value,
+                                                  duration: const Duration(
+                                                    milliseconds: 200,
+                                                  ),
+                                                  child: Icon(
+                                                    active
+                                                        ? Icons
+                                                              .play_arrow_rounded
+                                                        : Icons
+                                                              .auto_awesome_rounded,
+                                                    color: Colors.white
+                                                        .withValues(alpha: 0.9),
+                                                    size: 22,
+                                                  ),
                                                 ),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              const Text(
-                                                'EXP',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w800,
-                                                  fontSize: 9,
-                                                  letterSpacing: 0.5,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                ),
-
-                              // 3. Floating Metaball Orb Lens (tracks pointer or floats in orbit!)
-                              if (enableMetaball)
-                                AnimatedBuilder(
-                                  animation: _controller,
-                                  builder: (context, _) {
-                                    final t =
-                                        _controller.value *
-                                        2 *
-                                        math.pi *
-                                        _speedFactor *
-                                        animationSpeed;
-                                    final double targetX;
-                                    final double targetY;
-                                    if (active && interactiveOrb) {
-                                      targetX = _pointer.dx * w;
-                                      targetY = _pointer.dy * h;
-                                    } else {
-                                      targetX =
-                                          (w * 0.55) +
-                                          math.cos(t * _freqX + _phaseX) *
-                                              (w * _radiusX);
-                                      targetY =
-                                          (h * 0.45) +
-                                          math.sin(t * _freqY + _phaseY) *
-                                              (h * _radiusY);
-                                    }
-
-                                    final leftPos = (targetX - 22).clamp(
-                                      6.0,
-                                      w - 50.0,
-                                    );
-                                    final topPos = (targetY - 22).clamp(
-                                      6.0,
-                                      h - 50.0,
-                                    );
-
-                                    return Positioned(
-                                      left: leftPos,
-                                      top: topPos,
-                                      child: SizedBox(
-                                        width: 44,
-                                        height: 44,
-                                        child: LiquidGlassLens(
-                                          style: LiquidGlassStyle(
-                                            shape: LiquidGlassShape.squircle(
-                                              cornerRadius: orbRoundness,
-                                            ),
-                                            appearance: LiquidGlassAppearance(
-                                              color: Colors.white.withValues(
-                                                alpha:
-                                                    (lensAppearanceTint * 0.7)
-                                                        .clamp(0.0, 0.35),
-                                              ),
-                                            ),
-                                            refraction: LiquidGlassRefraction(
-                                              distortion: distortion * 1.5,
-                                              distortionWidth: 18,
-                                              magnification:
-                                                  magnification + 0.1,
-                                              chromaticAberration:
-                                                  chromaticAberration * 1.3,
-                                            ),
-                                          ),
-                                          child: Center(
-                                            child: AnimatedRotation(
-                                              turns: active
-                                                  ? 0.0
-                                                  : _controller.value,
-                                              duration: const Duration(
-                                                milliseconds: 200,
-                                              ),
-                                              child: Icon(
-                                                active
-                                                    ? Icons.play_arrow_rounded
-                                                    : Icons
-                                                          .auto_awesome_rounded,
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.9,
-                                                ),
-                                                size: 22,
                                               ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    );
-                                  },
-                                ),
+                                      );
+                                    },
+                                  ),
 
-                              // 4. Bottom Title Bar Lens
-                              Positioned(
-                                left: 10,
-                                right: 10,
-                                bottom: 10,
-                                child: LiquidGlassLens(
-                                  style: LiquidGlassStyle(
-                                    shape: LiquidGlassShape.squircle(
-                                      cornerRadius: titleRoundness,
+                                // 4. Bottom Title Bar Lens
+                                Positioned(
+                                  left: 10,
+                                  right: 10,
+                                  bottom: 10,
+                                  child: LiquidGlassLens(
+                                    style: LiquidGlassStyle(
+                                      shape: LiquidGlassShape.squircle(
+                                        cornerRadius: titleRoundness,
+                                      ),
+                                      appearance: LiquidGlassAppearance(
+                                        color: Colors.black.withValues(
+                                          alpha: lensAppearanceTint,
+                                        ),
+                                      ),
                                     ),
-                                    appearance: LiquidGlassAppearance(
-                                      color: Colors.black.withValues(
-                                        alpha: lensAppearanceTint,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 12,
+                                      ),
+                                      child: Text(
+                                        widget.widget.title,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13,
+                                          height: 1.25,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 12,
-                                    ),
-                                    child: Text(
-                                      widget.widget.title,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                        height: 1.25,
-                                      ),
-                                    ),
-                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Active state luminous border overlay
-                    if (enableLuminousBorder)
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(
-                                cardRoundness,
-                              ),
-                              border: Border.all(
-                                color: active
-                                    ? Colors.white.withValues(
-                                        alpha: borderGlowIntensity,
-                                      )
-                                    : Colors.white.withValues(alpha: 0.12),
-                                width: active
-                                    ? borderWidth
-                                    : (borderWidth * 0.4).clamp(0.6, 1.2),
-                              ),
+                              ],
                             ),
                           ),
                         ),
                       ),
-                  ],
+
+                      // Active state luminous border overlay
+                      if (enableLuminousBorder)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                  cardRoundness,
+                                ),
+                                border: Border.all(
+                                  color: active
+                                      ? Colors.white.withValues(
+                                          alpha: borderGlowIntensity,
+                                        )
+                                      : Colors.white.withValues(alpha: 0.12),
+                                  width: active
+                                      ? borderWidth
+                                      : (borderWidth * 0.4).clamp(0.6, 1.2),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -135,7 +135,6 @@ class UiPrefState {
     'lensAppearanceTint': 0.13,
     'enableBadgeLens': true,
     'enableCardShadow': false,
-    'animationSpeed': 1.0,
   };
 
   final MediaCardStyle cardStyle;

@@ -512,7 +512,7 @@ class UiSettingsScreen extends ConsumerWidget {
                         icon: Icons.bubble_chart_rounded,
                         title: 'Enable Metaball Orb',
                         subtitle:
-                            'Floating liquid lens orb inside the glass card',
+                            'Floating liquid lens orb appears on hover or touch',
                         value: config['enableMetaball'] != false,
                         onChanged: (val) => notifier.updateExperimentalConfig({
                           'enableMetaball': val,
@@ -527,23 +527,6 @@ class UiSettingsScreen extends ConsumerWidget {
                           value: config['interactiveOrb'] != false,
                           onChanged: (val) => notifier.updateExperimentalConfig(
                             {'interactiveOrb': val},
-                          ),
-                        ),
-                        SettingsSliderTile(
-                          icon: Icons.speed_rounded,
-                          title: 'Metaball Animation Speed',
-                          subtitle:
-                              'Orbit and flow animation frequency multiplier',
-                          value:
-                              (config['animationSpeed'] as num?)?.toDouble() ??
-                              1.0,
-                          min: 0.5,
-                          max: 2.5,
-                          divisions: 20,
-                          label:
-                              '${((config['animationSpeed'] as num?)?.toDouble() ?? 1.0).toStringAsFixed(1)}x',
-                          onChanged: (val) => notifier.updateExperimentalConfig(
-                            {'animationSpeed': val},
                           ),
                         ),
                         SettingsSliderTile(

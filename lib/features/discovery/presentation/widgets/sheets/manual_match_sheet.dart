@@ -62,9 +62,13 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
 
     try {
       final pref = await ref.read(
-        mediaPreferenceProvider(MatchArgs(mediaTitle: widget.mediaTitle, type: widget.type)).future,
+        mediaPreferenceProvider(
+          MatchArgs(mediaTitle: widget.mediaTitle, type: widget.type),
+        ).future,
       );
-      final source = ref.read(animeSourceProvider(pref.sourceInfo));
+      final source = widget.type == MediaType.ANIME
+          ? ref.read(animeSourceProvider(pref.sourceInfo))
+          : ref.read(mangaSourceProvider(pref.sourceInfo));
       final results = await source.search(cleanQuery, widget.type);
       if (mounted) setState(() => _results = results);
     } catch (_) {
@@ -76,7 +80,11 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
 
   void _onSelect(UnifiedMedia result) {
     ref
-        .read(mediaPreferenceProvider(MatchArgs(mediaTitle: widget.mediaTitle, type: widget.type)).notifier)
+        .read(
+          mediaPreferenceProvider(
+            MatchArgs(mediaTitle: widget.mediaTitle, type: widget.type),
+          ).notifier,
+        )
         .setManualOverrides(result.id, result.title.availableTitle);
 
     context.pop(true);
@@ -93,7 +101,9 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
           TextField(
             controller: _controller,
             decoration: InputDecoration(
-              labelText: 'Search Anime',
+              labelText: widget.type == MediaType.ANIME
+                  ? 'Search Anime'
+                  : 'Search Manga / Novel',
               border: const OutlineInputBorder(),
               suffixIcon: _isLoading
                   ? const Padding(

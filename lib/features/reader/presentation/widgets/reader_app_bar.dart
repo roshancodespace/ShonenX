@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -28,48 +29,58 @@ class ReaderAppBar extends StatelessWidget implements PreferredSizeWidget {
         ? episodeNumber.toInt().toString()
         : episodeNumber.toString();
 
-    return AppBar(
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            mediaTitle,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: themeInfo.textColor,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: themeInfo.appBarBg.withValues(alpha: 0.75),
           ),
-          const SizedBox(height: 2),
-          Text(
-            'Chapter $displayChapter',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: themeInfo.textColor.withValues(alpha: 0.7),
+          child: AppBar(
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  mediaTitle,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: themeInfo.textColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Chapter $displayChapter',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: themeInfo.textColor.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
-      backgroundColor: themeInfo.appBarBg,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      centerTitle: false,
-      iconTheme: IconThemeData(color: themeInfo.textColor),
-      leading: IconButton(
-        onPressed: context.pop,
-        icon: const Icon(Icons.arrow_back_ios_new_outlined),
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.settings_rounded),
-          onPressed: () => AppBottomSheet.show(
-            context: context,
-            title: 'Reader Settings',
-            child: const ReaderSettingsContent(),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            centerTitle: false,
+            iconTheme: IconThemeData(color: themeInfo.textColor),
+            leading: IconButton(
+              onPressed: context.pop,
+              icon: const Icon(Icons.arrow_back_ios_new_outlined),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.settings_rounded),
+                onPressed: () => AppBottomSheet.show(
+                  context: context,
+                  title: 'Reader Settings',
+                  child: const ReaderSettingsContent(),
+                ),
+              ),
+              const SizedBox(width: 10),
+            ],
           ),
         ),
-        const SizedBox(width: 10),
-      ],
+      ),
     );
   }
 }

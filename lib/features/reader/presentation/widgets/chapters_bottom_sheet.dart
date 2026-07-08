@@ -46,7 +46,7 @@ class ChaptersBottomSheet extends ConsumerWidget {
             initialIndex = i;
             break;
           }
-        } 
+        }
 
         return SizedBox(
           height: MediaQuery.of(context).size.height * 0.6,

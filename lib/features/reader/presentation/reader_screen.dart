@@ -45,11 +45,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
   late final PageController _pageController;
-  final TransformationController _transformationController =
-      TransformationController();
   late final MatchArgs _matchArgs;
-
-  double _currentScale = 1.0;
 
   @override
   void initState() {
@@ -72,7 +68,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _focusNode.dispose();
     _itemPositionsListener.itemPositions.removeListener(_onWebtoonScroll);
     _pageController.dispose();
-    _transformationController.dispose();
     _disableImmersiveMode();
     super.dispose();
   }
@@ -259,27 +254,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     }
   }
 
-  void _toggleZoom(TapDownDetails details) {
-    final tapPosition = details.localPosition;
-    final targetScale = (_currentScale < 2.0) ? 2.0 : 1.0;
-    _zoomAtPoint(tapPosition, targetScale);
-  }
-
-  void _zoomOnScroll(double scrollDelta, Offset pointerPosition) {
-    final zoomFactor = (scrollDelta < 0) ? 1.1 : 0.9;
-    final newScale = (_currentScale * zoomFactor).clamp(1.0, 4.0);
-    _zoomAtPoint(pointerPosition, newScale);
-  }
-
-  void _zoomAtPoint(Offset focalPoint, double targetScale) {
-    _currentScale = targetScale;
-    final scenePoint = _transformationController.toScene(focalPoint);
-    _transformationController.value = Matrix4.identity()
-      ..translate(focalPoint.dx, focalPoint.dy)
-      ..scale(_currentScale)
-      ..translate(-scenePoint.dx, -scenePoint.dy);
-  }
-
   @override
   Widget build(BuildContext context) {
     final readerStateAsync = ref.watch(readerProvider(widget.mode));
@@ -323,11 +297,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   itemScrollController: _itemScrollController,
                   itemPositionsListener: _itemPositionsListener,
                   pageController: _pageController,
-                  transformationController: _transformationController,
                   onTotalPagesUpdated: _updateTotalPagesIfNeeded,
                   onPageChanged: _onPageChanged,
-                  onZoomOnScroll: _zoomOnScroll,
-                  onToggleZoom: _toggleZoom,
                   onRetry: () =>
                       ref.read(readerProvider(widget.mode).notifier).retry(),
                 ),

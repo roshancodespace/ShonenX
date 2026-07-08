@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -185,6 +186,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   }
 
   void _onMouseHover(PointerHoverEvent event) {
+    if (event.kind == PointerDeviceKind.touch) return;
     if (_lastHoverPosition == event.position) return;
     _lastHoverPosition = event.position;
     _showControlsTemporarily();
@@ -463,7 +465,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         body: PlayerKeyboardListener(
           engine: engine,
           controller: controller,
-          onUserInteraction: _showControlsTemporarily,
+          onUserInteraction: () {},
           onToggleFullScreen: _toggleFullScreen,
           onToggleEpisodePanel: _toggleEpisodePanel,
           onShowShortcutsGuide: () => KeyboardShortcutsSheet.show(context),

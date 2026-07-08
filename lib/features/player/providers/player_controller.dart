@@ -700,7 +700,9 @@ class PlayerController extends Notifier<PlayerState> {
       ..durationInMilliseconds = duration.inMilliseconds
       ..sourceId = _source?.sourceInfo.id ?? _media!.sourceId
       ..sourceName = _source?.sourceInfo.name ?? _media!.sourceName
-      ..providerId = _media!.providerId ?? _media!.id
+      ..providerId = _media!.providerId != _media!.id
+          ? _media!.providerId
+          : null
       ..lastUpdated = DateTime.now();
 
     ref.read(watchHistoryRepositoryProvider).saveProgress(entry);

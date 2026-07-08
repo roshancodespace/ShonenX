@@ -134,7 +134,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       ..totalPages = _totalPages
       ..sourceId = widget.mode.sourceInfo.id
       ..sourceName = widget.mode.sourceInfo.name
-      ..providerId = widget.mode.media.providerId ?? widget.mode.media.id
+      ..providerId = widget.mode.media.providerId != widget.mode.media.id
+          ? widget.mode.media.providerId
+          : null
       ..lastUpdated = DateTime.now();
 
     ref.read(readHistoryRepositoryProvider).saveProgress(entry);

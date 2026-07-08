@@ -43,7 +43,10 @@ class ContinueWatchingResolver {
             : null) ??
         prefState.sourceInfo;
 
-    final overrideId = prefState.manualOverrideId ?? entry.providerId;
+    final rawOverride = prefState.manualOverrideId ?? entry.providerId;
+    final overrideId = (rawOverride != null && rawOverride != entry.animeId)
+        ? rawOverride
+        : null;
 
     UnifiedEpisode? episode;
 
@@ -81,9 +84,9 @@ class ContinueWatchingResolver {
           id: entry.animeId,
           idMal: entry.animeIdMal,
           cover: entry.cover,
-          sourceId: sourceInfo.id,
-          sourceName: sourceInfo.name,
-          providerId: overrideId ?? entry.animeId,
+          sourceId: null,
+          sourceName: null,
+          providerId: overrideId,
           type: MediaType.ANIME,
           title: MediaTitle(english: entry.animeTitle),
         ),

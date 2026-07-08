@@ -136,8 +136,10 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
                     if (now - _lastTapTime < 300) {
                       if (isLeft) {
                         _triggerSeek(-10);
+                        widget.onToggleControls();
                       } else if (isRight) {
                         _triggerSeek(10);
+                        widget.onToggleControls();
                       } else {
                         widget.onToggleControls();
                       }

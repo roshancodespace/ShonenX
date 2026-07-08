@@ -24,6 +24,7 @@ enum _BatchStep {
   choosePreference,
   queueing,
   preferenceFallbackPrompt,
+  failedRecovery,
 }
 
 class BatchDownloadSheet extends ConsumerStatefulWidget {
@@ -83,6 +84,9 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
   int _successCount = 0;
   String _currentQueueStatus = '';
 
+  final List<UnifiedEpisode> _failedEpisodes = [];
+  final Map<UnifiedEpisode, String> _failureReasons = {};
+
   @override
   void initState() {
     super.initState();
@@ -120,6 +124,127 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
     });
   }
 
+  void _showRangeDialog() {
+    final sorted = widget.episodes.toList()
+      ..sort((a, b) => a.number.compareTo(b.number));
+    if (sorted.isEmpty) return;
+
+    final unwatched = sorted.where((e) => e.number > widget.watchedProgress);
+    final initialStart = unwatched.isNotEmpty
+        ? unwatched.first.number
+        : sorted.first.number;
+    final initialEnd = sorted.last.number;
+
+    final startCtrl = TextEditingController(
+      text: initialStart.toString().contains('.0')
+          ? initialStart.toInt().toString()
+          : initialStart.toString(),
+    );
+    final endCtrl = TextEditingController(
+      text: initialEnd.toString().contains('.0')
+          ? initialEnd.toInt().toString()
+          : initialEnd.toString(),
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final cs = Theme.of(ctx).colorScheme;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'Select Episode Range',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Enter start and end episode numbers (available: ${sorted.first.number} to ${sorted.last.number}):',
+                style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: startCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'From Episode',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      '—',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: endCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'To Episode',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final start =
+                    double.tryParse(startCtrl.text.trim()) ?? initialStart;
+                final end = double.tryParse(endCtrl.text.trim()) ?? initialEnd;
+                final minNum = start <= end ? start : end;
+                final maxNum = start <= end ? end : start;
+
+                final matched = sorted
+                    .where((e) => e.number >= minNum && e.number <= maxNum)
+                    .toSet();
+                setState(() {
+                  _selectedEpisodes = matched;
+                });
+                Navigator.of(ctx).pop();
+              },
+              child: const Text('Apply Range'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _clearSelection() {
     setState(() => _selectedEpisodes.clear());
   }
@@ -139,19 +264,42 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
     _fetchServersForReference(firstEp);
   }
 
-  Future<void> _fetchServersForReference(UnifiedEpisode ep) async {
+  Future<void> _fetchServersForReference(UnifiedEpisode initialEp) async {
     try {
       final sourceImpl = ref.read(animeSourceProvider(widget.source));
-      final servers = await sourceImpl.getServers(ep.id);
-      if (mounted) {
-        setState(() {
-          _availableServers = servers;
+      List<VideoServer>? foundServers;
+      UnifiedEpisode? workingEp;
+
+      // Try the initial reference episode first, then fall back across other selected episodes
+      for (final ep in _sortedSelected) {
+        try {
+          final servers = await sourceImpl.getServers(ep.id);
           if (servers.isNotEmpty) {
-            _selectedServer = servers.first;
+            foundServers = servers;
+            workingEp = ep;
+            break;
           }
-        });
-        if (servers.isNotEmpty) {
-          _fetchStreamsForReference(ep, servers.first);
+        } catch (_) {
+          continue;
+        }
+      }
+
+      if (mounted) {
+        if (foundServers != null &&
+            foundServers.isNotEmpty &&
+            workingEp != null) {
+          setState(() {
+            _referenceEpisode = workingEp;
+            _availableServers = foundServers;
+            _selectedServer = foundServers!.first;
+          });
+          _fetchStreamsForReference(workingEp, foundServers.first);
+        } else {
+          setState(() {
+            _serversError =
+                'Could not load servers for any of the selected episodes.';
+            _availableServers = [];
+          });
         }
       }
     } catch (e) {
@@ -216,20 +364,6 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
     }
   }
 
-  void _triggerFallbackPrompt(UnifiedEpisode ep) {
-    if (!mounted) return;
-    setState(() {
-      _referenceEpisode = ep;
-      _currentStep = _BatchStep.preferenceFallbackPrompt;
-      _availableServers = null;
-      _serversError = null;
-      _selectedServer = null;
-      _availableStreams = null;
-      _selectedStream = null;
-    });
-    _fetchServersForReference(ep);
-  }
-
   Future<void> _startQueueLoop({bool fromIndexZero = true}) async {
     if (_selectedServer == null || _selectedStream == null) return;
 
@@ -255,6 +389,8 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
       }
       _currentIndex = 0;
       _successCount = 0;
+      _failedEpisodes.clear();
+      _failureReasons.clear();
     }
 
     setState(() {
@@ -289,6 +425,8 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
       try {
         final servers = await sourceImpl.getServers(ep.id);
         if (servers.isEmpty) {
+          _failedEpisodes.add(ep);
+          _failureReasons[ep] = 'No servers returned';
           _currentIndex++;
           continue;
         }
@@ -303,12 +441,17 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
             servers.where((s) => s.type == prefServerType).firstOrNull;
 
         if (matchedServer == null) {
-          _triggerFallbackPrompt(ep);
-          return;
+          _failedEpisodes.add(ep);
+          _failureReasons[ep] =
+              'Server "$prefServerName" ($prefServerType) not found';
+          _currentIndex++;
+          continue;
         }
 
         final streams = await sourceImpl.getSources(ep.id, matchedServer);
         if (streams.isEmpty) {
+          _failedEpisodes.add(ep);
+          _failureReasons[ep] = 'No video streams returned';
           _currentIndex++;
           continue;
         }
@@ -345,8 +488,10 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
             splitStreamsList.firstOrNull;
 
         if (matchedStream == null) {
-          _triggerFallbackPrompt(ep);
-          return;
+          _failedEpisodes.add(ep);
+          _failureReasons[ep] = 'Stream quality "$prefQuality" not found';
+          _currentIndex++;
+          continue;
         }
 
         var fileName = prefs.fileNameFormat == FileNameFormat.titleAndEpisode
@@ -386,6 +531,8 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
         _successCount++;
         _currentIndex++;
       } catch (e) {
+        _failedEpisodes.add(ep);
+        _failureReasons[ep] = e.toString().replaceAll('Exception: ', '');
         _currentIndex++;
       }
     }
@@ -399,14 +546,20 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
     }
 
     if (mounted && _currentIndex >= total) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Successfully queued $_successCount of $total episodes for download!',
+      if (_failedEpisodes.isNotEmpty) {
+        setState(() {
+          _currentStep = _BatchStep.failedRecovery;
+        });
+      } else {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Successfully queued $_successCount of $total episodes for download!',
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -421,9 +574,188 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
       case _BatchStep.choosePreference:
       case _BatchStep.preferenceFallbackPrompt:
         return _buildPreferenceState(cs, textTheme);
+      case _BatchStep.failedRecovery:
+        return _buildFailedRecoveryState(cs, textTheme);
       case _BatchStep.selectEpisodes:
         return _buildSelectState(cs, textTheme);
     }
+  }
+
+  Widget _buildFailedRecoveryState(ColorScheme cs, TextTheme textTheme) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: cs.errorContainer.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.error_outline_rounded, color: cs.error, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$_successCount episodes queued • ${_failedEpisodes.length} failed',
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: cs.error,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Would you like to choose a different server or quality for the failed episodes, or continue?',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'FAILED EPISODES',
+          style: textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.1,
+            color: cs.error,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 220),
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: _failedEpisodes.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final ep = _failedEpisodes[index];
+              final epNumStr = ep.number.toString().contains('.0')
+                  ? ep.number.toInt().toString()
+                  : ep.number.toString();
+              final reason = _failureReasons[ep] ?? 'Unknown error';
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      decoration: BoxDecoration(
+                        color: cs.errorContainer.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Ep $epNumStr',
+                        style: TextStyle(
+                          color: cs.error,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            ep.title?.isNotEmpty == true
+                                ? '${ep.title}'
+                                : 'Episode $epNumStr',
+                            style: textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            reason,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: cs.error.withValues(alpha: 0.8),
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            OutlinedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                if (_successCount > 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Queued $_successCount episodes for download.',
+                      ),
+                    ),
+                  );
+                }
+              },
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Text('Continue'),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _selectedEpisodes = _failedEpisodes.toSet();
+                    _failedEpisodes.clear();
+                    _failureReasons.clear();
+                  });
+                  _goToChoosePreference();
+                },
+                icon: const Icon(
+                  Icons.settings_backup_restore_rounded,
+                  size: 18,
+                ),
+                label: Text(
+                  'Re-fetch (${_failedEpisodes.length})',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   Widget _buildQueueingState(ColorScheme cs, TextTheme textTheme) {
@@ -698,6 +1030,8 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
               _buildPresetPill('Select All', _selectAll, cs),
               const SizedBox(width: 8),
               _buildPresetPill('Unwatched', _selectUnwatched, cs),
+              const SizedBox(width: 8),
+              _buildPresetPill('Range', _showRangeDialog, cs),
               const SizedBox(width: 8),
               _buildPresetPill('Next 5', () => _selectNext(5), cs),
               const SizedBox(width: 8),

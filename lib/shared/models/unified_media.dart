@@ -28,6 +28,7 @@ class UnifiedMedia {
   final String id;
   final MediaType type;
   final String? sourceId;
+  final String? sourceName;
   final String? providerId;
   final String? idMal;
   final MediaTitle title;
@@ -52,6 +53,7 @@ class UnifiedMedia {
     required this.id,
     required this.type,
     this.sourceId,
+    this.sourceName,
     this.title = const MediaTitle(),
     this.providerId,
     this.idMal,
@@ -124,6 +126,7 @@ extension UnifiedMediaX on UnifiedMedia {
       type: other.type,
 
       sourceId: other.sourceId ?? sourceId,
+      sourceName: other.sourceName ?? sourceName,
       providerId: other.providerId ?? providerId,
       idMal: other.idMal ?? idMal,
       format: other.format ?? format,

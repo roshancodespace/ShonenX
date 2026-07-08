@@ -186,6 +186,40 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
     }
   }
 
+  Future<void> saveWatchPreference({
+    required SourceInfo sourceInfo,
+    required String mediaId,
+    required String mediaTitle,
+  }) async {
+    try {
+      final existing = await _isar.mediaPreferences.getByMediaTitle(
+        args.mediaTitle,
+      );
+      final pref =
+          existing ?? (MediaPreference()..mediaTitle = args.mediaTitle);
+
+      pref.preferredSourceId = sourceInfo.id;
+      pref.preferredSourceName = sourceInfo.name;
+      pref.preferredSourceType = sourceInfo.type.name;
+      pref.manualOverrideId = mediaId;
+      pref.manualOverrideTitle = mediaTitle;
+
+      await _isar.writeTxn(() async => await _isar.mediaPreferences.put(pref));
+
+      if (state.hasValue && state.value != null) {
+        state = AsyncData(
+          state.value!.copyWith(
+            sourceInfo: sourceInfo,
+            manualOverrideId: mediaId,
+            manualOverrideTitle: mediaTitle,
+          ),
+        );
+      }
+    } catch (e, st) {
+      _log.e('Failed to save watch preference', e, st);
+    }
+  }
+
   void setPreferredAiringTracker(TrackerType tracker) {
     final log = _log.child('setPreferredAiringTracker');
     log.i('Tracker → ${tracker.displayName}');

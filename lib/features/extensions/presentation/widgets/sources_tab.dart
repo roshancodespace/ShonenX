@@ -14,6 +14,7 @@ import 'package:shonenx/source_engine/models/source_setting.dart';
 import 'package:shonenx/source_engine/providers/media_source.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
+import 'extension_beginner_sheet.dart';
 import 'runtime_setup_sheet.dart';
 
 class SourcesTab extends ConsumerStatefulWidget {
@@ -252,6 +253,23 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.tonalIcon(
+                    onPressed: () => ExtensionBeginnerSheet.show(context),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.errorContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onErrorContainer,
+                    ),
+                    icon: const Icon(Icons.help_outline_rounded),
+                    label: const Text(
+                      'Retarded? Interactive Beginner Guide',
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],

@@ -68,11 +68,37 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
   int _chunkIndex = 0;
   final ScrollController _scrollController = ScrollController();
   bool _hasAutoScrolled = false;
+  bool _isRetrying = false;
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _triggerRetry(MatchArgs matchArgs) {
+    if (_isRetrying) return;
+    setState(() {
+      _isRetrying = true;
+    });
+    ref.invalidate(matchedMediaProvider(matchArgs));
+    ref.invalidate(episodesListProvider(matchArgs));
+    if (widget.media.sourceId != null) {
+      ref.invalidate(
+        sourceEpisodesProvider((
+          providerId: widget.media.id,
+          sourceId: widget.media.sourceId!,
+          type: widget.media.type,
+        )),
+      );
+    }
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _isRetrying = false;
+        });
+      }
+    });
   }
 
   @override
@@ -82,6 +108,8 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     );
     final matchArgs = MatchArgs.fromMedia(widget.media);
     final episodesAsync = ref.watch(episodesListProvider(matchArgs));
+    final isBusy =
+        _isRetrying || episodesAsync.isRefreshing || episodesAsync.isLoading;
 
     return episodesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -109,21 +137,15 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () {
-                  ref.invalidate(matchedMediaProvider(matchArgs));
-                  ref.invalidate(episodesListProvider(matchArgs));
-                  if (widget.media.sourceId != null) {
-                    ref.invalidate(
-                      sourceEpisodesProvider((
-                        providerId: widget.media.id,
-                        sourceId: widget.media.sourceId!,
-                        type: widget.media.type,
-                      )),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Retry Search'),
+                onPressed: isBusy ? null : () => _triggerRetry(matchArgs),
+                icon: isBusy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded),
+                label: Text(isBusy ? 'Fetching...' : 'Retry Search'),
               ),
             ],
           ),
@@ -132,10 +154,50 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
       data: (state) {
         if (state.episodes.isEmpty) {
           return Center(
-            child: Text(
-              widget.media.type == MediaType.MANGA
-                  ? 'No chapters found.'
-                  : 'No episodes found.',
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.folder_open_rounded,
+                    size: 48,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    widget.media.type == MediaType.MANGA
+                        ? 'No chapters found for this source.'
+                        : 'No episodes found for this source.',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'The provider may still be indexing, or the match might need to be retried.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: isBusy ? null : () => _triggerRetry(matchArgs),
+                    icon: isBusy
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.refresh_rounded),
+                    label: Text(isBusy ? 'Fetching...' : 'Retry Fetching'),
+                  ),
+                ],
+              ),
             ),
           );
         }
@@ -409,6 +471,8 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
           });
         }
 
+        final fallbackThumbnailUrl = widget.media.banner ?? widget.media.cover;
+
         switch (viewMode) {
           case EpisodeViewMode.classic:
             return ListView.builder(
@@ -429,6 +493,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                   imageOpacity: widget.imageOpacity,
                   imageBlurSigma: widget.imageBlurSigma,
                   isFiller: ep.isFiller,
+                  fallbackThumbnailUrl: fallbackThumbnailUrl,
                   actions:
                       widget.episodeActionsBuilder?.call(
                         context,
@@ -457,6 +522,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                   isCurrent: isCurrent,
                   isWatched: isWatched,
                   isFiller: ep.isFiller,
+                  fallbackThumbnailUrl: fallbackThumbnailUrl,
                   actions:
                       widget.episodeActionsBuilder?.call(
                         context,
@@ -472,21 +538,21 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
 
           case EpisodeViewMode.cover:
             final coverColumns = panelTier.pick(
-              compact: 1,
-              medium: 2,
-              expanded: 2,
-              large: 3,
-              ultraLarge: 4,
+              compact: 2,
+              medium: 3,
+              expanded: 4,
+              large: 5,
+              ultraLarge: 6,
             );
             final coverPad = panelTier.pickOrFold(
-              compact: 10.0,
-              medium: 14.0,
-              large: 18.0,
-            );
-            final coverSpacing = panelTier.pickOrFold(
-              compact: 10.0,
+              compact: 8.0,
               medium: 12.0,
               large: 16.0,
+            );
+            final coverSpacing = panelTier.pickOrFold(
+              compact: 8.0,
+              medium: 10.0,
+              large: 14.0,
             );
 
             return GridView.builder(
@@ -496,7 +562,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                 crossAxisCount: coverColumns,
                 crossAxisSpacing: coverSpacing,
                 mainAxisSpacing: coverSpacing,
-                childAspectRatio: 16 / 9,
+                childAspectRatio: 16 / 10,
               ),
               itemCount: episodes.length,
               itemBuilder: (context, i) {
@@ -510,6 +576,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                   isCurrent: isCurrent,
                   isWatched: isWatched,
                   isFiller: ep.isFiller,
+                  fallbackThumbnailUrl: fallbackThumbnailUrl,
                   actions:
                       widget.episodeActionsBuilder?.call(
                         context,
@@ -559,9 +626,11 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
 
                 return EpisodeGridTile(
                   episode: ep,
+                  mediaType: widget.media.type,
                   isCurrent: isCurrent,
                   isWatched: isWatched,
                   isFiller: ep.isFiller,
+                  fallbackThumbnailUrl: fallbackThumbnailUrl,
                   actions:
                       widget.episodeActionsBuilder?.call(
                         context,
@@ -609,9 +678,11 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
 
                 return EpisodeBoxTile(
                   episode: ep,
+                  mediaType: widget.media.type,
                   isCurrent: isCurrent,
                   isFiller: ep.isFiller,
                   isWatched: isWatched,
+                  fallbackThumbnailUrl: fallbackThumbnailUrl,
                   onTap: () => widget.onEpisodeTap(ep, source),
                 );
               },
@@ -629,77 +700,91 @@ class _ViewModeToggle extends StatelessWidget {
   const _ViewModeToggle({required this.current, required this.onChanged});
 
   static IconData _iconForMode(EpisodeViewMode mode) => switch (mode) {
-        EpisodeViewMode.classic => Icons.view_agenda_outlined,
-        EpisodeViewMode.grid => Icons.grid_view_outlined,
-        EpisodeViewMode.box => Icons.tag_outlined,
-        EpisodeViewMode.compact => Icons.format_list_bulleted_rounded,
-        EpisodeViewMode.cover => Icons.movie_creation_outlined,
-      };
+    EpisodeViewMode.classic => Icons.view_agenda_outlined,
+    EpisodeViewMode.grid => Icons.grid_view_outlined,
+    EpisodeViewMode.box => Icons.tag_outlined,
+    EpisodeViewMode.compact => Icons.format_list_bulleted_rounded,
+    EpisodeViewMode.cover => Icons.movie_creation_outlined,
+  };
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return PopupMenuButton<EpisodeViewMode>(
-      initialValue: current,
-      onSelected: onChanged,
-      tooltip: 'Episode View Mode',
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      color: cs.surfaceContainerHigh,
-      elevation: 4,
-      position: PopupMenuPosition.under,
-      itemBuilder: (context) {
-        return EpisodeViewMode.values.map((mode) {
-          final isSelected = mode == current;
-          return PopupMenuItem<EpisodeViewMode>(
-            value: mode,
-            child: Row(
-              children: [
-                Icon(
-                  _iconForMode(mode),
-                  size: 20,
-                  color: isSelected ? cs.primary : cs.onSurfaceVariant,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  mode.displayName,
-                  style: TextStyle(
-                    color: isSelected ? cs.primary : cs.onSurface,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 14,
-                  ),
-                ),
-                if (isSelected) ...[
-                  const Spacer(),
-                  Icon(Icons.check_rounded, size: 18, color: cs.primary),
-                ],
-              ],
-            ),
-          );
-        }).toList();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(12),
+    return Theme(
+      data: Theme.of(context).copyWith(
+        hoverColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        splashColor: Colors.transparent,
+      ),
+      child: PopupMenuButton<EpisodeViewMode>(
+        initialValue: current,
+        onSelected: onChanged,
+        tooltip: 'Episode View Mode',
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(_iconForMode(current), size: 16, color: cs.primary),
-            const SizedBox(width: 6),
-            Text(
-              current.displayName,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: cs.onSurface,
+        color: cs.surfaceContainerHigh,
+        position: PopupMenuPosition.under,
+        itemBuilder: (context) {
+          return EpisodeViewMode.values.map((mode) {
+            final isSelected = mode == current;
+            return PopupMenuItem<EpisodeViewMode>(
+              value: mode,
+              child: Row(
+                children: [
+                  Icon(
+                    _iconForMode(mode),
+                    size: 20,
+                    color: isSelected ? cs.primary : cs.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    mode.displayName,
+                    style: TextStyle(
+                      color: isSelected ? cs.primary : cs.onSurface,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                  if (isSelected) ...[
+                    const Spacer(),
+                    Icon(Icons.check_rounded, size: 18, color: cs.primary),
+                  ],
+                ],
               ),
-            ),
-            const SizedBox(width: 4),
-            Icon(Icons.expand_more_rounded, size: 16, color: cs.onSurfaceVariant),
-          ],
+            );
+          }).toList();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(_iconForMode(current), size: 16, color: cs.primary),
+              const SizedBox(width: 6),
+              Text(
+                current.displayName,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.expand_more_rounded,
+                size: 16,
+                color: cs.onSurfaceVariant,
+              ),
+            ],
+          ),
         ),
       ),
     );

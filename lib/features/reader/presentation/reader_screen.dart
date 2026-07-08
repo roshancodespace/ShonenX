@@ -7,6 +7,7 @@ import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
+import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
@@ -131,9 +132,29 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       ..banner = widget.mode.media.banner
       ..positionPage = savedPageNumber
       ..totalPages = _totalPages
+      ..sourceId = widget.mode.sourceInfo.id
+      ..sourceName = widget.mode.sourceInfo.name
+      ..providerId = widget.mode.media.providerId ?? widget.mode.media.id
       ..lastUpdated = DateTime.now();
 
     ref.read(readHistoryRepositoryProvider).saveProgress(entry);
+
+    try {
+      final mediaTitle = widget.mode.media.title.availableTitle;
+      if (mediaTitle.isNotEmpty) {
+        ref
+            .read(
+              mediaPreferenceProvider(
+                MatchArgs(mediaTitle: mediaTitle, type: widget.mode.media.type),
+              ).notifier,
+            )
+            .saveWatchPreference(
+              sourceInfo: widget.mode.sourceInfo,
+              mediaId: widget.mode.media.providerId ?? widget.mode.media.id,
+              mediaTitle: mediaTitle,
+            );
+      }
+    } catch (_) {}
     ref
         .read(syncEngineProvider)
         .processReading(

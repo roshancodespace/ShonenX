@@ -7,6 +7,7 @@ import 'package:shonenx/features/history/domain/models/watch_history_entry.dart'
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/source_engine/source_registry.dart';
 
 final continueWatchingResolverProvider = Provider(
   (ref) => ContinueWatchingResolver(ref),
@@ -30,13 +31,25 @@ class ContinueWatchingResolver {
       ).future,
     );
 
-    final sourceInfo = prefState.sourceInfo;
+    final availableSourcesInfo = await ref.read(
+      availableAnimeSourcesProvider.future,
+    );
+
+    final sourceInfo =
+        (entry.sourceId != null
+            ? availableSourcesInfo.firstWhereOrNull(
+                (s) => s.id == entry.sourceId,
+              )
+            : null) ??
+        prefState.sourceInfo;
+
+    final overrideId = prefState.manualOverrideId ?? entry.providerId;
 
     UnifiedEpisode? episode;
 
-    if (prefState.manualOverrideId != null) {
+    if (overrideId != null) {
       final args = (
-        providerId: prefState.manualOverrideId!,
+        providerId: overrideId,
         sourceId: sourceInfo.id,
         type: MediaType.ANIME,
       );
@@ -68,6 +81,9 @@ class ContinueWatchingResolver {
           id: entry.animeId,
           idMal: entry.animeIdMal,
           cover: entry.cover,
+          sourceId: sourceInfo.id,
+          sourceName: sourceInfo.name,
+          providerId: overrideId ?? entry.animeId,
           type: MediaType.ANIME,
           title: MediaTitle(english: entry.animeTitle),
         ),

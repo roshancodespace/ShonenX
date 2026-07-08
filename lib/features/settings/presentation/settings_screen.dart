@@ -39,7 +39,7 @@ class SettingsScreen extends ConsumerWidget {
               SettingsNavTile(
                 icon: Icons.extension_outlined,
                 title: 'Extensions',
-                subtitle: 'Aniyomi and Mangayomi extensions',
+                subtitle: 'External runtime engines & native sources',
                 onTap: () => context.push('/settings/extensions'),
                 onLongPress: () =>
                     context.push('/settings/remote_config_editor'),

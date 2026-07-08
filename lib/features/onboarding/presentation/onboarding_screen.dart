@@ -395,7 +395,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '• Mangayomi: All-in-one ecosystem supported natively.\n• Aniyomi & CloudStream: Advanced streaming & reading ecosystems available via our Runtime Bridge.\n\nNote: ShonenX uses a minimal customized fork of AnymeXExtensionRuntimeBridge originally created by RyanYuuki.',
+                    '• External Runtime Engines: Connect to Mangayomi, Aniyomi, CloudStream, Kotatsu, and Sora via the extension runtime bridge.\n• Inbuilt Sources: ShonenX also comes with custom native sources directly integrated into the app.\n\nNote: ShonenX uses a minimal customized fork of AnymeXExtensionRuntimeBridge originally created by RyanYuuki.',
                     style: TextStyle(
                       fontSize: 13,
                       color: cs.onSurfaceVariant,

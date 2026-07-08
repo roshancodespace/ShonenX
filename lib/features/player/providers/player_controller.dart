@@ -8,6 +8,7 @@ import 'package:shonenx/core/utils/http_x.dart';
 import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
+import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
@@ -194,6 +195,24 @@ class PlayerController extends Notifier<PlayerState> {
     if (mode is PlayerModeOnline) {
       _source = ref.read(animeSourceProvider(mode.sourceInfo));
       _media = mode.media;
+
+      try {
+        final mediaTitle = mode.media.title.availableTitle;
+        if (mediaTitle.isNotEmpty) {
+          ref
+              .read(
+                mediaPreferenceProvider(
+                  MatchArgs(mediaTitle: mediaTitle, type: mode.media.type),
+                ).notifier,
+              )
+              .saveWatchPreference(
+                sourceInfo: mode.sourceInfo,
+                mediaId: mode.media.providerId ?? mode.media.id,
+                mediaTitle: mediaTitle,
+              );
+        }
+      } catch (_) {}
+
       await _loadData(mode.episode, startPosition: mode.startPosition);
     } else if (mode is PlayerModeOffline) {
       _source = null;
@@ -679,9 +698,31 @@ class PlayerController extends Notifier<PlayerState> {
           : state.activeEpisode?.thumbnailUrl
       ..positionInMilliseconds = position.inMilliseconds
       ..durationInMilliseconds = duration.inMilliseconds
+      ..sourceId = _source?.sourceInfo.id ?? _media!.sourceId
+      ..sourceName = _source?.sourceInfo.name ?? _media!.sourceName
+      ..providerId = _media!.providerId ?? _media!.id
       ..lastUpdated = DateTime.now();
 
     ref.read(watchHistoryRepositoryProvider).saveProgress(entry);
+
+    if (_source != null) {
+      try {
+        final mediaTitle = _media!.title.availableTitle;
+        if (mediaTitle.isNotEmpty) {
+          ref
+              .read(
+                mediaPreferenceProvider(
+                  MatchArgs(mediaTitle: mediaTitle, type: _media!.type),
+                ).notifier,
+              )
+              .saveWatchPreference(
+                sourceInfo: _source!.sourceInfo,
+                mediaId: _media!.providerId ?? _media!.id,
+                mediaTitle: mediaTitle,
+              );
+        }
+      } catch (_) {}
+    }
 
     if (state.activeEpisode != null) {
       ref

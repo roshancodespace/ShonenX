@@ -3,6 +3,7 @@ import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'extension_beginner_sheet.dart';
 import 'runtime_setup_sheet.dart';
 
 class ExtensionGuideSheet extends ConsumerWidget {
@@ -24,7 +25,7 @@ class ExtensionGuideSheet extends ConsumerWidget {
     final isRuntimeReady = bridge.AnymeXRuntimeBridge.controller.isReady.value;
 
     return AppBottomSheet(
-      title: 'Extensions Guide',
+      title: 'Extensions Quick Guide',
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
@@ -34,82 +35,59 @@ class ExtensionGuideSheet extends ConsumerWidget {
             _buildRuntimeBanner(context, ref, cs, textTheme, isRuntimeReady),
             const SizedBox(height: 20),
             Text(
-              'SUPPORTED REPOSITORIES',
+              'QUICK STEPS',
               style: textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.w800,
                 color: cs.primary,
                 letterSpacing: 0.8,
               ),
             ),
-            const SizedBox(height: 8),
-            _buildMinimalItem(
+            const SizedBox(height: 10),
+            _buildGuideStep(
               context: context,
-              title: 'Aniyomi (Anime)',
-              badge: 'Recommended',
-              badgeColor: Colors.amber.shade700,
-              icon: Icons.play_circle_outline_rounded,
+              stepNumber: '1',
+              title: 'Add Repositories & Install',
               description:
-                  'High-speed video streaming extensions curated specifically for anime sources.',
+                  'Add repository URLs to discover and install external extensions from supported runtime engines (Mangayomi, Aniyomi, CloudStream, etc.).',
+              icon: Icons.add_circle_outline_rounded,
             ),
-            _buildMinimalItem(
+            _buildGuideStep(
               context: context,
-              title: 'Tachiyomi / Keiyoushi (Manga)',
-              badge: 'Recommended',
-              badgeColor: Colors.blue.shade700,
-              icon: Icons.menu_book_rounded,
+              stepNumber: '2',
+              title: 'Pin Your Default Source',
               description:
-                  'Vast catalog of manga extensions with multi-language support.',
+                  'Tap the pin icon on any installed extension or inbuilt source to set it as your default streaming or reading provider.',
+              icon: Icons.push_pin_outlined,
             ),
-            _buildMinimalItem(
+            _buildGuideStep(
               context: context,
-              title: 'CloudStream',
-              badge: 'Multi-Source',
-              badgeColor: Colors.teal.shade700,
-              icon: Icons.cloud_queue_rounded,
+              stepNumber: '3',
+              title: 'Filter by Engine & Language',
               description:
-                  'Versatile multi-source streaming extensions and scrapers.',
-            ),
-            _buildMinimalItem(
-              context: context,
-              title: 'Mangayomi',
-              badge: 'All-in-One',
-              badgeColor: Colors.purple.shade700,
-              icon: Icons.all_inclusive_rounded,
-              description:
-                  'Built-in engine supporting both anime and manga extensions natively.',
+                  'Use the capsule pills right above the tabs to organize sources by specific language or extension engine.',
+              icon: Icons.filter_list_rounded,
             ),
             const SizedBox(height: 20),
-            Text(
-              'PRO TIPS',
-              style: textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: cs.primary,
-                letterSpacing: 0.8,
+            FilledButton.tonalIcon(
+              onPressed: () {
+                Navigator.pop(context);
+                ExtensionBeginnerSheet.show(context);
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: cs.errorContainer,
+                foregroundColor: cs.onErrorContainer,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.help_outline_rounded),
+              label: const Text(
+                'Retarded? Interactive Beginner Guide',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
-            const SizedBox(height: 8),
-            _buildMinimalTip(
-              context: context,
-              icon: Icons.push_pin_outlined,
-              title: 'Pin Default Source',
-              content:
-                  'Tap the pin icon on any installed extension to set it as your default streaming or reading source.',
-            ),
-            _buildMinimalTip(
-              context: context,
-              icon: Icons.folder_outlined,
-              title: 'Language Groups',
-              content:
-                  'Extensions with multiple translations are grouped into folders. Tap to expand and install specific variants.',
-            ),
-            _buildMinimalTip(
-              context: context,
-              icon: Icons.system_update_alt_rounded,
-              title: 'Runtime Bridge Updates',
-              content:
-                  'Check GitHub releases for updates and always restart ShonenX after force updating the runtime!',
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 10),
             FilledButton(
               onPressed: () => Navigator.pop(context),
               style: FilledButton.styleFrom(
@@ -154,17 +132,18 @@ class ExtensionGuideSheet extends ConsumerWidget {
                 children: [
                   Text(
                     isRuntimeReady
-                        ? 'Runtime Bridge Active'
-                        : 'Runtime Bridge Required',
+                        ? 'Extension Runtime Active'
+                        : 'Extension Runtime Required',
                     style: textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: isRuntimeReady ? Colors.green : cs.primary,
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     isRuntimeReady
-                        ? 'Ready for Aniyomi & CloudStream extensions.'
-                        : 'Required to run Aniyomi & CloudStream extensions.',
+                        ? 'External engines (Mangayomi, Aniyomi, CloudStream, etc.) are connected via runtime bridge.'
+                        : 'Set up the runtime bridge to enable external extension engines.',
                     style: textTheme.labelSmall?.copyWith(
                       color: cs.onSurfaceVariant,
                     ),
@@ -187,13 +166,12 @@ class ExtensionGuideSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildMinimalItem({
+  Widget _buildGuideStep({
     required BuildContext context,
+    required String stepNumber,
     required String title,
-    required String badge,
-    required Color badgeColor,
-    required IconData icon,
     required String description,
+    required IconData icon,
   }) {
     final cs = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
@@ -203,38 +181,37 @@ class ExtensionGuideSheet extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: cs.primary.withValues(alpha: 0.8)),
-          const SizedBox(width: 12),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: cs.primaryContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              stepNumber,
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: cs.onPrimaryContainer,
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Text(
-                      title,
-                      style: textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: cs.onSurface,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: badgeColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+                    Icon(icon, size: 16, color: cs.primary),
+                    const SizedBox(width: 6),
+                    Expanded(
                       child: Text(
-                        badge.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          color: badgeColor,
-                          letterSpacing: 0.4,
+                        title,
+                        style: textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurface,
                         ),
                       ),
                     ),
@@ -243,49 +220,6 @@ class ExtensionGuideSheet extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMinimalTip({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String content,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: cs.secondary.withValues(alpha: 0.8)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: cs.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  content,
                   style: textTheme.bodySmall?.copyWith(
                     color: cs.onSurfaceVariant,
                     height: 1.35,

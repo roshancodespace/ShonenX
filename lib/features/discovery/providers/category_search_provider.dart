@@ -93,8 +93,17 @@ class CategorySearchNotifier
           final source = arg.type == MediaType.ANIME
               ? ref.read(animeSourceProvider(targetSourceInfo))
               : ref.read(mangaSourceProvider(targetSourceInfo));
-          final items = await source.getTrending(page: page);
-          return PaginatedResult(items: items, hasNextPage: items.isNotEmpty);
+          List<UnifiedMedia> items = [];
+          try {
+            items = await source.getTrending(page: page);
+          } catch (_) {}
+          if (items.isEmpty) {
+            items = await source.search('', arg.type, page: page);
+          }
+          return PaginatedResult(
+            items: items,
+            hasNextPage: items.isNotEmpty && items.length >= 8,
+          );
         } catch (_) {
           return const PaginatedResult(items: [], hasNextPage: false);
         }
@@ -115,7 +124,10 @@ class CategorySearchNotifier
       final results = await Future.wait(futures);
       final merged = results.expand((list) => list).toList();
 
-      return PaginatedResult(items: merged, hasNextPage: false);
+      return PaginatedResult(
+        items: merged,
+        hasNextPage: merged.isNotEmpty && merged.length >= 8,
+      );
     }
   }
 
@@ -129,16 +141,21 @@ class CategorySearchNotifier
 
     try {
       final newPageResult = await _fetchPage(_currentPage);
+      final newItems = newPageResult.items;
+      final hasNext = newPageResult.hasNextPage && newItems.isNotEmpty;
       state = AsyncData(
         PaginatedResult(
           items: [
-            ...{...currentData.items, ...newPageResult.items},
+            ...{...currentData.items, ...newItems},
           ],
-          hasNextPage: newPageResult.hasNextPage,
+          hasNextPage: hasNext,
         ),
       );
     } catch (e, _) {
       _currentPage--;
+      state = AsyncData(
+        PaginatedResult(items: currentData.items, hasNextPage: false),
+      );
     } finally {
       _isFetchingNextPage = false;
     }

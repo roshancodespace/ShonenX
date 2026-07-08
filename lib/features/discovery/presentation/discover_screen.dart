@@ -84,6 +84,7 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
   String _query = '';
   List<String> _genres = [];
   List<String> _tags = [];
+  String? _source;
 
   @override
   void initState() {
@@ -92,6 +93,7 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
     _searchController = TextEditingController(text: _query);
     _genres = List.from(widget.initialGenres);
     _tags = List.from(widget.initialTags);
+    _source = widget.source;
 
     _tabController = TabController(
       length: 2,
@@ -100,6 +102,18 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
     );
 
     _attachOverlay();
+  }
+
+  @override
+  void didUpdateWidget(SearchDiscoverScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.source != widget.source) {
+      _source = widget.source;
+    }
+    if (oldWidget.initialQuery != widget.initialQuery) {
+      _query = widget.initialQuery?.trim() ?? '';
+      _searchController.text = _query;
+    }
   }
 
   @override
@@ -272,13 +286,34 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
                 },
               ),
             ),
-            if (_genres.isNotEmpty || _tags.isNotEmpty) ...[
+            if (_genres.isNotEmpty || _tags.isNotEmpty || _source != null) ...[
               const SizedBox(height: 10),
               SizedBox(
                 height: 36,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
+                    if (_source != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: InputChip(
+                          label: Text('Source: $_source'),
+                          onDeleted: () {
+                            setState(() {
+                              _source = null;
+                            });
+                          },
+                          backgroundColor: theme.colorScheme.primaryContainer,
+                          labelStyle: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
+                          deleteIconColor: theme.colorScheme.onPrimaryContainer,
+                          side: BorderSide.none,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
                     ..._genres.map(
                       (g) => Padding(
                         padding: const EdgeInsets.only(right: 8),
@@ -339,14 +374,34 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
                     query: _query,
                     genres: _genres,
                     tags: _tags,
-                    source: widget.source,
+                    source: _source,
+                    onGenreSelect: (g) {
+                      setState(() {
+                        _genres = [g];
+                      });
+                    },
+                    onSourceSelect: (sId) {
+                      setState(() {
+                        _source = sId;
+                      });
+                    },
                   ),
                   _DiscoverTabFeed(
                     type: MediaType.MANGA,
                     query: _query,
                     genres: _genres,
                     tags: _tags,
-                    source: widget.source,
+                    source: _source,
+                    onGenreSelect: (g) {
+                      setState(() {
+                        _genres = [g];
+                      });
+                    },
+                    onSourceSelect: (sId) {
+                      setState(() {
+                        _source = sId;
+                      });
+                    },
                   ),
                 ],
               ),
@@ -394,6 +449,8 @@ class _DiscoverTabFeed extends ConsumerStatefulWidget {
   final List<String> genres;
   final List<String> tags;
   final String? source;
+  final ValueChanged<String>? onGenreSelect;
+  final ValueChanged<String>? onSourceSelect;
 
   const _DiscoverTabFeed({
     required this.type,
@@ -401,6 +458,8 @@ class _DiscoverTabFeed extends ConsumerStatefulWidget {
     required this.genres,
     required this.tags,
     this.source,
+    this.onGenreSelect,
+    this.onSourceSelect,
   });
 
   @override
@@ -474,9 +533,15 @@ class _DiscoverTabFeedState extends ConsumerState<_DiscoverTabFeed> {
         discoveryPrefsProvider.select((p) => p.mode),
       );
       if (discoveryMode == MetadataMode.source) {
-        return _DynamicSourceFeed(type: widget.type);
+        return _DynamicSourceFeed(
+          type: widget.type,
+          onSourceSelect: widget.onSourceSelect,
+        );
       }
-      return _DynamicGenreFeed(type: widget.type);
+      return _DynamicGenreFeed(
+        type: widget.type,
+        onGenreSelect: widget.onGenreSelect,
+      );
     }
 
     final state = ref.watch(searchProvider(_args));
@@ -594,7 +659,9 @@ class _PaginatedMediaGrid extends ConsumerWidget {
 
           final position = scrollController.position;
 
-          if (position.maxScrollExtent == 0 && result.hasNextPage) {
+          if (position.maxScrollExtent == 0 &&
+              result.hasNextPage &&
+              !isLoadingMore) {
             onAutoLoad();
           }
         });
@@ -646,8 +713,9 @@ class _PaginatedMediaGrid extends ConsumerWidget {
 
 class _DynamicGenreFeed extends ConsumerWidget {
   final MediaType type;
+  final ValueChanged<String>? onGenreSelect;
 
-  const _DynamicGenreFeed({required this.type});
+  const _DynamicGenreFeed({required this.type, this.onGenreSelect});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -665,7 +733,11 @@ class _DynamicGenreFeed extends ConsumerWidget {
           itemBuilder: (context, index) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 5),
-              child: _GenreFeedRow(type: type, genre: genres[index]),
+              child: _GenreFeedRow(
+                type: type,
+                genre: genres[index],
+                onGenreSelect: onGenreSelect,
+              ),
             );
           },
         );
@@ -679,8 +751,13 @@ class _DynamicGenreFeed extends ConsumerWidget {
 class _GenreFeedRow extends ConsumerWidget {
   final MediaType type;
   final String genre;
+  final ValueChanged<String>? onGenreSelect;
 
-  const _GenreFeedRow({required this.type, required this.genre});
+  const _GenreFeedRow({
+    required this.type,
+    required this.genre,
+    this.onGenreSelect,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -695,8 +772,13 @@ class _GenreFeedRow extends ConsumerWidget {
         return HorizontalSection(
           title: genre,
           height: style.layout.height,
-          onMoreTap: () =>
-              context.push('/discover?genres=$genre&type=${type.id}'),
+          onMoreTap: () {
+            if (onGenreSelect != null) {
+              onGenreSelect!(genre);
+            } else {
+              context.push('/discover?genres=$genre&type=${type.id}');
+            }
+          },
           data: AsyncValue.data(items),
           itemBuilder: (context, item) {
             return MediaCard(
@@ -756,7 +838,8 @@ final _sourceDiscoverFeedProvider = FutureProvider.autoDispose
 
 class _DynamicSourceFeed extends ConsumerWidget {
   final MediaType type;
-  const _DynamicSourceFeed({required this.type});
+  final ValueChanged<String>? onSourceSelect;
+  const _DynamicSourceFeed({required this.type, this.onSourceSelect});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -808,7 +891,11 @@ class _DynamicSourceFeed extends ConsumerWidget {
           itemBuilder: (context, index) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _SourceFeedRow(type: type, info: active[index]),
+              child: _SourceFeedRow(
+                type: type,
+                info: active[index],
+                onSourceSelect: onSourceSelect,
+              ),
             );
           },
         );
@@ -822,7 +909,12 @@ class _DynamicSourceFeed extends ConsumerWidget {
 class _SourceFeedRow extends ConsumerWidget {
   final MediaType type;
   final SourceInfo info;
-  const _SourceFeedRow({required this.type, required this.info});
+  final ValueChanged<String>? onSourceSelect;
+  const _SourceFeedRow({
+    required this.type,
+    required this.info,
+    this.onSourceSelect,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -837,8 +929,13 @@ class _SourceFeedRow extends ConsumerWidget {
         return HorizontalSection(
           title: info.name,
           height: style.layout.height,
-          onMoreTap: () =>
-              context.push('/discover?source=${info.id}&type=${type.id}'),
+          onMoreTap: () {
+            if (onSourceSelect != null) {
+              onSourceSelect!(info.id);
+            } else {
+              context.push('/discover?source=${info.id}&type=${type.id}');
+            }
+          },
           data: AsyncValue.data(items),
           itemBuilder: (context, item) {
             return MediaCard(

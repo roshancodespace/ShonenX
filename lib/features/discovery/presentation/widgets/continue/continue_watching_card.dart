@@ -125,10 +125,13 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
     final epTitle = widget.entry.episodeTitle;
     final subtitleText = 'EP $cleanNum${epTitle != null ? ' • $epTitle' : ''}';
 
-    return ContinueCardLayout(
+    final baseLayout = style.baseLayout;
+    final layout = style.layout;
+
+    final card = ContinueCardLayout(
       isWideBanner: style == ContinueWatchingStyle.wideBanner,
-      width: style.layout.width,
-      height: style.layout.height,
+      width: baseLayout.width,
+      height: baseLayout.height,
       isActive: isActive,
       isLoading: isLoading,
       title: widget.entry.animeTitle,
@@ -142,6 +145,28 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
           _buildThumbnail(widget.entry.thumbnailUrl, cs),
       fallbackIcon: Icons.play_circle_outline_rounded,
       badgeType: 'WATCHING',
+    );
+
+    final currentTextScale = MediaQuery.of(context).textScaler.scale(1.0);
+    final scaleFactor = layout.width / baseLayout.width;
+    final normalizedCard = MediaQuery(
+      data: MediaQuery.of(context).copyWith(
+        textScaler: TextScaler.linear(currentTextScale / scaleFactor),
+      ),
+      child: card,
+    );
+
+    return SizedBox(
+      width: layout.width,
+      height: layout.height,
+      child: FittedBox(
+        fit: BoxFit.fill,
+        child: SizedBox(
+          width: baseLayout.width,
+          height: baseLayout.height,
+          child: normalizedCard,
+        ),
+      ),
     );
   }
 

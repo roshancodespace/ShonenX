@@ -24,6 +24,8 @@ enum MediaCardStyle {
   final ComponentLayout _baseLayout;
   const MediaCardStyle(this._baseLayout);
 
+  ComponentLayout get baseLayout => _baseLayout;
+
   ComponentLayout get layout {
     return ComponentLayout(
       width: _baseLayout.width * GlobalUI.uiScaleFactor,
@@ -33,8 +35,8 @@ enum MediaCardStyle {
 
   ComponentLayout getScaledLayout(double scale) {
     return ComponentLayout(
-      width: layout.width * scale,
-      height: layout.height * scale,
+      width: _baseLayout.width * scale,
+      height: _baseLayout.height * scale,
     );
   }
 
@@ -63,6 +65,8 @@ enum ContinueWatchingStyle {
   final ComponentLayout _baseLayout;
   const ContinueWatchingStyle(this._baseLayout);
 
+  ComponentLayout get baseLayout => _baseLayout;
+
   ComponentLayout get layout {
     return ComponentLayout(
       width: _baseLayout.width * GlobalUI.uiScaleFactor,
@@ -72,8 +76,8 @@ enum ContinueWatchingStyle {
 
   ComponentLayout getScaledLayout(double scale) {
     return ComponentLayout(
-      width: layout.width * scale,
-      height: layout.height * scale,
+      width: _baseLayout.width * scale,
+      height: _baseLayout.height * scale,
     );
   }
 
@@ -94,6 +98,8 @@ enum ContinueReadingStyle {
   final ComponentLayout _baseLayout;
   const ContinueReadingStyle(this._baseLayout);
 
+  ComponentLayout get baseLayout => _baseLayout;
+
   ComponentLayout get layout {
     return ComponentLayout(
       width: _baseLayout.width * GlobalUI.uiScaleFactor,
@@ -103,8 +109,8 @@ enum ContinueReadingStyle {
 
   ComponentLayout getScaledLayout(double scale) {
     return ComponentLayout(
-      width: layout.width * scale,
-      height: layout.height * scale,
+      width: _baseLayout.width * scale,
+      height: _baseLayout.height * scale,
     );
   }
 

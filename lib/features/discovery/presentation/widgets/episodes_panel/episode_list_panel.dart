@@ -12,7 +12,7 @@ import 'package:shonenx/features/reader/providers/preferred_scanlator_provider.d
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/batch_download_sheet.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 
-export 'episode_tiles.dart' show EpisodeViewMode, EpisodeImageFadeDirection;
+export 'episode_tiles.dart';
 
 class _Chunk {
   final String label;
@@ -353,6 +353,10 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
             switch (viewMode) {
               case EpisodeViewMode.classic:
                 offset = currentIndex * 72.0;
+              case EpisodeViewMode.compact:
+                offset = currentIndex * 52.0;
+              case EpisodeViewMode.cover:
+                offset = currentIndex * 140.0;
               case EpisodeViewMode.grid:
                 final cols = panelTier.pick(
                   compact: 2,
@@ -424,6 +428,87 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                   imageFadeStops: widget.imageFadeStops,
                   imageOpacity: widget.imageOpacity,
                   imageBlurSigma: widget.imageBlurSigma,
+                  isFiller: ep.isFiller,
+                  actions:
+                      widget.episodeActionsBuilder?.call(
+                        context,
+                        ep,
+                        isCurrent,
+                        isWatched,
+                      ) ??
+                      const [],
+                  onTap: () => widget.onEpisodeTap(ep, source),
+                );
+              },
+            );
+
+          case EpisodeViewMode.compact:
+            return ListView.builder(
+              controller: widget.useScrollController ? _scrollController : null,
+              itemCount: episodes.length,
+              itemBuilder: (context, i) {
+                final ep = episodes[i];
+                final isCurrent = widget.currentEpisodeNumber == ep.number;
+                final isWatched = widget.watchedProgress >= ep.number;
+
+                return EpisodeCompactTile(
+                  episode: ep,
+                  mediaType: widget.media.type,
+                  isCurrent: isCurrent,
+                  isWatched: isWatched,
+                  isFiller: ep.isFiller,
+                  actions:
+                      widget.episodeActionsBuilder?.call(
+                        context,
+                        ep,
+                        isCurrent,
+                        isWatched,
+                      ) ??
+                      const [],
+                  onTap: () => widget.onEpisodeTap(ep, source),
+                );
+              },
+            );
+
+          case EpisodeViewMode.cover:
+            final coverColumns = panelTier.pick(
+              compact: 1,
+              medium: 2,
+              expanded: 2,
+              large: 3,
+              ultraLarge: 4,
+            );
+            final coverPad = panelTier.pickOrFold(
+              compact: 10.0,
+              medium: 14.0,
+              large: 18.0,
+            );
+            final coverSpacing = panelTier.pickOrFold(
+              compact: 10.0,
+              medium: 12.0,
+              large: 16.0,
+            );
+
+            return GridView.builder(
+              controller: widget.useScrollController ? _scrollController : null,
+              padding: EdgeInsets.all(coverPad),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: coverColumns,
+                crossAxisSpacing: coverSpacing,
+                mainAxisSpacing: coverSpacing,
+                childAspectRatio: 16 / 9,
+              ),
+              itemCount: episodes.length,
+              itemBuilder: (context, i) {
+                final ep = episodes[i];
+                final isCurrent = widget.currentEpisodeNumber == ep.number;
+                final isWatched = widget.watchedProgress >= ep.number;
+
+                return EpisodeCoverTile(
+                  episode: ep,
+                  mediaType: widget.media.type,
+                  isCurrent: isCurrent,
+                  isWatched: isWatched,
                   isFiller: ep.isFiller,
                   actions:
                       widget.episodeActionsBuilder?.call(
@@ -543,68 +628,79 @@ class _ViewModeToggle extends StatelessWidget {
 
   const _ViewModeToggle({required this.current, required this.onChanged});
 
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _ToggleBtn(
-          icon: Icons.view_agenda_outlined,
-          activeIcon: Icons.view_agenda,
-          tooltip: 'Classic',
-          active: current == EpisodeViewMode.classic,
-          onTap: () => onChanged(EpisodeViewMode.classic),
-        ),
-        _ToggleBtn(
-          icon: Icons.grid_view_outlined,
-          activeIcon: Icons.grid_view,
-          tooltip: 'Grid',
-          active: current == EpisodeViewMode.grid,
-          onTap: () => onChanged(EpisodeViewMode.grid),
-        ),
-        _ToggleBtn(
-          icon: Icons.tag_outlined,
-          activeIcon: Icons.tag,
-          tooltip: 'Box',
-          active: current == EpisodeViewMode.box,
-          onTap: () => onChanged(EpisodeViewMode.box),
-        ),
-      ],
-    );
-  }
-}
-
-class _ToggleBtn extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
-  final String tooltip;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _ToggleBtn({
-    required this.icon,
-    required this.activeIcon,
-    required this.tooltip,
-    required this.active,
-    required this.onTap,
-  });
+  static IconData _iconForMode(EpisodeViewMode mode) => switch (mode) {
+        EpisodeViewMode.classic => Icons.view_agenda_outlined,
+        EpisodeViewMode.grid => Icons.grid_view_outlined,
+        EpisodeViewMode.box => Icons.tag_outlined,
+        EpisodeViewMode.compact => Icons.format_list_bulleted_rounded,
+        EpisodeViewMode.cover => Icons.movie_creation_outlined,
+      };
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Tooltip(
-      message: tooltip,
-      child: IconButton(
-        onPressed: onTap,
-        icon: Icon(active ? activeIcon : icon),
-        iconSize: 18,
-        color: active ? cs.primary : cs.onSurfaceVariant,
-        style: active
-            ? IconButton.styleFrom(
-                backgroundColor: cs.primary.withValues(alpha: 0.1),
-              )
-            : null,
+    return PopupMenuButton<EpisodeViewMode>(
+      initialValue: current,
+      onSelected: onChanged,
+      tooltip: 'Episode View Mode',
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      color: cs.surfaceContainerHigh,
+      elevation: 4,
+      position: PopupMenuPosition.under,
+      itemBuilder: (context) {
+        return EpisodeViewMode.values.map((mode) {
+          final isSelected = mode == current;
+          return PopupMenuItem<EpisodeViewMode>(
+            value: mode,
+            child: Row(
+              children: [
+                Icon(
+                  _iconForMode(mode),
+                  size: 20,
+                  color: isSelected ? cs.primary : cs.onSurfaceVariant,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  mode.displayName,
+                  style: TextStyle(
+                    color: isSelected ? cs.primary : cs.onSurface,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+                if (isSelected) ...[
+                  const Spacer(),
+                  Icon(Icons.check_rounded, size: 18, color: cs.primary),
+                ],
+              ],
+            ),
+          );
+        }).toList();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(_iconForMode(current), size: 16, color: cs.primary),
+            const SizedBox(width: 6),
+            Text(
+              current.displayName,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.expand_more_rounded, size: 16, color: cs.onSurfaceVariant),
+          ],
+        ),
       ),
     );
   }

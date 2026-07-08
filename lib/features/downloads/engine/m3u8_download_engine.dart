@@ -57,6 +57,7 @@ class M3U8DownloadEngine implements DownloadEngine {
       _isolate = await Isolate.spawn(_m3u8Worker, config);
 
       _receivePort.listen((msg) async {
+        if (_cancelled || _paused) return;
         if (msg is SendPort) {
           _commandPort = msg;
         } else if (msg is Map<String, dynamic>) {

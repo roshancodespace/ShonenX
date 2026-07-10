@@ -310,7 +310,7 @@ class _TagChip extends StatelessWidget {
         ),
       ),
       onPressed: () {
-        context.push('/discover?tags=${Uri.encodeComponent(label)}');
+        context.go('/discover?tags=${Uri.encodeComponent(label)}');
       },
     );
   }

@@ -2,6 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 enum WidthTier { compact, medium, expanded, large, ultraLarge }
 
@@ -333,3 +334,55 @@ extension ResponsiveContext on BuildContext {
   ResponsiveData get responsive => ResponsiveHandler.of(this);
   ResponsiveData? get responsiveOrNull => ResponsiveHandler.maybeOf(this);
 }
+
+class SliverGridDelegateWithMinCrossAxisExtent extends SliverGridDelegate {
+  const SliverGridDelegateWithMinCrossAxisExtent({
+    required this.minCrossAxisExtent,
+    this.mainAxisSpacing = 0.0,
+    this.crossAxisSpacing = 0.0,
+    this.childAspectRatio = 1.0,
+    this.mainAxisExtent,
+  }) : assert(minCrossAxisExtent > 0),
+       assert(mainAxisSpacing >= 0),
+       assert(crossAxisSpacing >= 0),
+       assert(childAspectRatio > 0);
+
+  final double minCrossAxisExtent;
+  final double mainAxisSpacing;
+  final double crossAxisSpacing;
+  final double childAspectRatio;
+  final double? mainAxisExtent;
+
+  @override
+  SliverGridLayout getLayout(SliverConstraints constraints) {
+    int crossAxisCount = ((constraints.crossAxisExtent + crossAxisSpacing) /
+            (minCrossAxisExtent + crossAxisSpacing))
+        .floor();
+    if (crossAxisCount < 1) {
+      crossAxisCount = 1;
+    }
+    final double usableCrossAxisExtent =
+        constraints.crossAxisExtent - crossAxisSpacing * (crossAxisCount - 1);
+    final double childCrossAxisExtent = usableCrossAxisExtent / crossAxisCount;
+    final double childMainAxisExtent =
+        mainAxisExtent ?? childCrossAxisExtent / childAspectRatio;
+    return SliverGridRegularTileLayout(
+      crossAxisCount: crossAxisCount,
+      mainAxisStride: childMainAxisExtent + mainAxisSpacing,
+      crossAxisStride: childCrossAxisExtent + crossAxisSpacing,
+      childMainAxisExtent: childMainAxisExtent,
+      childCrossAxisExtent: childCrossAxisExtent,
+      reverseCrossAxis: axisDirectionIsReversed(constraints.crossAxisDirection),
+    );
+  }
+
+  @override
+  bool shouldRelayout(SliverGridDelegateWithMinCrossAxisExtent oldDelegate) {
+    return oldDelegate.minCrossAxisExtent != minCrossAxisExtent ||
+        oldDelegate.mainAxisSpacing != mainAxisSpacing ||
+        oldDelegate.crossAxisSpacing != crossAxisSpacing ||
+        oldDelegate.childAspectRatio != childAspectRatio ||
+        oldDelegate.mainAxisExtent != mainAxisExtent;
+  }
+}
+

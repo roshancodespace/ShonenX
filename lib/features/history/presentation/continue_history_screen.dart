@@ -9,6 +9,7 @@ import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/core/utils/responsive.dart';
 
 class ContinueHistoryScreen extends ConsumerStatefulWidget {
   final MediaType type;
@@ -284,9 +285,8 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                     ? const Center(child: Text('No matching history items.'))
                     : GridView.builder(
                         padding: const EdgeInsets.all(10),
-                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: style.layout.width + 10,
-                          mainAxisExtent: style.layout.height,
+                        gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
+                          minCrossAxisExtent: style.layout.width,
                           childAspectRatio: style.layout.aspectRatio,
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
@@ -427,9 +427,8 @@ class ContinueHistoryItemsScreen extends ConsumerWidget {
           return GridView.builder(
             padding: const EdgeInsets.all(10),
             itemCount: entries.length,
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: layout.width + 10,
-              mainAxisExtent: layout.height,
+            gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
+              minCrossAxisExtent: layout.width,
               childAspectRatio: layout.aspectRatio,
               mainAxisSpacing: 10,
               crossAxisSpacing: 10,

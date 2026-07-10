@@ -18,6 +18,7 @@ import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/features/discovery/providers/discovery_feed_provider.dart';
 import 'package:shonenx/features/discovery/providers/metadata_tags_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/advanced_search_sheet.dart';
+import 'package:shonenx/core/utils/responsive.dart';
 
 class DiscoverScreen extends StatelessWidget {
   final String? query;
@@ -671,9 +672,8 @@ class _PaginatedMediaGrid extends ConsumerWidget {
             GridView.builder(
               controller: scrollController,
               padding: const EdgeInsets.only(bottom: 200, top: 10),
-              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: style.layout.width + 10,
-                mainAxisExtent: style.layout.height,
+              gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
+                minCrossAxisExtent: style.layout.width,
                 childAspectRatio: style.layout.aspectRatio,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,

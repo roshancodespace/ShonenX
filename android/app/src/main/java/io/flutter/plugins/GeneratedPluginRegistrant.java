@@ -43,7 +43,7 @@ public final class GeneratedPluginRegistrant {
     try {
       flutterEngine.getPlugins().add(new io.material.plugins.dynamic_color.DynamicColorPlugin());
     } catch (Exception e) {
-      Log.e(TAG, "Error registering plugin dynamic_system_colors, io.material.plugins.dynamic_color.DynamicColorPlugin", e);
+      Log.e(TAG, "Error registering plugin dynamic_color, io.material.plugins.dynamic_color.DynamicColorPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new com.mr.flutter.plugin.filepicker.FilePickerPlugin());

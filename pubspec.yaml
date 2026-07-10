@@ -61,7 +61,7 @@ dependencies:
   url_launcher: ^6.3.0
   html: ^0.15.6
   flutter_svg: ^2.2.4
-  dynamic_system_colors: ^1.9.0
+  dynamic_color: ^1.7.0
   permission_handler: ^11.3.1
   file_picker: ^8.1.4
   encrypt: ^5.0.3

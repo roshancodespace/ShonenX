@@ -5,7 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   anymex_extension_runtime_bridge
   app_links
-  dynamic_system_colors
+  dynamic_color
   flutter_inappwebview_windows
   flutter_qjs
   flutter_secure_storage_windows

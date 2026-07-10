@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -12,11 +13,13 @@ import 'package:shonenx/source_engine/source_engine_provider.dart';
 class ManualMatchSheet extends ConsumerStatefulWidget {
   final String mediaTitle;
   final MediaType type;
+  final MatchArgs? matchArgs;
 
   const ManualMatchSheet({
     super.key,
     required this.mediaTitle,
     required this.type,
+    this.matchArgs,
   });
 
   @override
@@ -29,6 +32,10 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
 
   List<UnifiedMedia>? _results;
   bool _isLoading = false;
+
+  MatchArgs get _effectiveArgs =>
+      widget.matchArgs ??
+      MatchArgs(mediaTitle: widget.mediaTitle, type: widget.type);
 
   @override
   void initState() {
@@ -62,9 +69,7 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
 
     try {
       final pref = await ref.read(
-        mediaPreferenceProvider(
-          MatchArgs(mediaTitle: widget.mediaTitle, type: widget.type),
-        ).future,
+        mediaPreferenceProvider(_effectiveArgs).future,
       );
       final source = widget.type == MediaType.ANIME
           ? ref.read(animeSourceProvider(pref.sourceInfo))
@@ -79,13 +84,14 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
   }
 
   void _onSelect(UnifiedMedia result) {
+    final args = _effectiveArgs;
+
     ref
-        .read(
-          mediaPreferenceProvider(
-            MatchArgs(mediaTitle: widget.mediaTitle, type: widget.type),
-          ).notifier,
-        )
+        .read(mediaPreferenceProvider(args).notifier)
         .setManualOverrides(result.id, result.title.availableTitle);
+
+    ref.invalidate(matchedMediaProvider(args));
+    ref.invalidate(episodesListProvider(args));
 
     context.pop(true);
   }

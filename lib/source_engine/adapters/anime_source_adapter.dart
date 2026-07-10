@@ -38,6 +38,7 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
               title: e.name,
               number: double.tryParse(e.episodeNumber) ?? 0.0,
               scanlator: e.scanlator,
+              uploadDate: e.dateUpload,
             ),
           )
           .toList();

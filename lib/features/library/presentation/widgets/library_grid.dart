@@ -88,9 +88,9 @@ class LibraryGridWidget extends ConsumerWidget {
               child: GridView.builder(
                 padding: const EdgeInsets.only(bottom: 200),
                 gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: cardStyle.layout.width + 10,
-                  mainAxisExtent: cardStyle.layout.height,
-                  childAspectRatio: cardStyle.layout.aspectRatio,
+                  maxCrossAxisExtent: cardStyle.baseLayout.width + 10,
+                  mainAxisExtent: cardStyle.baseLayout.height,
+                  childAspectRatio: cardStyle.baseLayout.aspectRatio,
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
                 ),

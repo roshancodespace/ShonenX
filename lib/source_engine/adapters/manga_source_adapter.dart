@@ -34,6 +34,7 @@ class MangaSourceAdapter extends BaseSourceAdapter implements MangaSource {
               title: e.name,
               number: double.tryParse(e.episodeNumber) ?? 0.0,
               scanlator: e.scanlator,
+              uploadDate: e.dateUpload,
             ),
           )
           .toList();

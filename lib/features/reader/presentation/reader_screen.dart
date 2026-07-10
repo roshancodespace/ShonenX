@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
@@ -16,6 +15,7 @@ import 'package:shonenx/features/reader/providers/reader_prefs_provider.dart';
 import 'package:shonenx/features/reader/providers/reader_provider.dart';
 import 'package:shonenx/features/tracking/engine/sync_engine.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 
@@ -257,22 +257,22 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   ReaderThemeInfo _getThemeInfo(ReaderBackgroundColor bgColorPref) {
     switch (bgColorPref) {
       case ReaderBackgroundColor.white:
-        return ReaderThemeInfo(
+        return const ReaderThemeInfo(
           bgColor: Colors.white,
-          appBarBg: Colors.white.withValues(alpha: 0.9),
-          textColor: Colors.black,
+          appBarBg: Color(0xFFF4F4F5),
+          textColor: Color(0xFF18181B),
         );
       case ReaderBackgroundColor.darkGrey:
-        return ReaderThemeInfo(
-          bgColor: Colors.grey[900]!,
-          appBarBg: Colors.grey[900]!.withValues(alpha: 0.9),
-          textColor: Colors.white,
+        return const ReaderThemeInfo(
+          bgColor: Color(0xFF18181B),
+          appBarBg: Color(0xFF27272A),
+          textColor: Color(0xFFFAFAFA),
         );
       case ReaderBackgroundColor.black:
-        return ReaderThemeInfo(
+        return const ReaderThemeInfo(
           bgColor: Colors.black,
-          appBarBg: Colors.black.withValues(alpha: 0.8),
-          textColor: Colors.white,
+          appBarBg: Color(0xFF141414),
+          textColor: Color(0xFFF4F4F5),
         );
     }
   }
@@ -281,9 +281,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   Widget build(BuildContext context) {
     final readerStateAsync = ref.watch(readerProvider(widget.mode));
     final readerPrefs = ref.watch(readerPrefsProvider);
-    final uiRoundness = ref.watch(
-      themePrefsProvider.select((s) => s.uiRoundness),
-    );
     final episodesState = ref.watch(episodesListProvider(_matchArgs)).value;
 
     final themeInfo = _getThemeInfo(readerPrefs.backgroundColor);
@@ -343,6 +340,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   mediaTitle: widget.mode.media.title.availableTitle,
                   episodeNumber: widget.mode.episode.number,
                   themeInfo: themeInfo,
+                  uiRoundness: GlobalUI.uiRoundness,
                 ),
               ),
             ),
@@ -364,10 +362,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                     totalPages: _totalPages,
                     hasPrevChapter: _hasChapter(episodesState, next: false),
                     hasNextChapter: _hasChapter(episodesState, next: true),
+                    totalChaptersCount: episodesState != null
+                        ? episodesState.episodes
+                              .map((e) => e.number)
+                              .toSet()
+                              .length
+                        : 0,
                     currentEpisode: widget.mode.episode,
                     appBarBg: themeInfo.appBarBg,
                     textColor: themeInfo.textColor,
-                    uiRoundness: uiRoundness,
+                    uiRoundness: GlobalUI.uiRoundness,
                     onPrevChapter: () =>
                         _skipToChapter(episodesState, next: false),
                     onNextChapter: () =>

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/core/commentum/commentum_auth_service.dart';
+import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/auth/providers/auth_provider.dart';
 import 'package:shonenx/features/comments/presentation/providers/comments_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
@@ -577,7 +578,7 @@ class _CommentsTabWidgetState extends ConsumerState<CommentsTabWidget> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Episode ${_selectedEpisodeNumber ?? widget.initialEpisodeNumber} Discussion',
+                    'Episode ${formatEpisodeNumber(_selectedEpisodeNumber ?? widget.initialEpisodeNumber)} Discussion',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,

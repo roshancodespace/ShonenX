@@ -4,7 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   anymex_extension_runtime_bridge
-  dynamic_system_colors
+  dynamic_color
   flutter_qjs
   flutter_secure_storage_linux
   flutter_timezone

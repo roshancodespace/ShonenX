@@ -43,7 +43,7 @@ class AppTheme {
         ? FlexThemeData.dark(
             scheme: exclusive == null ? prefs.flexScheme : null,
             colors: exclusive?.dark,
-            colorScheme: exclusive == null ? colorScheme : null,
+            colorScheme: colorScheme,
             surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
             blendLevel: prefs.blendLevel,
             appBarStyle: FlexAppBarStyle.surface,
@@ -60,7 +60,7 @@ class AppTheme {
         : FlexThemeData.light(
             scheme: exclusive == null ? prefs.flexScheme : null,
             colors: exclusive?.light,
-            colorScheme: exclusive == null ? colorScheme : null,
+            colorScheme: colorScheme,
             surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
             blendLevel: prefs.blendLevel,
             appBarStyle: FlexAppBarStyle.surface,

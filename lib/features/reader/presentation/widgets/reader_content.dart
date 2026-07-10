@@ -17,6 +17,7 @@ class ReaderContent extends ConsumerWidget {
   final Color textColor;
   final int initialPage;
   final ItemScrollController itemScrollController;
+  final ScrollOffsetController? scrollOffsetController;
   final ItemPositionsListener itemPositionsListener;
   final PageController pageController;
   final void Function(int) onTotalPagesUpdated;
@@ -30,6 +31,7 @@ class ReaderContent extends ConsumerWidget {
     required this.textColor,
     required this.initialPage,
     required this.itemScrollController,
+    this.scrollOffsetController,
     required this.itemPositionsListener,
     required this.pageController,
     required this.onTotalPagesUpdated,
@@ -94,12 +96,14 @@ class ReaderContent extends ConsumerWidget {
         ResponsiveData.from(context).isTablet;
 
     return ScrollablePositionedList.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: pages.length,
       initialScrollIndex: initialPage.clamp(
         0,
         pages.isEmpty ? 0 : pages.length - 1,
       ),
       itemScrollController: itemScrollController,
+      scrollOffsetController: scrollOffsetController,
       itemPositionsListener: itemPositionsListener,
       itemBuilder: (context, index) {
         final page = pages[index];
@@ -127,6 +131,7 @@ class ReaderContent extends ConsumerWidget {
 
   Widget _buildPageView(List<ChapterPage> pages) {
     return PageView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       controller: pageController,
       reverse: prefs.direction == ReaderDirection.rtl,
       itemCount: pages.length,

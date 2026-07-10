@@ -74,12 +74,20 @@ class ReaderPrefState {
   final ReaderBackgroundColor backgroundColor;
   final ReaderScaleType scaleType;
   final ReaderTransition transition;
+  final bool showMiniStatus;
+  final bool keepScreenOn;
+  final bool tapToTurnPage;
+  final double autoScrollSpeed;
 
   const ReaderPrefState({
     this.direction = ReaderDirection.webtoon,
     this.backgroundColor = ReaderBackgroundColor.black,
     this.scaleType = ReaderScaleType.fitWidth,
     this.transition = ReaderTransition.slide,
+    this.showMiniStatus = true,
+    this.keepScreenOn = true,
+    this.tapToTurnPage = true,
+    this.autoScrollSpeed = 1.0,
   });
 
   ReaderPrefState copyWith({
@@ -87,12 +95,20 @@ class ReaderPrefState {
     ReaderBackgroundColor? backgroundColor,
     ReaderScaleType? scaleType,
     ReaderTransition? transition,
+    bool? showMiniStatus,
+    bool? keepScreenOn,
+    bool? tapToTurnPage,
+    double? autoScrollSpeed,
   }) {
     return ReaderPrefState(
       direction: direction ?? this.direction,
       backgroundColor: backgroundColor ?? this.backgroundColor,
       scaleType: scaleType ?? this.scaleType,
       transition: transition ?? this.transition,
+      showMiniStatus: showMiniStatus ?? this.showMiniStatus,
+      keepScreenOn: keepScreenOn ?? this.keepScreenOn,
+      tapToTurnPage: tapToTurnPage ?? this.tapToTurnPage,
+      autoScrollSpeed: autoScrollSpeed ?? this.autoScrollSpeed,
     );
   }
 
@@ -101,6 +117,10 @@ class ReaderPrefState {
     'backgroundColor': backgroundColor.name,
     'scaleType': scaleType.name,
     'transition': transition.name,
+    'showMiniStatus': showMiniStatus,
+    'keepScreenOn': keepScreenOn,
+    'tapToTurnPage': tapToTurnPage,
+    'autoScrollSpeed': autoScrollSpeed,
   };
 
   factory ReaderPrefState.fromJson(Map<String, dynamic> json) {
@@ -121,6 +141,10 @@ class ReaderPrefState {
         (e) => e.name == json['transition'],
         orElse: () => ReaderTransition.slide,
       ),
+      showMiniStatus: json['showMiniStatus'] as bool? ?? true,
+      keepScreenOn: json['keepScreenOn'] as bool? ?? true,
+      tapToTurnPage: json['tapToTurnPage'] as bool? ?? true,
+      autoScrollSpeed: (json['autoScrollSpeed'] as num?)?.toDouble() ?? 1.0,
     );
   }
 }
@@ -162,6 +186,26 @@ class ReaderPrefsNotifier extends Notifier<ReaderPrefState> {
     _saveDb();
   }
 
+  void updateShowMiniStatus(bool show) {
+    state = state.copyWith(showMiniStatus: show);
+    _saveDb();
+  }
+
+  void updateKeepScreenOn(bool keep) {
+    state = state.copyWith(keepScreenOn: keep);
+    _saveDb();
+  }
+
+  void updateTapToTurnPage(bool tap) {
+    state = state.copyWith(tapToTurnPage: tap);
+    _saveDb();
+  }
+
+  void updateAutoScrollSpeed(double speed) {
+    state = state.copyWith(autoScrollSpeed: speed);
+    _saveDb();
+  }
+
   void reset() {
     _storage.remove(_key);
     state = const ReaderPrefState();
@@ -178,6 +222,7 @@ class ReaderPrefsNotifier extends Notifier<ReaderPrefState> {
   }
 }
 
-final readerPrefsProvider = NotifierProvider<ReaderPrefsNotifier, ReaderPrefState>(
-  ReaderPrefsNotifier.new,
-);
+final readerPrefsProvider =
+    NotifierProvider<ReaderPrefsNotifier, ReaderPrefState>(
+      ReaderPrefsNotifier.new,
+    );

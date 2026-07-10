@@ -15,6 +15,10 @@ class ReaderBottomOverlay extends StatefulWidget {
   final void Function() onChaptersTap;
   final void Function(int) onPageChanged;
   final double uiRoundness;
+  final bool isAutoScrolling;
+  final double autoScrollSpeed;
+  final VoidCallback? onToggleAutoScroll;
+  final VoidCallback? onChangeAutoScrollSpeed;
 
   const ReaderBottomOverlay({
     super.key,
@@ -31,6 +35,10 @@ class ReaderBottomOverlay extends StatefulWidget {
     required this.onChaptersTap,
     required this.onPageChanged,
     required this.uiRoundness,
+    this.isAutoScrolling = false,
+    this.autoScrollSpeed = 1.0,
+    this.onToggleAutoScroll,
+    this.onChangeAutoScrollSpeed,
   });
 
   @override
@@ -139,6 +147,85 @@ class _ReaderBottomOverlayState extends State<ReaderBottomOverlay> {
                       ],
                     ),
                   ),
+                  if (widget.onToggleAutoScroll != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: widget.isAutoScrolling
+                            ? theme.colorScheme.primaryContainer
+                            : widget.appBarBg,
+                        borderRadius: BorderRadius.circular(widget.uiRoundness),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            style: IconButton.styleFrom(
+                              minimumSize: const Size(36, 36),
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  (widget.uiRoundness - 4).clamp(
+                                    0.0,
+                                    widget.uiRoundness,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            onPressed: widget.onToggleAutoScroll,
+                            icon: Icon(
+                              widget.isAutoScrolling
+                                  ? Icons.pause_circle_filled_rounded
+                                  : Icons.play_circle_outline_rounded,
+                              size: 20,
+                            ),
+                            color: widget.isAutoScrolling
+                                ? theme.colorScheme.onPrimaryContainer
+                                : widget.textColor,
+                            tooltip: widget.isAutoScrolling
+                                ? 'Pause Auto-Scroll'
+                                : 'Start Auto-Scroll',
+                          ),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(
+                              (widget.uiRoundness - 4).clamp(
+                                0.0,
+                                widget.uiRoundness,
+                              ),
+                            ),
+                            onTap: widget.onChangeAutoScrollSpeed,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 6,
+                              ),
+                              child: Text(
+                                '${widget.autoScrollSpeed == widget.autoScrollSpeed.toInt().toDouble() ? widget.autoScrollSpeed.toInt() : widget.autoScrollSpeed}x',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: widget.isAutoScrolling
+                                      ? theme.colorScheme.onPrimaryContainer
+                                      : widget.textColor.withValues(
+                                          alpha: 0.85,
+                                        ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 4,

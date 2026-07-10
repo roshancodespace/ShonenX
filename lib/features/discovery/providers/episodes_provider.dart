@@ -5,8 +5,6 @@ import 'package:shonenx/features/discovery/providers/media_preference_provider.d
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
-import 'package:shonenx/source_engine/providers/anime_source.dart';
-import 'package:shonenx/source_engine/providers/manga_source.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
@@ -32,54 +30,21 @@ final episodesListProvider =
         final sourcePrefs = await ref.watch(
           mediaPreferenceProvider(args).future,
         );
-
-        if (args.sourceId != null &&
-            args.providerId != null &&
-            sourcePrefs.sourceInfo.id == args.sourceId) {
-          return ref.watch(
-            sourceEpisodesProvider((
-              providerId: args.providerId!,
-              sourceId: args.sourceId!,
-              type: args.type,
-            )).future,
-          );
-        }
-
         final matchState = await ref.watch(matchedMediaProvider(args).future);
-
-        final sourceImpl = args.type == MediaType.ANIME
-            ? ref.watch(animeSourceProvider(sourcePrefs.sourceInfo))
-            : ref.watch(mangaSourceProvider(sourcePrefs.sourceInfo));
-
-        log.i('Fetching episodes for "$title"');
 
         if (matchState.matchedMedia == null) {
           return EpisodesListState(
-            source: sourceImpl.sourceInfo,
+            source: sourcePrefs.sourceInfo,
             episodes: const [],
           );
         }
 
-        List<UnifiedEpisode> episodes = [];
-
-        if (sourceImpl is AnimeSource) {
-          episodes = await sourceImpl.getEpisodes(matchState.matchedMedia!.id);
-        } else if (sourceImpl is MangaSource) {
-          final chapters = await sourceImpl.getChapters(
-            matchState.matchedMedia!.id,
-          );
-          episodes = chapters
-              .map((c) => UnifiedEpisode.fromChapter(c))
-              .toList();
-        }
-
-        episodes.sort((a, b) => a.number.compareTo(b.number));
-
-        log.s('Fetched ${episodes.length} episodes');
-
-        return EpisodesListState(
-          source: sourceImpl.sourceInfo,
-          episodes: episodes,
+        return await ref.watch(
+          sourceEpisodesProvider((
+            providerId: matchState.matchedMedia!.id,
+            sourceId: sourcePrefs.sourceInfo.id,
+            type: args.type,
+          )).future,
         );
       } catch (e, st) {
         log.e('Failed to fetch episodes for "$title"', [e, st]);

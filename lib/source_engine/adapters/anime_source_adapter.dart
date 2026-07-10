@@ -21,10 +21,12 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
     final methodLog = log.child('getEpisodes');
     try {
       final parts = animeId.split('|');
-      methodLog.i('url=${parts[0]} title=${parts.length > 1 ? parts[1] : ''}');
+      final url = parts[0];
+      final title = parts.length > 1 ? parts[1] : '';
+      methodLog.i('url=$url title=$title');
 
       final detail = await source.methods.getDetail(
-        bridge.DMedia(url: parts[0], title: parts[1]),
+        bridge.DMedia(url: url, title: title),
       );
 
       methodLog.d('episodes=${detail.episodes?.length ?? 0}');
@@ -34,7 +36,7 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
             (e) => UnifiedEpisode(
               id: '${e.url!}|${e.episodeNumber}',
               title: e.name,
-              number: double.parse(e.episodeNumber),
+              number: double.tryParse(e.episodeNumber) ?? 0.0,
               scanlator: e.scanlator,
             ),
           )
@@ -61,9 +63,11 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
     try {
       methodLog.i('episodeId=$episodeId server=${server.name}');
       final parts = episodeId.split('|');
+      final url = parts[0];
+      final epNum = parts.length > 1 ? parts[1] : '1';
 
       final videos = await source.methods.getVideoList(
-        bridge.DEpisode(url: parts[0], episodeNumber: parts[1]),
+        bridge.DEpisode(url: url, episodeNumber: epNum),
       );
 
       methodLog.d('streams=${videos.length}');

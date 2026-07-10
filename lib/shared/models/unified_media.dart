@@ -1,4 +1,5 @@
-// ignore: constant_identifier_names
+// ignore_for_file: constant_identifier_names
+
 enum MediaType {
   ANIME,
   MANGA;
@@ -89,11 +90,7 @@ class MediaTitle {
   final String? english;
   final String? native;
 
-  const MediaTitle({
-    this.romaji,
-    this.english,
-    this.native,
-  });
+  const MediaTitle({this.romaji, this.english, this.native});
 
   String get availableTitle {
     switch (preference) {

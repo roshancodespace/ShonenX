@@ -180,7 +180,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 Uri.parse('https://discord.gg/Fp6HRPCsqe'),
                 mode: LaunchMode.externalApplication,
               ),
-              icon: const Icon(Icons.forum_rounded),
+              icon: const SvgIcon(
+                '''<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                    <path d="M0 0h24v24H0z" fill="none" />
+                    <path fill="currentColor" d="M18.59 5.89c-1.23-.57-2.54-.99-3.92-1.23c-.17.3-.37.71-.5 1.04c-1.46-.22-2.91-.22-4.34 0c-.14-.33-.34-.74-.51-1.04c-1.38.24-2.69.66-3.92 1.23c-2.48 3.74-3.15 7.39-2.82 10.98c1.65 1.23 3.24 1.97 4.81 2.46c.39-.53.73-1.1 1.03-1.69c-.57-.21-1.11-.48-1.62-.79c.14-.1.27-.21.4-.31c3.13 1.46 6.52 1.46 9.61 0c.13.11.26.21.4.31c-.51.31-1.06.57-1.62.79c.3.59.64 1.16 1.03 1.69c1.57-.49 3.17-1.23 4.81-2.46c.39-4.17-.67-7.78-2.82-10.98Zm-9.75 8.78c-.94 0-1.71-.87-1.71-1.94s.75-1.94 1.71-1.94s1.72.87 1.71 1.94c0 1.06-.75 1.94-1.71 1.94m6.31 0c-.94 0-1.71-.87-1.71-1.94s.75-1.94 1.71-1.94s1.72.87 1.71 1.94c0 1.06-.75 1.94-1.71 1.94" />
+                  </svg>
+                ''',
+                size: 30,
+                color: Colors.white,
+              ),
               label: const Text('Discord'),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF5865F2),
@@ -193,7 +201,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 Uri.parse('https://github.com/roshancodespace/shonenx'),
                 mode: LaunchMode.externalApplication,
               ),
-              icon: const Icon(Icons.code_rounded),
+              icon: const SvgIcon(
+                '''<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">
+                    <path d="M0 0h16v16H0z" fill="none" />
+                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                      <path d="m5.75 14.25s-.5-2 .5-3c0 0-2 0-3.5-1.5s-1-4.5 0-5.5c-.5-1.5.5-2.5.5-2.5s1.5 0 2.5 1c1-.5 3.5-.5 4.5 0 1-1 2.5-1 2.5-1s1 1 .5 2.5c1 1 1.5 4 0 5.5s-3.5 1.5-3.5 1.5c1 1 .5 3 .5 3" />
+                      <path d="m5.25 13.75c-1.5.5-3-.5-3.5-1" />
+                    </g>
+                  </svg>
+                ''',
+                size: 24,
+                color: Colors.white,
+              ),
               label: const Text('GitHub'),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF24292E),
@@ -406,38 +425,41 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () => setState(() {
-                showRuntimeSetupSheet(
-                  context,
-                  ref,
-                  onComplete: () {
-                    if (mounted) setState(() {});
-                  },
-                );
-              }),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
+            SizedBox(
+              width: double.maxFinite,
+              child: OutlinedButton.icon(
+                onPressed: () => setState(() {
+                  showRuntimeSetupSheet(
+                    context,
+                    ref,
+                    onComplete: () {
+                      if (mounted) setState(() {});
+                    },
+                  );
+                }),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              icon: Icon(
-                isRuntimeReady
-                    ? Icons.check_circle_rounded
-                    : Icons.download_rounded,
-                color: isRuntimeReady ? Colors.green : cs.primary,
-              ),
-              label: Text(
-                isRuntimeReady
-                    ? 'Runtime Bridge Installed'
-                    : 'Setup Aniyomi & CloudStream',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
+                icon: Icon(
+                  isRuntimeReady
+                      ? Icons.check_circle_rounded
+                      : Icons.download_rounded,
                   color: isRuntimeReady ? Colors.green : cs.primary,
+                ),
+                label: Text(
+                  isRuntimeReady
+                      ? 'Runtime Bridge Installed'
+                      : 'Setup Aniyomi & CloudStream',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isRuntimeReady ? Colors.green : cs.primary,
+                  ),
                 ),
               ),
             ),

@@ -78,6 +78,76 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
     state = build();
   }
 
+  void setSections(List<HomeSection> sections) {
+    state = sections;
+    _saveDb();
+  }
+
+  void setupHomeLayoutForContentPreference({
+    required bool includeAnime,
+    required bool includeManga,
+  }) {
+    if (includeAnime && !includeManga) {
+      state = const [
+        HomeSection(
+          id: '1',
+          title: 'Trending Anime',
+          type: HomeSectionType.trending,
+          targetMediaType: MediaType.ANIME,
+        ),
+        HomeSection(
+          id: '3',
+          title: 'Continue Watching',
+          type: HomeSectionType.continueMedia,
+          targetMediaType: MediaType.ANIME,
+        ),
+      ];
+    } else if (!includeAnime && includeManga) {
+      state = const [
+        HomeSection(
+          id: '2',
+          title: 'Trending Manga',
+          type: HomeSectionType.trending,
+          targetMediaType: MediaType.MANGA,
+        ),
+        HomeSection(
+          id: '4',
+          title: 'Continue Reading',
+          type: HomeSectionType.continueMedia,
+          targetMediaType: MediaType.MANGA,
+        ),
+      ];
+    } else {
+      state = const [
+        HomeSection(
+          id: '1',
+          title: 'Trending Anime',
+          type: HomeSectionType.trending,
+          targetMediaType: MediaType.ANIME,
+        ),
+        HomeSection(
+          id: '2',
+          title: 'Trending Manga',
+          type: HomeSectionType.trending,
+          targetMediaType: MediaType.MANGA,
+        ),
+        HomeSection(
+          id: '3',
+          title: 'Continue Watching',
+          type: HomeSectionType.continueMedia,
+          targetMediaType: MediaType.ANIME,
+        ),
+        HomeSection(
+          id: '4',
+          title: 'Continue Reading',
+          type: HomeSectionType.continueMedia,
+          targetMediaType: MediaType.MANGA,
+        ),
+      ];
+    }
+    _saveDb();
+  }
+
   void _saveDb() {
     _storage.setStringList(_dataKey, state.map((e) => e.toJson()).toList());
   }

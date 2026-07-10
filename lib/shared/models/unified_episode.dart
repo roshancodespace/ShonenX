@@ -7,6 +7,7 @@ class UnifiedEpisode {
   final bool isFiller;
   final String? thumbnailUrl;
   final String? airDate;
+  final String? uploadDate;
 
   final String? scanlator;
 
@@ -18,6 +19,7 @@ class UnifiedEpisode {
     this.thumbnailUrl,
     this.scanlator,
     this.airDate,
+    this.uploadDate,
   });
 
   factory UnifiedEpisode.fromChapter(UnifiedChapter chapter) {
@@ -27,6 +29,7 @@ class UnifiedEpisode {
       title: chapter.title,
       scanlator: chapter.scanlator,
       airDate: chapter.airDate,
+      uploadDate: chapter.uploadDate,
     );
   }
 }

@@ -404,8 +404,11 @@ class _EpisodesHeader extends ConsumerWidget {
             onTap: () {
               showModalBottomSheet(
                 context: context,
-                builder: (_) =>
-                    ManualMatchSheet(mediaTitle: title, type: media.type),
+                builder: (_) => ManualMatchSheet(
+                  mediaTitle: title,
+                  type: media.type,
+                  matchArgs: matchArgs,
+                ),
               );
             },
           ),

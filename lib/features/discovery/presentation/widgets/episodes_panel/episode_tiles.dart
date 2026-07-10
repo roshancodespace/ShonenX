@@ -146,9 +146,7 @@ class EpisodeClassicTile extends BaseEpisodeTile {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final num = episode.number % 1 == 0
-        ? episode.number.toInt().toString()
-        : episode.number.toString();
+    final num = formatEpisodeNumber(episode.number);
 
     final dimColor = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
     final isEffectivelyWatched = isWatched && !isCurrent;
@@ -426,9 +424,7 @@ class EpisodeGridTile extends BaseEpisodeTile {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    final num = episode.number % 1 == 0
-        ? episode.number.toInt().toString()
-        : episode.number.toString();
+    final num = formatEpisodeNumber(episode.number);
 
     final isEffectivelyWatched = isWatched && !isCurrent;
     final dimColor = cs.onSurfaceVariant.withValues(alpha: 0.45);
@@ -496,7 +492,7 @@ class EpisodeGridTile extends BaseEpisodeTile {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              num,
+                              num ?? '',
                               style: TextStyle(
                                 color: isFiller
                                     ? Colors.amber.shade300
@@ -665,9 +661,7 @@ class EpisodeBoxTile extends BaseEpisodeTile {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    final num = episode.number % 1 == 0
-        ? episode.number.toInt().toString()
-        : episode.number.toString();
+    final num = formatEpisodeNumber(episode.number);
 
     final isEffectivelyWatched = isWatched && !isCurrent;
 
@@ -701,7 +695,7 @@ class EpisodeBoxTile extends BaseEpisodeTile {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      num,
+                      num ?? '',
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: fgColor,
                         fontWeight: isCurrent

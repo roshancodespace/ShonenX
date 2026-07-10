@@ -87,9 +87,31 @@ String _formatDateTime(DateTime date) {
   }
 
   const monthsList = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
-  final monthStr = (date.month >= 1 && date.month <= 12) ? monthsList[date.month - 1] : '';
+  final monthStr = (date.month >= 1 && date.month <= 12)
+      ? monthsList[date.month - 1]
+      : '';
   return '$monthStr ${date.day}, ${date.year}';
+}
+
+String? formatEpisodeNumber(num? value) {
+  if (value == null) return null;
+
+  if (value == value.truncateToDouble()) {
+    return value.toInt().toString();
+  }
+
+  return value.toStringAsFixed(1);
 }

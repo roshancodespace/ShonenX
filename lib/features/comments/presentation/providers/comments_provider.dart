@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'package:anymex_extension_runtime_bridge/Services/Mangayomi/Util/string_extensions.dart';
 import 'package:commentum_client/commentum_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/commentum/commentum_client.dart';
+import 'package:shonenx/core/utils/formatting.dart';
 
 class CommentsArgs {
   final String mediaId;
@@ -76,7 +78,7 @@ class CommentsNotifier extends AsyncNotifier<CommentsState> {
       final response = await _client.listComments(
         mediaId: arg.mediaId,
         limit: 20,
-        episodeNumber: arg.episodeNumber,
+        episodeNumber: formatEpisodeNumber(arg.episodeNumber)?.toInt(),
       );
       return CommentsState(
         comments: response.data,
@@ -103,7 +105,7 @@ class CommentsNotifier extends AsyncNotifier<CommentsState> {
         mediaId: arg.mediaId,
         limit: 20,
         cursor: current.nextCursor,
-        episodeNumber: arg.episodeNumber,
+        episodeNumber: formatEpisodeNumber(arg.episodeNumber)?.toInt(),
       );
 
       final updatedComments = [...current.comments, ...response.data];
@@ -129,7 +131,7 @@ class CommentsNotifier extends AsyncNotifier<CommentsState> {
       mediaId: arg.mediaId,
       mediaProvider: arg.mediaProvider,
       content: content,
-      episodeNumber: arg.episodeNumber,
+      episodeNumber: formatEpisodeNumber(arg.episodeNumber)?.toInt(),
     );
 
     final current = state.value;

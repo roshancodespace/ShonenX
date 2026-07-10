@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/player/engine/video_engine.dart';
 import 'package:shonenx/features/player/presentation/widgets/keyboard_shortcuts_sheet.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
@@ -97,7 +98,7 @@ class TopControls extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       playerState.activeEpisode?.title ??
-                          'Episode ${playerState.activeEpisode?.number ?? (mode is PlayerModeOffline ? 'Offline File' : 'N/A')}',
+                          'Episode ${formatEpisodeNumber(playerState.activeEpisode?.number) ?? (mode is PlayerModeOffline ? 'Offline File' : 'N/A')}',
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 13,

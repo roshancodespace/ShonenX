@@ -47,23 +47,7 @@ class GlobalBackground extends ConsumerWidget {
             systemNavigationBarDividerColor: Colors.transparent,
           );
 
-    Widget content = child;
-
-    if (useNoiseOverlay && noiseOpacity > 0.0) {
-      content = Stack(
-        children: [
-          content,
-          Positioned.fill(
-            child: IgnorePointer(
-              child: StaticNoiseOverlay(
-                color: theme.colorScheme.onSurface,
-                opacity: noiseOpacity,
-              ),
-            ),
-          ),
-        ],
-      );
-    }
+    final List<Widget> backgroundLayers = [];
 
     if (customBackgroundImagePath != null) {
       final img = Image.file(
@@ -87,13 +71,25 @@ class GlobalBackground extends ConsumerWidget {
             )
           : RepaintBoundary(child: img);
 
-      content = Stack(
-        children: [
-          Positioned.fill(child: bgImg),
-          content,
-        ],
+      backgroundLayers.add(Positioned.fill(child: bgImg));
+    }
+
+    if (useNoiseOverlay && noiseOpacity > 0.0) {
+      backgroundLayers.add(
+        Positioned.fill(
+          child: IgnorePointer(
+            child: StaticNoiseOverlay(
+              color: theme.colorScheme.onSurface,
+              opacity: noiseOpacity,
+            ),
+          ),
+        ),
       );
     }
+
+    final Widget content = backgroundLayers.isEmpty
+        ? child
+        : Stack(children: [...backgroundLayers, child]);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: overlayStyle,

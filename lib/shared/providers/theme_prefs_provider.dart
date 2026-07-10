@@ -21,12 +21,14 @@ class ThemePrefsState {
   final double uiRoundness;
   final double fontScaleFactor;
   final double uiScaleFactor;
+  final bool swapColors;
 
   const ThemePrefsState({
     this.themeMode = ThemeMode.system,
     this.flexScheme = FlexScheme.deepBlue,
     this.useAmoled = false,
     this.useDynamic = false,
+    this.swapColors = false,
     this.exclusiveScheme,
     this.blendLevel = 10,
     this.useGradients = false,
@@ -58,6 +60,7 @@ class ThemePrefsState {
     double? uiRoundness,
     double? fontScaleFactor,
     double? uiScaleFactor,
+    bool? swapColors,
   }) {
     return ThemePrefsState(
       themeMode: themeMode ?? this.themeMode,
@@ -80,6 +83,7 @@ class ThemePrefsState {
       uiRoundness: uiRoundness ?? this.uiRoundness,
       fontScaleFactor: fontScaleFactor ?? this.fontScaleFactor,
       uiScaleFactor: uiScaleFactor ?? this.uiScaleFactor,
+      swapColors: swapColors ?? this.swapColors,
     );
   }
 
@@ -100,6 +104,7 @@ class ThemePrefsState {
       'uiRoundness': uiRoundness,
       'fontScaleFactor': fontScaleFactor,
       'uiScaleFactor': uiScaleFactor,
+      'swapColors': swapColors,
     };
   }
 
@@ -122,6 +127,7 @@ class ThemePrefsState {
       uiRoundness: (map['uiRoundness'] as num?)?.toDouble() ?? 12.0,
       fontScaleFactor: (map['fontScaleFactor'] as num?)?.toDouble() ?? 1.0,
       uiScaleFactor: (map['uiScaleFactor'] as num?)?.toDouble() ?? 1.0,
+      swapColors: map['swapColors'] ?? false,
     );
   }
 

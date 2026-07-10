@@ -66,6 +66,14 @@ class ThemeSettingsScreen extends ConsumerWidget {
                         ),
                       ),
               ),
+              SettingsSwitchTile(
+                icon: Icons.swap_horiz_rounded,
+                title: 'Swap Colors',
+                subtitle: 'Swap primary and secondary colors',
+                value: themePrefs.swapColors,
+                onChanged: (v) =>
+                    notifier.updateTheme((p) => p.copyWith(swapColors: v)),
+              ),
             ],
           ),
           SettingsSection(

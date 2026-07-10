@@ -41,39 +41,44 @@ class AppScaffold extends ConsumerWidget {
     final hasImage = ref.watch(
       themePrefsProvider.select((p) => p.customBackgroundImagePath != null),
     );
+    final useNoiseOverlay = ref.watch(
+      themePrefsProvider.select((p) => p.useNoiseOverlay),
+    );
 
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
 
     return Scaffold(
-      backgroundColor: (useGradients || hasImage)
+      backgroundColor: (useGradients || hasImage || useNoiseOverlay)
           ? Colors.transparent
           : theme.scaffoldBackgroundColor,
       extendBody: extendBody,
       appBar: title == null && titleWidget == null && actions == null
           ? null
           : AppBar(
-              title: titleWidget ?? (title == null
-                  ? null
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title!,
-                          style: textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        if (subtitle != null)
-                          Text(
-                            subtitle!,
-                            style: textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+              title:
+                  titleWidget ??
+                  (title == null
+                      ? null
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title!,
+                              style: textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                          ),
-                      ],
-                    )),
+                            if (subtitle != null)
+                              Text(
+                                subtitle!,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                          ],
+                        )),
               bottom: barBottom,
               centerTitle: centerTitle,
               elevation: 0,

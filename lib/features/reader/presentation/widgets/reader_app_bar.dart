@@ -99,9 +99,9 @@ class ReaderAppBar extends StatelessWidget implements PreferredSizeWidget {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withValues(
-                          alpha: 0.18,
-                        ),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(
                           (uiRoundness - 4).clamp(0.0, uiRoundness),
                         ),
@@ -132,24 +132,29 @@ class ReaderAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ],
               ),
-              child: IconButton(
-                style: IconButton.styleFrom(
-                  minimumSize: const Size(44, 44),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(uiRoundness),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(42, 42),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(uiRoundness),
+                      ),
+                    ),
+                    icon: Icon(
+                      Icons.tune_rounded,
+                      color: themeInfo.textColor,
+                      size: 20,
+                    ),
+                    tooltip: 'Reader Settings',
+                    onPressed: () => AppBottomSheet.show(
+                      context: context,
+                      title: 'Reader Settings',
+                      child: const ReaderSettingsContent(),
+                    ),
                   ),
-                ),
-                icon: Icon(
-                  Icons.tune_rounded,
-                  color: themeInfo.textColor,
-                  size: 20,
-                ),
-                tooltip: 'Reader Settings',
-                onPressed: () => AppBottomSheet.show(
-                  context: context,
-                  title: 'Reader Settings',
-                  child: const ReaderSettingsContent(),
-                ),
+                ],
               ),
             ),
           ],

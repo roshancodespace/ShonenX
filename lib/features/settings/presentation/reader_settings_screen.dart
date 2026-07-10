@@ -105,6 +105,33 @@ class ReaderSettingsContent extends ConsumerWidget {
               ),
           ],
         ),
+        SettingsSection(
+          title: 'Controls & Behavior',
+          children: [
+            SettingsSwitchTile(
+              icon: Icons.info_outline_rounded,
+              title: 'Mini Status Pill',
+              subtitle: 'Show page number & progress when controls are hidden',
+              value: readerPrefs.showMiniStatus,
+              onChanged: (val) => prefsNotifier.updateShowMiniStatus(val),
+            ),
+            SettingsSwitchTile(
+              icon: Icons.touch_app_outlined,
+              title: 'Tap to Turn Pages',
+              subtitle:
+                  'Tap screen edges to turn pages, center to show controls',
+              value: readerPrefs.tapToTurnPage,
+              onChanged: (val) => prefsNotifier.updateTapToTurnPage(val),
+            ),
+            SettingsSwitchTile(
+              icon: Icons.screen_lock_portrait_outlined,
+              title: 'Keep Screen Awake',
+              subtitle: 'Prevent display from sleeping while reading',
+              value: readerPrefs.keepScreenOn,
+              onChanged: (val) => prefsNotifier.updateKeepScreenOn(val),
+            ),
+          ],
+        ),
       ],
     );
   }

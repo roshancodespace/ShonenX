@@ -100,6 +100,7 @@ class SettingsSwitchTile extends StatelessWidget {
   final String? subtitle;
   final bool value;
   final ValueChanged<bool>? onChanged;
+  final VoidCallback? onInfoCallback;
 
   const SettingsSwitchTile({
     super.key,
@@ -109,15 +110,16 @@ class SettingsSwitchTile extends StatelessWidget {
     this.subtitle,
     required this.value,
     this.onChanged,
+    this.onInfoCallback,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return SwitchListTile.adaptive(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
-      secondary:
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+      leading:
           leading ??
           (icon != null ? Icon(icon, color: theme.colorScheme.primary) : null),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -130,8 +132,20 @@ class SettingsSwitchTile extends StatelessWidget {
               ),
             )
           : null,
-      value: value,
-      onChanged: onChanged,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (onInfoCallback != null)
+            IconButton(
+              icon: const Icon(Icons.info_outline, size: 20),
+              visualDensity: VisualDensity.compact,
+              splashRadius: 20,
+              onPressed: onInfoCallback,
+            ),
+          Switch.adaptive(value: value, onChanged: onChanged),
+        ],
+      ),
+      onTap: onChanged != null ? () => onChanged!(!value) : null,
     );
   }
 }
@@ -398,20 +412,19 @@ class SettingsSelectionTile extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       selected: isSelected,
-      selectedTileColor:
-          theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+      selectedTileColor: theme.colorScheme.primaryContainer.withValues(
+        alpha: 0.3,
+      ),
       selectedColor: theme.colorScheme.primary,
-      leading: leading ??
+      leading:
+          leading ??
           Icon(
             isSelected ? Icons.check_circle_rounded : Icons.circle_outlined,
             color: isSelected
                 ? theme.colorScheme.primary
                 : theme.colorScheme.onSurfaceVariant,
           ),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Text(
         subtitle,
         style: TextStyle(

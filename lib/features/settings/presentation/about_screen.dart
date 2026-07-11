@@ -1,11 +1,30 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+final githubContributorsProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
+  final response = await HTTP().get(
+    'https://api.github.com/repos/roshancodespace/shonenx/contributors',
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('Failed to load contributors');
+  }
+
+  final List<dynamic> data = jsonDecode(response.body);
+
+  return data.cast<Map<String, dynamic>>();
+});
 
 final _packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
   return PackageInfo.fromPlatform();
@@ -19,6 +38,7 @@ class AboutScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final packageInfo = ref.watch(_packageInfoProvider);
+    final contributors = ref.watch(githubContributorsProvider);
 
     return AppScaffold(
       title: 'About',
@@ -116,8 +136,147 @@ class AboutScreen extends ConsumerWidget {
               ),
             ],
           ),
+          SettingsSection(
+            title: 'Contributors',
+            children: [
+              contributors.when(
+                loading: () => const ListTile(
+                  leading: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  title: Text('Loading contributors...'),
+                ),
+                error: (_, __) => const ListTile(
+                  leading: Icon(Icons.error_outline),
+                  title: Text('Failed to load contributors'),
+                ),
+                data: (contributors) {
+                  final sorted = [...contributors];
+
+                  const pinnedUsers = ['roshancodespace', 'Darkx-Dev'];
+
+                  sorted.sort((a, b) {
+                    final aName = a['login'] as String;
+                    final bName = b['login'] as String;
+
+                    final aIndex = pinnedUsers.indexOf(aName);
+                    final bIndex = pinnedUsers.indexOf(bName);
+
+                    if (aIndex != -1 && bIndex != -1) {
+                      return aIndex.compareTo(bIndex);
+                    }
+                    if (aIndex != -1) return -1;
+                    if (bIndex != -1) return 1;
+
+                    return (b['contributions'] as int).compareTo(
+                      a['contributions'] as int,
+                    );
+                  });
+
+                  String roleFor(String login) {
+                    switch (login) {
+                      case 'roshancodespace':
+                        return 'Founder • Professional Bug Creator';
+                      case 'Darkx-Dev':
+                        return 'Co-Founder • Certified Chaos Engineer';
+                      default:
+                        return '${contributors.firstWhere((e) => e['login'] == login)['contributions']} contributions';
+                    }
+                  }
+
+                  return Column(
+                    children: [
+                      SettingsActionTile(
+                        leading: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const CircleAvatar(
+                              backgroundImage: NetworkImage(
+                                'https://github.com/roshancodespace.png',
+                              ),
+                            ),
+                            Positioned(
+                              left: 20,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: cs.surface,
+                                    width: 2,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const CircleAvatar(
+                                  radius: 12,
+                                  backgroundImage: NetworkImage(
+                                    'https://github.com/Darkx-Dev.png',
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        title: 'roshancodespace ⟷ Darkx-Dev',
+                        subtitle:
+                            'One developer pretending to be two contributors',
+                        onTap: () {},
+                      ),
+
+                      ...sorted.take(10).map((contributor) {
+                        final login = contributor['login'] as String;
+
+                        return SettingsActionTile(
+                          leading: buildAvatar(
+                            login,
+                            contributor['avatar_url'] as String,
+                            cs,
+                          ),
+                          title: login,
+                          subtitle: roleFor(login),
+                          onTap: () => launchUrl(
+                            Uri.parse(contributor['html_url'] as String),
+                            mode: LaunchMode.externalApplication,
+                          ),
+                        );
+                      }),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget buildAvatar(String login, String avatarUrl, ColorScheme cs) {
+    Color? borderColor;
+
+    switch (login) {
+      case 'roshancodespace':
+        borderColor = cs.primary;
+        break;
+
+      case 'Darkx-Dev':
+        borderColor = cs.secondary;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: borderColor != null
+            ? Border.all(
+                color: borderColor,
+                width: 3,
+                strokeAlign: BorderSide.strokeAlignOutside,
+              )
+            : null,
+      ),
+      child: CircleAvatar(backgroundImage: NetworkImage(avatarUrl)),
     );
   }
 }

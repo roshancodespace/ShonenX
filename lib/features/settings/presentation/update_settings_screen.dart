@@ -6,6 +6,7 @@ import 'package:shonenx/core/updates/services/update_service.dart';
 import 'package:shonenx/core/updates/ui/linux_update_widget.dart';
 import 'package:shonenx/core/updates/ui/android_update_widget.dart';
 import 'package:shonenx/core/updates/ui/update_ui.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -56,6 +57,7 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
   void _showReleaseDetails(BuildContext context, GitHubRelease release) {
     AppBottomSheet.show(
       context: context,
+      isScrollControlled: true,
       title: release.name,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -96,24 +98,59 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          Container(
-            height: 250,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: SingleChildScrollView(
-              child: Text(
-                release.body.trim().isEmpty
-                    ? 'No release notes provided.'
-                    : release.body.trim(),
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.45,
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(12),
+                child: MarkdownBody(
+                  data: release.body.trim().isEmpty
+                      ? 'No release notes provided.'
+                      : release.body.trim(),
+                  selectable: true,
+                  onTapLink: (text, href, title) {
+                    if (href != null) {
+                      launchUrl(
+                        Uri.parse(href),
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  },
+                  styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
+                      .copyWith(
+                        p: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.45,
+                        ),
+                        h1: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        h2: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        h3: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        code: TextStyle(
+                          fontFamily: 'monospace',
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                        ),
+                        blockquote: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                 ),
               ),
             ),
@@ -176,6 +213,7 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
               ),
             ),
           ],
+          const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [

@@ -120,7 +120,10 @@ abstract class BaseSourceAdapter implements MediaSource {
     final methodLog = log.child('search');
     try {
       methodLog.i('query=$query page=$page genres=$genres tags=$tags');
-      final results = await source.methods.search(query, page, [...genres, ...tags]);
+      final results = await source.methods.search(query, page, [
+        ...genres,
+        ...tags,
+      ]);
       methodLog.d('results=${results.list.length}');
 
       return results.list

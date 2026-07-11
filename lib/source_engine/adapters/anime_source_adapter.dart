@@ -8,10 +8,7 @@ import 'package:shonenx/source_engine/providers/anime_source.dart';
 import 'base_source_adapter.dart';
 
 class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
-  AnimeSourceAdapter({
-    required super.sourceInfo,
-    required super.source,
-  });
+  AnimeSourceAdapter({required super.sourceInfo, required super.source});
 
   @override
   final log = AppLogger.scope(AnimeSourceAdapter);

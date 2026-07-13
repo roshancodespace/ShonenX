@@ -40,9 +40,12 @@ class SettingsSection extends StatelessWidget {
               ),
             ),
           ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: children,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: children,
+          ),
         ),
       ],
     );

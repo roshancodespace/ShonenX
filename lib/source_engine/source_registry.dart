@@ -110,6 +110,23 @@ class EnabledExtensionManagersNotifier extends Notifier<Set<String>> {
     _storage.setStringList(_key, next.toList());
   }
 
+  void disableAll(List<String> managers) {
+    final next = Set<String>.from(state);
+    for (var manager in managers) {
+      next.remove(manager);
+      next.remove('$manager-desktop');
+    }
+    state = next;
+    _storage.setStringList(_key, next.toList());
+  }
+
+  void enableAll(List<String> managers) {
+    final next = Set<String>.from(state);
+    next.addAll(managers);
+    state = next;
+    _storage.setStringList(_key, next.toList());
+  }
+
   void setAll(Set<String> managers) {
     state = managers;
     _storage.setStringList(_key, managers.toList());

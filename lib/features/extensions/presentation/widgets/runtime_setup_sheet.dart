@@ -68,6 +68,11 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
         ref.invalidate(extensionManagerProvider);
         ref.invalidate(availableAnimeSourcesProvider);
         ref.invalidate(availableMangaSourcesProvider);
+        ref.read(enabledExtensionManagersProvider.notifier).enableAll([
+          'aniyomi',
+          'cloudstream',
+          'kotatsu',
+        ]);
         if (mounted && force) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

@@ -15,7 +15,7 @@ class AppThemePreset {
 
   final ThemeMode themeMode;
   final FlexScheme flexScheme;
-  final FlexSchemeVariant themeVariant;
+  final AppThemeVariant themeVariant;
   final bool useAmoled;
   final bool useDynamic;
   final String? exclusiveScheme;
@@ -44,6 +44,7 @@ class AppThemePreset {
   final ContinueWatchingStyle continueWatchingStyle;
   final ContinueReadingStyle continueReadingStyle;
   final EpisodeViewMode episodeViewMode;
+  final NavBarStyle navBarStyle;
   final Map<String, dynamic> experimentalConfig;
 
   const AppThemePreset({
@@ -55,7 +56,7 @@ class AppThemePreset {
     required this.previewColors,
     this.themeMode = ThemeMode.system,
     this.flexScheme = FlexScheme.deepBlue,
-    this.themeVariant = FlexSchemeVariant.tonalSpot,
+    this.themeVariant = AppThemeVariant.classic,
     this.useAmoled = false,
     this.useDynamic = false,
     this.exclusiveScheme,
@@ -83,6 +84,7 @@ class AppThemePreset {
     this.continueWatchingStyle = ContinueWatchingStyle.classic,
     this.continueReadingStyle = ContinueReadingStyle.classic,
     this.episodeViewMode = EpisodeViewMode.classic,
+    this.navBarStyle = NavBarStyle.classic,
     this.experimentalConfig = UiPrefState.defaultExperimentalConfig,
   });
 
@@ -131,6 +133,7 @@ class AppThemePreset {
       continueWatchingStyle: uiPrefs.continueWatchingStyle,
       continueReadingStyle: uiPrefs.continueReadingStyle,
       episodeViewMode: uiPrefs.episodeViewMode,
+      navBarStyle: uiPrefs.navBarStyle,
       experimentalConfig: uiPrefs.experimentalConfig,
     );
   }
@@ -179,6 +182,7 @@ class AppThemePreset {
       continueWatchingStyle: continueWatchingStyle,
       continueReadingStyle: continueReadingStyle,
       episodeViewMode: episodeViewMode,
+      navBarStyle: navBarStyle,
       experimentalConfig: {
         ...current.experimentalConfig,
         ...experimentalConfig,
@@ -196,7 +200,7 @@ class AppThemePreset {
       'previewColors': previewColors,
       'themeMode': themeMode.index,
       'flexScheme': flexScheme.name,
-      'themeVariant': themeVariant.index,
+      'themeVariant': themeVariant.name,
       'useAmoled': useAmoled,
       'useDynamic': useDynamic,
       'exclusiveScheme': exclusiveScheme,
@@ -224,6 +228,7 @@ class AppThemePreset {
       'continueWatchingStyle': continueWatchingStyle.name,
       'continueReadingStyle': continueReadingStyle.name,
       'episodeViewMode': episodeViewMode.name,
+      'navBarStyle': navBarStyle.name,
       'experimentalConfig': experimentalConfig,
     };
   }
@@ -265,12 +270,24 @@ class AppThemePreset {
         (e) => e.name == map['flexScheme'] || e.index == map['flexScheme'],
         orElse: () => FlexScheme.custom,
       ),
-      themeVariant:
-          FlexSchemeVariant.values[(map['themeVariant'] as num?)?.toInt().clamp(
-                0,
-                FlexSchemeVariant.values.length - 1,
-              ) ??
-              FlexSchemeVariant.tonalSpot.index],
+      themeVariant: () {
+        final val = map['themeVariant'];
+        if (val is int) {
+          if (val >= 0 && val < AppThemeVariant.values.length) {
+            return AppThemeVariant.values[val];
+          }
+          if (val == 2) return AppThemeVariant.tonalSpot;
+          if (val == 3) return AppThemeVariant.fidelity;
+          if (val == 8) return AppThemeVariant.vibrant;
+          if (val == 12) return AppThemeVariant.vivid;
+        } else if (val is String) {
+          return AppThemeVariant.values.firstWhere(
+            (e) => e.name == val,
+            orElse: () => AppThemeVariant.classic,
+          );
+        }
+        return AppThemeVariant.classic;
+      }(),
       useAmoled: map['useAmoled'] == true,
       useDynamic: map['useDynamic'] == true,
       exclusiveScheme: map['exclusiveScheme']?.toString(),
@@ -322,6 +339,10 @@ class AppThemePreset {
       episodeViewMode: EpisodeViewMode.values.firstWhere(
         (e) => e.name == map['episodeViewMode'],
         orElse: () => EpisodeViewMode.classic,
+      ),
+      navBarStyle: NavBarStyle.values.firstWhere(
+        (e) => e.name == map['navBarStyle'],
+        orElse: () => NavBarStyle.classic,
       ),
       experimentalConfig: (map['experimentalConfig'] is Map)
           ? {

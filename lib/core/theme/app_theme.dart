@@ -82,12 +82,16 @@ class AppTheme {
                 : FlexScheme.custom,
             colors: customColors,
             colorScheme: effectiveColorScheme,
-            keyColors: const FlexKeyColors(
-              useKeyColors: true,
-              useSecondary: true,
-              useTertiary: true,
-            ),
-            variant: prefs.themeVariant,
+            keyColors: prefs.themeVariant == AppThemeVariant.classic
+                ? null
+                : const FlexKeyColors(
+                    useKeyColors: true,
+                    keepPrimary: true,
+                    keepSecondary: true,
+                    keepTertiary: true,
+                    keepError: true,
+                  ),
+            variant: prefs.themeVariant.flexVariant,
             surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
             blendLevel: prefs.blendLevel,
             swapColors: prefs.swapColors,
@@ -111,12 +115,10 @@ class AppTheme {
                 : FlexScheme.custom,
             colors: customColors,
             colorScheme: effectiveColorScheme,
-            keyColors: const FlexKeyColors(
-              useKeyColors: true,
-              useSecondary: true,
-              useTertiary: true,
-            ),
-            variant: prefs.themeVariant,
+            keyColors: prefs.themeVariant == AppThemeVariant.classic
+                ? null
+                : const FlexKeyColors(useExpressiveOnContainerColors: true),
+            variant: prefs.themeVariant.flexVariant,
             surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
             blendLevel: prefs.blendLevel,
             swapColors: prefs.swapColors,

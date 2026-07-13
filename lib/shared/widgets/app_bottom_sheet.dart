@@ -190,7 +190,7 @@ class AppBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return SafeArea(
@@ -210,7 +210,7 @@ class AppBottomSheet extends StatelessWidget {
         child: Container(
           margin: EdgeInsets.only(bottom: bottomInset),
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainer,
+            color: cs.surfaceContainer,
             borderRadius: BorderRadius.vertical(
               top: Radius.circular(GlobalUI.uiRoundness),
             ),
@@ -225,7 +225,7 @@ class AppBottomSheet extends StatelessWidget {
                   height: 4,
                   width: 36,
                   decoration: BoxDecoration(
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.35),
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -235,11 +235,7 @@ class AppBottomSheet extends StatelessWidget {
                 child: Row(
                   children: [
                     if (titleIcon != null) ...[
-                      Icon(
-                        titleIcon,
-                        color: colorScheme.primary,
-                        size: 22,
-                      ),
+                      Icon(titleIcon, color: cs.primary, size: 22),
                       const SizedBox(width: 10),
                     ],
                     Expanded(
@@ -258,6 +254,10 @@ class AppBottomSheet extends StatelessWidget {
                       const SizedBox(width: 8),
                     ],
                     IconButton(
+                      style: IconButton.styleFrom(
+                        backgroundColor: cs.errorContainer,
+                        foregroundColor: cs.onErrorContainer,
+                      ),
                       icon: const Icon(Icons.close, size: 20),
                       onPressed: () => context.pop(),
                     ),

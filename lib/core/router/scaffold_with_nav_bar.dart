@@ -279,6 +279,8 @@ class _BottomNavBar extends ConsumerWidget {
     final r = context.responsive;
     final cs = Theme.of(context).colorScheme;
     final navState = ref.watch(navBarProvider);
+    final uiPrefs = ref.watch(uiPrefsProvider);
+    final navBarStyle = uiPrefs.navBarStyle;
 
     if (navState.customBar != null) {
       return SafeArea(
@@ -297,11 +299,70 @@ class _BottomNavBar extends ConsumerWidget {
     );
 
     final uiScale = GlobalUI.uiScaleFactor.clamp(0.85, 1.25);
-    final barHeight = (r.isPhone ? 68.0 : 80.0) * uiScale;
+    final double barHeight =
+        (navBarStyle == NavBarStyle.minimal
+            ? 54.0
+            : (r.isPhone ? 68.0 : 80.0)) *
+        uiScale;
     final iconSize = (r.isPhone ? 25.0 : 28.0) * uiScale;
     final fontSize = r.isPhone ? 14.5 : 16.0;
     final hPad = (r.isPhone ? 6.0 : 10.5) * uiScale;
-    final itemRadius = GlobalUI.uiRoundness;
+
+    // Radius calculations
+    final barRadius =
+        (navBarStyle == NavBarStyle.material ||
+            navBarStyle == NavBarStyle.minimal)
+        ? barHeight / 2
+        : GlobalUI.uiRoundness;
+    final activeItemRadius =
+        (navBarStyle == NavBarStyle.material ||
+            navBarStyle == NavBarStyle.minimal)
+        ? (barHeight - 2 * hPad) / 2
+        : GlobalUI.uiRoundness;
+
+    // Background blur config
+    final double? blurAmount = switch (navBarStyle) {
+      NavBarStyle.classic => 14.0,
+      NavBarStyle.frosted => 24.0,
+      NavBarStyle.minimal => 12.0,
+      _ => null,
+    };
+
+    // Main bar background decoration
+    final barDecoration = switch (navBarStyle) {
+      NavBarStyle.classic => BoxDecoration(
+        color: cs.surface.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(barRadius),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.45)),
+      ),
+      NavBarStyle.minimal => BoxDecoration(
+        color: cs.surface.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(barRadius),
+        border: Border.all(
+          color: cs.outlineVariant.withValues(alpha: 0.2),
+          width: 0.8,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            spreadRadius: 0.5,
+          ),
+        ],
+      ),
+      NavBarStyle.frosted => BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(barRadius),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15),
+          width: 0.8,
+        ),
+      ),
+      NavBarStyle.material => BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(barRadius),
+      ),
+    };
 
     return SafeArea(
       child: Align(
@@ -331,112 +392,186 @@ class _BottomNavBar extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                      child: Container(
-                        height: barHeight,
-                        padding: EdgeInsets.all(hPad),
-                        decoration: BoxDecoration(
-                          color: cs.surface.withValues(alpha: 0.75),
-                          borderRadius: BorderRadius.circular(
-                            GlobalUI.uiRoundness,
-                          ),
-                          border: Border.all(
-                            color: cs.outlineVariant.withValues(alpha: 0.45),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: List.generate(_destinations.length, (i) {
-                            final active = navigationShell.currentIndex == i;
-                            return InkWell(
-                              onTap: () => navigationShell.goBranch(i),
-                              borderRadius: BorderRadius.circular(itemRadius),
-                              focusColor: cs.primary.withValues(alpha: 0.2),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOutCubic,
-                                height: double.maxFinite,
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: active ? 18 : 14,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: active
-                                      ? cs.primary
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(
-                                    itemRadius,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    AnimatedScale(
-                                      scale: active ? 1.15 : 1.0,
-                                      duration: const Duration(
-                                        milliseconds: 300,
-                                      ),
-                                      curve: Curves.easeOutBack,
-                                      child: AnimatedOpacity(
-                                        opacity: active ? 1.0 : 0.55,
-                                        duration: const Duration(
-                                          milliseconds: 250,
-                                        ),
-                                        child: Icon(
-                                          _destinations[i].icon,
-                                          color: active
-                                              ? cs.onPrimary
-                                              : cs.onSurfaceVariant,
-                                          size: iconSize,
-                                        ),
-                                      ),
-                                    ),
-                                    ClipRect(
-                                      child: AnimatedSize(
-                                        duration: const Duration(
-                                          milliseconds: 300,
-                                        ),
-                                        curve: Curves.easeOutCubic,
-                                        child: active
-                                            ? Padding(
-                                                padding: const EdgeInsets.only(
-                                                  left: 8,
-                                                ),
-                                                child: Text(
-                                                  _destinations[i].label,
-                                                  style: TextStyle(
-                                                    fontSize: fontSize,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: cs.onPrimary,
-                                                  ),
-                                                ),
-                                              )
-                                            : const SizedBox.shrink(),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                    borderRadius: BorderRadius.circular(barRadius),
+                    child: blurAmount != null
+                        ? BackdropFilter(
+                            filter: ImageFilter.blur(
+                              sigmaX: blurAmount,
+                              sigmaY: blurAmount,
+                            ),
+                            child: Container(
+                              height: barHeight,
+                              padding: EdgeInsets.all(hPad),
+                              decoration: barDecoration,
+                              child: _buildItemsRow(
+                                context,
+                                cs,
+                                iconSize,
+                                fontSize,
+                                activeItemRadius,
+                                navBarStyle,
                               ),
-                            );
-                          }),
-                        ),
-                      ),
+                            ),
+                          )
+                        : Container(
+                            height: barHeight,
+                            padding: EdgeInsets.all(hPad),
+                            decoration: barDecoration,
+                            child: _buildItemsRow(
+                              context,
+                              cs,
+                              iconSize,
+                              fontSize,
+                              activeItemRadius,
+                              navBarStyle,
+                            ),
+                          ),
+                  ),
+                  if (navBarStyle != NavBarStyle.minimal) ...[
+                    SizedBox(width: hPad + 4),
+                    _DownloadButton(
+                      colorScheme: cs,
+                      size: barHeight,
+                      iconSize: iconSize,
+                      padding: hPad,
+                      navBarStyle: navBarStyle,
                     ),
-                  ),
-                  SizedBox(width: hPad + 4),
-                  _DownloadButton(
-                    colorScheme: cs,
-                    size: barHeight,
-                    iconSize: iconSize,
-                    padding: hPad,
-                  ),
+                  ],
                 ],
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildItemsRow(
+    BuildContext context,
+    ColorScheme cs,
+    double iconSize,
+    double fontSize,
+    double itemRadius,
+    NavBarStyle navBarStyle,
+  ) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(_destinations.length, (i) {
+        final active = navigationShell.currentIndex == i;
+
+        // Colors based on NavBarStyle
+        final activeIconColor = switch (navBarStyle) {
+          NavBarStyle.material => cs.onSecondaryContainer,
+          NavBarStyle.frosted => Colors.white,
+          NavBarStyle.minimal => cs.primary,
+          _ => cs.onPrimary,
+        };
+
+        final inactiveIconColor = switch (navBarStyle) {
+          NavBarStyle.frosted => Colors.white54,
+          NavBarStyle.minimal => cs.onSurfaceVariant.withValues(alpha: 0.5),
+          _ => cs.onSurfaceVariant,
+        };
+
+        final activeTextColor = switch (navBarStyle) {
+          NavBarStyle.material => cs.onSecondaryContainer,
+          NavBarStyle.frosted => Colors.white,
+          NavBarStyle.minimal => cs.primary,
+          _ => cs.onPrimary,
+        };
+
+        // Item background decoration
+        final itemDecoration = switch (navBarStyle) {
+          NavBarStyle.classic => BoxDecoration(
+            color: active ? cs.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(itemRadius),
+          ),
+          NavBarStyle.minimal => const BoxDecoration(color: Colors.transparent),
+          NavBarStyle.frosted => BoxDecoration(
+            color: active
+                ? Colors.white.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(itemRadius),
+            border: active
+                ? Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    width: 0.5,
+                  )
+                : null,
+          ),
+          NavBarStyle.material => BoxDecoration(
+            color: active ? cs.secondaryContainer : Colors.transparent,
+            borderRadius: BorderRadius.circular(itemRadius),
+          ),
+        };
+
+        return InkWell(
+          onTap: () => navigationShell.goBranch(i),
+          borderRadius: BorderRadius.circular(itemRadius),
+          focusColor: cs.primary.withValues(alpha: 0.2),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            height: double.maxFinite,
+            padding: EdgeInsets.symmetric(horizontal: active ? 18 : 14),
+            decoration: itemDecoration,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedScale(
+                      scale: active ? 1.15 : 1.0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutBack,
+                      child: AnimatedOpacity(
+                        opacity: active ? 1.0 : 0.55,
+                        duration: const Duration(milliseconds: 250),
+                        child: Icon(
+                          _destinations[i].icon,
+                          color: active ? activeIconColor : inactiveIconColor,
+                          size: iconSize,
+                        ),
+                      ),
+                    ),
+                    ClipRect(
+                      child: AnimatedSize(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
+                        child: active
+                            ? Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: Text(
+                                  _destinations[i].label,
+                                  style: TextStyle(
+                                    fontSize: fontSize,
+                                    fontWeight: FontWeight.w600,
+                                    color: activeTextColor,
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    ),
+                  ],
+                ),
+                if (navBarStyle == NavBarStyle.minimal && active) ...[
+                  const SizedBox(height: 3),
+                  Container(
+                    width: 5,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: cs.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      }),
     );
   }
 }
@@ -446,15 +581,19 @@ class _DownloadButton extends ConsumerWidget {
   final double size;
   final double iconSize;
   final double padding;
+  final NavBarStyle navBarStyle;
+
   const _DownloadButton({
     required this.colorScheme,
     required this.size,
     required this.iconSize,
     required this.padding,
+    required this.navBarStyle,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cs = colorScheme;
     final tasks = ref.watch(downloadTasksProvider).value ?? [];
     final activeTasks = tasks
         .where(
@@ -475,74 +614,111 @@ class _DownloadButton extends ConsumerWidget {
       }
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: colorScheme.surface.withValues(alpha: 0.75),
-            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-            ),
-          ),
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            icon: Badge(
-              isLabelVisible: hasActive,
-              label: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Text('$count', key: ValueKey(count)),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  AnimatedOpacity(
-                    opacity: hasActive ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: SizedBox(
-                      width: iconSize + 8,
-                      height: iconSize + 8,
-                      child: CircularProgressIndicator(
-                        value: progress,
-                        strokeWidth: 2.5,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                  AnimatedScale(
-                    scale: hasActive ? 1.1 : 1.0,
-                    duration: const Duration(milliseconds: 350),
-                    curve: Curves.easeOutBack,
-                    child: Icon(
-                      Icons.download_outlined,
-                      color: colorScheme.onSurface,
-                      size: iconSize,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            onPressed: () => context.push('/downloads'),
-          ),
+    // Background blur config
+    final double? blurAmount = switch (navBarStyle) {
+      NavBarStyle.classic => 14.0,
+      NavBarStyle.frosted => 24.0,
+      _ => null,
+    };
+
+    // Decoration matching the main Nav bar
+    final btnDecoration = switch (navBarStyle) {
+      NavBarStyle.classic => BoxDecoration(
+        color: cs.surface.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.45)),
+      ),
+      NavBarStyle.minimal => const BoxDecoration(color: Colors.transparent),
+      NavBarStyle.frosted => BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15),
+          width: 0.8,
         ),
       ),
+      NavBarStyle.material => BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(999),
+      ),
+    };
+
+    final Color iconColor = switch (navBarStyle) {
+      NavBarStyle.frosted => Colors.white,
+      NavBarStyle.minimal => cs.primary,
+      _ => cs.onSurface,
+    };
+
+    final content = Container(
+      width: size,
+      height: size,
+      decoration: btnDecoration,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        icon: Badge(
+          isLabelVisible: hasActive,
+          label: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Text('$count', key: ValueKey(count)),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              AnimatedOpacity(
+                opacity: hasActive ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: SizedBox(
+                  width: iconSize + 8,
+                  height: iconSize + 8,
+                  child: CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 2.5,
+                    color: cs.primary,
+                  ),
+                ),
+              ),
+              AnimatedScale(
+                scale: hasActive ? 1.1 : 1.0,
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutBack,
+                child: Icon(
+                  Icons.download_outlined,
+                  color: iconColor,
+                  size: iconSize,
+                ),
+              ),
+            ],
+          ),
+        ),
+        onPressed: () => context.push('/downloads'),
+      ),
+    );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(
+        navBarStyle == NavBarStyle.material ? 999.0 : GlobalUI.uiRoundness,
+      ),
+      child: blurAmount != null
+          ? BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: blurAmount, sigmaY: blurAmount),
+              child: content,
+            )
+          : content,
     );
   }
 }
 
-class _SideNavBar extends StatelessWidget {
+class _SideNavBar extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
   const _SideNavBar({required this.navigationShell});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final r = context.responsive;
     final cs = Theme.of(context).colorScheme;
     final h = r.heightTier;
+    final uiPrefs = ref.watch(uiPrefsProvider);
+    final navBarStyle = uiPrefs.navBarStyle;
 
     final barWidth = h.pick(
       spacious: 72.0,
@@ -583,6 +759,10 @@ class _SideNavBar extends StatelessWidget {
     final hideDownloadLabel = h.isBelowCompact;
     final hideNavLabels = h == HeightTier.cramped;
 
+    final activeItemRadius = navBarStyle == NavBarStyle.material
+        ? 999.0
+        : GlobalUI.uiRoundness;
+
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -593,29 +773,53 @@ class _SideNavBar extends StatelessWidget {
           children: [
             Expanded(
               flex: 3,
-              child: _GlassPillContainer(
+              child: _SideBarContainer(
                 width: barWidth,
                 padding: hPad,
+                navBarStyle: navBarStyle,
+                cs: cs,
                 child: Column(
                   children: List.generate(_destinations.length, (i) {
                     final active = navigationShell.currentIndex == i;
+
+                    final itemDecoration = switch (navBarStyle) {
+                      NavBarStyle.classic => BoxDecoration(
+                        color: active ? cs.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(activeItemRadius),
+                      ),
+                      NavBarStyle.minimal => const BoxDecoration(
+                        color: Colors.transparent,
+                      ),
+                      NavBarStyle.frosted => BoxDecoration(
+                        color: active
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(activeItemRadius),
+                        border: active
+                            ? Border.all(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                width: 0.5,
+                              )
+                            : null,
+                      ),
+                      NavBarStyle.material => BoxDecoration(
+                        color: active
+                            ? cs.secondaryContainer
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(activeItemRadius),
+                      ),
+                    };
+
                     return Expanded(
                       child: InkWell(
                         onTap: () => navigationShell.goBranch(i),
-                        borderRadius: BorderRadius.circular(
-                          GlobalUI.uiRoundness,
-                        ),
+                        borderRadius: BorderRadius.circular(activeItemRadius),
                         focusColor: cs.primary.withValues(alpha: 0.2),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 350),
                           curve: Curves.easeOutCubic,
                           width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: active ? cs.primary : Colors.transparent,
-                            borderRadius: BorderRadius.circular(
-                              GlobalUI.uiRoundness,
-                            ),
-                          ),
+                          decoration: itemDecoration,
                           child: _PillContent(
                             icon: _destinations[i].icon,
                             label: _destinations[i].label,
@@ -623,6 +827,7 @@ class _SideNavBar extends StatelessWidget {
                             cs: cs,
                             heightTier: h,
                             forceHideLabel: hideNavLabels,
+                            navBarStyle: navBarStyle,
                           ),
                         ),
                       ),
@@ -631,19 +836,24 @@ class _SideNavBar extends StatelessWidget {
                 ),
               ),
             ),
-            SizedBox(height: gapBetween),
-            Expanded(
-              flex: 1,
-              child: _GlassPillContainer(
-                width: barWidth,
-                padding: hPad,
-                child: _TallDownloadPillContent(
+            if (navBarStyle != NavBarStyle.minimal) ...[
+              SizedBox(height: gapBetween),
+              Expanded(
+                flex: 1,
+                child: _SideBarContainer(
+                  width: barWidth,
+                  padding: hPad,
+                  navBarStyle: navBarStyle,
                   cs: cs,
-                  heightTier: h,
-                  hideLabel: hideDownloadLabel,
+                  child: _TallDownloadPillContent(
+                    cs: cs,
+                    heightTier: h,
+                    hideLabel: hideDownloadLabel,
+                    navBarStyle: navBarStyle,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -651,37 +861,88 @@ class _SideNavBar extends StatelessWidget {
   }
 }
 
-class _GlassPillContainer extends StatelessWidget {
+class _SideBarContainer extends StatelessWidget {
   final double width;
   final double padding;
   final Widget child;
+  final NavBarStyle navBarStyle;
+  final ColorScheme cs;
 
-  const _GlassPillContainer({
+  const _SideBarContainer({
     required this.width,
     required this.padding,
     required this.child,
+    required this.navBarStyle,
+    required this.cs,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          width: width,
-          padding: EdgeInsets.all(padding),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerLow.withValues(alpha: 0.75),
-            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-            border: Border.all(
-              color: cs.outlineVariant.withValues(alpha: 0.45),
-            ),
+    final barRadius =
+        (navBarStyle == NavBarStyle.material ||
+            navBarStyle == NavBarStyle.minimal)
+        ? 28.0
+        : GlobalUI.uiRoundness;
+
+    // Background blur config
+    final double? blurAmount = switch (navBarStyle) {
+      NavBarStyle.classic => 14.0,
+      NavBarStyle.frosted => 24.0,
+      NavBarStyle.minimal => 12.0,
+      _ => null,
+    };
+
+    // Container background decoration
+    final decoration = switch (navBarStyle) {
+      NavBarStyle.classic => BoxDecoration(
+        color: cs.surface.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(barRadius),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.45)),
+      ),
+      NavBarStyle.minimal => BoxDecoration(
+        color: cs.surface.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(barRadius),
+        border: Border.all(
+          color: cs.outlineVariant.withValues(alpha: 0.2),
+          width: 0.8,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            spreadRadius: 0.5,
           ),
-          child: child,
+        ],
+      ),
+      NavBarStyle.frosted => BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(barRadius),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15),
+          width: 0.8,
         ),
       ),
+      NavBarStyle.material => BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(barRadius),
+      ),
+    };
+
+    final content = Container(
+      width: width,
+      padding: EdgeInsets.all(padding),
+      decoration: decoration,
+      child: child,
+    );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(barRadius),
+      child: blurAmount != null
+          ? BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: blurAmount, sigmaY: blurAmount),
+              child: content,
+            )
+          : content,
     );
   }
 }
@@ -694,6 +955,7 @@ class _PillContent extends StatelessWidget {
   final bool isDownload;
   final HeightTier heightTier;
   final bool forceHideLabel;
+  final NavBarStyle navBarStyle;
 
   const _PillContent({
     required this.icon,
@@ -701,6 +963,7 @@ class _PillContent extends StatelessWidget {
     required this.active,
     required this.cs,
     required this.heightTier,
+    required this.navBarStyle,
     this.isDownload = false,
     this.forceHideLabel = false,
   });
@@ -738,6 +1001,43 @@ class _PillContent extends StatelessWidget {
 
     final showLabel = !forceHideLabel && (active || isDownload);
 
+    // Dynamic coloring based on NavBarStyle
+    final activeIconColor = switch (navBarStyle) {
+      NavBarStyle.material => cs.onSecondaryContainer,
+      NavBarStyle.frosted => Colors.white,
+      NavBarStyle.minimal => cs.primary,
+      _ => cs.onPrimary,
+    };
+
+    final inactiveIconColor = switch (navBarStyle) {
+      NavBarStyle.frosted => Colors.white54,
+      NavBarStyle.minimal => cs.onSurfaceVariant.withValues(alpha: 0.5),
+      _ => cs.onSurfaceVariant,
+    };
+
+    final activeTextColor = switch (navBarStyle) {
+      NavBarStyle.material => cs.onSecondaryContainer,
+      NavBarStyle.frosted => Colors.white,
+      NavBarStyle.minimal => cs.primary,
+      _ => cs.onPrimary,
+    };
+
+    final resolvedColor = active
+        ? activeIconColor
+        : (isDownload
+              ? (navBarStyle == NavBarStyle.frosted
+                    ? Colors.white
+                    : cs.onSurface)
+              : inactiveIconColor);
+
+    final resolvedTextColor = active
+        ? activeTextColor
+        : (isDownload
+              ? (navBarStyle == NavBarStyle.frosted
+                    ? Colors.white
+                    : cs.onSurface)
+              : inactiveIconColor);
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -748,13 +1048,7 @@ class _PillContent extends StatelessWidget {
           child: AnimatedOpacity(
             opacity: active || isDownload ? 1.0 : 0.5,
             duration: const Duration(milliseconds: 250),
-            child: Icon(
-              icon,
-              color: active || isDownload
-                  ? (isDownload ? cs.onSurface : cs.onPrimary)
-                  : cs.onSurfaceVariant,
-              size: iconSize,
-            ),
+            child: Icon(icon, color: resolvedColor, size: iconSize),
           ),
         ),
         ClipRect(
@@ -772,7 +1066,7 @@ class _PillContent extends StatelessWidget {
                           fontSize: labelSize,
                           letterSpacing: labelSpacing,
                           fontWeight: FontWeight.bold,
-                          color: isDownload ? cs.onSurface : cs.onPrimary,
+                          color: resolvedTextColor,
                         ),
                       ),
                     ),
@@ -789,11 +1083,13 @@ class _TallDownloadPillContent extends ConsumerWidget {
   final ColorScheme cs;
   final HeightTier heightTier;
   final bool hideLabel;
+  final NavBarStyle navBarStyle;
 
   const _TallDownloadPillContent({
     required this.cs,
     required this.heightTier,
     required this.hideLabel,
+    required this.navBarStyle,
   });
 
   @override
@@ -828,6 +1124,7 @@ class _TallDownloadPillContent extends ConsumerWidget {
             cs: cs,
             heightTier: heightTier,
             forceHideLabel: hideLabel,
+            navBarStyle: navBarStyle,
           ),
         ),
       ),

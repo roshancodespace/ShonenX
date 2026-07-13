@@ -129,7 +129,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
     final layout = style.layout;
 
     final card = ContinueCardLayout(
-      isWideBanner: style == ContinueWatchingStyle.wideBanner,
+      variant: style.name,
       width: baseLayout.width,
       height: baseLayout.height,
       isActive: isActive,

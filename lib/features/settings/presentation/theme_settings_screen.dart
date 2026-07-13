@@ -22,6 +22,25 @@ class ThemeSettingsScreen extends ConsumerWidget {
 
     return AppScaffold(
       title: 'Appearance',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.restart_alt_rounded),
+          tooltip: 'Reset to Defaults',
+          onPressed: () {
+            ref
+                .read(themePrefsProvider.notifier)
+                .updateTheme((_) => const ThemePrefsState());
+            ref.read(presetProvider.notifier).clearActivePresetMark();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Theme settings reset to default'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 10),
+      ],
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
@@ -279,7 +298,9 @@ class ThemeSettingsScreen extends ConsumerWidget {
                   icon: Icons.opacity_rounded,
                   title: 'Noise Intensity',
                   subtitle: 'Textured grain strength',
-                  value: themePrefs.noiseOpacity,
+                  value: themePrefs.noiseOpacity > 0.15
+                      ? 0.15
+                      : themePrefs.noiseOpacity,
                   min: 0.0,
                   max: 0.15,
                   divisions: 15,
@@ -472,8 +493,8 @@ class ThemeSettingsScreen extends ConsumerWidget {
 
   void _openThemeVariantPicker(
     BuildContext context,
-    FlexSchemeVariant currentVariant,
-    void Function(FlexSchemeVariant) onSelected,
+    AppThemeVariant currentVariant,
+    void Function(AppThemeVariant) onSelected,
     bool isDark,
   ) {
     AppBottomSheet.show(
@@ -728,7 +749,7 @@ class _ExclusiveSchemePicker extends ConsumerWidget {
 
 class _VariantSwatchPreview extends ConsumerWidget {
   const _VariantSwatchPreview({required this.variant, required this.isDark});
-  final FlexSchemeVariant variant;
+  final AppThemeVariant variant;
   final bool isDark;
 
   @override
@@ -748,21 +769,70 @@ class _VariantSwatchPreview extends ConsumerWidget {
       final exclusive = prefs.exclusiveScheme != null
           ? exclusiveSchemes[prefs.exclusiveScheme]
           : null;
-      final schemeColors = activeIsDark
-          ? (exclusive?.dark ?? FlexColor.schemes[prefs.flexScheme]!.dark)
-          : (exclusive?.light ?? FlexColor.schemes[prefs.flexScheme]!.light);
-      primaryKey = schemeColors.primary;
-      secondaryKey = schemeColors.secondary;
-      tertiaryKey = schemeColors.tertiary;
+      if (exclusive != null) {
+        final schemeColors = activeIsDark ? exclusive.dark : exclusive.light;
+        primaryKey = schemeColors.primary;
+        secondaryKey = schemeColors.secondary;
+        tertiaryKey = schemeColors.tertiary;
+      } else if (prefs.primaryColor != null) {
+        final primary = Color(prefs.primaryColor!);
+        primaryKey = primary;
+
+        if (prefs.secondaryColor != null) {
+          secondaryKey = Color(prefs.secondaryColor!);
+        } else {
+          final brightness = activeIsDark ? Brightness.dark : Brightness.light;
+          secondaryKey = FlexSchemeColor.from(
+            primary: primary,
+            brightness: brightness,
+          ).secondary;
+        }
+
+        if (prefs.tertiaryColor != null) {
+          tertiaryKey = Color(prefs.tertiaryColor!);
+        } else {
+          final brightness = activeIsDark ? Brightness.dark : Brightness.light;
+          tertiaryKey = FlexSchemeColor.from(
+            primary: primary,
+            brightness: brightness,
+          ).tertiary;
+        }
+      } else if (prefs.colorSeed != null) {
+        final seed = Color(prefs.colorSeed!);
+        primaryKey = seed;
+        secondaryKey = seed;
+        tertiaryKey = seed;
+      } else {
+        final scheme =
+            FlexColor.schemes[prefs.flexScheme] ??
+            FlexColor.schemes[FlexScheme.material]!;
+        final schemeColors = activeIsDark ? scheme.dark : scheme.light;
+        primaryKey = schemeColors.primary;
+        secondaryKey = schemeColors.secondary;
+        tertiaryKey = schemeColors.tertiary;
+      }
     }
 
-    final seededScheme = SeedColorScheme.fromSeeds(
-      brightness: activeIsDark ? Brightness.dark : Brightness.light,
-      primaryKey: primaryKey,
-      secondaryKey: secondaryKey,
-      tertiaryKey: tertiaryKey,
-      variant: variant,
-    );
+    final Color previewPrimary;
+    final Color previewSecondary;
+    final Color previewTertiary;
+
+    if (variant == AppThemeVariant.classic) {
+      previewPrimary = primaryKey;
+      previewSecondary = secondaryKey;
+      previewTertiary = tertiaryKey;
+    } else {
+      final seededScheme = SeedColorScheme.fromSeeds(
+        brightness: activeIsDark ? Brightness.dark : Brightness.light,
+        primaryKey: primaryKey,
+        secondaryKey: secondaryKey,
+        tertiaryKey: tertiaryKey,
+        variant: variant.flexVariant,
+      );
+      previewPrimary = seededScheme.primary;
+      previewSecondary = seededScheme.secondary;
+      previewTertiary = seededScheme.tertiary;
+    }
 
     return CircleAvatar(
       radius: 18,
@@ -775,11 +845,7 @@ class _VariantSwatchPreview extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              seededScheme.primary,
-              seededScheme.secondary,
-              seededScheme.tertiary,
-            ],
+            colors: [previewPrimary, previewSecondary, previewTertiary],
           ),
           border: Border.all(
             color: Theme.of(context).colorScheme.surface,
@@ -798,20 +864,19 @@ class _ThemeVariantPicker extends ConsumerWidget {
     required this.onSelected,
   });
 
-  final FlexSchemeVariant currentVariant;
+  final AppThemeVariant currentVariant;
   final bool isDark;
-  final void Function(FlexSchemeVariant) onSelected;
+  final void Function(AppThemeVariant) onSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
-    ref.watch(themePrefsProvider);
 
     return ListView.builder(
       shrinkWrap: true,
-      itemCount: FlexSchemeVariant.values.length,
+      itemCount: AppThemeVariant.values.length,
       itemBuilder: (context, index) {
-        final variant = FlexSchemeVariant.values[index];
+        final variant = AppThemeVariant.values[index];
         final isSelected = currentVariant == variant;
 
         return ListTile(

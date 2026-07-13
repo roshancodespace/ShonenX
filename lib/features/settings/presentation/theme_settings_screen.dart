@@ -21,6 +21,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
     return AppScaffold(
       title: 'Appearance',
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
             title: 'Display & Color',

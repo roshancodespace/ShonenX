@@ -20,6 +20,7 @@ class HomeSettingsScreen extends ConsumerWidget {
     return AppScaffold(
       title: 'Home Settings',
       body: ReorderableListView.builder(
+        padding: const EdgeInsets.only(bottom: 50),
         buildDefaultDragHandles: false,
         itemCount: homeSections.length,
         onReorder: (oldIndex, newIndex) {

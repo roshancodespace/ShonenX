@@ -43,7 +43,7 @@ class AboutScreen extends ConsumerWidget {
     return AppScaffold(
       title: 'About',
       body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 24),
+        padding: const EdgeInsets.only(bottom: 50),
         children: [
           Column(
             children: [

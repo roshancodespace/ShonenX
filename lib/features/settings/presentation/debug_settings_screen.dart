@@ -16,6 +16,7 @@ class DebugSettingsScreen extends ConsumerWidget {
     return AppScaffold(
       title: 'Debug Settings',
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
             title: 'App State & Onboarding',

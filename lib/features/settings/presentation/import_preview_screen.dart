@@ -31,11 +31,12 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
 
   Future<void> _loadCounts() async {
     final counts = await ref.read(backupServiceProvider).getExistingCounts();
-    if (mounted)
+    if (mounted) {
       setState(() {
         _existingCounts = counts;
         _loading = false;
       });
+    }
   }
 
   Future<void> _confirmImport() async {
@@ -80,6 +81,7 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
+              padding: const EdgeInsets.only(bottom: 50),
               children: [
                 // File info
                 ListTile(

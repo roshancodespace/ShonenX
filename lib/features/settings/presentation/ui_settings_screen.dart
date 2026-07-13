@@ -49,7 +49,7 @@ class UiSettingsScreen extends ConsumerWidget {
     return AppScaffold(
       title: 'UI',
       body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
             title: 'Appearance',

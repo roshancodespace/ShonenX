@@ -28,6 +28,7 @@ class TrackingSettingsScreen extends ConsumerWidget {
     return AppScaffold(
       title: 'Tracking & Sync',
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
             title: 'General',

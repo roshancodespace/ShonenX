@@ -114,6 +114,7 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
     return AppScaffold(
       title: 'Cache Manager',
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 50),
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(

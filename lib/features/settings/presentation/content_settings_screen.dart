@@ -14,6 +14,7 @@ class ContentSettingsScreen extends ConsumerWidget {
     return AppScaffold(
       title: 'Content Settings',
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
             title: 'Filters',

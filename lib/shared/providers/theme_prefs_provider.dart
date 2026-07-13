@@ -55,6 +55,48 @@ extension FlexSchemeVariantExtension on FlexSchemeVariant {
   };
 }
 
+enum BackgroundGradientStyle {
+  linear,
+  radial,
+  topGlow,
+  sweep;
+
+  String get displayName => switch (this) {
+    BackgroundGradientStyle.linear => 'Linear',
+    BackgroundGradientStyle.radial => 'Radial Glow',
+    BackgroundGradientStyle.topGlow => 'Top Spotlight',
+    BackgroundGradientStyle.sweep => 'Sweep',
+  };
+}
+
+enum BackgroundGradientDirection {
+  diagonalUp,
+  diagonalDown,
+  vertical,
+  horizontal;
+
+  String get displayName => switch (this) {
+    BackgroundGradientDirection.diagonalUp => 'Diagonal Up',
+    BackgroundGradientDirection.diagonalDown => 'Diagonal Down',
+    BackgroundGradientDirection.vertical => 'Vertical',
+    BackgroundGradientDirection.horizontal => 'Horizontal',
+  };
+}
+
+enum BackgroundGradientColorPair {
+  surfaceContainer,
+  primaryInfused,
+  secondaryInfused,
+  vibrantMix;
+
+  String get displayName => switch (this) {
+    BackgroundGradientColorPair.surfaceContainer => 'Subtle Surface',
+    BackgroundGradientColorPair.primaryInfused => 'Primary Glow',
+    BackgroundGradientColorPair.secondaryInfused => 'Secondary Glow',
+    BackgroundGradientColorPair.vibrantMix => 'Vibrant Two-Tone',
+  };
+}
+
 class ThemePrefsState {
   final ThemeMode themeMode;
   final FlexScheme flexScheme;
@@ -64,6 +106,10 @@ class ThemePrefsState {
   final String? exclusiveScheme;
   final int blendLevel;
   final bool useGradients;
+  final BackgroundGradientStyle gradientStyle;
+  final BackgroundGradientDirection gradientDirection;
+  final BackgroundGradientColorPair gradientColorPair;
+  final double gradientIntensity;
   final bool useNoiseOverlay;
   final String? customBackgroundImagePath;
   final double noiseOpacity;
@@ -73,6 +119,11 @@ class ThemePrefsState {
   final double fontScaleFactor;
   final double uiScaleFactor;
   final bool swapColors;
+  final int? colorSeed;
+  final int? primaryColor;
+  final int? secondaryColor;
+  final int? tertiaryColor;
+  final int? surfaceColor;
 
   const ThemePrefsState({
     this.themeMode = ThemeMode.system,
@@ -84,6 +135,10 @@ class ThemePrefsState {
     this.exclusiveScheme,
     this.blendLevel = 10,
     this.useGradients = false,
+    this.gradientStyle = BackgroundGradientStyle.linear,
+    this.gradientDirection = BackgroundGradientDirection.diagonalUp,
+    this.gradientColorPair = BackgroundGradientColorPair.surfaceContainer,
+    this.gradientIntensity = 0.35,
     this.useNoiseOverlay = false,
     this.customBackgroundImagePath,
     this.noiseOpacity = 0.03,
@@ -92,6 +147,11 @@ class ThemePrefsState {
     this.uiRoundness = 12.0,
     this.fontScaleFactor = 1.0,
     this.uiScaleFactor = 1.0,
+    this.colorSeed,
+    this.primaryColor,
+    this.secondaryColor,
+    this.tertiaryColor,
+    this.surfaceColor,
   });
 
   ThemePrefsState copyWith({
@@ -114,6 +174,20 @@ class ThemePrefsState {
     double? fontScaleFactor,
     double? uiScaleFactor,
     bool? swapColors,
+    BackgroundGradientStyle? gradientStyle,
+    BackgroundGradientDirection? gradientDirection,
+    BackgroundGradientColorPair? gradientColorPair,
+    double? gradientIntensity,
+    int? colorSeed,
+    bool clearColorSeed = false,
+    int? primaryColor,
+    bool clearPrimaryColor = false,
+    int? secondaryColor,
+    bool clearSecondaryColor = false,
+    int? tertiaryColor,
+    bool clearTertiaryColor = false,
+    int? surfaceColor,
+    bool clearSurfaceColor = false,
   }) {
     return ThemePrefsState(
       themeMode: themeMode ?? this.themeMode,
@@ -126,6 +200,10 @@ class ThemePrefsState {
           : (exclusiveScheme ?? this.exclusiveScheme),
       blendLevel: blendLevel ?? this.blendLevel,
       useGradients: useGradients ?? this.useGradients,
+      gradientStyle: gradientStyle ?? this.gradientStyle,
+      gradientDirection: gradientDirection ?? this.gradientDirection,
+      gradientColorPair: gradientColorPair ?? this.gradientColorPair,
+      gradientIntensity: gradientIntensity ?? this.gradientIntensity,
       useNoiseOverlay: useNoiseOverlay ?? this.useNoiseOverlay,
       customBackgroundImagePath: clearCustomBackgroundImagePath
           ? null
@@ -138,6 +216,19 @@ class ThemePrefsState {
       fontScaleFactor: fontScaleFactor ?? this.fontScaleFactor,
       uiScaleFactor: uiScaleFactor ?? this.uiScaleFactor,
       swapColors: swapColors ?? this.swapColors,
+      colorSeed: clearColorSeed ? null : (colorSeed ?? this.colorSeed),
+      primaryColor: clearPrimaryColor
+          ? null
+          : (primaryColor ?? this.primaryColor),
+      secondaryColor: clearSecondaryColor
+          ? null
+          : (secondaryColor ?? this.secondaryColor),
+      tertiaryColor: clearTertiaryColor
+          ? null
+          : (tertiaryColor ?? this.tertiaryColor),
+      surfaceColor: clearSurfaceColor
+          ? null
+          : (surfaceColor ?? this.surfaceColor),
     );
   }
 
@@ -151,6 +242,10 @@ class ThemePrefsState {
       'exclusiveScheme': exclusiveScheme,
       'blendLevel': blendLevel,
       'useGradients': useGradients,
+      'gradientStyle': gradientStyle.index,
+      'gradientDirection': gradientDirection.index,
+      'gradientColorPair': gradientColorPair.index,
+      'gradientIntensity': gradientIntensity,
       'useNoiseOverlay': useNoiseOverlay,
       'customBackgroundImagePath': customBackgroundImagePath,
       'noiseOpacity': noiseOpacity,
@@ -160,7 +255,24 @@ class ThemePrefsState {
       'fontScaleFactor': fontScaleFactor,
       'uiScaleFactor': uiScaleFactor,
       'swapColors': swapColors,
+      if (colorSeed != null) 'colorSeed': colorSeed,
+      if (primaryColor != null) 'primaryColor': primaryColor,
+      if (secondaryColor != null) 'secondaryColor': secondaryColor,
+      if (tertiaryColor != null) 'tertiaryColor': tertiaryColor,
+      if (surfaceColor != null) 'surfaceColor': surfaceColor,
     };
+  }
+
+  static int? _parseColor(dynamic val) {
+    if (val == null) return null;
+    if (val is int) return val;
+    if (val is num) return val.toInt();
+    if (val is String) {
+      String hex = val.trim().replaceAll('#', '');
+      if (hex.length == 6) hex = 'FF$hex';
+      return int.tryParse(hex, radix: 16);
+    }
+    return null;
   }
 
   factory ThemePrefsState.fromMap(Map<String, dynamic> map) {
@@ -179,6 +291,27 @@ class ThemePrefsState {
       exclusiveScheme: map['exclusiveScheme'],
       blendLevel: map['blendLevel'] ?? 10,
       useGradients: map['useGradients'] ?? false,
+      gradientStyle:
+          (map['gradientStyle'] is int &&
+              map['gradientStyle'] >= 0 &&
+              map['gradientStyle'] < BackgroundGradientStyle.values.length)
+          ? BackgroundGradientStyle.values[map['gradientStyle']]
+          : BackgroundGradientStyle.linear,
+      gradientDirection:
+          (map['gradientDirection'] is int &&
+              map['gradientDirection'] >= 0 &&
+              map['gradientDirection'] <
+                  BackgroundGradientDirection.values.length)
+          ? BackgroundGradientDirection.values[map['gradientDirection']]
+          : BackgroundGradientDirection.diagonalUp,
+      gradientColorPair:
+          (map['gradientColorPair'] is int &&
+              map['gradientColorPair'] >= 0 &&
+              map['gradientColorPair'] <
+                  BackgroundGradientColorPair.values.length)
+          ? BackgroundGradientColorPair.values[map['gradientColorPair']]
+          : BackgroundGradientColorPair.surfaceContainer,
+      gradientIntensity: (map['gradientIntensity'] as num?)?.toDouble() ?? 0.35,
       useNoiseOverlay: map['useNoiseOverlay'] ?? false,
       customBackgroundImagePath: map['customBackgroundImagePath'],
       noiseOpacity: (map['noiseOpacity'] as num?)?.toDouble() ?? 0.03,
@@ -189,6 +322,11 @@ class ThemePrefsState {
       fontScaleFactor: (map['fontScaleFactor'] as num?)?.toDouble() ?? 1.0,
       uiScaleFactor: (map['uiScaleFactor'] as num?)?.toDouble() ?? 1.0,
       swapColors: map['swapColors'] ?? false,
+      colorSeed: _parseColor(map['colorSeed'] ?? map['seedColor']),
+      primaryColor: _parseColor(map['primaryColor'] ?? map['primary']),
+      secondaryColor: _parseColor(map['secondaryColor'] ?? map['secondary']),
+      tertiaryColor: _parseColor(map['tertiaryColor'] ?? map['tertiary']),
+      surfaceColor: _parseColor(map['surfaceColor'] ?? map['surface']),
     );
   }
 
@@ -209,6 +347,10 @@ class ThemePrefsState {
         other.exclusiveScheme == exclusiveScheme &&
         other.blendLevel == blendLevel &&
         other.useGradients == useGradients &&
+        other.gradientStyle == gradientStyle &&
+        other.gradientDirection == gradientDirection &&
+        other.gradientColorPair == gradientColorPair &&
+        other.gradientIntensity == gradientIntensity &&
         other.useNoiseOverlay == useNoiseOverlay &&
         other.customBackgroundImagePath == customBackgroundImagePath &&
         other.noiseOpacity == noiseOpacity &&
@@ -217,7 +359,12 @@ class ThemePrefsState {
         other.uiRoundness == uiRoundness &&
         other.fontScaleFactor == fontScaleFactor &&
         other.uiScaleFactor == uiScaleFactor &&
-        other.swapColors == swapColors;
+        other.swapColors == swapColors &&
+        other.colorSeed == colorSeed &&
+        other.primaryColor == primaryColor &&
+        other.secondaryColor == secondaryColor &&
+        other.tertiaryColor == tertiaryColor &&
+        other.surfaceColor == surfaceColor;
   }
 
   @override
@@ -231,8 +378,12 @@ class ThemePrefsState {
       exclusiveScheme,
       blendLevel,
       useGradients,
-      useNoiseOverlay,
+      gradientStyle,
+      gradientDirection,
       Object.hash(
+        gradientColorPair,
+        gradientIntensity,
+        useNoiseOverlay,
         customBackgroundImagePath,
         noiseOpacity,
         backgroundBlur,
@@ -241,6 +392,11 @@ class ThemePrefsState {
         fontScaleFactor,
         uiScaleFactor,
         swapColors,
+        colorSeed,
+        primaryColor,
+        secondaryColor,
+        tertiaryColor,
+        surfaceColor,
       ),
     );
   }

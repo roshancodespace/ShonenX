@@ -21,6 +21,7 @@ class DownloadSettingsScreen extends ConsumerWidget {
       title: 'Downloads',
       body: prefsAsync.when(
         data: (prefs) => ListView(
+          padding: const EdgeInsets.only(bottom: 50),
           children: [
             SettingsSection(
               title: 'Storage',
@@ -218,7 +219,9 @@ class DownloadSettingsScreen extends ConsumerWidget {
                     },
                   ),
                 ],
-                if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) ...[
+                if (Platform.isLinux ||
+                    Platform.isWindows ||
+                    Platform.isMacOS) ...[
                   SettingsDropdownTile<RemuxerPreference>(
                     icon: Icons.auto_fix_high_outlined,
                     title: 'HLS Remuxer Preference',

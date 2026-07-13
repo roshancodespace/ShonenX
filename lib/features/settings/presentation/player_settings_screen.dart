@@ -25,6 +25,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
     return AppScaffold(
       title: 'Player',
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
             title: 'Aniskip',

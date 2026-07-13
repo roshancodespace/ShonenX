@@ -105,6 +105,7 @@ class _BackupSettingsScreenState extends ConsumerState<BackupSettingsScreen> {
     return AppScaffold(
       title: 'Backup & Restore',
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
             title: 'Export',

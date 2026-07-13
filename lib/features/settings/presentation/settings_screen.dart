@@ -14,6 +14,7 @@ class SettingsScreen extends ConsumerWidget {
     return AppScaffold(
       title: 'Settings',
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 50),
         children: [
           SettingsSection(
             title: 'General',

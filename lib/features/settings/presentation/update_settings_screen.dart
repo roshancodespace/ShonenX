@@ -291,7 +291,7 @@ class _UpdateSettingsScreenState extends ConsumerState<UpdateSettingsScreen> {
           await ref.read(releasesListProvider.future);
         },
         child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.only(bottom: 50),
           children: [
             if (Platform.isLinux)
               SettingsSection(

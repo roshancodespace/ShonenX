@@ -23,6 +23,7 @@ class ReaderSettingsContent extends ConsumerWidget {
 
     return ListView(
       shrinkWrap: true,
+      padding: const EdgeInsets.only(bottom: 50),
       children: [
         SettingsSection(
           title: 'Display',

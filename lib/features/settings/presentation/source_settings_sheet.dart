@@ -29,6 +29,7 @@ class SourceSettingsSheet extends ConsumerWidget {
         children: [
           Flexible(
             child: ListView.builder(
+              padding: const EdgeInsets.only(bottom: 50),
               shrinkWrap: true,
               itemCount: schema.length,
               itemBuilder: (context, index) {

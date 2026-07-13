@@ -85,6 +85,7 @@ class _ManualTrackerMatchSheetState
                     id: r.id,
                     type: widget.type,
                     title: MediaTitle(english: r.title),
+                    cover: r.cover,
                   ),
                 )
                 .toList(),

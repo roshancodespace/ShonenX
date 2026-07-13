@@ -64,37 +64,40 @@ class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTrack
         queryParameters: {
           'filter[text]': query,
           'page[limit]': '20',
-          'fields[$endpoint]': 'titles,canonicalTitle,posterImage,episodeCount,chapterCount',
         },
       );
 
       final body = response.json;
-      if (body['errors'] != null) {
-        throw Exception(body['errors']?.toString() ?? 'Search failed');
+      if (body is! Map || body['errors'] != null) {
+        throw Exception(body?['errors']?.toString() ?? 'Search failed');
       }
 
       final data = body['data'] as List? ?? [];
 
-      return data.map((item) {
-        final attr = item['attributes'] as Map? ?? {};
-        final titles = attr['titles'] as Map? ?? {};
-        final title = attr['canonicalTitle']?.toString() ??
-            titles['en_jp']?.toString() ??
-            titles['en']?.toString() ??
-            titles['ja_jp']?.toString() ??
-            'Unknown Title';
-        final posterImage = attr['posterImage'] as Map? ?? {};
-        final cover = posterImage['large']?.toString() ??
-            posterImage['medium']?.toString() ??
-            posterImage['original']?.toString() ??
-            '';
+      return data.whereType<Map>().map((item) {
+        try {
+          final attr = item['attributes'] as Map? ?? {};
+          final titles = attr['titles'] as Map? ?? {};
+          final title = attr['canonicalTitle']?.toString() ??
+              titles['en_jp']?.toString() ??
+              titles['en']?.toString() ??
+              titles['ja_jp']?.toString() ??
+              'Unknown Title';
+          final posterImage = attr['posterImage'] as Map? ?? {};
+          final cover = posterImage['large']?.toString() ??
+              posterImage['medium']?.toString() ??
+              posterImage['original']?.toString() ??
+              '';
 
-        return TrackerSearchResult(
-          id: item['id']?.toString() ?? '',
-          title: title,
-          cover: cover,
-        );
-      }).toList();
+          return TrackerSearchResult(
+            id: item['id']?.toString() ?? '',
+            title: title,
+            cover: cover,
+          );
+        } catch (_) {
+          return null;
+        }
+      }).whereType<TrackerSearchResult>().toList();
     });
   }
 

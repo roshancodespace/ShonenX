@@ -53,14 +53,22 @@ class CategorySearchNotifier
     if (prefs.mode == MetadataMode.tracker) {
       final engine = ref.read(metadataSourceProvider);
       final adultMode = ref.read(contentPrefsProvider).adultContentMode;
-      return arg.category.toLowerCase().contains('trending')
-          ? await engine.getTrending(
-              type: arg.type,
-              page: page,
-              cacheDuration: const Duration(seconds: 30),
-              adultMode: adultMode,
-            )
-          : const PaginatedResult<UnifiedMedia>(items: [], hasNextPage: false);
+      if (arg.category.toLowerCase().contains('trending')) {
+        return await engine.getTrending(
+          type: arg.type,
+          page: page,
+          cacheDuration: const Duration(seconds: 30),
+          adultMode: adultMode,
+        );
+      } else {
+        return await engine.search(
+          '',
+          type: arg.type,
+          page: page,
+          genres: [arg.category],
+          adultMode: adultMode,
+        );
+      }
     } else {
       final allAnimeSources = await ref.read(
         availableAnimeSourcesProvider.future,

@@ -4,125 +4,11 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shonenx/shared/models/component_layout.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
+import 'package:shonenx/shared/models/ui_style_enums.dart';
 
-class GlobalUI {
-  static double uiScaleFactor = 1.0;
-  static double uiRoundness = 6.0;
-}
-
-enum MediaCardStyle {
-  classic(ComponentLayout(width: 125, height: 215)),
-  minimal(ComponentLayout(width: 120, height: 180)),
-  expressive(ComponentLayout(width: 140, height: 230)),
-  material(ComponentLayout(width: 135, height: 210)),
-  liquidGlass(ComponentLayout(width: 140, height: 210)),
-  experimentalLiquid(ComponentLayout(width: 145, height: 220));
-
-  final ComponentLayout _baseLayout;
-  const MediaCardStyle(this._baseLayout);
-
-  ComponentLayout get baseLayout => _baseLayout;
-
-  ComponentLayout get layout {
-    return ComponentLayout(
-      width: _baseLayout.width * GlobalUI.uiScaleFactor,
-      height: _baseLayout.height * GlobalUI.uiScaleFactor,
-    );
-  }
-
-  ComponentLayout getScaledLayout(double scale) {
-    return ComponentLayout(
-      width: _baseLayout.width * scale,
-      height: _baseLayout.height * scale,
-    );
-  }
-
-  String get displayName {
-    switch (this) {
-      case MediaCardStyle.classic:
-        return 'Classic';
-      case MediaCardStyle.minimal:
-        return 'Minimal';
-      case MediaCardStyle.expressive:
-        return 'Expressive';
-      case MediaCardStyle.material:
-        return 'Material';
-      case MediaCardStyle.liquidGlass:
-        return 'Liquid Glass';
-      case MediaCardStyle.experimentalLiquid:
-        return 'Experimental Liquid';
-    }
-  }
-}
-
-enum ContinueWatchingStyle {
-  classic(ComponentLayout(width: 180, height: 180)),
-  wideBanner(ComponentLayout(width: 390, height: 125));
-
-  final ComponentLayout _baseLayout;
-  const ContinueWatchingStyle(this._baseLayout);
-
-  ComponentLayout get baseLayout => _baseLayout;
-
-  ComponentLayout get layout {
-    return ComponentLayout(
-      width: _baseLayout.width * GlobalUI.uiScaleFactor,
-      height: _baseLayout.height * GlobalUI.uiScaleFactor,
-    );
-  }
-
-  ComponentLayout getScaledLayout(double scale) {
-    return ComponentLayout(
-      width: _baseLayout.width * scale,
-      height: _baseLayout.height * scale,
-    );
-  }
-
-  String get displayName {
-    switch (this) {
-      case ContinueWatchingStyle.classic:
-        return 'Classic';
-      case ContinueWatchingStyle.wideBanner:
-        return 'Wide Banner';
-    }
-  }
-}
-
-enum ContinueReadingStyle {
-  classic(ComponentLayout(width: 140, height: 210)),
-  wideBanner(ComponentLayout(width: 390, height: 125));
-
-  final ComponentLayout _baseLayout;
-  const ContinueReadingStyle(this._baseLayout);
-
-  ComponentLayout get baseLayout => _baseLayout;
-
-  ComponentLayout get layout {
-    return ComponentLayout(
-      width: _baseLayout.width * GlobalUI.uiScaleFactor,
-      height: _baseLayout.height * GlobalUI.uiScaleFactor,
-    );
-  }
-
-  ComponentLayout getScaledLayout(double scale) {
-    return ComponentLayout(
-      width: _baseLayout.width * scale,
-      height: _baseLayout.height * scale,
-    );
-  }
-
-  String get displayName {
-    switch (this) {
-      case ContinueReadingStyle.classic:
-        return 'Classic';
-      case ContinueReadingStyle.wideBanner:
-        return 'Wide Banner';
-    }
-  }
-}
+export 'package:shonenx/shared/models/ui_style_enums.dart';
 
 class UiPrefState {
   static const Map<String, dynamic> defaultExperimentalConfig = {
@@ -147,6 +33,7 @@ class UiPrefState {
   final ContinueWatchingStyle continueWatchingStyle;
   final ContinueReadingStyle continueReadingStyle;
   final EpisodeViewMode episodeViewMode;
+  final NavBarStyle navBarStyle;
   final Map<String, dynamic> experimentalConfig;
 
   const UiPrefState({
@@ -154,6 +41,7 @@ class UiPrefState {
     this.continueWatchingStyle = ContinueWatchingStyle.classic,
     this.continueReadingStyle = ContinueReadingStyle.classic,
     this.episodeViewMode = EpisodeViewMode.classic,
+    this.navBarStyle = NavBarStyle.classic,
     this.experimentalConfig = defaultExperimentalConfig,
   });
 
@@ -162,6 +50,7 @@ class UiPrefState {
     ContinueWatchingStyle? continueWatchingStyle,
     ContinueReadingStyle? continueReadingStyle,
     EpisodeViewMode? episodeViewMode,
+    NavBarStyle? navBarStyle,
     Map<String, dynamic>? experimentalConfig,
   }) {
     return UiPrefState(
@@ -170,6 +59,7 @@ class UiPrefState {
           continueWatchingStyle ?? this.continueWatchingStyle,
       continueReadingStyle: continueReadingStyle ?? this.continueReadingStyle,
       episodeViewMode: episodeViewMode ?? this.episodeViewMode,
+      navBarStyle: navBarStyle ?? this.navBarStyle,
       experimentalConfig: experimentalConfig ?? this.experimentalConfig,
     );
   }
@@ -179,6 +69,7 @@ class UiPrefState {
     'continueWatchingStyle': continueWatchingStyle.name,
     'continueReadingStyle': continueReadingStyle.name,
     'episodeViewMode': episodeViewMode.name,
+    'navBarStyle': navBarStyle.name,
     'experimentalConfig': experimentalConfig,
   };
 
@@ -200,6 +91,10 @@ class UiPrefState {
         (e) => e.name == json['episodeViewMode'],
         orElse: () => EpisodeViewMode.classic,
       ),
+      navBarStyle: NavBarStyle.values.firstWhere(
+        (e) => e.name == json['navBarStyle'],
+        orElse: () => NavBarStyle.classic,
+      ),
       experimentalConfig: (json['experimentalConfig'] is Map)
           ? {
               ...defaultExperimentalConfig,
@@ -211,7 +106,7 @@ class UiPrefState {
 
   @override
   String toString() =>
-      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode, experimentalConfig: $experimentalConfig)';
+      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode, navBarStyle: $navBarStyle, experimentalConfig: $experimentalConfig)';
 
   @override
   bool operator ==(Object other) {
@@ -221,6 +116,7 @@ class UiPrefState {
         other.continueWatchingStyle == continueWatchingStyle &&
         other.continueReadingStyle == continueReadingStyle &&
         other.episodeViewMode == episodeViewMode &&
+        other.navBarStyle == navBarStyle &&
         mapEquals(other.experimentalConfig, experimentalConfig);
   }
 
@@ -230,6 +126,7 @@ class UiPrefState {
     continueWatchingStyle,
     continueReadingStyle,
     episodeViewMode,
+    navBarStyle,
     experimentalConfig,
   );
 }
@@ -282,6 +179,11 @@ class UiPrefsNotifier extends Notifier<UiPrefState> {
 
   void updateEpisodeViewMode(EpisodeViewMode mode) {
     state = state.copyWith(episodeViewMode: mode);
+    _saveDb();
+  }
+
+  void updateNavBarStyle(NavBarStyle style) {
+    state = state.copyWith(navBarStyle: style);
     _saveDb();
   }
 

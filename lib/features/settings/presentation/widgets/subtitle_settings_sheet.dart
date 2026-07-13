@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,7 +39,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
     );
 
     if (isWide) {
-      final double paneWidth = (screenWidth * 0.30).clamp(280.0, 400.0);
+      final double paneWidth = (screenWidth * 0.26).clamp(260.0, 360.0);
       final routeAnimation =
           ModalRoute.of(context)?.animation ??
           const AlwaysStoppedAnimation(1.0);
@@ -47,60 +49,57 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
         reverseCurve: Curves.easeInCubic,
       );
       final leftSlide = Tween<Offset>(
-        begin: const Offset(-1.2, 0.0),
+        begin: const Offset(-1.0, 0.0),
         end: Offset.zero,
       ).animate(curve);
       final rightSlide = Tween<Offset>(
-        begin: const Offset(1.2, 0.0),
+        begin: const Offset(1.0, 0.0),
         end: Offset.zero,
       ).animate(curve);
-      final middleFade = Tween<double>(begin: 0.0, end: 1.0).animate(curve);
 
       return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // LEFT PANE
-              SlideTransition(
-                position: leftSlide,
-                child: _buildPaneContainer(
-                  context: context,
-                  width: paneWidth,
-                  title: 'Typography & Colors',
-                  leadingIcon: Icons.font_download_outlined,
-                  onReset: () => notifier.updatePrefs(const SubtitlePrefs()),
-                  children: _buildBasicSettings(prefs, notifier, theme, cs),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // LEFT PANE
+            SlideTransition(
+              position: leftSlide,
+              child: _buildMinimalPane(
+                context: context,
+                borderRadius: BorderRadiusGeometry.only(
+                  topRight: Radius.circular(GlobalUI.uiRoundness),
+                  bottomRight: Radius.circular(GlobalUI.uiRoundness),
                 ),
+                width: paneWidth,
+                alignRight: false,
+                onReset: () => notifier.updatePrefs(const SubtitlePrefs()),
+                children: _buildBasicSettings(prefs, notifier, theme, cs),
               ),
+            ),
 
-              // MIDDLE PANE
-              Expanded(
-                child: FadeTransition(
-                  opacity: middleFade,
-                  child: _buildMiddlePreviewPane(
-                    prefs: prefs,
-                    cs: cs,
-                    responsiveFontSize: responsiveFontSize,
-                  ),
-                ),
+            // MIDDLE
+            Expanded(
+              child: Center(
+                child: _buildPreviewText(prefs, responsiveFontSize),
               ),
+            ),
 
-              // RIGHT PANE
-              SlideTransition(
-                position: rightSlide,
-                child: _buildPaneContainer(
-                  context: context,
-                  width: paneWidth,
-                  title: 'Styling & Spacing',
-                  leadingIcon: Icons.tune_rounded,
-                  onClose: () => Navigator.of(context).pop(),
-                  children: _buildAdvancedSettings(prefs, notifier, theme, cs),
+            // RIGHT PANE
+            SlideTransition(
+              position: rightSlide,
+              child: _buildMinimalPane(
+                context: context,
+                borderRadius: BorderRadiusGeometry.only(
+                  topLeft: Radius.circular(GlobalUI.uiRoundness),
+                  bottomLeft: Radius.circular(GlobalUI.uiRoundness),
                 ),
+                width: paneWidth,
+                alignRight: true,
+                onClose: () => Navigator.of(context).pop(),
+                children: _buildAdvancedSettings(prefs, notifier, theme, cs),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }
@@ -148,7 +147,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
               decoration: const BoxDecoration(
                 image: DecorationImage(
                   image: CachedNetworkImageProvider(
-                    'https://mir-s3-cdn-cf.behance.net/project_modules/1400_webp/833374164510463.63f7b82b9427d.png',
+                    'https://i.pinimg.com/736x/90/64/ee/9064eed5aabcfc7a30e8af33d040b565.jpg',
                   ),
                   fit: BoxFit.cover,
                   alignment: Alignment(0, -0.5),
@@ -193,189 +192,59 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
     );
   }
 
-  Widget _buildPaneContainer({
+  Widget _buildMinimalPane({
     required BuildContext context,
     required double width,
-    required String title,
-    required IconData leadingIcon,
+    required bool alignRight,
+    required BorderRadiusGeometry borderRadius,
     VoidCallback? onReset,
     VoidCallback? onClose,
     required List<Widget> children,
   }) {
     final cs = Theme.of(context).colorScheme;
-    return Container(
-      width: width,
-      decoration: BoxDecoration(
-        color: cs.surfaceContainer,
-        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
-            child: Row(
-              children: [
-                Icon(leadingIcon, size: 20, color: cs.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ),
-                if (onReset != null)
-                  IconButton.filledTonal(
-                    tooltip: 'Reset to Defaults',
-                    style: IconButton.styleFrom(
-                      backgroundColor: cs.errorContainer,
-                      foregroundColor: cs.onErrorContainer,
-                      minimumSize: const Size(36, 36),
-                      padding: EdgeInsets.zero,
-                    ),
-                    icon: const Icon(Icons.refresh_rounded, size: 18),
-                    onPressed: onReset,
-                  ),
-                if (onClose != null)
-                  IconButton.filledTonal(
-                    tooltip: 'Close',
-                    style: IconButton.styleFrom(
-                      backgroundColor: cs.primary,
-                      foregroundColor: cs.onPrimary,
-                      minimumSize: const Size(36, 36),
-                      padding: EdgeInsets.zero,
-                    ),
-                    icon: const Icon(Icons.close_rounded, size: 18),
-                    onPressed: onClose,
-                  ),
-              ],
-            ),
-          ),
-          Divider(color: cs.outlineVariant.withValues(alpha: 0.3), height: 1),
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(GlobalUI.uiRoundness),
-              ),
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                children: children,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    final action = onClose != null
+        ? _HeaderIconButton(icon: Icons.close_rounded, onTap: onClose)
+        : onReset != null
+        ? _HeaderIconButton(icon: Icons.refresh_rounded, onTap: onReset)
+        : null;
 
-  Widget _buildMiddlePreviewPane({
-    required SubtitlePrefs prefs,
-    required ColorScheme cs,
-    required double responsiveFontSize,
-  }) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHigh.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-                border: Border.all(
-                  color: cs.outlineVariant.withValues(alpha: 0.4),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          width: width,
+          decoration: BoxDecoration(color: cs.surface),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (action != null)
+                Padding(
+                  padding: EdgeInsets.only(
+                    top: 10,
+                    left: alignRight ? 10 : 14,
+                    right: alignRight ? 14 : 10,
+                    bottom: 2,
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _showLivePreview
-                        ? Icons.visibility_rounded
-                        : Icons.visibility_off_rounded,
-                    size: 18,
-                    color: _showLivePreview ? cs.primary : cs.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Live Preview Background',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: _showLivePreview
-                          ? cs.onSurface
-                          : cs.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Switch(
-                    value: _showLivePreview,
-                    onChanged: (val) {
-                      setState(() => _showLivePreview = val);
-                    },
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Expanded(
-          child: _showLivePreview
-              ? Center(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    constraints: const BoxConstraints(maxHeight: 280),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: cs.outlineVariant.withValues(alpha: 0.4),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.5),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                      image: const DecorationImage(
-                        image: CachedNetworkImageProvider(
-                          'https://mir-s3-cdn-cf.behance.net/project_modules/1400_webp/833374164510463.63f7b82b9427d.png',
-                        ),
-                        fit: BoxFit.cover,
-                        alignment: Alignment(0, -0.5),
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: _buildPreviewText(prefs, responsiveFontSize),
+                  child: Row(
+                    mainAxisAlignment: alignRight
+                        ? MainAxisAlignment.end
+                        : MainAxisAlignment.start,
+                    children: [action],
                   ),
                 )
-              : const SizedBox.shrink(),
+              else
+                const SizedBox(height: 10),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  children: children,
+                ),
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
 
@@ -383,52 +252,51 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
-      children:
-          ['Ore wa kaizoku ou ni naru!', '(I will become the Pirate King!)']
-              .map(
-                (line) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOut,
-                  margin: const EdgeInsets.symmetric(vertical: 2),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: prefs.padding * 1.5,
-                    vertical: prefs.padding * 0.5,
-                  ),
-                  decoration: prefs.backgroundColor != 0x00000000
-                      ? BoxDecoration(
-                          color: prefs.bg,
-                          borderRadius: BorderRadius.circular(4.0),
-                        )
-                      : null,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      if (getSubtitleStrokeStyle(
-                            prefs,
-                            responsiveFontSize.clamp(10.0, 100.0),
-                          ) !=
-                          null)
-                        Text(
-                          line,
-                          textAlign: TextAlign.center,
-                          style: getSubtitleStrokeStyle(
-                            prefs,
-                            responsiveFontSize.clamp(10.0, 100.0),
-                          ),
-                        ),
-                      Text(
-                        line,
-                        textAlign: TextAlign.center,
-                        style: getSubtitleTextStyle(
-                          prefs,
-                          responsiveFontSize.clamp(10.0, 100.0),
-                        ),
+      children: ['何も…… なかった。', ' Nothing... happened.']
+          .map(
+            (line) => AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              margin: const EdgeInsets.symmetric(vertical: 2),
+              padding: EdgeInsets.symmetric(
+                horizontal: prefs.padding * 1.5,
+                vertical: prefs.padding * 0.5,
+              ),
+              decoration: prefs.backgroundColor != 0x00000000
+                  ? BoxDecoration(
+                      color: prefs.bg,
+                      borderRadius: BorderRadius.circular(4.0),
+                    )
+                  : null,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (getSubtitleStrokeStyle(
+                        prefs,
+                        responsiveFontSize.clamp(10.0, 100.0),
+                      ) !=
+                      null)
+                    Text(
+                      line,
+                      textAlign: TextAlign.center,
+                      style: getSubtitleStrokeStyle(
+                        prefs,
+                        responsiveFontSize.clamp(10.0, 100.0),
                       ),
-                    ],
+                    ),
+                  Text(
+                    line,
+                    textAlign: TextAlign.center,
+                    style: getSubtitleTextStyle(
+                      prefs,
+                      responsiveFontSize.clamp(10.0, 100.0),
+                    ),
                   ),
-                ),
-              )
-              .toList(),
+                ],
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -818,6 +686,26 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
           ),
         );
       },
+    );
+  }
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _HeaderIconButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      customBorder: const CircleBorder(),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(icon, color: cs.onSurfaceVariant),
+      ),
     );
   }
 }

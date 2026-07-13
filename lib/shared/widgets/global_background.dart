@@ -196,7 +196,6 @@ class GlobalBackground extends ConsumerWidget {
           colors: [colors.first, ...colors.skip(1), colors.first],
         );
       case BackgroundGradientStyle.linear:
-      default:
         final Alignment begin;
         final Alignment end;
         switch (direction) {
@@ -210,7 +209,6 @@ class GlobalBackground extends ConsumerWidget {
             begin = Alignment.centerLeft;
             end = Alignment.centerRight;
           case BackgroundGradientDirection.diagonalUp:
-          default:
             begin = Alignment.bottomLeft;
             end = Alignment.topRight;
         }

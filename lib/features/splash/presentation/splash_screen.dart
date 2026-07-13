@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shonenx/app_init.dart';
 import 'package:shonenx/features/onboarding/providers/onboarding_provider.dart';
 import 'package:shonenx/features/splash/presentation/splash_quotes.dart';
+import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/svg_icon.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -134,8 +135,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      backgroundColor: cs.surface,
+    return AppScaffold(
       body: Center(
         child: AnimatedBuilder(
           animation: _animController,

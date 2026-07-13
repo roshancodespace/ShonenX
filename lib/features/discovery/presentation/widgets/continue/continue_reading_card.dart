@@ -122,7 +122,7 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
     final layout = style.layout;
 
     final card = ContinueCardLayout(
-      isWideBanner: style == ContinueReadingStyle.wideBanner,
+      variant: style.name,
       width: baseLayout.width,
       height: baseLayout.height,
       isActive: isActive,

@@ -5,53 +5,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 
-extension FlexSchemeVariantExtension on FlexSchemeVariant {
+enum AppThemeVariant {
+  classic,
+  tonalSpot,
+  fidelity,
+  vibrant,
+  vivid;
+
   String get displayName => switch (this) {
-    FlexSchemeVariant.material => 'Material',
-    FlexSchemeVariant.material3Legacy => 'M3 Legacy',
-    FlexSchemeVariant.tonalSpot => 'Tonal Spot',
-    FlexSchemeVariant.fidelity => 'Fidelity',
-    FlexSchemeVariant.content => 'Content',
-    FlexSchemeVariant.monochrome => 'Monochrome',
-    FlexSchemeVariant.neutral => 'Neutral',
-    FlexSchemeVariant.soft => 'Soft',
-    FlexSchemeVariant.vibrant => 'Vibrant',
-    FlexSchemeVariant.expressive => 'Expressive',
-    FlexSchemeVariant.rainbow => 'Rainbow',
-    FlexSchemeVariant.fruitSalad => 'Fruit Salad',
-    FlexSchemeVariant.vivid => 'Vivid',
-    FlexSchemeVariant.vividSurfaces => 'Vivid Surfaces',
-    FlexSchemeVariant.highContrast => 'High Contrast',
-    FlexSchemeVariant.ultraContrast => 'Ultra Contrast',
-    FlexSchemeVariant.vividBackground => 'Vivid Background',
-    FlexSchemeVariant.oneHue => 'One Hue',
-    FlexSchemeVariant.chroma => 'Chroma',
-    FlexSchemeVariant.candyPop => 'Candy Pop',
-    FlexSchemeVariant.jolly => 'Jolly',
+    AppThemeVariant.classic => 'Classic',
+    AppThemeVariant.tonalSpot => 'Tonal Spot',
+    AppThemeVariant.fidelity => 'Fidelity',
+    AppThemeVariant.vibrant => 'Vibrant',
+    AppThemeVariant.vivid => 'Vivid',
   };
 
   String get subtitle => switch (this) {
-    FlexSchemeVariant.material => 'Standard Material color generation',
-    FlexSchemeVariant.material3Legacy => 'Original Material 3 tonal mapping',
-    FlexSchemeVariant.tonalSpot => 'Soft Material You style colors',
-    FlexSchemeVariant.fidelity => 'Preserves source color character',
-    FlexSchemeVariant.content => 'Optimized for content readability',
-    FlexSchemeVariant.monochrome => 'Single-hue monochromatic palette',
-    FlexSchemeVariant.neutral => 'Muted and understated appearance',
-    FlexSchemeVariant.soft => 'Gentle colors with reduced intensity',
-    FlexSchemeVariant.vibrant => 'Strong colorful accents',
-    FlexSchemeVariant.expressive => 'Playful and colorful tones',
-    FlexSchemeVariant.rainbow => 'Maximum hue separation',
-    FlexSchemeVariant.fruitSalad => 'Experimental colorful palette',
-    FlexSchemeVariant.vivid => 'Highly saturated color palette',
-    FlexSchemeVariant.vividSurfaces => 'Vivid colors with stronger surfaces',
-    FlexSchemeVariant.highContrast => 'Increased accessibility contrast',
-    FlexSchemeVariant.ultraContrast => 'Maximum contrast and separation',
-    FlexSchemeVariant.vividBackground => 'More colorful background surfaces',
-    FlexSchemeVariant.oneHue => 'All colors derived from a single hue',
-    FlexSchemeVariant.chroma => 'Maximizes colorfulness from seed',
-    FlexSchemeVariant.candyPop => 'Bright candy-inspired colors',
-    FlexSchemeVariant.jolly => 'Cheerful and energetic palette',
+    AppThemeVariant.classic => 'Classic color scheme styling',
+    AppThemeVariant.tonalSpot => 'Soft Material You style colors',
+    AppThemeVariant.fidelity => 'Preserves source color character',
+    AppThemeVariant.vibrant => 'Strong colorful accents',
+    AppThemeVariant.vivid => 'Highly saturated color palette',
+  };
+
+  FlexSchemeVariant get flexVariant => switch (this) {
+    AppThemeVariant.classic =>
+      FlexSchemeVariant.tonalSpot, // Fallback/default when not classic
+    AppThemeVariant.tonalSpot => FlexSchemeVariant.tonalSpot,
+    AppThemeVariant.fidelity => FlexSchemeVariant.fidelity,
+    AppThemeVariant.vibrant => FlexSchemeVariant.vibrant,
+    AppThemeVariant.vivid => FlexSchemeVariant.vivid,
   };
 }
 
@@ -100,7 +83,7 @@ enum BackgroundGradientColorPair {
 class ThemePrefsState {
   final ThemeMode themeMode;
   final FlexScheme flexScheme;
-  final FlexSchemeVariant themeVariant;
+  final AppThemeVariant themeVariant;
   final bool useAmoled;
   final bool useDynamic;
   final String? exclusiveScheme;
@@ -128,7 +111,7 @@ class ThemePrefsState {
   const ThemePrefsState({
     this.themeMode = ThemeMode.system,
     this.flexScheme = FlexScheme.deepBlue,
-    this.themeVariant = FlexSchemeVariant.tonalSpot,
+    this.themeVariant = AppThemeVariant.classic,
     this.useAmoled = false,
     this.useDynamic = false,
     this.swapColors = false,
@@ -157,7 +140,7 @@ class ThemePrefsState {
   ThemePrefsState copyWith({
     ThemeMode? themeMode,
     FlexScheme? flexScheme,
-    FlexSchemeVariant? themeVariant,
+    AppThemeVariant? themeVariant,
     bool? useAmoled,
     bool? useDynamic,
     String? exclusiveScheme,
@@ -236,7 +219,7 @@ class ThemePrefsState {
     return {
       'themeMode': themeMode.index,
       'flexScheme': flexScheme.index,
-      'themeVariant': themeVariant.index,
+      'themeVariant': themeVariant.name,
       'useAmoled': useAmoled,
       'useDynamic': useDynamic,
       'exclusiveScheme': exclusiveScheme,
@@ -276,16 +259,34 @@ class ThemePrefsState {
   }
 
   factory ThemePrefsState.fromMap(Map<String, dynamic> map) {
+    AppThemeVariant resolvedVariant = AppThemeVariant.classic;
+    final variantVal = map['themeVariant'];
+    if (variantVal is int) {
+      if (variantVal >= 0 && variantVal < AppThemeVariant.values.length) {
+        resolvedVariant = AppThemeVariant.values[variantVal];
+      } else {
+        // Fallback for legacy FlexSchemeVariant index mapping
+        if (variantVal == 2) {
+          resolvedVariant = AppThemeVariant.tonalSpot;
+        } else if (variantVal == 3)
+          resolvedVariant = AppThemeVariant.fidelity;
+        else if (variantVal == 8)
+          resolvedVariant = AppThemeVariant.vibrant;
+        else if (variantVal == 12)
+          resolvedVariant = AppThemeVariant.vivid;
+      }
+    } else if (variantVal is String) {
+      resolvedVariant = AppThemeVariant.values.firstWhere(
+        (v) => v.name == variantVal,
+        orElse: () => AppThemeVariant.classic,
+      );
+    }
+
     return ThemePrefsState(
       themeMode: ThemeMode.values[map['themeMode'] ?? ThemeMode.system.index],
       flexScheme:
           FlexScheme.values[map['flexScheme'] ?? FlexScheme.deepBlue.index],
-      themeVariant:
-          (map['themeVariant'] is int &&
-              map['themeVariant'] >= 0 &&
-              map['themeVariant'] < FlexSchemeVariant.values.length)
-          ? FlexSchemeVariant.values[map['themeVariant']]
-          : FlexSchemeVariant.vibrant,
+      themeVariant: resolvedVariant,
       useAmoled: map['useAmoled'] ?? false,
       useDynamic: map['useDynamic'] ?? false,
       exclusiveScheme: map['exclusiveScheme'],

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shonenx/shared/models/component_layout.dart';
@@ -100,6 +102,48 @@ class MediaCard extends ConsumerWidget {
             isActive: isActive,
             layout: baseLayout,
             config: activeConfig,
+          ),
+
+          MediaCardStyle.cinematic => _CinematicCard(
+            widget: this,
+            theme: theme,
+            isActive: isActive,
+            layout: baseLayout,
+          ),
+
+          MediaCardStyle.frosted => _FrostedCard(
+            widget: this,
+            theme: theme,
+            isActive: isActive,
+            layout: baseLayout,
+          ),
+
+          MediaCardStyle.neon => _NeonCard(
+            widget: this,
+            theme: theme,
+            isActive: isActive,
+            layout: baseLayout,
+          ),
+
+          MediaCardStyle.compact => _CompactCard(
+            widget: this,
+            theme: theme,
+            isActive: isActive,
+            layout: baseLayout,
+          ),
+
+          MediaCardStyle.editorial => _EditorialCard(
+            widget: this,
+            theme: theme,
+            isActive: isActive,
+            layout: baseLayout,
+          ),
+
+          MediaCardStyle.wideBanner => _WideBannerCard(
+            widget: this,
+            theme: theme,
+            isActive: isActive,
+            layout: baseLayout,
           ),
         };
 
@@ -657,6 +701,650 @@ class _LiquidGlassCard extends StatelessWidget {
                     ),
                   ),
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CinematicCard extends StatelessWidget {
+  final MediaCard widget;
+  final ThemeData theme;
+  final bool isActive;
+  final ComponentLayout layout;
+
+  const _CinematicCard({
+    required this.widget,
+    required this.theme,
+    required this.isActive,
+    required this.layout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = theme.colorScheme;
+
+    return AnimatedContainer(
+      duration: Durations.short4,
+      width: layout.width,
+      height: layout.height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 0.6),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 0.6),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            buildCardImage(
+              widget,
+              theme,
+              width: layout.width,
+              height: layout.height,
+              radius: 0,
+            ),
+            // Cinematic gradient
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    stops: const [0.0, 0.45, 0.8, 1.0],
+                    colors: [
+                      Colors.black.withValues(alpha: 0.9),
+                      Colors.black.withValues(alpha: 0.55),
+                      Colors.transparent,
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Content overlaid on the left
+            Positioned(
+              left: 14,
+              top: 12,
+              bottom: 12,
+              width: layout.width * 0.55,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (widget.format != null || widget.badge != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.primary.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${(widget.format ?? widget.badge ?? '')}'
+                            .toUpperCase(),
+                        style: TextStyle(
+                          color: cs.onPrimary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 10,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.title,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Active border
+            if (isActive)
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(
+                      GlobalUI.uiRoundness * 0.6,
+                    ),
+                    border: Border.all(color: cs.tertiary, width: 2.5),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FrostedCard extends StatelessWidget {
+  final MediaCard widget;
+  final ThemeData theme;
+  final bool isActive;
+  final ComponentLayout layout;
+
+  const _FrostedCard({
+    required this.widget,
+    required this.theme,
+    required this.isActive,
+    required this.layout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = theme.colorScheme;
+
+    return AnimatedContainer(
+      duration: Durations.short4,
+      width: layout.width,
+      height: layout.height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+        border: Border.all(
+          color: isActive
+              ? cs.tertiary.withValues(alpha: 0.85)
+              : (theme.brightness == Brightness.dark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : cs.outlineVariant.withValues(alpha: 0.2)),
+          width: isActive ? 1.8 : 1.0,
+          strokeAlign: BorderSide.strokeAlignOutside,
+        ),
+        boxShadow: isActive
+            ? [
+                BoxShadow(
+                  color: cs.tertiary.withValues(alpha: 0.18),
+                  blurRadius: 12,
+                  spreadRadius: 0.5,
+                ),
+              ]
+            : null,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness - 1),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Full image background
+            buildCardImage(
+              widget,
+              theme,
+              width: layout.width,
+              height: layout.height,
+              radius: 0,
+            ),
+            // Format badge
+            _TopOverlay(format: widget.format, badge: widget.badge),
+            // Frosted bottom panel
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: ClipRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          cs.surface.withValues(alpha: 0.25),
+                          cs.surface.withValues(alpha: 0.75),
+                        ],
+                      ),
+                      border: Border(
+                        top: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          width: 0.5,
+                        ),
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    alignment: Alignment.bottomLeft,
+                    child: Text(
+                      widget.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
+                        height: 1.25,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NeonCard extends StatelessWidget {
+  final MediaCard widget;
+  final ThemeData theme;
+  final bool isActive;
+  final ComponentLayout layout;
+
+  const _NeonCard({
+    required this.widget,
+    required this.theme,
+    required this.isActive,
+    required this.layout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = theme.colorScheme;
+    final primaryGlow = cs.primary;
+    final secondaryGlow = cs.tertiary;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      width: layout.width,
+      height: layout.height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+        border: Border.all(
+          color: (isActive ? primaryGlow : secondaryGlow).withValues(
+            alpha: isActive ? 0.95 : 0.45,
+          ),
+          width: isActive ? 2.5 : 1.5,
+          strokeAlign: BorderSide.strokeAlignOutside,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (isActive ? primaryGlow : secondaryGlow).withValues(
+              alpha: isActive ? 0.55 : 0.18,
+            ),
+            blurRadius: isActive ? 20 : 8,
+            spreadRadius: isActive ? 2.5 : 0,
+          ),
+          if (isActive)
+            BoxShadow(
+              color: secondaryGlow.withValues(alpha: 0.35),
+              blurRadius: 10,
+              spreadRadius: 0.5,
+            ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            buildCardImage(
+              widget,
+              theme,
+              width: layout.width,
+              height: layout.height,
+              radius: 0,
+            ),
+            // Cinematic bottom fade
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.4, 0.75, 1.0],
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.55),
+                      Colors.black.withValues(alpha: 0.95),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            _TopOverlay(format: widget.format, badge: widget.badge),
+            Positioned(
+              left: 10,
+              right: 10,
+              bottom: 10,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 24,
+                    height: 2,
+                    color: isActive ? primaryGlow : secondaryGlow,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    widget.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactCard extends StatelessWidget {
+  final MediaCard widget;
+  final ThemeData theme;
+  final bool isActive;
+  final ComponentLayout layout;
+
+  const _CompactCard({
+    required this.widget,
+    required this.theme,
+    required this.isActive,
+    required this.layout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = theme.colorScheme;
+    final r = GlobalUI.uiRoundness;
+
+    return AnimatedContainer(
+      duration: Durations.short4,
+      width: layout.width,
+      height: layout.height,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(r),
+        border: Border.all(
+          color: isActive
+              ? cs.primary
+              : cs.outlineVariant.withValues(alpha: 0.28),
+          width: isActive ? 2.0 : 1.0,
+        ),
+      ),
+      padding: const EdgeInsets.all(6),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(r * 0.7),
+            child: SizedBox(
+              width: layout.height - 12,
+              height: layout.height - 12,
+              child: buildCardImage(
+                widget,
+                theme,
+                width: layout.height - 12,
+                height: layout.height - 12,
+                radius: 0,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  widget.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                    height: 1.2,
+                  ),
+                ),
+                if (widget.format != null) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cs.secondaryContainer,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      widget.format!.toUpperCase(),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontSize: 9,
+                        color: cs.onSecondaryContainer,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EditorialCard extends StatelessWidget {
+  final MediaCard widget;
+  final ThemeData theme;
+  final bool isActive;
+  final ComponentLayout layout;
+
+  const _EditorialCard({
+    required this.widget,
+    required this.theme,
+    required this.isActive,
+    required this.layout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = theme.colorScheme;
+    final imageHeight = layout.height * 0.65;
+    final r = GlobalUI.uiRoundness;
+
+    return AnimatedContainer(
+      duration: Durations.short4,
+      width: layout.width,
+      height: layout.height,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(r),
+        border: Border.all(
+          color: isActive
+              ? cs.tertiary
+              : cs.outlineVariant.withValues(alpha: 0.25),
+          width: isActive ? 2.5 : 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(r)),
+            child: Stack(
+              children: [
+                buildCardImage(
+                  widget,
+                  theme,
+                  width: layout.width,
+                  height: imageHeight,
+                  radius: 0,
+                ),
+                _TopOverlay(format: widget.format, badge: widget.badge),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    widget.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: cs.onSurface,
+                      height: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WideBannerCard extends StatelessWidget {
+  final MediaCard widget;
+  final ThemeData theme;
+  final bool isActive;
+  final ComponentLayout layout;
+
+  const _WideBannerCard({
+    required this.widget,
+    required this.theme,
+    required this.isActive,
+    required this.layout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = theme.colorScheme;
+    final r = GlobalUI.uiRoundness;
+
+    return AnimatedContainer(
+      duration: Durations.short4,
+      width: layout.width,
+      height: layout.height,
+      foregroundDecoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(r),
+        border: Border.all(
+          color: isActive
+              ? cs.tertiary
+              : cs.outlineVariant.withValues(alpha: 0.28),
+          width: isActive ? 2.5 : 0.0,
+        ),
+      ),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(r),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.28)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(5.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(r),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    buildCardImage(
+                      widget,
+                      theme,
+                      width: double.infinity,
+                      height: double.infinity,
+                      radius: 0,
+                    ),
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            stops: const [0.45, 1],
+                            colors: [
+                              Colors.transparent,
+                              cs.scrim.withValues(alpha: 0.75),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (widget.format != null || widget.badge != null)
+                      Positioned(
+                        top: 10,
+                        left: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: cs.primaryContainer,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            '${(widget.format ?? widget.badge ?? '')}'
+                                .toUpperCase(),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: cs.onPrimaryContainer,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    widget.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
+                    ),
+                  ),
+                  if (widget.format != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.format!.toUpperCase(),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ],

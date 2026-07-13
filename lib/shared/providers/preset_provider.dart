@@ -11,15 +11,12 @@ class PresetState {
   final List<AppThemePreset> customPresets;
   final String? activePresetId;
 
-  const PresetState({
-    this.customPresets = const [],
-    this.activePresetId = '1',
-  });
+  const PresetState({this.customPresets = const [], this.activePresetId = '1'});
 
   List<AppThemePreset> get allPresets => [
-        ...BuiltInPresets.all,
-        ...customPresets,
-      ];
+    ...BuiltInPresets.all,
+    ...customPresets,
+  ];
 
   AppThemePreset? get activePreset {
     try {
@@ -64,21 +61,22 @@ class PresetNotifier extends Notifier<PresetState> {
       } catch (_) {}
     }
 
-    return PresetState(
-      customPresets: loaded,
-      activePresetId: activeId ?? '1',
-    );
+    return PresetState(customPresets: loaded, activePresetId: activeId ?? '1');
   }
 
   void applyPreset(AppThemePreset preset) {
     // Apply to Theme preferences
-    ref.read(themePrefsProvider.notifier).updateTheme(
-          (current) => preset.applyToThemePrefs(current),
-        );
+    final themeNotifier = ref.read(themePrefsProvider.notifier);
+    themeNotifier.updateTheme((current) => preset.applyToThemePrefs(current));
 
     // Apply to UI & Widget preferences
-    ref.read(uiPrefsProvider.notifier).updateCardStyle(preset.cardStyle);
-    ref.read(uiPrefsProvider.notifier).updateExperimentalConfig(preset.experimentalConfig);
+    final uiNotifier = ref.read(uiPrefsProvider.notifier);
+    uiNotifier.updateCardStyle(preset.cardStyle);
+    uiNotifier.updateContinueWatchingStyle(preset.continueWatchingStyle);
+    uiNotifier.updateContinueReadingStyle(preset.continueReadingStyle);
+    uiNotifier.updateEpisodeViewMode(preset.episodeViewMode);
+    uiNotifier.updateNavBarStyle(preset.navBarStyle);
+    uiNotifier.updateExperimentalConfig(preset.experimentalConfig);
 
     state = state.copyWith(activePresetId: preset.id);
     _saveDb();
@@ -113,7 +111,9 @@ class PresetNotifier extends Notifier<PresetState> {
   AppThemePreset importPresetFromJson(String jsonString) {
     final preset = AppThemePreset.fromJsonString(jsonString);
     // Check if a preset with same ID exists, if so replace or generate new ID
-    final existingIndex = state.customPresets.indexWhere((p) => p.id == preset.id);
+    final existingIndex = state.customPresets.indexWhere(
+      (p) => p.id == preset.id,
+    );
     List<AppThemePreset> updatedList;
     if (existingIndex >= 0) {
       updatedList = [...state.customPresets];

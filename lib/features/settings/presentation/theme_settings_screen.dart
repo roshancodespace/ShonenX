@@ -7,6 +7,8 @@ import 'package:shonenx/core/theme/exclusive_schemes.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/features/settings/presentation/widgets/preset_gallery_sheet.dart';
+import 'package:shonenx/shared/providers/preset_provider.dart';
 
 class ThemeSettingsScreen extends ConsumerWidget {
   const ThemeSettingsScreen({super.key});
@@ -23,6 +25,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.only(bottom: 50),
         children: [
+          _buildPresetGalleryBanner(context, ref),
           SettingsSection(
             title: 'Display & Color',
             children: [
@@ -93,7 +96,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                   (p) => p.copyWith(blendLevel: v.toInt()),
                 ),
               ),
-              if (themePrefs.customBackgroundImagePath == null)
+              if (themePrefs.customBackgroundImagePath == null) ...[
                 SettingsSwitchTile(
                   icon: Icons.gradient_outlined,
                   title: 'Gradient Surfaces',
@@ -107,6 +110,84 @@ class ThemeSettingsScreen extends ConsumerWidget {
                           (p) => p.copyWith(useGradients: v),
                         ),
                 ),
+                if (themePrefs.useGradients && !themePrefs.useAmoled) ...[
+                  SettingsDropdownTile<BackgroundGradientStyle>(
+                    icon: Icons.auto_awesome_outlined,
+                    title: 'Gradient Shape',
+                    value: themePrefs.gradientStyle,
+                    items: BackgroundGradientStyle.values
+                        .map(
+                          (s) => DropdownMenuItem(
+                            value: s,
+                            child: Text(s.displayName),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) {
+                        notifier.updateTheme(
+                          (p) => p.copyWith(gradientStyle: v),
+                        );
+                      }
+                    },
+                  ),
+                  if (themePrefs.gradientStyle ==
+                      BackgroundGradientStyle.linear)
+                    SettingsDropdownTile<BackgroundGradientDirection>(
+                      icon: Icons.explore_outlined,
+                      title: 'Gradient Angle',
+                      value: themePrefs.gradientDirection,
+                      items: BackgroundGradientDirection.values
+                          .map(
+                            (d) => DropdownMenuItem(
+                              value: d,
+                              child: Text(d.displayName),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          notifier.updateTheme(
+                            (p) => p.copyWith(gradientDirection: v),
+                          );
+                        }
+                      },
+                    ),
+                  SettingsDropdownTile<BackgroundGradientColorPair>(
+                    icon: Icons.color_lens_outlined,
+                    title: 'Gradient Palette',
+                    value: themePrefs.gradientColorPair,
+                    items: BackgroundGradientColorPair.values
+                        .map(
+                          (c) => DropdownMenuItem(
+                            value: c,
+                            child: Text(c.displayName),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) {
+                        notifier.updateTheme(
+                          (p) => p.copyWith(gradientColorPair: v),
+                        );
+                      }
+                    },
+                  ),
+                  SettingsSliderTile(
+                    icon: Icons.tune_rounded,
+                    title: 'Gradient Intensity',
+                    subtitle: 'Color vibrancy over background',
+                    value: themePrefs.gradientIntensity,
+                    min: 0.05,
+                    max: 1.0,
+                    divisions: 19,
+                    label: '${(themePrefs.gradientIntensity * 100).toInt()}%',
+                    onChanged: (v) => notifier.updateTheme(
+                      (p) => p.copyWith(gradientIntensity: v),
+                    ),
+                  ),
+                ],
+              ],
             ],
           ),
           SettingsSection(
@@ -327,6 +408,25 @@ class ThemeSettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPresetGalleryBanner(BuildContext context, WidgetRef ref) {
+    final presetState = ref.watch(presetProvider);
+    final active = presetState.activePreset;
+
+    return SettingsSection(
+      title: 'Presets',
+      children: [
+        SettingsNavTile(
+          icon: Icons.auto_awesome_outlined,
+          title: 'Theme Presets & Gallery',
+          subtitle: active != null
+              ? 'Active: ${active.name} (${active.cardStyle.displayName})'
+              : 'Explore themes & import/export JSON',
+          onTap: () => PresetGallerySheet.show(context),
+        ),
+      ],
     );
   }
 

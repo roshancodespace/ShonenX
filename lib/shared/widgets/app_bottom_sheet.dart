@@ -8,6 +8,7 @@ class AppBottomSheet extends StatelessWidget {
   final EdgeInsetsGeometry headerPadding;
   final EdgeInsetsGeometry contentPadding;
   final List<Widget>? actions;
+  final IconData? titleIcon;
 
   const AppBottomSheet({
     super.key,
@@ -16,6 +17,7 @@ class AppBottomSheet extends StatelessWidget {
     this.headerPadding = const EdgeInsets.symmetric(horizontal: 16),
     this.contentPadding = const EdgeInsets.fromLTRB(16, 0, 16, 16),
     this.actions,
+    this.titleIcon,
   });
 
   static Future<T?> show<T>({
@@ -23,6 +25,7 @@ class AppBottomSheet extends StatelessWidget {
     required String title,
     required Widget child,
     List<Widget>? actions,
+    IconData? titleIcon,
     bool isScrollControlled = true,
     bool useRootNavigator = false,
     bool enableDrag = true,
@@ -53,6 +56,7 @@ class AppBottomSheet extends StatelessWidget {
       builder: (_) {
         return AppBottomSheet(
           title: title,
+          titleIcon: titleIcon,
           actions: actions,
           headerPadding: headerPadding,
           contentPadding: contentPadding,
@@ -217,11 +221,11 @@ class AppBottomSheet extends StatelessWidget {
             children: [
               Center(
                 child: Container(
-                  margin: const EdgeInsets.only(top: 16),
+                  margin: const EdgeInsets.only(top: 14),
                   height: 4,
-                  width: 40,
+                  width: 36,
                   decoration: BoxDecoration(
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -230,13 +234,20 @@ class AppBottomSheet extends StatelessWidget {
                 padding: headerPadding,
                 child: Row(
                   children: [
+                    if (titleIcon != null) ...[
+                      Icon(
+                        titleIcon,
+                        color: colorScheme.primary,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 10),
+                    ],
                     Expanded(
                       child: Text(
                         title,
                         style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.5,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -246,18 +257,14 @@ class AppBottomSheet extends StatelessWidget {
                       ...actions!,
                       const SizedBox(width: 8),
                     ],
-                    IconButton.filledTonal(
-                      style: IconButton.styleFrom(
-                        backgroundColor: colorScheme.primary,
-                        foregroundColor: colorScheme.onPrimary,
-                      ),
+                    IconButton(
                       icon: const Icon(Icons.close, size: 20),
                       onPressed: () => context.pop(),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Flexible(
                 child: Padding(padding: contentPadding, child: child),
               ),

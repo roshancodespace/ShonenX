@@ -39,11 +39,49 @@ class AppTheme {
         ? exclusiveSchemes[prefs.exclusiveScheme]
         : null;
 
+    ColorScheme? effectiveColorScheme = colorScheme;
+    if (effectiveColorScheme == null && prefs.colorSeed != null) {
+      effectiveColorScheme = ColorScheme.fromSeed(
+        seedColor: Color(prefs.colorSeed!),
+        brightness: brightness,
+      );
+    }
+
+    FlexSchemeColor? customColors;
+    if (prefs.primaryColor != null && effectiveColorScheme == null) {
+      final primary = Color(prefs.primaryColor!);
+      final secondary = prefs.secondaryColor != null
+          ? Color(prefs.secondaryColor!)
+          : FlexSchemeColor.from(
+              primary: primary,
+              brightness: brightness,
+            ).secondary;
+      final tertiary = prefs.tertiaryColor != null
+          ? Color(prefs.tertiaryColor!)
+          : FlexSchemeColor.from(
+              primary: primary,
+              brightness: brightness,
+            ).tertiary;
+
+      customColors = FlexSchemeColor(
+        primary: primary,
+        secondary: secondary,
+        tertiary: tertiary,
+      );
+    } else if (effectiveColorScheme == null && exclusive != null) {
+      customColors = isDark ? exclusive.dark : exclusive.light;
+    }
+
     final baseTheme = isDark
         ? FlexThemeData.dark(
-            scheme: exclusive == null ? prefs.flexScheme : null,
-            colors: exclusive?.dark,
-            colorScheme: colorScheme,
+            scheme:
+                (customColors == null &&
+                    effectiveColorScheme == null &&
+                    exclusive == null)
+                ? prefs.flexScheme
+                : FlexScheme.custom,
+            colors: customColors,
+            colorScheme: effectiveColorScheme,
             keyColors: const FlexKeyColors(
               useKeyColors: true,
               useSecondary: true,
@@ -65,9 +103,14 @@ class AppTheme {
             subThemesData: _subThemesData(prefs),
           )
         : FlexThemeData.light(
-            scheme: exclusive == null ? prefs.flexScheme : null,
-            colors: exclusive?.light,
-            colorScheme: colorScheme,
+            scheme:
+                (customColors == null &&
+                    effectiveColorScheme == null &&
+                    exclusive == null)
+                ? prefs.flexScheme
+                : FlexScheme.custom,
+            colors: customColors,
+            colorScheme: effectiveColorScheme,
             keyColors: const FlexKeyColors(
               useKeyColors: true,
               useSecondary: true,
@@ -88,8 +131,24 @@ class AppTheme {
             subThemesData: _subThemesData(prefs),
           );
 
+    ThemeData result = baseTheme;
+    if (isDark && prefs.useAmoled) {
+      result = result.copyWith(
+        scaffoldBackgroundColor: const Color(0xFF000000),
+        colorScheme: result.colorScheme.copyWith(
+          surface: const Color(0xFF000000),
+        ),
+      );
+    } else if (prefs.surfaceColor != null) {
+      final sCol = Color(prefs.surfaceColor!);
+      result = result.copyWith(
+        scaffoldBackgroundColor: sCol,
+        colorScheme: result.colorScheme.copyWith(surface: sCol),
+      );
+    }
+
     return _themeModifiers.fold(
-      baseTheme,
+      result,
       (theme, modifier) => modifier(theme, prefs),
     );
   }

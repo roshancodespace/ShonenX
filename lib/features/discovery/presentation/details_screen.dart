@@ -181,6 +181,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
             NestedScrollView(
               headerSliverBuilder: (context, innerBoxIsScrolled) => [
                 SliverAppBar(
+                  backgroundColor: Colors.transparent,
                   automaticallyImplyLeading: false,
                   expandedHeight: 350.0,
                   leading: IconButton(
@@ -192,35 +193,38 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                     background: Stack(
                       children: [
                         Positioned.fill(
-                          child: CachedNetworkImage(
-                            imageUrl:
-                                displayMedia.banner ?? displayMedia.cover ?? '',
-                            fit: BoxFit.cover,
-                            placeholder: (_, __) => const Center(
-                              child: CircularProgressIndicator(),
+                          child: ShaderMask(
+                            shaderCallback: (Rect bounds) {
+                              return LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.white,
+                                  Colors.white,
+                                  Colors.transparent,
+                                ],
+                                stops: const [0.0, 0.3, 1.0],
+                              ).createShader(bounds);
+                            },
+                            blendMode: BlendMode.dstIn,
+                            child: CachedNetworkImage(
+                              imageUrl:
+                                  displayMedia.banner ??
+                                  displayMedia.cover ??
+                                  '',
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                              errorWidget: (_, __, ___) =>
+                                  const Center(child: Icon(Icons.error)),
                             ),
-                            errorWidget: (_, __, ___) =>
-                                const Center(child: Icon(Icons.error)),
                           ),
                         ),
                         Positioned.fill(
                           child: Container(
                             padding: const EdgeInsets.only(bottom: 5),
                             margin: const EdgeInsets.only(top: 10),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                stops: const [0, 0.5, 1],
-                                colors: [
-                                  Colors.transparent,
-                                  theme.scaffoldBackgroundColor.withValues(
-                                    alpha: 0.8,
-                                  ),
-                                  theme.scaffoldBackgroundColor,
-                                ],
-                              ),
-                            ),
                             alignment: Alignment.bottomLeft,
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.end,

@@ -209,6 +209,7 @@ class PlayerSettingsScreen extends ConsumerWidget {
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
+                    useSafeArea: true,
                     backgroundColor: Colors.transparent,
                     constraints: const BoxConstraints(
                       maxWidth: double.infinity,

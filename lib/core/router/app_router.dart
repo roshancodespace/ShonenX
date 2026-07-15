@@ -42,18 +42,21 @@ import 'package:shonenx/core/services/backup_service.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/core/network/cf_client.dart';
 
-
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _homeNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'home');
 final _libraryNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'library');
 final _searchNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'search');
 
+final startupUriProvider = Provider<Uri?>((ref) => null);
+
 final routerProvider = Provider<GoRouter>((ref) {
   CFClient.navigatorKey = rootNavigatorKey;
 
+  final startupUri = ref.watch(startupUriProvider);
+
   return GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: '/splash',
+    initialLocation: startupUri?.toString() ?? '/splash',
     debugLogDiagnostics: true,
     extraCodec: const ComplexExtraCodec(),
     errorBuilder: (context, state) => Scaffold(
@@ -273,7 +276,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final autoAddUrl = state.uri.queryParameters['autoAddUrl'];
               final autoAddType = state.uri.queryParameters['autoAddType'];
-              final autoAddManager = state.uri.queryParameters['autoAddManager'];
+              final autoAddManager =
+                  state.uri.queryParameters['autoAddManager'];
               return ExtensionsSettingsScreen(
                 autoAddUrl: autoAddUrl,
                 autoAddType: autoAddType,

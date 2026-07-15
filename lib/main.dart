@@ -17,13 +17,14 @@ import 'package:shonenx/shared/widgets/global_background.dart';
 final _log = AppLogger.scope('Main');
 final _riverpodLog = AppLogger.scope('RiverpodObserver');
 
-void main() async {
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppLogger.init();
 
   final log = _log.child('main');
 
   log.i('App starting');
+  log.i('Args: $args');
 
   final init = await AppInit().init();
   log.i('AppInit completed');
@@ -31,10 +32,21 @@ void main() async {
   final sharedPreference = await SharedPreferences.getInstance();
   log.i('SharedPreferences ready');
 
+  Uri? startupUri;
+
+  for (final arg in args) {
+    final uri = Uri.tryParse(arg);
+    if (uri != null && uri.scheme.isNotEmpty) {
+      startupUri = uri;
+      break;
+    }
+  }
+
   runApp(
     ProviderScope(
       observers: [RiverpodLogger()],
       overrides: [
+        startupUriProvider.overrideWithValue(startupUri),
         databaseProvider.overrideWith((ref) => init.isar),
         sharedPreferencesProvider.overrideWith((ref) => sharedPreference),
       ],
@@ -116,7 +128,7 @@ final class RiverpodLogger extends ProviderObserver {
   ) {
     final providerName = context.provider.name ?? 'UnknownProvider';
 
-    if (providerName != 'episodeTabProvider') return;
+    if (providerName != 'debug') return;
 
     final log = _log.child(providerName);
 

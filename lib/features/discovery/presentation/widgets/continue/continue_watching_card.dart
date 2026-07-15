@@ -125,8 +125,17 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
     final epTitle = widget.entry.episodeTitle;
     final subtitleText = 'EP $cleanNum${epTitle != null ? ' • $epTitle' : ''}';
 
-    final baseLayout = style.baseLayout;
-    final layout = style.layout;
+    final isWideMode = ref.watch(
+      uiPrefsProvider.select((s) => s.isContinueWatchingWide(style.name)),
+    );
+    final baseLayout = style.getBaseLayout(
+      isContinueWatching: true,
+      isWideMode: isWideMode,
+    );
+    final layout = style.getLayout(
+      isContinueWatching: true,
+      isWideMode: isWideMode,
+    );
 
     final card = ContinueCardLayout(
       variant: style.name,
@@ -134,6 +143,7 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
       height: baseLayout.height,
       isActive: isActive,
       isLoading: isLoading,
+      isWideMode: isWideMode,
       title: widget.entry.animeTitle,
       subtitle: style == ContinueWatchingStyle.wideBanner
           ? (widget.entry.episodeTitle ?? 'Continue watching')

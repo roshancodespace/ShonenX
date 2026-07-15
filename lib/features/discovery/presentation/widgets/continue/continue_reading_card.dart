@@ -119,9 +119,19 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
     final epTitle = widget.entry.chapterTitle;
     final subtitleText = 'CH $cleanNum${epTitle != null ? ' • $epTitle' : ''}';
 
+    final isWideMode = ref.watch(
+      uiPrefsProvider.select((s) => s.isContinueReadingWide(style.name)),
+    );
     final scale = ref.watch(themePrefsProvider).uiScaleFactor;
-    final baseLayout = style.getBaseLayout(isContinueReading: true);
-    final layout = style.getScaledLayout(scale, isContinueReading: true);
+    final baseLayout = style.getBaseLayout(
+      isContinueReading: true,
+      isWideMode: isWideMode,
+    );
+    final layout = style.getScaledLayout(
+      scale,
+      isContinueReading: true,
+      isWideMode: isWideMode,
+    );
 
     final card = ContinueCardLayout(
       variant: style.name,
@@ -129,6 +139,7 @@ class _ContinueReadingItemState extends ConsumerState<ContinueReadingItem>
       height: baseLayout.height,
       isActive: isActive,
       isLoading: isLoading,
+      isWideMode: isWideMode,
       title: widget.entry.mangaTitle,
       subtitle: style == ContinueReadingStyle.wideBanner
           ? (widget.entry.chapterTitle ?? 'Continue reading')

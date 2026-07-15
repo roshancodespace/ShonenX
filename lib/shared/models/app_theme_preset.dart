@@ -46,6 +46,7 @@ class AppThemePreset {
   final EpisodeViewMode episodeViewMode;
   final NavBarStyle navBarStyle;
   final Map<String, dynamic> experimentalConfig;
+  final Map<String, bool> cardStyleWideModes;
 
   const AppThemePreset({
     required this.id,
@@ -86,6 +87,7 @@ class AppThemePreset {
     this.episodeViewMode = EpisodeViewMode.classic,
     this.navBarStyle = NavBarStyle.classic,
     this.experimentalConfig = UiPrefState.defaultExperimentalConfig,
+    this.cardStyleWideModes = const {},
   });
 
   factory AppThemePreset.fromStates({
@@ -135,6 +137,7 @@ class AppThemePreset {
       episodeViewMode: uiPrefs.episodeViewMode,
       navBarStyle: uiPrefs.navBarStyle,
       experimentalConfig: uiPrefs.experimentalConfig,
+      cardStyleWideModes: uiPrefs.cardStyleWideModes,
     );
   }
 
@@ -187,6 +190,10 @@ class AppThemePreset {
         ...current.experimentalConfig,
         ...experimentalConfig,
       },
+      cardStyleWideModes: {
+        ...current.cardStyleWideModes,
+        ...cardStyleWideModes,
+      },
     );
   }
 
@@ -230,6 +237,7 @@ class AppThemePreset {
       'episodeViewMode': episodeViewMode.name,
       'navBarStyle': navBarStyle.name,
       'experimentalConfig': experimentalConfig,
+      'cardStyleWideModes': cardStyleWideModes,
     };
   }
 
@@ -350,6 +358,9 @@ class AppThemePreset {
               ...Map<String, dynamic>.from(map['experimentalConfig'] as Map),
             }
           : UiPrefState.defaultExperimentalConfig,
+      cardStyleWideModes: (map['cardStyleWideModes'] is Map)
+          ? Map<String, bool>.from(map['cardStyleWideModes'] as Map)
+          : const {},
     );
   }
 

@@ -20,431 +20,498 @@ class ThemeSettingsScreen extends ConsumerWidget {
     final notifier = ref.read(themePrefsProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return AppScaffold(
-      title: 'Appearance',
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.restart_alt_rounded),
-          tooltip: 'Reset to Defaults',
-          onPressed: () {
-            ref
-                .read(themePrefsProvider.notifier)
-                .updateTheme((_) => const ThemePrefsState());
-            ref.read(presetProvider.notifier).clearActivePresetMark();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Theme settings reset to default'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
+    return DefaultTabController(
+      length: 2,
+      child: AppScaffold(
+        title: 'Appearance',
+        barBottom: const PreferredSize(
+          preferredSize: Size.fromHeight(48),
+          child: TabBar(
+            isScrollable: true,
+            indicatorSize: TabBarIndicatorSize.tab,
+            indicatorAnimation: TabIndicatorAnimation.linear,
+            tabAlignment: TabAlignment.start,
+            dividerColor: Colors.transparent,
+            tabs: [
+              Tab(text: 'Themes'),
+              Tab(text: 'Effects'),
+            ],
+          ),
         ),
-        const SizedBox(width: 10),
-      ],
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 50),
-        children: [
-          _buildPresetGalleryBanner(context, ref),
-          SettingsSection(
-            title: 'Display & Color',
-            children: [
-              SettingsSegmentedTile<ThemeMode>(
-                title: 'Theme Mode',
-                segments: const [
-                  ButtonSegment(value: ThemeMode.system, label: Text('System')),
-                  ButtonSegment(value: ThemeMode.light, label: Text('Light')),
-                  ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
-                ],
-                selected: {themePrefs.themeMode},
-                onSelectionChanged: (Set<ThemeMode> s) =>
-                    notifier.updateTheme((p) => p.copyWith(themeMode: s.first)),
-              ),
-              SettingsSwitchTile(
-                icon: Icons.palette_outlined,
-                title: 'Dynamic Color',
-                subtitle: 'Uses wallpaper colors',
-                value: themePrefs.useDynamic,
-                onChanged: (v) => notifier.updateTheme(
-                  (p) => p.copyWith(useDynamic: v, clearExclusiveScheme: v),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.restart_alt_rounded),
+            tooltip: 'Reset to Defaults',
+            onPressed: () {
+              ref
+                  .read(themePrefsProvider.notifier)
+                  .updateTheme((_) => const ThemePrefsState());
+              ref.read(presetProvider.notifier).clearActivePresetMark();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Theme settings reset to default'),
+                  behavior: SnackBarBehavior.floating,
                 ),
-              ),
-              SettingsSwitchTile(
-                icon: Icons.dark_mode_outlined,
-                title: 'Pure Black',
-                subtitle: themePrefs.customBackgroundImagePath != null
-                    ? 'Disabled while background image is set'
-                    : 'Saves battery on OLED screens',
-                value: themePrefs.useAmoled,
-                onChanged:
-                    themePrefs.themeMode == ThemeMode.light ||
-                        themePrefs.customBackgroundImagePath != null
-                    ? null
-                    : (v) => notifier.updateTheme(
-                        (p) => p.copyWith(
-                          useAmoled: v,
-                          // Turn off effects that conflict with pure black
-                          useGradients: v ? false : p.useGradients,
-                          useNoiseOverlay: v ? false : p.useNoiseOverlay,
-                          clearCustomBackgroundImagePath: v,
-                        ),
-                      ),
-              ),
-              SettingsSwitchTile(
-                icon: Icons.swap_horiz_rounded,
-                title: 'Swap Colors',
-                subtitle: 'Swap primary and secondary colors',
-                value: themePrefs.swapColors,
-                onChanged: (v) =>
-                    notifier.updateTheme((p) => p.copyWith(swapColors: v)),
-              ),
-            ],
+              );
+            },
           ),
-          SettingsSection(
-            title: 'Surface Styling',
-            children: [
-              SettingsSliderTile(
-                icon: Icons.opacity_outlined,
-                title: 'Blend Level',
-                subtitle: 'Color infusion intensity',
-                value: themePrefs.blendLevel.toDouble(),
-                min: 0,
-                max: 40,
-                divisions: 40,
-                label: '${(themePrefs.blendLevel / 40 * 100).toInt()}%',
-                onChanged: (v) => notifier.updateTheme(
-                  (p) => p.copyWith(blendLevel: v.toInt()),
-                ),
-              ),
-              if (themePrefs.customBackgroundImagePath == null) ...[
-                SettingsSwitchTile(
-                  icon: Icons.gradient_outlined,
-                  title: 'Gradient Surfaces',
-                  subtitle: themePrefs.useAmoled
-                      ? 'Disabled with Pure Black'
-                      : 'Subtle gradients instead of flat fills',
-                  value: themePrefs.useGradients,
-                  onChanged: themePrefs.useAmoled
-                      ? null
-                      : (v) => notifier.updateTheme(
-                          (p) => p.copyWith(useGradients: v),
-                        ),
-                ),
-                if (themePrefs.useGradients && !themePrefs.useAmoled) ...[
-                  SettingsDropdownTile<BackgroundGradientStyle>(
-                    icon: Icons.auto_awesome_outlined,
-                    title: 'Gradient Shape',
-                    value: themePrefs.gradientStyle,
-                    items: BackgroundGradientStyle.values
-                        .map(
-                          (s) => DropdownMenuItem(
-                            value: s,
-                            child: Text(s.displayName),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) {
-                      if (v != null) {
-                        notifier.updateTheme(
-                          (p) => p.copyWith(gradientStyle: v),
-                        );
-                      }
-                    },
-                  ),
-                  if (themePrefs.gradientStyle ==
-                      BackgroundGradientStyle.linear)
-                    SettingsDropdownTile<BackgroundGradientDirection>(
-                      icon: Icons.explore_outlined,
-                      title: 'Gradient Angle',
-                      value: themePrefs.gradientDirection,
-                      items: BackgroundGradientDirection.values
-                          .map(
-                            (d) => DropdownMenuItem(
-                              value: d,
-                              child: Text(d.displayName),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) {
-                          notifier.updateTheme(
-                            (p) => p.copyWith(gradientDirection: v),
-                          );
-                        }
-                      },
-                    ),
-                  SettingsDropdownTile<BackgroundGradientColorPair>(
-                    icon: Icons.color_lens_outlined,
-                    title: 'Gradient Palette',
-                    value: themePrefs.gradientColorPair,
-                    items: BackgroundGradientColorPair.values
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c,
-                            child: Text(c.displayName),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) {
-                      if (v != null) {
-                        notifier.updateTheme(
-                          (p) => p.copyWith(gradientColorPair: v),
-                        );
-                      }
-                    },
-                  ),
-                  SettingsSliderTile(
-                    icon: Icons.tune_rounded,
-                    title: 'Gradient Intensity',
-                    subtitle: 'Color vibrancy over background',
-                    value: themePrefs.gradientIntensity,
-                    min: 0.05,
-                    max: 1.0,
-                    divisions: 19,
-                    label: '${(themePrefs.gradientIntensity * 100).toInt()}%',
-                    onChanged: (v) => notifier.updateTheme(
-                      (p) => p.copyWith(gradientIntensity: v),
-                    ),
-                  ),
-                ],
-              ],
-            ],
-          ),
-          SettingsSection(
-            title: 'Background Decoration',
-            children: [
-              SettingsActionTile(
-                icon: Icons.image_outlined,
-                title: 'Custom Wallpaper',
-                subtitle: themePrefs.useAmoled
-                    ? 'Disabled with Pure Black'
-                    : themePrefs.customBackgroundImagePath != null
-                    ? 'Wallpaper active'
-                    : 'Select a custom background image',
-                onTap: themePrefs.useAmoled
-                    ? null
-                    : () async {
-                        final result = await FilePicker.platform.pickFiles(
-                          type: FileType.image,
-                        );
-                        if (result != null &&
-                            result.files.single.path != null) {
-                          notifier.updateTheme(
-                            (p) => p.copyWith(
-                              customBackgroundImagePath:
-                                  result.files.single.path,
-                              // Image replaces gradient
-                              useGradients: false,
-                            ),
-                          );
-                        }
-                      },
-                trailing:
-                    themePrefs.customBackgroundImagePath != null &&
-                        !themePrefs.useAmoled
-                    ? IconButton(
-                        icon: const Icon(Icons.clear_rounded),
-                        onPressed: () => notifier.updateTheme(
-                          (p) =>
-                              p.copyWith(clearCustomBackgroundImagePath: true),
-                        ),
-                      )
-                    : null,
-              ),
-              if (themePrefs.customBackgroundImagePath != null &&
-                  !themePrefs.useAmoled) ...[
-                SettingsSliderTile(
-                  icon: Icons.blur_on_rounded,
-                  title: 'Wallpaper Blur',
-                  subtitle: 'Softness of background image',
-                  value: themePrefs.backgroundBlur,
-                  min: 0.0,
-                  max: 25.0,
-                  divisions: 25,
-                  label: '${themePrefs.backgroundBlur.toInt()}px',
-                  onChanged: (v) => notifier.updateTheme(
-                    (p) => p.copyWith(backgroundBlur: v),
-                  ),
-                ),
-                SettingsSliderTile(
-                  icon: Icons.filter_b_and_w_outlined,
-                  title: 'Wallpaper Opacity',
-                  subtitle: 'Visibility of background image',
-                  value: themePrefs.backgroundImageOpacity,
-                  min: 0.0,
-                  max: 1.0,
-                  divisions: 20,
-                  label:
-                      '${(themePrefs.backgroundImageOpacity * 100).toInt()}%',
-                  onChanged: (v) => notifier.updateTheme(
-                    (p) => p.copyWith(backgroundImageOpacity: v),
-                  ),
-                ),
-              ],
-              SettingsSwitchTile(
-                icon: Icons.grain_rounded,
-                title: 'Noise Overlay',
-                subtitle: themePrefs.useAmoled
-                    ? 'Disabled with Pure Black'
-                    : 'Overlay a subtle textured grain grid',
-                value: themePrefs.useNoiseOverlay,
-                onChanged: themePrefs.useAmoled
-                    ? null
-                    : (v) => notifier.updateTheme(
-                        (p) => p.copyWith(useNoiseOverlay: v),
-                      ),
-              ),
-              if (themePrefs.useNoiseOverlay && !themePrefs.useAmoled)
-                SettingsSliderTile(
-                  icon: Icons.opacity_rounded,
-                  title: 'Noise Intensity',
-                  subtitle: 'Textured grain strength',
-                  value: themePrefs.noiseOpacity > 0.15
-                      ? 0.15
-                      : themePrefs.noiseOpacity,
-                  min: 0.0,
-                  max: 0.15,
-                  divisions: 15,
-                  label: '${(themePrefs.noiseOpacity * 100).toInt()}%',
-                  onChanged: (v) =>
-                      notifier.updateTheme((p) => p.copyWith(noiseOpacity: v)),
-                ),
-            ],
-          ),
-          if (!themePrefs.useDynamic) ...[
-            SettingsSection(
-              title: 'Color Schemes',
+          const SizedBox(width: 10),
+        ],
+        body: TabBarView(
+          children: [
+            // ── Tab 1: Themes ──
+            ListView(
+              padding: const EdgeInsets.only(bottom: 50),
               children: [
-                SettingsActionTile(
-                  icon: Icons.colorize,
-                  title: 'Standard Color Scheme',
-                  subtitle: themePrefs.exclusiveScheme == null
-                      ? FlexColor.schemes[themePrefs.flexScheme]?.name ??
-                            'Default'
-                      : 'Not active',
-                  onTap: () => _openSchemePicker(
-                    context,
-                    themePrefs.flexScheme,
-                    (scheme) => notifier.updateTheme(
-                      (p) => p.copyWith(
-                        flexScheme: scheme,
-                        clearExclusiveScheme: true,
-                      ),
-                    ),
-                    isDark,
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (themePrefs.exclusiveScheme == null)
-                        _SwatchStack(
-                          colors: [cs.primary, cs.secondary, cs.tertiary],
+                // Mode selection
+                SettingsSection(
+                  title: 'Mode',
+                  children: [
+                    SettingsSegmentedTile<ThemeMode>(
+                      title: 'Theme Mode',
+                      segments: const [
+                        ButtonSegment(
+                          value: ThemeMode.system,
+                          label: Text('System'),
                         ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                      ),
-                    ],
-                  ),
-                ),
-                SettingsActionTile(
-                  icon: Icons.auto_awesome,
-                  title: 'Exclusive Scheme',
-                  subtitle: themePrefs.exclusiveScheme != null
-                      ? exclusiveSchemes[themePrefs.exclusiveScheme]?.name ??
-                            'Unknown'
-                      : 'Not active',
-                  onTap: () => _openExclusiveSchemePicker(
-                    context,
-                    themePrefs.exclusiveScheme,
-                    (key) => notifier.updateTheme(
-                      (p) => p.copyWith(exclusiveScheme: key),
-                    ),
-                    isDark,
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (themePrefs.exclusiveScheme != null) ...[
-                        _ExclusiveSwatchPreview(
-                          schemeKey: themePrefs.exclusiveScheme!,
-                          isDark: isDark,
+                        ButtonSegment(
+                          value: ThemeMode.light,
+                          label: Text('Light'),
                         ),
-                        const SizedBox(width: 8),
+                        ButtonSegment(
+                          value: ThemeMode.dark,
+                          label: Text('Dark'),
+                        ),
                       ],
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                      selected: {themePrefs.themeMode},
+                      onSelectionChanged: (Set<ThemeMode> s) => notifier
+                          .updateTheme((p) => p.copyWith(themeMode: s.first)),
+                    ),
+                    SettingsSwitchTile(
+                      icon: Icons.palette_outlined,
+                      title: 'Dynamic Color',
+                      subtitle: 'Uses wallpaper colors',
+                      value: themePrefs.useDynamic,
+                      onChanged: (v) => notifier.updateTheme(
+                        (p) =>
+                            p.copyWith(useDynamic: v, clearExclusiveScheme: v),
+                      ),
+                    ),
+                    SettingsSwitchTile(
+                      icon: Icons.dark_mode_outlined,
+                      title: 'Pure Black',
+                      subtitle: themePrefs.customBackgroundImagePath != null
+                          ? 'Disabled while background image is set'
+                          : 'Saves battery on OLED screens',
+                      value: themePrefs.useAmoled,
+                      onChanged:
+                          themePrefs.themeMode == ThemeMode.light ||
+                              themePrefs.customBackgroundImagePath != null
+                          ? null
+                          : (v) => notifier.updateTheme(
+                              (p) => p.copyWith(
+                                useAmoled: v,
+                                useGradients: v ? false : p.useGradients,
+                                useNoiseOverlay: v ? false : p.useNoiseOverlay,
+                                clearCustomBackgroundImagePath: v,
+                              ),
+                            ),
+                    ),
+                    SettingsSwitchTile(
+                      icon: Icons.swap_horiz_rounded,
+                      title: 'Swap Colors',
+                      subtitle: 'Swap primary and secondary colors',
+                      value: themePrefs.swapColors,
+                      onChanged: (v) => notifier.updateTheme(
+                        (p) => p.copyWith(swapColors: v),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Presets
+                _buildPresetGalleryBanner(context, ref),
+
+                // Color Style
+                SettingsSection(
+                  title: 'Color Style',
+                  children: [
+                    SettingsActionTile(
+                      icon: Icons.palette_outlined,
+                      title: 'Theme Variant',
+                      subtitle: themePrefs.themeVariant.displayName,
+                      onTap: () => _openThemeVariantPicker(
+                        context,
+                        themePrefs.themeVariant,
+                        (variant) => notifier.updateTheme(
+                          (p) => p.copyWith(themeVariant: variant),
+                        ),
+                        isDark,
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _VariantSwatchPreview(
+                            variant: themePrefs.themeVariant,
+                            isDark: isDark,
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Color Schemes
+                if (!themePrefs.useDynamic)
+                  SettingsSection(
+                    title: 'Color Schemes',
+                    children: [
+                      SettingsActionTile(
+                        icon: Icons.colorize,
+                        title: 'Standard Color Scheme',
+                        subtitle: themePrefs.exclusiveScheme == null
+                            ? FlexColor.schemes[themePrefs.flexScheme]?.name ??
+                                  'Default'
+                            : 'Not active',
+                        onTap: () => _openSchemePicker(
+                          context,
+                          themePrefs.flexScheme,
+                          (scheme) => notifier.updateTheme(
+                            (p) => p.copyWith(
+                              flexScheme: scheme,
+                              clearExclusiveScheme: true,
+                              clearColorSeed: true,
+                              clearPrimaryColor: true,
+                              clearSecondaryColor: true,
+                              clearTertiaryColor: true,
+                              clearSurfaceColor: true,
+                            ),
+                          ),
+                          isDark,
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (themePrefs.exclusiveScheme == null)
+                              _SwatchStack(
+                                colors: [cs.primary, cs.secondary, cs.tertiary],
+                              ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SettingsActionTile(
+                        icon: Icons.auto_awesome,
+                        title: 'Exclusive Scheme',
+                        subtitle: themePrefs.exclusiveScheme != null
+                            ? exclusiveSchemes[themePrefs.exclusiveScheme]
+                                      ?.name ??
+                                  'Unknown'
+                            : 'Not active',
+                        onTap: () => _openExclusiveSchemePicker(
+                          context,
+                          themePrefs.exclusiveScheme,
+                          (key) => notifier.updateTheme(
+                            (p) => p.copyWith(
+                              exclusiveScheme: key,
+                              clearColorSeed: true,
+                              clearPrimaryColor: true,
+                              clearSecondaryColor: true,
+                              clearTertiaryColor: true,
+                              clearSurfaceColor: true,
+                            ),
+                          ),
+                          isDark,
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (themePrefs.exclusiveScheme != null) ...[
+                              _ExclusiveSwatchPreview(
+                                schemeKey: themePrefs.exclusiveScheme!,
+                                isDark: isDark,
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  SettingsSection(
+                    title: 'Color Scheme',
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                        child: Text(
+                          'Color scheme is managed by Dynamic Color.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
                       ),
                     ],
                   ),
+              ],
+            ),
+
+            // ── Tab 2: Effects ──
+            ListView(
+              padding: const EdgeInsets.only(bottom: 50),
+              children: [
+                // Blend & Gradients
+                SettingsSection(
+                  title: 'Surface Styling',
+                  children: [
+                    SettingsSliderTile(
+                      icon: Icons.opacity_outlined,
+                      title: 'Blend Level',
+                      subtitle: 'Color infusion intensity',
+                      value: themePrefs.blendLevel.toDouble(),
+                      min: 0,
+                      max: 40,
+                      divisions: 40,
+                      label: '${(themePrefs.blendLevel / 40 * 100).toInt()}%',
+                      onChanged: (v) => notifier.updateTheme(
+                        (p) => p.copyWith(blendLevel: v.toInt()),
+                      ),
+                    ),
+                    if (themePrefs.customBackgroundImagePath == null) ...[
+                      SettingsSwitchTile(
+                        icon: Icons.gradient_outlined,
+                        title: 'Gradient Surfaces',
+                        subtitle: themePrefs.useAmoled
+                            ? 'Disabled with Pure Black'
+                            : 'Subtle gradients instead of flat fills',
+                        value: themePrefs.useGradients,
+                        onChanged: themePrefs.useAmoled
+                            ? null
+                            : (v) => notifier.updateTheme(
+                                (p) => p.copyWith(useGradients: v),
+                              ),
+                      ),
+                      if (themePrefs.useGradients && !themePrefs.useAmoled) ...[
+                        SettingsDropdownTile<BackgroundGradientStyle>(
+                          icon: Icons.auto_awesome_outlined,
+                          title: 'Gradient Shape',
+                          value: themePrefs.gradientStyle,
+                          items: BackgroundGradientStyle.values
+                              .map(
+                                (s) => DropdownMenuItem(
+                                  value: s,
+                                  child: Text(s.displayName),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (v) {
+                            if (v != null) {
+                              notifier.updateTheme(
+                                (p) => p.copyWith(gradientStyle: v),
+                              );
+                            }
+                          },
+                        ),
+                        if (themePrefs.gradientStyle ==
+                            BackgroundGradientStyle.linear)
+                          SettingsDropdownTile<BackgroundGradientDirection>(
+                            icon: Icons.explore_outlined,
+                            title: 'Gradient Angle',
+                            value: themePrefs.gradientDirection,
+                            items: BackgroundGradientDirection.values
+                                .map(
+                                  (d) => DropdownMenuItem(
+                                    value: d,
+                                    child: Text(d.displayName),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) {
+                              if (v != null) {
+                                notifier.updateTheme(
+                                  (p) => p.copyWith(gradientDirection: v),
+                                );
+                              }
+                            },
+                          ),
+                        SettingsDropdownTile<BackgroundGradientColorPair>(
+                          icon: Icons.color_lens_outlined,
+                          title: 'Gradient Palette',
+                          value: themePrefs.gradientColorPair,
+                          items: BackgroundGradientColorPair.values
+                              .map(
+                                (c) => DropdownMenuItem(
+                                  value: c,
+                                  child: Text(c.displayName),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (v) {
+                            if (v != null) {
+                              notifier.updateTheme(
+                                (p) => p.copyWith(gradientColorPair: v),
+                              );
+                            }
+                          },
+                        ),
+                        SettingsSliderTile(
+                          icon: Icons.tune_rounded,
+                          title: 'Gradient Intensity',
+                          subtitle: 'Color vibrancy over background',
+                          value: themePrefs.gradientIntensity,
+                          min: 0.05,
+                          max: 1.0,
+                          divisions: 19,
+                          label:
+                              '${(themePrefs.gradientIntensity * 100).toInt()}%',
+                          onChanged: (v) => notifier.updateTheme(
+                            (p) => p.copyWith(gradientIntensity: v),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+
+                // Wallpaper
+                SettingsSection(
+                  title: 'Wallpaper',
+                  children: [
+                    SettingsActionTile(
+                      icon: Icons.image_outlined,
+                      title: 'Custom Wallpaper',
+                      subtitle: themePrefs.useAmoled
+                          ? 'Disabled with Pure Black'
+                          : themePrefs.customBackgroundImagePath != null
+                          ? 'Wallpaper active'
+                          : 'Select a custom background image',
+                      onTap: themePrefs.useAmoled
+                          ? null
+                          : () async {
+                              final result = await FilePicker.platform
+                                  .pickFiles(type: FileType.image);
+                              if (result != null &&
+                                  result.files.single.path != null) {
+                                notifier.updateTheme(
+                                  (p) => p.copyWith(
+                                    customBackgroundImagePath:
+                                        result.files.single.path,
+                                    useGradients: false,
+                                  ),
+                                );
+                              }
+                            },
+                      trailing:
+                          themePrefs.customBackgroundImagePath != null &&
+                              !themePrefs.useAmoled
+                          ? IconButton(
+                              icon: const Icon(Icons.clear_rounded),
+                              onPressed: () => notifier.updateTheme(
+                                (p) => p.copyWith(
+                                  clearCustomBackgroundImagePath: true,
+                                ),
+                              ),
+                            )
+                          : null,
+                    ),
+                    if (themePrefs.customBackgroundImagePath != null &&
+                        !themePrefs.useAmoled) ...[
+                      SettingsSliderTile(
+                        icon: Icons.blur_on_rounded,
+                        title: 'Wallpaper Blur',
+                        subtitle: 'Softness of background image',
+                        value: themePrefs.backgroundBlur,
+                        min: 0.0,
+                        max: 25.0,
+                        divisions: 25,
+                        label: '${themePrefs.backgroundBlur.toInt()}px',
+                        onChanged: (v) => notifier.updateTheme(
+                          (p) => p.copyWith(backgroundBlur: v),
+                        ),
+                      ),
+                      SettingsSliderTile(
+                        icon: Icons.filter_b_and_w_outlined,
+                        title: 'Wallpaper Opacity',
+                        subtitle: 'Visibility of background image',
+                        value: themePrefs.backgroundImageOpacity,
+                        min: 0.0,
+                        max: 1.0,
+                        divisions: 20,
+                        label:
+                            '${(themePrefs.backgroundImageOpacity * 100).toInt()}%',
+                        onChanged: (v) => notifier.updateTheme(
+                          (p) => p.copyWith(backgroundImageOpacity: v),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+
+                // Noise
+                SettingsSection(
+                  title: 'Texture',
+                  children: [
+                    SettingsSwitchTile(
+                      icon: Icons.grain_rounded,
+                      title: 'Noise Overlay',
+                      subtitle: themePrefs.useAmoled
+                          ? 'Disabled with Pure Black'
+                          : 'Overlay a subtle textured grain grid',
+                      value: themePrefs.useNoiseOverlay,
+                      onChanged: themePrefs.useAmoled
+                          ? null
+                          : (v) => notifier.updateTheme(
+                              (p) => p.copyWith(useNoiseOverlay: v),
+                            ),
+                    ),
+                    if (themePrefs.useNoiseOverlay && !themePrefs.useAmoled)
+                      SettingsSliderTile(
+                        icon: Icons.opacity_rounded,
+                        title: 'Noise Intensity',
+                        subtitle: 'Textured grain strength',
+                        value: themePrefs.noiseOpacity > 0.15
+                            ? 0.15
+                            : themePrefs.noiseOpacity,
+                        min: 0.0,
+                        max: 0.15,
+                        divisions: 15,
+                        label: '${(themePrefs.noiseOpacity * 100).toInt()}%',
+                        onChanged: (v) => notifier.updateTheme(
+                          (p) => p.copyWith(noiseOpacity: v),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
           ],
-          if (themePrefs.useDynamic)
-            SettingsSection(
-              title: 'Color Scheme',
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                  child: Text(
-                    'Color scheme is managed by Dynamic Color.',
-                    style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
-                  ),
-                ),
-              ],
-            ),
-          SettingsSection(
-            title: 'Theme Style',
-            children: [
-              SettingsActionTile(
-                icon: Icons.palette_outlined,
-                title: 'Color Style',
-                subtitle: themePrefs.themeVariant.displayName,
-                onTap: () => _openThemeVariantPicker(
-                  context,
-                  themePrefs.themeVariant,
-                  (variant) => notifier.updateTheme(
-                    (p) => p.copyWith(themeVariant: variant),
-                  ),
-                  isDark,
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _VariantSwatchPreview(
-                      variant: themePrefs.themeVariant,
-                      isDark: isDark,
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildPresetGalleryBanner(BuildContext context, WidgetRef ref) {
-    final presetState = ref.watch(presetProvider);
-    final active = presetState.activePreset;
-
     return SettingsSection(
       title: 'Presets',
       children: [
         SettingsNavTile(
           icon: Icons.auto_awesome_outlined,
           title: 'Theme Presets & Gallery',
-          subtitle: active != null
-              ? 'Active: ${active.name} (${active.cardStyle.displayName})'
-              : 'Explore themes & import/export JSON',
+          subtitle: 'Explore themes & import/export JSON presets',
           onTap: () => PresetGallerySheet.show(context),
         ),
       ],
@@ -893,3 +960,4 @@ class _ThemeVariantPicker extends ConsumerWidget {
     );
   }
 }
+

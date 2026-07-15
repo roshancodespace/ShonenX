@@ -15,11 +15,7 @@ class ContinueMediaRow extends ConsumerWidget {
   final String title;
   final MediaType type;
 
-  const ContinueMediaRow({
-    super.key,
-    required this.title,
-    required this.type,
-  });
+  const ContinueMediaRow({super.key, required this.title, required this.type});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,14 +25,30 @@ class ContinueMediaRow extends ConsumerWidget {
         ? ref.watch(continueWatchingPerAnimeProvider(10))
         : ref.watch(continueReadingPerMangaProvider(10));
 
+    if (asyncData.value?.isEmpty == true) {
+      return const SizedBox.shrink();
+    }
+
     final cwStyle = ref.watch(
       uiPrefsProvider.select((p) => p.continueWatchingStyle),
     );
     final crStyle = ref.watch(
       uiPrefsProvider.select((p) => p.continueReadingStyle),
     );
+    final isCwWide = ref.watch(
+      uiPrefsProvider.select((p) => p.isContinueWatchingWide(cwStyle.name)),
+    );
+    final isCrWide = ref.watch(
+      uiPrefsProvider.select((p) => p.isContinueReadingWide(crStyle.name)),
+    );
 
-    final layoutHeight = isAnime ? cwStyle.layout.height : crStyle.layout.height;
+    final layoutHeight = isAnime
+        ? cwStyle
+              .getLayout(isContinueWatching: true, isWideMode: isCwWide)
+              .height
+        : crStyle
+              .getLayout(isContinueReading: true, isWideMode: isCrWide)
+              .height;
 
     return HorizontalSection(
       title: title,
@@ -49,7 +61,8 @@ class ContinueMediaRow extends ConsumerWidget {
           final watchEntry = entry as WatchHistoryEntry;
           final progress = watchEntry.durationInMilliseconds == 0
               ? 0.0
-              : watchEntry.positionInMilliseconds / watchEntry.durationInMilliseconds;
+              : watchEntry.positionInMilliseconds /
+                    watchEntry.durationInMilliseconds;
 
           return ContinueWatchingItem(
             entry: watchEntry,

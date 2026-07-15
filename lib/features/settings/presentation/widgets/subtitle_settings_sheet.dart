@@ -585,6 +585,7 @@ class _SubtitleSettingsSheetState extends ConsumerState<SubtitleSettingsSheet> {
       context: context,
       backgroundColor: cs.surface,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (context) {
         return Padding(
           padding: EdgeInsets.only(

@@ -24,7 +24,51 @@ enum MediaCardStyle {
   ComponentLayout getBaseLayout({
     bool isContinueWatching = false,
     bool isContinueReading = false,
+    bool isWideMode = false,
   }) {
+    if (isWideMode) {
+      if (isContinueWatching || isContinueReading) {
+        return switch (this) {
+          MediaCardStyle.cinematic => const ComponentLayout(
+            width: 380,
+            height: 135,
+          ),
+          MediaCardStyle.wideBanner => const ComponentLayout(
+            width: 440,
+            height: 135,
+          ),
+          MediaCardStyle.compact => const ComponentLayout(
+            width: 340,
+            height: 125,
+          ),
+          MediaCardStyle.editorial => const ComponentLayout(
+            width: 370,
+            height: 135,
+          ),
+          MediaCardStyle.expressive => const ComponentLayout(
+            width: 370,
+            height: 135,
+          ),
+          _ => const ComponentLayout(width: 370, height: 160),
+        };
+      }
+      return switch (this) {
+        MediaCardStyle.cinematic => const ComponentLayout(
+          width: 360,
+          height: 150,
+        ),
+        MediaCardStyle.wideBanner => const ComponentLayout(
+          width: 430,
+          height: 155,
+        ),
+        MediaCardStyle.compact => const ComponentLayout(
+          width: 320,
+          height: 115,
+        ),
+        _ => const ComponentLayout(width: 340, height: 145),
+      };
+    }
+
     if (isContinueWatching) {
       return switch (this) {
         MediaCardStyle.classic ||
@@ -90,14 +134,29 @@ enum MediaCardStyle {
     );
   }
 
+  ComponentLayout getLayout({
+    bool isContinueWatching = false,
+    bool isContinueReading = false,
+    bool isWideMode = false,
+  }) {
+    return getScaledLayout(
+      GlobalUI.uiScaleFactor,
+      isContinueWatching: isContinueWatching,
+      isContinueReading: isContinueReading,
+      isWideMode: isWideMode,
+    );
+  }
+
   ComponentLayout getScaledLayout(
     double scale, {
     bool isContinueWatching = false,
     bool isContinueReading = false,
+    bool isWideMode = false,
   }) {
     final base = getBaseLayout(
       isContinueWatching: isContinueWatching,
       isContinueReading: isContinueReading,
+      isWideMode: isWideMode,
     );
     return ComponentLayout(
       width: base.width * scale,

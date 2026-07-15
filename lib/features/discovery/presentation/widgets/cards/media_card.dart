@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shonenx/core/utils/focus_hover_detector.dart';
 import 'package:shonenx/shared/models/ui_style_enums.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/universal_card_renderer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -29,8 +30,11 @@ class MediaCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isWideMode = ref.watch(
+      uiPrefsProvider.select((s) => s.isMediaCardWide(style.name)),
+    );
     final scale = ref.watch(themePrefsProvider).uiScaleFactor;
-    final layout = style.getScaledLayout(scale);
+    final layout = style.getScaledLayout(scale, isWideMode: isWideMode);
 
     return FocusHoverDetector(
       onTap: onTap,
@@ -44,12 +48,13 @@ class MediaCard extends ConsumerWidget {
       },
       builder: (context, isFocused, isHovered) {
         final isActive = isFocused || isHovered;
-        final baseLayout = style.baseLayout;
+        final baseLayout = style.getBaseLayout(isWideMode: isWideMode);
         final child = UniversalCardRenderer(
           styleName: style.name,
           width: baseLayout.width,
           height: baseLayout.height,
           isActive: isActive,
+          isWideMode: isWideMode,
           title: title,
           imageUrl: imageUrl,
           heroTag: tag,

@@ -35,6 +35,7 @@ class UiPrefState {
   final EpisodeViewMode episodeViewMode;
   final NavBarStyle navBarStyle;
   final Map<String, dynamic> experimentalConfig;
+  final Map<String, bool> cardStyleWideModes;
 
   const UiPrefState({
     this.cardStyle = MediaCardStyle.classic,
@@ -43,7 +44,18 @@ class UiPrefState {
     this.episodeViewMode = EpisodeViewMode.classic,
     this.navBarStyle = NavBarStyle.classic,
     this.experimentalConfig = defaultExperimentalConfig,
+    this.cardStyleWideModes = const {},
   });
+
+  bool isWideCardMode(String key) => cardStyleWideModes[key] ?? false;
+
+  bool isMediaCardWide(String styleName) => isWideCardMode('media_$styleName');
+
+  bool isContinueWatchingWide(String styleName) =>
+      isWideCardMode('cw_$styleName');
+
+  bool isContinueReadingWide(String styleName) =>
+      isWideCardMode('cr_$styleName');
 
   UiPrefState copyWith({
     MediaCardStyle? cardStyle,
@@ -52,6 +64,7 @@ class UiPrefState {
     EpisodeViewMode? episodeViewMode,
     NavBarStyle? navBarStyle,
     Map<String, dynamic>? experimentalConfig,
+    Map<String, bool>? cardStyleWideModes,
   }) {
     return UiPrefState(
       cardStyle: cardStyle ?? this.cardStyle,
@@ -61,6 +74,7 @@ class UiPrefState {
       episodeViewMode: episodeViewMode ?? this.episodeViewMode,
       navBarStyle: navBarStyle ?? this.navBarStyle,
       experimentalConfig: experimentalConfig ?? this.experimentalConfig,
+      cardStyleWideModes: cardStyleWideModes ?? this.cardStyleWideModes,
     );
   }
 
@@ -71,6 +85,7 @@ class UiPrefState {
     'episodeViewMode': episodeViewMode.name,
     'navBarStyle': navBarStyle.name,
     'experimentalConfig': experimentalConfig,
+    'cardStyleWideModes': cardStyleWideModes,
   };
 
   factory UiPrefState.fromJson(Map<String, dynamic> json) {
@@ -101,12 +116,15 @@ class UiPrefState {
               ...Map<String, dynamic>.from(json['experimentalConfig'] as Map),
             }
           : defaultExperimentalConfig,
+      cardStyleWideModes: (json['cardStyleWideModes'] is Map)
+          ? Map<String, bool>.from(json['cardStyleWideModes'] as Map)
+          : const {},
     );
   }
 
   @override
   String toString() =>
-      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode, navBarStyle: $navBarStyle, experimentalConfig: $experimentalConfig)';
+      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode, navBarStyle: $navBarStyle, experimentalConfig: $experimentalConfig, cardStyleWideModes: $cardStyleWideModes)';
 
   @override
   bool operator ==(Object other) {
@@ -117,7 +135,8 @@ class UiPrefState {
         other.continueReadingStyle == continueReadingStyle &&
         other.episodeViewMode == episodeViewMode &&
         other.navBarStyle == navBarStyle &&
-        mapEquals(other.experimentalConfig, experimentalConfig);
+        mapEquals(other.experimentalConfig, experimentalConfig) &&
+        mapEquals(other.cardStyleWideModes, cardStyleWideModes);
   }
 
   @override
@@ -128,6 +147,7 @@ class UiPrefState {
     episodeViewMode,
     navBarStyle,
     experimentalConfig,
+    cardStyleWideModes,
   );
 }
 
@@ -153,10 +173,36 @@ class UiPrefsNotifier extends Notifier<UiPrefState> {
     _saveDb();
   }
 
+  void setWideCardMode(String key, bool isWide) {
+    state = state.copyWith(
+      cardStyleWideModes: {...state.cardStyleWideModes, key: isWide},
+    );
+    _saveDb();
+  }
+
+  void _toggleWideCardMode(String key) {
+    final current = state.isWideCardMode(key);
+    setWideCardMode(key, !current);
+  }
+
+  void toggleMediaCardWide(String styleName) =>
+      _toggleWideCardMode('media_$styleName');
+
+  void toggleContinueWatchingWide(String styleName) =>
+      _toggleWideCardMode('cw_$styleName');
+
+  void toggleContinueReadingWide(String styleName) =>
+      _toggleWideCardMode('cr_$styleName');
+
   void updateExperimentalConfig(Map<String, dynamic> newValues) {
     state = state.copyWith(
       experimentalConfig: {...state.experimentalConfig, ...newValues},
     );
+    _saveDb();
+  }
+
+  void updateUiPrefs(UiPrefState Function(UiPrefState) updater) {
+    state = updater(state);
     _saveDb();
   }
 

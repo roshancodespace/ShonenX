@@ -339,11 +339,14 @@ class HomeScreen extends ConsumerWidget {
     String title,
   ) {
     final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
+    final isWide = ref.watch(
+      uiPrefsProvider.select((p) => p.isMediaCardWide(style.name)),
+    );
     final sourceData = ref.watch(singleSourceFeedProvider((info, mediaType)));
 
     return HorizontalSection<UnifiedMedia>(
       title: title,
-      height: style.layout.height,
+      height: style.getLayout(isWideMode: isWide).height,
       onMoreTap: () => context.push('/category/$title?type=${mediaType.id}'),
       data: sourceData,
       itemBuilder: (context, item) {
@@ -372,10 +375,13 @@ class HomeScreen extends ConsumerWidget {
     return Consumer(
       builder: (context, ref, child) {
         final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
+        final isWide = ref.watch(
+          uiPrefsProvider.select((p) => p.isMediaCardWide(style.name)),
+        );
         final mediaType = items.isNotEmpty ? items.first.type : MediaType.ANIME;
         return HorizontalSection(
           title: title,
-          height: style.layout.height,
+          height: style.getLayout(isWideMode: isWide).height,
           onMoreTap: () =>
               context.push('/category/$title?type=${mediaType.id}'),
           data: AsyncValue.data(items),

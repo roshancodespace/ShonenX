@@ -764,6 +764,9 @@ class _GenreFeedRow extends ConsumerWidget {
     final arg = (type: type, genre: genre);
     final feedState = ref.watch(genreFeedProvider(arg));
     final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
+    final isWide = ref.watch(
+      uiPrefsProvider.select((p) => p.isMediaCardWide(style.name)),
+    );
 
     return feedState.when(
       data: (items) {
@@ -771,7 +774,7 @@ class _GenreFeedRow extends ConsumerWidget {
 
         return HorizontalSection(
           title: genre,
-          height: style.layout.height,
+          height: style.getLayout(isWideMode: isWide).height,
           onMoreTap: () {
             if (onGenreSelect != null) {
               onGenreSelect!(genre);
@@ -796,7 +799,7 @@ class _GenreFeedRow extends ConsumerWidget {
         );
       },
       loading: () => SizedBox(
-        height: style.layout.height + 40,
+        height: style.getLayout(isWideMode: isWide).height + 40,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -921,6 +924,9 @@ class _SourceFeedRow extends ConsumerWidget {
     final arg = (info: info, type: type);
     final catalogState = ref.watch(_sourceDiscoverFeedProvider(arg));
     final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
+    final isWide = ref.watch(
+      uiPrefsProvider.select((p) => p.isMediaCardWide(style.name)),
+    );
 
     return catalogState.when(
       data: (items) {
@@ -928,7 +934,7 @@ class _SourceFeedRow extends ConsumerWidget {
 
         return HorizontalSection(
           title: info.name,
-          height: style.layout.height,
+          height: style.getLayout(isWideMode: isWide).height,
           onMoreTap: () {
             if (onSourceSelect != null) {
               onSourceSelect!(info.id);
@@ -953,7 +959,7 @@ class _SourceFeedRow extends ConsumerWidget {
         );
       },
       loading: () => SizedBox(
-        height: style.layout.height + 40,
+        height: style.getLayout(isWideMode: isWide).height + 40,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

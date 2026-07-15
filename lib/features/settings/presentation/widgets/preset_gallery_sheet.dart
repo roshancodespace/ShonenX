@@ -152,10 +152,17 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                 ...BuiltInPresets.all.map(
                   (preset) => _PresetCard(
                     preset: preset,
-                    isActive: preset.id == presetState.activePresetId,
+                    isActive: false,
                     onTap: () {
                       notifier.applyPreset(preset);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Loaded preset: ${preset.name}'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
                     },
+                    onExport: () => _showExportDialog(context, ref, preset),
                   ),
                 ),
               ] else ...[
@@ -210,9 +217,18 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                   ...presetState.customPresets.map(
                     (preset) => _PresetCard(
                       preset: preset,
-                      isActive: preset.id == presetState.activePresetId,
+                      isActive: false,
                       isCustom: true,
-                      onTap: () => notifier.applyPreset(preset),
+                      onTap: () {
+                        notifier.applyPreset(preset);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Loaded preset: ${preset.name}'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      onExport: () => _showExportDialog(context, ref, preset),
                       onDelete: () {
                         notifier.deleteCustomPreset(preset.id);
                       },
@@ -307,7 +323,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
           ),
         ),
         InkWell(
-          onTap: () => _exportCurrentTheme(context, ref),
+          onTap: () => _showExportDialog(context, ref),
           borderRadius: BorderRadius.circular(50),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
@@ -345,30 +361,133 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
     );
   }
 
-  void _exportCurrentTheme(BuildContext context, WidgetRef ref) {
-    final themePrefs = ref.read(themePrefsProvider);
-    final uiPrefs = ref.read(uiPrefsProvider);
+  void _showExportDialog(
+    BuildContext context,
+    WidgetRef ref, [
+    AppThemePreset? targetPreset,
+  ]) {
+    final nameController = TextEditingController(
+      text: targetPreset?.name ?? 'My ShonenX Theme',
+    );
+    final authorController = TextEditingController(
+      text: targetPreset?.author ?? '@roshancodespace',
+    );
+    final descController = TextEditingController(
+      text: targetPreset?.description ?? 'Exported custom theme configuration.',
+    );
     final cs = Theme.of(context).colorScheme;
 
-    final preset = AppThemePreset.fromStates(
-      id: 'custom_export_${DateTime.now().millisecondsSinceEpoch}',
-      name: 'My ShonenX Theme',
-      description: 'Exported custom theme configuration.',
-      author: 'User',
-      previewColors: [
-        cs.primary.toARGB32(),
-        cs.secondary.toARGB32(),
-        cs.surface.toARGB32(),
-      ],
-      themePrefs: themePrefs,
-      uiPrefs: uiPrefs,
-    );
+    AppBottomSheet.show<void>(
+      context: context,
+      title: targetPreset != null
+          ? 'Export Preset JSON'
+          : 'Export Current Theme',
+      child: Builder(
+        builder: (ctx) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              targetPreset != null
+                  ? 'Customize the metadata before exporting "${targetPreset.name}" to clipboard:'
+                  : 'Customize the metadata before exporting your current theme settings to clipboard:',
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Preset Name',
+                hintText: 'e.g. Neon Horizon',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: authorController,
+              decoration: const InputDecoration(
+                labelText: 'Author / Creator',
+                hintText: 'e.g. @username or Me',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descController,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                hintText: 'Brief summary of your theme aesthetic',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  onPressed: () {
+                    final name = nameController.text.trim();
+                    final author = authorController.text.trim();
+                    final desc = descController.text.trim();
+                    if (name.isEmpty) return;
 
-    Clipboard.setData(ClipboardData(text: preset.toJsonString()));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Theme JSON copied to clipboard! Ready for Marketplace.'),
-        behavior: SnackBarBehavior.floating,
+                    AppThemePreset exportPreset;
+                    if (targetPreset != null) {
+                      final map = targetPreset.toMap();
+                      map['name'] = name;
+                      map['author'] = author.isEmpty ? 'Community' : author;
+                      map['description'] = desc.isEmpty
+                          ? 'A ShonenX theme.'
+                          : desc;
+                      exportPreset = AppThemePreset.fromMap(map);
+                    } else {
+                      final themePrefs = ref.read(themePrefsProvider);
+                      final uiPrefs = ref.read(uiPrefsProvider);
+                      exportPreset = AppThemePreset.fromStates(
+                        id: 'custom_export_${DateTime.now().millisecondsSinceEpoch}',
+                        name: name,
+                        description: desc.isEmpty
+                            ? 'Exported custom theme.'
+                            : desc,
+                        author: author.isEmpty ? 'Community' : author,
+                        previewColors: [
+                          cs.primary.toARGB32(),
+                          cs.secondary.toARGB32(),
+                          cs.surface.toARGB32(),
+                        ],
+                        themePrefs: themePrefs,
+                        uiPrefs: uiPrefs,
+                      );
+                    }
+
+                    Clipboard.setData(
+                      ClipboardData(text: exportPreset.toJsonString()),
+                    );
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Copied "$name" JSON by ${exportPreset.author} to clipboard!',
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.copy_rounded, size: 16),
+                  label: const Text('Copy JSON'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -383,30 +502,80 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Paste a ShonenX Theme JSON code from the marketplace or community:',
-              style: TextStyle(fontSize: 13),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Paste a ShonenX Theme JSON code below:',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () async {
+                    final data = await Clipboard.getData(Clipboard.kTextPlain);
+                    if (data != null && data.text != null) {
+                      controller.text = data.text!;
+                    }
+                  },
+                  icon: const Icon(Icons.content_paste_rounded, size: 15),
+                  label: const Text(
+                    'Paste Clipboard',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             TextField(
               controller: controller,
               maxLines: 6,
               decoration: const InputDecoration(
-                hintText: '{\n  "name": "Marketplace Theme",\n  ...\n}',
+                hintText:
+                    '{\n  "name": "Marketplace Theme",\n  "author": "@username",\n  ...\n}',
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.all(12),
               ),
               style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
                   child: const Text('Cancel'),
                 ),
-                const SizedBox(width: 8),
+                OutlinedButton(
+                  onPressed: () {
+                    final text = controller.text.trim();
+                    if (text.isEmpty) return;
+                    try {
+                      final preset = ref
+                          .read(presetProvider.notifier)
+                          .importPresetFromJson(text, apply: false);
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Saved "${preset.name}" to Custom Themes (not applied).',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Invalid JSON format: ${e.toString()}'),
+                          backgroundColor: Theme.of(context).colorScheme.error,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('Save Only'),
+                ),
                 FilledButton(
                   onPressed: () {
                     final text = controller.text.trim();
@@ -414,7 +583,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                     try {
                       final preset = ref
                           .read(presetProvider.notifier)
-                          .importPresetFromJson(text);
+                          .importPresetFromJson(text, apply: true);
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -427,9 +596,7 @@ class _PresetGallerySheetState extends ConsumerState<PresetGallerySheet> {
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(
-                            'Invalid Theme JSON format: ${e.toString()}',
-                          ),
+                          content: Text('Invalid JSON format: ${e.toString()}'),
                           backgroundColor: Theme.of(context).colorScheme.error,
                         ),
                       );
@@ -529,6 +696,7 @@ class _PresetCard extends StatelessWidget {
   final bool isActive;
   final bool isCustom;
   final VoidCallback onTap;
+  final VoidCallback onExport;
   final VoidCallback? onDelete;
 
   const _PresetCard({
@@ -536,6 +704,7 @@ class _PresetCard extends StatelessWidget {
     required this.isActive,
     this.isCustom = false,
     required this.onTap,
+    required this.onExport,
     this.onDelete,
   });
 
@@ -574,7 +743,7 @@ class _PresetCard extends StatelessWidget {
         ),
       ),
       subtitle: Text(
-        '${preset.cardStyle.displayName} • ${preset.description}',
+        '${preset.cardStyle.displayName} • ${preset.author}',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
@@ -582,22 +751,30 @@ class _PresetCard extends StatelessWidget {
           color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
-      trailing: isActive
-          ? Icon(
-              Icons.check_circle_rounded,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(
+              Icons.share_outlined,
               color: theme.colorScheme.primary,
-              size: 20,
-            )
-          : isCustom && onDelete != null
-          ? IconButton(
+              size: 19,
+            ),
+            tooltip: 'Export / Share JSON',
+            onPressed: onExport,
+          ),
+          if (isCustom && onDelete != null)
+            IconButton(
               icon: Icon(
                 Icons.delete_outline,
                 color: theme.colorScheme.error,
-                size: 20,
+                size: 19,
               ),
+              tooltip: 'Delete Preset',
               onPressed: onDelete,
-            )
-          : null,
+            ),
+        ],
+      ),
     );
   }
 }

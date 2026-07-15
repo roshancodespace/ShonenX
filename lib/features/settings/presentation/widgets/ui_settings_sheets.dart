@@ -203,18 +203,93 @@ void showCardStyleSheet(
   AppBottomSheet.show(
     context: context,
     title: 'Card Style',
+    actions: [
+      Consumer(
+        builder: (_, r, __) {
+          final current = r.watch(uiPrefsProvider.select((s) => s.cardStyle));
+          final isWide = r.watch(
+            uiPrefsProvider.select((s) => s.isMediaCardWide(current.name)),
+          );
+          final canToggleWide =
+              current != MediaCardStyle.compact &&
+              current != MediaCardStyle.cinematic &&
+              current != MediaCardStyle.wideBanner;
+
+          if (!canToggleWide) return const SizedBox.shrink();
+
+          return Tooltip(
+            message: isWide ? 'Switch to Portrait Mode' : 'Switch to Wide Mode',
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => notifier.toggleMediaCardWide(current.name),
+                borderRadius: BorderRadius.circular(20),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isWide
+                        ? cs.primaryContainer
+                        : cs.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isWide
+                          ? cs.primary
+                          : cs.outlineVariant.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isWide
+                            ? Icons.table_rows_rounded
+                            : Icons.grid_view_rounded,
+                        size: 15,
+                        color: isWide
+                            ? cs.onPrimaryContainer
+                            : cs.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        isWide ? 'Wide' : 'Normal',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: isWide
+                              ? cs.onPrimaryContainer
+                              : cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    ],
     child: Consumer(
       builder: (_, r, _) {
         final current = r.watch(uiPrefsProvider.select((s) => s.cardStyle));
+        final isWide = r.watch(
+          uiPrefsProvider.select((s) => s.isMediaCardWide(current.name)),
+        );
+        final layout = current.getLayout(isWideMode: isWide);
 
         return SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const SizedBox(height: 4),
               Center(
                 child: SizedBox(
-                  width: current.layout.width,
-                  height: current.layout.height,
+                  width: layout.width,
+                  height: layout.height,
                   child: MediaCard(
                     title: 'Demon Slayer: Kimetsu No Yaiba',
                     tag: 'ui-card-preview',
@@ -227,18 +302,34 @@ void showCardStyleSheet(
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
 
-              ...MediaCardStyle.values.map(
-                (style) => _SelectionTile(
-                  selected: current == style,
-                  icon: Icons.style_outlined,
-                  title: style.displayName,
-                  subtitle: _cardStyleDesc(style),
-                  selectedColor: cs.primary,
-                  onTap: () => notifier.updateCardStyle(style),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisExtent: 54,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: MediaCardStyle.values.length,
+                  itemBuilder: (context, index) {
+                    final style = MediaCardStyle.values[index];
+                    return _StyleGridCard(
+                      selected: current == style,
+                      icon: Icons.style_outlined,
+                      title: style.displayName,
+                      subtitle: _cardStyleDesc(style),
+                      selectedColor: cs.primary,
+                      onTap: () => notifier.updateCardStyle(style),
+                    );
+                  },
                 ),
               ),
+              const SizedBox(height: 12),
             ],
           ),
         );
@@ -258,6 +349,80 @@ void showContinueWatchingSheet(
   AppBottomSheet.show(
     context: context,
     title: 'Continue Watching Style',
+    actions: [
+      Consumer(
+        builder: (_, r, __) {
+          final current = r.watch(
+            uiPrefsProvider.select((s) => s.continueWatchingStyle),
+          );
+          final isWide = r.watch(
+            uiPrefsProvider.select(
+              (s) => s.isContinueWatchingWide(current.name),
+            ),
+          );
+          final canToggleWide =
+              current != ContinueWatchingStyle.compact &&
+              current != ContinueWatchingStyle.cinematic &&
+              current != ContinueWatchingStyle.wideBanner;
+
+          if (!canToggleWide) return const SizedBox.shrink();
+
+          return Tooltip(
+            message: isWide ? 'Switch to Portrait Mode' : 'Switch to Wide Mode',
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => notifier.toggleContinueWatchingWide(current.name),
+                borderRadius: BorderRadius.circular(20),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isWide
+                        ? cs.primaryContainer
+                        : cs.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isWide
+                          ? cs.primary
+                          : cs.outlineVariant.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isWide
+                            ? Icons.table_rows_rounded
+                            : Icons.grid_view_rounded,
+                        size: 15,
+                        color: isWide
+                            ? cs.onPrimaryContainer
+                            : cs.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        isWide ? 'Wide' : 'Normal',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: isWide
+                              ? cs.onPrimaryContainer
+                              : cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    ],
     child: Consumer(
       builder: (_, r, _) {
         final current = r.watch(
@@ -268,6 +433,7 @@ void showContinueWatchingSheet(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const SizedBox(height: 4),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: ContinueWatchingItem(
@@ -277,18 +443,34 @@ void showContinueWatchingSheet(
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
 
-              ...ContinueWatchingStyle.values.map(
-                (style) => _SelectionTile(
-                  selected: current == style,
-                  icon: _cwStyleIcon(style),
-                  title: style.displayName,
-                  subtitle: _cwStyleDesc(style),
-                  selectedColor: cs.primary,
-                  onTap: () => notifier.updateContinueWatchingStyle(style),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisExtent: 54,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: ContinueWatchingStyle.values.length,
+                  itemBuilder: (context, index) {
+                    final style = ContinueWatchingStyle.values[index];
+                    return _StyleGridCard(
+                      selected: current == style,
+                      icon: _cwStyleIcon(style),
+                      title: style.displayName,
+                      subtitle: _cwStyleDesc(style),
+                      selectedColor: cs.primary,
+                      onTap: () => notifier.updateContinueWatchingStyle(style),
+                    );
+                  },
                 ),
               ),
+              const SizedBox(height: 12),
             ],
           ),
         );
@@ -308,6 +490,80 @@ void showContinueReadingSheet(
   AppBottomSheet.show(
     context: context,
     title: 'Continue Reading Style',
+    actions: [
+      Consumer(
+        builder: (_, r, __) {
+          final current = r.watch(
+            uiPrefsProvider.select((s) => s.continueReadingStyle),
+          );
+          final isWide = r.watch(
+            uiPrefsProvider.select(
+              (s) => s.isContinueReadingWide(current.name),
+            ),
+          );
+          final canToggleWide =
+              current != ContinueReadingStyle.compact &&
+              current != ContinueReadingStyle.cinematic &&
+              current != ContinueReadingStyle.wideBanner;
+
+          if (!canToggleWide) return const SizedBox.shrink();
+
+          return Tooltip(
+            message: isWide ? 'Switch to Portrait Mode' : 'Switch to Wide Mode',
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => notifier.toggleContinueReadingWide(current.name),
+                borderRadius: BorderRadius.circular(20),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isWide
+                        ? cs.primaryContainer
+                        : cs.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isWide
+                          ? cs.primary
+                          : cs.outlineVariant.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isWide
+                            ? Icons.table_rows_rounded
+                            : Icons.grid_view_rounded,
+                        size: 15,
+                        color: isWide
+                            ? cs.onPrimaryContainer
+                            : cs.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        isWide ? 'Wide' : 'Normal',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: isWide
+                              ? cs.onPrimaryContainer
+                              : cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    ],
     child: Consumer(
       builder: (_, r, _) {
         final current = r.watch(
@@ -318,6 +574,7 @@ void showContinueReadingSheet(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const SizedBox(height: 4),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: ContinueReadingItem(
@@ -327,18 +584,34 @@ void showContinueReadingSheet(
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
 
-              ...ContinueReadingStyle.values.map(
-                (style) => _SelectionTile(
-                  selected: current == style,
-                  icon: _crStyleIcon(style),
-                  title: style.displayName,
-                  subtitle: _crStyleDesc(style),
-                  selectedColor: cs.primary,
-                  onTap: () => notifier.updateContinueReadingStyle(style),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisExtent: 54,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: ContinueReadingStyle.values.length,
+                  itemBuilder: (context, index) {
+                    final style = ContinueReadingStyle.values[index];
+                    return _StyleGridCard(
+                      selected: current == style,
+                      icon: _crStyleIcon(style),
+                      title: style.displayName,
+                      subtitle: _crStyleDesc(style),
+                      selectedColor: cs.primary,
+                      onTap: () => notifier.updateContinueReadingStyle(style),
+                    );
+                  },
                 ),
               ),
+              const SizedBox(height: 12),
             ],
           ),
         );
@@ -414,25 +687,150 @@ class _SelectionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: selected ? selectedColor : cs.onSurfaceVariant,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+          decoration: BoxDecoration(
+            color: selected
+                ? selectedColor.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: selected ? selectedColor : cs.onSurfaceVariant,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: selected ? cs.onSurface : cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (selected) ...[
+                const SizedBox(width: 8),
+                Icon(Icons.check_rounded, size: 18, color: selectedColor),
+              ],
+            ],
+          ),
         ),
       ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+    );
+  }
+}
+
+class _StyleGridCard extends StatelessWidget {
+  final bool selected;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color selectedColor;
+  final VoidCallback onTap;
+
+  const _StyleGridCard({
+    required this.selected,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.selectedColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected
+                ? selectedColor.withValues(alpha: 0.15)
+                : cs.surfaceContainerLow.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: selected ? selectedColor : cs.onSurfaceVariant,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: selected ? cs.onSurface : cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: cs.onSurfaceVariant.withValues(
+                          alpha: selected ? 0.9 : 0.6,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (selected) ...[
+                const SizedBox(width: 4),
+                Icon(Icons.check_rounded, size: 16, color: selectedColor),
+              ],
+            ],
+          ),
+        ),
       ),
-      trailing: selected
-          ? Icon(Icons.check_rounded, color: selectedColor)
-          : null,
-      onTap: onTap,
     );
   }
 }

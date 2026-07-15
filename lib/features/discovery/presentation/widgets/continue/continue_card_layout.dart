@@ -16,6 +16,7 @@ class ContinueCardLayout extends StatelessWidget {
   final Widget Function(BuildContext context, ColorScheme cs)? thumbnailBuilder;
   final IconData fallbackIcon;
   final String badgeType;
+  final bool isWideMode;
 
   const ContinueCardLayout({
     super.key,
@@ -24,6 +25,7 @@ class ContinueCardLayout extends StatelessWidget {
     required this.height,
     required this.isActive,
     required this.isLoading,
+    this.isWideMode = false,
     required this.title,
     required this.subtitle,
     required this.progress,
@@ -43,11 +45,11 @@ class ContinueCardLayout extends StatelessWidget {
       height: height,
       isActive: isActive,
       isLoading: isLoading,
+      isWideMode: isWideMode,
       title: title,
       subtitle: subtitle,
       progress: progress,
-      progressText: progressText,
-      badgeText: badgeType,
+      badgeText: badgeText,
       bottomLeftBadgeText: badgeText,
       imageUrl: imageUrl,
       thumbnailBuilder: thumbnailBuilder,

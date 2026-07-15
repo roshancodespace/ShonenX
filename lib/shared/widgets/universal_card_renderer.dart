@@ -19,6 +19,7 @@ class UniversalCardRenderer extends StatelessWidget {
   final Widget Function(BuildContext context, ColorScheme cs)? thumbnailBuilder;
   final String? heroTag;
   final IconData fallbackIcon;
+  final bool isWideMode;
 
   const UniversalCardRenderer({
     super.key,
@@ -27,6 +28,7 @@ class UniversalCardRenderer extends StatelessWidget {
     required this.height,
     required this.isActive,
     this.isLoading = false,
+    this.isWideMode = false,
     required this.title,
     this.subtitle,
     this.progress,
@@ -43,6 +45,12 @@ class UniversalCardRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    if (isWideMode &&
+        styleName != 'compact' &&
+        styleName != 'cinematic' &&
+        styleName != 'wideBanner') {
+      return _buildWideModeCard(theme);
+    }
     return switch (styleName) {
       'minimal' => _buildMinimal(theme),
       'expressive' => _buildExpressive(theme),
@@ -108,6 +116,44 @@ class UniversalCardRenderer extends StatelessWidget {
     );
   }
 
+  Widget _buildThumbnailWithProgressBorder(
+    ThemeData theme, {
+    required double w,
+    required double h,
+    double? r,
+  }) {
+    final cs = theme.colorScheme;
+    final radius = r ?? GlobalUI.uiRoundness;
+    if (progress == null) {
+      return _buildImage(theme, w: w, h: h, r: radius);
+    }
+    final strokeW = isActive ? 3.5 : 2.8;
+    return Stack(
+      children: [
+        Padding(
+          padding: EdgeInsets.all(strokeW * 0.5),
+          child: _buildImage(
+            theme,
+            w: w == double.maxFinite ? w : w - strokeW,
+            h: h - strokeW,
+            r: radius - (strokeW * 0.5),
+          ),
+        ),
+        Positioned.fill(
+          child: CustomPaint(
+            painter: _ThumbnailProgressBorderPainter(
+              progress: progress!.clamp(0.0, 1.0),
+              color: cs.primary,
+              trackColor: cs.primary.withValues(alpha: 0.22),
+              strokeWidth: strokeW,
+              radius: radius,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildBadgeOverlay(ThemeData theme) {
     if (badgeText == null && topRightBadge == null) {
       return const SizedBox.shrink();
@@ -144,23 +190,642 @@ class UniversalCardRenderer extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressBar(
-    ColorScheme cs, {
-    double height = 4,
-    BorderRadius? radius,
-  }) {
-    if (progress == null) {
-      return const SizedBox.shrink();
+  Widget _buildWideModeCard(ThemeData theme) {
+    final cs = theme.colorScheme;
+    final thumbW = width * 0.48;
+
+    switch (styleName) {
+      case 'classic':
+        return AnimatedContainer(
+          duration: Durations.short4,
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+            border: Border.all(
+              color: isActive ? cs.tertiary : Colors.transparent,
+              width: isActive ? 2.5 : 1.0,
+              strokeAlign: BorderSide.strokeAlignOutside,
+            ),
+          ),
+          child: Row(
+            children: [
+              Stack(
+                children: [
+                  _buildThumbnailWithProgressBorder(
+                    theme,
+                    w: thumbW,
+                    h: height,
+                  ),
+                  _buildBadgeOverlay(theme),
+                ],
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 4,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: cs.onSurface,
+                                height: 1.2,
+                              ),
+                            ),
+                          ),
+                          if (topRightBadge != null) topRightBadge!,
+                        ],
+                      ),
+                      if (subtitle != null ||
+                          progress != null ||
+                          progressText != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (subtitle != null)
+                              Expanded(
+                                child: Text(
+                                  subtitle!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: cs.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            if (progressText != null || progress != null) ...[
+                              const SizedBox(width: 4),
+                              Text(
+                                progressText ??
+                                    '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: cs.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+      case 'minimal':
+        return AnimatedContainer(
+          duration: Durations.short4,
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+            border: Border.all(
+              color: isActive
+                  ? cs.tertiary
+                  : cs.outlineVariant.withValues(alpha: 0.28),
+              width: isActive ? 2.5 : 1.0,
+              strokeAlign: BorderSide.strokeAlignOutside,
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _buildThumbnailWithProgressBorder(
+                  theme,
+                  w: width,
+                  h: height,
+                  r: GlobalUI.uiRoundness,
+                ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      stops: const [0.1, 0.7, 1.0],
+                      colors: [
+                        cs.scrim.withValues(alpha: 0.9),
+                        cs.scrim.withValues(alpha: 0.65),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+                _buildBadgeOverlay(theme),
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 10,
+                  top: 10,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                height: 1.2,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          if (topRightBadge != null) topRightBadge!,
+                        ],
+                      ),
+                      if (subtitle != null ||
+                          progress != null ||
+                          progressText != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (subtitle != null)
+                              Expanded(
+                                child: Text(
+                                  subtitle!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ),
+                            if (progressText != null || progress != null)
+                              Text(
+                                progressText ??
+                                    '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: cs.primaryContainer,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+      case 'expressive':
+        return AnimatedContainer(
+          duration: Durations.short4,
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.5),
+            border: Border.all(
+              color: isActive ? cs.primary : Colors.transparent,
+              width: isActive ? 2.5 : 1.0,
+              strokeAlign: BorderSide.strokeAlignOutside,
+            ),
+          ),
+          padding: const EdgeInsets.all(6),
+          child: Row(
+            children: [
+              Stack(
+                children: [
+                  _buildThumbnailWithProgressBorder(
+                    theme,
+                    w: thumbW,
+                    h: height,
+                    r: GlobalUI.uiRoundness * 1.2,
+                  ),
+                  _buildBadgeOverlay(theme),
+                ],
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 4,
+                    horizontal: 4,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: cs.onSurface,
+                              ),
+                            ),
+                          ),
+                          if (topRightBadge != null) topRightBadge!,
+                        ],
+                      ),
+                      if (subtitle != null ||
+                          progress != null ||
+                          progressText != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (subtitle != null)
+                              Expanded(
+                                child: Text(
+                                  subtitle!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: cs.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            if (progressText != null || progress != null)
+                              Text(
+                                progressText ??
+                                    '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: cs.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+      case 'material':
+        return AnimatedContainer(
+          duration: Durations.short4,
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest.withValues(alpha: 0.65),
+            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.3),
+            border: Border.all(
+              color: isActive
+                  ? cs.primary
+                  : cs.outlineVariant.withValues(alpha: 0.3),
+              width: isActive ? 2.0 : 1.0,
+              strokeAlign: BorderSide.strokeAlignOutside,
+            ),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: cs.primary.withValues(alpha: 0.15),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : const [],
+          ),
+          padding: const EdgeInsets.all(6),
+          child: Row(
+            children: [
+              Stack(
+                children: [
+                  _buildThumbnailWithProgressBorder(
+                    theme,
+                    w: thumbW,
+                    h: height,
+                    r: GlobalUI.uiRoundness,
+                  ),
+                  _buildBadgeOverlay(theme),
+                ],
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 4,
+                    horizontal: 4,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: cs.onSurface,
+                              ),
+                            ),
+                          ),
+                          if (topRightBadge != null) topRightBadge!,
+                        ],
+                      ),
+                      if (subtitle != null ||
+                          progress != null ||
+                          progressText != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (subtitle != null)
+                              Expanded(
+                                child: Text(
+                                  subtitle!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: cs.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            if (progressText != null || progress != null)
+                              Text(
+                                progressText ??
+                                    '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: cs.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+      case 'neon':
+        final isDark = theme.brightness == Brightness.dark;
+        return AnimatedContainer(
+          duration: Durations.short4,
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0C0E14) : cs.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+            border: Border.all(
+              color: isActive ? cs.primary : cs.primary.withValues(alpha: 0.65),
+              width: isActive ? 2.5 : 1.5,
+              strokeAlign: BorderSide.strokeAlignOutside,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: cs.primary.withValues(alpha: isActive ? 0.48 : 0.22),
+                blurRadius: isActive ? 20 : 10,
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(6),
+          child: Row(
+            children: [
+              Stack(
+                children: [
+                  _buildThumbnailWithProgressBorder(
+                    theme,
+                    w: thumbW,
+                    h: height,
+                    r: GlobalUI.uiRoundness * 0.8,
+                  ),
+                  _buildBadgeOverlay(theme),
+                ],
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 4,
+                    horizontal: 4,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? Colors.white : cs.onSurface,
+                                height: 1.2,
+                              ),
+                            ),
+                          ),
+                          if (topRightBadge != null) topRightBadge!,
+                        ],
+                      ),
+                      if (subtitle != null ||
+                          progress != null ||
+                          progressText != null) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (subtitle != null)
+                              Expanded(
+                                child: Text(
+                                  subtitle!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: cs.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            if (progressText != null || progress != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: cs.primary.withValues(alpha: 0.18),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: cs.primary.withValues(alpha: 0.4),
+                                    strokeAlign: BorderSide.strokeAlignOutside,
+                                  ),
+                                ),
+                                child: Text(
+                                  progressText ??
+                                      '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: cs.primary,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+      case 'editorial':
+        return AnimatedContainer(
+          duration: Durations.short4,
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+            border: Border.all(
+              color: isActive ? cs.tertiary : Colors.transparent,
+              width: isActive ? 2.5 : 1.0,
+              strokeAlign: BorderSide.strokeAlignOutside,
+            ),
+          ),
+          child: Row(
+            children: [
+              Stack(
+                children: [
+                  _buildThumbnailWithProgressBorder(
+                    theme,
+                    w: thumbW,
+                    h: height,
+                    r: GlobalUI.uiRoundness,
+                  ),
+                  _buildBadgeOverlay(theme),
+                ],
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 4,
+                    horizontal: 4,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (bottomLeftBadgeText != null ||
+                                    badgeText != null)
+                                  Text(
+                                    (bottomLeftBadgeText ?? badgeText!)
+                                        .toUpperCase(),
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: cs.primary,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.8,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                Text(
+                                  title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: cs.onSurface,
+                                    height: 1.15,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (topRightBadge != null) topRightBadge!,
+                        ],
+                      ),
+                      if (subtitle != null ||
+                          progress != null ||
+                          progressText != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (subtitle != null)
+                              Expanded(
+                                child: Text(
+                                  subtitle!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: cs.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            if (progressText != null || progress != null)
+                              Text(
+                                progressText ??
+                                    '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: cs.primary,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+      case 'compact':
+        return _buildCompact(theme);
+      case 'cinematic':
+        return _buildCinematic(theme);
+      case 'wideBanner':
+      default:
+        return _buildWideBanner(theme);
     }
-    return ClipRRect(
-      borderRadius: radius ?? BorderRadius.circular(height / 2),
-      child: LinearProgressIndicator(
-        value: progress!.clamp(0.0, 1.0),
-        minHeight: height,
-        backgroundColor: cs.surfaceContainerHighest,
-        valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
-      ),
-    );
   }
 
   // 1. CLASSIC
@@ -185,17 +850,10 @@ class UniversalCardRenderer extends StatelessWidget {
         children: [
           Stack(
             children: [
-              _buildImage(theme, w: width, h: imgH),
+              _buildThumbnailWithProgressBorder(theme, w: width, h: imgH),
               _buildBadgeOverlay(theme),
             ],
           ),
-          if (progress != null) ...[
-            const SizedBox(height: 4),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: _buildProgressBar(cs),
-            ),
-          ],
           const SizedBox(height: 6),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -212,9 +870,12 @@ class UniversalCardRenderer extends StatelessWidget {
                     height: 1.2,
                   ),
                 ),
-                if (subtitle != null || progressText != null) ...[
+                if (subtitle != null ||
+                    progress != null ||
+                    progressText != null) ...[
                   const SizedBox(height: 2),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       if (subtitle != null)
                         Expanded(
@@ -227,13 +888,14 @@ class UniversalCardRenderer extends StatelessWidget {
                             ),
                           ),
                         ),
-                      if (progressText != null) ...[
+                      if (progressText != null || progress != null) ...[
                         const SizedBox(width: 4),
                         Text(
-                          progressText!,
+                          progressText ??
+                              '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: cs.primary,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
@@ -271,7 +933,12 @@ class UniversalCardRenderer extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            _buildImage(theme, w: width, h: height, r: 0),
+            _buildThumbnailWithProgressBorder(
+              theme,
+              w: width,
+              h: height,
+              r: GlobalUI.uiRoundness,
+            ),
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -289,7 +956,7 @@ class UniversalCardRenderer extends StatelessWidget {
             Positioned(
               left: 10,
               right: 10,
-              bottom: progress != null ? 14 : 10,
+              bottom: 10,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -304,9 +971,12 @@ class UniversalCardRenderer extends StatelessWidget {
                       height: 1.2,
                     ),
                   ),
-                  if (subtitle != null || progressText != null) ...[
+                  if (subtitle != null ||
+                      progress != null ||
+                      progressText != null) ...[
                     const SizedBox(height: 2),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         if (subtitle != null)
                           Expanded(
@@ -319,9 +989,10 @@ class UniversalCardRenderer extends StatelessWidget {
                               ),
                             ),
                           ),
-                        if (progressText != null)
+                        if (progressText != null || progress != null)
                           Text(
-                            progressText!,
+                            progressText ??
+                                '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: cs.primaryContainer,
                               fontWeight: FontWeight.w700,
@@ -333,17 +1004,6 @@ class UniversalCardRenderer extends StatelessWidget {
                 ],
               ),
             ),
-            if (progress != null)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: _buildProgressBar(
-                  cs,
-                  height: 3.5,
-                  radius: BorderRadius.zero,
-                ),
-              ),
           ],
         ),
       ),
@@ -378,7 +1038,7 @@ class UniversalCardRenderer extends StatelessWidget {
           children: [
             Stack(
               children: [
-                _buildImage(
+                _buildThumbnailWithProgressBorder(
                   theme,
                   w: double.maxFinite,
                   h: imgH,
@@ -401,48 +1061,47 @@ class UniversalCardRenderer extends StatelessWidget {
                 ),
               ),
             ),
-            if (subtitle != null || progress != null) ...[
+            if (subtitle != null ||
+                progress != null ||
+                progressText != null) ...[
               const Spacer(),
-              if (progress != null) ...[
-                _buildProgressBar(cs),
-                const SizedBox(height: 4),
-              ],
-              if (subtitle != null || progressText != null)
-                Row(
-                  children: [
-                    if (subtitle != null)
-                      Expanded(
-                        child: Text(
-                          subtitle!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: cs.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (subtitle != null)
+                    Expanded(
+                      child: Text(
+                        subtitle!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    if (progressText != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: cs.primaryContainer,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          progressText!,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: cs.onPrimaryContainer,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 10,
-                          ),
+                    ),
+                  if (progressText != null || progress != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.primaryContainer,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        progressText ??
+                            '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: cs.onPrimaryContainer,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                ],
+              ),
             ],
           ],
         ),
@@ -450,88 +1109,110 @@ class UniversalCardRenderer extends StatelessWidget {
     );
   }
 
-  // 4. MATERIAL
+  // 4. MATERIAL (Material You / M3 Expressive)
   Widget _buildMaterial(ThemeData theme) {
     final cs = theme.colorScheme;
-    final imgH = height * (progress != null ? 0.65 : 0.72);
+    final imgH = height * 0.62;
 
-    return AnimatedContainer(
-      duration: Durations.short4,
+    return SizedBox(
       width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: cs.surfaceContainer,
-        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-        border: Border.all(
-          color: isActive ? cs.tertiary : Colors.transparent,
-          width: isActive ? 2.5 : 1.0,
-          strokeAlign: BorderSide.strokeAlignOutside,
-        ),
-        boxShadow: isActive
-            ? [
-                BoxShadow(
-                  color: cs.shadow.withValues(alpha: 0.15),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              _buildImage(theme, w: width, h: imgH, r: GlobalUI.uiRoundness),
-              _buildBadgeOverlay(theme),
-            ],
+      child: AnimatedContainer(
+        duration: Durations.short4,
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: isActive ? cs.surfaceContainerHighest : cs.surfaceContainer,
+          borderRadius: BorderRadius.circular(GlobalUI.uiRoundness + 2),
+          border: Border.all(
+            color: isActive
+                ? cs.primary
+                : cs.outlineVariant.withValues(alpha: 0.35),
+            width: isActive ? 2.5 : 1.0,
+            strokeAlign: BorderSide.strokeAlignOutside,
           ),
-          if (progress != null)
-            _buildProgressBar(cs, height: 3, radius: BorderRadius.zero),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: cs.shadow.withValues(alpha: 0.14),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : null,
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
               children: [
-                Text(
-                  title,
-                  maxLines: progress != null ? 1 : 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: cs.onSurface,
-                  ),
+                _buildThumbnailWithProgressBorder(
+                  theme,
+                  w: double.maxFinite,
+                  h: imgH,
+                  r: GlobalUI.uiRoundness - 2,
                 ),
-                if (subtitle != null || progressText != null) ...[
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      if (subtitle != null)
-                        Expanded(
-                          child: Text(
-                            subtitle!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      if (progressText != null)
-                        Text(
-                          progressText!,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: cs.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
+                _buildBadgeOverlay(theme),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                title,
+                maxLines: progress != null ? 1 : 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: cs.onSurface,
+                  height: 1.2,
+                ),
+              ),
+            ),
+            if (subtitle != null ||
+                progress != null ||
+                progressText != null) ...[
+              const Spacer(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (subtitle != null)
+                    Expanded(
+                      child: Text(
+                        subtitle!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  if (progressText != null || progress != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.secondaryContainer,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(
+                        progressText ??
+                            '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: cs.onSecondaryContainer,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -539,7 +1220,7 @@ class UniversalCardRenderer extends StatelessWidget {
   // 5. CINEMATIC
   Widget _buildCinematic(ThemeData theme) {
     final cs = theme.colorScheme;
-    final thumbWidth = width * 0.42;
+    final thumbWidth = width * 0.48;
 
     return AnimatedContainer(
       duration: Durations.short4,
@@ -562,7 +1243,12 @@ class UniversalCardRenderer extends StatelessWidget {
           children: [
             Stack(
               children: [
-                _buildImage(theme, w: thumbWidth, h: height, r: 0),
+                _buildThumbnailWithProgressBorder(
+                  theme,
+                  w: thumbWidth,
+                  h: height,
+                  r: GlobalUI.uiRoundness * 0.6,
+                ),
                 if (badgeText != null)
                   Positioned(
                     top: 6,
@@ -622,27 +1308,30 @@ class UniversalCardRenderer extends StatelessWidget {
                       ),
                     ],
                     const Spacer(),
-                    if (progress != null) ...[
-                      _buildProgressBar(cs),
-                      const SizedBox(height: 4),
-                    ],
-                    if (progressText != null || bottomLeftBadgeText != null)
+                    if (progressText != null ||
+                        bottomLeftBadgeText != null ||
+                        progress != null)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           if (bottomLeftBadgeText != null)
-                            Text(
-                              bottomLeftBadgeText!,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: cs.primary,
-                                fontWeight: FontWeight.w700,
+                            Expanded(
+                              child: Text(
+                                bottomLeftBadgeText!,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: cs.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                          if (progressText != null)
+                          if (progressText != null || progress != null)
                             Text(
-                              progressText!,
+                              progressText ??
+                                  '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: cs.onSurfaceVariant,
+                                color: cs.primary,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                         ],
@@ -691,7 +1380,7 @@ class UniversalCardRenderer extends StatelessWidget {
           children: [
             Stack(
               children: [
-                _buildImage(
+                _buildThumbnailWithProgressBorder(
                   theme,
                   w: double.maxFinite,
                   h: imgH,
@@ -714,70 +1403,51 @@ class UniversalCardRenderer extends StatelessWidget {
                 ),
               ),
             ),
-            if (subtitle != null || progress != null) ...[
+            if (subtitle != null ||
+                progress != null ||
+                progressText != null) ...[
               const Spacer(),
-              if (progress != null) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: cs.primary.withValues(alpha: 0.5),
-                          blurRadius: 6,
-                        ),
-                      ],
-                    ),
-                    child: LinearProgressIndicator(
-                      value: progress!.clamp(0.0, 1.0),
-                      minHeight: 4.0,
-                      backgroundColor: cs.primary.withValues(alpha: 0.18),
-                      valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-              ],
-              if (subtitle != null || progressText != null)
-                Row(
-                  children: [
-                    if (subtitle != null)
-                      Expanded(
-                        child: Text(
-                          subtitle!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: cs.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (subtitle != null)
+                    Expanded(
+                      child: Text(
+                        subtitle!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: cs.primary,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                    if (progressText != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: cs.primary.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: cs.primary.withValues(alpha: 0.4),
-                            strokeAlign: BorderSide.strokeAlignOutside,
-                          ),
-                        ),
-                        child: Text(
-                          progressText!,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: cs.primary,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 10,
-                          ),
+                    ),
+                  if (progressText != null || progress != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.primary.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: cs.primary.withValues(alpha: 0.4),
+                          strokeAlign: BorderSide.strokeAlignOutside,
                         ),
                       ),
-                  ],
-                ),
+                      child: Text(
+                        progressText ??
+                            '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: cs.primary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ],
           ],
         ),
@@ -808,7 +1478,7 @@ class UniversalCardRenderer extends StatelessWidget {
       padding: const EdgeInsets.all(6),
       child: Row(
         children: [
-          _buildImage(
+          _buildThumbnailWithProgressBorder(
             theme,
             w: thumbW,
             h: height,
@@ -836,33 +1506,35 @@ class UniversalCardRenderer extends StatelessWidget {
                     if (topRightBadge != null) topRightBadge!,
                   ],
                 ),
-                if (subtitle != null || badgeText != null) ...[
+                if (subtitle != null ||
+                    badgeText != null ||
+                    progress != null ||
+                    progressText != null) ...[
                   const SizedBox(height: 2),
-                  Text(
-                    subtitle ?? badgeText ?? '',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-                if (progress != null) ...[
-                  const SizedBox(height: 6),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(child: _buildProgressBar(cs, height: 3)),
-                      if (progressText != null) ...[
-                        const SizedBox(width: 6),
+                      if (subtitle != null || badgeText != null)
+                        Expanded(
+                          child: Text(
+                            subtitle ?? badgeText ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      if (progressText != null || progress != null)
                         Text(
-                          progressText!,
+                          progressText ??
+                              '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: cs.primary,
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ],
                     ],
                   ),
                 ],
@@ -896,7 +1568,12 @@ class UniversalCardRenderer extends StatelessWidget {
         children: [
           Stack(
             children: [
-              _buildImage(theme, w: width, h: imgH, r: GlobalUI.uiRoundness),
+              _buildThumbnailWithProgressBorder(
+                theme,
+                w: width,
+                h: imgH,
+                r: GlobalUI.uiRoundness,
+              ),
               _buildBadgeOverlay(theme),
             ],
           ),
@@ -926,18 +1603,35 @@ class UniversalCardRenderer extends StatelessWidget {
                     height: 1.15,
                   ),
                 ),
-                if (subtitle != null)
-                  Text(
-                    subtitle!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
+                if (subtitle != null ||
+                    progress != null ||
+                    progressText != null) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (subtitle != null)
+                        Expanded(
+                          child: Text(
+                            subtitle!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      if (progressText != null || progress != null)
+                        Text(
+                          progressText ??
+                              '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                    ],
                   ),
-                if (progress != null) ...[
-                  const SizedBox(height: 6),
-                  _buildProgressBar(cs),
                 ],
               ],
             ),
@@ -971,7 +1665,12 @@ class UniversalCardRenderer extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            _buildImage(theme, w: width, h: height, r: 0),
+            _buildThumbnailWithProgressBorder(
+              theme,
+              w: width,
+              h: height,
+              r: GlobalUI.uiRoundness,
+            ),
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -1025,30 +1724,33 @@ class UniversalCardRenderer extends StatelessWidget {
                             color: cs.onSurface,
                           ),
                         ),
-                        if (subtitle != null)
-                          Text(
-                            subtitle!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
-                        if (progress != null) ...[
-                          const SizedBox(height: 8),
+                        if (subtitle != null ||
+                            progress != null ||
+                            progressText != null) ...[
+                          const SizedBox(height: 2),
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Expanded(child: _buildProgressBar(cs)),
-                              if (progressText != null) ...[
-                                const SizedBox(width: 8),
-                                Text(
-                                  progressText!,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: cs.primary,
-                                    fontWeight: FontWeight.w700,
+                              if (subtitle != null)
+                                Expanded(
+                                  child: Text(
+                                    subtitle!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: cs.onSurfaceVariant,
+                                    ),
                                   ),
                                 ),
-                              ],
+                              if (progressText != null || progress != null)
+                                Text(
+                                  progressText ??
+                                      '${(progress!.clamp(0.0, 1.0) * 100).toInt()}%',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: cs.primary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
                             ],
                           ),
                         ],
@@ -1065,5 +1767,69 @@ class UniversalCardRenderer extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ThumbnailProgressBorderPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color trackColor;
+  final double strokeWidth;
+  final double radius;
+
+  _ThumbnailProgressBorderPainter({
+    required this.progress,
+    required this.color,
+    required this.trackColor,
+    required this.strokeWidth,
+    required this.radius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+    final halfWidth = strokeWidth / 2;
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        halfWidth,
+        halfWidth,
+        size.width - strokeWidth,
+        size.height - strokeWidth,
+      ),
+      Radius.circular((radius - halfWidth).clamp(0.0, 999.0)),
+    );
+
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    canvas.drawRRect(rrect, trackPaint);
+
+    if (progress > 0.0) {
+      final path = Path()..addRRect(rrect);
+      for (final metric in path.computeMetrics()) {
+        final extractLength = metric.length * progress.clamp(0.0, 1.0);
+        final subPath = metric.extractPath(0.0, extractLength);
+
+        final progressPaint = Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth
+          ..strokeCap = StrokeCap.round;
+
+        canvas.drawPath(subPath, progressPaint);
+        break;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ThumbnailProgressBorderPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.color != color ||
+        oldDelegate.trackColor != trackColor ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.radius != radius;
   }
 }

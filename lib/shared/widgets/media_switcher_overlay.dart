@@ -21,64 +21,73 @@ class MediaSwitcherOverlay extends StatelessWidget {
         final colorScheme = theme.colorScheme;
         final hasSearch = onSearchTap != null && !isSearchActive;
 
-        return Container(
-          height: 48,
-          padding: EdgeInsets.only(
-            left: 4,
-            top: 4,
-            bottom: 4,
-            right: hasSearch ? 8 : 4,
-          ),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _MediaTabPill(
-                label: 'Anime',
-                icon: Icons.movie_outlined,
-                isSelected: controller.index == 0,
-                onTap: () => controller.animateTo(0),
-              ),
-              _MediaTabPill(
-                label: 'Manga',
-                icon: Icons.menu_book_outlined,
-                isSelected: controller.index == 1,
-                onTap: () => controller.animateTo(1),
-              ),
-              if (hasSearch) ...[
-                const VerticalDivider(
-                  width: 16,
-                  indent: 6,
-                  endIndent: 6,
-                  thickness: 1,
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              height: 48,
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.92,
                 ),
-                IconButton(
-                  icon: Icon(
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _MediaTabPill(
+                    label: 'Anime',
+                    icon: Icons.movie_outlined,
+                    isSelected: controller.index == 0,
+                    onTap: () => controller.animateTo(0),
+                  ),
+                  _MediaTabPill(
+                    label: 'Manga',
+                    icon: Icons.menu_book_outlined,
+                    isSelected: controller.index == 1,
+                    onTap: () => controller.animateTo(1),
+                  ),
+                ],
+              ),
+            ),
+            if (hasSearch) ...[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: onSearchTap,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.92,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
                     Icons.search_rounded,
                     color: colorScheme.onSurfaceVariant,
+                    size: 22,
                   ),
-                  iconSize: 20,
-                  tooltip: 'Search',
-                  constraints: const BoxConstraints(
-                    minWidth: 36,
-                    minHeight: 36,
-                  ),
-                  padding: EdgeInsets.zero,
-                  onPressed: onSearchTap,
                 ),
-              ],
+              ),
             ],
-          ),
+          ],
         );
       },
     );

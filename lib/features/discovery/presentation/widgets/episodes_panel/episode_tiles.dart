@@ -269,126 +269,122 @@ class EpisodeClassicTile extends BaseEpisodeTile {
                     ),
                     const SizedBox(width: 14),
                     Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${mediaType == MediaType.ANIME ? 'EPISODE' : 'CHAPTER'} $num',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: isFiller
+                                        ? Colors.amber.shade700
+                                        : labelColor,
+                                    height: 1,
+                                  ),
+                                ),
+                              ),
+                              if (actions.isNotEmpty)
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: actions,
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 1),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  (episode.title == null ||
+                                          episode.title!.trim().isEmpty)
+                                      ? 'Episode $num'
+                                      : episode.title!,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: isCurrent
+                                        ? FontWeight.w800
+                                        : FontWeight.w600,
+                                    color: titleColor,
+                                    height: 1.1,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (isCurrent) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                   child: Text(
-                                    '${mediaType == MediaType.ANIME ? 'EPISODE' : 'CHAPTER'} $num',
-                                    style: theme.textTheme.labelSmall?.copyWith(
+                                    'Now Playing',
+                                    style: TextStyle(
+                                      fontSize: 9,
                                       fontWeight: FontWeight.w800,
-                                      color: isFiller
-                                          ? Colors.amber.shade700
-                                          : labelColor,
+                                      color: theme.colorScheme.onPrimary,
                                       height: 1,
                                     ),
                                   ),
                                 ),
-                                if (actions.isNotEmpty)
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: actions,
-                                  ),
                               ],
-                            ),
-                            const SizedBox(height: 1),
+                            ],
+                          ),
+                          if (displayDate != null &&
+                              displayDate!.isNotEmpty) ...[
+                            const SizedBox(height: 3),
                             Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    (episode.title == null ||
-                                            episode.title!.trim().isEmpty)
-                                        ? 'Episode $num'
-                                        : episode.title!,
-                                    style: theme.textTheme.titleMedium
-                                        ?.copyWith(
-                                          fontWeight: isCurrent
-                                              ? FontWeight.w800
-                                              : FontWeight.w600,
-                                          color: titleColor,
-                                          height: 1.1,
-                                        ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: 12,
+                                  color: dimColor,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  displayDate!,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: dimColor,
+                                    fontSize: 11,
                                   ),
                                 ),
-                                if (isCurrent) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 7,
-                                      vertical: 3,
+                                if (episode.scanlator != null &&
+                                    episode.scanlator!.isNotEmpty) ...[
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '•',
+                                    style: TextStyle(
+                                      color: dimColor,
+                                      fontSize: 10,
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.primary,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Flexible(
                                     child: Text(
-                                      'Now Playing',
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w800,
-                                        color: theme.colorScheme.onPrimary,
-                                        height: 1,
-                                      ),
+                                      episode.scanlator!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: dimColor,
+                                            fontSize: 11,
+                                          ),
                                     ),
                                   ),
                                 ],
                               ],
                             ),
-                            if (displayDate != null &&
-                                displayDate!.isNotEmpty) ...[
-                              const SizedBox(height: 3),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.access_time_rounded,
-                                    size: 12,
-                                    color: dimColor,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    displayDate!,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: dimColor,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                  if (episode.scanlator != null &&
-                                      episode.scanlator!.isNotEmpty) ...[
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      '•',
-                                      style: TextStyle(
-                                        color: dimColor,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        episode.scanlator!,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: theme.textTheme.labelSmall
-                                            ?.copyWith(
-                                              color: dimColor,
-                                              fontSize: 11,
-                                            ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ],
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   ],

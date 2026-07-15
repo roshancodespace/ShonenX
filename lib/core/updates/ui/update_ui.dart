@@ -1,62 +1,92 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/core/updates/models/github_release.dart';
-import 'package:shonenx/core/updates/ui/linux_update_widget.dart';
-import 'package:shonenx/core/updates/ui/android_update_widget.dart';
-import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:shonenx/core/updates/models/github_release.dart';
+import 'package:shonenx/core/updates/ui/android_update_widget.dart';
+import 'package:shonenx/core/updates/ui/linux_update_widget.dart';
+import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+
 class UpdateUI {
-  static Future<void> showReleaseUpdateSheet(
+  static String _formatDate(DateTime dt) {
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+  }
+
+  static Future<void> showReleaseSheet(
     BuildContext context, {
     required GitHubRelease release,
-    required VoidCallback onDismiss,
-    required VoidCallback onDownload,
+    VoidCallback? onDismiss,
+    VoidCallback? onDownload,
   }) async {
     await AppBottomSheet.show(
       context: context,
-      title: 'Update Available',
+      title: onDismiss != null ? 'Update Available' : release.name,
       useRootNavigator: true,
+      isScrollControlled: true,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (onDismiss != null) ...[
+            Text(
+              release.name,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+          ],
           Row(
             children: [
-              Expanded(
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: release.prerelease
+                      ? Theme.of(context).colorScheme.tertiaryContainer
+                      : Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Text(
-                  release.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  release.prerelease ? 'Pre-release' : 'Stable',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: release.prerelease
+                        ? Theme.of(context).colorScheme.onTertiaryContainer
+                        : Theme.of(context).colorScheme.onPrimaryContainer,
                   ),
                 ),
               ),
-              if (release.prerelease)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.tertiaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Pre-release',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onTertiaryContainer,
-                    ),
-                  ),
+              const SizedBox(width: 8),
+              Text(
+                'Released on ${_formatDate(release.publishedAt)}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          Expanded(
+          const SizedBox(height: 16),
+          Flexible(
             child: Container(
               decoration: BoxDecoration(
                 color: Theme.of(
@@ -113,36 +143,44 @@ class UpdateUI {
               ),
             ),
           ),
-          if (Platform.isLinux) ...[
-            const SizedBox(height: 14),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              onPressed: () {
-                onDownload();
-                context.pop();
-                LinuxUpdateWidget.show(context);
-              },
-              icon: const Icon(Icons.terminal_rounded, size: 18),
-              label: const Text('Linux Terminal Installer (Copy Command)'),
-            ),
-          ],
           const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              TextButton(
-                onPressed: () {
-                  onDismiss();
-                  context.pop();
+              if (onDismiss != null)
+                TextButton(
+                  onPressed: () {
+                    onDismiss();
+                    context.pop();
+                  },
+                  child: const Text('Later'),
+                ),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final url = Uri.parse(release.htmlUrl);
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
                 },
-                child: const Text('Later'),
+                icon: const Icon(Icons.open_in_browser_rounded, size: 18),
+                label: const Text('GitHub'),
               ),
-              const SizedBox(width: 8),
+              if (Platform.isLinux)
+                OutlinedButton.icon(
+                  onPressed: () {
+                    onDownload?.call();
+                    context.pop();
+                    LinuxUpdateWidget.show(context);
+                  },
+                  icon: const Icon(Icons.terminal_rounded, size: 18),
+                  label: const Text('Terminal Install'),
+                ),
               if (Platform.isAndroid)
                 FilledButton.icon(
                   onPressed: () {
+                    onDownload?.call();
                     context.pop();
                     AndroidUpdateWidget.show(
                       context,
@@ -150,13 +188,14 @@ class UpdateUI {
                       onDownloadStarted: onDownload,
                     );
                   },
-                  icon: const Icon(Icons.install_mobile_rounded),
-                  label: const Text('In-App Download & Install'),
+                  icon: const Icon(Icons.install_mobile_rounded, size: 18),
+                  label: const Text('In-App Install'),
                 )
-              else
+              else if (release.downloadUrl != null ||
+                  release.htmlUrl.isNotEmpty)
                 FilledButton.icon(
                   onPressed: () async {
-                    onDownload();
+                    onDownload?.call();
                     context.pop();
                     final url = Uri.parse(
                       release.downloadUrl ?? release.htmlUrl,
@@ -168,13 +207,27 @@ class UpdateUI {
                       );
                     }
                   },
-                  icon: const Icon(Icons.download_rounded),
-                  label: const Text('Download Archive'),
+                  icon: const Icon(Icons.download_rounded, size: 18),
+                  label: const Text('Download'),
                 ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  static Future<void> showReleaseUpdateSheet(
+    BuildContext context, {
+    required GitHubRelease release,
+    required VoidCallback onDismiss,
+    required VoidCallback onDownload,
+  }) {
+    return showReleaseSheet(
+      context,
+      release: release,
+      onDismiss: onDismiss,
+      onDownload: onDownload,
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -18,6 +19,8 @@ class DiscoveryModeSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final prefs = ref.watch(discoveryPrefsProvider);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     return AppBottomSheet(
       title: 'Discovery Mode',
@@ -46,7 +49,7 @@ class DiscoveryModeSheet extends ConsumerWidget {
                 ref.read(discoveryPrefsProvider.notifier).setMode(value.first);
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             AnimatedSize(
               duration: const Duration(milliseconds: 300),
@@ -64,19 +67,21 @@ class DiscoveryModeSheet extends ConsumerWidget {
                       ),
               ),
             ),
-
             const SizedBox(height: 16),
             FilledButton(
               onPressed: context.pop,
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(24),
                 ),
+                elevation: 1,
               ),
               child: const Text(
                 'Done',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
               ),
             ),
           ],
@@ -88,6 +93,75 @@ class DiscoveryModeSheet extends ConsumerWidget {
 
 class _TrackerConfig extends ConsumerWidget {
   const _TrackerConfig({super.key});
+
+  Widget _buildTrackerRow({
+    required BuildContext context,
+    required String? value,
+    required String? groupValue,
+    required String title,
+    required String subtitle,
+    required Widget leading,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isSelected = value == groupValue;
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            SizedBox(width: 28, height: 28, child: Center(child: leading)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      fontSize: 14,
+                      color: isSelected ? cs.primary : cs.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? cs.primary : Colors.transparent,
+                border: Border.all(
+                  color: isSelected ? cs.primary : cs.outlineVariant,
+                  width: 1.5,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 12,
+                      color: Colors.white,
+                    )
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -107,7 +181,7 @@ class _TrackerConfig extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -129,63 +203,67 @@ class _TrackerConfig extends ConsumerWidget {
             ],
           ),
         ),
-
-        // Grouped Card Layout
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Material(
-            color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
-            child: Column(
-              children: [
-                RadioListTile<String?>(
-                  value: null,
-                  groupValue: targetId,
-                  activeColor: cs.primary,
-                  onChanged: (val) => ref
-                      .read(discoveryPrefsProvider.notifier)
-                      .setMetadataTrackerId(val),
-                  title: Text(
-                    'Auto (${primaryTracker.type.displayName})',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(
-                    'Matches your primary tracker',
-                    style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
-                  ),
-                ),
-                if (trackers.isNotEmpty)
-                  Divider(
-                    height: 1,
-                    color: cs.outlineVariant.withValues(alpha: 0.3),
-                  ),
-                ...trackers.map((tracker) {
-                  final isLast = tracker == trackers.last;
-                  return Column(
-                    children: [
-                      RadioListTile<String?>(
-                        value: tracker.type.id,
-                        groupValue: targetId,
-                        activeColor: cs.primary,
-                        onChanged: (val) => ref
-                            .read(discoveryPrefsProvider.notifier)
-                            .setMetadataTrackerId(val),
-                        title: Text(
-                          tracker.type.displayName,
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                      if (!isLast)
-                        Divider(
-                          height: 1,
-                          indent: 16,
-                          endIndent: 16,
-                          color: cs.outlineVariant.withValues(alpha: 0.3),
-                        ),
-                    ],
-                  );
-                }),
-              ],
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerLow.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: cs.outline.withValues(alpha: 0.15),
+              width: 1.0,
             ),
+          ),
+          child: Column(
+            children: [
+              _buildTrackerRow(
+                context: context,
+                value: null,
+                groupValue: targetId,
+                title: 'Auto (${primaryTracker.type.displayName})',
+                subtitle: 'Matches your primary tracker',
+                leading: Icon(
+                  Icons.sync_rounded,
+                  size: 24,
+                  color: targetId == null ? cs.primary : cs.onSurfaceVariant,
+                ),
+                onTap: () => ref
+                    .read(discoveryPrefsProvider.notifier)
+                    .setMetadataTrackerId(null),
+              ),
+              if (trackers.isNotEmpty)
+                Divider(height: 1, color: cs.outline.withValues(alpha: 0.1)),
+              ...trackers.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final tracker = entry.value;
+                final isLast = idx == trackers.length - 1;
+                final isSelected = tracker.type.id == targetId;
+                return Column(
+                  children: [
+                    _buildTrackerRow(
+                      context: context,
+                      value: tracker.type.id,
+                      groupValue: targetId,
+                      title: tracker.type.displayName,
+                      subtitle: 'Use specific tracker metadata',
+                      leading: tracker.type.getIconWidget(
+                        size: 24,
+                        color: isSelected
+                            ? cs.primary
+                            : cs.onSurfaceVariant.withValues(alpha: 0.7),
+                      ),
+                      onTap: () => ref
+                          .read(discoveryPrefsProvider.notifier)
+                          .setMetadataTrackerId(tracker.type.id),
+                    ),
+                    if (!isLast)
+                      Divider(
+                        height: 1,
+                        color: cs.outline.withValues(alpha: 0.1),
+                      ),
+                  ],
+                );
+              }),
+            ],
           ),
         ),
       ],
@@ -197,6 +275,146 @@ class _SourceConfig extends ConsumerWidget {
   const _SourceConfig({super.key, required this.activeSources});
 
   final List<String> activeSources;
+
+  Widget _buildSourceRow({
+    required BuildContext context,
+    required SourceInfo source,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            source.iconUrl != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: CachedNetworkImage(
+                      imageUrl: source.iconUrl!,
+                      width: 28,
+                      height: 28,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? cs.primaryContainer
+                          : cs.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(
+                      source.type == SourceType.inbuilt
+                          ? Icons.home_rounded
+                          : Icons.code_rounded,
+                      size: 16,
+                      color: isActive ? cs.primary : cs.onSurfaceVariant,
+                    ),
+                  ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    source.name,
+                    style: TextStyle(
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                      fontSize: 14,
+                      color: isActive ? cs.primary : cs.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    source.type == SourceType.inbuilt
+                        ? 'Built-in source'
+                        : 'Extension',
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isActive ? cs.primary : Colors.transparent,
+                border: Border.all(
+                  color: isActive ? cs.primary : cs.outlineVariant,
+                  width: 1.5,
+                ),
+              ),
+              child: isActive
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 12,
+                      color: Colors.white,
+                    )
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSourceGroup({
+    required BuildContext context,
+    required List<SourceInfo> sources,
+    required WidgetRef ref,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: cs.outline.withValues(alpha: 0.15),
+          width: 1.0,
+        ),
+      ),
+      child: Column(
+        children: sources.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final source = entry.value;
+          final isLast = idx == sources.length - 1;
+          final isActive = activeSources.contains(source.id);
+
+          return Column(
+            children: [
+              _buildSourceRow(
+                context: context,
+                source: source,
+                isActive: isActive,
+                onTap: () {
+                  ref
+                      .read(discoveryPrefsProvider.notifier)
+                      .toggleSource(source.id);
+                },
+              ),
+              if (!isLast)
+                Divider(
+                  height: 1,
+                  indent: 56,
+                  endIndent: 16,
+                  color: cs.outline.withValues(alpha: 0.1),
+                ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -211,58 +429,40 @@ class _SourceConfig extends ConsumerWidget {
             context.pop();
             context.push('/settings/extensions');
           },
-          borderRadius: BorderRadius.circular(16),
-          child: Ink(
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: cs.secondaryContainer.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: cs.secondary.withValues(alpha: 0.2)),
+              color: cs.surfaceContainerLow.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: cs.outline.withValues(alpha: 0.15),
+                width: 1.0,
+              ),
             ),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: cs.secondary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.extension_rounded,
-                    color: cs.onSecondary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 14),
+                Icon(Icons.extension_rounded, color: cs.primary, size: 20),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Manage Extensions',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: cs.onSecondaryContainer,
-                        ),
-                      ),
-                      Text(
-                        'Install or update content sources',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.onSecondaryContainer.withValues(alpha: 0.8),
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    'Manage Extensions',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: cs.onSurface,
+                    ),
                   ),
                 ),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: cs.onSecondaryContainer,
+                  color: cs.onSurfaceVariant,
+                  size: 18,
                 ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
         ref
             .watch(allAvailableSourcesProvider)
@@ -286,16 +486,17 @@ class _SourceConfig extends ConsumerWidget {
                       _buildSectionHeader(context, 'ANIME SOURCES'),
                       _buildSourceGroup(
                         context: context,
-                        ref: ref,
                         sources: animeSources,
+                        ref: ref,
                       ),
                     ],
                     if (mangaSources.isNotEmpty) ...[
+                      const SizedBox(height: 24),
                       _buildSectionHeader(context, 'MANGA SOURCES'),
                       _buildSourceGroup(
                         context: context,
-                        ref: ref,
                         sources: mangaSources,
+                        ref: ref,
                       ),
                     ],
                   ],
@@ -330,104 +531,6 @@ class _SourceConfig extends ConsumerWidget {
           color: theme.colorScheme.primary,
           letterSpacing: 1.1,
           fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSourceGroup({
-    required BuildContext context,
-    required WidgetRef ref,
-    required List<SourceInfo> sources,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Material(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
-        child: Column(
-          children: sources.map((source) {
-            final isLast = source == sources.last;
-            final isActive = activeSources.contains(source.id);
-
-            return Column(
-              children: [
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 2,
-                  ),
-                  onTap: () {
-                    ref
-                        .read(discoveryPrefsProvider.notifier)
-                        .toggleSource(source.id);
-                  },
-                  leading: source.iconUrl != null
-                      ? CachedNetworkImage(imageUrl: source.iconUrl!, width: 35)
-                      : Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isActive
-                                ? cs.primaryContainer
-                                : cs.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            source.type == SourceType.inbuilt
-                                ? Icons.home_rounded
-                                : Icons.code_rounded,
-                            size: 20,
-                            color: isActive ? cs.primary : cs.onSurfaceVariant,
-                          ),
-                        ),
-                  title: Text(
-                    source.name,
-                    style: TextStyle(
-                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                      color: isActive ? cs.onSurface : cs.onSurfaceVariant,
-                    ),
-                  ),
-                  subtitle: Text(
-                    source.type == SourceType.inbuilt
-                        ? 'Built-in source'
-                        : 'Extension',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: cs.onSurfaceVariant.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  trailing: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isActive ? cs.primary : Colors.transparent,
-                      border: Border.all(
-                        color: isActive ? cs.primary : cs.outlineVariant,
-                        width: 2,
-                      ),
-                    ),
-                    child: isActive
-                        ? Icon(
-                            Icons.check_rounded,
-                            size: 16,
-                            color: cs.onPrimary,
-                          )
-                        : null,
-                  ),
-                ),
-                if (!isLast)
-                  Divider(
-                    height: 1,
-                    indent: 64,
-                    endIndent: 16,
-                    color: cs.outlineVariant.withValues(alpha: 0.3),
-                  ),
-              ],
-            );
-          }).toList(),
         ),
       ),
     );

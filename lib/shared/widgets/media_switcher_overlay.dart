@@ -2,7 +2,15 @@ import 'package:flutter/material.dart';
 
 class MediaSwitcherOverlay extends StatelessWidget {
   final TabController controller;
-  const MediaSwitcherOverlay({super.key, required this.controller});
+  final VoidCallback? onSearchTap;
+  final bool isSearchActive;
+
+  const MediaSwitcherOverlay({
+    super.key,
+    required this.controller,
+    this.onSearchTap,
+    this.isSearchActive = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -11,9 +19,16 @@ class MediaSwitcherOverlay extends StatelessWidget {
       builder: (context, _) {
         final theme = Theme.of(context);
         final colorScheme = theme.colorScheme;
+        final hasSearch = onSearchTap != null && !isSearchActive;
+
         return Container(
           height: 48,
-          padding: const EdgeInsets.all(4),
+          padding: EdgeInsets.only(
+            left: 4,
+            top: 4,
+            bottom: 4,
+            right: hasSearch ? 8 : 4,
+          ),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(24),
@@ -40,6 +55,28 @@ class MediaSwitcherOverlay extends StatelessWidget {
                 isSelected: controller.index == 1,
                 onTap: () => controller.animateTo(1),
               ),
+              if (hasSearch) ...[
+                const VerticalDivider(
+                  width: 16,
+                  indent: 6,
+                  endIndent: 6,
+                  thickness: 1,
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.search_rounded,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  iconSize: 20,
+                  tooltip: 'Search',
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                  padding: EdgeInsets.zero,
+                  onPressed: onSearchTap,
+                ),
+              ],
             ],
           ),
         );

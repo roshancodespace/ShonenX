@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/discovery/providers/metadata_tags_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/unified_search_bar.dart';
 
 class AdvancedSearchSheet extends ConsumerStatefulWidget {
   final String initialQuery;
@@ -87,6 +88,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final tagsState = ref.watch(
       discoveryFiltersProvider((type: widget.type, sourceId: widget.sourceId)),
     );
@@ -94,27 +96,27 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
 
     return AppBottomSheet(
       title: 'Filters & Search',
-      actions: [TextButton(onPressed: _clear, child: const Text('Clear'))],
+      actions: [
+        TextButton(
+          onPressed: _clear,
+          style: TextButton.styleFrom(foregroundColor: colorScheme.error),
+          child: const Text('Clear'),
+        ),
+      ],
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SearchBar(
+          UnifiedSearchBar(
             controller: _queryController,
-            hintText: 'Search ${widget.type.name.toLowerCase()}...',
-            leading: const Icon(Icons.search),
-            trailing: _queryController.text.isNotEmpty
-                ? [
-                    IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: _queryController.clear,
-                    ),
-                  ]
-                : null,
-            textInputAction: TextInputAction.search,
+            onBackPressed: () => Navigator.pop(context),
+            onClearPressed: () => _queryController.clear(),
             onSubmitted: (_) => _submit(),
+            autofocus: false,
+            hintText: 'Search ${widget.type.name.toLowerCase()}...',
+            leading: const Icon(Icons.search_rounded),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Flexible(
             child: SingleChildScrollView(
               child: tagsState.when(
@@ -129,7 +131,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                     padding: const EdgeInsets.all(24.0),
                     child: Text(
                       'Failed to load filters: $e',
-                      style: TextStyle(color: theme.colorScheme.error),
+                      style: TextStyle(color: colorScheme.error),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -143,7 +145,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                                   !_selectedTags.contains(t) &&
                                   t.toLowerCase().contains(tagQuery),
                             )
-                            .take(5) // Limit suggestions to keep UI compact
+                            .take(5)
                             .toList();
 
                   return Column(
@@ -153,74 +155,108 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                         Text(
                           'Genres',
                           style: theme.textTheme.titleSmall?.copyWith(
-                            color: theme.colorScheme.primary,
+                            color: colorScheme.primary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 12),
                         Wrap(
-                          spacing: 5,
-                          runSpacing: 5,
+                          spacing: 6,
+                          runSpacing: 6,
                           children: data.genres
                               .map(
                                 (g) => FilterChip(
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                   visualDensity: VisualDensity.compact,
                                   label: Text(g),
                                   selected: _selectedGenres.contains(g),
                                   onSelected: (_) => _toggleGenre(g),
+                                  backgroundColor: colorScheme
+                                      .surfaceContainerHigh
+                                      .withValues(alpha: 0.5),
+                                  selectedColor: colorScheme.primaryContainer,
+                                  checkmarkColor:
+                                      colorScheme.onPrimaryContainer,
+                                  labelStyle: theme.textTheme.labelMedium
+                                      ?.copyWith(
+                                        color: _selectedGenres.contains(g)
+                                            ? colorScheme.onPrimaryContainer
+                                            : colorScheme.onSurfaceVariant,
+                                        fontWeight: _selectedGenres.contains(g)
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                  side: BorderSide(
+                                    color: _selectedGenres.contains(g)
+                                        ? colorScheme.primary
+                                        : colorScheme.outline.withValues(
+                                            alpha: 0.2,
+                                          ),
+                                    width: 1,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
                                 ),
                               )
                               .toList(),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
                       ],
                       if (data.tags.isNotEmpty) ...[
                         Text(
                           'Tags',
                           style: theme.textTheme.titleSmall?.copyWith(
-                            color: theme.colorScheme.primary,
+                            color: colorScheme.primary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 12),
                         if (_selectedTags.isNotEmpty) ...[
                           Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
+                            spacing: 6,
+                            runSpacing: 6,
                             children: _selectedTags
                                 .map(
                                   (t) => InputChip(
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
                                     label: Text(t),
                                     onDeleted: () => _removeTag(t),
                                     backgroundColor:
-                                        theme.colorScheme.tertiaryContainer,
-                                    labelStyle: TextStyle(
-                                      color:
-                                          theme.colorScheme.onTertiaryContainer,
-                                    ),
+                                        colorScheme.secondaryContainer,
+                                    labelStyle: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          color:
+                                              colorScheme.onSecondaryContainer,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                     deleteIconColor:
-                                        theme.colorScheme.onTertiaryContainer,
+                                        colorScheme.onSecondaryContainer,
+                                    side: BorderSide.none,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
                                   ),
                                 )
                                 .toList(),
                           ),
                           const SizedBox(height: 12),
                         ],
-                        SearchBar(
+                        UnifiedSearchBar(
                           controller: _tagQueryController,
+                          onBackPressed: () {
+                            _tagQueryController.clear();
+                            setState(() {});
+                          },
+                          onClearPressed: () {
+                            _tagQueryController.clear();
+                            setState(() {});
+                          },
+                          autofocus: false,
                           hintText: 'Search tags to add...',
-                          leading: const Icon(Icons.tag),
-                          trailing: _tagQueryController.text.isNotEmpty
-                              ? [
-                                  IconButton(
-                                    icon: const Icon(Icons.clear, size: 20),
-                                    onPressed: () {
-                                      _tagQueryController.clear();
-                                      setState(() {});
-                                    },
-                                  ),
-                                ]
-                              : null,
+                          leading: const Icon(Icons.tag_rounded),
                         ),
                         if (filteredTags.isNotEmpty) ...[
                           const SizedBox(height: 8),
@@ -233,7 +269,11 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                                   .map(
                                     (t) => ListTile(
                                       title: Text(t),
-                                      trailing: const Icon(Icons.add),
+                                      trailing: Icon(
+                                        Icons.add_circle_outline_rounded,
+                                        color: colorScheme.primary,
+                                        size: 20,
+                                      ),
                                       onTap: () => _addTag(t),
                                       dense: true,
                                     ),
@@ -242,7 +282,7 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
                             ),
                           ),
                         ],
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
                       ],
                     ],
                   );
@@ -254,9 +294,22 @@ class _AdvancedSearchSheetState extends ConsumerState<AdvancedSearchSheet> {
           FilledButton(
             onPressed: _submit,
             style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              elevation: 2,
+              shadowColor: colorScheme.primary.withValues(alpha: 0.3),
             ),
-            child: const Text('Apply Filters'),
+            child: Text(
+              'Apply Filters',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: colorScheme.onPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),

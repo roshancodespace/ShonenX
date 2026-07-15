@@ -55,9 +55,9 @@ class BuiltInPresets {
       useNoiseOverlay: true,
       noiseOpacity: 0.06,
       uiRoundness: 14.0,
-      cardStyle: MediaCardStyle.frosted,
-      continueWatchingStyle: ContinueWatchingStyle.frosted,
-      continueReadingStyle: ContinueReadingStyle.frosted,
+      cardStyle: MediaCardStyle.classic,
+      continueWatchingStyle: ContinueWatchingStyle.classic,
+      continueReadingStyle: ContinueReadingStyle.classic,
       episodeViewMode: EpisodeViewMode.classic,
     ),
     AppThemePreset(

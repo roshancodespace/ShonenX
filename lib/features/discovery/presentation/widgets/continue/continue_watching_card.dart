@@ -150,9 +150,9 @@ class _ContinueWatchingItemState extends ConsumerState<ContinueWatchingItem>
     final currentTextScale = MediaQuery.of(context).textScaler.scale(1.0);
     final scaleFactor = layout.width / baseLayout.width;
     final normalizedCard = MediaQuery(
-      data: MediaQuery.of(context).copyWith(
-        textScaler: TextScaler.linear(currentTextScale / scaleFactor),
-      ),
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: TextScaler.linear(currentTextScale / scaleFactor)),
       child: card,
     );
 

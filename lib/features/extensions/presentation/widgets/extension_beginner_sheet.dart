@@ -45,212 +45,357 @@ class _ExtensionBeginnerSheetState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Prerequisite Warning Banner
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: cs.primaryContainer.withValues(alpha: 0.4),
+                color: cs.errorContainer.withOpacity(0.6),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.school_rounded, color: cs.primary, size: 24),
+                  Icon(Icons.warning_amber_rounded, color: cs.onErrorContainer),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Don\'t know how to install extensions? Follow these 3 easy interactive steps below!',
-                      style: textTheme.bodySmall?.copyWith(
+                      'BEFORE YOU START:\nYou must have the Runtime installed for extensions to work.',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: cs.onErrorContainer,
                         fontWeight: FontWeight.bold,
-                        color: cs.onSurface,
+                        height: 1.3,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 18),
-            Text(
-              'SELECT YOUR ENGINE',
-              style: textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: cs.primary,
-                letterSpacing: 0.8,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _engines.map((e) {
-                  final isSelected = _selectedEngine == e;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(e),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() => _selectedEngine = e);
-                        }
-                      },
-                      selectedColor: cs.primary,
-                      labelStyle: TextStyle(
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        color: isSelected ? cs.onPrimary : cs.onSurfaceVariant,
+            const SizedBox(height: 24),
+
+            // Step 1: Engine Selection
+            _buildTimelineStep(
+              cs: cs,
+              textTheme: textTheme,
+              stepNumber: '1',
+              title: 'Choose your engine',
+              isLast: false,
+              content: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _engines.map((engine) {
+                  final isSelected = _selectedEngine == engine;
+                  return InkWell(
+                    onTap: () => setState(() => _selectedEngine = engine),
+                    borderRadius: BorderRadius.circular(8),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? cs.primary
+                            : cs.surfaceContainerHighest.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isSelected
+                              ? cs.primary
+                              : cs.outlineVariant.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Text(
+                        engine,
+                        style: TextStyle(
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          color: isSelected
+                              ? cs.onPrimary
+                              : cs.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   );
                 }).toList(),
               ),
             ),
-            const SizedBox(height: 20),
-            _buildStepCard(
+
+            // Step 2: Search & Open
+            _buildTimelineStep(
               cs: cs,
               textTheme: textTheme,
-              step: '1',
-              title: 'Search & Open 1st Website',
-              content:
-                  'Tap the button below to search Google for your chosen engine. You MUST open the 1st website shown (usually wotaku).',
-              action: FilledButton.icon(
-                onPressed: () {
-                  final query = '$_selectedEngine Wotaku Extensions';
-                  final url =
-                      'https://www.google.com/search?q=${Uri.encodeComponent(query)}';
-                  launchUrl(
-                    Uri.parse(url),
-                    mode: LaunchMode.externalApplication,
-                  );
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: cs.primary,
-                  foregroundColor: cs.onPrimary,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 16,
+              stepNumber: '2',
+              title: 'Find the repository',
+              isLast: false,
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tap below to search Google. Open the first result (usually a Wotaku website).',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
-                ),
-                icon: const Icon(Icons.search_rounded, size: 18),
-                label: Text(
-                  'Search Google: "$_selectedEngine Wotaku Extensions"',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: () {
+                      final query = '$_selectedEngine Wotaku Extensions';
+                      final url =
+                          'https://www.google.com/search?q=${Uri.encodeComponent(query)}';
+                      launchUrl(
+                        Uri.parse(url),
+                        mode: LaunchMode.externalApplication,
+                      );
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: cs.primaryContainer,
+                      foregroundColor: cs.onPrimaryContainer,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    icon: const Icon(Icons.search_rounded, size: 20),
+                    label: Text(
+                      'Search "$_selectedEngine Wotaku"',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 14),
-            _buildStepCard(
+
+            // Step 3: Installation Methods
+            _buildTimelineStep(
               cs: cs,
               textTheme: textTheme,
-              step: '2',
-              title: 'Copy the Repository URL',
-              content:
-                  'On the 1st website you opened, find the repository index link (ending with .json or index.min.json) and tap Copy.',
-            ),
-            const SizedBox(height: 14),
-            _buildStepCard(
-              cs: cs,
-              textTheme: textTheme,
-              step: '3',
-              title: 'Paste & Install in ShonenX',
-              content:
-                  'Come right back to ShonenX, open Manage Repos below, and paste your copied repository URL to unlock your extensions!',
-              action: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => const ManageReposSheet(),
-                  );
-                },
-                icon: const Icon(Icons.add_link_rounded, size: 18),
-                label: const Text(
-                  'Open "Manage Repos" Sheet Now',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+              stepNumber: '3',
+              title: 'Install inside ShonenX',
+              isLast: true, // Hides the connecting line
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Once on the site, choose the method that works for your device:',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Method 1: One-Click
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cs.secondaryContainer.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: cs.secondary.withOpacity(0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.touch_app_rounded,
+                              size: 18,
+                              color: cs.secondary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Method 1: One-Click (Android)',
+                              style: textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: cs.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Just tap the Install/Download button on the site. ShonenX will open and add it automatically.\n(Note: May be broken on Windows/Linux).',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Method 2: Manual
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: cs.outlineVariant.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.content_paste_rounded,
+                              size: 18,
+                              color: cs.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Method 2: Manual Link',
+                              style: textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: cs.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '1. Find the repo link on the site and tap the Copy icon.\n'
+                          '2. Open Manage Repos below.\n'
+                          '3. Select your engine, paste the link, and save.\n'
+                          '(Leaving the type as "All" is perfectly fine!).',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (context) => const ManageReposSheet(),
+                            );
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: cs.primary,
+                            foregroundColor: cs.onPrimary,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 10,
+                              horizontal: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          icon: const Icon(Icons.settings_rounded, size: 18),
+                          label: const Text(
+                            'Open Manage Repos',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-            FilledButton.tonal(
+
+            const SizedBox(height: 16),
+
+            // Close Button
+            TextButton(
               onPressed: () => Navigator.pop(context),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 'Close Guide',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: cs.onSurfaceVariant,
+                ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStepCard({
+  Widget _buildTimelineStep({
     required ColorScheme cs,
     required TextTheme textTheme,
-    required String step,
+    required String stepNumber,
     required String title,
-    required String content,
-    Widget? action,
+    required Widget content,
+    required bool isLast,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-      ),
-      child: Column(
+    return IntrinsicHeight(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          // Timeline Indicator Column
+          Column(
             children: [
               Container(
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: cs.primary,
+                  color: cs.primaryContainer,
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  step,
+                  stepNumber,
                   style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: cs.onPrimary,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onPrimaryContainer,
                     fontSize: 13,
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: cs.onSurface,
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            content,
-            style: textTheme.bodySmall?.copyWith(
-              color: cs.onSurfaceVariant,
-              height: 1.4,
+          const SizedBox(width: 16),
+          // Step Content
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 28.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  content,
+                ],
+              ),
             ),
           ),
-          if (action != null) ...[const SizedBox(height: 12), action],
         ],
       ),
     );

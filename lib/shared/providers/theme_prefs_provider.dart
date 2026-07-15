@@ -1,8 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+
 import 'package:shonenx/shared/providers/storage_provider.dart';
 
 enum AppThemeVariant {
@@ -95,6 +100,7 @@ class ThemePrefsState {
   final double gradientIntensity;
   final bool useNoiseOverlay;
   final String? customBackgroundImagePath;
+  final String? processedBackgroundImagePath;
   final double noiseOpacity;
   final double backgroundBlur;
   final double backgroundImageOpacity;
@@ -124,6 +130,7 @@ class ThemePrefsState {
     this.gradientIntensity = 0.35,
     this.useNoiseOverlay = false,
     this.customBackgroundImagePath,
+    this.processedBackgroundImagePath,
     this.noiseOpacity = 0.03,
     this.backgroundBlur = 0.0,
     this.backgroundImageOpacity = 0.4,
@@ -150,6 +157,8 @@ class ThemePrefsState {
     bool? useNoiseOverlay,
     String? customBackgroundImagePath,
     bool clearCustomBackgroundImagePath = false,
+    String? processedBackgroundImagePath,
+    bool clearProcessedBackgroundImagePath = false,
     double? noiseOpacity,
     double? backgroundBlur,
     double? backgroundImageOpacity,
@@ -191,6 +200,9 @@ class ThemePrefsState {
       customBackgroundImagePath: clearCustomBackgroundImagePath
           ? null
           : (customBackgroundImagePath ?? this.customBackgroundImagePath),
+      processedBackgroundImagePath: clearProcessedBackgroundImagePath
+          ? null
+          : (processedBackgroundImagePath ?? this.processedBackgroundImagePath),
       noiseOpacity: noiseOpacity ?? this.noiseOpacity,
       backgroundBlur: backgroundBlur ?? this.backgroundBlur,
       backgroundImageOpacity:
@@ -231,6 +243,7 @@ class ThemePrefsState {
       'gradientIntensity': gradientIntensity,
       'useNoiseOverlay': useNoiseOverlay,
       'customBackgroundImagePath': customBackgroundImagePath,
+      'processedBackgroundImagePath': processedBackgroundImagePath,
       'noiseOpacity': noiseOpacity,
       'backgroundBlur': backgroundBlur,
       'backgroundImageOpacity': backgroundImageOpacity,
@@ -265,7 +278,6 @@ class ThemePrefsState {
       if (variantVal >= 0 && variantVal < AppThemeVariant.values.length) {
         resolvedVariant = AppThemeVariant.values[variantVal];
       } else {
-        // Fallback for legacy FlexSchemeVariant index mapping
         if (variantVal == 2) {
           resolvedVariant = AppThemeVariant.tonalSpot;
         } else if (variantVal == 3)
@@ -315,6 +327,7 @@ class ThemePrefsState {
       gradientIntensity: (map['gradientIntensity'] as num?)?.toDouble() ?? 0.35,
       useNoiseOverlay: map['useNoiseOverlay'] ?? false,
       customBackgroundImagePath: map['customBackgroundImagePath'],
+      processedBackgroundImagePath: map['processedBackgroundImagePath'],
       noiseOpacity: (map['noiseOpacity'] as num?)?.toDouble() ?? 0.03,
       backgroundBlur: (map['backgroundBlur'] as num?)?.toDouble() ?? 0.0,
       backgroundImageOpacity:
@@ -354,6 +367,7 @@ class ThemePrefsState {
         other.gradientIntensity == gradientIntensity &&
         other.useNoiseOverlay == useNoiseOverlay &&
         other.customBackgroundImagePath == customBackgroundImagePath &&
+        other.processedBackgroundImagePath == processedBackgroundImagePath &&
         other.noiseOpacity == noiseOpacity &&
         other.backgroundBlur == backgroundBlur &&
         other.backgroundImageOpacity == backgroundImageOpacity &&
@@ -386,6 +400,7 @@ class ThemePrefsState {
         gradientIntensity,
         useNoiseOverlay,
         customBackgroundImagePath,
+        processedBackgroundImagePath,
         noiseOpacity,
         backgroundBlur,
         backgroundImageOpacity,
@@ -405,6 +420,7 @@ class ThemePrefsState {
 
 class ThemePrefsNotifier extends Notifier<ThemePrefsState> {
   static const _themeDataKey = 'app_theme_data';
+  Timer? _processingDebounceTimer;
 
   @override
   ThemePrefsState build() {
@@ -413,7 +429,13 @@ class ThemePrefsNotifier extends Notifier<ThemePrefsState> {
 
     if (jsonString != null) {
       try {
-        return ThemePrefsState.fromJson(jsonString);
+        final loadedState = ThemePrefsState.fromJson(jsonString);
+        if (loadedState.customBackgroundImagePath != null &&
+            loadedState.processedBackgroundImagePath == null &&
+            loadedState.backgroundBlur > 0.0) {
+          Future.microtask(() => _processBackgroundImage(loadedState));
+        }
+        return loadedState;
       } catch (e) {
         return const ThemePrefsState();
       }
@@ -425,9 +447,111 @@ class ThemePrefsNotifier extends Notifier<ThemePrefsState> {
   void updateTheme(
     ThemePrefsState Function(ThemePrefsState currentState) updateFn,
   ) {
+    final oldState = state;
     final newState = updateFn(state);
     state = newState;
     _saveDb();
+
+    if (newState.customBackgroundImagePath !=
+            oldState.customBackgroundImagePath ||
+        newState.backgroundBlur != oldState.backgroundBlur) {
+      _processBackgroundImage(newState);
+    }
+  }
+
+  void _processBackgroundImage(ThemePrefsState targetState) {
+    _processingDebounceTimer?.cancel();
+    _processingDebounceTimer = Timer(
+      const Duration(milliseconds: 250),
+      () async {
+        final originalPath = targetState.customBackgroundImagePath;
+        final blurSigma = targetState.backgroundBlur;
+
+        if (originalPath == null) {
+          final oldProcessedPath = state.processedBackgroundImagePath;
+          if (oldProcessedPath != null) {
+            try {
+              final file = File(oldProcessedPath);
+              if (await file.exists()) {
+                await file.delete();
+              }
+            } catch (_) {}
+          }
+          updateTheme(
+            (p) => p.copyWith(clearProcessedBackgroundImagePath: true),
+          );
+          return;
+        }
+
+        if (blurSigma <= 0.0) {
+          updateTheme(
+            (p) => p.copyWith(processedBackgroundImagePath: originalPath),
+          );
+          return;
+        }
+
+        try {
+          final docDir = await getApplicationDocumentsDirectory();
+          final fileName =
+              'blurred_wallpaper_${DateTime.now().millisecondsSinceEpoch}.png';
+          final outputPath = '${docDir.path}/$fileName';
+
+          final data = await File(originalPath).readAsBytes();
+          final codec = await ui.instantiateImageCodec(data);
+          final frame = await codec.getNextFrame();
+          final originalImage = frame.image;
+
+          final recorder = ui.PictureRecorder();
+          final canvas = Canvas(recorder);
+
+          final width = originalImage.width.toDouble();
+          final height = originalImage.height.toDouble();
+
+          final paint = Paint()
+            ..imageFilter = ui.ImageFilter.blur(
+              sigmaX: blurSigma,
+              sigmaY: blurSigma,
+            );
+
+          canvas.drawImage(originalImage, Offset.zero, paint);
+
+          final picture = recorder.endRecording();
+          final blurredImage = await picture.toImage(
+            width.toInt(),
+            height.toInt(),
+          );
+
+          final byteData = await blurredImage.toByteData(
+            format: ui.ImageByteFormat.png,
+          );
+          final bytes = byteData!.buffer.asUint8List();
+
+          final blurredFile = File(outputPath);
+          await blurredFile.writeAsBytes(bytes);
+
+          originalImage.dispose();
+          blurredImage.dispose();
+
+          final oldProcessedPath = state.processedBackgroundImagePath;
+          if (oldProcessedPath != null && oldProcessedPath != originalPath) {
+            try {
+              final oldFile = File(oldProcessedPath);
+              if (await oldFile.exists()) {
+                await oldFile.delete();
+              }
+            } catch (_) {}
+          }
+
+          updateTheme(
+            (p) => p.copyWith(processedBackgroundImagePath: outputPath),
+          );
+        } catch (e) {
+          updateTheme(
+            (p) => p.copyWith(processedBackgroundImagePath: originalPath),
+          );
+        }
+      },
+    );
   }
 
   void _saveDb() {

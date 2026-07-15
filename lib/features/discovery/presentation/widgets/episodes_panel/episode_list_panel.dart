@@ -356,7 +356,10 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
 
             StaggeredFadeIn(
               index: chunks.length > 1 ? 4 : 3,
-              child: const Divider(height: 1),
+              child: Divider(
+                height: 0.5,
+                color: ColorScheme.of(context).surfaceContainerHighest,
+              ),
             ),
 
             Expanded(

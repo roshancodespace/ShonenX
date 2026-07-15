@@ -70,8 +70,8 @@ class EpisodesTabWidget extends ConsumerWidget {
           index: 1,
           child: Container(
             width: double.maxFinite,
-            height: 2,
-            color: cs.surfaceContainerHigh,
+            height: 0.5,
+            color: cs.surfaceContainerHighest,
           ),
         ),
         Expanded(

@@ -21,7 +21,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: AppScaffold(
         title: 'Appearance',
         barBottom: const PreferredSize(
@@ -35,6 +35,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
             tabs: [
               Tab(text: 'Themes'),
               Tab(text: 'Effects'),
+              Tab(text: 'Wallpaper'),
             ],
           ),
         ),
@@ -387,6 +388,48 @@ class ThemeSettingsScreen extends ConsumerWidget {
                   ],
                 ),
 
+                // Noise
+                SettingsSection(
+                  title: 'Texture',
+                  children: [
+                    SettingsSwitchTile(
+                      icon: Icons.grain_rounded,
+                      title: 'Noise Overlay',
+                      subtitle: themePrefs.useAmoled
+                          ? 'Disabled with Pure Black'
+                          : 'Overlay a subtle textured grain grid',
+                      value: themePrefs.useNoiseOverlay,
+                      onChanged: themePrefs.useAmoled
+                          ? null
+                          : (v) => notifier.updateTheme(
+                              (p) => p.copyWith(useNoiseOverlay: v),
+                            ),
+                    ),
+                    if (themePrefs.useNoiseOverlay && !themePrefs.useAmoled)
+                      SettingsSliderTile(
+                        icon: Icons.opacity_rounded,
+                        title: 'Noise Intensity',
+                        subtitle: 'Textured grain strength',
+                        value: themePrefs.noiseOpacity > 0.15
+                            ? 0.15
+                            : themePrefs.noiseOpacity,
+                        min: 0.0,
+                        max: 0.15,
+                        divisions: 15,
+                        label: '${(themePrefs.noiseOpacity * 100).toInt()}%',
+                        onChanged: (v) => notifier.updateTheme(
+                          (p) => p.copyWith(noiseOpacity: v),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+
+            // ── Tab 3: Wallpaper ──
+            ListView(
+              padding: const EdgeInsets.only(bottom: 50),
+              children: [
                 // Wallpaper
                 SettingsSection(
                   title: 'Wallpaper',
@@ -423,6 +466,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                               onPressed: () => notifier.updateTheme(
                                 (p) => p.copyWith(
                                   clearCustomBackgroundImagePath: true,
+                                  clearProcessedBackgroundImagePath: true,
                                 ),
                               ),
                             )
@@ -458,42 +502,6 @@ class ThemeSettingsScreen extends ConsumerWidget {
                         ),
                       ),
                     ],
-                  ],
-                ),
-
-                // Noise
-                SettingsSection(
-                  title: 'Texture',
-                  children: [
-                    SettingsSwitchTile(
-                      icon: Icons.grain_rounded,
-                      title: 'Noise Overlay',
-                      subtitle: themePrefs.useAmoled
-                          ? 'Disabled with Pure Black'
-                          : 'Overlay a subtle textured grain grid',
-                      value: themePrefs.useNoiseOverlay,
-                      onChanged: themePrefs.useAmoled
-                          ? null
-                          : (v) => notifier.updateTheme(
-                              (p) => p.copyWith(useNoiseOverlay: v),
-                            ),
-                    ),
-                    if (themePrefs.useNoiseOverlay && !themePrefs.useAmoled)
-                      SettingsSliderTile(
-                        icon: Icons.opacity_rounded,
-                        title: 'Noise Intensity',
-                        subtitle: 'Textured grain strength',
-                        value: themePrefs.noiseOpacity > 0.15
-                            ? 0.15
-                            : themePrefs.noiseOpacity,
-                        min: 0.0,
-                        max: 0.15,
-                        divisions: 15,
-                        label: '${(themePrefs.noiseOpacity * 100).toInt()}%',
-                        onChanged: (v) => notifier.updateTheme(
-                          (p) => p.copyWith(noiseOpacity: v),
-                        ),
-                      ),
                   ],
                 ),
               ],
@@ -960,4 +968,3 @@ class _ThemeVariantPicker extends ConsumerWidget {
     );
   }
 }
-

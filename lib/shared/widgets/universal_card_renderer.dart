@@ -45,23 +45,26 @@ class UniversalCardRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final Widget card;
     if (isWideMode &&
         styleName != 'compact' &&
         styleName != 'cinematic' &&
         styleName != 'wideBanner') {
-      return _buildWideModeCard(theme);
+      card = _buildWideModeCard(theme);
+    } else {
+      card = switch (styleName) {
+        'minimal' => _buildMinimal(theme),
+        'expressive' => _buildExpressive(theme),
+        'material' => _buildMaterial(theme),
+        'cinematic' => _buildCinematic(theme),
+        'neon' => _buildNeon(theme),
+        'compact' => _buildCompact(theme),
+        'editorial' => _buildEditorial(theme),
+        'wideBanner' => _buildWideBanner(theme),
+        _ => _buildClassic(theme),
+      };
     }
-    return switch (styleName) {
-      'minimal' => _buildMinimal(theme),
-      'expressive' => _buildExpressive(theme),
-      'material' => _buildMaterial(theme),
-      'cinematic' => _buildCinematic(theme),
-      'neon' => _buildNeon(theme),
-      'compact' => _buildCompact(theme),
-      'editorial' => _buildEditorial(theme),
-      'wideBanner' => _buildWideBanner(theme),
-      _ => _buildClassic(theme),
-    };
+    return RepaintBoundary(child: card);
   }
 
   Widget _buildImage(

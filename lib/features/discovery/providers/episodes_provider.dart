@@ -7,6 +7,7 @@ import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/source_engine/providers/source_settings_provider.dart';
 
 class EpisodesListState {
   final SourceInfo source;
@@ -59,6 +60,9 @@ final sourceEpisodesProvider =
       args,
     ) async {
       final log = AppLogger.scope('SourceEpisodesProvider').child('fetch');
+
+      // Watch settings to auto-refresh episodes on settings changes
+      ref.watch(sourceSettingsProvider(args.sourceId));
 
       try {
         final allSources = args.type == MediaType.ANIME

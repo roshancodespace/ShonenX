@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
@@ -89,8 +90,9 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
   List<String> _genres = [];
   List<String> _tags = [];
   String? _source;
-  bool _isSearchActive = false;
-  bool _isSearchAtTop = false;
+
+  late final FocusNode _searchFocusNode;
+  late final FocusNode _keyboardFocusNode;
 
   @override
   void initState() {
@@ -98,11 +100,15 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
     _query = widget.initialQuery?.trim() ?? '';
     _searchController = TextEditingController(text: _query)
       ..addListener(_onSearchTextChanged);
-    _isSearchActive = _query.isNotEmpty;
-    _isSearchAtTop = _query.isNotEmpty;
     _genres = List.from(widget.initialGenres);
     _tags = List.from(widget.initialTags);
     _source = widget.source;
+
+    _searchFocusNode = FocusNode();
+    _keyboardFocusNode = FocusNode();
+    _searchFocusNode.addListener(() {
+      if (mounted) setState(() {});
+    });
 
     _tabController = TabController(
       length: 2,
@@ -122,8 +128,6 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
     if (oldWidget.initialQuery != widget.initialQuery) {
       _query = widget.initialQuery?.trim() ?? '';
       _searchController.text = _query;
-      _isSearchActive = _query.isNotEmpty;
-      _isSearchAtTop = _query.isNotEmpty;
     }
   }
 
@@ -143,12 +147,7 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
             .attachTop(
               MediaSwitcherOverlay(
                 controller: _tabController,
-                isSearchActive: _isSearchActive,
-                onSearchTap: () {
-                  setState(() {
-                    _isSearchActive = true;
-                  });
-                },
+                onSearchTap: null,
               ),
               branchIndex: 1,
             );
@@ -163,6 +162,8 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
     try {
       ref.read(navBarProvider.notifier).clearTop(branchIndex: 1);
     } catch (_) {}
+    _searchFocusNode.dispose();
+    _keyboardFocusNode.dispose();
     _searchController.dispose();
     _tabController.dispose();
     super.dispose();
@@ -171,10 +172,6 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
   void _onSearchTextChanged() {
     _debounceTimer?.cancel();
     final text = _searchController.text.trim();
-    if (!_isSearchAtTop) {
-      setState(() {});
-      return;
-    }
 
     if (text.isEmpty) {
       if (_query.isNotEmpty) {
@@ -199,7 +196,6 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
     final trimmedText = text.trim();
     if (trimmedText.isNotEmpty) {
       setState(() {
-        _isSearchAtTop = true;
         _query = trimmedText;
       });
     }
@@ -208,11 +204,10 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
   void _cancelSearch() {
     _debounceTimer?.cancel();
     setState(() {
-      _isSearchActive = false;
-      _isSearchAtTop = false;
       _query = '';
       _searchController.clear();
     });
+    _searchFocusNode.unfocus();
   }
 
   void _openAdvancedSearch(BuildContext context) {
@@ -298,223 +293,220 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
 
     final showBackButton = widget.source != null && widget.source!.isNotEmpty;
 
-    return AppScaffold(
-      title: pageTitle,
-      subtitle: pageSubtitle,
-      showBackButton: showBackButton,
-      body: Stack(
-        children: [
-          // Feed / Results layer
-          SizedBox.expand(
-            child: Column(
-              children: [
-                if (_isSearchActive && _isSearchAtTop) ...[
-                  const SizedBox(height: 4),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: UnifiedSearchBar(
-                      controller: _searchController,
-                      onBackPressed: _cancelSearch,
-                      onClearPressed: () => _searchController.clear(),
-                      onSubmitted: _submitSearch,
-                      hasFilters: hasFilters,
-                      onFilterPressed: () => _openAdvancedSearch(context),
-                    ),
-                  ),
-                ],
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (_genres.isNotEmpty ||
-                            _tags.isNotEmpty ||
-                            _source != null) ...[
-                          const SizedBox(height: 4),
-                          SizedBox(
-                            height: 36,
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
-                              children: [
-                                if (_source != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: InputChip(
-                                      label: Text('Source: $_source'),
-                                      onDeleted: () {
-                                        setState(() {
-                                          _source = null;
-                                        });
-                                      },
-                                      backgroundColor:
-                                          theme.colorScheme.primaryContainer,
-                                      labelStyle: theme.textTheme.labelMedium
-                                          ?.copyWith(
-                                            color: theme
-                                                .colorScheme
-                                                .onPrimaryContainer,
-                                          ),
-                                      deleteIconColor:
-                                          theme.colorScheme.onPrimaryContainer,
-                                      side: BorderSide.none,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
-                                ..._genres.map(
-                                  (g) => Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: InputChip(
-                                      label: Text(g),
-                                      onDeleted: () {
-                                        setState(() {
-                                          _genres.remove(g);
-                                        });
-                                      },
-                                      backgroundColor:
-                                          theme.colorScheme.secondaryContainer,
-                                      labelStyle: theme.textTheme.labelMedium
-                                          ?.copyWith(
-                                            color: theme
-                                                .colorScheme
-                                                .onSecondaryContainer,
-                                          ),
-                                      deleteIconColor: theme
-                                          .colorScheme
-                                          .onSecondaryContainer,
-                                      side: BorderSide.none,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                ..._tags.map(
-                                  (t) => Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: InputChip(
-                                      label: Text(t),
-                                      onDeleted: () {
-                                        setState(() {
-                                          _tags.remove(t);
-                                        });
-                                      },
-                                      backgroundColor:
-                                          theme.colorScheme.tertiaryContainer,
-                                      labelStyle: theme.textTheme.labelMedium
-                                          ?.copyWith(
-                                            color: theme
-                                                .colorScheme
-                                                .onTertiaryContainer,
-                                          ),
-                                      deleteIconColor:
-                                          theme.colorScheme.onTertiaryContainer,
-                                      side: BorderSide.none,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+    return KeyboardListener(
+      focusNode: _keyboardFocusNode,
+      autofocus: true,
+      onKeyEvent: (KeyEvent event) {
+        if (event is KeyDownEvent) {
+          if (HardwareKeyboard.instance.isControlPressed ||
+              HardwareKeyboard.instance.isAltPressed ||
+              HardwareKeyboard.instance.isMetaPressed) {
+            return;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.escape) {
+            if (_searchFocusNode.hasFocus) {
+              _searchFocusNode.unfocus();
+            }
+            return;
+          }
+          final character = event.character;
+          if (character != null && character.isNotEmpty) {
+            final isAlphanumeric = RegExp(r'^[a-zA-Z0-9]$').hasMatch(character);
+            if (isAlphanumeric) {
+              final primaryFocus = FocusManager.instance.primaryFocus;
+              final isAnyTextFieldFocused =
+                  primaryFocus != null &&
+                  (primaryFocus.context?.widget is EditableText ||
+                      primaryFocus.context
+                              ?.findAncestorWidgetOfExactType<EditableText>() !=
+                          null);
+
+              if (!isAnyTextFieldFocused) {
+                setState(() {
+                  _searchController.text = character;
+                  _searchController.selection = TextSelection.fromPosition(
+                    TextPosition(offset: character.length),
+                  );
+                });
+                _searchFocusNode.requestFocus();
+              }
+            }
+          }
+        }
+      },
+      child: AppScaffold(
+        title: pageTitle,
+        subtitle: pageSubtitle,
+        showBackButton: showBackButton,
+        body: SizedBox.expand(
+          child: Column(
+            children: [
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: UnifiedSearchBar(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  onBackPressed: _cancelSearch,
+                  onClearPressed: () => _searchController.clear(),
+                  onSubmitted: _submitSearch,
+                  hasFilters: hasFilters,
+                  onFilterPressed: () => _openAdvancedSearch(context),
+                  leading:
+                      _searchController.text.isEmpty &&
+                          !_searchFocusNode.hasFocus
+                      ? const Icon(Icons.search_rounded)
+                      : null,
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_genres.isNotEmpty ||
+                          _tags.isNotEmpty ||
+                          _source != null) ...[
                         const SizedBox(height: 4),
-                        Expanded(
-                          child: TabBarView(
-                            controller: _tabController,
+                        SizedBox(
+                          height: 36,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
                             children: [
-                              _DiscoverTabFeed(
-                                type: MediaType.ANIME,
-                                query: _query,
-                                genres: _genres,
-                                tags: _tags,
-                                source: _source,
-                                onGenreSelect: (g) {
-                                  setState(() {
-                                    _genres = [g];
-                                  });
-                                },
-                                onSourceSelect: (sId) {
-                                  setState(() {
-                                    _source = sId;
-                                  });
-                                },
+                              if (_source != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: InputChip(
+                                    label: Text('Source: $_source'),
+                                    onDeleted: () {
+                                      setState(() {
+                                        _source = null;
+                                      });
+                                    },
+                                    backgroundColor:
+                                        theme.colorScheme.primaryContainer,
+                                    labelStyle: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          color: theme
+                                              .colorScheme
+                                              .onPrimaryContainer,
+                                        ),
+                                    deleteIconColor:
+                                        theme.colorScheme.onPrimaryContainer,
+                                    side: BorderSide.none,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ..._genres.map(
+                                (g) => Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: InputChip(
+                                    label: Text(g),
+                                    onDeleted: () {
+                                      setState(() {
+                                        _genres.remove(g);
+                                      });
+                                    },
+                                    backgroundColor:
+                                        theme.colorScheme.secondaryContainer,
+                                    labelStyle: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          color: theme
+                                              .colorScheme
+                                              .onSecondaryContainer,
+                                        ),
+                                    deleteIconColor:
+                                        theme.colorScheme.onSecondaryContainer,
+                                    side: BorderSide.none,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
                               ),
-                              _DiscoverTabFeed(
-                                type: MediaType.MANGA,
-                                query: _query,
-                                genres: _genres,
-                                tags: _tags,
-                                source: _source,
-                                onGenreSelect: (g) {
-                                  setState(() {
-                                    _genres = [g];
-                                  });
-                                },
-                                onSourceSelect: (sId) {
-                                  setState(() {
-                                    _source = sId;
-                                  });
-                                },
+                              ..._tags.map(
+                                (t) => Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: InputChip(
+                                    label: Text(t),
+                                    onDeleted: () {
+                                      setState(() {
+                                        _tags.remove(t);
+                                      });
+                                    },
+                                    backgroundColor:
+                                        theme.colorScheme.tertiaryContainer,
+                                    labelStyle: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          color: theme
+                                              .colorScheme
+                                              .onTertiaryContainer,
+                                        ),
+                                    deleteIconColor:
+                                        theme.colorScheme.onTertiaryContainer,
+                                    side: BorderSide.none,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ],
-                    ),
+                      const SizedBox(height: 4),
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _DiscoverTabFeed(
+                              type: MediaType.ANIME,
+                              query: _query,
+                              genres: _genres,
+                              tags: _tags,
+                              source: _source,
+                              onGenreSelect: (g) {
+                                setState(() {
+                                  _genres = [g];
+                                });
+                              },
+                              onSourceSelect: (sId) {
+                                setState(() {
+                                  _source = sId;
+                                });
+                              },
+                            ),
+                            _DiscoverTabFeed(
+                              type: MediaType.MANGA,
+                              query: _query,
+                              genres: _genres,
+                              tags: _tags,
+                              source: _source,
+                              onGenreSelect: (g) {
+                                setState(() {
+                                  _genres = [g];
+                                });
+                              },
+                              onSourceSelect: (sId) {
+                                setState(() {
+                                  _source = sId;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-
-          // Centered Floating Search Bar overlay (shown ONLY when active and search bar has not transitioned to top)
-          if (_isSearchActive && !_isSearchAtTop)
-            Stack(
-              children: [
-                Positioned.fill(
-                  child: GestureDetector(
-                    onTap: _cancelSearch,
-                    child: Container(
-                      color: Colors.black.withValues(alpha: 0.45),
-                    ),
-                  ),
-                ),
-                TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0.0, end: 1.0),
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutBack,
-                  builder: (context, value, child) {
-                    final yOffset = (1.0 - value) * 120.0;
-                    return Opacity(
-                      opacity: value.clamp(0.0, 1.0),
-                      child: Transform.translate(
-                        offset: Offset(0, yOffset),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: UnifiedSearchBar(
-                        controller: _searchController,
-                        onBackPressed: _cancelSearch,
-                        onClearPressed: () => _searchController.clear(),
-                        onSubmitted: _submitSearch,
-                        hasFilters: hasFilters,
-                        onFilterPressed: () => _openAdvancedSearch(context),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-        ],
+        ),
       ),
     );
   }

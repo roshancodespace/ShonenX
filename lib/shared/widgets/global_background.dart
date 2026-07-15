@@ -33,6 +33,10 @@ class GlobalBackground extends ConsumerWidget {
       themePrefsProvider.select((p) => p.backgroundImageOpacity),
     );
 
+    final processedBackgroundImagePath = ref.watch(
+      themePrefsProvider.select((p) => p.processedBackgroundImagePath),
+    );
+
     final gradientStyle = ref.watch(
       themePrefsProvider.select((p) => p.gradientStyle),
     );
@@ -64,8 +68,11 @@ class GlobalBackground extends ConsumerWidget {
     final List<Widget> backgroundLayers = [];
 
     if (customBackgroundImagePath != null) {
+      final imagePathToRender = processedBackgroundImagePath ?? customBackgroundImagePath;
+      final needsRealtimeBlur = processedBackgroundImagePath == null && backgroundBlur > 0.0;
+
       final img = Image.file(
-        File(customBackgroundImagePath),
+        File(imagePathToRender),
         fit: BoxFit.cover,
         color: theme.scaffoldBackgroundColor.withValues(
           alpha: (1.0 - backgroundImageOpacity).clamp(0.0, 1.0),
@@ -73,7 +80,7 @@ class GlobalBackground extends ConsumerWidget {
         colorBlendMode: BlendMode.srcOver,
       );
 
-      final Widget bgImg = backgroundBlur > 0.0
+      final Widget bgImg = needsRealtimeBlur
           ? RepaintBoundary(
               child: ImageFiltered(
                 imageFilter: ui.ImageFilter.blur(

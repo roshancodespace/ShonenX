@@ -17,15 +17,19 @@ abstract class BaseSourceAdapter implements MediaSource {
 
   MediaType get mediaType => sourceInfo.mediaType;
 
+  final Map<String, bridge.SourcePreference> _preferencesCache = {};
+
   @override
   Future<List<SourceSetting>> getSettingsSchema() async {
     final methodLog = log.child('getSettingsSchema');
     try {
       final schema = await source.methods.getPreference();
+      _preferencesCache.clear();
       final List<SourceSetting> settings = [];
 
       for (final pref in schema) {
         if (pref.key == null || pref.type == null) continue;
+        _preferencesCache[pref.key!] = pref;
 
         try {
           if (pref.type == 'switch' || pref.type == 'checkbox') {
@@ -104,6 +108,55 @@ abstract class BaseSourceAdapter implements MediaSource {
     } catch (e, st) {
       methodLog.e('Failed to fetch settings schema', e, st);
       return [];
+    }
+  }
+
+  Future<bool> saveSetting(String settingId, dynamic value) async {
+    final methodLog = log.child('saveSetting');
+    try {
+      bridge.SourcePreference? pref = _preferencesCache[settingId];
+      if (pref == null) {
+        final schema = await source.methods.getPreference();
+        for (final p in schema) {
+          if (p.key != null) {
+            _preferencesCache[p.key!] = p;
+          }
+        }
+        pref = _preferencesCache[settingId];
+      }
+
+      final targetPref = pref ?? bridge.SourcePreference(key: settingId);
+
+      if (targetPref.type == 'checkbox' || targetPref.checkBoxPreference != null) {
+        targetPref.checkBoxPreference?.value =
+            value is bool ? value : (value.toString().toLowerCase() == 'true');
+      } else if (targetPref.type == 'switch' ||
+          targetPref.switchPreferenceCompat != null) {
+        targetPref.switchPreferenceCompat?.value =
+            value is bool ? value : (value.toString().toLowerCase() == 'true');
+      } else if (targetPref.type == 'list' ||
+          targetPref.listPreference != null) {
+        targetPref.listPreference?.value = value?.toString();
+        final entryValues = targetPref.listPreference?.entryValues;
+        if (entryValues != null) {
+          final idx = entryValues.indexOf(value?.toString() ?? '');
+          if (idx != -1) targetPref.listPreference?.valueIndex = idx;
+        }
+      } else if (targetPref.type == 'multi_select' ||
+          targetPref.multiSelectListPreference != null) {
+        final list =
+            value is List ? value.map((e) => e.toString()).toList() : <String>[];
+        targetPref.multiSelectListPreference?.values = list;
+      } else if (targetPref.type == 'text' ||
+          targetPref.editTextPreference != null) {
+        targetPref.editTextPreference?.value = value?.toString();
+      }
+
+      methodLog.i('Saving setting $settingId to source ${sourceInfo.id}');
+      return await source.methods.setPreference(targetPref, value);
+    } catch (e, st) {
+      methodLog.e('Failed to save setting $settingId', e, st);
+      return false;
     }
   }
 

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/models/source_setting.dart';
+import 'package:shonenx/source_engine/providers/media_source.dart';
 import 'package:shonenx/source_engine/providers/source_settings_provider.dart';
+import 'package:shonenx/source_engine/source_engine_provider.dart';
 
-class SourceSettingsSheet extends ConsumerWidget {
+class SourceSettingsSheet extends ConsumerStatefulWidget {
   final SourceInfo source;
   final List<SourceSetting> schema;
 
@@ -17,9 +20,40 @@ class SourceSettingsSheet extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SourceSettingsSheet> createState() =>
+      _SourceSettingsSheetState();
+}
+
+class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final notifier =
+          ref.read(sourceSettingsProvider(widget.source.id).notifier);
+      notifier.syncSchemaDefaults(widget.schema);
+    });
+  }
+
+  MediaSource? _getMediaSource() {
+    try {
+      if (widget.source.mediaType == MediaType.ANIME) {
+        return ref.read(animeSourceProvider(widget.source)) as MediaSource;
+      } else {
+        return ref.read(mangaSourceProvider(widget.source)) as MediaSource;
+      }
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final source = widget.source;
+    final schema = widget.schema;
     final settingsMap = ref.watch(sourceSettingsProvider(source.id));
     final notifier = ref.read(sourceSettingsProvider(source.id).notifier);
+    final mediaSource = _getMediaSource();
 
     return AppBottomSheet(
       title: '${source.name} Settings',
@@ -60,7 +94,11 @@ class SourceSettingsSheet extends ConsumerWidget {
                     value: currentValue as bool? ?? false,
                     onChanged: isEnabled
                         ? (val) {
-                            notifier.updateSetting(setting.id, val);
+                            notifier.updateSetting(
+                              setting.id,
+                              val,
+                              mediaSource: mediaSource,
+                            );
                           }
                         : null,
                   );
@@ -77,7 +115,11 @@ class SourceSettingsSheet extends ConsumerWidget {
                               options: setting.options ?? [],
                               currentValue: currentValue?.toString() ?? '',
                               onChanged: (val) {
-                                notifier.updateSetting(setting.id, val);
+                                notifier.updateSetting(
+                                  setting.id,
+                                  val,
+                                  mediaSource: mediaSource,
+                                );
                               },
                             );
                           }
@@ -102,7 +144,11 @@ class SourceSettingsSheet extends ConsumerWidget {
                               title: setting.name,
                               currentValue: currentValue?.toString() ?? '',
                               onChanged: (val) {
-                                notifier.updateSetting(setting.id, val);
+                                notifier.updateSetting(
+                                  setting.id,
+                                  val,
+                                  mediaSource: mediaSource,
+                                );
                               },
                             );
                           }
@@ -138,7 +184,11 @@ class SourceSettingsSheet extends ConsumerWidget {
                               options: setting.options ?? [],
                               currentValues: currentList,
                               onChanged: (val) {
-                                notifier.updateSetting(setting.id, val);
+                                notifier.updateSetting(
+                                  setting.id,
+                                  val,
+                                  mediaSource: mediaSource,
+                                );
                               },
                             );
                           }

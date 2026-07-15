@@ -227,27 +227,6 @@ void showCardStyleSheet(
                 ),
               ),
 
-              if (current == MediaCardStyle.experimentalLiquid) ...[
-                const SizedBox(height: 14),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    showExperimentalEditorSheet(context, ref, notifier, theme);
-                  },
-                  icon: const Icon(Icons.tune_rounded, size: 16),
-                  label: const Text('Customize & Optimize for Device'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
-              ],
-
               const SizedBox(height: 10),
 
               ...MediaCardStyle.values.map(
@@ -264,350 +243,6 @@ void showCardStyleSheet(
           ),
         );
       },
-    ),
-  );
-}
-
-void showExperimentalEditorSheet(
-  BuildContext context,
-  WidgetRef ref,
-  UiPrefsNotifier notifier,
-  ThemeData theme,
-) {
-  AppBottomSheet.show(
-    context: context,
-    title: 'Liquid Glass Live Editor',
-    child: Consumer(
-      builder: (_, r, _) {
-        final config = r.watch(
-          uiPrefsProvider.select((s) => s.experimentalConfig),
-        );
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Live Preview (Pinned)',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey,
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () => notifier.resetExperimentalConfig(),
-                  icon: const Icon(Icons.refresh_rounded, size: 16),
-                  label: const Text(
-                    'Reset to Defaults',
-                    style: TextStyle(fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            Center(
-              child: SizedBox(
-                width: MediaCardStyle.experimentalLiquid.layout.width,
-                height: MediaCardStyle.experimentalLiquid.layout.height,
-                child: MediaCard(
-                  title: 'Demon Slayer: Kimetsu No Yaiba',
-                  tag: 'ui-editor-preview',
-                  format: 'TV',
-                  imageUrl:
-                      'https://m.media-amazon.com/images/M/MV5BM2IyN2E0NjctYWU2ZC00ZDc4LThiOTQtODAyOGNkZWM0M2E1XkEyXkFqcGc@._V1_.jpg',
-                  onTap: () {},
-                  style: MediaCardStyle.experimentalLiquid,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            Flexible(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Section 1: Glass Optics & Refraction
-                    _buildEditorSectionHeader(
-                      'Glass Optics & Refraction',
-                      Icons.water_drop_rounded,
-                      theme.colorScheme.primary,
-                    ),
-                    SettingsSliderTile(
-                      icon: Icons.water_drop_outlined,
-                      title: 'Refraction Distortion',
-                      subtitle: 'Intensity of glass light bending effect',
-                      value: (config['distortion'] as num?)?.toDouble() ?? 0.15,
-                      min: 0.0,
-                      max: 0.40,
-                      divisions: 20,
-                      label:
-                          ((config['distortion'] as num?)?.toDouble() ?? 0.15)
-                              .toStringAsFixed(2),
-                      onChanged: (val) => notifier.updateExperimentalConfig({
-                        'distortion': val,
-                      }),
-                    ),
-                    SettingsSliderTile(
-                      icon: Icons.zoom_in_rounded,
-                      title: 'Lens Magnification',
-                      subtitle: 'Zoom effect through the glass lens',
-                      value:
-                          (config['magnification'] as num?)?.toDouble() ?? 1.06,
-                      min: 1.0,
-                      max: 1.25,
-                      divisions: 25,
-                      label:
-                          '${(((config['magnification'] as num?)?.toDouble() ?? 1.06) - 1.0) * 100 ~/ 1}%',
-                      onChanged: (val) => notifier.updateExperimentalConfig({
-                        'magnification': val,
-                      }),
-                    ),
-                    SettingsSliderTile(
-                      icon: Icons.lens_blur_rounded,
-                      title: 'Chromatic Aberration',
-                      subtitle: 'RGB color splitting on lens refraction edges',
-                      value:
-                          (config['chromaticAberration'] as num?)?.toDouble() ??
-                          0.006,
-                      min: 0.0,
-                      max: 0.02,
-                      divisions: 20,
-                      label:
-                          ((config['chromaticAberration'] as num?)
-                                      ?.toDouble() ??
-                                  0.006)
-                              .toStringAsFixed(3),
-                      onChanged: (val) => notifier.updateExperimentalConfig({
-                        'chromaticAberration': val,
-                      }),
-                    ),
-                    SettingsSliderTile(
-                      icon: Icons.invert_colors_rounded,
-                      title: 'Card Tint Opacity',
-                      subtitle: 'Frosted white glass body transparency',
-                      value:
-                          (config['cardTintOpacity'] as num?)?.toDouble() ??
-                          0.10,
-                      min: 0.0,
-                      max: 0.35,
-                      divisions: 35,
-                      label:
-                          '${(((config['cardTintOpacity'] as num?)?.toDouble() ?? 0.10) * 100).round()}%',
-                      onChanged: (val) => notifier.updateExperimentalConfig({
-                        'cardTintOpacity': val,
-                      }),
-                    ),
-                    SettingsSliderTile(
-                      icon: Icons.blur_linear_rounded,
-                      title: 'Lens Appearance Tint',
-                      subtitle: 'Floating lenses background opacity',
-                      value:
-                          (config['lensAppearanceTint'] as num?)?.toDouble() ??
-                          0.13,
-                      min: 0.0,
-                      max: 0.35,
-                      divisions: 35,
-                      label:
-                          '${(((config['lensAppearanceTint'] as num?)?.toDouble() ?? 0.13) * 100).round()}%',
-                      onChanged: (val) => notifier.updateExperimentalConfig({
-                        'lensAppearanceTint': val,
-                      }),
-                    ),
-
-                    const Divider(height: 1),
-
-                    // Section 2: Border & Luminous Effects
-                    _buildEditorSectionHeader(
-                      'Border & Luminous Effects',
-                      Icons.auto_awesome_rounded,
-                      theme.colorScheme.primary,
-                    ),
-                    SettingsSwitchTile(
-                      icon: Icons.flare_rounded,
-                      title: 'Enable Luminous Border',
-                      subtitle: 'Clean glowing border overlay on card edges',
-                      value: config['enableLuminousBorder'] != false,
-                      onChanged: (val) => notifier.updateExperimentalConfig({
-                        'enableLuminousBorder': val,
-                      }),
-                    ),
-                    if (config['enableLuminousBorder'] != false) ...[
-                      SettingsSliderTile(
-                        icon: Icons.line_weight_rounded,
-                        title: 'Luminous Border Width',
-                        subtitle: 'Thickness of the active glass edge border',
-                        value:
-                            (config['borderWidth'] as num?)?.toDouble() ?? 2.0,
-                        min: 1.0,
-                        max: 4.0,
-                        divisions: 15,
-                        label:
-                            '${((config['borderWidth'] as num?)?.toDouble() ?? 2.0).toStringAsFixed(1)}px',
-                        onChanged: (val) => notifier.updateExperimentalConfig({
-                          'borderWidth': val,
-                        }),
-                      ),
-                      SettingsSliderTile(
-                        icon: Icons.brightness_high_rounded,
-                        title: 'Border Glow Intensity',
-                        subtitle: 'Brightness and opacity of the border glow',
-                        value:
-                            (config['borderGlowIntensity'] as num?)
-                                ?.toDouble() ??
-                            0.65,
-                        min: 0.1,
-                        max: 1.0,
-                        divisions: 18,
-                        label:
-                            '${(((config['borderGlowIntensity'] as num?)?.toDouble() ?? 0.65) * 100).round()}%',
-                        onChanged: (val) => notifier.updateExperimentalConfig({
-                          'borderGlowIntensity': val,
-                        }),
-                      ),
-                    ],
-                    SettingsSliderTile(
-                      icon: Icons.highlight_outlined,
-                      title: 'Optical Border Saturation',
-                      subtitle: 'Vibrancy saturation along the glass outline',
-                      value:
-                          (config['borderSaturation'] as num?)?.toDouble() ??
-                          1.6,
-                      min: 0.0,
-                      max: 3.0,
-                      divisions: 30,
-                      label:
-                          '${(((config['borderSaturation'] as num?)?.toDouble() ?? 1.6) * 100).round()}%',
-                      onChanged: (val) => notifier.updateExperimentalConfig({
-                        'borderSaturation': val,
-                      }),
-                    ),
-
-                    const Divider(height: 1),
-
-                    // Section 3: Interactive Physics & Lenses
-                    _buildEditorSectionHeader(
-                      'Interactive Physics & Lenses',
-                      Icons.track_changes_rounded,
-                      theme.colorScheme.primary,
-                    ),
-                    SettingsSwitchTile(
-                      icon: Icons.bubble_chart_rounded,
-                      title: 'Enable Metaball Orb',
-                      subtitle:
-                          'Floating liquid lens orb appears on hover or touch',
-                      value: config['enableMetaball'] != false,
-                      onChanged: (val) => notifier.updateExperimentalConfig({
-                        'enableMetaball': val,
-                      }),
-                    ),
-                    if (config['enableMetaball'] != false) ...[
-                      SettingsSwitchTile(
-                        icon: Icons.touch_app_rounded,
-                        title: 'Interactive Tracking Orb',
-                        subtitle:
-                            'Floating metaball tracks pointer and touch position',
-                        value: config['interactiveOrb'] != false,
-                        onChanged: (val) => notifier.updateExperimentalConfig({
-                          'interactiveOrb': val,
-                        }),
-                      ),
-                      SettingsSliderTile(
-                        icon: Icons.blur_on_rounded,
-                        title: 'Metaball Smoothness (Performance)',
-                        subtitle:
-                            'Lower for better GPU performance on older devices',
-                        value:
-                            (config['smoothness'] as num?)?.toDouble() ?? 46.0,
-                        min: 15.0,
-                        max: 75.0,
-                        divisions: 12,
-                        label:
-                            ((config['smoothness'] as num?)?.toDouble() ?? 46.0)
-                                .round()
-                                .toString(),
-                        onChanged: (val) => notifier.updateExperimentalConfig({
-                          'smoothness': val,
-                        }),
-                      ),
-                    ],
-                    SettingsSwitchTile(
-                      icon: Icons.crop_rotate,
-                      title: '3D Hover Tilt Perspective',
-                      subtitle:
-                          'Card tilts in 3D space on mouse hover or touch',
-                      value: config['enable3dTilt'] != false,
-                      onChanged: (val) => notifier.updateExperimentalConfig({
-                        'enable3dTilt': val,
-                      }),
-                    ),
-                    SettingsSwitchTile(
-                      icon: Icons.center_focus_weak_rounded,
-                      title: 'Glass Lenses on Badges',
-                      subtitle:
-                          'Wrap top badge indicators in liquid glass lenses',
-                      value: config['enableBadgeLens'] != false,
-                      onChanged: (val) => notifier.updateExperimentalConfig({
-                        'enableBadgeLens': val,
-                      }),
-                    ),
-
-                    const Divider(height: 1),
-
-                    // Section 4: Background & Shadows
-                    _buildEditorSectionHeader(
-                      'Background & Shadows',
-                      Icons.layers_outlined,
-                      theme.colorScheme.primary,
-                    ),
-                    SettingsSwitchTile(
-                      icon: Icons.add_box,
-                      title: 'Enable Card Elevation Shadow',
-                      subtitle:
-                          'Add drop shadow (disabled by default so only border suffices)',
-                      value: config['enableCardShadow'] == true,
-                      onChanged: (val) => notifier.updateExperimentalConfig({
-                        'enableCardShadow': val,
-                      }),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    ),
-  );
-}
-
-Widget _buildEditorSectionHeader(
-  String title,
-  IconData icon,
-  Color primaryColor,
-) {
-  return Padding(
-    padding: const EdgeInsets.only(top: 18, bottom: 6, left: 4),
-    child: Row(
-      children: [
-        Icon(icon, size: 16, color: primaryColor),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: primaryColor,
-            letterSpacing: 0.3,
-          ),
-        ),
-      ],
     ),
   );
 }
@@ -1275,11 +910,7 @@ String _cardStyleDesc(MediaCardStyle s) => switch (s) {
   MediaCardStyle.minimal => 'Compact with subtle overlay',
   MediaCardStyle.expressive => 'Tall card with bold typography',
   MediaCardStyle.material => 'Material You elevated card',
-  MediaCardStyle.liquidGlass => 'Frosted glass finish',
-  MediaCardStyle.experimentalLiquid =>
-    'iOS 26 Liquid Glass with real-time metaball refraction & lens physics',
   MediaCardStyle.cinematic => 'Full-bleed image with cinematic gradient',
-  MediaCardStyle.frosted => 'Glassmorphism with frosted info panel',
   MediaCardStyle.neon => 'Neon-glowing borders with accent color',
   MediaCardStyle.compact => 'Dense horizontal mini-card layout',
   MediaCardStyle.editorial => 'Editorial pick with clear information structure',
@@ -1291,11 +922,7 @@ String _cwStyleDesc(ContinueWatchingStyle s) => switch (s) {
   ContinueWatchingStyle.minimal => 'Border-free clean image card',
   ContinueWatchingStyle.expressive => 'Spacious container with bold labels',
   ContinueWatchingStyle.material => 'Unified color background material card',
-  ContinueWatchingStyle.liquidGlass => 'Semi-transparent container overlay',
-  ContinueWatchingStyle.experimentalLiquid =>
-    'Refractive physics continue style',
   ContinueWatchingStyle.cinematic => 'Horizontal full-bleed background banner',
-  ContinueWatchingStyle.frosted => 'Blur glass overlay bottom panel',
   ContinueWatchingStyle.neon => 'Vivid accent glowing neon borders',
   ContinueWatchingStyle.compact => 'Super dense layout for small lists',
   ContinueWatchingStyle.editorial => 'High-whitespace magazine design',
@@ -1307,10 +934,7 @@ IconData _cwStyleIcon(ContinueWatchingStyle s) => switch (s) {
   ContinueWatchingStyle.minimal => Icons.photo_size_select_actual_rounded,
   ContinueWatchingStyle.expressive => Icons.featured_play_list_rounded,
   ContinueWatchingStyle.material => Icons.crop_portrait_rounded,
-  ContinueWatchingStyle.liquidGlass => Icons.blur_on_rounded,
-  ContinueWatchingStyle.experimentalLiquid => Icons.science_rounded,
   ContinueWatchingStyle.cinematic => Icons.movie_filter_rounded,
-  ContinueWatchingStyle.frosted => Icons.filter_b_and_w_rounded,
   ContinueWatchingStyle.neon => Icons.electric_bolt_rounded,
   ContinueWatchingStyle.compact => Icons.table_rows_rounded,
   ContinueWatchingStyle.editorial => Icons.newspaper_rounded,
@@ -1322,11 +946,7 @@ String _crStyleDesc(ContinueReadingStyle s) => switch (s) {
   ContinueReadingStyle.minimal => 'Border-free clean image card',
   ContinueReadingStyle.expressive => 'Spacious container with bold labels',
   ContinueReadingStyle.material => 'Unified color background material card',
-  ContinueReadingStyle.liquidGlass => 'Semi-transparent container overlay',
-  ContinueReadingStyle.experimentalLiquid =>
-    'Refractive physics continue style',
   ContinueReadingStyle.cinematic => 'Horizontal full-bleed background banner',
-  ContinueReadingStyle.frosted => 'Blur glass overlay bottom panel',
   ContinueReadingStyle.neon => 'Vivid accent glowing neon borders',
   ContinueReadingStyle.compact => 'Super dense layout for small lists',
   ContinueReadingStyle.editorial => 'High-whitespace magazine design',
@@ -1338,10 +958,7 @@ IconData _crStyleIcon(ContinueReadingStyle s) => switch (s) {
   ContinueReadingStyle.minimal => Icons.photo_size_select_actual_rounded,
   ContinueReadingStyle.expressive => Icons.featured_play_list_rounded,
   ContinueReadingStyle.material => Icons.crop_portrait_rounded,
-  ContinueReadingStyle.liquidGlass => Icons.blur_on_rounded,
-  ContinueReadingStyle.experimentalLiquid => Icons.science_rounded,
   ContinueReadingStyle.cinematic => Icons.movie_filter_rounded,
-  ContinueReadingStyle.frosted => Icons.filter_b_and_w_rounded,
   ContinueReadingStyle.neon => Icons.electric_bolt_rounded,
   ContinueReadingStyle.compact => Icons.table_rows_rounded,
   ContinueReadingStyle.editorial => Icons.newspaper_rounded,

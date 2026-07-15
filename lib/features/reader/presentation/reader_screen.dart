@@ -420,6 +420,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
     return Scaffold(
       backgroundColor: themeInfo.bgColor,
+      extendBodyBehindAppBar: true,
+      extendBody: true,
       body: Stack(
         fit: StackFit.expand,
         children: [

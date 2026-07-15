@@ -10,8 +10,9 @@ class AnilistAuthenticator implements Authenticator {
   static final HTTP _http = HTTP();
   static final _isDesktop = Platform.isWindows || Platform.isLinux;
 
-  String get _clientId =>
-      _isDesktop ? Env.ANILIST_CLIENT_ID_LIST.last : Env.ANILIST_CLIENT_ID_LIST.first;
+  String get _clientId => _isDesktop
+      ? Env.ANILIST_CLIENT_ID_LIST.last
+      : Env.ANILIST_CLIENT_ID_LIST.first;
 
   String get _clientSecret => _isDesktop
       ? Env.ANILIST_CLIENT_SECRET_LIST.last
@@ -34,8 +35,6 @@ class AnilistAuthenticator implements Authenticator {
 
   @override
   Future<String> performLogin() async {
-    print(_clientId);
-    print(_clientSecret);
     final url = Uri.https('anilist.co', '/api/v2/oauth/authorize', {
       'client_id': _clientId,
       'redirect_uri': redirectUri,

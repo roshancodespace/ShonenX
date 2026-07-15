@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,8 +10,9 @@ import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.da
 import 'package:shonenx/features/discovery/providers/search_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
-import 'package:shonenx/shared/providers/navbar_action_provider.dart';
 import 'package:shonenx/shared/widgets/media_switcher_overlay.dart';
+import 'package:shonenx/shared/widgets/unified_search_bar.dart';
+import 'package:shonenx/shared/providers/navbar_action_provider.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
@@ -81,17 +83,23 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
     with SingleTickerProviderStateMixin {
   late final TextEditingController _searchController;
   late TabController _tabController;
+  Timer? _debounceTimer;
 
   String _query = '';
   List<String> _genres = [];
   List<String> _tags = [];
   String? _source;
+  bool _isSearchActive = false;
+  bool _isSearchAtTop = false;
 
   @override
   void initState() {
     super.initState();
     _query = widget.initialQuery?.trim() ?? '';
-    _searchController = TextEditingController(text: _query);
+    _searchController = TextEditingController(text: _query)
+      ..addListener(_onSearchTextChanged);
+    _isSearchActive = _query.isNotEmpty;
+    _isSearchAtTop = _query.isNotEmpty;
     _genres = List.from(widget.initialGenres);
     _tags = List.from(widget.initialTags);
     _source = widget.source;
@@ -114,6 +122,8 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
     if (oldWidget.initialQuery != widget.initialQuery) {
       _query = widget.initialQuery?.trim() ?? '';
       _searchController.text = _query;
+      _isSearchActive = _query.isNotEmpty;
+      _isSearchAtTop = _query.isNotEmpty;
     }
   }
 
@@ -131,7 +141,15 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
         ref
             .read(navBarProvider.notifier)
             .attachTop(
-              MediaSwitcherOverlay(controller: _tabController),
+              MediaSwitcherOverlay(
+                controller: _tabController,
+                isSearchActive: _isSearchActive,
+                onSearchTap: () {
+                  setState(() {
+                    _isSearchActive = true;
+                  });
+                },
+              ),
               branchIndex: 1,
             );
       }
@@ -140,12 +158,61 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
+    _searchController.removeListener(_onSearchTextChanged);
     try {
       ref.read(navBarProvider.notifier).clearTop(branchIndex: 1);
     } catch (_) {}
     _searchController.dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _onSearchTextChanged() {
+    _debounceTimer?.cancel();
+    final text = _searchController.text.trim();
+    if (!_isSearchAtTop) {
+      setState(() {});
+      return;
+    }
+
+    if (text.isEmpty) {
+      if (_query.isNotEmpty) {
+        setState(() {
+          _query = '';
+        });
+      }
+    } else {
+      setState(() {});
+      _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+        if (mounted) {
+          setState(() {
+            _query = text;
+          });
+        }
+      });
+    }
+  }
+
+  void _submitSearch(String text) {
+    _debounceTimer?.cancel();
+    final trimmedText = text.trim();
+    if (trimmedText.isNotEmpty) {
+      setState(() {
+        _isSearchAtTop = true;
+        _query = trimmedText;
+      });
+    }
+  }
+
+  void _cancelSearch() {
+    _debounceTimer?.cancel();
+    setState(() {
+      _isSearchActive = false;
+      _isSearchAtTop = false;
+      _query = '';
+      _searchController.clear();
+    });
   }
 
   void _openAdvancedSearch(BuildContext context) {
@@ -189,11 +256,13 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
 
   @override
   Widget build(BuildContext context) {
+    _attachOverlay();
+
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final currentType = _tabController.index == 0
         ? MediaType.ANIME
         : MediaType.MANGA;
+
     final filtersState = ref.watch(
       discoveryFiltersProvider((type: currentType, sourceId: widget.source)),
     );
@@ -227,188 +296,225 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
       pageSubtitle = 'Browsing ${currentType.name.toLowerCase()} by tag';
     }
 
+    final showBackButton = widget.source != null && widget.source!.isNotEmpty;
+
     return AppScaffold(
       title: pageTitle,
       subtitle: pageSubtitle,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 44,
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search anime or manga...',
-                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_query.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.clear, size: 18),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _query = '');
-                          },
-                        ),
-                      if (hasFilters)
-                        IconButton(
-                          icon: const Icon(Icons.tune, size: 20),
-                          tooltip: 'Advanced Filters',
-                          onPressed: () => _openAdvancedSearch(context),
-                        ),
-                    ],
-                  ),
-                  filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.6,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 0,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                style: theme.textTheme.bodyMedium,
-                textInputAction: TextInputAction.search,
-                onSubmitted: (value) {
-                  setState(() {
-                    _query = value.trim();
-                  });
-                },
-              ),
-            ),
-            if (_genres.isNotEmpty || _tags.isNotEmpty || _source != null) ...[
-              const SizedBox(height: 10),
-              SizedBox(
-                height: 36,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    if (_source != null)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: InputChip(
-                          label: Text('Source: $_source'),
-                          onDeleted: () {
-                            setState(() {
-                              _source = null;
-                            });
-                          },
-                          backgroundColor: theme.colorScheme.primaryContainer,
-                          labelStyle: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onPrimaryContainer,
-                          ),
-                          deleteIconColor: theme.colorScheme.onPrimaryContainer,
-                          side: BorderSide.none,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ..._genres.map(
-                      (g) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: InputChip(
-                          label: Text(g),
-                          onDeleted: () {
-                            setState(() {
-                              _genres.remove(g);
-                            });
-                          },
-                          backgroundColor: theme.colorScheme.secondaryContainer,
-                          labelStyle: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onSecondaryContainer,
-                          ),
-                          deleteIconColor:
-                              theme.colorScheme.onSecondaryContainer,
-                          side: BorderSide.none,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
+      showBackButton: showBackButton,
+      body: Stack(
+        children: [
+          // Feed / Results layer
+          SizedBox.expand(
+            child: Column(
+              children: [
+                if (_isSearchActive && _isSearchAtTop) ...[
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: UnifiedSearchBar(
+                      controller: _searchController,
+                      onBackPressed: _cancelSearch,
+                      onClearPressed: () => _searchController.clear(),
+                      onSubmitted: _submitSearch,
+                      hasFilters: hasFilters,
+                      onFilterPressed: () => _openAdvancedSearch(context),
                     ),
-                    ..._tags.map(
-                      (t) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: InputChip(
-                          label: Text(t),
-                          onDeleted: () {
-                            setState(() {
-                              _tags.remove(t);
-                            });
-                          },
-                          backgroundColor: theme.colorScheme.tertiaryContainer,
-                          labelStyle: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onTertiaryContainer,
-                          ),
-                          deleteIconColor:
-                              theme.colorScheme.onTertiaryContainer,
-                          side: BorderSide.none,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            const SizedBox(height: 10),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _DiscoverTabFeed(
-                    type: MediaType.ANIME,
-                    query: _query,
-                    genres: _genres,
-                    tags: _tags,
-                    source: _source,
-                    onGenreSelect: (g) {
-                      setState(() {
-                        _genres = [g];
-                      });
-                    },
-                    onSourceSelect: (sId) {
-                      setState(() {
-                        _source = sId;
-                      });
-                    },
-                  ),
-                  _DiscoverTabFeed(
-                    type: MediaType.MANGA,
-                    query: _query,
-                    genres: _genres,
-                    tags: _tags,
-                    source: _source,
-                    onGenreSelect: (g) {
-                      setState(() {
-                        _genres = [g];
-                      });
-                    },
-                    onSourceSelect: (sId) {
-                      setState(() {
-                        _source = sId;
-                      });
-                    },
                   ),
                 ],
-              ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_genres.isNotEmpty ||
+                            _tags.isNotEmpty ||
+                            _source != null) ...[
+                          const SizedBox(height: 4),
+                          SizedBox(
+                            height: 36,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              children: [
+                                if (_source != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: InputChip(
+                                      label: Text('Source: $_source'),
+                                      onDeleted: () {
+                                        setState(() {
+                                          _source = null;
+                                        });
+                                      },
+                                      backgroundColor:
+                                          theme.colorScheme.primaryContainer,
+                                      labelStyle: theme.textTheme.labelMedium
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme
+                                                .onPrimaryContainer,
+                                          ),
+                                      deleteIconColor:
+                                          theme.colorScheme.onPrimaryContainer,
+                                      side: BorderSide.none,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                ..._genres.map(
+                                  (g) => Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: InputChip(
+                                      label: Text(g),
+                                      onDeleted: () {
+                                        setState(() {
+                                          _genres.remove(g);
+                                        });
+                                      },
+                                      backgroundColor:
+                                          theme.colorScheme.secondaryContainer,
+                                      labelStyle: theme.textTheme.labelMedium
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme
+                                                .onSecondaryContainer,
+                                          ),
+                                      deleteIconColor: theme
+                                          .colorScheme
+                                          .onSecondaryContainer,
+                                      side: BorderSide.none,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                ..._tags.map(
+                                  (t) => Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: InputChip(
+                                      label: Text(t),
+                                      onDeleted: () {
+                                        setState(() {
+                                          _tags.remove(t);
+                                        });
+                                      },
+                                      backgroundColor:
+                                          theme.colorScheme.tertiaryContainer,
+                                      labelStyle: theme.textTheme.labelMedium
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme
+                                                .onTertiaryContainer,
+                                          ),
+                                      deleteIconColor:
+                                          theme.colorScheme.onTertiaryContainer,
+                                      side: BorderSide.none,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 4),
+                        Expanded(
+                          child: TabBarView(
+                            controller: _tabController,
+                            children: [
+                              _DiscoverTabFeed(
+                                type: MediaType.ANIME,
+                                query: _query,
+                                genres: _genres,
+                                tags: _tags,
+                                source: _source,
+                                onGenreSelect: (g) {
+                                  setState(() {
+                                    _genres = [g];
+                                  });
+                                },
+                                onSourceSelect: (sId) {
+                                  setState(() {
+                                    _source = sId;
+                                  });
+                                },
+                              ),
+                              _DiscoverTabFeed(
+                                type: MediaType.MANGA,
+                                query: _query,
+                                genres: _genres,
+                                tags: _tags,
+                                source: _source,
+                                onGenreSelect: (g) {
+                                  setState(() {
+                                    _genres = [g];
+                                  });
+                                },
+                                onSourceSelect: (sId) {
+                                  setState(() {
+                                    _source = sId;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+
+          // Centered Floating Search Bar overlay (shown ONLY when active and search bar has not transitioned to top)
+          if (_isSearchActive && !_isSearchAtTop)
+            Stack(
+              children: [
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: _cancelSearch,
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.45),
+                    ),
+                  ),
+                ),
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack,
+                  builder: (context, value, child) {
+                    final yOffset = (1.0 - value) * 120.0;
+                    return Opacity(
+                      opacity: value.clamp(0.0, 1.0),
+                      child: Transform.translate(
+                        offset: Offset(0, yOffset),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: UnifiedSearchBar(
+                        controller: _searchController,
+                        onBackPressed: _cancelSearch,
+                        onClearPressed: () => _searchController.clear(),
+                        onSubmitted: _submitSearch,
+                        hasFilters: hasFilters,
+                        onFilterPressed: () => _openAdvancedSearch(context),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
     );
   }

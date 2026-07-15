@@ -544,7 +544,7 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
           loading: () => const SizedBox.shrink(),
           error: (_, __) => const SizedBox.shrink(),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
@@ -855,7 +855,7 @@ class _TrackerProfileSheetState extends ConsumerState<TrackerProfileSheet> {
     ShonenxLocalMetrics m,
   ) {
     return Container(
-      margin: const EdgeInsets.only(top: 24, bottom: 8),
+      margin: const EdgeInsets.only(top: 24),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,

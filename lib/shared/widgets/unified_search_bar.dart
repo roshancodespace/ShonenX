@@ -43,7 +43,7 @@ class UnifiedSearchBar extends StatelessWidget {
           margin: const EdgeInsetsDirectional.all(4),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerLow.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.25),
+            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.3),
             border: Border.all(
               color: colorScheme.primary,
               width: 2,

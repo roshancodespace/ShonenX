@@ -11,6 +11,8 @@ import 'package:media_kit/media_kit.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/core/caching/cache_manager.dart';
 import 'package:shonenx/core/caching/domain/cache_entry.dart';
+import 'package:shonenx/core/network/http_adapter.dart';
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/services/notification_service.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/features/discovery/domain/media_preference.dart';
@@ -169,6 +171,7 @@ class AppInit {
         getDirectory: AnymeXExtensionBridge.defaultGetDirectory(
           baseDirectory: await getDatabaseDirectory('ShonenX'),
         ),
+        http: HTTPAdapter(ref.read(httpClientProvider)),
         projectName: "ShonenX",
       );
 
@@ -182,7 +185,7 @@ class AppInit {
         retryCount++;
       }
 
-      await extManager.onRuntimeBridgeInitialization(force: true);
+      // await extManager.onRuntimeBridgeInitialization();
 
       log.s('Extension bridge ready');
     } catch (e, st) {

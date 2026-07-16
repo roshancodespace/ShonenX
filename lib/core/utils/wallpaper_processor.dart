@@ -5,15 +5,46 @@ import 'package:palette_generator/palette_generator.dart';
 import 'package:path_provider/path_provider.dart';
 
 class WallpaperProcessor {
+  static Future<Directory> _getThemeDirectory() async {
+    final docDir = await getApplicationDocumentsDirectory();
+    final themeDirPath = '${docDir.path}/ShonenX/Theme';
+    final themeDir = Directory(themeDirPath);
+
+    if (!await themeDir.exists()) {
+      await themeDir.create(recursive: true);
+    }
+    return themeDir;
+  }
+
+  static Future<String> saveOriginalWallpaper(String sourcePath) async {
+    final themeDir = await _getThemeDirectory();
+
+    final files = themeDir.listSync();
+    for (var file in files) {
+      if (file is File && file.path.contains('original_wallpaper_')) {
+        try {
+          await file.delete();
+        } catch (_) {}
+      }
+    }
+
+    final ext = sourcePath.split('.').last.toLowerCase();
+    final safeExt = ['png', 'jpg', 'jpeg', 'webp'].contains(ext) ? ext : 'png';
+    final newPath =
+        '${themeDir.path}/original_wallpaper_${DateTime.now().millisecondsSinceEpoch}.$safeExt';
+
+    await File(sourcePath).copy(newPath);
+    return newPath;
+  }
+
   static Future<({String processedPath, int? imageColorSeed})?> process({
     required String originalPath,
     required double blurSigma,
     required double saturation,
     required double brightness,
-    String? currentOriginalPath,
-    String? currentProcessedPath,
   }) async {
     int? imageColorSeed;
+
     try {
       final palette = await PaletteGenerator.fromImageProvider(
         FileImage(File(originalPath)),
@@ -25,36 +56,25 @@ class WallpaperProcessor {
       debugPrint('Error generating palette: $e');
     }
 
-    void cleanOldFiles() async {
-      if (currentProcessedPath != null &&
-          currentProcessedPath != originalPath) {
+    final themeDir = await _getThemeDirectory();
+
+    final files = themeDir.listSync();
+    for (var file in files) {
+      if (file is File && file.path.contains('blurred_wallpaper_')) {
         try {
-          final oldFile = File(currentProcessedPath);
-          if (await oldFile.exists()) {
-            await oldFile.delete();
-          }
-        } catch (_) {}
-      }
-      if (currentOriginalPath != null && currentOriginalPath != originalPath) {
-        try {
-          final oldFile = File(currentOriginalPath);
-          if (await oldFile.exists()) {
-            await oldFile.delete();
-          }
+          await file.delete();
         } catch (_) {}
       }
     }
 
     if (blurSigma <= 0.0 && saturation == 1.0 && brightness == 1.0) {
-      cleanOldFiles();
       return (processedPath: originalPath, imageColorSeed: imageColorSeed);
     }
 
     try {
-      final docDir = await getApplicationDocumentsDirectory();
       final fileName =
           'blurred_wallpaper_${DateTime.now().millisecondsSinceEpoch}.png';
-      final outputPath = '${docDir.path}/$fileName';
+      final outputPath = '${themeDir.path}/$fileName';
 
       final data = await File(originalPath).readAsBytes();
 
@@ -150,8 +170,6 @@ class WallpaperProcessor {
 
       originalImage.dispose();
       blurredImage.dispose();
-
-      cleanOldFiles();
 
       return (processedPath: outputPath, imageColorSeed: imageColorSeed);
     } catch (e, stack) {

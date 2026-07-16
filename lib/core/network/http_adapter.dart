@@ -16,6 +16,7 @@ class HTTPAdapter extends http.BaseClient {
         response = await api.get(
           request.url.toString(),
           headers: request.headers,
+          cacheDuration: const Duration(minutes: 10),
         );
         break;
 
@@ -26,6 +27,7 @@ class HTTPAdapter extends http.BaseClient {
           request.url.toString(),
           headers: request.headers,
           body: body,
+          cacheDuration: const Duration(minutes: 1),
         );
         break;
 

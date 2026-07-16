@@ -1,18 +1,17 @@
-import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
-    as bridge;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:shonenx/app_init.dart';
+import 'package:shonenx/features/extensions/providers/extension_service_provider.dart';
+import 'package:shonenx/features/extensions/providers/extensions_provider.dart';
+import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
-import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
-import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
-
-import 'package:shonenx/features/extensions/providers/extensions_provider.dart';
 import 'widgets/extension_beginner_sheet.dart';
 import 'widgets/extension_guide_sheet.dart';
 import 'widgets/manage_repos_sheet.dart';
@@ -56,10 +55,8 @@ class _ExtensionsSettingsScreenState
           autoAddManager: widget.autoAddManager,
         );
       } else {
-        final manager = ref.read(extensionManagerProvider);
-        final animeRepos = manager.getReposRx(bridge.ItemType.anime).value;
-        final mangaRepos = manager.getReposRx(bridge.ItemType.manga).value;
-        if (animeRepos.isEmpty && mangaRepos.isEmpty) {
+        final repos = ref.read(activeExtReposProvider);
+        if (repos.isEmpty) {
           ExtensionGuideSheet.show(context);
         }
       }
@@ -75,7 +72,6 @@ class _ExtensionsSettingsScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final manager = ref.watch(extensionManagerProvider);
 
     return DefaultTabController(
       length: 6,
@@ -87,47 +83,47 @@ class _ExtensionsSettingsScreenState
             : FloatingActionButtonLocation.endFloat,
         titleWidget: _isSearching ? _buildSearchField(theme) : null,
         barBottom: _buildBarBottom(),
-        actions: _buildActions(context, manager),
+        actions: _buildActions(context),
         body: TabBarView(
           children: [
             SourcesTab(
               engineFilter: _selectedEngineFilter,
-              type: bridge.ItemType.anime,
+              type: MediaType.ANIME,
               searchQuery: _searchQuery,
               langFilter: _selectedLangFilter,
               isInstalled: true,
             ),
             SourcesTab(
               engineFilter: _selectedEngineFilter,
-              type: bridge.ItemType.manga,
+              type: MediaType.MANGA,
               searchQuery: _searchQuery,
               langFilter: _selectedLangFilter,
               isInstalled: true,
             ),
             SourcesTab(
               engineFilter: _selectedEngineFilter,
-              type: bridge.ItemType.novel,
+              type: MediaType.NOVEL,
               searchQuery: _searchQuery,
               langFilter: _selectedLangFilter,
               isInstalled: true,
             ),
             SourcesTab(
               engineFilter: _selectedEngineFilter,
-              type: bridge.ItemType.anime,
+              type: MediaType.ANIME,
               searchQuery: _searchQuery,
               langFilter: _selectedLangFilter,
               isInstalled: false,
             ),
             SourcesTab(
               engineFilter: _selectedEngineFilter,
-              type: bridge.ItemType.manga,
+              type: MediaType.MANGA,
               searchQuery: _searchQuery,
               langFilter: _selectedLangFilter,
               isInstalled: false,
             ),
             SourcesTab(
               engineFilter: _selectedEngineFilter,
-              type: bridge.ItemType.novel,
+              type: MediaType.NOVEL,
               searchQuery: _searchQuery,
               langFilter: _selectedLangFilter,
               isInstalled: false,
@@ -135,7 +131,7 @@ class _ExtensionsSettingsScreenState
           ],
         ),
         floatingActionButton: Builder(
-          builder: (context) => _buildFab(context, manager, theme),
+          builder: (context) => _buildFab(context, theme),
         ),
       ),
     );
@@ -399,90 +395,89 @@ class _ExtensionsSettingsScreenState
     final novelSources = ref.watch(availableNovelSourcesProvider).value ?? [];
     final enabledManagers = ref.watch(enabledExtensionManagersProvider);
 
-    return Obx(() {
-      final countInstalledAnime = ExtensionsService.getSourcesTabCount(
-        type: bridge.ItemType.anime,
-        isInstalled: true,
-        engineFilter: _selectedEngineFilter,
-        searchQuery: _searchQuery,
-        langFilter: _selectedLangFilter,
-        animeSources: animeSources,
-        mangaSources: mangaSources,
-        novelSources: novelSources,
-        enabledManagers: enabledManagers.toList(),
-      );
-      final countInstalledManga = ExtensionsService.getSourcesTabCount(
-        type: bridge.ItemType.manga,
-        isInstalled: true,
-        engineFilter: _selectedEngineFilter,
-        searchQuery: _searchQuery,
-        langFilter: _selectedLangFilter,
-        animeSources: animeSources,
-        mangaSources: mangaSources,
-        novelSources: novelSources,
-        enabledManagers: enabledManagers.toList(),
-      );
-      final countInstalledNovel = ExtensionsService.getSourcesTabCount(
-        type: bridge.ItemType.novel,
-        isInstalled: true,
-        engineFilter: _selectedEngineFilter,
-        searchQuery: _searchQuery,
-        langFilter: _selectedLangFilter,
-        animeSources: animeSources,
-        mangaSources: mangaSources,
-        novelSources: novelSources,
-        enabledManagers: enabledManagers.toList(),
-      );
-      final countAvailableAnime = ExtensionsService.getSourcesTabCount(
-        type: bridge.ItemType.anime,
-        isInstalled: false,
-        engineFilter: _selectedEngineFilter,
-        searchQuery: _searchQuery,
-        langFilter: _selectedLangFilter,
-        animeSources: animeSources,
-        mangaSources: mangaSources,
-        novelSources: novelSources,
-        enabledManagers: enabledManagers.toList(),
-      );
-      final countAvailableManga = ExtensionsService.getSourcesTabCount(
-        type: bridge.ItemType.manga,
-        isInstalled: false,
-        engineFilter: _selectedEngineFilter,
-        searchQuery: _searchQuery,
-        langFilter: _selectedLangFilter,
-        animeSources: animeSources,
-        mangaSources: mangaSources,
-        novelSources: novelSources,
-        enabledManagers: enabledManagers.toList(),
-      );
-      final countAvailableNovel = ExtensionsService.getSourcesTabCount(
-        type: bridge.ItemType.novel,
-        isInstalled: false,
-        engineFilter: _selectedEngineFilter,
-        searchQuery: _searchQuery,
-        langFilter: _selectedLangFilter,
-        animeSources: animeSources,
-        mangaSources: mangaSources,
-        novelSources: novelSources,
-        enabledManagers: enabledManagers.toList(),
-      );
+    // 5. Removed Obx entirely. Riverpod's `ref.watch` already triggers rebuilds.
+    final countInstalledAnime = ExtensionsService.getSourcesTabCount(
+      type: MediaType.ANIME,
+      isInstalled: true,
+      engineFilter: _selectedEngineFilter,
+      searchQuery: _searchQuery,
+      langFilter: _selectedLangFilter,
+      animeSources: animeSources,
+      mangaSources: mangaSources,
+      novelSources: novelSources,
+      enabledManagers: enabledManagers.toList(),
+    );
+    final countInstalledManga = ExtensionsService.getSourcesTabCount(
+      type: MediaType.MANGA,
+      isInstalled: true,
+      engineFilter: _selectedEngineFilter,
+      searchQuery: _searchQuery,
+      langFilter: _selectedLangFilter,
+      animeSources: animeSources,
+      mangaSources: mangaSources,
+      novelSources: novelSources,
+      enabledManagers: enabledManagers.toList(),
+    );
+    final countInstalledNovel = ExtensionsService.getSourcesTabCount(
+      type: MediaType.NOVEL,
+      isInstalled: true,
+      engineFilter: _selectedEngineFilter,
+      searchQuery: _searchQuery,
+      langFilter: _selectedLangFilter,
+      animeSources: animeSources,
+      mangaSources: mangaSources,
+      novelSources: novelSources,
+      enabledManagers: enabledManagers.toList(),
+    );
+    final countAvailableAnime = ExtensionsService.getSourcesTabCount(
+      type: MediaType.ANIME,
+      isInstalled: false,
+      engineFilter: _selectedEngineFilter,
+      searchQuery: _searchQuery,
+      langFilter: _selectedLangFilter,
+      animeSources: animeSources,
+      mangaSources: mangaSources,
+      novelSources: novelSources,
+      enabledManagers: enabledManagers.toList(),
+    );
+    final countAvailableManga = ExtensionsService.getSourcesTabCount(
+      type: MediaType.MANGA,
+      isInstalled: false,
+      engineFilter: _selectedEngineFilter,
+      searchQuery: _searchQuery,
+      langFilter: _selectedLangFilter,
+      animeSources: animeSources,
+      mangaSources: mangaSources,
+      novelSources: novelSources,
+      enabledManagers: enabledManagers.toList(),
+    );
+    final countAvailableNovel = ExtensionsService.getSourcesTabCount(
+      type: MediaType.NOVEL,
+      isInstalled: false,
+      engineFilter: _selectedEngineFilter,
+      searchQuery: _searchQuery,
+      langFilter: _selectedLangFilter,
+      animeSources: animeSources,
+      mangaSources: mangaSources,
+      novelSources: novelSources,
+      enabledManagers: enabledManagers.toList(),
+    );
 
-      return TabBar(
-        isScrollable: true,
-        indicatorSize: TabBarIndicatorSize.tab,
-        indicatorAnimation: TabIndicatorAnimation.linear,
-        tabAlignment: TabAlignment.start,
-        dividerColor: Colors.transparent,
-        tabs: [
-          _buildTab('Installed Anime', countInstalledAnime),
-          _buildTab('Installed Manga', countInstalledManga),
-          _buildTab('Installed Novel', countInstalledNovel),
-          _buildTab('Available Anime', countAvailableAnime),
-          _buildTab('Available Manga', countAvailableManga),
-          _buildTab('Available Novel', countAvailableNovel),
-        ],
-      );
-    });
+    return TabBar(
+      isScrollable: true,
+      indicatorSize: TabBarIndicatorSize.tab,
+      indicatorAnimation: TabIndicatorAnimation.linear,
+      tabAlignment: TabAlignment.start,
+      dividerColor: Colors.transparent,
+      tabs: [
+        _buildTab('Installed Anime', countInstalledAnime),
+        _buildTab('Installed Manga', countInstalledManga),
+        _buildTab('Installed Novel', countInstalledNovel),
+        _buildTab('Available Anime', countAvailableAnime),
+        _buildTab('Available Manga', countAvailableManga),
+        _buildTab('Available Novel', countAvailableNovel),
+      ],
+    );
   }
 
   Widget _buildTab(String text, int count) {
@@ -491,6 +486,7 @@ class _ExtensionsSettingsScreenState
     final roundness = ref.watch(
       themePrefsProvider.select((s) => s.uiRoundness),
     );
+
     return Tab(
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -517,7 +513,7 @@ class _ExtensionsSettingsScreenState
     );
   }
 
-  List<Widget> _buildActions(BuildContext context, bridge.Extension manager) {
+  List<Widget> _buildActions(BuildContext context) {
     if (_isSearching) {
       return [
         if (_searchQuery.isNotEmpty)
@@ -576,11 +572,7 @@ class _ExtensionsSettingsScreenState
     ];
   }
 
-  Widget _buildFab(
-    BuildContext context,
-    bridge.Extension manager,
-    ThemeData theme,
-  ) {
+  Widget _buildFab(BuildContext context, ThemeData theme) {
     return Wrap(
       spacing: 8.0,
       runSpacing: 8.0,
@@ -626,6 +618,8 @@ class _ExtensionsSettingsScreenState
             final notifier = ref.read(
               enabledExtensionManagersProvider.notifier,
             );
+
+            final isRuntimeReady = AppInit.isBridgeInitialized;
             final cs = Theme.of(context).colorScheme;
 
             final engines = [
@@ -685,20 +679,17 @@ class _ExtensionsSettingsScreenState
                     final id = e.$1;
                     final title = e.$2;
                     final desc = e.$3;
-                    final isRuntimeEngine =
-                        id == 'mangayomi' ||
-                        id == 'aniyomi' ||
-                        id == 'cloudstream' ||
-                        id == 'kotatsu' ||
-                        id == 'sora';
+                    final isRuntimeEngine = [
+                      'mangayomi',
+                      'aniyomi',
+                      'cloudstream',
+                      'kotatsu',
+                      'sora',
+                    ].contains(id);
+
                     final isEnabled =
                         enabled.contains(id) &&
-                        (!isRuntimeEngine ||
-                            bridge
-                                .AnymeXRuntimeBridge
-                                .controller
-                                .isReady
-                                .value);
+                        (!isRuntimeEngine || isRuntimeReady);
 
                     return SettingsSwitchTile(
                       icon: e.$4,
@@ -707,11 +698,7 @@ class _ExtensionsSettingsScreenState
                       value: isEnabled,
                       onChanged: (val) {
                         if (val && isRuntimeEngine) {
-                          if (!bridge
-                              .AnymeXRuntimeBridge
-                              .controller
-                              .isReady
-                              .value) {
+                          if (!isRuntimeReady) {
                             showRuntimeSetupSheet(
                               context,
                               ref,
@@ -748,14 +735,14 @@ class _ExtensionsSettingsScreenState
     String? autoAddType,
     String? autoAddManager,
   }) {
-    final manager = ref.watch(extensionManagerProvider);
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ManageReposSheet(
-        manager: manager,
+        // 7. No longer passing bridge.Extension to the sheet.
+        // The sheet manages it internally via the ID string or defaults to 'aniyomi'
+        managerId: 'aniyomi',
         autoAddUrl: autoAddUrl,
         autoAddType: autoAddType,
         autoAddManager: autoAddManager,

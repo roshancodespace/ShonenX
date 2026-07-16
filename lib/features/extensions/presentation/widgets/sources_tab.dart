@@ -8,6 +8,7 @@ import 'package:shonenx/features/extensions/models/unified_source.dart';
 import 'package:shonenx/features/extensions/providers/extensions_provider.dart';
 import 'package:shonenx/features/settings/presentation/source_settings_sheet.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/models/source_setting.dart';
@@ -19,7 +20,7 @@ import 'runtime_setup_sheet.dart';
 
 class SourcesTab extends ConsumerStatefulWidget {
   final String engineFilter;
-  final bridge.ItemType type;
+  final MediaType type;
   final String searchQuery;
   final String langFilter;
   final bool isInstalled;
@@ -62,20 +63,20 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
   Widget build(BuildContext context) {
     if (widget.isInstalled) {
       final sourcesAsync = switch (widget.type) {
-        bridge.ItemType.anime => ref.watch(availableAnimeSourcesProvider),
-        bridge.ItemType.manga => ref.watch(availableMangaSourcesProvider),
-        bridge.ItemType.novel => ref.watch(availableNovelSourcesProvider),
+        MediaType.ANIME => ref.watch(availableAnimeSourcesProvider),
+        MediaType.MANGA => ref.watch(availableMangaSourcesProvider),
+        MediaType.NOVEL => ref.watch(availableNovelSourcesProvider),
       };
 
       return sourcesAsync.when(
         data: (sources) {
-          final animeSources = widget.type == bridge.ItemType.anime
+          final animeSources = widget.type == MediaType.ANIME
               ? sources
               : <SourceInfo>[];
-          final mangaSources = widget.type == bridge.ItemType.manga
+          final mangaSources = widget.type == MediaType.MANGA
               ? sources
               : <SourceInfo>[];
-          final novelSources = widget.type == bridge.ItemType.novel
+          final novelSources = widget.type == MediaType.NOVEL
               ? sources
               : <SourceInfo>[];
           final enabledManagers = ref.watch(enabledExtensionManagersProvider);
@@ -280,9 +281,9 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
       );
     }
 
-    final prefKey = widget.type == bridge.ItemType.anime
+    final prefKey = widget.type == MediaType.ANIME
         ? 'source_order_ANIME'
-        : (widget.type == bridge.ItemType.manga
+        : (widget.type == MediaType.MANGA
               ? 'source_order_MANGA'
               : 'source_order_NOVEL');
     final prefs = ref.watch(sharedPreferencesProvider);
@@ -606,9 +607,9 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
           if (widget.isInstalled && source.sourceInfo != null) ...[
             Builder(
               builder: (context) {
-                final availableList = widget.type == bridge.ItemType.anime
+                final availableList = widget.type == MediaType.ANIME
                     ? ref.watch(availableAnimeSourcesProvider).value
-                    : (widget.type == bridge.ItemType.manga
+                    : (widget.type == MediaType.MANGA
                           ? ref.watch(availableMangaSourcesProvider).value
                           : ref.watch(availableNovelSourcesProvider).value);
                 final isDefault = controller.isDefaultSource(
@@ -759,7 +760,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
   }
 
   Widget _buildSettingsButton(BuildContext context, SourceInfo sourceInfo) {
-    final sourceImpl = widget.type == bridge.ItemType.anime
+    final sourceImpl = widget.type == MediaType.ANIME
         ? ref.read(animeSourceProvider(sourceInfo)) as MediaSource
         : ref.read(mangaSourceProvider(sourceInfo)) as MediaSource;
 

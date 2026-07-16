@@ -361,7 +361,8 @@ class AnilistTracker extends BaseTracker
       await _http.post(
         'https://graphql.anilist.co',
         body: {
-          'query': 'mutation (\$about: String) { UpdateUser(about: \$about) { id about } }',
+          'query':
+              'mutation (\$about: String) { UpdateUser(about: \$about) { id about } }',
           'variables': {'about': bio},
         },
         headers: {
@@ -412,6 +413,8 @@ class AnilistTracker extends BaseTracker
         return 'ANIME';
       case MediaType.MANGA:
         return 'MANGA';
+      default:
+        throw AnilistException('Unsupported media type: $type');
     }
   }
 }

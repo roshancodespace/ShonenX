@@ -7,7 +7,6 @@ import 'dart:io';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/core/utils/wallpaper_processor.dart';
 
 import 'package:shonenx/shared/providers/storage_provider.dart';
@@ -591,8 +590,6 @@ class ThemePrefsNotifier extends Notifier<ThemePrefsState> {
       blurSigma: blurSigma,
       saturation: saturation,
       brightness: brightness,
-      currentOriginalPath: state.wallpaperSettings?.imagePath,
-      currentProcessedPath: state.wallpaperSettings?.processedPath,
     );
   }
 

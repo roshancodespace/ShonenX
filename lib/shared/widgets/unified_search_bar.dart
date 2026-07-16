@@ -79,7 +79,8 @@ class _UnifiedSearchBarState extends State<UnifiedSearchBar> {
     final iconColor = colorScheme.onSurfaceVariant;
     final isFocused = _effectiveFocusNode.hasFocus;
 
-    return ClipRect(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.5),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: AnimatedContainer(

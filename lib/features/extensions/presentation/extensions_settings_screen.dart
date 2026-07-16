@@ -680,11 +680,9 @@ class _ExtensionsSettingsScreenState
                     final title = e.$2;
                     final desc = e.$3;
                     final isRuntimeEngine = [
-                      'mangayomi',
                       'aniyomi',
                       'cloudstream',
                       'kotatsu',
-                      'sora',
                     ].contains(id);
 
                     final isEnabled =

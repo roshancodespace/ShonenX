@@ -63,14 +63,23 @@ class GlobalBackground extends ConsumerWidget {
     final List<Widget> backgroundLayers = [];
 
     if (customBackgroundImagePath != null) {
-      final imagePathToRender = processedWallpaperPath ?? customBackgroundImagePath;
+      final imagePathToRender =
+          processedWallpaperPath ?? customBackgroundImagePath;
       final isNetwork =
           imagePathToRender.startsWith('http://') ||
           imagePathToRender.startsWith('https://');
 
       final img = isNetwork
-          ? Image.network(imagePathToRender, fit: BoxFit.cover)
-          : Image.file(File(imagePathToRender), fit: BoxFit.cover);
+          ? Image.network(
+              imagePathToRender,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            )
+          : Image.file(
+              File(imagePathToRender),
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            );
 
       backgroundLayers.add(
         Positioned.fill(

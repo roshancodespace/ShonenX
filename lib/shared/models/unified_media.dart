@@ -2,7 +2,8 @@
 
 enum MediaType {
   ANIME,
-  MANGA;
+  MANGA,
+  NOVEL;
 
   String get displayName {
     switch (this) {
@@ -10,6 +11,8 @@ enum MediaType {
         return 'Anime';
       case MediaType.MANGA:
         return 'Manga';
+      case MediaType.NOVEL:
+        return 'Novel';
     }
   }
 

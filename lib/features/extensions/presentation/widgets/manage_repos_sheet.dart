@@ -1,3 +1,5 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
+
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
 import 'package:flutter/material.dart';
@@ -5,18 +7,19 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:shonenx/core/utils/snackbar_utils.dart';
+import 'package:shonenx/features/extensions/providers/extension_service_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
 class ManageReposSheet extends ConsumerStatefulWidget {
-  final bridge.Extension? manager;
+  final String? managerId;
   final String? autoAddUrl;
   final String? autoAddType;
   final String? autoAddManager;
 
   const ManageReposSheet({
     super.key,
-    this.manager,
+    this.managerId,
     this.autoAddUrl,
     this.autoAddType,
     this.autoAddManager,
@@ -54,20 +57,20 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
       final lower = widget.autoAddUrl!.toLowerCase();
       if (lower.contains('cloudstream')) {
         _selectedEngineId = 'cloudstream';
-      } else if (lower.contains('kotatsu')) {
+      } else if (lower.contains('kotatsu'))
         _selectedEngineId = 'kotatsu';
-      } else if (lower.contains('sora')) {
+      else if (lower.contains('sora'))
         _selectedEngineId = 'sora';
-      } else if (lower.contains('mangayomi')) {
+      else if (lower.contains('mangayomi'))
         _selectedEngineId = 'mangayomi';
-      } else {
+      else
         _selectedEngineId =
-            widget.manager?.id.replaceAll('-desktop', '') ?? 'aniyomi';
-      }
+            widget.managerId?.replaceAll('-desktop', '') ?? 'aniyomi';
     } else {
       _selectedEngineId =
-          widget.manager?.id.replaceAll('-desktop', '') ?? 'aniyomi';
+          widget.managerId?.replaceAll('-desktop', '') ?? 'aniyomi';
     }
+
     if (![
       'aniyomi',
       'mangayomi',
@@ -125,10 +128,9 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
     String message, {
     bool isError = false,
     bool isSuccess = false,
-    BuildContext? ctx,
   }) {
     SnackbarUtils.show(
-      ctx ?? context,
+      context,
       message,
       isError: isError,
       isSuccess: isSuccess,
@@ -147,45 +149,45 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
 
     setState(() => _isLoading = true);
     try {
-      final bridgeManager = Get.find<bridge.ExtensionManager>();
-      final targetManager =
-          bridgeManager.findById(_selectedEngineId) ??
-          bridgeManager.findById('$_selectedEngineId-desktop');
-
-      if (targetManager == null) {
-        _showSnackBar(
-          'Engine $_selectedEngineId is not available or registered.',
-          isError: true,
-        );
-        return;
-      }
-
+      final adapter = ref.read(extensionAdapterProvider);
       bool added = false;
+
       if (_selectedCategory == 'both' || _selectedCategory == 'anime') {
-        try {
-          await targetManager.addRepo(parsedUrl, bridge.ItemType.anime);
+        if (await adapter.addRepo(
+          parsedUrl,
+          _selectedEngineId,
+          bridge.ItemType.anime,
+        )) {
           added = true;
-        } catch (_) {}
+        }
       }
       if (_selectedCategory == 'both' || _selectedCategory == 'manga') {
-        try {
-          await targetManager.addRepo(parsedUrl, bridge.ItemType.manga);
+        if (await adapter.addRepo(
+          parsedUrl,
+          _selectedEngineId,
+          bridge.ItemType.manga,
+        )) {
           added = true;
-        } catch (_) {}
+        }
       }
       if (_selectedCategory == 'both' || _selectedCategory == 'novel') {
-        try {
-          await targetManager.addRepo(parsedUrl, bridge.ItemType.novel);
+        if (await adapter.addRepo(
+          parsedUrl,
+          _selectedEngineId,
+          bridge.ItemType.novel,
+        )) {
           added = true;
-        } catch (_) {}
+        }
       }
 
-      _controller.clear();
-      ref.invalidate(availableAnimeSourcesProvider);
-      ref.invalidate(availableMangaSourcesProvider);
-      ref.invalidate(availableNovelSourcesProvider);
       if (mounted) {
         if (added) {
+          _controller.clear();
+          // Invalidate so the UI rebuilds with fresh data
+          ref.invalidate(activeExtReposProvider);
+          ref.invalidate(availableAnimeSourcesProvider);
+          ref.invalidate(availableMangaSourcesProvider);
+          ref.invalidate(availableNovelSourcesProvider);
           _showSnackBar(
             'Repository added to ${_getEngineName(_selectedEngineId)} successfully!',
             isSuccess: true,
@@ -205,30 +207,19 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
   Future<void> _removeRepo(String url, String managerId) async {
     setState(() => _isLoading = true);
     try {
-      final bridgeManager = Get.find<bridge.ExtensionManager>();
-      final targetManager =
-          bridgeManager.findById(managerId) ??
-          bridgeManager.findById('$managerId-desktop');
-      if (targetManager != null) {
-        try {
-          await targetManager.removeRepo(url, bridge.ItemType.anime);
-        } catch (_) {}
-        try {
-          await targetManager.removeRepo(url, bridge.ItemType.manga);
-        } catch (_) {}
-        try {
-          await targetManager.removeRepo(url, bridge.ItemType.novel);
-        } catch (_) {}
-      }
-      ref.invalidate(availableAnimeSourcesProvider);
-      ref.invalidate(availableMangaSourcesProvider);
-      ref.invalidate(availableNovelSourcesProvider);
-      if (mounted) {
-        _showSnackBar('Repository removed');
-      }
-    } catch (_) {
-      if (mounted) {
-        _showSnackBar('Failed to remove repository', isError: true);
+      final adapter = ref.read(extensionAdapterProvider);
+      final removed = await adapter.removeRepo(url, managerId);
+
+      if (removed) {
+        ref.invalidate(activeExtReposProvider);
+        ref.invalidate(availableAnimeSourcesProvider);
+        ref.invalidate(availableMangaSourcesProvider);
+        ref.invalidate(availableNovelSourcesProvider);
+        if (mounted) _showSnackBar('Repository removed');
+      } else {
+        if (mounted) {
+          _showSnackBar('Failed to remove repository', isError: true);
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -284,7 +275,7 @@ class _ManageReposSheetState extends ConsumerState<ManageReposSheet> {
 
             // TARGET ENGINE DROPDOWN
             DropdownButtonFormField<String>(
-              value: _selectedEngineId,
+              initialValue: _selectedEngineId,
               icon: Icon(Icons.expand_more_rounded, color: cs.primary),
               decoration: InputDecoration(
                 filled: true,

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shonenx/features/extensions/models/unified_source.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/shared/widgets/confirmation_bottom_sheet.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
@@ -76,7 +77,7 @@ class ExtensionsController extends Notifier<Set<String>> {
   void uninstallVariantGroup(
     BuildContext context,
     String name,
-    bridge.ItemType type,
+    MediaType type,
   ) {
     ConfirmationBottomSheet.show(
       context,
@@ -89,9 +90,9 @@ class ExtensionsController extends Notifier<Set<String>> {
         try {
           final bridgeManager = Get.find<bridge.ExtensionManager>();
           final installed = switch (type) {
-            bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
-            bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
-            bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
+            MediaType.ANIME => bridgeManager.installedAnimeExtensions,
+            MediaType.MANGA => bridgeManager.installedMangaExtensions,
+            MediaType.NOVEL => bridgeManager.installedNovelExtensions,
           };
           final variants = installed
               .where((e) => (e.name ?? 'N/A') == name)
@@ -123,7 +124,7 @@ class ExtensionsController extends Notifier<Set<String>> {
   void uninstallSource(
     BuildContext context,
     UnifiedSource source,
-    bridge.ItemType type,
+    MediaType type,
   ) {
     ConfirmationBottomSheet.show(
       context,
@@ -136,9 +137,9 @@ class ExtensionsController extends Notifier<Set<String>> {
         try {
           final bridgeManager = Get.find<bridge.ExtensionManager>();
           final installed = switch (type) {
-            bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
-            bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
-            bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
+            MediaType.ANIME => bridgeManager.installedAnimeExtensions,
+            MediaType.MANGA => bridgeManager.installedMangaExtensions,
+            MediaType.NOVEL => bridgeManager.installedNovelExtensions,
           };
           final extSource = installed.firstWhere((e) => e.id == source.id);
           await bridge.getSourceManager(extSource).uninstallSource(extSource);
@@ -166,16 +167,16 @@ class ExtensionsController extends Notifier<Set<String>> {
   Future<void> updateSource(
     BuildContext context,
     UnifiedSource source,
-    bridge.ItemType type,
+    MediaType type,
   ) async {
     bridge.Source? extSource = source.bridgeSource;
     if (extSource == null) {
       try {
         final bridgeManager = Get.find<bridge.ExtensionManager>();
         final installed = switch (type) {
-          bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
-          bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
-          bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
+          MediaType.ANIME => bridgeManager.installedAnimeExtensions,
+          MediaType.MANGA => bridgeManager.installedMangaExtensions,
+          MediaType.NOVEL => bridgeManager.installedNovelExtensions,
         };
         extSource = installed.firstWhereOrNull((e) => e.id == source.id);
       } catch (_) {}
@@ -215,15 +216,15 @@ class ExtensionsController extends Notifier<Set<String>> {
   Future<void> updateVariantGroup(
     BuildContext context,
     String name,
-    bridge.ItemType type,
+    MediaType type,
   ) async {
     state = {...state, name};
     try {
       final bridgeManager = Get.find<bridge.ExtensionManager>();
       final installed = switch (type) {
-        bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
-        bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
-        bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
+        MediaType.ANIME => bridgeManager.installedAnimeExtensions,
+        MediaType.MANGA => bridgeManager.installedMangaExtensions,
+        MediaType.NOVEL => bridgeManager.installedNovelExtensions,
       };
       final variants = installed
           .where((e) => (e.name ?? 'N/A') == name && (e.hasUpdate ?? false))
@@ -320,13 +321,10 @@ class ExtensionsController extends Notifier<Set<String>> {
     }
   }
 
-  Future<void> setDefaultSource(
-    UnifiedSource source,
-    bridge.ItemType type,
-  ) async {
-    final prefKey = type == bridge.ItemType.anime
+  Future<void> setDefaultSource(UnifiedSource source, MediaType type) async {
+    final prefKey = type == MediaType.ANIME
         ? 'source_order_ANIME'
-        : (type == bridge.ItemType.manga
+        : (type == MediaType.MANGA
               ? 'source_order_MANGA'
               : 'source_order_NOVEL');
     final order = _storage.getStringList(prefKey) ?? [];
@@ -339,12 +337,12 @@ class ExtensionsController extends Notifier<Set<String>> {
 
   bool isDefaultSource(
     UnifiedSource source,
-    bridge.ItemType type,
+    MediaType type,
     List<SourceInfo>? availableList,
   ) {
-    final prefKey = type == bridge.ItemType.anime
+    final prefKey = type == MediaType.ANIME
         ? 'source_order_ANIME'
-        : (type == bridge.ItemType.manga
+        : (type == MediaType.MANGA
               ? 'source_order_MANGA'
               : 'source_order_NOVEL');
     final order = _storage.getStringList(prefKey) ?? [];
@@ -377,7 +375,7 @@ class ExtensionsService {
   }
 
   static List<UnifiedSource> getFilteredSources({
-    required bridge.ItemType type,
+    required MediaType type,
     required bool isInstalled,
     required String engineFilter,
     required String searchQuery,
@@ -392,14 +390,14 @@ class ExtensionsService {
 
     if (isInstalled) {
       final sources = switch (type) {
-        bridge.ItemType.anime => animeSources,
-        bridge.ItemType.manga => mangaSources,
-        bridge.ItemType.novel => novelSources,
+        MediaType.ANIME => animeSources,
+        MediaType.MANGA => mangaSources,
+        MediaType.NOVEL => novelSources,
       };
       final installedRx = switch (type) {
-        bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
-        bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
-        bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
+        MediaType.ANIME => bridgeManager.installedAnimeExtensions,
+        MediaType.MANGA => bridgeManager.installedMangaExtensions,
+        MediaType.NOVEL => bridgeManager.installedNovelExtensions,
       };
       final installedMap = {for (final e in installedRx) e.id ?? '': e};
       final validSources = sources
@@ -413,14 +411,14 @@ class ExtensionsService {
           .toList();
     } else {
       final available = switch (type) {
-        bridge.ItemType.anime => bridgeManager.availableAnimeExtensions,
-        bridge.ItemType.manga => bridgeManager.availableMangaExtensions,
-        bridge.ItemType.novel => bridgeManager.availableNovelExtensions,
+        MediaType.ANIME => bridgeManager.availableAnimeExtensions,
+        MediaType.MANGA => bridgeManager.availableMangaExtensions,
+        MediaType.NOVEL => bridgeManager.availableNovelExtensions,
       };
       final installed = switch (type) {
-        bridge.ItemType.anime => bridgeManager.installedAnimeExtensions,
-        bridge.ItemType.manga => bridgeManager.installedMangaExtensions,
-        bridge.ItemType.novel => bridgeManager.installedNovelExtensions,
+        MediaType.ANIME => bridgeManager.installedAnimeExtensions,
+        MediaType.MANGA => bridgeManager.installedMangaExtensions,
+        MediaType.NOVEL => bridgeManager.installedNovelExtensions,
       };
       final installedIds = installed.map((e) => e.id ?? '').toSet();
 
@@ -491,7 +489,7 @@ class ExtensionsService {
   }
 
   static int getSourcesTabCount({
-    required bridge.ItemType type,
+    required MediaType type,
     required bool isInstalled,
     required String engineFilter,
     required String searchQuery,

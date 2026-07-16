@@ -5,6 +5,7 @@ import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/source_engine/providers/anime_source.dart';
+import 'package:shonenx/source_engine/utils/parsers.dart';
 import 'base_source_adapter.dart';
 
 class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
@@ -32,6 +33,7 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
           .map(
             (e) => UnifiedEpisode(
               id: '${e.url!}|${e.episodeNumber}',
+              season: e.toMediaInfo()?.season,
               title: e.name,
               number: double.tryParse(e.episodeNumber) ?? 0.0,
               scanlator: e.scanlator,

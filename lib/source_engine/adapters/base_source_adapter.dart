@@ -5,6 +5,7 @@ import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/models/source_setting.dart';
 import 'package:shonenx/source_engine/providers/media_source.dart';
+import 'package:shonenx/source_engine/utils/parsers.dart';
 
 abstract class BaseSourceAdapter implements MediaSource {
   @override
@@ -127,13 +128,16 @@ abstract class BaseSourceAdapter implements MediaSource {
 
       final targetPref = pref ?? bridge.SourcePreference(key: settingId);
 
-      if (targetPref.type == 'checkbox' || targetPref.checkBoxPreference != null) {
-        targetPref.checkBoxPreference?.value =
-            value is bool ? value : (value.toString().toLowerCase() == 'true');
+      if (targetPref.type == 'checkbox' ||
+          targetPref.checkBoxPreference != null) {
+        targetPref.checkBoxPreference?.value = value is bool
+            ? value
+            : (value.toString().toLowerCase() == 'true');
       } else if (targetPref.type == 'switch' ||
           targetPref.switchPreferenceCompat != null) {
-        targetPref.switchPreferenceCompat?.value =
-            value is bool ? value : (value.toString().toLowerCase() == 'true');
+        targetPref.switchPreferenceCompat?.value = value is bool
+            ? value
+            : (value.toString().toLowerCase() == 'true');
       } else if (targetPref.type == 'list' ||
           targetPref.listPreference != null) {
         targetPref.listPreference?.value = value?.toString();
@@ -144,8 +148,9 @@ abstract class BaseSourceAdapter implements MediaSource {
         }
       } else if (targetPref.type == 'multi_select' ||
           targetPref.multiSelectListPreference != null) {
-        final list =
-            value is List ? value.map((e) => e.toString()).toList() : <String>[];
+        final list = value is List
+            ? value.map((e) => e.toString()).toList()
+            : <String>[];
         targetPref.multiSelectListPreference?.values = list;
       } else if (targetPref.type == 'text' ||
           targetPref.editTextPreference != null) {
@@ -246,9 +251,12 @@ abstract class BaseSourceAdapter implements MediaSource {
         bridge.DMedia(url: parts[0], title: parts.length > 1 ? parts[1] : ''),
       );
 
+      final extraInfo = detail.toMediaInfo();
+
       return UnifiedMedia(
         id: providerId,
         type: mediaType,
+        idMal: extraInfo?.malId?.toString(),
         sourceId: sourceInfo.id,
         sourceName: sourceInfo.name,
         providerId: parts[0],

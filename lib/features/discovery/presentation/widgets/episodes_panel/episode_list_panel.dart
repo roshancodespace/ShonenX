@@ -66,6 +66,7 @@ class EpisodeListPanel extends ConsumerStatefulWidget {
 class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
   bool _descending = false;
   int _chunkIndex = 0;
+  int? _selectedSeason;
   final ScrollController _scrollController = ScrollController();
   bool _hasAutoScrolled = false;
   bool _isRetrying = false;
@@ -202,175 +203,287 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
           );
         }
 
-        final nums = state.episodes.map((e) => e.number).toList()..sort();
+        // 1. Extract and Sort Unique Seasons
+        final uniqueSeasons = state.episodes
+            .map((e) => e.season)
+            .toSet()
+            .toList();
+        uniqueSeasons.sort((a, b) {
+          if (a == null && b == null) return 0;
+          if (a == null) return 1; // Put nulls (specials/extras) at the end
+          if (b == null) return -1;
+          return a.compareTo(b);
+        });
 
+        // 2. Resolve Active Season (Fallback to the first available season if not set)
+        int? activeSeason = _selectedSeason;
+        if (!uniqueSeasons.contains(activeSeason)) {
+          activeSeason = uniqueSeasons.firstOrNull;
+        }
+
+        // 3. Filter episodes strictly by the active season
+        final seasonEpisodes = state.episodes
+            .where((e) => e.season == activeSeason)
+            .toList();
+
+        // 4. Generate Chunks for the current season
+        final uniqueNums = seasonEpisodes.map((e) => e.number).toSet().toList()
+          ..sort();
         final chunks = <_Chunk>[_Chunk('All', null, null)];
 
-        if (nums.length > 100) {
-          for (int i = 0; i < nums.length; i += 100) {
-            final endIdx = (i + 99 < nums.length) ? i + 99 : nums.length - 1;
-            final mn = nums[i];
-            final mx = nums[endIdx];
-            final mnS = mn % 1 == 0 ? mn.toInt().toString() : mn.toString();
-            final mxS = mx % 1 == 0 ? mx.toInt().toString() : mx.toString();
-            chunks.add(_Chunk('$mnS – $mxS', mn, mx));
+        if (uniqueNums.length > 100) {
+          String fmt(num n) => n % 1 == 0 ? n.toInt().toString() : n.toString();
+          for (int i = 0; i < uniqueNums.length; i += 100) {
+            final min = uniqueNums[i];
+            final max = uniqueNums[(i + 99).clamp(0, uniqueNums.length - 1)];
+            chunks.add(_Chunk('${fmt(min)} – ${fmt(max)}', min, max));
           }
         }
 
         final safeIdx = _chunkIndex < chunks.length ? _chunkIndex : 0;
-        final active = chunks[safeIdx];
-
-        var filtered = state.episodes.where((e) {
-          if (active.min == null) return true;
-          return e.number >= active.min! && e.number <= active.max!;
-        }).toList();
-
+        final activeChunk = chunks[safeIdx];
         final prefScanlator = ref.read(
           preferredScanlatorProvider(widget.media.id),
         );
-        final Map<double, List<UnifiedEpisode>> grouped = {};
-        for (final ep in filtered) {
-          grouped.putIfAbsent(ep.number, () => []).add(ep);
+
+        // 5. Single-pass Deduplication & Chunk Filtering
+        final dedupedMap = <double, UnifiedEpisode>{};
+
+        for (final ep in seasonEpisodes) {
+          if (activeChunk.min != null &&
+              (ep.number < activeChunk.min! || ep.number > activeChunk.max!)) {
+            continue;
+          }
+          if (!dedupedMap.containsKey(ep.number) ||
+              ep.scanlator == prefScanlator) {
+            dedupedMap[ep.number] = ep;
+          }
         }
 
-        filtered = grouped.values.map((eps) {
-          UnifiedEpisode target = eps.first;
-          if (prefScanlator != null) {
-            target =
-                eps.where((e) => e.scanlator == prefScanlator).firstOrNull ??
-                target;
-          }
-          return target;
-        }).toList();
+        final finalEpisodes = dedupedMap.values.toList()
+          ..sort(
+            (a, b) => _descending
+                ? b.number.compareTo(a.number)
+                : a.number.compareTo(b.number),
+          );
 
-        filtered.sort(
-          (a, b) => _descending
-              ? b.number.compareTo(a.number)
-              : a.number.compareTo(b.number),
-        );
+        int staggerIndex = 2;
+        final cs = Theme.of(context).colorScheme;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            StaggeredFadeIn(
-              index: 2,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 5, 4, 5),
-                child: Row(
-                  children: [
-                    Text(
-                      '${state.episodes.length} ${widget.media.type == MediaType.MANGA ? 'chapters' : 'episodes'}',
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-
-                    const Spacer(),
-
-                    if (widget.media.type == MediaType.ANIME &&
-                        filtered.isNotEmpty)
-                      Tooltip(
-                        message: 'Batch Download',
-                        child: IconButton(
-                          onPressed: () => BatchDownloadSheet.show(
-                            context,
-                            filtered,
-                            widget.watchedProgress,
-                            state.source,
-                            widget.media,
+        // Helper for building minimalist dropdown capsules
+        Widget buildFilterCapsule<T>({
+          required T current,
+          required List<T> items,
+          required String Function(T) labelBuilder,
+          required void Function(T) onSelected,
+          required IconData icon,
+        }) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              hoverColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
+            ),
+            child: PopupMenuButton<T>(
+              initialValue: current,
+              onSelected: onSelected,
+              tooltip: '',
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              color: cs.surfaceContainerHigh,
+              position: PopupMenuPosition.under,
+              itemBuilder: (context) {
+                return items.map((item) {
+                  final isSelected = item == current;
+                  return PopupMenuItem<T>(
+                    value: item,
+                    child: Row(
+                      children: [
+                        Text(
+                          labelBuilder(item),
+                          style: TextStyle(
+                            color: isSelected ? cs.primary : cs.onSurface,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            fontSize: 14,
                           ),
-                          icon: const Icon(Icons.download_for_offline_outlined),
-                          iconSize: 20,
-                          color: Theme.of(context).colorScheme.primary,
                         ),
-                      ),
-
-                    // View mode toggle
-                    _ViewModeToggle(
-                      current: viewMode,
-                      onChanged: (m) => ref
-                          .read(uiPrefsProvider.notifier)
-                          .updateEpisodeViewMode(m),
+                        if (isSelected) ...[
+                          const Spacer(),
+                          Icon(
+                            Icons.check_rounded,
+                            size: 18,
+                            color: cs.primary,
+                          ),
+                        ],
+                      ],
                     ),
-
-                    // Sort toggle
-                    IconButton(
-                      onPressed: () =>
-                          setState(() => _descending = !_descending),
-                      icon: Icon(
-                        _descending ? Icons.arrow_downward : Icons.arrow_upward,
+                  );
+                }).toList();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 15, color: cs.primary),
+                    const SizedBox(width: 6),
+                    Text(
+                      labelBuilder(current),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurface,
                       ),
-                      iconSize: 18,
-                      tooltip: _descending
-                          ? 'Sort Ascending'
-                          : 'Sort Descending',
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.expand_more_rounded,
+                      size: 16,
+                      color: cs.onSurfaceVariant,
                     ),
                   ],
                 ),
               ),
             ),
+          );
+        }
 
-            if (chunks.length > 1) ...[
-              StaggeredFadeIn(
-                index: 3,
-                child: SizedBox(
-                  height: 32,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    itemCount: chunks.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (context, i) {
-                      final isSelected = safeIdx == i;
-                      final theme = Theme.of(context);
-
-                      return GestureDetector(
-                        onTap: () => setState(() => _chunkIndex = i),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.surfaceBright,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            chunks[i].label,
-                            style: TextStyle(
-                              color: isSelected
-                                  ? theme.colorScheme.onPrimary
-                                  : theme.colorScheme.onSurface,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.w500,
-                              fontSize: 13,
-                            ),
-                          ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            StaggeredFadeIn(
+              index: staggerIndex++,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 5, 4, 8),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minWidth: constraints.maxWidth,
                         ),
-                      );
-                    },
-                  ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (uniqueSeasons.length > 1) ...[
+                                  buildFilterCapsule<int?>(
+                                    current: activeSeason,
+                                    items: uniqueSeasons,
+                                    labelBuilder: (s) =>
+                                        s == null ? 'Specials' : 'S$s',
+                                    icon: Icons.layers_rounded,
+                                    onSelected: (s) => setState(() {
+                                      _selectedSeason = s;
+                                      _chunkIndex = 0;
+                                    }),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                if (chunks.length > 1) ...[
+                                  buildFilterCapsule<int>(
+                                    current: safeIdx,
+                                    items: List.generate(
+                                      chunks.length,
+                                      (i) => i,
+                                    ),
+                                    labelBuilder: (i) => chunks[i].label,
+                                    icon: Icons.tag_rounded,
+                                    onSelected: (i) =>
+                                        setState(() => _chunkIndex = i),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                if (uniqueSeasons.length > 1 ||
+                                    chunks.length > 1)
+                                  Text(
+                                    ' •  ',
+                                    style: TextStyle(
+                                      color: cs.onSurfaceVariant,
+                                    ),
+                                  ),
+                                Text(
+                                  '${finalEpisodes.length} ${widget.media.type == MediaType.MANGA ? 'ch' : 'ep'}',
+                                  style: Theme.of(context).textTheme.labelLarge
+                                      ?.copyWith(color: cs.onSurfaceVariant),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(width: 16),
+                                if (widget.media.type == MediaType.ANIME &&
+                                    finalEpisodes.isNotEmpty)
+                                  IconButton(
+                                    onPressed: () => BatchDownloadSheet.show(
+                                      context,
+                                      finalEpisodes,
+                                      widget.watchedProgress,
+                                      state.source,
+                                      widget.media,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.download_for_offline_outlined,
+                                    ),
+                                    iconSize: 20,
+                                    color: cs.primary,
+                                  ),
+                                _ViewModeToggle(
+                                  current: viewMode,
+                                  onChanged: (m) => ref
+                                      .read(uiPrefsProvider.notifier)
+                                      .updateEpisodeViewMode(m),
+                                ),
+                                IconButton(
+                                  onPressed: () => setState(
+                                    () => _descending = !_descending,
+                                  ),
+                                  icon: Icon(
+                                    _descending
+                                        ? Icons.arrow_downward
+                                        : Icons.arrow_upward,
+                                  ),
+                                  iconSize: 18,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
-              const SizedBox(height: 6),
-            ],
+            ),
 
             StaggeredFadeIn(
-              index: chunks.length > 1 ? 4 : 3,
-              child: Divider(
-                height: 0.5,
-                color: ColorScheme.of(context).surfaceContainerHighest,
-              ),
+              index: staggerIndex++,
+              child: Divider(height: 1, color: cs.surfaceContainerHighest),
             ),
 
             Expanded(
               child: StaggeredFadeIn(
-                index: chunks.length > 1 ? 5 : 4,
+                index: staggerIndex++,
                 child: _buildEpisodeView(
                   context,
-                  episodes: filtered,
+                  episodes: finalEpisodes,
                   source: state.source,
                   viewMode: viewMode,
-                  currentIndex: filtered.indexWhere(
+                  currentIndex: finalEpisodes.indexWhere(
                     (ep) => ep.number == widget.currentEpisodeNumber,
                   ),
                 ),

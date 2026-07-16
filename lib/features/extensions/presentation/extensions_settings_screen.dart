@@ -740,8 +740,6 @@ class _ExtensionsSettingsScreenState
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ManageReposSheet(
-        // 7. No longer passing bridge.Extension to the sheet.
-        // The sheet manages it internally via the ID string or defaults to 'aniyomi'
         managerId: 'aniyomi',
         autoAddUrl: autoAddUrl,
         autoAddType: autoAddType,

@@ -29,8 +29,9 @@ class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final notifier =
-          ref.read(sourceSettingsProvider(widget.source.id).notifier);
+      final notifier = ref.read(
+        sourceSettingsProvider(widget.source.id).notifier,
+      );
       notifier.syncSchemaDefaults(widget.schema);
     });
   }
@@ -63,7 +64,6 @@ class _SourceSettingsSheetState extends ConsumerState<SourceSettingsSheet> {
         children: [
           Flexible(
             child: ListView.builder(
-              padding: const EdgeInsets.only(bottom: 50),
               shrinkWrap: true,
               itemCount: schema.length,
               itemBuilder: (context, index) {

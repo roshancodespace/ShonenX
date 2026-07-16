@@ -73,11 +73,12 @@ class _AvailableTrackerRow extends StatelessWidget {
       leading: Container(
         width: 42,
         height: 42,
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: cs.surfaceContainerHighest,
         ),
-        child: Icon(Icons.sync_rounded, size: 20, color: cs.onSurfaceVariant),
+        child: tracker.type.getIconWidget(size: 20, color: cs.onSurfaceVariant),
       ),
       title: Text(
         tracker.type.displayName,
@@ -127,16 +128,12 @@ class _LoginTrackerRow extends ConsumerWidget {
       leading: Container(
         width: 42,
         height: 42,
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: cs.surfaceContainerHighest,
         ),
-        child: Center(
-          child: tracker.type.getIconWidget(
-            size: 20,
-            color: cs.onSurfaceVariant,
-          ),
-        ),
+        child: tracker.type.getIconWidget(size: 20, color: cs.onSurfaceVariant),
       ),
       title: Text(
         tracker.type.displayName,

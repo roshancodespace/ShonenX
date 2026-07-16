@@ -85,6 +85,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: SegmentedButton<LibraryMode>(
+              style: ButtonStyle(
+                padding: WidgetStateProperty.all(
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                ),
+                minimumSize: WidgetStateProperty.all(const Size(48, 40)),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
               showSelectedIcon: false,
               segments: [
                 ButtonSegment<LibraryMode>(

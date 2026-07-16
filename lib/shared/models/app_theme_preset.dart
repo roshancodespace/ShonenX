@@ -120,8 +120,6 @@ class AppThemePreset {
       useNoiseOverlay: themePrefs.useNoiseOverlay,
       customBackgroundImagePath: themePrefs.customBackgroundImagePath,
       noiseOpacity: themePrefs.noiseOpacity,
-      backgroundBlur: themePrefs.backgroundBlur,
-      backgroundImageOpacity: themePrefs.backgroundImageOpacity,
       uiRoundness: themePrefs.uiRoundness,
       fontScaleFactor: themePrefs.fontScaleFactor,
       uiScaleFactor: themePrefs.uiScaleFactor,
@@ -157,11 +155,15 @@ class AppThemePreset {
       gradientColorPair: gradientColorPair,
       gradientIntensity: gradientIntensity,
       useNoiseOverlay: useNoiseOverlay,
-      customBackgroundImagePath: customBackgroundImagePath,
-      clearCustomBackgroundImagePath: customBackgroundImagePath == null,
+      wallpaperSettings: customBackgroundImagePath == null
+          ? null
+          : WallpaperSettings(
+              imagePath: customBackgroundImagePath!,
+              opacity: backgroundImageOpacity,
+              blur: backgroundBlur,
+            ),
+      clearWallpaperSettings: customBackgroundImagePath == null,
       noiseOpacity: noiseOpacity,
-      backgroundBlur: backgroundBlur,
-      backgroundImageOpacity: backgroundImageOpacity,
       uiRoundness: uiRoundness,
       fontScaleFactor: fontScaleFactor,
       uiScaleFactor: uiScaleFactor,

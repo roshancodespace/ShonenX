@@ -40,7 +40,14 @@ class AppTheme {
         : null;
 
     ColorScheme? effectiveColorScheme = colorScheme;
-    if (effectiveColorScheme == null && prefs.colorSeed != null) {
+    if (effectiveColorScheme == null &&
+        prefs.useImageColors &&
+        prefs.wallpaperSettings?.imageColorSeed != null) {
+      effectiveColorScheme = ColorScheme.fromSeed(
+        seedColor: Color(prefs.wallpaperSettings!.imageColorSeed!),
+        brightness: brightness,
+      );
+    } else if (effectiveColorScheme == null && prefs.colorSeed != null) {
       effectiveColorScheme = ColorScheme.fromSeed(
         seedColor: Color(prefs.colorSeed!),
         brightness: brightness,

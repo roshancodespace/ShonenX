@@ -1,7 +1,10 @@
+import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/core/theme/exclusive_schemes.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
@@ -114,7 +117,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                                 useAmoled: v,
                                 useGradients: v ? false : p.useGradients,
                                 useNoiseOverlay: v ? false : p.useNoiseOverlay,
-                                clearCustomBackgroundImagePath: v,
+                                clearWallpaperSettings: v,
                               ),
                             ),
                     ),
@@ -440,7 +443,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                       subtitle: themePrefs.useAmoled
                           ? 'Disabled with Pure Black'
                           : themePrefs.customBackgroundImagePath != null
-                          ? 'Wallpaper active'
+                          ? 'Change custom background image'
                           : 'Select a custom background image',
                       onTap: themePrefs.useAmoled
                           ? null
@@ -449,57 +452,93 @@ class ThemeSettingsScreen extends ConsumerWidget {
                                   .pickFiles(type: FileType.image);
                               if (result != null &&
                                   result.files.single.path != null) {
-                                notifier.updateTheme(
-                                  (p) => p.copyWith(
-                                    customBackgroundImagePath:
-                                        result.files.single.path,
-                                    useGradients: false,
-                                  ),
-                                );
+                                final selectedPath = result.files.single.path!;
+
+                                final docDir =
+                                    await getApplicationDocumentsDirectory();
+                                final originalPath =
+                                    '${docDir.path}/original_wallpaper_${DateTime.now().millisecondsSinceEpoch}.png';
+                                try {
+                                  await File(selectedPath).copy(originalPath);
+                                } catch (_) {}
+
+                                if (context.mounted) {
+                                  _showCustomizationSheet(
+                                    context,
+                                    imagePath: originalPath,
+                                    initialBlur: 0.0,
+                                    initialOpacity: 0.4,
+                                    initialSaturation: 1.0,
+                                    initialBrightness: 1.0,
+                                    isNewWallpaper: true,
+                                  );
+                                }
                               }
                             },
-                      trailing:
-                          themePrefs.customBackgroundImagePath != null &&
-                              !themePrefs.useAmoled
-                          ? IconButton(
-                              icon: const Icon(Icons.clear_rounded),
-                              onPressed: () => notifier.updateTheme(
-                                (p) => p.copyWith(
-                                  clearCustomBackgroundImagePath: true,
-                                  clearProcessedBackgroundImagePath: true,
-                                ),
-                              ),
-                            )
-                          : null,
                     ),
                     if (themePrefs.customBackgroundImagePath != null &&
-                        !themePrefs.useAmoled) ...[
-                      SettingsSliderTile(
-                        icon: Icons.blur_on_rounded,
-                        title: 'Wallpaper Blur',
-                        subtitle: 'Softness of background image',
-                        value: themePrefs.backgroundBlur,
-                        min: 0.0,
-                        max: 25.0,
-                        divisions: 25,
-                        label: '${themePrefs.backgroundBlur.toInt()}px',
+                        !themePrefs.useAmoled &&
+                        !themePrefs.customBackgroundImagePath!.startsWith(
+                          'http',
+                        )) ...[
+                      SettingsActionTile(
+                        icon: Icons.tune_rounded,
+                        title: 'Customize Wallpaper',
+                        subtitle:
+                            'Adjust blur, opacity, saturation, and brightness',
+                        onTap: () {
+                          final ws = themePrefs.wallpaperSettings;
+                          if (context.mounted &&
+                              themePrefs.customBackgroundImagePath != null) {
+                            _showCustomizationSheet(
+                              context,
+                              imagePath: themePrefs.customBackgroundImagePath!,
+                              initialBlur: ws?.blur ?? 0.0,
+                              initialOpacity: ws?.opacity ?? 0.4,
+                              initialSaturation: ws?.saturation ?? 1.0,
+                              initialBrightness: ws?.brightness ?? 1.0,
+                              isNewWallpaper: false,
+                            );
+                          }
+                        },
+                      ),
+                      SettingsSwitchTile(
+                        icon: Icons.color_lens_outlined,
+                        title: 'Use Wallpaper Colors',
+                        subtitle: 'Generate theme colors from the wallpaper',
+                        value: themePrefs.useImageColors,
                         onChanged: (v) => notifier.updateTheme(
-                          (p) => p.copyWith(backgroundBlur: v),
+                          (p) => p.copyWith(useImageColors: v),
                         ),
                       ),
-                      SettingsSliderTile(
-                        icon: Icons.filter_b_and_w_outlined,
-                        title: 'Wallpaper Opacity',
-                        subtitle: 'Visibility of background image',
-                        value: themePrefs.backgroundImageOpacity,
-                        min: 0.0,
-                        max: 1.0,
-                        divisions: 20,
-                        label:
-                            '${(themePrefs.backgroundImageOpacity * 100).toInt()}%',
-                        onChanged: (v) => notifier.updateTheme(
-                          (p) => p.copyWith(backgroundImageOpacity: v),
-                        ),
+                      SettingsActionTile(
+                        icon: Icons.delete_outline_rounded,
+                        title: 'Remove Wallpaper',
+                        subtitle: 'Clear custom background image',
+                        isDestructive: true,
+                        onTap: () async {
+                          notifier.updateTheme(
+                            (p) => p.copyWith(
+                              clearWallpaperSettings: true,
+                              useImageColors: false,
+                            ),
+                          );
+                          final docDir =
+                              await getApplicationDocumentsDirectory();
+                          final dir = Directory(docDir.path);
+                          try {
+                            final files = dir.listSync();
+                            for (final file in files) {
+                              if (file is File &&
+                                  (file.path.contains('blurred_wallpaper_') ||
+                                      file.path.contains(
+                                        'original_wallpaper.png',
+                                      ))) {
+                                await file.delete();
+                              }
+                            }
+                          } catch (_) {}
+                        },
                       ),
                     ],
                   ],
@@ -965,6 +1004,304 @@ class _ThemeVariantPicker extends ConsumerWidget {
           onTap: () => onSelected(variant),
         );
       },
+    );
+  }
+}
+
+void _showCustomizationSheet(
+  BuildContext context, {
+  required String imagePath,
+  required double initialBlur,
+  required double initialOpacity,
+  required double initialSaturation,
+  required double initialBrightness,
+  required bool isNewWallpaper,
+}) {
+  AppBottomSheet.show(
+    context: context,
+    title: 'Customize Wallpaper',
+    child: _WallpaperCustomizationSheet(
+      imagePath: imagePath,
+      initialBlur: initialBlur,
+      initialOpacity: initialOpacity,
+      initialSaturation: initialSaturation,
+      initialBrightness: initialBrightness,
+      isNewWallpaper: isNewWallpaper,
+    ),
+  );
+}
+
+class _WallpaperCustomizationSheet extends ConsumerStatefulWidget {
+  const _WallpaperCustomizationSheet({
+    required this.imagePath,
+    required this.initialBlur,
+    required this.initialOpacity,
+    required this.initialSaturation,
+    required this.initialBrightness,
+    required this.isNewWallpaper,
+  });
+
+  final String imagePath;
+  final double initialBlur;
+  final double initialOpacity;
+  final double initialSaturation;
+  final double initialBrightness;
+  final bool isNewWallpaper;
+
+  @override
+  ConsumerState<_WallpaperCustomizationSheet> createState() =>
+      _WallpaperCustomizationSheetState();
+}
+
+class _WallpaperCustomizationSheetState
+    extends ConsumerState<_WallpaperCustomizationSheet> {
+  late double _currentBlur;
+  late double _currentOpacity;
+  late double _currentSaturation;
+  late double _currentBrightness;
+  bool _isProcessing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentBlur = widget.initialBlur;
+    _currentOpacity = widget.initialOpacity;
+    _currentSaturation = widget.initialSaturation;
+    _currentBrightness = widget.initialBrightness;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final notifier = ref.read(themePrefsProvider.notifier);
+    final cs = Theme.of(context).colorScheme;
+
+    // Standard matrix calculations for color saturation & brightness
+    final double r = 0.2126;
+    final double g = 0.7152;
+    final double b = 0.0722;
+    final double invS = 1.0 - _currentSaturation;
+    final double R = r * invS;
+    final double G = g * invS;
+    final double B = b * invS;
+
+    final matrix = [
+      (R + _currentSaturation) * _currentBrightness,
+      G * _currentBrightness,
+      B * _currentBrightness,
+      0.0,
+      0.0,
+      R * _currentBrightness,
+      (G + _currentSaturation) * _currentBrightness,
+      B * _currentBrightness,
+      0.0,
+      0.0,
+      R * _currentBrightness,
+      G * _currentBrightness,
+      (B + _currentSaturation) * _currentBrightness,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+    ];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Dynamic live preview container
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Container(color: Colors.black),
+                  Opacity(
+                    opacity: _currentOpacity,
+                    child: ImageFiltered(
+                      imageFilter: ui.ImageFilter.blur(
+                        sigmaX: _currentBlur,
+                        sigmaY: _currentBlur,
+                      ),
+                      child: ColorFiltered(
+                        colorFilter: ColorFilter.matrix(matrix),
+                        child: Image.file(
+                          File(widget.imagePath),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Live Preview',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Blur Slider
+          Text(
+            'Blur: ${_currentBlur.toInt()}px',
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          Slider(
+            value: _currentBlur,
+            min: 0.0,
+            max: 25.0,
+            divisions: 25,
+            activeColor: cs.primary,
+            inactiveColor: cs.primary.withOpacity(0.2),
+            onChanged: (v) {
+              setState(() {
+                _currentBlur = v;
+              });
+            },
+          ),
+          // Opacity Slider
+          Text(
+            'Opacity: ${(_currentOpacity * 100).toInt()}%',
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          Slider(
+            value: _currentOpacity,
+            min: 0.0,
+            max: 1.0,
+            activeColor: cs.primary,
+            inactiveColor: cs.primary.withOpacity(0.2),
+            onChanged: (v) {
+              setState(() {
+                _currentOpacity = v;
+              });
+            },
+          ),
+          // Saturation Slider
+          Text(
+            'Saturation: ${_currentSaturation.toStringAsFixed(1)}x',
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          Slider(
+            value: _currentSaturation,
+            min: 0.0,
+            max: 2.0,
+            activeColor: cs.primary,
+            inactiveColor: cs.primary.withOpacity(0.2),
+            onChanged: (v) {
+              setState(() {
+                _currentSaturation = v;
+              });
+            },
+          ),
+          // Brightness Slider
+          Text(
+            'Brightness: ${_currentBrightness.toStringAsFixed(1)}x',
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          Slider(
+            value: _currentBrightness,
+            min: 0.5,
+            max: 1.5,
+            activeColor: cs.primary,
+            inactiveColor: cs.primary.withOpacity(0.2),
+            onChanged: (v) {
+              setState(() {
+                _currentBrightness = v;
+              });
+            },
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _isProcessing
+                    ? null
+                    : () {
+                        Navigator.pop(context);
+                      },
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: cs.primary,
+                  foregroundColor: cs.onPrimary,
+                ),
+                onPressed: _isProcessing
+                    ? null
+                    : () async {
+                        setState(() {
+                          _isProcessing = true;
+                        });
+                        final result = await notifier.processBackgroundImage(
+                          widget.imagePath,
+                          _currentBlur,
+                          _currentSaturation,
+                          _currentBrightness,
+                        );
+                        notifier.updateTheme(
+                          (p) => p.copyWith(
+                            wallpaperSettings: WallpaperSettings(
+                              imagePath: widget.imagePath,
+                              processedPath:
+                                  result?.processedPath ?? widget.imagePath,
+                              blur: _currentBlur,
+                              opacity: _currentOpacity,
+                              saturation: _currentSaturation,
+                              brightness: _currentBrightness,
+                              imageColorSeed: result?.imageColorSeed,
+                            ),
+                            useGradients: widget.isNewWallpaper
+                                ? false
+                                : p.useGradients,
+                          ),
+                        );
+                        setState(() {
+                          _isProcessing = false;
+                        });
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                      },
+                child: _isProcessing
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: cs.onPrimary,
+                        ),
+                      )
+                    : const Text('Apply'),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

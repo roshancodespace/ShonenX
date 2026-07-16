@@ -1,12 +1,14 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shonenx/core/utils/wallpaper_processor.dart';
 
 import 'package:shonenx/shared/providers/storage_provider.dart';
 
@@ -85,6 +87,105 @@ enum BackgroundGradientColorPair {
   };
 }
 
+class WallpaperSettings {
+  final String imagePath;
+  final String? processedPath;
+  final double blur;
+  final double opacity;
+  final double saturation;
+  final double brightness;
+  final int? imageColorSeed;
+
+  const WallpaperSettings({
+    required this.imagePath,
+    this.processedPath,
+    this.blur = 0.0,
+    this.opacity = 0.4,
+    this.saturation = 1.0,
+    this.brightness = 1.0,
+    this.imageColorSeed,
+  });
+
+  WallpaperSettings copyWith({
+    String? imagePath,
+    String? processedPath,
+    bool clearProcessedPath = false,
+    double? blur,
+    double? opacity,
+    double? saturation,
+    double? brightness,
+    int? imageColorSeed,
+    bool clearImageColorSeed = false,
+  }) {
+    return WallpaperSettings(
+      imagePath: imagePath ?? this.imagePath,
+      processedPath: clearProcessedPath
+          ? null
+          : (processedPath ?? this.processedPath),
+      blur: blur ?? this.blur,
+      opacity: opacity ?? this.opacity,
+      saturation: saturation ?? this.saturation,
+      brightness: brightness ?? this.brightness,
+      imageColorSeed: clearImageColorSeed
+          ? null
+          : (imageColorSeed ?? this.imageColorSeed),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'imagePath': imagePath,
+      'processedPath': processedPath,
+      'blur': blur,
+      'opacity': opacity,
+      'saturation': saturation,
+      'brightness': brightness,
+      'imageColorSeed': imageColorSeed,
+    };
+  }
+
+  factory WallpaperSettings.fromMap(Map<String, dynamic> map) {
+    return WallpaperSettings(
+      imagePath: map['imagePath'] ?? '',
+      processedPath: map['processedPath'],
+      blur: (map['blur'] as num?)?.toDouble() ?? 0.0,
+      opacity: (map['opacity'] as num?)?.toDouble() ?? 0.4,
+      saturation: (map['saturation'] as num?)?.toDouble() ?? 1.0,
+      brightness: (map['brightness'] as num?)?.toDouble() ?? 1.0,
+      imageColorSeed: map['imageColorSeed'] as int?,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory WallpaperSettings.fromJson(String source) =>
+      WallpaperSettings.fromMap(json.decode(source));
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is WallpaperSettings &&
+        other.imagePath == imagePath &&
+        other.processedPath == processedPath &&
+        other.blur == blur &&
+        other.opacity == opacity &&
+        other.saturation == saturation &&
+        other.brightness == brightness &&
+        other.imageColorSeed == imageColorSeed;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    imagePath,
+    processedPath,
+    blur,
+    opacity,
+    saturation,
+    brightness,
+    imageColorSeed,
+  );
+}
+
 class ThemePrefsState {
   final ThemeMode themeMode;
   final FlexScheme flexScheme;
@@ -99,11 +200,9 @@ class ThemePrefsState {
   final BackgroundGradientColorPair gradientColorPair;
   final double gradientIntensity;
   final bool useNoiseOverlay;
-  final String? customBackgroundImagePath;
-  final String? processedBackgroundImagePath;
+  final WallpaperSettings? wallpaperSettings;
+  final bool useImageColors;
   final double noiseOpacity;
-  final double backgroundBlur;
-  final double backgroundImageOpacity;
   final double uiRoundness;
   final double fontScaleFactor;
   final double uiScaleFactor;
@@ -113,6 +212,9 @@ class ThemePrefsState {
   final int? secondaryColor;
   final int? tertiaryColor;
   final int? surfaceColor;
+
+  String? get customBackgroundImagePath => wallpaperSettings?.imagePath;
+  double get backgroundImageOpacity => wallpaperSettings?.opacity ?? 0.4;
 
   const ThemePrefsState({
     this.themeMode = ThemeMode.system,
@@ -129,11 +231,9 @@ class ThemePrefsState {
     this.gradientColorPair = BackgroundGradientColorPair.surfaceContainer,
     this.gradientIntensity = 0.35,
     this.useNoiseOverlay = false,
-    this.customBackgroundImagePath,
-    this.processedBackgroundImagePath,
+    this.wallpaperSettings,
+    this.useImageColors = false,
     this.noiseOpacity = 0.03,
-    this.backgroundBlur = 0.0,
-    this.backgroundImageOpacity = 0.4,
     this.uiRoundness = 12.0,
     this.fontScaleFactor = 1.0,
     this.uiScaleFactor = 1.0,
@@ -155,13 +255,10 @@ class ThemePrefsState {
     int? blendLevel,
     bool? useGradients,
     bool? useNoiseOverlay,
-    String? customBackgroundImagePath,
-    bool clearCustomBackgroundImagePath = false,
-    String? processedBackgroundImagePath,
-    bool clearProcessedBackgroundImagePath = false,
+    WallpaperSettings? wallpaperSettings,
+    bool clearWallpaperSettings = false,
+    bool? useImageColors,
     double? noiseOpacity,
-    double? backgroundBlur,
-    double? backgroundImageOpacity,
     double? uiRoundness,
     double? fontScaleFactor,
     double? uiScaleFactor,
@@ -197,16 +294,11 @@ class ThemePrefsState {
       gradientColorPair: gradientColorPair ?? this.gradientColorPair,
       gradientIntensity: gradientIntensity ?? this.gradientIntensity,
       useNoiseOverlay: useNoiseOverlay ?? this.useNoiseOverlay,
-      customBackgroundImagePath: clearCustomBackgroundImagePath
+      wallpaperSettings: clearWallpaperSettings
           ? null
-          : (customBackgroundImagePath ?? this.customBackgroundImagePath),
-      processedBackgroundImagePath: clearProcessedBackgroundImagePath
-          ? null
-          : (processedBackgroundImagePath ?? this.processedBackgroundImagePath),
+          : (wallpaperSettings ?? this.wallpaperSettings),
+      useImageColors: useImageColors ?? this.useImageColors,
       noiseOpacity: noiseOpacity ?? this.noiseOpacity,
-      backgroundBlur: backgroundBlur ?? this.backgroundBlur,
-      backgroundImageOpacity:
-          backgroundImageOpacity ?? this.backgroundImageOpacity,
       uiRoundness: uiRoundness ?? this.uiRoundness,
       fontScaleFactor: fontScaleFactor ?? this.fontScaleFactor,
       uiScaleFactor: uiScaleFactor ?? this.uiScaleFactor,
@@ -242,11 +334,10 @@ class ThemePrefsState {
       'gradientColorPair': gradientColorPair.index,
       'gradientIntensity': gradientIntensity,
       'useNoiseOverlay': useNoiseOverlay,
-      'customBackgroundImagePath': customBackgroundImagePath,
-      'processedBackgroundImagePath': processedBackgroundImagePath,
+      if (wallpaperSettings != null)
+        'wallpaperSettings': wallpaperSettings!.toMap(),
+      'useImageColors': useImageColors,
       'noiseOpacity': noiseOpacity,
-      'backgroundBlur': backgroundBlur,
-      'backgroundImageOpacity': backgroundImageOpacity,
       'uiRoundness': uiRoundness,
       'fontScaleFactor': fontScaleFactor,
       'uiScaleFactor': uiScaleFactor,
@@ -294,6 +385,22 @@ class ThemePrefsState {
       );
     }
 
+    final legacyPath = map['customBackgroundImagePath'];
+    final legacyOpacity = map['backgroundImageOpacity'];
+    final WallpaperSettings? resolvedWallpaper;
+    if (map['wallpaperSettings'] != null) {
+      resolvedWallpaper = WallpaperSettings.fromMap(map['wallpaperSettings']);
+    } else if (legacyPath != null) {
+      resolvedWallpaper = WallpaperSettings(
+        imagePath: legacyPath,
+        processedPath: map['processedBackgroundImagePath'],
+        blur: (map['backgroundBlur'] as num?)?.toDouble() ?? 0.0,
+        opacity: (legacyOpacity as num?)?.toDouble() ?? 0.4,
+      );
+    } else {
+      resolvedWallpaper = null;
+    }
+
     return ThemePrefsState(
       themeMode: ThemeMode.values[map['themeMode'] ?? ThemeMode.system.index],
       flexScheme:
@@ -326,12 +433,9 @@ class ThemePrefsState {
           : BackgroundGradientColorPair.surfaceContainer,
       gradientIntensity: (map['gradientIntensity'] as num?)?.toDouble() ?? 0.35,
       useNoiseOverlay: map['useNoiseOverlay'] ?? false,
-      customBackgroundImagePath: map['customBackgroundImagePath'],
-      processedBackgroundImagePath: map['processedBackgroundImagePath'],
+      wallpaperSettings: resolvedWallpaper,
+      useImageColors: map['useImageColors'] ?? false,
       noiseOpacity: (map['noiseOpacity'] as num?)?.toDouble() ?? 0.03,
-      backgroundBlur: (map['backgroundBlur'] as num?)?.toDouble() ?? 0.0,
-      backgroundImageOpacity:
-          (map['backgroundImageOpacity'] as num?)?.toDouble() ?? 0.4,
       uiRoundness: (map['uiRoundness'] as num?)?.toDouble() ?? 12.0,
       fontScaleFactor: (map['fontScaleFactor'] as num?)?.toDouble() ?? 1.0,
       uiScaleFactor: (map['uiScaleFactor'] as num?)?.toDouble() ?? 1.0,
@@ -366,11 +470,9 @@ class ThemePrefsState {
         other.gradientColorPair == gradientColorPair &&
         other.gradientIntensity == gradientIntensity &&
         other.useNoiseOverlay == useNoiseOverlay &&
-        other.customBackgroundImagePath == customBackgroundImagePath &&
-        other.processedBackgroundImagePath == processedBackgroundImagePath &&
+        other.wallpaperSettings == wallpaperSettings &&
+        other.useImageColors == useImageColors &&
         other.noiseOpacity == noiseOpacity &&
-        other.backgroundBlur == backgroundBlur &&
-        other.backgroundImageOpacity == backgroundImageOpacity &&
         other.uiRoundness == uiRoundness &&
         other.fontScaleFactor == fontScaleFactor &&
         other.uiScaleFactor == uiScaleFactor &&
@@ -399,11 +501,9 @@ class ThemePrefsState {
         gradientColorPair,
         gradientIntensity,
         useNoiseOverlay,
-        customBackgroundImagePath,
-        processedBackgroundImagePath,
+        wallpaperSettings,
+        useImageColors,
         noiseOpacity,
-        backgroundBlur,
-        backgroundImageOpacity,
         uiRoundness,
         fontScaleFactor,
         uiScaleFactor,
@@ -420,7 +520,6 @@ class ThemePrefsState {
 
 class ThemePrefsNotifier extends Notifier<ThemePrefsState> {
   static const _themeDataKey = 'app_theme_data';
-  Timer? _processingDebounceTimer;
 
   @override
   ThemePrefsState build() {
@@ -430,10 +529,39 @@ class ThemePrefsNotifier extends Notifier<ThemePrefsState> {
     if (jsonString != null) {
       try {
         final loadedState = ThemePrefsState.fromJson(jsonString);
-        if (loadedState.customBackgroundImagePath != null &&
-            loadedState.processedBackgroundImagePath == null &&
-            loadedState.backgroundBlur > 0.0) {
-          Future.microtask(() => _processBackgroundImage(loadedState));
+        if (loadedState.wallpaperSettings != null) {
+          final settings = loadedState.wallpaperSettings!;
+          final needsProcessing =
+              settings.processedPath == null &&
+              (settings.blur > 0.0 ||
+                  settings.saturation != 1.0 ||
+                  settings.brightness != 1.0);
+          final processedFileExists =
+              settings.processedPath != null &&
+              File(settings.processedPath!).existsSync();
+
+          if (needsProcessing ||
+              (settings.processedPath != null && !processedFileExists)) {
+            Future.microtask(() async {
+              final result = await processBackgroundImage(
+                settings.imagePath,
+                settings.blur,
+                settings.saturation,
+                settings.brightness,
+              );
+              if (result != null) {
+                updateTheme(
+                  (p) => p.copyWith(
+                    wallpaperSettings: p.wallpaperSettings?.copyWith(
+                      processedPath: result.processedPath,
+                      imageColorSeed: result.imageColorSeed,
+                      clearImageColorSeed: result.imageColorSeed == null,
+                    ),
+                  ),
+                );
+              }
+            });
+          }
         }
         return loadedState;
       } catch (e) {
@@ -447,110 +575,24 @@ class ThemePrefsNotifier extends Notifier<ThemePrefsState> {
   void updateTheme(
     ThemePrefsState Function(ThemePrefsState currentState) updateFn,
   ) {
-    final oldState = state;
     final newState = updateFn(state);
     state = newState;
     _saveDb();
-
-    if (newState.customBackgroundImagePath !=
-            oldState.customBackgroundImagePath ||
-        newState.backgroundBlur != oldState.backgroundBlur) {
-      _processBackgroundImage(newState);
-    }
   }
 
-  void _processBackgroundImage(ThemePrefsState targetState) {
-    _processingDebounceTimer?.cancel();
-    _processingDebounceTimer = Timer(
-      const Duration(milliseconds: 250),
-      () async {
-        final originalPath = targetState.customBackgroundImagePath;
-        final blurSigma = targetState.backgroundBlur;
-
-        if (originalPath == null) {
-          final oldProcessedPath = state.processedBackgroundImagePath;
-          if (oldProcessedPath != null) {
-            try {
-              final file = File(oldProcessedPath);
-              if (await file.exists()) {
-                await file.delete();
-              }
-            } catch (_) {}
-          }
-          updateTheme(
-            (p) => p.copyWith(clearProcessedBackgroundImagePath: true),
-          );
-          return;
-        }
-
-        if (blurSigma <= 0.0) {
-          updateTheme(
-            (p) => p.copyWith(processedBackgroundImagePath: originalPath),
-          );
-          return;
-        }
-
-        try {
-          final docDir = await getApplicationDocumentsDirectory();
-          final fileName =
-              'blurred_wallpaper_${DateTime.now().millisecondsSinceEpoch}.png';
-          final outputPath = '${docDir.path}/$fileName';
-
-          final data = await File(originalPath).readAsBytes();
-          final codec = await ui.instantiateImageCodec(data);
-          final frame = await codec.getNextFrame();
-          final originalImage = frame.image;
-
-          final recorder = ui.PictureRecorder();
-          final canvas = Canvas(recorder);
-
-          final width = originalImage.width.toDouble();
-          final height = originalImage.height.toDouble();
-
-          final paint = Paint()
-            ..imageFilter = ui.ImageFilter.blur(
-              sigmaX: blurSigma,
-              sigmaY: blurSigma,
-            );
-
-          canvas.drawImage(originalImage, Offset.zero, paint);
-
-          final picture = recorder.endRecording();
-          final blurredImage = await picture.toImage(
-            width.toInt(),
-            height.toInt(),
-          );
-
-          final byteData = await blurredImage.toByteData(
-            format: ui.ImageByteFormat.png,
-          );
-          final bytes = byteData!.buffer.asUint8List();
-
-          final blurredFile = File(outputPath);
-          await blurredFile.writeAsBytes(bytes);
-
-          originalImage.dispose();
-          blurredImage.dispose();
-
-          final oldProcessedPath = state.processedBackgroundImagePath;
-          if (oldProcessedPath != null && oldProcessedPath != originalPath) {
-            try {
-              final oldFile = File(oldProcessedPath);
-              if (await oldFile.exists()) {
-                await oldFile.delete();
-              }
-            } catch (_) {}
-          }
-
-          updateTheme(
-            (p) => p.copyWith(processedBackgroundImagePath: outputPath),
-          );
-        } catch (e) {
-          updateTheme(
-            (p) => p.copyWith(processedBackgroundImagePath: originalPath),
-          );
-        }
-      },
+  Future<({String processedPath, int? imageColorSeed})?> processBackgroundImage(
+    String originalPath,
+    double blurSigma,
+    double saturation,
+    double brightness,
+  ) async {
+    return WallpaperProcessor.process(
+      originalPath: originalPath,
+      blurSigma: blurSigma,
+      saturation: saturation,
+      brightness: brightness,
+      currentOriginalPath: state.wallpaperSettings?.imagePath,
+      currentProcessedPath: state.wallpaperSettings?.processedPath,
     );
   }
 

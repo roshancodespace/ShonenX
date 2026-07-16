@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,21 +19,17 @@ class GlobalBackground extends ConsumerWidget {
     final customBackgroundImagePath = ref.watch(
       themePrefsProvider.select((p) => p.customBackgroundImagePath),
     );
+    final processedWallpaperPath = ref.watch(
+      themePrefsProvider.select((p) => p.wallpaperSettings?.processedPath),
+    );
+    final backgroundImageOpacity = ref.watch(
+      themePrefsProvider.select((p) => p.backgroundImageOpacity),
+    );
     final useNoiseOverlay = ref.watch(
       themePrefsProvider.select((p) => p.useNoiseOverlay),
     );
     final noiseOpacity = ref.watch(
       themePrefsProvider.select((p) => p.noiseOpacity),
-    );
-    final backgroundBlur = ref.watch(
-      themePrefsProvider.select((p) => p.backgroundBlur),
-    );
-    final backgroundImageOpacity = ref.watch(
-      themePrefsProvider.select((p) => p.backgroundImageOpacity),
-    );
-
-    final processedBackgroundImagePath = ref.watch(
-      themePrefsProvider.select((p) => p.processedBackgroundImagePath),
     );
 
     final gradientStyle = ref.watch(
@@ -68,31 +63,22 @@ class GlobalBackground extends ConsumerWidget {
     final List<Widget> backgroundLayers = [];
 
     if (customBackgroundImagePath != null) {
-      final imagePathToRender = processedBackgroundImagePath ?? customBackgroundImagePath;
-      final needsRealtimeBlur = processedBackgroundImagePath == null && backgroundBlur > 0.0;
+      final imagePathToRender = processedWallpaperPath ?? customBackgroundImagePath;
+      final isNetwork =
+          imagePathToRender.startsWith('http://') ||
+          imagePathToRender.startsWith('https://');
 
-      final img = Image.file(
-        File(imagePathToRender),
-        fit: BoxFit.cover,
-        color: theme.scaffoldBackgroundColor.withValues(
-          alpha: (1.0 - backgroundImageOpacity).clamp(0.0, 1.0),
+      final img = isNetwork
+          ? Image.network(imagePathToRender, fit: BoxFit.cover)
+          : Image.file(File(imagePathToRender), fit: BoxFit.cover);
+
+      backgroundLayers.add(
+        Positioned.fill(
+          child: RepaintBoundary(
+            child: Opacity(opacity: backgroundImageOpacity, child: img),
+          ),
         ),
-        colorBlendMode: BlendMode.srcOver,
       );
-
-      final Widget bgImg = needsRealtimeBlur
-          ? RepaintBoundary(
-              child: ImageFiltered(
-                imageFilter: ui.ImageFilter.blur(
-                  sigmaX: backgroundBlur,
-                  sigmaY: backgroundBlur,
-                ),
-                child: img,
-              ),
-            )
-          : RepaintBoundary(child: img);
-
-      backgroundLayers.add(Positioned.fill(child: bgImg));
     }
 
     if (useNoiseOverlay && noiseOpacity > 0.0 && !(isDark && useAmoled)) {

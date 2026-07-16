@@ -80,6 +80,7 @@ dependencies:
   video_player_platform_interface: ^6.7.0
   liquid_glass_easy: ^3.2.2
   flutter_markdown: ^0.7.7+1
+  palette_generator: ^0.3.3+7
 
 dependency_overrides:
   media_kit:

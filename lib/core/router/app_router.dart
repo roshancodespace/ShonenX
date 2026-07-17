@@ -12,6 +12,7 @@ import 'package:shonenx/features/discovery/presentation/discover_screen.dart';
 import 'package:shonenx/features/downloads/presentation/downloads_screen.dart';
 import 'package:shonenx/features/extensions/presentation/extensions_settings_screen.dart';
 import 'package:shonenx/features/extensions/presentation/extension_tester_screen.dart';
+import 'package:shonenx/features/extensions/presentation/dsl_playground_screen.dart';
 import 'package:shonenx/core/remote_config/ui/remote_config_editor_screen.dart';
 import 'package:shonenx/features/history/presentation/continue_history_screen.dart';
 import 'package:shonenx/features/library/presentation/library_screen.dart';
@@ -288,6 +289,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'test',
                 builder: (context, state) => const ExtensionTesterScreen(),
+              ),
+              GoRoute(
+                path: 'dsl_playground',
+                builder: (context, state) => const DSLPlaygroundScreen(),
               ),
             ],
           ),

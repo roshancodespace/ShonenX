@@ -564,6 +564,11 @@ class _ExtensionsSettingsScreenState
         onPressed: () => context.push('/settings/extensions/test'),
       ),
       IconButton(
+        icon: const Icon(Icons.developer_mode_rounded),
+        tooltip: 'DSL Playground',
+        onPressed: () => context.push('/settings/extensions/dsl_playground'),
+      ),
+      IconButton(
         icon: const Icon(Icons.info_outline_rounded),
         tooltip: 'Extension Guide',
         onPressed: () => ExtensionGuideSheet.show(context),

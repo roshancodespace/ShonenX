@@ -575,7 +575,12 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
 
     return SettingsActionTile(
       title: isSubItem
-          ? (source.lang ?? (source.isInbuilt ? 'inbuilt' : 'all'))
+          ? (source.lang ??
+                    (source.sourceInfo?.type == SourceType.inbuilt
+                        ? 'inbuilt'
+                        : source.sourceInfo?.type == SourceType.dsl
+                        ? 'DSL'
+                        : 'all'))
                 .toUpperCase()
           : source.name,
       subtitle: isSubItem
@@ -664,11 +669,15 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
               },
             ),
             _buildSettingsButton(context, source.sourceInfo!),
-            if (source.isInbuilt)
+            if (source.isInbuilt || source.isDsl)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Text(
-                  'INBUILT',
+                  source.isInbuilt
+                      ? 'INBUILT'
+                      : source.isDsl
+                      ? 'DSL'
+                      : 'UNKNOWN',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSecondaryContainer,
                   ),

@@ -23,6 +23,7 @@ import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/library/domain/models/library_entry.dart';
 import 'package:shonenx/features/notifications/domain/models/notification_subscription.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
+import 'package:shonenx/source_engine/dsl_engine/dsl_provider_service.dart';
 import 'package:window_manager/window_manager.dart';
 
 class AppInit {
@@ -167,6 +168,7 @@ class AppInit {
     final log = AppLogger.scope('AppInit').child('setupBridge');
 
     try {
+      ref.read(dslProvidersProvider);
       await AnymeXExtensionBridge.init(
         getDirectory: AnymeXExtensionBridge.defaultGetDirectory(
           baseDirectory: await getDatabaseDirectory('ShonenX'),

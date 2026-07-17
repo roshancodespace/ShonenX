@@ -8,26 +8,29 @@ class UnifiedSource {
   final String? lang;
   final String? iconUrl;
   final bool isInbuilt;
+  final bool isDsl;
   final bool isNsfw;
   final SourceInfo? sourceInfo;
   final bridge.Source? bridgeSource;
 
   UnifiedSource.fromSourceInfo(this.sourceInfo, [this.bridgeSource])
-      : id = sourceInfo!.id,
-        name = sourceInfo.name,
-        lang = sourceInfo.lang,
-        iconUrl = sourceInfo.iconUrl,
-        isInbuilt = sourceInfo.type == SourceType.inbuilt,
-        isNsfw = sourceInfo.isNsfw;
+    : id = sourceInfo!.id,
+      name = sourceInfo.name,
+      lang = sourceInfo.lang,
+      iconUrl = sourceInfo.iconUrl,
+      isDsl = sourceInfo.type == SourceType.dsl,
+      isInbuilt = sourceInfo.type == SourceType.inbuilt,
+      isNsfw = sourceInfo.isNsfw;
 
   UnifiedSource.fromBridgeSource(this.bridgeSource)
-      : id = bridgeSource!.id ?? '',
-        name = bridgeSource.name ?? 'N/A',
-        lang = bridgeSource.lang,
-        iconUrl = bridgeSource.iconUrl,
-        isInbuilt = false,
-        isNsfw = bridgeSource.isNsfw ?? false,
-        sourceInfo = null;
+    : id = bridgeSource!.id ?? '',
+      name = bridgeSource.name ?? 'N/A',
+      lang = bridgeSource.lang,
+      iconUrl = bridgeSource.iconUrl,
+      isDsl = false,
+      isInbuilt = false,
+      isNsfw = bridgeSource.isNsfw ?? false,
+      sourceInfo = null;
 
   bool get hasUpdate => bridgeSource?.hasUpdate ?? false;
   String? get version => bridgeSource?.version;

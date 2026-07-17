@@ -32,7 +32,6 @@ class HomeScreen extends ConsumerWidget {
 
     final sections = ref.watch(userHomeLayoutProvider);
     final feedState = ref.watch(homeFeedProvider);
-
     return AppScaffold(
       body: RefreshIndicator(
         onRefresh: () async {

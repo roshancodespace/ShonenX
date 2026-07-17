@@ -20,7 +20,7 @@ class DSLAnimeSource extends MediaSource implements AnimeSource {
   SourceInfo get sourceInfo => SourceInfo(
     id: providerDef['id']?.toString() ?? '',
     name: providerDef['name']?.toString() ?? 'DSL Anime Source',
-    type: SourceType.inbuilt,
+    type: SourceType.dsl,
     mediaType: MediaType.ANIME,
     iconUrl: providerDef['iconUrl']?.toString(),
     baseUrl: providerDef['baseUrl']?.toString(),

@@ -1,6 +1,6 @@
 import 'package:shonenx/shared/models/unified_media.dart';
 
-enum SourceType { inbuilt, extension }
+enum SourceType { inbuilt, dsl, extension }
 
 class SourceInfo {
   final String id;
@@ -35,14 +35,14 @@ class SourceInfo {
   int get hashCode => Object.hash(id, type, mediaType);
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'type': type.name,
-        'mediaType': mediaType.name,
-        'iconUrl': iconUrl,
-        'lang': lang,
-        'isNsfw': isNsfw,
-      };
+    'id': id,
+    'name': name,
+    'type': type.name,
+    'mediaType': mediaType.name,
+    'iconUrl': iconUrl,
+    'lang': lang,
+    'isNsfw': isNsfw,
+  };
 
   factory SourceInfo.fromMap(Map<String, dynamic> map) {
     return SourceInfo(

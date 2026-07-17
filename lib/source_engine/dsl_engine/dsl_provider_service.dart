@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/source_engine/dsl_engine/dsl_runtime.dart';
@@ -23,75 +25,104 @@ class DSLProvidersNotifier
 
   @override
   Future<Map<String, Map<String, dynamic>>> build() async {
-    return await _loadAllFromDisk();
+    _log.i('Loading DSL providers...');
+    final providers = await _loadAllFromDisk();
+    _log.i('Loaded ${providers.length} DSL providers');
+    return providers;
   }
 
   Future<Directory> _getDslDir() async {
     final dir = await getApplicationDocumentsDirectory();
+
     final path = Platform.isAndroid || Platform.isIOS || Platform.isMacOS
         ? p.join(dir.path, 'dsl_providers')
         : p.join(dir.path, 'ShonenX', 'dsl_providers');
 
     final dslDir = Directory(path);
+
     if (!await dslDir.exists()) {
       await dslDir.create(recursive: true);
     }
+
     return dslDir;
   }
 
   Future<Map<String, Map<String, dynamic>>> _loadAllFromDisk() async {
     try {
       final dir = await _getDslDir();
-      if (!dir.existsSync()) return {};
 
-      final files = dir.listSync();
       final loaded = <String, Map<String, dynamic>>{};
 
+      final files = await dir.list().toList();
+
       for (final file in files) {
-        if (file is File && file.path.endsWith('.json')) {
-          try {
-            final content = await file.readAsString();
-            final json = jsonDecode(content);
-            if (json is Map && json['id'] != null) {
-              loaded[json['id'].toString()] = Map<String, dynamic>.from(json);
-            }
-          } catch (e) {
-            _log.e('Failed to parse DSL file: ${file.path}', e);
+        if (file is! File || !file.path.endsWith('.json')) {
+          continue;
+        }
+
+        try {
+          final content = await file.readAsString();
+          final decoded = jsonDecode(content);
+
+          if (decoded is Map && decoded['id'] != null) {
+            loaded[decoded['id'].toString()] = Map<String, dynamic>.from(
+              decoded,
+            );
           }
+        } catch (e, st) {
+          _log.e('Failed to parse DSL file: ${file.path}', '$e\n$st');
         }
       }
+
       return loaded;
-    } catch (e) {
-      _log.e('Critical error loading DSL directory', e);
+    } catch (e, st) {
+      _log.e('Critical error loading DSL providers', '$e\n$st');
+
       return {};
     }
   }
 
-  Future<void> saveProvider(String id, Map<String, dynamic> json) async {
-    state = const AsyncValue.loading();
+  Future<void> reload() async {
+    state = const AsyncLoading();
+
     state = await AsyncValue.guard(() async {
-      final dir = await _getDslDir();
-      final file = File(p.join(dir.path, '$id.json'));
-      await file.writeAsString(jsonEncode(json));
-      final currentState = Map<String, Map<String, dynamic>>.from(
-        state.value ?? {},
-      );
-      currentState[id] = json;
-      return currentState;
+      return _loadAllFromDisk();
     });
   }
 
-  Future<void> deleteProvider(String id) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+  Future<void> saveProvider(String id, Map<String, dynamic> json) async {
+    try {
       final dir = await _getDslDir();
+
       final file = File(p.join(dir.path, '$id.json'));
-      if (await file.exists()) await file.delete();
-      final currentState = Map<String, Map<String, dynamic>>.from(
-        state.value ?? {},
+
+      await file.writeAsString(
+        const JsonEncoder.withIndent('  ').convert(json),
       );
-      currentState.remove(id);
-      return currentState;
-    });
+
+      await reload();
+    } catch (e, st) {
+      _log.e('Failed to save provider: $id', '$e\n$st');
+
+      rethrow;
+    }
+  }
+
+  Future<void> deleteProvider(String id) async {
+    try {
+      final dir = await _getDslDir();
+
+      final file = File(p.join(dir.path, '$id.json'));
+
+      if (await file.exists()) {
+        await file.delete();
+      }
+
+      await reload();
+    } catch (e, st) {
+      _log.e('Failed to delete provider: $id', '$e\n$st');
+
+      rethrow;
+    }
   }
 }

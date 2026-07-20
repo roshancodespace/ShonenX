@@ -1,7 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:android_intent_plus/android_intent.dart';
+
+import 'package:shonenx/core/services/one_dm_service.dart';
+import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/download_sheet.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
@@ -25,6 +31,7 @@ import 'package:shonenx/source_engine/models/source_setting.dart';
 import 'package:shonenx/features/settings/presentation/source_settings_sheet.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
+import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 
 class EpisodesTabWidget extends ConsumerWidget {
   final UnifiedMedia media;
@@ -166,6 +173,69 @@ class EpisodesTabWidget extends ConsumerWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          if (media.type == MediaType.ANIME) ...[
+                            ListTile(
+                              title: const Text('External Player'),
+                              leading: const Icon(Icons.open_in_new_rounded),
+                              onTap: () {
+                                episodeActionsContext.pop();
+                                _launchExternal(
+                                  context,
+                                  ref,
+                                  episode,
+                                  ref
+                                          .read(
+                                            mediaPreferenceProvider(
+                                              MatchArgs(
+                                                mediaTitle:
+                                                    media.title.availableTitle,
+                                                type: media.type,
+                                                sourceId: media.sourceId,
+                                                providerId: media.id,
+                                              ),
+                                            ),
+                                          )
+                                          .value
+                                          ?.sourceInfo ??
+                                      sources.first,
+                                  media,
+                                  use1DM: false,
+                                );
+                              },
+                            ),
+                            if (Platform.isAndroid)
+                              ListTile(
+                                title: const Text('Download using 1DM'),
+                                leading: const Icon(Icons.download_for_offline),
+                                onTap: () {
+                                  episodeActionsContext.pop();
+                                  _launchExternal(
+                                    context,
+                                    ref,
+                                    episode,
+                                    ref
+                                            .read(
+                                              mediaPreferenceProvider(
+                                                MatchArgs(
+                                                  mediaTitle: media
+                                                      .title
+                                                      .availableTitle,
+                                                  type: media.type,
+                                                  sourceId: media.sourceId,
+                                                  providerId: media.id,
+                                                ),
+                                              ),
+                                            )
+                                            .value
+                                            ?.sourceInfo ??
+                                        sources.first,
+                                    media,
+                                    use1DM: true,
+                                  );
+                                },
+                              ),
+                            const Divider(height: 1),
+                          ],
                           ListTile(
                             title: const Text('Discussion'),
                             leading: const Icon(Icons.forum_rounded),
@@ -989,5 +1059,92 @@ class _NoExtensionsPlaceholder extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+Future<void> _launchExternal(
+  BuildContext context,
+  WidgetRef ref,
+  UnifiedEpisode episode,
+  SourceInfo source,
+  UnifiedMedia media, {
+  required bool use1DM,
+}) async {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => const Center(child: CircularProgressIndicator()),
+  );
+
+  try {
+    final servers = await ref
+        .read(animeSourceProvider(source))
+        .getServers(episode.id);
+    if (servers.isEmpty) throw Exception('No servers found');
+
+    // Try preferred server type if dub/sub matters, or just use the first
+    final prefType = ref.read(playerPrefsProvider).defaultServerType;
+    final server = servers.firstWhere(
+      (s) => s.name.toLowerCase().contains(prefType.name.toLowerCase()),
+      orElse: () => servers.first,
+    );
+
+    final streams = await ref
+        .read(animeSourceProvider(source))
+        .getSources(episode.id, server);
+    if (streams.isEmpty) throw Exception('No streams found');
+
+    final stream = streams.first;
+
+    if (context.mounted) {
+      Navigator.of(context, rootNavigator: true).pop(); // dismiss loading
+    }
+
+    if (use1DM) {
+      final success = await OneDMService.instance.download(
+        url: stream.url,
+        fileName:
+            '${media.title.availableTitle} - Episode ${episode.number}.mp4',
+        headers: stream.headers,
+      );
+      if (!success && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('1DM not installed or failed to launch'),
+          ),
+        );
+      }
+    } else {
+      if (Platform.isAndroid) {
+        final intent = AndroidIntent(
+          action: 'android.intent.action.VIEW',
+          data: stream.url,
+          type: 'video/*',
+          arguments: {
+            if (stream.headers != null)
+              'android.media.intent.extra.HTTP_HEADERS': stream.headers,
+            'title': '${media.title.availableTitle} - Ep ${episode.number}',
+          },
+        );
+        await intent.launch();
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'External player launch only supported on Android currently.',
+              ),
+            ),
+          );
+        }
+      }
+    }
+  } catch (e) {
+    if (context.mounted) {
+      Navigator.of(context, rootNavigator: true).pop(); // dismiss loading
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
+    }
   }
 }

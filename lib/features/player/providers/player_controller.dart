@@ -1,28 +1,32 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:screenshot/screenshot.dart';
-import 'package:shonenx/core/network/http_client.dart';
-import 'package:shonenx/core/utils/http_x.dart';
+import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
+
+import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/extensions.dart';
+import 'package:shonenx/core/utils/http_x.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
-import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
-import 'package:shonenx/features/player/providers/video_engine_provider.dart';
+import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_provider.dart';
+import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
+import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/tracking/engine/sync_engine.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/source_engine/providers/anime_source.dart';
-import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 
 const _keepError = Object();
@@ -313,15 +317,44 @@ class PlayerController extends Notifier<PlayerState> {
   }
 
   Future<void> skipEpisode({bool forward = true}) async {
-    if (_media == null) return;
+    if (_media == null || state.activeEpisode == null) return;
     final episodes = await ref.read(
       episodesListProvider(
         MatchArgs.fromMedia(_media!),
       ).selectAsync((s) => s.episodes),
     );
-    final targetNumber = state.activeEpisode!.number + (forward ? 1 : -1);
-    if (targetNumber < 1 || targetNumber > episodes.length) return;
-    await loadEpisode(episodes.firstWhere((e) => e.number == targetNumber));
+
+    final currentIndex = episodes.indexWhere(
+      (e) => e.id == state.activeEpisode!.id,
+    );
+    if (currentIndex == -1) return;
+
+    final targetIndex = currentIndex + (forward ? 1 : -1);
+    if (targetIndex < 0 || targetIndex >= episodes.length) return;
+
+    await loadEpisode(episodes[targetIndex]);
+  }
+
+  bool get hasNextEpisode {
+    if (_media == null || state.activeEpisode == null) return false;
+    final episodesState = ref
+        .read(episodesListProvider(MatchArgs.fromMedia(_media!)))
+        .value;
+    if (episodesState != null) {
+      final episodes = episodesState.episodes;
+      final currentIndex = episodes.indexWhere(
+        (e) => e.id == state.activeEpisode!.id,
+      );
+      if (currentIndex != -1) {
+        return currentIndex < episodes.length - 1;
+      }
+    }
+
+    final total = _media!.episodes;
+    if (total != null && total > 0) {
+      return state.activeEpisode!.number < total;
+    }
+    return true; // Assume there is one if total is unknown, until proven otherwise
   }
 
   bool _matchesQuality(String candidate, String target) {
@@ -685,6 +718,28 @@ class PlayerController extends Notifier<PlayerState> {
       }
     } catch (_) {}
     return _cachedThumbnail;
+  }
+
+  Future<String?> takeAndShareScreenshot() async {
+    try {
+      ref.read(videoEngineProvider).pause();
+      final image = await _screenshot.capture(pixelRatio: 1.0);
+      if (image != null) {
+        final tempDir = await getTemporaryDirectory();
+        final file = File(
+          '${tempDir.path}/screenshot_${DateTime.now().millisecondsSinceEpoch}.png',
+        );
+        await file.writeAsBytes(image);
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text: 'Screenshot from ${_media?.title.availableTitle ?? "ShonenX"}',
+        );
+        return null; // success
+      }
+      return 'Failed to capture screenshot.';
+    } catch (e) {
+      return e.toString();
+    }
   }
 
   bool get _shouldCaptureThumbnail {

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
@@ -441,6 +443,25 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                                     ),
                                     iconSize: 20,
                                     color: cs.primary,
+                                  ),
+                                if (Platform.isAndroid &&
+                                    widget.media.type == MediaType.ANIME &&
+                                    finalEpisodes.isNotEmpty)
+                                  IconButton(
+                                    onPressed: () => BatchDownloadSheet.show(
+                                      context,
+                                      finalEpisodes,
+                                      widget.watchedProgress,
+                                      state.source,
+                                      widget.media,
+                                      forceOneDM: true,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.cloud_download_outlined,
+                                    ),
+                                    iconSize: 20,
+                                    color: cs.primary,
+                                    tooltip: 'Batch Download with 1DM',
                                   ),
                                 _ViewModeToggle(
                                   current: viewMode,

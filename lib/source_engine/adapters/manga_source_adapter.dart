@@ -59,14 +59,7 @@ class MangaSourceAdapter extends BaseSourceAdapter implements MangaSource {
 
       methodLog.d('pages=${pages.length}');
       return pages.map((e) {
-        final finalHeaders = <String, String>{}
-          ..addAll({
-            'User-Agent':
-                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
-            'Referer': sourceInfo.baseUrl ?? '',
-          });
-
-        return ChapterPage(url: e.url, headers: finalHeaders);
+        return ChapterPage(url: e.url, headers: e.headers);
       }).toList();
     } catch (e, st) {
       methodLog.e('getPages failed', e, st);

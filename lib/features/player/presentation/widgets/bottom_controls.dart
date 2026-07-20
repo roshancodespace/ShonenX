@@ -412,44 +412,74 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (widget.playerState.activeServer != null &&
-                            widget.playerState.servers.length > 1 &&
-                            widget.playerState.servers.any(
-                              (e) => e.type == ServerType.sub,
-                            ) &&
-                            widget.playerState.servers.any(
-                              (e) => e.type == ServerType.dub,
-                            ))
-                          _buildActionButton(
-                            displayText:
-                                widget.playerState.activeServer?.type ==
-                                    ServerType.dub
-                                ? 'DUB'
-                                : 'SUB',
-                            onTap: () {
-                              widget.controller.changeServerType();
-                            },
-                            isHighlighted: true,
-                            highlightedAccentColor:
-                                widget.playerState.activeServer?.type ==
-                                    ServerType.dub
-                                ? widget.theme.colorScheme.primary
-                                : widget.theme.colorScheme.secondary,
-                            highlightedBackgroundColor:
-                                widget.playerState.activeServer?.type ==
-                                    ServerType.dub
-                                ? widget.theme.colorScheme.primary.withValues(
-                                    alpha: 0.1,
-                                  )
-                                : widget.theme.colorScheme.secondary.withValues(
-                                    alpha: 0.1,
-                                  ),
-                            theme: widget.theme,
-                          ),
+                        Builder(
+                          builder: (context) {
+                            final hasServerToggle =
+                                widget.playerState.activeServer != null &&
+                                widget.playerState.servers.length > 1 &&
+                                widget.playerState.servers.any(
+                                  (e) => e.type == ServerType.sub,
+                                ) &&
+                                widget.playerState.servers.any(
+                                  (e) => e.type == ServerType.dub,
+                                );
+
+                            bool isStreamDub(VideoStream? s) {
+                              if (s == null) return false;
+                              final q = s.quality.toLowerCase();
+                              return q.contains('dub') || q.contains('english');
+                            }
+
+                            final hasDubStream = widget.playerState.streams.any(
+                              (e) => isStreamDub(e),
+                            );
+                            final hasSubStream = widget.playerState.streams.any(
+                              (e) => !isStreamDub(e),
+                            );
+                            final hasStreamToggle =
+                                !hasServerToggle &&
+                                hasDubStream &&
+                                hasSubStream &&
+                                widget.playerState.streams.length > 1;
+
+                            if (hasServerToggle || hasStreamToggle) {
+                              final isCurrentlyDub = hasServerToggle
+                                  ? widget.playerState.activeServer?.type ==
+                                        ServerType.dub
+                                  : isStreamDub(
+                                      widget.playerState.activeStream,
+                                    );
+
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 14),
+                                child: _buildActionButton(
+                                  displayText: isCurrentlyDub ? 'DUB' : 'SUB',
+                                  onTap: () {
+                                    if (hasServerToggle) {
+                                      widget.controller.changeServerType();
+                                    } else {
+                                      widget.controller.changeStreamType();
+                                    }
+                                  },
+                                  isHighlighted: true,
+                                  highlightedAccentColor: isCurrentlyDub
+                                      ? widget.theme.colorScheme.primary
+                                      : widget.theme.colorScheme.secondary,
+                                  highlightedBackgroundColor: isCurrentlyDub
+                                      ? widget.theme.colorScheme.primary
+                                            .withValues(alpha: 0.1)
+                                      : widget.theme.colorScheme.secondary
+                                            .withValues(alpha: 0.1),
+                                  theme: widget.theme,
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
 
                         if (widget.playerState.servers.length > 1 &&
                             !isCompact) ...[
-                          const SizedBox(width: 14),
                           _buildBottomSheetTrigger<VideoServer>(
                             context: context,
                             value: widget.playerState.activeServer,

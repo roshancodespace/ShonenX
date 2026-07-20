@@ -40,59 +40,61 @@ class CustomSubtitleOverlay extends ConsumerWidget {
           bottom: prefs.bottomPadding, // Configurable bottom padding
           left: 0,
           right: 0,
-          child: SafeArea(
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: SubtitleParser.cleanSubtitleText(activeCue.text)
-                      .split('\n')
-                      .map((l) => l.replaceAll('\r', ''))
-                      .where((l) => l.trim().isNotEmpty)
-                      .map(
-                        (line) => Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: prefs.padding * 1.5,
-                            vertical: prefs.padding * 0.5,
-                          ),
-                          decoration: prefs.backgroundColor != 0x00000000
-                              ? BoxDecoration(
-                                  color: prefs.bg,
-                                  borderRadius: BorderRadius.circular(4.0),
-                                )
-                              : null,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              if (getSubtitleStrokeStyle(
-                                    prefs,
-                                    responsiveFontSize,
-                                  ) !=
-                                  null)
+          child: IgnorePointer(
+            child: SafeArea(
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: SubtitleParser.cleanSubtitleText(activeCue.text)
+                        .split('\n')
+                        .map((l) => l.replaceAll('\r', ''))
+                        .where((l) => l.trim().isNotEmpty)
+                        .map(
+                          (line) => Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: prefs.padding * 1.5,
+                              vertical: prefs.padding * 0.5,
+                            ),
+                            decoration: prefs.backgroundColor != 0x00000000
+                                ? BoxDecoration(
+                                    color: prefs.bg,
+                                    borderRadius: BorderRadius.circular(4.0),
+                                  )
+                                : null,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                if (getSubtitleStrokeStyle(
+                                      prefs,
+                                      responsiveFontSize,
+                                    ) !=
+                                    null)
+                                  Text(
+                                    line,
+                                    textAlign: TextAlign.center,
+                                    style: getSubtitleStrokeStyle(
+                                      prefs,
+                                      responsiveFontSize,
+                                    ),
+                                  ),
                                 Text(
                                   line,
                                   textAlign: TextAlign.center,
-                                  style: getSubtitleStrokeStyle(
+                                  style: getSubtitleTextStyle(
                                     prefs,
                                     responsiveFontSize,
                                   ),
                                 ),
-                              Text(
-                                line,
-                                textAlign: TextAlign.center,
-                                style: getSubtitleTextStyle(
-                                  prefs,
-                                  responsiveFontSize,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      )
-                      .toList(),
+                        )
+                        .toList(),
+                  ),
                 ),
               ),
             ),

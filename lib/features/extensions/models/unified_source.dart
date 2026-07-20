@@ -8,7 +8,7 @@ class UnifiedSource {
   final String? lang;
   final String? iconUrl;
   final bool isInbuilt;
-  final bool isDsl;
+
   final bool isNsfw;
   final SourceInfo? sourceInfo;
   final bridge.Source? bridgeSource;
@@ -18,7 +18,6 @@ class UnifiedSource {
       name = sourceInfo.name,
       lang = sourceInfo.lang,
       iconUrl = sourceInfo.iconUrl,
-      isDsl = sourceInfo.type == SourceType.dsl,
       isInbuilt = sourceInfo.type == SourceType.inbuilt,
       isNsfw = sourceInfo.isNsfw;
 
@@ -27,7 +26,6 @@ class UnifiedSource {
       name = bridgeSource.name ?? 'N/A',
       lang = bridgeSource.lang,
       iconUrl = bridgeSource.iconUrl,
-      isDsl = false,
       isInbuilt = false,
       isNsfw = bridgeSource.isNsfw ?? false,
       sourceInfo = null;

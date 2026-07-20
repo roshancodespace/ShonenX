@@ -168,29 +168,6 @@ flutter run # Select your device/platform
 
 ---
 
-## 🔌 Extensions & DSL
-
-ShonenX ships without built-in content sources.
-
-Instead, it supports external providers powered by the ShonenX DSL — a JSON-based runtime that allows Anime, Manga, and Tracker integrations to be developed independently from the app.
-
-Build providers using:
-
-- HTML scraping
-- JSON APIs
-- Custom trackers
-- External extension repositories
-
-📖 **Read the DSL Documentation:** [DSL Guide](DSL_GUIDE.md)
-
-Examples:
-
-- [Anime Provider](examples/dsl_providers/sample_anime.json)
-- [Manga Provider](examples/dsl_providers/sample_manga.json)
-- [Tracker Provider](examples/dsl_providers/sample_tracker.json)
-
----
-
 ## ⚖️ Legal & DMCA Disclaimer
 
 Please read this before complaining.

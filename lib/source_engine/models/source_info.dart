@@ -1,6 +1,6 @@
 import 'package:shonenx/shared/models/unified_media.dart';
 
-enum SourceType { inbuilt, dsl, extension }
+enum SourceType { inbuilt, extension }
 
 class SourceInfo {
   final String id;

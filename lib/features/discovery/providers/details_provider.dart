@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
@@ -7,8 +9,9 @@ class DetailsArgs {
   final String id;
   final MediaType type;
   final String? sourceId;
+  final String? trackerId;
 
-  const DetailsArgs(this.id, this.type, {this.sourceId});
+  const DetailsArgs(this.id, this.type, {this.sourceId, this.trackerId});
 
   @override
   bool operator ==(Object other) =>
@@ -17,10 +20,11 @@ class DetailsArgs {
           runtimeType == other.runtimeType &&
           id == other.id &&
           type == other.type &&
-          sourceId == other.sourceId;
+          sourceId == other.sourceId &&
+          trackerId == other.trackerId;
 
   @override
-  int get hashCode => Object.hash(id, type, sourceId);
+  int get hashCode => Object.hash(id, type, sourceId, trackerId);
 }
 
 final detailsProvider = FutureProvider.autoDispose
@@ -28,6 +32,13 @@ final detailsProvider = FutureProvider.autoDispose
       ref,
       args,
     ) async {
+      if (args.trackerId != null) {
+        final targetType = TrackerType.tryFromId(args.trackerId!);
+        if (targetType != null) {
+          final targetTracker = targetType.getTracker(ref) as RemoteTracker;
+          return targetTracker.getDetails(args.id, args.type);
+        }
+      }
       if (args.sourceId != null &&
           args.sourceId != 'kitsu' &&
           args.sourceId != 'anilist' &&

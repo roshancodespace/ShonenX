@@ -3,15 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
-import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
+import 'package:share_plus/share_plus.dart';
+
 import 'package:shonenx/features/auth/providers/auth_provider.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/tabs/about_tab.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/tabs/about_tab.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/tabs/episodes_tab.dart';
 import 'package:shonenx/features/discovery/providers/details_provider.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
+import 'package:shonenx/features/player/domain/player_mode.dart';
+import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
@@ -22,10 +24,10 @@ import 'package:shonenx/features/tracking/presentation/widgets/tracker_manager_s
 import 'package:shonenx/features/tracking/providers/media_tracking_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_link_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
-import 'package:shonenx/features/player/domain/player_mode.dart';
-import 'package:shonenx/features/reader/domain/reader_mode.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
+import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
 class DetailsScreen extends ConsumerStatefulWidget {
@@ -163,6 +165,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
           widget.media.id,
           widget.mediaType,
           sourceId: widget.media.sourceId,
+          trackerId: widget.media.providerId,
         ),
       ),
     );
@@ -188,6 +191,54 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                     icon: const Icon(Icons.arrow_back_ios_new),
                     onPressed: () => context.pop(),
                   ),
+                  actions: [
+                    const _DownloadAppBarButton(),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 2),
+                      child: IconButton.filledTonal(
+                        tooltip: 'Share',
+                        style: IconButton.styleFrom(
+                          backgroundColor: theme.colorScheme.secondaryContainer,
+                          foregroundColor:
+                              theme.colorScheme.onSecondaryContainer,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(uiRoundness),
+                          ),
+                        ),
+                        icon: const Icon(Icons.share, size: 18),
+                        onPressed: () {
+                          final providerId =
+                              displayMedia.providerId ?? 'anilist';
+                          final id = displayMedia.id;
+                          final type = widget.mediaType == MediaType.ANIME
+                              ? 'anime'
+                              : 'manga';
+                          String url;
+                          if (providerId == 'myanimelist' ||
+                              providerId == 'mal') {
+                            url = 'https://myanimelist.net/$type/$id';
+                          } else if (providerId == 'kitsu') {
+                            url = 'https://kitsu.io/$type/$id';
+                          } else {
+                            url = 'https://anilist.co/$type/$id';
+                          }
+                          SharePlus.instance.share(
+                            ShareParams(uri: Uri.parse(url)),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    _CommentsAppBarButton(
+                      media: displayMedia,
+                      uiRoundness: uiRoundness,
+                    ),
+                    const SizedBox(width: 4),
+                    _TrackerAppBarButton(
+                      media: displayMedia,
+                      uiRoundness: uiRoundness,
+                    ),
+                  ],
                   flexibleSpace: FlexibleSpaceBar(
                     titlePadding: EdgeInsets.zero,
                     background: Stack(
@@ -335,18 +386,6 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                       ],
                     ),
                   ),
-                  actions: [
-                    const _DownloadAppBarButton(),
-                    _CommentsAppBarButton(
-                      media: displayMedia,
-                      uiRoundness: uiRoundness,
-                    ),
-                    const SizedBox(width: 4),
-                    _TrackerAppBarButton(
-                      media: displayMedia,
-                      uiRoundness: uiRoundness,
-                    ),
-                  ],
                 ),
               ],
               body: TabBarView(

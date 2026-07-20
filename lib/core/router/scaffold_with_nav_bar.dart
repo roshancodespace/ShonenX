@@ -19,6 +19,7 @@ import 'package:shonenx/features/downloads/providers/download_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/providers/navbar_action_provider.dart';
 import 'package:shonenx/app_init.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 final _navBreakpoints = ResponsiveBreakpoints.defaults.copyWith(
   heightNormal: 750,
@@ -80,6 +81,36 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
   void _handleDeepLink(Uri uri) {
     final scheme = uri.scheme.toLowerCase();
     final host = uri.host.toLowerCase();
+
+    if (host == 'anilist.co' ||
+        host == 'myanimelist.net' ||
+        host == 'kitsu.io' ||
+        host == 'kitsu.app') {
+      final pathSegments = uri.pathSegments;
+      if (pathSegments.length >= 2) {
+        final mediaTypeStr = pathSegments[0].toLowerCase();
+        final id = pathSegments[1];
+        MediaType? mediaType;
+        if (mediaTypeStr == 'anime') mediaType = MediaType.ANIME;
+        if (mediaTypeStr == 'manga') mediaType = MediaType.MANGA;
+
+        if (mediaType != null) {
+          String providerId = 'anilist';
+          if (host == 'myanimelist.net') providerId = 'myanimelist';
+          if (host == 'kitsu.io' || host == 'kitsu.app') providerId = 'kitsu';
+
+          final media = UnifiedMedia(
+            id: id,
+            title: MediaTitle(english: 'Loading...'),
+            type: mediaType,
+            providerId: providerId,
+          );
+
+          context.push('/details/${mediaType.id}', extra: media);
+          return;
+        }
+      }
+    }
 
     if ((scheme == 'aniyomi' ||
             scheme == 'tachiyomi' ||

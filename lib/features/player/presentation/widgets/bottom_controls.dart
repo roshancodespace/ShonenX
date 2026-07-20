@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/formatting.dart';
+import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_list_panel.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
@@ -189,7 +190,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                             final seconds = position.inSeconds;
 
                             return seconds >= skip.startTime &&
-                                seconds <= skip.endTime;
+                                seconds < skip.endTime;
                           }, orElse: () => null);
 
                       if (currentSkip != null &&
@@ -209,6 +210,48 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                             await widget.engine.seekTo(
                               Duration(seconds: currentSkip.endTime.ceil()),
                             );
+                          },
+                          theme: theme,
+                          defaultAccentColor: theme.colorScheme.onSecondary,
+                          defaultBackgroundColor: theme.colorScheme.secondary,
+                        );
+                      }
+
+                      final playerPrefs = ref.watch(playerPrefsProvider);
+                      final duration = aniRef.watch(
+                        videoEngineStateProvider.select((s) => s.duration),
+                      );
+                      final remaining = duration.inSeconds - position.inSeconds;
+                      final isNearEnd =
+                          remaining <= playerPrefs.nextEpisodeThreshold &&
+                          remaining > 0 &&
+                          duration.inSeconds > 0;
+
+                      if (isNearEnd && widget.controller.hasNextEpisode) {
+                        final progress =
+                            (playerPrefs.nextEpisodeThreshold - remaining) /
+                            playerPrefs.nextEpisodeThreshold;
+
+                        return _buildActionButton(
+                          leading: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              if (playerPrefs.autoNext)
+                                SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    value: progress,
+                                    strokeWidth: 2,
+                                    color: theme.colorScheme.onSecondary,
+                                  ),
+                                ),
+                              const Icon(Icons.skip_next_rounded, size: 18),
+                            ],
+                          ),
+                          displayText: 'Next Episode',
+                          onTap: () async {
+                            await widget.controller.skipEpisode();
                           },
                           theme: theme,
                           defaultAccentColor: theme.colorScheme.onSecondary,

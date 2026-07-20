@@ -32,6 +32,7 @@ class BatchDownloadSheet extends ConsumerStatefulWidget {
   final double watchedProgress;
   final SourceInfo source;
   final UnifiedMedia media;
+  final bool forceOneDM;
 
   const BatchDownloadSheet({
     super.key,
@@ -39,6 +40,7 @@ class BatchDownloadSheet extends ConsumerStatefulWidget {
     required this.watchedProgress,
     required this.source,
     required this.media,
+    this.forceOneDM = false,
   });
 
   static Future<void> show(
@@ -46,8 +48,9 @@ class BatchDownloadSheet extends ConsumerStatefulWidget {
     List<UnifiedEpisode> episodes,
     double watchedProgress,
     SourceInfo source,
-    UnifiedMedia media,
-  ) {
+    UnifiedMedia media, {
+    bool forceOneDM = false,
+  }) {
     return AppBottomSheet.show(
       context: context,
       title: 'Batch Download',
@@ -56,6 +59,7 @@ class BatchDownloadSheet extends ConsumerStatefulWidget {
         watchedProgress: watchedProgress,
         source: source,
         media: media,
+        forceOneDM: forceOneDM,
       ),
     );
   }
@@ -513,7 +517,8 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
           await dir.create(recursive: true);
         }
 
-        if (prefs.useOneDM) {
+        final use1DM = widget.forceOneDM || prefs.useOneDM;
+        if (use1DM) {
           oneDmUrls.add(matchedStream.url);
           oneDmFileNames.add(fileName);
           oneDmHeaders ??= matchedStream.headers;
@@ -537,7 +542,8 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
       }
     }
 
-    if (prefs.useOneDM && oneDmUrls.isNotEmpty) {
+    final use1DM = widget.forceOneDM || prefs.useOneDM;
+    if (use1DM && oneDmUrls.isNotEmpty) {
       await OneDMService.instance.downloadBatch(
         urls: oneDmUrls,
         fileNames: oneDmFileNames,

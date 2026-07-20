@@ -28,6 +28,8 @@ class PlayerPrefsState {
   final String defaultAudioLang;
   final String defaultSubtitleLang;
   final ServerType defaultServerType;
+  final bool autoNext;
+  final int nextEpisodeThreshold;
 
   const PlayerPrefsState({
     this.playerType = PlayerType.mediakit,
@@ -37,6 +39,8 @@ class PlayerPrefsState {
     this.defaultAudioLang = 'eng',
     this.defaultSubtitleLang = 'eng',
     this.defaultServerType = ServerType.sub,
+    this.autoNext = true,
+    this.nextEpisodeThreshold = 85,
   });
 
   PlayerPrefsState copyWith({
@@ -48,6 +52,8 @@ class PlayerPrefsState {
     String? defaultAudioLang,
     String? defaultSubtitleLang,
     ServerType? defaultServerType,
+    bool? autoNext,
+    int? nextEpisodeThreshold,
   }) {
     return PlayerPrefsState(
       playerType: playerType ?? this.playerType,
@@ -58,6 +64,8 @@ class PlayerPrefsState {
       defaultAudioLang: defaultAudioLang ?? this.defaultAudioLang,
       defaultSubtitleLang: defaultSubtitleLang ?? this.defaultSubtitleLang,
       defaultServerType: defaultServerType ?? this.defaultServerType,
+      autoNext: autoNext ?? this.autoNext,
+      nextEpisodeThreshold: nextEpisodeThreshold ?? this.nextEpisodeThreshold,
     );
   }
 
@@ -77,6 +85,8 @@ class PlayerPrefsState {
               orElse: () => ServerType.sub,
             )
           : ServerType.sub,
+      autoNext: map['autoNext'] ?? true,
+      nextEpisodeThreshold: map['nextEpisodeThreshold'] ?? 85,
     );
   }
 
@@ -89,6 +99,8 @@ class PlayerPrefsState {
       'defaultAudioLang': defaultAudioLang,
       'defaultSubtitleLang': defaultSubtitleLang,
       'defaultServerType': defaultServerType.name,
+      'autoNext': autoNext,
+      'nextEpisodeThreshold': nextEpisodeThreshold,
     };
   }
 
@@ -149,6 +161,16 @@ class PlayerPrefsNotifier extends Notifier<PlayerPrefsState> {
 
   void setDefaultServerType(ServerType type) {
     state = state.copyWith(defaultServerType: type);
+    _saveDb();
+  }
+
+  void setAutoNext(bool value) {
+    state = state.copyWith(autoNext: value);
+    _saveDb();
+  }
+
+  void setNextEpisodeThreshold(int threshold) {
+    state = state.copyWith(nextEpisodeThreshold: threshold);
     _saveDb();
   }
 

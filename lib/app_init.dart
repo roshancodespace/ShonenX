@@ -23,7 +23,6 @@ import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/library/domain/models/library_entry.dart';
 import 'package:shonenx/features/notifications/domain/models/notification_subscription.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
-import 'package:shonenx/source_engine/dsl_engine/dsl_provider_service.dart';
 import 'package:window_manager/window_manager.dart';
 
 class AppInit {
@@ -51,12 +50,32 @@ class AppInit {
     await _initDatabase();
     log.s('Database initialized');
 
+    await _cleanupOldDslProviders();
+    log.s('Old DSL providers cleaned up');
+
     await _initNotifications();
     log.s('Notifications initialized');
 
     log.section('DONE');
 
     return this;
+  }
+
+  Future<void> _cleanupOldDslProviders() async {
+    final log = _log.child('_cleanupOldDslProviders');
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final dslDir = Platform.isAndroid || Platform.isIOS || Platform.isMacOS
+          ? Directory(p.join(dir.path, 'dsl_providers'))
+          : Directory(p.join(dir.path, 'ShonenX', 'dsl_providers'));
+
+      if (await dslDir.exists()) {
+        await dslDir.delete(recursive: true);
+        log.i('Deleted old dsl_providers directory');
+      }
+    } catch (e) {
+      log.w('Failed to delete dsl_providers: $e');
+    }
   }
 
   Future<void> _initWindowManager() async {
@@ -168,7 +187,6 @@ class AppInit {
     final log = AppLogger.scope('AppInit').child('setupBridge');
 
     try {
-      ref.read(dslProvidersProvider);
       await AnymeXExtensionBridge.init(
         getDirectory: AnymeXExtensionBridge.defaultGetDirectory(
           baseDirectory: await getDatabaseDirectory('ShonenX'),

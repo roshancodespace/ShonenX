@@ -578,8 +578,6 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
           ? (source.lang ??
                     (source.sourceInfo?.type == SourceType.inbuilt
                         ? 'inbuilt'
-                        : source.sourceInfo?.type == SourceType.dsl
-                        ? 'DSL'
                         : 'all'))
                 .toUpperCase()
           : source.name,
@@ -669,15 +667,11 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
               },
             ),
             _buildSettingsButton(context, source.sourceInfo!),
-            if (source.isInbuilt || source.isDsl)
+            if (source.isInbuilt)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Text(
-                  source.isInbuilt
-                      ? 'INBUILT'
-                      : source.isDsl
-                      ? 'DSL'
-                      : 'UNKNOWN',
+                  'INBUILT',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSecondaryContainer,
                   ),

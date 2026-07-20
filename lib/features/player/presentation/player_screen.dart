@@ -166,6 +166,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     }
   }
 
+  void _hideControls() {
+    if (_showControls) {
+      _controlsTimer?.cancel();
+      if (mounted) setState(() => _showControls = false);
+    }
+  }
+
   Future<void> _toggleFullScreen() async {
     if (!Platform.isWindows && !Platform.isLinux && !Platform.isMacOS) return;
 
@@ -489,6 +496,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 Positioned.fill(
                   child: PlayerGestureOverlay(
                     onToggleControls: _toggleControls,
+                    onHideControls: _hideControls,
                     onRightClick: _toggleEpisodePanel,
                     onSeek: engine.seekRelative,
                     onSetSpeed: engine.setSpeed,

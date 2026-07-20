@@ -20,8 +20,6 @@ class ReaderImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cleanUrl = url.split('#').first;
-
     BoxFit fit = BoxFit.fitWidth;
     if (scaleType == ReaderScaleType.fitHeight) {
       fit = BoxFit.fitHeight;
@@ -30,7 +28,7 @@ class ReaderImage extends StatelessWidget {
     }
 
     return CachedNetworkImage(
-      imageUrl: cleanUrl,
+      imageUrl: url,
       httpHeaders: headers,
       fit: fit,
       width: double.infinity,

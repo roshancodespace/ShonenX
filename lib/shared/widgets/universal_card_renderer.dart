@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:shonenx/core/utils/image_headers.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 
 class UniversalCardRenderer extends StatelessWidget {
@@ -90,6 +91,7 @@ class UniversalCardRenderer extends StatelessWidget {
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       Widget img = CachedNetworkImage(
         imageUrl: imageUrl!,
+        httpHeaders: decodeUrlHeaders(imageUrl!),
         width: w,
         height: h,
         fit: BoxFit.cover,

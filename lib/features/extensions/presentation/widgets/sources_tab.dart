@@ -18,6 +18,265 @@ import 'package:shonenx/source_engine/source_registry.dart';
 import 'extension_beginner_sheet.dart';
 import 'runtime_setup_sheet.dart';
 
+class _LangHeaderTile extends StatelessWidget {
+  final String lang;
+  final int count;
+  final bool isExpanded;
+  final VoidCallback onTap;
+
+  const _LangHeaderTile(this.lang, this.count, this.isExpanded, this.onTap);
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(
+        lang,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+      subtitle: Text(
+        '$count extensions',
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+        ),
+      ),
+      trailing: Icon(
+        isExpanded ? Icons.expand_less : Icons.expand_more,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+      onTap: onTap,
+    );
+  }
+}
+
+class _GroupHeaderTile extends ConsumerWidget {
+  final String name;
+  final List<UnifiedSource> groupSources;
+  final bool isExpanded;
+  final VoidCallback onTap;
+  final bool isInstalled;
+  final MediaType type;
+
+  const _GroupHeaderTile(
+    this.name,
+    this.groupSources,
+    this.isExpanded,
+    this.onTap,
+    this.isInstalled,
+    this.type,
+  );
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isGroupProcessing = ref
+        .watch(extensionsControllerProvider)
+        .contains(name);
+    final isNsfw = groupSources.any((s) => s.effectiveNsfw);
+    final bgColor = isNsfw ? Colors.red.withValues(alpha: 0.06) : null;
+
+    Widget trailingIcon = Icon(
+      isExpanded ? Icons.expand_less : Icons.expand_more,
+    );
+    Widget trailing = trailingIcon;
+
+    if (isInstalled) {
+      if (isGroupProcessing) {
+        trailing = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(12),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+            trailingIcon,
+          ],
+        );
+      } else {
+        trailing = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (groupSources.any((s) => s.hasUpdate))
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: InkWell(
+                  onTap: () => ref
+                      .read(extensionsControllerProvider.notifier)
+                      .updateVariantGroup(context, name, type),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.arrow_upward_rounded,
+                          size: 13,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'UPDATE',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.primary,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => ref
+                  .read(extensionsControllerProvider.notifier)
+                  .uninstallVariantGroup(context, name, type),
+            ),
+            trailingIcon,
+          ],
+        );
+      }
+    }
+
+    return ListTile(
+      tileColor: bgColor,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+      leading: CachedNetworkImage(
+        imageUrl: groupSources.first.iconUrl ?? '',
+        width: 40,
+        height: 40,
+        fit: BoxFit.cover,
+        errorWidget: (_, __, ___) => const Icon(Icons.extension, size: 40),
+      ),
+      title: Text(
+        name,
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        isNsfw
+            ? '18+ • ${groupSources.length} variants'
+            : '${groupSources.length} variants',
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: isNsfw
+              ? Colors.red.shade400
+              : Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+          fontWeight: isNsfw ? FontWeight.w600 : null,
+        ),
+      ),
+      trailing: trailing,
+      onTap: onTap,
+    );
+  }
+}
+
+class _UpdatesHeaderTile extends ConsumerWidget {
+  final List<UnifiedSource> outdatedSources;
+  final bool isExpanded;
+  final VoidCallback onTap;
+
+  const _UpdatesHeaderTile(this.outdatedSources, this.isExpanded, this.onTap);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListTile(
+      title: Row(
+        children: [
+          Icon(
+            Icons.system_update_rounded,
+            color: Theme.of(context).colorScheme.primary,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Updates Available (${outdatedSources.length})',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+          TextButton.icon(
+            onPressed: () => ref
+                .read(extensionsControllerProvider.notifier)
+                .updateAllSources(context),
+            icon: const Icon(Icons.update, size: 16),
+            label: const Text(
+              'Update All',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ],
+      ),
+      trailing: Icon(isExpanded ? Icons.expand_less : Icons.expand_more),
+      onTap: onTap,
+    );
+  }
+}
+
+abstract class SourceListItem {}
+
+class LangHeaderItem extends SourceListItem {
+  final String lang;
+  final int count;
+  final bool isExpanded;
+  LangHeaderItem(this.lang, this.count, this.isExpanded);
+}
+
+class GroupHeaderItem extends SourceListItem {
+  final String name;
+  final List<UnifiedSource> sources;
+  final bool isExpanded;
+  final String groupKey;
+  GroupHeaderItem(this.name, this.sources, this.isExpanded, this.groupKey);
+}
+
+class SingleSourceItem extends SourceListItem {
+  final UnifiedSource source;
+  final bool isSubItem;
+  SingleSourceItem(this.source, this.isSubItem);
+}
+
+class UpdatesHeaderItem extends SourceListItem {
+  final List<UnifiedSource> outdatedSources;
+  final bool isExpanded;
+  UpdatesHeaderItem(this.outdatedSources, this.isExpanded);
+}
+
 class SourcesTab extends ConsumerStatefulWidget {
   final String engineFilter;
   final MediaType type;
@@ -39,6 +298,11 @@ class SourcesTab extends ConsumerStatefulWidget {
 }
 
 class _SourcesTabState extends ConsumerState<SourcesTab> {
+  final Set<String> _expandedLangs = {};
+  final Set<String> _expandedGroups = {};
+  bool _isUpdatesExpanded = true;
+  bool _isFirstLoad = true;
+
   @override
   void initState() {
     super.initState();
@@ -296,12 +560,74 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
     );
     final sortedLangs = groupedByLang.keys.toList();
 
+    if (_isFirstLoad && sortedLangs.isNotEmpty) {
+      _expandedLangs.add(sortedLangs.first);
+      _isFirstLoad = false;
+    }
+
     final outdatedSources = widget.isInstalled
         ? sources.where((s) => s.hasUpdate).toList()
         : <UnifiedSource>[];
     final outdatedGroups = <String, List<UnifiedSource>>{};
     for (final s in outdatedSources) {
       outdatedGroups.putIfAbsent(s.name, () => []).add(s);
+    }
+
+    // Flatten logic
+    final flatList = <SourceListItem>[];
+
+    if (widget.isInstalled && outdatedSources.isNotEmpty) {
+      flatList.add(UpdatesHeaderItem(outdatedSources, _isUpdatesExpanded));
+
+      if (_isUpdatesExpanded) {
+        for (final name in outdatedGroups.keys) {
+          final groupSources = outdatedGroups[name]!;
+          if (groupSources.length == 1) {
+            flatList.add(SingleSourceItem(groupSources.first, false));
+          } else {
+            final groupKey = '__UPDATE_GROUP__$name';
+            final isGroupExpanded = _expandedGroups.contains(groupKey);
+            flatList.add(
+              GroupHeaderItem(name, groupSources, isGroupExpanded, groupKey),
+            );
+
+            if (isGroupExpanded) {
+              for (final s in groupSources) {
+                flatList.add(SingleSourceItem(s, true));
+              }
+            }
+          }
+        }
+      }
+    }
+
+    for (final lang in sortedLangs) {
+      final nameGroups = groupedByLang[lang]!;
+      final sortedNames = nameGroups.keys.toList();
+      final isLangExpanded = _expandedLangs.contains(lang);
+
+      flatList.add(LangHeaderItem(lang, nameGroups.length, isLangExpanded));
+
+      if (isLangExpanded) {
+        for (final name in sortedNames) {
+          final groupSources = nameGroups[name]!;
+          if (groupSources.length == 1) {
+            flatList.add(SingleSourceItem(groupSources.first, false));
+          } else {
+            final groupKey = '${lang}_$name';
+            final isGroupExpanded = _expandedGroups.contains(groupKey);
+            flatList.add(
+              GroupHeaderItem(name, groupSources, isGroupExpanded, groupKey),
+            );
+
+            if (isGroupExpanded) {
+              for (final s in groupSources) {
+                flatList.add(SingleSourceItem(s, true));
+              }
+            }
+          }
+        }
+      }
     }
 
     return RefreshIndicator(
@@ -312,253 +638,64 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
       },
       child: CustomScrollView(
         slivers: [
-          if (widget.isInstalled && outdatedSources.isNotEmpty)
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
-              sliver: SliverToBoxAdapter(
-                child: Theme(
-                  data: Theme.of(
-                    context,
-                  ).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    initiallyExpanded: true,
-                    title: Row(
-                      children: [
-                        Icon(
-                          Icons.system_update_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Updates Available (${outdatedSources.length})',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: () => ref
-                              .read(extensionsControllerProvider.notifier)
-                              .updateAllSources(context),
-                          icon: const Icon(Icons.update, size: 16),
-                          label: const Text(
-                            'Update All',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 10,
-                            ),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                        ),
-                      ],
-                    ),
-                    children: outdatedGroups.keys.map((name) {
-                      final groupSources = outdatedGroups[name]!;
-                      if (groupSources.length == 1) {
-                        return _buildItem(context, groupSources.first, false);
-                      }
-                      return _buildGroupTile(context, name, groupSources);
-                    }).toList(),
-                  ),
-                ),
-              ),
-            ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 120),
             sliver: SliverList.builder(
-              itemCount: sortedLangs.length,
-              itemBuilder: (context, langIndex) {
-                final lang = sortedLangs[langIndex];
-                final nameGroups = groupedByLang[lang]!;
-                final sortedNames = nameGroups.keys.toList();
+              itemCount: flatList.length,
+              itemBuilder: (context, index) {
+                final item = flatList[index];
 
-                return Theme(
-                  data: Theme.of(
-                    context,
-                  ).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    initiallyExpanded: langIndex == 0,
-                    title: Text(
-                      lang,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    subtitle: Text(
-                      '${nameGroups.length} extensions',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                      ),
-                    ),
-                    children: sortedNames.map((name) {
-                      final groupSources = nameGroups[name]!;
+                if (item is UpdatesHeaderItem) {
+                  return _UpdatesHeaderTile(
+                    item.outdatedSources,
+                    item.isExpanded,
+                    () {
+                      setState(() {
+                        _isUpdatesExpanded = !_isUpdatesExpanded;
+                      });
+                    },
+                  );
+                } else if (item is LangHeaderItem) {
+                  return _LangHeaderTile(
+                    item.lang,
+                    item.count,
+                    item.isExpanded,
+                    () {
+                      setState(() {
+                        if (item.isExpanded) {
+                          _expandedLangs.remove(item.lang);
+                        } else {
+                          _expandedLangs.add(item.lang);
+                        }
+                      });
+                    },
+                  );
+                } else if (item is GroupHeaderItem) {
+                  return _GroupHeaderTile(
+                    item.name,
+                    item.sources,
+                    item.isExpanded,
+                    () {
+                      setState(() {
+                        if (item.isExpanded) {
+                          _expandedGroups.remove(item.groupKey);
+                        } else {
+                          _expandedGroups.add(item.groupKey);
+                        }
+                      });
+                    },
+                    widget.isInstalled,
+                    widget.type,
+                  );
+                } else if (item is SingleSourceItem) {
+                  return _buildItem(context, item.source, item.isSubItem);
+                }
 
-                      if (groupSources.length == 1) {
-                        return _buildItem(context, groupSources.first, false);
-                      }
-
-                      return _buildGroupTile(context, name, groupSources);
-                    }).toList(),
-                  ),
-                );
+                return const SizedBox.shrink();
               },
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildGroupTile(
-    BuildContext context,
-    String name,
-    List<UnifiedSource> groupSources,
-  ) {
-    final isGroupProcessing = ref
-        .watch(extensionsControllerProvider)
-        .contains(name);
-
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        backgroundColor: groupSources.any((s) => s.effectiveNsfw)
-            ? Colors.red.withValues(alpha: 0.06)
-            : null,
-        collapsedBackgroundColor: groupSources.any((s) => s.effectiveNsfw)
-            ? Colors.red.withValues(alpha: 0.06)
-            : null,
-        tilePadding: const EdgeInsets.symmetric(horizontal: 10),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                name,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (widget.isInstalled)
-              isGroupProcessing
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (groupSources.any((s) => s.hasUpdate))
-                          Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: InkWell(
-                              onTap: () => ref
-                                  .read(extensionsControllerProvider.notifier)
-                                  .updateVariantGroup(
-                                    context,
-                                    name,
-                                    widget.type,
-                                  ),
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.primary.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Theme.of(context).colorScheme.primary
-                                        .withValues(alpha: 0.4),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.arrow_upward_rounded,
-                                      size: 13,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'UPDATE',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: () => ref
-                              .read(extensionsControllerProvider.notifier)
-                              .uninstallVariantGroup(
-                                context,
-                                name,
-                                widget.type,
-                              ),
-                        ),
-                      ],
-                    ),
-          ],
-        ),
-        subtitle: Text(
-          groupSources.any((s) => s.effectiveNsfw)
-              ? '18+ • ${groupSources.length} variants'
-              : '${groupSources.length} variants',
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: groupSources.any((s) => s.effectiveNsfw)
-                ? Colors.red.shade400
-                : Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-            fontWeight: groupSources.any((s) => s.effectiveNsfw)
-                ? FontWeight.w600
-                : null,
-          ),
-        ),
-        leading: CachedNetworkImage(
-          imageUrl: groupSources.first.iconUrl ?? '',
-          width: 40,
-          height: 40,
-          fit: BoxFit.cover,
-          errorWidget: (_, __, ___) => const Icon(Icons.extension, size: 40),
-        ),
-        children: groupSources
-            .map((s) => _buildItem(context, s, true))
-            .toList(),
       ),
     );
   }
@@ -752,9 +889,23 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   )
-                : IconButton(
-                    icon: const Icon(Icons.add),
+                : FilledButton.tonalIcon(
                     onPressed: () => controller.installSource(context, source),
+                    icon: const Icon(Icons.download_rounded, size: 16),
+                    label: const Text(
+                      'Install',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 0,
+                      ),
+                      minimumSize: const Size(0, 32),
+                    ),
                   ),
           ],
         ],

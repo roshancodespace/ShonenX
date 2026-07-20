@@ -263,6 +263,44 @@ class PlayerController extends Notifier<PlayerState> {
     await changeServer(server);
   }
 
+  Future<void> changeStreamType({bool? isDub, bool toggle = true}) async {
+    final currentStream = state.activeStream;
+    if (currentStream == null) return;
+
+    bool targetDub = isDub ?? false;
+    if (toggle && isDub == null) {
+      final q = currentStream.quality.toLowerCase();
+      final currentlyDub = q.contains('dub') || q.contains('english');
+      targetDub = !currentlyDub;
+    }
+
+    _preferredServerType = targetDub ? ServerType.dub : ServerType.sub;
+    ref
+        .read(playerPrefsProvider.notifier)
+        .setDefaultServerType(_preferredServerType!);
+
+    VideoStream? targetStream;
+    if (targetDub) {
+      targetStream = state.streams.firstWhereOrNull((s) {
+        final sq = s.quality.toLowerCase();
+        return sq.contains('dub') || sq.contains('english');
+      });
+    } else {
+      targetStream = state.streams.firstWhereOrNull((s) {
+        final sq = s.quality.toLowerCase();
+        return sq.contains('sub') || sq.contains('japanese');
+      });
+      targetStream ??= state.streams.firstWhereOrNull((s) {
+        final sq = s.quality.toLowerCase();
+        return !sq.contains('dub') && !sq.contains('english');
+      });
+    }
+
+    if (targetStream != null && targetStream.url != currentStream.url) {
+      await changeStream(targetStream);
+    }
+  }
+
   Future<void> loadEpisode(
     UnifiedEpisode newEpisode, {
     bool force = false,
@@ -351,10 +389,30 @@ class PlayerController extends Notifier<PlayerState> {
 
       // Video Stream (mirror) Selection
       VideoStream activeStream = streams.first;
+
+      List<VideoStream> preferredTypeStreams = streams;
+      if (_preferredServerType != null) {
+        final isPrefDub = _preferredServerType == ServerType.dub;
+        final matchingStreams = streams.where((s) {
+          final sq = s.quality.toLowerCase();
+          final isDub = sq.contains('dub') || sq.contains('english');
+          return isPrefDub ? isDub : (!isDub);
+        }).toList();
+
+        if (matchingStreams.isNotEmpty) {
+          preferredTypeStreams = matchingStreams;
+          activeStream = matchingStreams.first;
+        }
+      }
+
       if (_preferredQuality != null && _preferredQuality != 'Auto') {
-        final qualityMatch = streams.firstWhereOrNull(
-          (s) => _matchesQuality(s.quality, _preferredQuality!),
-        );
+        final qualityMatch =
+            preferredTypeStreams.firstWhereOrNull(
+              (s) => _matchesQuality(s.quality, _preferredQuality!),
+            ) ??
+            streams.firstWhereOrNull(
+              (s) => _matchesQuality(s.quality, _preferredQuality!),
+            );
         if (qualityMatch != null) activeStream = qualityMatch;
       }
 

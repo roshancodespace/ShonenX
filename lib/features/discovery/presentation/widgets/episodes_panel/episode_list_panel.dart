@@ -443,25 +443,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                                     ),
                                     iconSize: 20,
                                     color: cs.primary,
-                                  ),
-                                if (Platform.isAndroid &&
-                                    widget.media.type == MediaType.ANIME &&
-                                    finalEpisodes.isNotEmpty)
-                                  IconButton(
-                                    onPressed: () => BatchDownloadSheet.show(
-                                      context,
-                                      finalEpisodes,
-                                      widget.watchedProgress,
-                                      state.source,
-                                      widget.media,
-                                      forceOneDM: true,
-                                    ),
-                                    icon: const Icon(
-                                      Icons.cloud_download_outlined,
-                                    ),
-                                    iconSize: 20,
-                                    color: cs.primary,
-                                    tooltip: 'Batch Download with 1DM',
+                                    tooltip: 'Batch Download',
                                   ),
                                 _ViewModeToggle(
                                   current: viewMode,

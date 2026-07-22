@@ -63,27 +63,49 @@ extension HttpX on HTTP {
                 name = '${resolution.split('x').last}p';
               }
             }
-            if (name == null || name.isEmpty) {
-              final bandwidth = RegExp(
-                r'BANDWIDTH=(\d+)',
-                caseSensitive: false,
-              ).firstMatch(line)?.group(1);
-              if (bandwidth != null) {
-                final bwVal = int.tryParse(bandwidth) ?? 0;
-                name = '${(bwVal / 1000).round()} kbps';
+            final bandwidthStr = RegExp(
+              r'BANDWIDTH=(\d+)',
+              caseSensitive: false,
+            ).firstMatch(line)?.group(1);
+
+            String? estSize;
+            if (bandwidthStr != null) {
+              final bwVal = int.tryParse(bandwidthStr);
+              if (bwVal != null && bwVal > 0) {
+                // Estimate size for ~24 min episode (1440 sec)
+                final bytes = (bwVal / 8) * 1440;
+                estSize = '~${_formatM3u8Bytes(bytes.toInt())}';
               }
+            }
+
+            if (name == null || name.isEmpty && bandwidthStr != null) {
+              final bwVal = int.tryParse(bandwidthStr!) ?? 0;
+              name = '${(bwVal / 1000).round()} kbps';
             }
             if (name == null || name.isEmpty) {
               name = 'Quality ${qualities.length + 1}';
             }
 
-            qualities.add(M3U8Quality(quality: name, url: resolvedUrl));
+            qualities.add(
+              M3U8Quality(quality: name, url: resolvedUrl, size: estSize),
+            );
           }
         }
       }
       return qualities;
     } catch (_) {
       return [];
+    }
+  }
+
+  String _formatM3u8Bytes(int bytes) {
+    if (bytes <= 0) return '';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    } else if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(0)} MB';
+    } else {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
     }
   }
 
@@ -102,5 +124,6 @@ extension HttpX on HTTP {
 class M3U8Quality {
   final String quality;
   final String url;
-  const M3U8Quality({required this.quality, required this.url});
+  final String? size;
+  const M3U8Quality({required this.quality, required this.url, this.size});
 }

@@ -57,6 +57,16 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
   double? _dragingValue;
   bool _isFullScreen = false;
   bool _isPortrait = false;
+  bool _hasTriggeredAutoNext = false;
+
+  @override
+  void didUpdateWidget(covariant BottomControls oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.playerState.activeEpisode?.id !=
+        widget.playerState.activeEpisode?.id) {
+      _hasTriggeredAutoNext = false;
+    }
+  }
 
   @override
   void initState() {
@@ -223,14 +233,26 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                       );
                       final remaining = duration.inSeconds - position.inSeconds;
                       final isNearEnd =
-                          remaining <= playerPrefs.nextEpisodeThreshold &&
-                          remaining > 0 &&
-                          duration.inSeconds > 0;
+                          widget.controller.hasNextEpisode &&
+                          duration.inSeconds > 0 &&
+                          (remaining <= playerPrefs.nextEpisodeThreshold ||
+                              position.inSeconds >= duration.inSeconds);
 
-                      if (isNearEnd && widget.controller.hasNextEpisode) {
-                        final progress =
-                            (playerPrefs.nextEpisodeThreshold - remaining) /
-                            playerPrefs.nextEpisodeThreshold;
+                      if (isNearEnd) {
+                        final progress = playerPrefs.nextEpisodeThreshold > 0
+                            ? ((playerPrefs.nextEpisodeThreshold - remaining) /
+                                      playerPrefs.nextEpisodeThreshold)
+                                  .clamp(0.0, 1.0)
+                            : 1.0;
+
+                        if (playerPrefs.autoNext &&
+                            !_hasTriggeredAutoNext &&
+                            (progress >= 1.0 || remaining <= 0)) {
+                          _hasTriggeredAutoNext = true;
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            widget.controller.skipEpisode();
+                          });
+                        }
 
                         return _buildActionButton(
                           leading: Stack(
@@ -251,6 +273,7 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                           ),
                           displayText: 'Next Episode',
                           onTap: () async {
+                            _hasTriggeredAutoNext = true;
                             await widget.controller.skipEpisode();
                           },
                           theme: theme,
@@ -259,18 +282,23 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
                         );
                       }
 
-                      return _buildActionButton(
-                        leading: const Icon(Icons.skip_next_rounded),
-                        displayText: '+85s',
-                        onTap: () async {
-                          await widget.engine.seekRelative(
-                            const Duration(seconds: 85),
-                          );
-                        },
-                        theme: theme,
-                        defaultAccentColor: theme.colorScheme.onSecondary,
-                        defaultBackgroundColor: theme.colorScheme.secondary,
-                      );
+                      if (playerPrefs.showSkipButton &&
+                          playerPrefs.skipDuration > 0) {
+                        return _buildActionButton(
+                          leading: const Icon(Icons.skip_next_rounded),
+                          displayText: '+${playerPrefs.skipDuration}s',
+                          onTap: () async {
+                            await widget.engine.seekRelative(
+                              Duration(seconds: playerPrefs.skipDuration),
+                            );
+                          },
+                          theme: theme,
+                          defaultAccentColor: theme.colorScheme.onSecondary,
+                          defaultBackgroundColor: theme.colorScheme.secondary,
+                        );
+                      }
+
+                      return const SizedBox.shrink();
                     },
                   ),
                   const SizedBox(width: 10),

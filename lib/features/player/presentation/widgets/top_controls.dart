@@ -179,13 +179,18 @@ class TopControls extends ConsumerWidget {
               _buildActionIcon(
                 icon: Icons.camera_alt_outlined,
                 onTap: () async {
-                  final error = await ref
+                  final result = await ref
                       .read(playerControllerProvider.notifier)
                       .takeAndShareScreenshot();
-                  if (error != null && context.mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text(error)));
+                  if (context.mounted && result.message != 'Save cancelled') {
+                    ScaffoldMessenger.of(context).clearSnackBars();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(result.message),
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
                   }
                 },
               ),

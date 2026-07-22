@@ -46,6 +46,7 @@ class DownloadSheet extends ConsumerStatefulWidget {
     return AppBottomSheet.show(
       context: context,
       title: 'Download Episode $epNumStr',
+      titleIcon: Icons.download_rounded,
       child: DownloadSheet(episode: episode, source: source, media: media),
     );
   }
@@ -219,17 +220,16 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: cs.primaryContainer.withValues(alpha: 0.25),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: cs.primary.withValues(alpha: 0.2)),
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 2,
+                right: 2,
+                top: 4,
+                bottom: 8,
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Icon(Icons.tune_rounded, color: cs.primary, size: 18),
-                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       '${server.id.length <= 12 ? '[${server.id}] ' : ''}${server.name}',
@@ -657,7 +657,6 @@ class _ServerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isDub = server.type == ServerType.dub;
 
     final subtitle = streams != null
         ? '${streams!.length} streams'
@@ -692,24 +691,7 @@ class _ServerTile extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-              decoration: BoxDecoration(
-                color: isDub ? cs.primaryContainer : cs.secondaryContainer,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                isDub ? 'DUB' : 'SUB',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                  color: isDub
-                      ? cs.onPrimaryContainer
-                      : cs.onSecondaryContainer,
-                ),
-              ),
-            ),
+            _ServerTypeBadge(type: server.type),
             const SizedBox(width: 8),
           ],
         ),
@@ -839,9 +821,9 @@ class _ServerTypeBadge extends StatelessWidget {
     final isSub = type == ServerType.sub;
 
     final bgColor = isDub
-        ? cs.primaryContainer
+        ? cs.primaryContainer.withValues(alpha: 0.5)
         : isSub
-        ? cs.secondaryContainer
+        ? cs.secondaryContainer.withValues(alpha: 0.5)
         : cs.surfaceContainerHighest;
 
     final textColor = isDub
@@ -851,16 +833,16 @@ class _ServerTypeBadge extends StatelessWidget {
         : cs.onSurfaceVariant;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         type.displayName,
         style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
           letterSpacing: 0.5,
           color: textColor,
         ),

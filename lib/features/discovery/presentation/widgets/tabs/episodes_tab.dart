@@ -62,6 +62,9 @@ class EpisodesTabWidget extends ConsumerWidget {
         ref.watch(historyEpisodesProvider(media.id)).value ?? [];
     final readHistoryEntries =
         ref.watch(historyChaptersProvider(media.id)).value ?? [];
+    final currentEpisodeNumber = media.type == MediaType.ANIME
+        ? watchHistoryEntries.firstOrNull?.episodeNumber
+        : readHistoryEntries.firstOrNull?.chapterNumber;
 
     return Column(
       children: [
@@ -78,7 +81,8 @@ class EpisodesTabWidget extends ConsumerWidget {
           child: EpisodeListPanel(
             media: media,
             watchedProgress: watchedProgress,
-            useScrollController: false,
+            currentEpisodeNumber: currentEpisodeNumber,
+            useScrollController: true,
             onEpisodeTap: (UnifiedEpisode episode, SourceInfo sourceInfo) {
               if (media.type == MediaType.MANGA) {
                 final historyEntry = readHistoryEntries

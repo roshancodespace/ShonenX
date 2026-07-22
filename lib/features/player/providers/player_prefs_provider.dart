@@ -30,6 +30,8 @@ class PlayerPrefsState {
   final ServerType defaultServerType;
   final bool autoNext;
   final int nextEpisodeThreshold;
+  final bool showSkipButton;
+  final int skipDuration;
 
   const PlayerPrefsState({
     this.playerType = PlayerType.mediakit,
@@ -41,6 +43,8 @@ class PlayerPrefsState {
     this.defaultServerType = ServerType.sub,
     this.autoNext = true,
     this.nextEpisodeThreshold = 85,
+    this.showSkipButton = true,
+    this.skipDuration = 85,
   });
 
   PlayerPrefsState copyWith({
@@ -54,6 +58,8 @@ class PlayerPrefsState {
     ServerType? defaultServerType,
     bool? autoNext,
     int? nextEpisodeThreshold,
+    bool? showSkipButton,
+    int? skipDuration,
   }) {
     return PlayerPrefsState(
       playerType: playerType ?? this.playerType,
@@ -66,6 +72,8 @@ class PlayerPrefsState {
       defaultServerType: defaultServerType ?? this.defaultServerType,
       autoNext: autoNext ?? this.autoNext,
       nextEpisodeThreshold: nextEpisodeThreshold ?? this.nextEpisodeThreshold,
+      showSkipButton: showSkipButton ?? this.showSkipButton,
+      skipDuration: skipDuration ?? this.skipDuration,
     );
   }
 
@@ -87,6 +95,8 @@ class PlayerPrefsState {
           : ServerType.sub,
       autoNext: map['autoNext'] ?? true,
       nextEpisodeThreshold: map['nextEpisodeThreshold'] ?? 85,
+      showSkipButton: map['showSkipButton'] ?? true,
+      skipDuration: map['skipDuration'] ?? 85,
     );
   }
 
@@ -101,6 +111,8 @@ class PlayerPrefsState {
       'defaultServerType': defaultServerType.name,
       'autoNext': autoNext,
       'nextEpisodeThreshold': nextEpisodeThreshold,
+      'showSkipButton': showSkipButton,
+      'skipDuration': skipDuration,
     };
   }
 
@@ -171,6 +183,16 @@ class PlayerPrefsNotifier extends Notifier<PlayerPrefsState> {
 
   void setNextEpisodeThreshold(int threshold) {
     state = state.copyWith(nextEpisodeThreshold: threshold);
+    _saveDb();
+  }
+
+  void setShowSkipButton(bool value) {
+    state = state.copyWith(showSkipButton: value);
+    _saveDb();
+  }
+
+  void setSkipDuration(int duration) {
+    state = state.copyWith(skipDuration: duration);
     _saveDb();
   }
 

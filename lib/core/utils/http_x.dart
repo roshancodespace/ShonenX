@@ -82,7 +82,7 @@ extension HttpX on HTTP {
               final bwVal = int.tryParse(bandwidthStr!) ?? 0;
               name = '${(bwVal / 1000).round()} kbps';
             }
-            if (name == null || name.isEmpty) {
+            if (name.isEmpty) {
               name = 'Quality ${qualities.length + 1}';
             }
 

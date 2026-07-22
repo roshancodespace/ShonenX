@@ -199,6 +199,78 @@ class PlayerSettingsScreen extends ConsumerWidget {
             ],
           ),
           SettingsSection(
+            title: 'Auto-Next & Quick Skip',
+            children: [
+              SettingsSwitchTile(
+                icon: Icons.skip_next_rounded,
+                title: 'Auto-Switch to Next Episode',
+                subtitle:
+                    'Automatically load next episode when countdown finishes or video ends',
+                value: playerPrefs.autoNext,
+                onChanged: (val) => prefsNotifier.setAutoNext(val),
+              ),
+              SettingsDropdownTile<int>(
+                icon: Icons.timer_outlined,
+                title: 'Next Episode Prompt Threshold',
+                value:
+                    [
+                      30,
+                      45,
+                      60,
+                      85,
+                      90,
+                      120,
+                    ].contains(playerPrefs.nextEpisodeThreshold)
+                    ? playerPrefs.nextEpisodeThreshold
+                    : 85,
+                items: [30, 45, 60, 85, 90, 120]
+                    .map(
+                      (s) => DropdownMenuItem(
+                        value: s,
+                        child: Text('${s}s before end'),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) prefsNotifier.setNextEpisodeThreshold(val);
+                },
+              ),
+              SettingsSwitchTile(
+                icon: Icons.fast_forward_rounded,
+                title: 'Show Quick Skip Button',
+                subtitle: 'Display quick seek button (+Xs) during playback',
+                value: playerPrefs.showSkipButton,
+                onChanged: (val) => prefsNotifier.setShowSkipButton(val),
+              ),
+              if (playerPrefs.showSkipButton)
+                SettingsDropdownTile<int>(
+                  icon: Icons.forward_10_rounded,
+                  title: 'Quick Skip Duration',
+                  value:
+                      [
+                        15,
+                        30,
+                        45,
+                        60,
+                        85,
+                        90,
+                        120,
+                      ].contains(playerPrefs.skipDuration)
+                      ? playerPrefs.skipDuration
+                      : 85,
+                  items: [15, 30, 45, 60, 85, 90, 120]
+                      .map(
+                        (s) =>
+                            DropdownMenuItem(value: s, child: Text('+${s}s')),
+                      )
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) prefsNotifier.setSkipDuration(val);
+                  },
+                ),
+            ],
+          ),
+          SettingsSection(
             title: 'Subtitles & Gestures',
             children: [
               SettingsActionTile(

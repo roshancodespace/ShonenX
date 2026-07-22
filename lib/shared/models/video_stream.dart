@@ -3,12 +3,14 @@ class VideoStream {
   final Map<String, String>? headers;
   final String quality;
   final List<SubtitleTrack> subtitles;
+  final String? size;
 
   const VideoStream({
     required this.url,
     this.headers,
     this.quality = 'Auto',
     this.subtitles = const [],
+    this.size,
   });
 
   VideoStream copyWith({
@@ -16,12 +18,14 @@ class VideoStream {
     Map<String, String>? headers,
     String? quality,
     List<SubtitleTrack>? subtitles,
+    String? size,
   }) {
     return VideoStream(
       url: url ?? this.url,
       headers: headers ?? this.headers,
       quality: quality ?? this.quality,
       subtitles: subtitles ?? this.subtitles,
+      size: size ?? this.size,
     );
   }
 }
@@ -40,11 +44,7 @@ class AudioTrack {
   final String label;
   final String? language;
 
-  const AudioTrack({
-    required this.id,
-    required this.label,
-    this.language,
-  });
+  const AudioTrack({required this.id, required this.label, this.language});
 
   static const auto = AudioTrack(id: 'auto', label: 'Auto');
   static const none = AudioTrack(id: 'no', label: 'Off');

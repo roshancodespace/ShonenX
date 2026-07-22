@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:device_apps/device_apps.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class OneDMService {
   OneDMService._();
@@ -105,5 +107,21 @@ class OneDMService {
 
     return true;
   }
+
+  Future<bool> isOneDMAvailable() async {
+    if (!Platform.isAndroid) return false;
+    final package = await getInstalledPackage();
+    return package != null;
+  }
+
+  Future<bool> launchPlayStore() async {
+    final uri = Uri.parse(
+      'https://play.google.com/store/apps/details?id=idm.internet.download.manager',
+    );
+    return await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
 }
 
+final isOneDMInstalledProvider = FutureProvider<bool>((ref) async {
+  return await OneDMService.instance.isOneDMAvailable();
+});

@@ -368,7 +368,10 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
     }
   }
 
-  Future<void> _startQueueLoop({bool fromIndexZero = true}) async {
+  Future<void> _startQueueLoop({
+    bool fromIndexZero = true,
+    bool? overrideOneDM,
+  }) async {
     if (_selectedServer == null || _selectedStream == null) return;
 
     if (fromIndexZero) {
@@ -413,6 +416,8 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
     final List<String> oneDmUrls = [];
     final List<String> oneDmFileNames = [];
     Map<String, String>? oneDmHeaders;
+
+    final use1DM = overrideOneDM ?? (widget.forceOneDM || prefs.useOneDM);
 
     while (_currentIndex < total) {
       if (!mounted || _currentStep != _BatchStep.queueing) break;
@@ -517,7 +522,6 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
           await dir.create(recursive: true);
         }
 
-        final use1DM = widget.forceOneDM || prefs.useOneDM;
         if (use1DM) {
           oneDmUrls.add(matchedStream.url);
           oneDmFileNames.add(fileName);
@@ -542,7 +546,6 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
       }
     }
 
-    final use1DM = widget.forceOneDM || prefs.useOneDM;
     if (use1DM && oneDmUrls.isNotEmpty) {
       await OneDMService.instance.downloadBatch(
         urls: oneDmUrls,
@@ -877,16 +880,40 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
           )
         else if (_availableServers!.isEmpty)
           const Text('No servers available.')
+        else if (_availableServers!.length == 1)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: cs.primaryContainer.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline_rounded, color: cs.primary, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Only 1 server available: ${_availableServers!.first.name} • ${_availableServers!.first.type.displayName} (Auto-selected)',
+                    style: TextStyle(
+                      color: cs.onSurface,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
         else
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: _availableServers!.map((server) {
               final isSelected = _selectedServer == server;
-              final isDub = server.type == ServerType.dub;
               return ChoiceChip(
                 label: Text(
-                  '${server.name} • ${isDub ? 'DUB' : 'SUB'}',
+                  '${server.name} • ${server.type.displayName}',
                   style: TextStyle(
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
@@ -972,50 +999,86 @@ class _BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
             }).toList(),
           ),
         const SizedBox(height: 28),
-        Row(
-          children: [
-            if (!isFallback) ...[
-              OutlinedButton(
-                onPressed: () =>
-                    setState(() => _currentStep = _BatchStep.selectEpisodes),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
+        Builder(
+          builder: (context) {
+            final isOneDMInstalledAsync = ref.watch(isOneDMInstalledProvider);
+            final isOneDMInstalled = isOneDMInstalledAsync.value ?? false;
+
+            return Row(
+              children: [
+                if (!isFallback) ...[
+                  OutlinedButton(
+                    onPressed: () => setState(
+                      () => _currentStep = _BatchStep.selectEpisodes,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text('Back'),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                  const SizedBox(width: 10),
+                ],
+                if (isOneDMInstalled && Platform.isAndroid) ...[
+                  OutlinedButton.icon(
+                    onPressed:
+                        (_selectedServer == null || _selectedStream == null)
+                        ? null
+                        : () => _startQueueLoop(
+                            fromIndexZero: !isFallback,
+                            overrideOneDM: true,
+                          ),
+                    icon: Icon(
+                      Icons.cloud_download_outlined,
+                      size: 18,
+                      color: cs.primary,
+                    ),
+                    label: const Text('1DM Batch'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed:
+                        (_selectedServer == null || _selectedStream == null)
+                        ? null
+                        : () => _startQueueLoop(fromIndexZero: !isFallback),
+                    icon: Icon(
+                      isFallback
+                          ? Icons.play_arrow_rounded
+                          : Icons.download_rounded,
+                    ),
+                    label: Text(
+                      isFallback
+                          ? 'Resume Downloading'
+                          : 'Start Batch Download (${_selectedEpisodes.length})',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
                   ),
                 ),
-                child: const Text('Back'),
-              ),
-              const SizedBox(width: 12),
-            ],
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: (_selectedServer == null || _selectedStream == null)
-                    ? null
-                    : () => _startQueueLoop(fromIndexZero: !isFallback),
-                icon: Icon(
-                  isFallback
-                      ? Icons.play_arrow_rounded
-                      : Icons.download_rounded,
-                ),
-                label: Text(
-                  isFallback
-                      ? 'Resume Downloading'
-                      : 'Start Batch Download (${_selectedEpisodes.length})',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ],
     );

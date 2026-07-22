@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/services/one_dm_service.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
@@ -262,21 +263,96 @@ class DownloadSettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 if (Platform.isAndroid) ...[
-                  SettingsSwitchTile(
-                    leading: SvgIcon(
-                      color: colors.primary,
-                      size: 30,
-                      '''<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-                        <path fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" d="M10.78 37.272h23.98c13.018 0 10.842-19.588-2.216-15.235c0-10.882-19.588-10.882-19.588 2.176C2.074 22.037 2.074 37.272 10.78 37.272" stroke-width="2.2" />
-                        <path fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" d="M27.273 27.477L24 30.75l-3.273-3.273M24 30.75v-9.998m-5.758 12h11.516" stroke-width="2.2" />
-                      </svg>''',
-                    ),
-                    title: 'Use External Downloader (1DM)',
-                    subtitle:
-                        'Send links to external apps instead of the built-in engine',
-                    value: prefs.useOneDM,
-                    onChanged: (val) {
-                      prefsNotifier.setUseOneDM(val);
+                  Builder(
+                    builder: (context) {
+                      final isInstalledAsync = ref.watch(
+                        isOneDMInstalledProvider,
+                      );
+                      final isInstalled = isInstalledAsync.value ?? false;
+                      final svgIcon = SvgIcon(
+                        color: colors.primary,
+                        size: 30,
+                        '''<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+                          <path fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" d="M10.78 37.272h23.98c13.018 0 10.842-19.588-2.216-15.235c0-10.882-19.588-10.882-19.588 2.176C2.074 22.037 2.074 37.272 10.78 37.272" stroke-width="2.2" />
+                          <path fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" d="M27.273 27.477L24 30.75l-3.273-3.273M24 30.75v-9.998m-5.758 12h11.516" stroke-width="2.2" />
+                        </svg>''',
+                      );
+
+                      if (isInstalled) {
+                        return SettingsSwitchTile(
+                          leading: svgIcon,
+                          title: 'Use External Downloader (1DM)',
+                          subtitle:
+                              'Send links to external apps instead of the built-in engine',
+                          value: prefs.useOneDM,
+                          onChanged: (val) {
+                            prefsNotifier.setUseOneDM(val);
+                          },
+                        );
+                      } else {
+                        return SettingsActionTile(
+                          leading: Opacity(opacity: 0.5, child: svgIcon),
+                          title: 'Use External Downloader (1DM)',
+                          subtitle:
+                              '1DM is not installed on your device. High-speed multi-threaded downloader for Android.',
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 20,
+                                ),
+                                tooltip: 'What is 1DM?',
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      title: const Text('About 1DM Downloader'),
+                                      content: const Text(
+                                        '1DM (Internet Download Manager) is a popular third-party Android download manager app. '
+                                        'It supports up to 32 parallel download connections, background downloads, and smart error recovery.\n\n'
+                                        'If installed, ShonenX can send episode download streams directly to 1DM.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(ctx),
+                                          child: const Text('Close'),
+                                        ),
+                                        FilledButton.icon(
+                                          icon: const Icon(
+                                            Icons.get_app_rounded,
+                                            size: 18,
+                                          ),
+                                          label: const Text(
+                                            'Get on Play Store',
+                                          ),
+                                          onPressed: () {
+                                            Navigator.pop(ctx);
+                                            OneDMService.instance
+                                                .launchPlayStore();
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 4),
+                              FilledButton.tonalIcon(
+                                icon: const Icon(
+                                  Icons.download_rounded,
+                                  size: 16,
+                                ),
+                                label: const Text('Install'),
+                                onPressed: () =>
+                                    OneDMService.instance.launchPlayStore(),
+                              ),
+                            ],
+                          ),
+                          onTap: () => OneDMService.instance.launchPlayStore(),
+                        );
+                      }
                     },
                   ),
                 ],

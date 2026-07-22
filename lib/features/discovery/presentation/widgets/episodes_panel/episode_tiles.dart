@@ -149,7 +149,7 @@ class EpisodeClassicTile extends BaseEpisodeTile {
     final num = formatEpisodeNumber(episode.number);
 
     final dimColor = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
-    final isEffectivelyWatched = isWatched && !isCurrent;
+    final isEffectivelyWatched = isWatched;
 
     final labelColor = isEffectivelyWatched
         ? dimColor
@@ -323,16 +323,29 @@ class EpisodeClassicTile extends BaseEpisodeTile {
                                     vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary,
+                                    color: isWatched
+                                        ? theme.colorScheme.secondaryContainer
+                                        : theme.colorScheme.primaryContainer,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
-                                    'Now Playing',
+                                    isWatched
+                                        ? (mediaType == MediaType.ANIME
+                                              ? 'Watched'
+                                              : 'Read')
+                                        : 'In Progress',
                                     style: TextStyle(
                                       fontSize: 9,
                                       fontWeight: FontWeight.w800,
-                                      color: theme.colorScheme.onPrimary,
+                                      color: isWatched
+                                          ? theme
+                                                .colorScheme
+                                                .onSecondaryContainer
+                                          : theme
+                                                .colorScheme
+                                                .onPrimaryContainer,
                                       height: 1,
+                                      letterSpacing: 0.5,
                                     ),
                                   ),
                                 ),
@@ -422,7 +435,7 @@ class EpisodeGridTile extends BaseEpisodeTile {
 
     final num = formatEpisodeNumber(episode.number);
 
-    final isEffectivelyWatched = isWatched && !isCurrent;
+    final isEffectivelyWatched = isWatched;
     final dimColor = cs.onSurfaceVariant.withValues(alpha: 0.45);
 
     return Material(
@@ -557,29 +570,25 @@ class EpisodeGridTile extends BaseEpisodeTile {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: cs.primary,
-                          borderRadius: BorderRadius.circular(6),
+                          color: isWatched
+                              ? cs.secondaryContainer
+                              : cs.primaryContainer,
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.play_arrow_rounded,
-                              color: cs.onPrimary,
-                              size: 8,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              'NOW',
-                              style: TextStyle(
-                                color: cs.onPrimary,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                height: 1,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          isWatched
+                              ? (mediaType == MediaType.ANIME
+                                    ? 'WATCHED'
+                                    : 'READ')
+                              : 'IN PROGRESS',
+                          style: TextStyle(
+                            color: isWatched
+                                ? cs.onSecondaryContainer
+                                : cs.onPrimaryContainer,
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
                     ),
@@ -659,7 +668,7 @@ class EpisodeBoxTile extends BaseEpisodeTile {
 
     final num = formatEpisodeNumber(episode.number);
 
-    final isEffectivelyWatched = isWatched && !isCurrent;
+    final isEffectivelyWatched = isWatched;
 
     final bgColor = isCurrent
         ? cs.primary
@@ -771,7 +780,7 @@ class EpisodeCompactTile extends BaseEpisodeTile {
         : 'Ch $epNumText';
     final title = episode.title ?? epLabel;
 
-    final isEffectivelyWatched = isWatched && !isCurrent;
+    final isEffectivelyWatched = isWatched;
     final dimColor = cs.onSurfaceVariant.withValues(alpha: 0.55);
 
     return InkWell(
@@ -918,7 +927,7 @@ class EpisodeCoverTile extends BaseEpisodeTile {
         : 'Chapter $epNumText';
     final title = episode.title ?? epLabel;
 
-    final isEffectivelyWatched = isWatched && !isCurrent;
+    final isEffectivelyWatched = isWatched;
 
     return Material(
       color: cs.surfaceContainerHigh,

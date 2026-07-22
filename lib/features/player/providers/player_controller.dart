@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
@@ -720,11 +721,36 @@ class PlayerController extends Notifier<PlayerState> {
     return _cachedThumbnail;
   }
 
-  Future<String?> takeAndShareScreenshot() async {
+  Future<({bool success, String message})> takeAndShareScreenshot() async {
     try {
       ref.read(videoEngineProvider).pause();
-      final image = await _screenshot.capture(pixelRatio: 1.0);
-      if (image != null) {
+      final image = await _screenshot.capture(pixelRatio: 1.5);
+      if (image == null) {
+        return (success: false, message: 'Failed to capture screenshot.');
+      }
+
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        final now = DateTime.now();
+        final timestamp =
+            '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+        final defaultFileName = 'ShonenX_$timestamp.png';
+
+        final savePath = await FilePicker.platform.saveFile(
+          dialogTitle: 'Save Screenshot',
+          fileName: defaultFileName,
+          type: FileType.custom,
+          allowedExtensions: ['png'],
+        );
+
+        if (savePath == null) {
+          return (success: false, message: 'Save cancelled');
+        }
+
+        final file = File(savePath);
+        await file.writeAsBytes(image);
+
+        return (success: true, message: 'Screenshot saved to ${file.path}');
+      } else {
         final tempDir = await getTemporaryDirectory();
         final file = File(
           '${tempDir.path}/screenshot_${DateTime.now().millisecondsSinceEpoch}.png',
@@ -734,11 +760,10 @@ class PlayerController extends Notifier<PlayerState> {
           [XFile(file.path)],
           text: 'Screenshot from ${_media?.title.availableTitle ?? "ShonenX"}',
         );
-        return null; // success
+        return (success: true, message: 'Screenshot captured');
       }
-      return 'Failed to capture screenshot.';
     } catch (e) {
-      return e.toString();
+      return (success: false, message: 'Screenshot error: $e');
     }
   }
 

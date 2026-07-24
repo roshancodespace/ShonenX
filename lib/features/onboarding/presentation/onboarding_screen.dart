@@ -6,6 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:collection/collection.dart';
+import 'package:shonenx/features/discovery/domain/models/home_section.dart';
+import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
+import 'package:shonenx/features/discovery/providers/home_layout_provider.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/features/auth/providers/auth_provider.dart';
 import 'package:shonenx/features/onboarding/providers/onboarding_provider.dart';
@@ -32,7 +38,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // FIXED: Added kIsWeb check to prevent UnsupportedError on Web
   bool get _isMobile => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
-  int get _totalPages => _isMobile ? 5 : 4;
+  int get _totalPages => _isMobile ? 6 : 5;
 
   void _nextPage() {
     // FIXED: Use actual PageController position instead of lagging _currentIndex state to prevent animation jitter on rapid taps
@@ -87,6 +93,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     children: [
                       _buildWelcomePage(theme, cs),
                       _buildThemePage(theme, cs),
+                      _buildDiscoveryGuidePage(theme, cs),
                       _buildTrackersPage(theme, cs),
                       _buildExtensionsPage(theme, cs),
                       if (_isMobile) _buildNotificationsPage(theme, cs),
@@ -272,6 +279,256 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           style: SegmentedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDiscoveryGuidePage(ThemeData theme, ColorScheme cs) {
+    final discPrefs = ref.watch(discoveryPrefsProvider);
+    final homeSections = ref.watch(userHomeLayoutProvider);
+    final layoutNotifier = ref.read(userHomeLayoutProvider.notifier);
+
+    final hasContinue = homeSections.any(
+      (s) => s.type == HomeSectionType.continueMedia,
+    );
+    final hasLibrary = homeSections.any(
+      (s) => s.type == HomeSectionType.libraryStatus,
+    );
+    final hasTrending = homeSections.any(
+      (s) => s.trackerCategory == TrackerCategory.trending,
+    );
+    final hasUpcoming = homeSections.any(
+      (s) => s.trackerCategory == TrackerCategory.upcoming,
+    );
+    final hasPopular = homeSections.any(
+      (s) => s.trackerCategory == TrackerCategory.popular,
+    );
+    final hasTopRated = homeSections.any(
+      (s) => s.trackerCategory == TrackerCategory.topRated,
+    );
+
+    return _buildPageLayout(
+      title: 'Initial Home & Discovery Setup',
+      description:
+          'Customize your initial Home Feed layout and pick your preferred discovery engine.',
+      icon: Icons.dashboard_customize_rounded,
+      theme: theme,
+      cs: cs,
+      customWidget: Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'DISCOVERY ENGINE',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: cs.primary,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.1,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SegmentedButton<MetadataMode>(
+              segments: const [
+                ButtonSegment(
+                  value: MetadataMode.tracker,
+                  label: Text('Tracker Feeds'),
+                  icon: Icon(Icons.cloud_rounded),
+                ),
+                ButtonSegment(
+                  value: MetadataMode.source,
+                  label: Text('Source Mode'),
+                  icon: Icon(Icons.extension_rounded),
+                ),
+              ],
+              selected: {discPrefs.mode},
+              onSelectionChanged: (val) {
+                ref.read(discoveryPrefsProvider.notifier).setMode(val.first);
+              },
+            ),
+            const SizedBox(height: 6),
+            Text(
+              discPrefs.mode == MetadataMode.tracker
+                  ? '• Tracker Mode: Shows categories (Trending, Upcoming, Popular) from AniList/MAL.'
+                  : '• Source Mode: Directly queries installed extensions (Gogoanime, MangaDex, etc.).',
+              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 20),
+
+            Text(
+              'HOME SCREEN SECTIONS',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: cs.primary,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.1,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilterChip(
+                  avatar: const Icon(
+                    Icons.play_circle_outline_rounded,
+                    size: 16,
+                  ),
+                  label: const Text('Continue Media'),
+                  selected: hasContinue,
+                  onSelected: (val) {
+                    if (val) {
+                      layoutNotifier.addSection(
+                        const HomeSection(
+                          id: 'continue_anime',
+                          title: 'Continue Watching',
+                          type: HomeSectionType.continueMedia,
+                          targetMediaType: MediaType.ANIME,
+                        ),
+                      );
+                    } else {
+                      final target = homeSections.firstWhereOrNull(
+                        (s) => s.type == HomeSectionType.continueMedia,
+                      );
+                      if (target != null) {
+                        layoutNotifier.removeSection(target.id);
+                      }
+                    }
+                  },
+                ),
+                FilterChip(
+                  avatar: const Icon(
+                    Icons.collections_bookmark_rounded,
+                    size: 16,
+                  ),
+                  label: const Text('Library List'),
+                  selected: hasLibrary,
+                  onSelected: (val) {
+                    if (val) {
+                      layoutNotifier.addSection(
+                        const HomeSection(
+                          id: 'library_anime',
+                          title: 'Anime Library',
+                          type: HomeSectionType.libraryStatus,
+                          targetMediaType: MediaType.ANIME,
+                        ),
+                      );
+                    } else {
+                      final target = homeSections.firstWhereOrNull(
+                        (s) => s.type == HomeSectionType.libraryStatus,
+                      );
+                      if (target != null) {
+                        layoutNotifier.removeSection(target.id);
+                      }
+                    }
+                  },
+                ),
+                FilterChip(
+                  avatar: const Icon(
+                    Icons.local_fire_department_rounded,
+                    size: 16,
+                  ),
+                  label: const Text('Trending'),
+                  selected: hasTrending,
+                  onSelected: (val) {
+                    if (val) {
+                      layoutNotifier.addSection(
+                        const HomeSection(
+                          id: 'trending_anime',
+                          title: 'Trending Anime',
+                          type: HomeSectionType.discovery,
+                          trackerCategory: TrackerCategory.trending,
+                          targetMediaType: MediaType.ANIME,
+                        ),
+                      );
+                    } else {
+                      final target = homeSections.firstWhereOrNull(
+                        (s) => s.trackerCategory == TrackerCategory.trending,
+                      );
+                      if (target != null) {
+                        layoutNotifier.removeSection(target.id);
+                      }
+                    }
+                  },
+                ),
+                FilterChip(
+                  avatar: const Icon(Icons.rocket_launch_rounded, size: 16),
+                  label: const Text('Upcoming'),
+                  selected: hasUpcoming,
+                  onSelected: (val) {
+                    if (val) {
+                      layoutNotifier.addSection(
+                        const HomeSection(
+                          id: 'upcoming_anime',
+                          title: 'Upcoming Anime',
+                          type: HomeSectionType.discovery,
+                          trackerCategory: TrackerCategory.upcoming,
+                          targetMediaType: MediaType.ANIME,
+                        ),
+                      );
+                    } else {
+                      final target = homeSections.firstWhereOrNull(
+                        (s) => s.trackerCategory == TrackerCategory.upcoming,
+                      );
+                      if (target != null) {
+                        layoutNotifier.removeSection(target.id);
+                      }
+                    }
+                  },
+                ),
+                FilterChip(
+                  avatar: const Icon(Icons.emoji_events_rounded, size: 16),
+                  label: const Text('Popular'),
+                  selected: hasPopular,
+                  onSelected: (val) {
+                    if (val) {
+                      layoutNotifier.addSection(
+                        const HomeSection(
+                          id: 'popular_anime',
+                          title: 'Popular Anime',
+                          type: HomeSectionType.discovery,
+                          trackerCategory: TrackerCategory.popular,
+                          targetMediaType: MediaType.ANIME,
+                        ),
+                      );
+                    } else {
+                      final target = homeSections.firstWhereOrNull(
+                        (s) => s.trackerCategory == TrackerCategory.popular,
+                      );
+                      if (target != null) {
+                        layoutNotifier.removeSection(target.id);
+                      }
+                    }
+                  },
+                ),
+                FilterChip(
+                  avatar: const Icon(Icons.star_rounded, size: 16),
+                  label: const Text('Top Rated'),
+                  selected: hasTopRated,
+                  onSelected: (val) {
+                    if (val) {
+                      layoutNotifier.addSection(
+                        const HomeSection(
+                          id: 'top_rated_anime',
+                          title: 'Top Rated Anime',
+                          type: HomeSectionType.discovery,
+                          trackerCategory: TrackerCategory.topRated,
+                          targetMediaType: MediaType.ANIME,
+                        ),
+                      );
+                    } else {
+                      final target = homeSections.firstWhereOrNull(
+                        (s) => s.trackerCategory == TrackerCategory.topRated,
+                      );
+                      if (target != null) {
+                        layoutNotifier.removeSection(target.id);
+                      }
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

@@ -75,6 +75,28 @@ class HTTP {
     return buffer.toString();
   }
 
+  Duration _getEffectiveCacheDuration(
+    HttpClientResponse res,
+    Duration? cacheDuration,
+  ) {
+    if (cacheDuration != null && cacheDuration > Duration.zero) {
+      return cacheDuration;
+    }
+
+    final cacheControl = res.headers.value(HttpHeaders.cacheControlHeader);
+    if (cacheControl != null) {
+      final match = RegExp(r'max-age=(\d+)').firstMatch(cacheControl);
+      if (match != null) {
+        final seconds = int.tryParse(match.group(1) ?? '');
+        if (seconds != null && seconds > 0) {
+          return Duration(seconds: seconds);
+        }
+      }
+    }
+
+    return Duration.zero;
+  }
+
   Future<HttpResponse> _request(
     String method,
     String url, {
@@ -83,11 +105,10 @@ class HTTP {
     Object? body,
     Duration? cacheDuration,
   }) async {
-    final shouldCache = _shouldCache(cacheDuration);
     final key = _buildKey(url, queryParameters, body);
 
-    if (shouldCache &&
-        _cache != null &&
+    if (_cache != null &&
+        _cache.cacheConfig.enableCaching &&
         !_cache.cacheConfig.bypassCache &&
         (method == 'GET' || method == 'POST')) {
       final cached = await _cache.get(key);
@@ -124,8 +145,11 @@ class HTTP {
           : {'content-type': res.headers.contentType!.mimeType},
     );
 
-    if (shouldCache &&
+    final effectiveTtl = _getEffectiveCacheDuration(res, cacheDuration);
+
+    if (effectiveTtl > Duration.zero &&
         _cache != null &&
+        _cache.cacheConfig.enableCaching &&
         (method == 'GET' || method == 'POST') &&
         res.statusCode >= 200 &&
         res.statusCode < 300 &&
@@ -137,7 +161,7 @@ class HTTP {
           ..bodyBytes = utf8.encode(resBody)
           ..etag = res.headers.value(HttpHeaders.etagHeader)
           ..lastModified = res.headers.value(HttpHeaders.lastModifiedHeader),
-        cacheDuration!,
+        effectiveTtl,
       );
     }
     return response;
@@ -229,13 +253,6 @@ class HTTP {
       headers: headers,
       queryParameters: queryParameters,
     );
-  }
-
-  bool _shouldCache(Duration? cacheDuration) {
-    if (_cache != null && !_cache.cacheConfig.enableCaching) {
-      return false;
-    }
-    return cacheDuration != null && cacheDuration > Duration.zero;
   }
 }
 

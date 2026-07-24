@@ -32,29 +32,49 @@ const MediaPreferenceSchema = CollectionSchema(
       name: r'manualOverrideTitle',
       type: IsarType.string,
     ),
-    r'mediaTitle': PropertySchema(
+    r'matchedMediaId': PropertySchema(
       id: 3,
+      name: r'matchedMediaId',
+      type: IsarType.string,
+    ),
+    r'matchedMediaTitle': PropertySchema(
+      id: 4,
+      name: r'matchedMediaTitle',
+      type: IsarType.string,
+    ),
+    r'mediaTitle': PropertySchema(
+      id: 5,
       name: r'mediaTitle',
       type: IsarType.string,
     ),
     r'preferredAiringTracker': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'preferredAiringTracker',
       type: IsarType.string,
     ),
     r'preferredSourceId': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'preferredSourceId',
       type: IsarType.string,
     ),
     r'preferredSourceName': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'preferredSourceName',
       type: IsarType.string,
     ),
     r'preferredSourceType': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'preferredSourceType',
+      type: IsarType.string,
+    ),
+    r'preferredTracker': PropertySchema(
+      id: 10,
+      name: r'preferredTracker',
+      type: IsarType.string,
+    ),
+    r'trackerMediaId': PropertySchema(
+      id: 11,
+      name: r'trackerMediaId',
       type: IsarType.string,
     ),
   },
@@ -112,6 +132,18 @@ int _mediaPreferenceEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.matchedMediaId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.matchedMediaTitle;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.mediaTitle.length * 3;
   {
     final value = object.preferredAiringTracker;
@@ -122,6 +154,18 @@ int _mediaPreferenceEstimateSize(
   bytesCount += 3 + object.preferredSourceId.length * 3;
   bytesCount += 3 + object.preferredSourceName.length * 3;
   bytesCount += 3 + object.preferredSourceType.length * 3;
+  {
+    final value = object.preferredTracker;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.trackerMediaId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -134,11 +178,15 @@ void _mediaPreferenceSerialize(
   writer.writeString(offsets[0], object.manualAiringTrackerId);
   writer.writeString(offsets[1], object.manualOverrideId);
   writer.writeString(offsets[2], object.manualOverrideTitle);
-  writer.writeString(offsets[3], object.mediaTitle);
-  writer.writeString(offsets[4], object.preferredAiringTracker);
-  writer.writeString(offsets[5], object.preferredSourceId);
-  writer.writeString(offsets[6], object.preferredSourceName);
-  writer.writeString(offsets[7], object.preferredSourceType);
+  writer.writeString(offsets[3], object.matchedMediaId);
+  writer.writeString(offsets[4], object.matchedMediaTitle);
+  writer.writeString(offsets[5], object.mediaTitle);
+  writer.writeString(offsets[6], object.preferredAiringTracker);
+  writer.writeString(offsets[7], object.preferredSourceId);
+  writer.writeString(offsets[8], object.preferredSourceName);
+  writer.writeString(offsets[9], object.preferredSourceType);
+  writer.writeString(offsets[10], object.preferredTracker);
+  writer.writeString(offsets[11], object.trackerMediaId);
 }
 
 MediaPreference _mediaPreferenceDeserialize(
@@ -152,11 +200,15 @@ MediaPreference _mediaPreferenceDeserialize(
   object.manualAiringTrackerId = reader.readStringOrNull(offsets[0]);
   object.manualOverrideId = reader.readStringOrNull(offsets[1]);
   object.manualOverrideTitle = reader.readStringOrNull(offsets[2]);
-  object.mediaTitle = reader.readString(offsets[3]);
-  object.preferredAiringTracker = reader.readStringOrNull(offsets[4]);
-  object.preferredSourceId = reader.readString(offsets[5]);
-  object.preferredSourceName = reader.readString(offsets[6]);
-  object.preferredSourceType = reader.readString(offsets[7]);
+  object.matchedMediaId = reader.readStringOrNull(offsets[3]);
+  object.matchedMediaTitle = reader.readStringOrNull(offsets[4]);
+  object.mediaTitle = reader.readString(offsets[5]);
+  object.preferredAiringTracker = reader.readStringOrNull(offsets[6]);
+  object.preferredSourceId = reader.readString(offsets[7]);
+  object.preferredSourceName = reader.readString(offsets[8]);
+  object.preferredSourceType = reader.readString(offsets[9]);
+  object.preferredTracker = reader.readStringOrNull(offsets[10]);
+  object.trackerMediaId = reader.readStringOrNull(offsets[11]);
   return object;
 }
 
@@ -174,15 +226,23 @@ P _mediaPreferenceDeserializeProp<P>(
     case 2:
       return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
       return (reader.readStringOrNull(offset)) as P;
     case 5:
       return (reader.readString(offset)) as P;
     case 6:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 7:
       return (reader.readString(offset)) as P;
+    case 8:
+      return (reader.readString(offset)) as P;
+    case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readStringOrNull(offset)) as P;
+    case 11:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -937,6 +997,324 @@ extension MediaPreferenceQueryFilter
   }
 
   QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'matchedMediaId'),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'matchedMediaId'),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaIdEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'matchedMediaId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'matchedMediaId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'matchedMediaId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'matchedMediaId',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaIdStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'matchedMediaId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaIdEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'matchedMediaId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'matchedMediaId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'matchedMediaId',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'matchedMediaId', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'matchedMediaId', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaTitleIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'matchedMediaTitle'),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaTitleIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'matchedMediaTitle'),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaTitleEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'matchedMediaTitle',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaTitleGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'matchedMediaTitle',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaTitleLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'matchedMediaTitle',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaTitleBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'matchedMediaTitle',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaTitleStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'matchedMediaTitle',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaTitleEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'matchedMediaTitle',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaTitleContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'matchedMediaTitle',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaTitleMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'matchedMediaTitle',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaTitleIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'matchedMediaTitle', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  matchedMediaTitleIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'matchedMediaTitle', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
   mediaTitleEqualTo(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -1667,6 +2045,324 @@ extension MediaPreferenceQueryFilter
       );
     });
   }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  preferredTrackerIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'preferredTracker'),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  preferredTrackerIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'preferredTracker'),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  preferredTrackerEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'preferredTracker',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  preferredTrackerGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'preferredTracker',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  preferredTrackerLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'preferredTracker',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  preferredTrackerBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'preferredTracker',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  preferredTrackerStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'preferredTracker',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  preferredTrackerEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'preferredTracker',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  preferredTrackerContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'preferredTracker',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  preferredTrackerMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'preferredTracker',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  preferredTrackerIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'preferredTracker', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  preferredTrackerIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'preferredTracker', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  trackerMediaIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'trackerMediaId'),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  trackerMediaIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'trackerMediaId'),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  trackerMediaIdEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'trackerMediaId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  trackerMediaIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'trackerMediaId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  trackerMediaIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'trackerMediaId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  trackerMediaIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'trackerMediaId',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  trackerMediaIdStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'trackerMediaId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  trackerMediaIdEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'trackerMediaId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  trackerMediaIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'trackerMediaId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  trackerMediaIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'trackerMediaId',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  trackerMediaIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'trackerMediaId', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterFilterCondition>
+  trackerMediaIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'trackerMediaId', value: ''),
+      );
+    });
+  }
 }
 
 extension MediaPreferenceQueryObject
@@ -1716,6 +2412,34 @@ extension MediaPreferenceQuerySortBy
   sortByManualOverrideTitleDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'manualOverrideTitle', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  sortByMatchedMediaId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'matchedMediaId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  sortByMatchedMediaIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'matchedMediaId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  sortByMatchedMediaTitle() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'matchedMediaTitle', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  sortByMatchedMediaTitleDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'matchedMediaTitle', Sort.desc);
     });
   }
 
@@ -1788,6 +2512,34 @@ extension MediaPreferenceQuerySortBy
       return query.addSortBy(r'preferredSourceType', Sort.desc);
     });
   }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  sortByPreferredTracker() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'preferredTracker', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  sortByPreferredTrackerDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'preferredTracker', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  sortByTrackerMediaId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'trackerMediaId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  sortByTrackerMediaIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'trackerMediaId', Sort.desc);
+    });
+  }
 }
 
 extension MediaPreferenceQuerySortThenBy
@@ -1843,6 +2595,34 @@ extension MediaPreferenceQuerySortThenBy
   thenByManualOverrideTitleDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'manualOverrideTitle', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  thenByMatchedMediaId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'matchedMediaId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  thenByMatchedMediaIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'matchedMediaId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  thenByMatchedMediaTitle() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'matchedMediaTitle', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  thenByMatchedMediaTitleDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'matchedMediaTitle', Sort.desc);
     });
   }
 
@@ -1915,6 +2695,34 @@ extension MediaPreferenceQuerySortThenBy
       return query.addSortBy(r'preferredSourceType', Sort.desc);
     });
   }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  thenByPreferredTracker() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'preferredTracker', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  thenByPreferredTrackerDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'preferredTracker', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  thenByTrackerMediaId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'trackerMediaId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QAfterSortBy>
+  thenByTrackerMediaIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'trackerMediaId', Sort.desc);
+    });
+  }
 }
 
 extension MediaPreferenceQueryWhereDistinct
@@ -1944,6 +2752,26 @@ extension MediaPreferenceQueryWhereDistinct
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(
         r'manualOverrideTitle',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QDistinct>
+  distinctByMatchedMediaId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'matchedMediaId',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QDistinct>
+  distinctByMatchedMediaTitle({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'matchedMediaTitle',
         caseSensitive: caseSensitive,
       );
     });
@@ -1995,6 +2823,26 @@ extension MediaPreferenceQueryWhereDistinct
       );
     });
   }
+
+  QueryBuilder<MediaPreference, MediaPreference, QDistinct>
+  distinctByPreferredTracker({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'preferredTracker',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
+  QueryBuilder<MediaPreference, MediaPreference, QDistinct>
+  distinctByTrackerMediaId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'trackerMediaId',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
 }
 
 extension MediaPreferenceQueryProperty
@@ -2023,6 +2871,20 @@ extension MediaPreferenceQueryProperty
   manualOverrideTitleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'manualOverrideTitle');
+    });
+  }
+
+  QueryBuilder<MediaPreference, String?, QQueryOperations>
+  matchedMediaIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'matchedMediaId');
+    });
+  }
+
+  QueryBuilder<MediaPreference, String?, QQueryOperations>
+  matchedMediaTitleProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'matchedMediaTitle');
     });
   }
 
@@ -2057,6 +2919,20 @@ extension MediaPreferenceQueryProperty
   preferredSourceTypeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'preferredSourceType');
+    });
+  }
+
+  QueryBuilder<MediaPreference, String?, QQueryOperations>
+  preferredTrackerProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'preferredTracker');
+    });
+  }
+
+  QueryBuilder<MediaPreference, String?, QQueryOperations>
+  trackerMediaIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'trackerMediaId');
     });
   }
 }

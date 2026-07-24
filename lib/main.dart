@@ -19,40 +19,66 @@ final _riverpodLog = AppLogger.scope('RiverpodObserver');
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppLogger.init();
-
   final log = _log.child('main');
+  try {
+    await AppLogger.init();
 
-  log.i('App starting');
-  log.i('Args: $args');
+    log.i('App starting');
+    log.i('Args: $args');
 
-  final init = await AppInit().init();
-  log.i('AppInit completed');
+    final init = await AppInit().init();
+    log.i('AppInit completed');
 
-  final sharedPreference = await SharedPreferences.getInstance();
-  log.i('SharedPreferences ready');
+    final sharedPreference = await SharedPreferences.getInstance();
+    log.i('SharedPreferences ready');
 
-  Uri? startupUri;
+    Uri? startupUri;
 
-  for (final arg in args) {
-    final uri = Uri.tryParse(arg);
-    if (uri != null && uri.scheme.isNotEmpty) {
-      startupUri = uri;
-      break;
+    for (final arg in args) {
+      final uri = Uri.tryParse(arg);
+      if (uri != null && uri.scheme.isNotEmpty) {
+        startupUri = uri;
+        break;
+      }
     }
-  }
 
-  runApp(
-    ProviderScope(
-      observers: [RiverpodLogger()],
-      overrides: [
-        startupUriProvider.overrideWithValue(startupUri),
-        databaseProvider.overrideWith((ref) => init.isar),
-        sharedPreferencesProvider.overrideWith((ref) => sharedPreference),
-      ],
-      child: const ShonenXApp(),
-    ),
-  );
+    runApp(
+      ProviderScope(
+        observers: [RiverpodLogger()],
+        overrides: [
+          startupUriProvider.overrideWithValue(startupUri),
+          databaseProvider.overrideWith((ref) => init.isar),
+          sharedPreferencesProvider.overrideWith((ref) => sharedPreference),
+        ],
+        child: const ShonenXApp(),
+      ),
+    );
+  } catch (e, st) {
+    _log.e(e.toString(), st);
+
+    runApp(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          backgroundColor: const Color(0xFF8B0000),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Initialization Failed:\n\n$e\n\n$st',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class ShonenXApp extends ConsumerWidget {

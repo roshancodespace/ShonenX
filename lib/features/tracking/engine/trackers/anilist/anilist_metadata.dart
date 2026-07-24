@@ -380,6 +380,14 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
           : null;
       final nextEpisode = json['nextAiringEpisode']?['episode'];
 
+      final scoreVal = (json['averageScore'] as num?)?.toDouble();
+      final score = scoreVal != null && scoreVal > 0
+          ? (scoreVal > 10 ? scoreVal / 10.0 : scoreVal)
+          : null;
+      final seasonStr = json['seasonYear'] != null
+          ? json['seasonYear'].toString()
+          : json['season']?.toString();
+
       return UnifiedMedia(
         id: json['id']?.toString() ?? '',
         idMal: json['idMal']?.toString(),
@@ -388,6 +396,8 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
         providerId: json['id']?.toString() ?? '',
         title: title,
         format: json['format'],
+        score: score,
+        season: seasonStr,
         cover:
             (json['coverImage'] as Map?)?['extraLarge'] ??
             (json['coverImage'] as Map?)?['large'] ??

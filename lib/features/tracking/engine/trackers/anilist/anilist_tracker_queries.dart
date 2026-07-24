@@ -146,6 +146,9 @@ class AnilistTrackerQueries {
           status
           averageScore
           episodes
+          genres
+          seasonYear
+          season
         }
       }
     }
@@ -197,6 +200,9 @@ class AnilistTrackerQueries {
           status
           averageScore
           episodes
+          genres
+          seasonYear
+          season
         }
       }
     }

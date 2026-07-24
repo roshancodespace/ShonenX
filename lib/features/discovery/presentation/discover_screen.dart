@@ -782,6 +782,11 @@ class _PaginatedMediaGrid extends ConsumerWidget {
 
                 return MediaCard(
                   tag: 'media-${media.id}',
+                  format: media.format,
+                  score: media.score,
+                  status: media.status,
+                  genres: media.genres,
+                  year: media.season,
                   title: media.title.availableTitle,
                   imageUrl: media.cover ?? media.banner ?? '',
                   style: style,
@@ -885,6 +890,10 @@ class _GenreFeedRow extends ConsumerWidget {
             return MediaCard(
               tag: 'feed-$genre-${item.id}',
               format: item.format,
+              score: item.score,
+              status: item.status,
+              genres: item.genres,
+              year: item.season,
               title: item.title.availableTitle,
               imageUrl: item.cover ?? '',
               style: style,
@@ -1045,6 +1054,10 @@ class _SourceFeedRow extends ConsumerWidget {
             return MediaCard(
               tag: 'src-${info.id}-${item.id}',
               format: item.format,
+              score: item.score,
+              status: item.status,
+              genres: item.genres,
+              year: item.season,
               title: item.title.availableTitle,
               imageUrl: item.cover ?? '',
               style: style,

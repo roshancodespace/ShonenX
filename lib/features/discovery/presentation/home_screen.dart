@@ -378,6 +378,10 @@ class HomeScreen extends ConsumerWidget {
             return MediaCard(
               tag: '${section.id}-${item.id}',
               format: item.format,
+              score: item.score,
+              status: item.status,
+              genres: item.genres,
+              year: item.season,
               title: item.title.availableTitle,
               imageUrl: item.cover ?? '',
               style: style,
@@ -475,6 +479,10 @@ class HomeScreen extends ConsumerWidget {
         return MediaCard(
           tag: '$title-${item.id}',
           format: item.format,
+          score: item.score,
+          status: item.status,
+          genres: item.genres,
+          year: item.season,
           title: item.title.availableTitle,
           imageUrl: item.cover ?? '',
           style: style,

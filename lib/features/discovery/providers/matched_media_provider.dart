@@ -90,11 +90,11 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
     state = const AsyncLoading();
     final prefs = await ref.watch(mediaPreferenceProvider(args).future);
 
-    if (prefs.manualOverrideId != null && prefs.manualOverrideTitle != null) {
+    if (prefs.matchedMediaId != null && prefs.matchedMediaTitle != null) {
       return MatchedMediaState(
         matchedMedia: MatchedMedia(
-          id: prefs.manualOverrideId!,
-          title: prefs.manualOverrideTitle!,
+          id: prefs.matchedMediaId!,
+          title: prefs.matchedMediaTitle!,
         ),
       );
     }

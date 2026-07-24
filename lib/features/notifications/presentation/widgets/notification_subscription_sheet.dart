@@ -30,13 +30,13 @@ final _sheetScheduleProvider = FutureProvider.autoDispose
           TrackerType.tryFromId(metadataSourceId) ?? TrackerType.anilist;
 
       final targetTrackerType =
-          prefs.preferredAiringTracker ?? fallbackTrackerType;
+          prefs.preferredTracker ?? fallbackTrackerType;
 
       String targetId = media.id;
       final primaryTrackerType = ref.read(primaryTrackerProvider).type;
 
-      if (prefs.manualAiringTrackerId != null) {
-        targetId = prefs.manualAiringTrackerId!;
+      if (prefs.trackerMediaId != null) {
+        targetId = prefs.trackerMediaId!;
       } else if (targetTrackerType != primaryTrackerType) {
         if (targetTrackerType == TrackerType.myanimelist &&
             media.idMal != null) {
@@ -466,7 +466,7 @@ class _NotificationSubscriptionSheetState
                     TrackerType.anilist;
 
                 final tracker =
-                    prefsAsync.value?.preferredAiringTracker ?? fallbackTracker;
+                    prefsAsync.value?.preferredTracker ?? fallbackTracker;
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -501,7 +501,7 @@ class _NotificationSubscriptionSheetState
                         if (val != null) {
                           ref
                               .read(mediaPreferenceProvider(args).notifier)
-                              .setPreferredAiringTracker(val);
+                              .setPreferredTracker(val);
                         }
                       },
                     ),

@@ -108,7 +108,7 @@ class _ManualTrackerMatchSheetState
             MatchArgs(mediaTitle: widget.mediaTitle, type: widget.type),
           ).notifier,
         )
-        .setManualAiringTrackerId(result.id);
+        .setTrackerMediaId(result.id);
 
     context.pop(true);
   }

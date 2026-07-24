@@ -88,7 +88,7 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
 
     ref
         .read(mediaPreferenceProvider(args).notifier)
-        .setManualOverrides(result.id, result.title.availableTitle);
+        .setManualMatch(result.id, result.title.availableTitle);
 
     ref.invalidate(matchedMediaProvider(args));
     ref.invalidate(episodesListProvider(args));

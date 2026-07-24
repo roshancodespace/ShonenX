@@ -12,6 +12,7 @@ abstract class TrackingService {
   Future<bool> get isAuthenticated;
 
   bool supportsMediaType(MediaType mediaType);
+  List<MediaType> get supportedMediaTypes;
 
   Future<void> updateListItem({
     required String trackingId,

@@ -5,11 +5,13 @@ import 'package:shonenx/features/auth/providers/auth_provider.dart';
 import 'package:shonenx/features/library/domain/models/library_entry.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_credentials.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_profile.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/base_tracker.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/features/tracking/engine/trackers/mal/mal_authenticator.dart';
+import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/tracker_search_result.dart';
 import 'mal_metadata.dart';
@@ -32,13 +34,23 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
   Future<bool> get isAuthenticated async => (await _getToken()) != null;
 
   @override
-  bool supportsMediaType(MediaType mediaType) => true;
+  List<MediaType> get supportedMediaTypes => [MediaType.ANIME, MediaType.MANGA];
+
+  @override
+  bool supportsMediaType(MediaType mediaType) =>
+      supportedMediaTypes.contains(mediaType);
 
   @override
   TrackerType get type => TrackerType.myanimelist;
 
   @override
-  Authenticator get authenticator => MalAuthenticator();
+  TrackerCredentials? get customCredentials => ref
+      .read(trackingPrefsProvider)
+      .customCredentials[TrackerType.myanimelist];
+
+  @override
+  Authenticator get authenticator =>
+      MalAuthenticator(customCredentials: customCredentials);
 
   @override
   Future<List<TrackerSearchResult>> searchMedia(
@@ -152,12 +164,20 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
       }
 
       final stats = body['anime_statistics'] as Map?;
-      final totalWatching = (stats?['num_items_watching'] as num?)?.toInt() ?? 0;
-      final totalCompleted = (stats?['num_items_completed'] as num?)?.toInt() ?? 0;
+      final totalWatching =
+          (stats?['num_items_watching'] as num?)?.toInt() ?? 0;
+      final totalCompleted =
+          (stats?['num_items_completed'] as num?)?.toInt() ?? 0;
       final totalOnHold = (stats?['num_items_on_hold'] as num?)?.toInt() ?? 0;
       final totalDropped = (stats?['num_items_dropped'] as num?)?.toInt() ?? 0;
-      final totalPlan = (stats?['num_items_plan_to_watch'] as num?)?.toInt() ?? 0;
-      final totalAnime = totalWatching + totalCompleted + totalOnHold + totalDropped + totalPlan;
+      final totalPlan =
+          (stats?['num_items_plan_to_watch'] as num?)?.toInt() ?? 0;
+      final totalAnime =
+          totalWatching +
+          totalCompleted +
+          totalOnHold +
+          totalDropped +
+          totalPlan;
 
       final username = body['name']?.toString() ?? '';
 
@@ -165,7 +185,9 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
         id: body['id']?.toString() ?? '',
         username: username,
         avatarUrl: body['picture'],
-        profileUrl: username.isNotEmpty ? 'https://myanimelist.net/profile/$username' : null,
+        profileUrl: username.isNotEmpty
+            ? 'https://myanimelist.net/profile/$username'
+            : null,
         animeCount: stats != null ? totalAnime : null,
         episodesWatched: (stats?['num_episodes'] as num?)?.toInt(),
         meanScore: (stats?['mean_score'] as num?)?.toDouble(),
@@ -204,7 +226,7 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
           queryParameters: {'fields': 'my_list_status'},
           headers: {
             'Authorization': 'Bearer $token',
-            'X-MAL-CLIENT-ID': MalMetadata.clientId,
+            'X-MAL-CLIENT-ID': clientId,
           },
         );
 
@@ -221,12 +243,11 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
         if (listStatus == null) return null;
 
         final rawScore = (listStatus['score'] as num?)?.toInt() ?? 0;
-        
+
         final progressKey = mediaType == MediaType.ANIME
             ? 'num_episodes_watched'
             : 'num_chapters_read';
-        final progress =
-            (listStatus[progressKey] as num?)?.toDouble() ?? 0.0;
+        final progress = (listStatus[progressKey] as num?)?.toDouble() ?? 0.0;
 
         return TrackedListItem(
           id: body['id']?.toString(),
@@ -254,7 +275,9 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
         final limit = 50;
         final offset = (page - 1) * limit;
 
-        final endpoint = mediaType == MediaType.ANIME ? 'animelist' : 'mangalist';
+        final endpoint = mediaType == MediaType.ANIME
+            ? 'animelist'
+            : 'mangalist';
         final progressKey = mediaType == MediaType.ANIME
             ? 'num_episodes_watched'
             : 'num_chapters_read';
@@ -294,8 +317,7 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
                 ''
             ..status = _parseMalStatus(listStatus?['status']).id
             ..score = rawScore > 0 ? rawScore.toDouble() : 0
-            ..episodesWatched =
-                (listStatus?[progressKey] as num?)?.toInt() ?? 0
+            ..episodesWatched = (listStatus?[progressKey] as num?)?.toInt() ?? 0
             ..episodes = node[totalCountKey];
         }).toList();
       },

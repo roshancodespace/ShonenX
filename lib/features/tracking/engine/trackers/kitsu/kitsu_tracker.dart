@@ -15,7 +15,9 @@ import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dar
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/tracker_search_result.dart';
 
-class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTracker {
+class KitsuTracker extends BaseTracker
+    with KitsuMetadata
+    implements RemoteTracker {
   final Ref ref;
   final HTTP _http;
 
@@ -33,7 +35,11 @@ class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTrack
   Future<bool> get isAuthenticated async => (await _getToken()) != null;
 
   @override
-  bool supportsMediaType(MediaType mediaType) => true;
+  List<MediaType> get supportedMediaTypes => [MediaType.ANIME, MediaType.MANGA];
+
+  @override
+  bool supportsMediaType(MediaType mediaType) =>
+      supportedMediaTypes.contains(mediaType);
 
   @override
   TrackerType get type => TrackerType.kitsu;
@@ -47,7 +53,9 @@ class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTrack
       return cachedProfile.id;
     }
     final profile = await fetchProfile();
-    ref.read(trackerProfileProvider.notifier).saveProfile(TrackerType.kitsu, profile);
+    ref
+        .read(trackerProfileProvider.notifier)
+        .saveProfile(TrackerType.kitsu, profile);
     return profile.id;
   }
 
@@ -61,10 +69,7 @@ class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTrack
 
       final response = await _http.get(
         'https://kitsu.io/api/edge/$endpoint',
-        queryParameters: {
-          'filter[text]': query,
-          'page[limit]': '20',
-        },
+        queryParameters: {'filter[text]': query, 'page[limit]': '20'},
       );
 
       final body = response.json;
@@ -74,30 +79,36 @@ class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTrack
 
       final data = body['data'] as List? ?? [];
 
-      return data.whereType<Map>().map((item) {
-        try {
-          final attr = item['attributes'] as Map? ?? {};
-          final titles = attr['titles'] as Map? ?? {};
-          final title = attr['canonicalTitle']?.toString() ??
-              titles['en_jp']?.toString() ??
-              titles['en']?.toString() ??
-              titles['ja_jp']?.toString() ??
-              'Unknown Title';
-          final posterImage = attr['posterImage'] as Map? ?? {};
-          final cover = posterImage['large']?.toString() ??
-              posterImage['medium']?.toString() ??
-              posterImage['original']?.toString() ??
-              '';
+      return data
+          .whereType<Map>()
+          .map((item) {
+            try {
+              final attr = item['attributes'] as Map? ?? {};
+              final titles = attr['titles'] as Map? ?? {};
+              final title =
+                  attr['canonicalTitle']?.toString() ??
+                  titles['en_jp']?.toString() ??
+                  titles['en']?.toString() ??
+                  titles['ja_jp']?.toString() ??
+                  'Unknown Title';
+              final posterImage = attr['posterImage'] as Map? ?? {};
+              final cover =
+                  posterImage['large']?.toString() ??
+                  posterImage['medium']?.toString() ??
+                  posterImage['original']?.toString() ??
+                  '';
 
-          return TrackerSearchResult(
-            id: item['id']?.toString() ?? '',
-            title: title,
-            cover: cover,
-          );
-        } catch (_) {
-          return null;
-        }
-      }).whereType<TrackerSearchResult>().toList();
+              return TrackerSearchResult(
+                id: item['id']?.toString() ?? '',
+                title: title,
+                cover: cover,
+              );
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<TrackerSearchResult>()
+          .toList();
     });
   }
 
@@ -121,7 +132,8 @@ class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTrack
       final attr = user['attributes'] as Map? ?? {};
       final username = attr['name']?.toString() ?? 'Unknown';
       final avatar = attr['avatar'] as Map? ?? {};
-      final avatarUrl = avatar['original']?.toString() ?? avatar['large']?.toString();
+      final avatarUrl =
+          avatar['original']?.toString() ?? avatar['large']?.toString();
 
       return TrackerProfile(
         id: user['id']?.toString() ?? '',
@@ -183,16 +195,20 @@ class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTrack
           final mediaObj = mediaMap[mediaId];
           final mediaAttr = mediaObj?['attributes'] as Map? ?? {};
           final titles = mediaAttr['titles'] as Map? ?? {};
-          final title = mediaAttr['canonicalTitle']?.toString() ??
+          final title =
+              mediaAttr['canonicalTitle']?.toString() ??
               titles['en_jp']?.toString() ??
               titles['en']?.toString() ??
               titles['ja_jp']?.toString() ??
               'Unknown';
           final posterImage = mediaAttr['posterImage'] as Map? ?? {};
-          final cover = posterImage['large']?.toString() ??
+          final cover =
+              posterImage['large']?.toString() ??
               posterImage['medium']?.toString() ??
               '';
-          final totalCount = mediaAttr['episodeCount'] as int? ?? mediaAttr['chapterCount'] as int?;
+          final totalCount =
+              mediaAttr['episodeCount'] as int? ??
+              mediaAttr['chapterCount'] as int?;
 
           final r20 = (attr['ratingTwenty'] as num?)?.toDouble() ?? 0.0;
           final score = r20 > 0 ? r20 / 2.0 : 0.0;
@@ -220,42 +236,38 @@ class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTrack
     final token = await _getToken();
     if (token == null) return null;
 
-    return executeApi(
-      'FETCH_ENTRY',
-      fallback: (e, st) => null,
-      () async {
-        final userId = await _getUserId(token);
-        final kindIdParam = mediaType == MediaType.ANIME ? 'animeId' : 'mangaId';
+    return executeApi('FETCH_ENTRY', fallback: (e, st) => null, () async {
+      final userId = await _getUserId(token);
+      final kindIdParam = mediaType == MediaType.ANIME ? 'animeId' : 'mangaId';
 
-        final res = await _http.get(
-          'https://kitsu.io/api/edge/library-entries',
-          queryParameters: {
-            'filter[userId]': userId,
-            'filter[$kindIdParam]': mediaId,
-          },
-          headers: {'Authorization': 'Bearer $token'},
-        );
+      final res = await _http.get(
+        'https://kitsu.io/api/edge/library-entries',
+        queryParameters: {
+          'filter[userId]': userId,
+          'filter[$kindIdParam]': mediaId,
+        },
+        headers: {'Authorization': 'Bearer $token'},
+      );
 
-        final body = res.json;
-        if (body['errors'] != null) return null;
+      final body = res.json;
+      if (body['errors'] != null) return null;
 
-        final data = body['data'] as List? ?? [];
-        if (data.isEmpty) return null;
+      final data = body['data'] as List? ?? [];
+      if (data.isEmpty) return null;
 
-        final entry = data[0] as Map;
-        final attr = entry['attributes'] as Map? ?? {};
-        final r20 = (attr['ratingTwenty'] as num?)?.toDouble() ?? 0.0;
-        final score = r20 > 0 ? r20 / 2.0 : null;
-        final progress = (attr['progress'] as num?)?.toDouble() ?? 0.0;
+      final entry = data[0] as Map;
+      final attr = entry['attributes'] as Map? ?? {};
+      final r20 = (attr['ratingTwenty'] as num?)?.toDouble() ?? 0.0;
+      final score = r20 > 0 ? r20 / 2.0 : null;
+      final progress = (attr['progress'] as num?)?.toDouble() ?? 0.0;
 
-        return TrackedListItem(
-          id: entry['id']?.toString(),
-          status: _parseKitsuStatus(attr['status']?.toString()),
-          progress: progress,
-          score: score,
-        );
-      },
-    );
+      return TrackedListItem(
+        id: entry['id']?.toString(),
+        status: _parseKitsuStatus(attr['status']?.toString()),
+        progress: progress,
+        score: score,
+      );
+    });
   }
 
   @override
@@ -294,7 +306,8 @@ class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTrack
         final attr = <String, dynamic>{};
         if (status != null) attr['status'] = _toKitsuStatus(status);
         if (progress != null) attr['progress'] = progress.toInt();
-        if (score != null && score > 0) attr['ratingTwenty'] = (score * 2.0).round();
+        if (score != null && score > 0)
+          attr['ratingTwenty'] = (score * 2.0).round();
 
         if (attr.isEmpty) return;
 
@@ -303,7 +316,7 @@ class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTrack
             "type": "libraryEntries",
             "id": libraryEntryId,
             "attributes": attr,
-          }
+          },
         };
 
         final response = await _http.patch(
@@ -317,7 +330,9 @@ class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTrack
         );
 
         if (response.statusCode >= 400) {
-          throw Exception('Kitsu Error ${response.statusCode}: Failed to update entry');
+          throw Exception(
+            'Kitsu Error ${response.statusCode}: Failed to update entry',
+          );
         }
       } else {
         final attr = <String, dynamic>{
@@ -334,13 +349,13 @@ class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTrack
             "attributes": attr,
             "relationships": {
               "user": {
-                "data": { "type": "users", "id": userId }
+                "data": {"type": "users", "id": userId},
               },
               kind: {
-                "data": { "type": kind, "id": trackingId }
-              }
-            }
-          }
+                "data": {"type": kind, "id": trackingId},
+              },
+            },
+          },
         };
 
         final response = await _http.post(
@@ -354,7 +369,9 @@ class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTrack
         );
 
         if (response.statusCode >= 400) {
-          throw Exception('Kitsu Error ${response.statusCode}: Failed to create entry');
+          throw Exception(
+            'Kitsu Error ${response.statusCode}: Failed to create entry',
+          );
         }
       }
     });
@@ -394,7 +411,9 @@ class KitsuTracker extends BaseTracker with KitsuMetadata implements RemoteTrack
       );
 
       if (response.statusCode >= 400) {
-        throw Exception('Kitsu Error ${response.statusCode}: Failed to remove entry');
+        throw Exception(
+          'Kitsu Error ${response.statusCode}: Failed to remove entry',
+        );
       }
     });
   }

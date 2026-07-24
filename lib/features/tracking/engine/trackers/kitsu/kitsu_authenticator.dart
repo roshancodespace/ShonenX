@@ -3,6 +3,7 @@ import 'package:shonenx/core/network/auth/authenticator.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/router/app_router.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+import 'package:shonenx/shared/widgets/app_dialog.dart';
 
 class KitsuAuthenticator implements Authenticator {
   @override
@@ -24,10 +25,12 @@ class KitsuAuthenticator implements Authenticator {
       throw Exception('Kitsu Auth Error: No UI context available for login.');
     }
 
-    final result = await showDialog<String>(
+    final result = await AppDialog.show<String>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const _KitsuLoginDialog(),
+      title: 'Login to Kitsu',
+      showCloseButton: true,
+      child: const _KitsuLoginForm(),
     );
 
     if (result == null || result.isEmpty) {
@@ -38,14 +41,14 @@ class KitsuAuthenticator implements Authenticator {
   }
 }
 
-class _KitsuLoginDialog extends StatefulWidget {
-  const _KitsuLoginDialog();
+class _KitsuLoginForm extends StatefulWidget {
+  const _KitsuLoginForm();
 
   @override
-  State<_KitsuLoginDialog> createState() => _KitsuLoginDialogState();
+  State<_KitsuLoginForm> createState() => _KitsuLoginFormState();
 }
 
-class _KitsuLoginDialogState extends State<_KitsuLoginDialog> {
+class _KitsuLoginFormState extends State<_KitsuLoginForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -99,10 +102,13 @@ class _KitsuLoginDialogState extends State<_KitsuLoginDialog> {
     } catch (e) {
       String msg = 'Failed to login. Please check your credentials.';
       final str = e.toString();
-      if (str.contains('invalid_grant') || str.contains('Invalid credentials')) {
+      if (str.contains('invalid_grant') ||
+          str.contains('Invalid credentials')) {
         msg = 'Invalid email/username or password.';
       } else if (str.isNotEmpty) {
-        msg = str.replaceAll('Exception: ', '').replaceAll('HttpException: ', '');
+        msg = str
+            .replaceAll('Exception: ', '')
+            .replaceAll('HttpException: ', '');
       }
       if (mounted) {
         setState(() {
@@ -116,73 +122,75 @@ class _KitsuLoginDialogState extends State<_KitsuLoginDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return AlertDialog(
-      title: const Text('Login to Kitsu'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Enter your Kitsu email (or username) and password to sync your library.',
+          style: TextStyle(fontSize: 13, color: Colors.grey),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _emailController,
+          decoration: const InputDecoration(
+            labelText: 'Email or Username',
+            prefixIcon: Icon(Icons.person_outline),
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          enabled: !_isLoading,
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _passwordController,
+          obscureText: _obscurePassword,
+          decoration: InputDecoration(
+            labelText: 'Password',
+            prefixIcon: const Icon(Icons.lock_outline),
+            border: const OutlineInputBorder(),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+              ),
+              onPressed: () {
+                setState(() => _obscurePassword = !_obscurePassword);
+              },
+            ),
+          ),
+          onSubmitted: (_) => _login(),
+          enabled: !_isLoading,
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            _error!,
+            style: TextStyle(color: theme.colorScheme.error, fontSize: 13),
+          ),
+        ],
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            const Text(
-              'Enter your Kitsu email (or username) and password to sync your library.',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
+            TextButton(
+              onPressed: _isLoading
+                  ? null
+                  : () => Navigator.of(context).pop(null),
+              child: const Text('Cancel'),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email or Username',
-                prefixIcon: Icon(Icons.person_outline),
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              enabled: !_isLoading,
+            const SizedBox(width: 8),
+            FilledButton(
+              onPressed: _isLoading ? null : _login,
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Login'),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                prefixIcon: const Icon(Icons.lock_outline),
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                  ),
-                  onPressed: () {
-                    setState(() => _obscurePassword = !_obscurePassword);
-                  },
-                ),
-              ),
-              onSubmitted: (_) => _login(),
-              enabled: !_isLoading,
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                _error!,
-                style: TextStyle(color: theme.colorScheme.error, fontSize: 13),
-              ),
-            ],
           ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _isLoading ? null : () => Navigator.of(context).pop(null),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _login,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Login'),
         ),
       ],
     );

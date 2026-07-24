@@ -116,42 +116,12 @@ class AboutTabWidget extends ConsumerWidget {
       items.add(
         Padding(
           padding: const EdgeInsets.only(top: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Characters & Cast',
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                    onPressed: () {
-                      CharactersSheet.show(
-                        context,
-                        mediaId: media.id,
-                        mediaType: media.type,
-                        mediaTitle: media.title.availableTitle,
-                        initialCharacters: media.characters ?? [],
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              _CharactersList(
-                mediaId: media.id,
-                mediaType: media.type,
-                mediaTitle: media.title.availableTitle,
-                characters: media.characters ?? [],
-                uiRoundness: uiRoundness,
-              ),
-            ],
+          child: _CharactersList(
+            mediaId: media.id,
+            mediaType: media.type,
+            mediaTitle: media.title.availableTitle,
+            characters: media.characters ?? [],
+            uiRoundness: uiRoundness,
           ),
         ),
       );
@@ -253,14 +223,21 @@ class _QuickStatsBar extends StatelessWidget {
       stats.add(
         _StatPill(
           icon: Icons.star_rounded,
-          iconColor: const Color(0xFFFFB703),
+          iconColor: cs.primary,
           label: media.score!.toStringAsFixed(1),
+          uiRoundness: uiRoundness,
         ),
       );
     }
 
     if (media.format != null && media.format!.isNotEmpty) {
-      stats.add(_StatPill(icon: Icons.tv_rounded, label: media.format!));
+      stats.add(
+        _StatPill(
+          icon: Icons.tv_rounded,
+          label: media.format!,
+          uiRoundness: uiRoundness,
+        ),
+      );
     }
 
     if (media.status != null && media.status!.isNotEmpty) {
@@ -271,6 +248,7 @@ class _QuickStatsBar extends StatelessWidget {
               ? Colors.greenAccent
               : cs.primary,
           label: media.status!.toUpperCase().replaceAll('_', ' '),
+          uiRoundness: uiRoundness,
         ),
       );
     }
@@ -280,6 +258,7 @@ class _QuickStatsBar extends StatelessWidget {
         _StatPill(
           icon: Icons.video_library_rounded,
           label: '${media.episodes} eps',
+          uiRoundness: uiRoundness,
         ),
       );
     }
@@ -289,19 +268,35 @@ class _QuickStatsBar extends StatelessWidget {
         _StatPill(
           icon: Icons.menu_book_rounded,
           label: '${media.chapters} chs',
+          uiRoundness: uiRoundness,
         ),
       );
     }
 
     if (media.season != null && media.season!.isNotEmpty) {
       stats.add(
-        _StatPill(icon: Icons.calendar_today_rounded, label: media.season!),
+        _StatPill(
+          icon: Icons.calendar_today_rounded,
+          label: media.season!,
+          uiRoundness: uiRoundness,
+        ),
       );
     }
 
     if (stats.isEmpty) return const SizedBox.shrink();
 
-    return Wrap(spacing: 6, runSpacing: 6, children: stats);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          for (int i = 0; i < stats.length; i++) ...[
+            stats[i],
+            if (i < stats.length - 1) const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
   }
 }
 
@@ -309,28 +304,34 @@ class _StatPill extends StatelessWidget {
   final IconData icon;
   final Color? iconColor;
   final String label;
+  final double uiRoundness;
 
-  const _StatPill({required this.icon, this.iconColor, required this.label});
+  const _StatPill({
+    required this.icon,
+    this.iconColor,
+    required this.label,
+    required this.uiRoundness,
+  });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHigh.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(20),
+        color: cs.surfaceContainerHigh.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(uiRoundness * 0.7),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: iconColor ?? cs.primary),
-          const SizedBox(width: 5),
+          Icon(icon, size: 14, color: iconColor ?? cs.primary),
+          const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              fontSize: 11.5,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
               color: cs.onSurface,
             ),
@@ -683,8 +684,34 @@ class _CharactersListState extends ConsumerState<_CharactersList> {
       return const SizedBox.shrink();
     }
 
+    final header = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Characters & Cast',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+          onPressed: () {
+            CharactersSheet.show(
+              context,
+              mediaId: widget.mediaId,
+              mediaType: widget.mediaType,
+              mediaTitle: widget.mediaTitle,
+              initialCharacters: widget.characters,
+            );
+          },
+        ),
+      ],
+    );
+
+    Widget content;
     if (_isLoading) {
-      return SizedBox(
+      content = SizedBox(
         height: 102,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
@@ -736,109 +763,114 @@ class _CharactersListState extends ConsumerState<_CharactersList> {
           },
         ),
       );
-    }
-
-    return SizedBox(
-      height: 102,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: _list.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          final c = _list[index];
-          return InkWell(
-            onTap: () {
-              CharactersSheet.showDetails(context, c);
-            },
-            borderRadius: BorderRadius.circular(widget.uiRoundness),
-            child: Container(
-              width: 195,
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHigh.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(widget.uiRoundness),
-              ),
-              child: Row(
-                children: [
-                  if (c.image != null && c.image!.isNotEmpty)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(
-                        widget.uiRoundness * 0.7,
-                      ),
-                      child: CachedNetworkImage(
-                        imageUrl: c.image!,
-                        width: 52,
-                        height: 90,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => Container(
-                          width: 52,
-                          height: 90,
-                          color: cs.surfaceContainerHigh,
-                          child: const Icon(Icons.person_rounded, size: 22),
-                        ),
-                      ),
-                    )
-                  else
-                    Container(
-                      width: 52,
-                      height: 90,
-                      decoration: BoxDecoration(
-                        color: cs.surfaceContainerHigh,
+    } else {
+      content = SizedBox(
+        height: 102,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: _list.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (context, index) {
+            final c = _list[index];
+            return InkWell(
+              onTap: () {
+                CharactersSheet.showDetails(context, c);
+              },
+              borderRadius: BorderRadius.circular(widget.uiRoundness),
+              child: Container(
+                width: 195,
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHigh.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(widget.uiRoundness),
+                ),
+                child: Row(
+                  children: [
+                    if (c.image != null && c.image!.isNotEmpty)
+                      ClipRRect(
                         borderRadius: BorderRadius.circular(
                           widget.uiRoundness * 0.7,
                         ),
-                      ),
-                      child: const Icon(Icons.person_rounded, size: 22),
-                    ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          c.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w800,
+                        child: CachedNetworkImage(
+                          imageUrl: c.image!,
+                          width: 52,
+                          height: 90,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => Container(
+                            width: 52,
+                            height: 90,
+                            color: cs.surfaceContainerHigh,
+                            child: const Icon(Icons.person_rounded, size: 22),
                           ),
                         ),
-                        if (c.role != null && c.role!.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            c.role!.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 8.5,
-                              fontWeight: FontWeight.w800,
-                              color: cs.primary,
-                            ),
+                      )
+                    else
+                      Container(
+                        width: 52,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(
+                            widget.uiRoundness * 0.7,
                           ),
-                        ],
-                        if (c.voiceActorName != null &&
-                            c.voiceActorName!.isNotEmpty) ...[
-                          const SizedBox(height: 3),
+                        ),
+                        child: const Icon(Icons.person_rounded, size: 22),
+                      ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                           Text(
-                            c.voiceActorName!,
-                            maxLines: 1,
+                            c.name,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 9.5,
-                              color: cs.onSurfaceVariant,
-                              fontWeight: FontWeight.w500,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
+                          if (c.role != null && c.role!.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              c.role!.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w800,
+                                color: cs.primary,
+                              ),
+                            ),
+                          ],
+                          if (c.voiceActorName != null &&
+                              c.voiceActorName!.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              c.voiceActorName!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                color: cs.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-      ),
+            );
+          },
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [header, const SizedBox(height: 12), content],
     );
   }
 }

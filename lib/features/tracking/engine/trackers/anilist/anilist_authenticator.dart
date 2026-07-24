@@ -6,17 +6,27 @@ import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/env.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 
+import 'package:shonenx/features/tracking/domain/models/tracker_credentials.dart';
+
 class AnilistAuthenticator implements Authenticator {
+  final TrackerCredentials? customCredentials;
+
+  AnilistAuthenticator({this.customCredentials});
+
   static final HTTP _http = HTTP();
   static final _isDesktop = Platform.isWindows || Platform.isLinux;
 
-  String get _clientId => _isDesktop
-      ? Env.ANILIST_CLIENT_ID_LIST.last
-      : Env.ANILIST_CLIENT_ID_LIST.first;
+  String get _clientId =>
+      customCredentials?.clientId ??
+      (_isDesktop
+          ? Env.ANILIST_CLIENT_ID_LIST.last
+          : Env.ANILIST_CLIENT_ID_LIST.first);
 
-  String get _clientSecret => _isDesktop
-      ? Env.ANILIST_CLIENT_SECRET_LIST.last
-      : Env.ANILIST_CLIENT_SECRET_LIST.first;
+  String get _clientSecret =>
+      customCredentials?.clientSecret ??
+      (_isDesktop
+          ? Env.ANILIST_CLIENT_SECRET_LIST.last
+          : Env.ANILIST_CLIENT_SECRET_LIST.first);
 
   @override
   String get redirectUri => _isDesktop

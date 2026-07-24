@@ -330,6 +330,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
         MediaType.ANIME => ref.watch(availableAnimeSourcesProvider),
         MediaType.MANGA => ref.watch(availableMangaSourcesProvider),
         MediaType.NOVEL => ref.watch(availableNovelSourcesProvider),
+        _ => ref.watch(availableAnimeSourcesProvider),
       };
 
       return sourcesAsync.when(

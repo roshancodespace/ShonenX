@@ -8,6 +8,7 @@ import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
 import 'package:shonenx/features/tracking/engine/base_tracker.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_credentials.dart';
 
 class MalException implements Exception {
   final String message;
@@ -19,10 +20,15 @@ class MalException implements Exception {
 mixin MalMetadata on BaseTracker implements RemoteTracker {
   HTTP get http;
 
+  TrackerCredentials? get customCredentials => null;
+
   static const String _baseUrl = 'https://api.myanimelist.net/v2';
-  static String get clientId => Platform.isWindows || Platform.isLinux
+  static String get defaultClientId => Platform.isWindows || Platform.isLinux
       ? Env.MAL_CLIENT_ID_LIST.last
       : Env.MAL_CLIENT_ID_LIST.first;
+
+  String get clientId => customCredentials?.clientId ?? defaultClientId;
+
   static const String _fields =
       'id,title,main_picture,alternative_titles,start_date,end_date,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,status,genres,created_at,updated_at,media_type,nsfw,my_list_status,num_episodes,start_season,broadcast,source,average_episode_duration,rating,pictures,background,related_anime,related_manga,recommendations,studios,statistics';
 

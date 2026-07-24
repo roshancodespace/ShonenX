@@ -203,6 +203,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
     MediaType type = MediaType.ANIME,
     List<String>? genres,
     List<String>? tags,
+    List<String>? statusIn,
     Duration? cacheDuration,
     AdultContentMode adultMode = AdultContentMode.safe,
   }) {

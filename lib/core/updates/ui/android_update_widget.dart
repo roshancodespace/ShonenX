@@ -77,14 +77,10 @@ class _AndroidUpdateWidgetState extends State<AndroidUpdateWidget> {
     });
 
     try {
-      Directory? dir;
-      if (Platform.isAndroid) {
-        final publicDownload = Directory('/storage/emulated/0/Download');
-        if (await publicDownload.exists()) {
-          dir = publicDownload;
-        }
-      }
-      dir ??= await getExternalStorageDirectory() ?? await getTemporaryDirectory();
+      final dir =
+          (await getExternalCacheDirectories())?.first ??
+          await getExternalStorageDirectory() ??
+          await getTemporaryDirectory();
 
       final file = File('${dir.path}/${_bestAsset!.name}');
       final request = http.Request('GET', Uri.parse(_bestAsset!.downloadUrl));
@@ -102,7 +98,9 @@ class _AndroidUpdateWidgetState extends State<AndroidUpdateWidget> {
         if (totalBytes > 0 && mounted) {
           setState(() {
             _progress = receivedBytes / totalBytes;
-            final mbReceived = (receivedBytes / (1024 * 1024)).toStringAsFixed(1);
+            final mbReceived = (receivedBytes / (1024 * 1024)).toStringAsFixed(
+              1,
+            );
             final mbTotal = (totalBytes / (1024 * 1024)).toStringAsFixed(1);
             _statusMessage = 'Downloading: $mbReceived MB / $mbTotal MB';
           });
@@ -137,7 +135,16 @@ class _AndroidUpdateWidgetState extends State<AndroidUpdateWidget> {
       if (Platform.isAndroid) {
         final status = await Permission.requestInstallPackages.status;
         if (!status.isGranted) {
-          await Permission.requestInstallPackages.request();
+          final res = await Permission.requestInstallPackages.request();
+          if (!res.isGranted) {
+            if (mounted) {
+              setState(() {
+                _statusMessage =
+                    'Permission to install unknown apps is required to install updates.';
+              });
+            }
+            return;
+          }
         }
       }
       final result = await OpenFile.open(file.path);
@@ -210,7 +217,10 @@ class _AndroidUpdateWidgetState extends State<AndroidUpdateWidget> {
         ),
         const SizedBox(height: 16),
         if (_isDownloading) ...[
-          LinearProgressIndicator(value: _progress, borderRadius: BorderRadius.circular(4)),
+          LinearProgressIndicator(
+            value: _progress,
+            borderRadius: BorderRadius.circular(4),
+          ),
           const SizedBox(height: 8),
         ],
         Text(
@@ -227,15 +237,22 @@ class _AndroidUpdateWidgetState extends State<AndroidUpdateWidget> {
           ),
         ] else ...[
           FilledButton.icon(
-            onPressed: _bestAsset == null || _isDownloading ? null : _startDownloadAndInstall,
+            onPressed: _bestAsset == null || _isDownloading
+                ? null
+                : _startDownloadAndInstall,
             icon: _isDownloading
                 ? const SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Icon(Icons.download_rounded),
-            label: Text(_isDownloading ? 'Downloading...' : 'In-App Download & Install'),
+            label: Text(
+              _isDownloading ? 'Downloading...' : 'In-App Download & Install',
+            ),
           ),
         ],
       ],

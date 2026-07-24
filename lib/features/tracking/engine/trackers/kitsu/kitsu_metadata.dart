@@ -44,8 +44,10 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
       case TrackerCategory.recentlyUpdated:
         sortOption = '-updatedAt';
         break;
+      case TrackerCategory.upcoming:
+        sortOption = '-userCount';
+        break;
       case TrackerCategory.trending:
-      default:
         sortOption = '-userCount';
         break;
     }
@@ -59,14 +61,20 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
         final offset = (page - 1) * limit;
         final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';
 
+        final queryParams = <String, String>{
+          'sort': sortOption,
+          'page[limit]': limit.toString(),
+          'page[offset]': offset.toString(),
+          'include': 'categories,genres',
+        };
+
+        if (category == TrackerCategory.upcoming) {
+          queryParams['filter[status]'] = 'upcoming';
+        }
+
         final response = await http.get(
           'https://kitsu.io/api/edge/$endpoint',
-          queryParameters: {
-            'sort': sortOption,
-            'page[limit]': limit.toString(),
-            'page[offset]': offset.toString(),
-            'include': 'categories,genres',
-          },
+          queryParameters: queryParams,
           cacheDuration: cacheDuration ?? const Duration(hours: 1),
         );
 
@@ -218,6 +226,7 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
     MediaType type = MediaType.ANIME,
     List<String>? genres,
     List<String>? tags,
+    List<String>? statusIn,
     Duration? cacheDuration,
     AdultContentMode adultMode = AdultContentMode.safe,
   }) {
@@ -250,6 +259,27 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
 
         if (categoryFilters.isNotEmpty) {
           queryParams['filter[categories]'] = categoryFilters.join(',');
+        }
+
+        if (statusIn != null && statusIn.isNotEmpty) {
+          final mappedStatuses = statusIn
+              .map((s) {
+                final lower = s.toLowerCase();
+                if (lower == 'not_yet_released' || lower == 'upcoming') {
+                  return 'upcoming';
+                }
+                if (lower == 'releasing' ||
+                    lower == 'ongoing' ||
+                    lower == 'current') {
+                  return 'current';
+                }
+                if (lower == 'finished' || lower == 'completed') {
+                  return 'finished';
+                }
+                return lower;
+              })
+              .join(',');
+          queryParams['filter[status]'] = mappedStatuses;
         }
 
         final response = await http.get(

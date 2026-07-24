@@ -60,6 +60,15 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
         sortOptions = ['UPDATED_AT_DESC'];
         break;
       case TrackerCategory.upcoming:
+        return search(
+          '',
+          page: page,
+          type: type,
+          cacheDuration: cacheDuration,
+          adultMode: adultMode,
+          sort: ['POPULARITY_DESC'],
+          statusIn: ['NOT_YET_RELEASED'],
+        );
       default:
         sortOptions = ['POPULARITY_DESC'];
         break;
@@ -168,6 +177,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
     MediaType type = MediaType.ANIME,
     List<String>? genres,
     List<String>? tags,
+    List<String>? statusIn,
     Duration? cacheDuration,
     AdultContentMode adultMode = AdultContentMode.safe,
     List<String> sort = const ['SEARCH_MATCH'],
@@ -190,6 +200,10 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
 
         if (tags != null && tags.isNotEmpty) {
           variables['tag_in'] = tags;
+        }
+
+        if (statusIn != null && statusIn.isNotEmpty) {
+          variables['status_in'] = statusIn;
         }
 
         final response = await http.post(

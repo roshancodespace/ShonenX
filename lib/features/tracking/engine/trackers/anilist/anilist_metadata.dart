@@ -402,6 +402,49 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
           ? json['seasonYear'].toString()
           : json['season']?.toString();
 
+      final studios = ((json['studios'] as Map?)?['nodes'] as List?)
+          ?.map((s) => (s as Map)['name']?.toString() ?? '')
+          .where((s) => s.isNotEmpty)
+          .toList();
+
+      final synonyms = (json['synonyms'] as List?)
+          ?.map((s) => s.toString())
+          .where((s) => s.isNotEmpty)
+          .toList();
+
+      final externalLinks = ((json['externalLinks'] as List?) ?? [])
+          .whereType<Map>()
+          .map(
+            (link) => MediaExternalLink(
+              id: link['id']?.toString() ?? '',
+              url: link['url']?.toString() ?? '',
+              site: link['site']?.toString() ?? '',
+              icon: link['icon']?.toString(),
+            ),
+          )
+          .where((link) => link.url.isNotEmpty)
+          .toList();
+
+      final characters = ((json['characters'] as Map?)?['edges'] as List?)
+          ?.whereType<Map>()
+          .map((edge) {
+            final node = edge['node'] as Map? ?? {};
+            final voiceActor =
+                (edge['voiceActors'] as List?)?.firstOrNull as Map?;
+            return MediaCharacter(
+              id: node['id']?.toString() ?? '',
+              name: (node['name'] as Map?)?['full']?.toString() ?? 'Unknown',
+              role: edge['role']?.toString(),
+              image: (node['image'] as Map?)?['large']?.toString(),
+              voiceActorName: (voiceActor?['name'] as Map?)?['full']
+                  ?.toString(),
+              voiceActorImage: (voiceActor?['image'] as Map?)?['large']
+                  ?.toString(),
+            );
+          })
+          .where((c) => c.name.isNotEmpty)
+          .toList();
+
       return UnifiedMedia(
         id: json['id']?.toString() ?? '',
         idMal: json['idMal']?.toString(),
@@ -420,6 +463,16 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
         description: json['description'],
         status: status,
         episodes: json['episodes'],
+        chapters: json['chapters'],
+        volumes: json['volumes'],
+        duration: json['duration'],
+        source: json['source'],
+        popularity: json['popularity'],
+        favourites: json['favourites'],
+        studios: studios,
+        synonyms: synonyms,
+        externalLinks: externalLinks,
+        characters: characters,
         relationType: relationType,
         relations: relations,
         recommendations: recommendations,
@@ -436,5 +489,127 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
       );
       rethrow;
     }
+  }
+
+  @override
+  Future<PaginatedResult<MediaCharacter>> getCharacters(
+    String providerId, {
+    int page = 1,
+    int perPage = 25,
+    MediaType type = MediaType.ANIME,
+  }) async {
+    final numericId = int.tryParse(providerId);
+    if (numericId == null) {
+      return PaginatedResult(items: [], hasNextPage: false);
+    }
+
+    return executeApi(
+      'GET_CHARACTERS',
+      () async {
+        final response = await http.post(
+          _endpoint,
+          body: {
+            'query': AnilistTrackerQueries.characters,
+            'variables': {'id': numericId, 'page': page, 'perPage': perPage},
+          },
+          headers: {'Content-Type': 'application/json'},
+          cacheDuration: const Duration(days: 7),
+        );
+
+        final data = _validateAndParseResponse(response.json, 'getCharacters');
+        final mediaMap = data['Media'] as Map?;
+        final charMap = mediaMap?['characters'] as Map?;
+        final pageInfo = charMap?['pageInfo'] as Map?;
+        final edges = (charMap?['edges'] as List?)?.whereType<Map>() ?? [];
+        final hasNextPage = pageInfo?['hasNextPage'] as bool? ?? false;
+
+        final items = edges
+            .map((edge) {
+              final node = edge['node'] as Map? ?? {};
+              final voiceActor =
+                  (edge['voiceActors'] as List?)?.firstOrNull as Map?;
+              return MediaCharacter(
+                id: node['id']?.toString() ?? '',
+                name: (node['name'] as Map?)?['full']?.toString() ?? 'Unknown',
+                nativeName: (node['name'] as Map?)?['native']?.toString(),
+                role: edge['role']?.toString(),
+                image: (node['image'] as Map?)?['large']?.toString(),
+                description: _cleanBio(node['description']?.toString()),
+                voiceActorName: (voiceActor?['name'] as Map?)?['full']
+                    ?.toString(),
+                voiceActorImage: (voiceActor?['image'] as Map?)?['large']
+                    ?.toString(),
+              );
+            })
+            .where((c) => c.name.isNotEmpty)
+            .toList();
+
+        return PaginatedResult(items: items, hasNextPage: hasNextPage);
+      },
+      fallback: (error, stackTrace) {
+        log(
+          'Error fetching characters',
+          name: 'AnilistTracker.getCharacters',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        return PaginatedResult(items: [], hasNextPage: false);
+      },
+    );
+  }
+
+  @override
+  Future<MediaCharacter?> getCharacterDetails(String characterId) async {
+    final numericId = int.tryParse(characterId);
+    if (numericId == null) return null;
+
+    return executeApi(
+      'GET_CHARACTER_DETAILS',
+      () async {
+        final response = await http.post(
+          _endpoint,
+          body: {
+            'query': AnilistTrackerQueries.characterDetails,
+            'variables': {'id': numericId},
+          },
+          headers: {'Content-Type': 'application/json'},
+          cacheDuration: const Duration(days: 7),
+        );
+
+        final data = _validateAndParseResponse(
+          response.json,
+          'getCharacterDetails',
+        );
+        final charMap = data['Character'] as Map?;
+        if (charMap == null) return null;
+
+        return MediaCharacter(
+          id: charMap['id']?.toString() ?? '',
+          name: (charMap['name'] as Map?)?['full']?.toString() ?? 'Unknown',
+          nativeName: (charMap['name'] as Map?)?['native']?.toString(),
+          image: (charMap['image'] as Map?)?['large']?.toString(),
+          description: _cleanBio(charMap['description']?.toString()),
+        );
+      },
+      fallback: (error, stackTrace) {
+        log(
+          'Error fetching character details',
+          name: 'AnilistTracker.getCharacterDetails',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        return null;
+      },
+    );
+  }
+
+  String? _cleanBio(String? text) {
+    if (text == null || text.trim().isEmpty) return null;
+    var s = text;
+    s = s.replaceAll('~!', '').replaceAll('!~', '');
+    s = s.replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n');
+    s = s.replaceAll(RegExp(r'<[^>]*>'), '');
+    s = s.replaceAll(RegExp(r'\n+'), '\n\n');
+    return s.trim();
   }
 }

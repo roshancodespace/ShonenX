@@ -104,8 +104,9 @@ class PortraitMetadataRow extends StatelessWidget {
 
 class WideMetadataColumn extends StatelessWidget {
   final CardConfig config;
+  final Color? textColor;
 
-  const WideMetadataColumn({super.key, required this.config});
+  const WideMetadataColumn({super.key, required this.config, this.textColor});
 
   @override
   Widget build(BuildContext context) {
@@ -124,10 +125,19 @@ class WideMetadataColumn extends StatelessWidget {
     final metaText = metaItems.join(' • ');
 
     final formattedScore = config.formattedScore;
+    final showGenres =
+        config.genres != null &&
+        config.genres!.isNotEmpty &&
+        config.height >= 105;
+
+    final effectiveTextColor = textColor ?? cs.onSurface;
+    final effectiveSubtextColor =
+        textColor?.withValues(alpha: 0.75) ?? cs.onSurfaceVariant;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           children: [
@@ -137,17 +147,17 @@ class WideMetadataColumn extends StatelessWidget {
                 style:
                     theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: cs.onSurface,
+                      color: effectiveTextColor,
                       height: 1.2,
                     ) ??
-                    const TextStyle(),
+                    TextStyle(color: effectiveTextColor),
               ),
             ),
             if (config.topRightBadge != null) config.topRightBadge!,
           ],
         ),
         if (formattedScore != null || metaText.isNotEmpty) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Row(
             children: [
               if (formattedScore != null) ...[
@@ -176,7 +186,7 @@ class WideMetadataColumn extends StatelessWidget {
                       Text(
                         formattedScore,
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: cs.onSurface,
+                          color: effectiveTextColor,
                           fontWeight: FontWeight.w800,
                           fontSize: 10,
                         ),
@@ -193,7 +203,7 @@ class WideMetadataColumn extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: cs.onSurfaceVariant,
+                      color: effectiveSubtextColor,
                       fontSize: 11,
                     ),
                   ),
@@ -201,8 +211,8 @@ class WideMetadataColumn extends StatelessWidget {
             ],
           ),
         ],
-        if (config.genres != null && config.genres!.isNotEmpty) ...[
-          const SizedBox(height: 4),
+        if (showGenres) ...[
+          const SizedBox(height: 3),
           Wrap(
             spacing: 4,
             runSpacing: 4,
@@ -231,7 +241,7 @@ class WideMetadataColumn extends StatelessWidget {
           ),
         ],
         if (config.progress != null || config.progressText != null) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Row(
             children: [
               if (config.progress != null)

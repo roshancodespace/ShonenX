@@ -62,4 +62,14 @@ abstract interface class RemoteTracker implements TrackingService {
   });
 
   Future<UnifiedMedia> getDetails(String providerId, MediaType type);
+
+  Future<PaginatedResult<MediaCharacter>> getCharacters(
+    String providerId, {
+    int page = 1,
+    int perPage = 25,
+    MediaType type = MediaType.ANIME,
+  }) => Future.value(PaginatedResult(items: [], hasNextPage: false));
+
+  Future<MediaCharacter?> getCharacterDetails(String characterId) =>
+      Future.value(null);
 }

@@ -29,6 +29,10 @@ class LibraryRow extends ConsumerWidget {
     final isLocal = targetTracker == TrackerType.local;
     final mediaType = targetMediaType ?? MediaType.ANIME;
     final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
+    final isWide = ref.watch(
+      uiPrefsProvider.select((s) => s.isMediaCardWide(style.name)),
+    );
+    final rowHeight = style.getLayout(isWideMode: isWide).height;
 
     Widget buildCard(BuildContext ctx, dynamic entry, String tagPrefix) {
       return MediaCard(
@@ -50,10 +54,11 @@ class LibraryRow extends ConsumerWidget {
       );
       return HorizontalSection(
         title: title,
-        height: style.layout.height,
+        height: rowHeight,
         emptyText: 'No items in this list.',
         data: asyncData,
-        itemBuilder: (context, entry) => buildCard(context, entry, 'local-library'),
+        itemBuilder: (context, entry) =>
+            buildCard(context, entry, 'local-library'),
       );
     } else {
       final asyncData = ref.watch(
@@ -65,7 +70,7 @@ class LibraryRow extends ConsumerWidget {
       );
       return HorizontalSection(
         title: title,
-        height: style.layout.height,
+        height: rowHeight,
         emptyText: 'No items in this list.',
         data: asyncData,
         itemBuilder: (context, entry) => buildCard(context, entry, 'library'),

@@ -168,75 +168,9 @@ class NeonCard extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          config.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : cs.onSurface,
-                            height: 1.2,
-                          ),
-                        ),
-                      ),
-                      if (config.topRightBadge != null) config.topRightBadge!,
-                    ],
-                  ),
-                  if (config.subtitle != null ||
-                      config.progress != null ||
-                      config.progressText != null) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (config.subtitle != null)
-                          Expanded(
-                            child: Text(
-                              config.subtitle!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: cs.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        if (config.progressText != null ||
-                            config.progress != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: cs.primary.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: cs.primary.withValues(alpha: 0.4),
-                                strokeAlign: BorderSide.strokeAlignOutside,
-                              ),
-                            ),
-                            child: Text(
-                              config.progressText ??
-                                  '${(config.progress!.clamp(0.0, 1.0) * 100).toInt()}%',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: cs.primary,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ],
+              child: WideMetadataColumn(
+                config: config,
+                textColor: isDark ? Colors.white : cs.onSurface,
               ),
             ),
           ),

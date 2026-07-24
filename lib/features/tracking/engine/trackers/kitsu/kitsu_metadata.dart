@@ -616,4 +616,137 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
       rethrow;
     }
   }
+
+  @override
+  Future<PaginatedResult<MediaCharacter>> getCharacters(
+    String providerId, {
+    int page = 1,
+    int perPage = 25,
+    MediaType type = MediaType.ANIME,
+  }) async {
+    return executeApi(
+      'GET_KITSU_CHARACTERS',
+      () async {
+        final offset = (page - 1) * perPage;
+        final endpointType = type == MediaType.ANIME ? 'anime' : 'manga';
+        final response = await http.get(
+          'https://kitsu.io/api/edge/$endpointType/$providerId/characters',
+          queryParameters: {
+            'include': 'character',
+            'page[limit]': perPage.toString(),
+            'page[offset]': offset.toString(),
+          },
+          cacheDuration: const Duration(days: 7),
+        );
+
+        final jsonMap = response.json as Map?;
+        final rawList = (jsonMap?['data'] as List?)?.whereType<Map>() ?? [];
+        final includedMap = _buildIncludedMap(jsonMap?['included']);
+        final links = jsonMap?['links'] as Map? ?? {};
+        final next = links['next'] as String?;
+        final hasNextPage = next != null && next.isNotEmpty;
+
+        final items = <MediaCharacter>[];
+        for (final item in rawList) {
+          final role = (item['attributes'] as Map?)?['role']?.toString();
+          final charRel =
+              (item['relationships'] as Map?)?['character']?['data'] as Map?;
+          final charId = charRel?['id']?.toString();
+
+          Map? charData;
+          if (charId != null) {
+            charData = includedMap['character:$charId'];
+          }
+
+          if (charData != null) {
+            final attrs = charData['attributes'] as Map? ?? {};
+            final name =
+                attrs['canonicalName']?.toString() ??
+                attrs['name']?.toString() ??
+                'Unknown';
+            final imageObj = attrs['image'] as Map?;
+            final image =
+                imageObj?['original']?.toString() ??
+                imageObj?['medium']?.toString();
+            final desc = attrs['description']?.toString();
+
+            items.add(
+              MediaCharacter(
+                id: charData['id']?.toString() ?? '',
+                name: name,
+                role: role,
+                image: image,
+                description: _cleanBio(desc),
+              ),
+            );
+          }
+        }
+
+        return PaginatedResult(items: items, hasNextPage: hasNextPage);
+      },
+      fallback: (error, stackTrace) {
+        log(
+          'Error fetching Kitsu characters',
+          name: 'KitsuTracker.getCharacters',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        return PaginatedResult(items: [], hasNextPage: false);
+      },
+    );
+  }
+
+  @override
+  Future<MediaCharacter?> getCharacterDetails(String characterId) async {
+    return executeApi(
+      'GET_KITSU_CHARACTER_DETAILS',
+      () async {
+        final response = await http.get(
+          'https://kitsu.io/api/edge/characters/$characterId',
+          cacheDuration: const Duration(days: 7),
+        );
+
+        final jsonMap = response.json as Map?;
+        final charData = jsonMap?['data'] as Map?;
+        if (charData == null) return null;
+
+        final attrs = charData['attributes'] as Map? ?? {};
+        final name =
+            attrs['canonicalName']?.toString() ??
+            attrs['name']?.toString() ??
+            'Unknown';
+        final imageObj = attrs['image'] as Map?;
+        final image =
+            imageObj?['original']?.toString() ??
+            imageObj?['medium']?.toString();
+        final desc = attrs['description']?.toString();
+
+        return MediaCharacter(
+          id: charData['id']?.toString() ?? characterId,
+          name: name,
+          image: image,
+          description: _cleanBio(desc),
+        );
+      },
+      fallback: (error, stackTrace) {
+        log(
+          'Error fetching Kitsu character details',
+          name: 'KitsuTracker.getCharacterDetails',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        return null;
+      },
+    );
+  }
+
+  String? _cleanBio(String? text) {
+    if (text == null || text.trim().isEmpty) return null;
+    var s = text;
+    s = s.replaceAll('~!', '').replaceAll('!~', '');
+    s = s.replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n');
+    s = s.replaceAll(RegExp(r'<[^>]*>'), '');
+    s = s.replaceAll(RegExp(r'\n+'), '\n\n');
+    return s.trim();
+  }
 }

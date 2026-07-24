@@ -55,9 +55,11 @@ class EditorialCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (config.bottomLeftBadgeText != null || config.badgeText != null)
+                if (config.bottomLeftBadgeText != null ||
+                    config.badgeText != null)
                   Text(
-                    (config.bottomLeftBadgeText ?? config.badgeText!).toUpperCase(),
+                    (config.bottomLeftBadgeText ?? config.badgeText!)
+                        .toUpperCase(),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: cs.primary,
                       fontWeight: FontWeight.w900,
@@ -84,7 +86,8 @@ class EditorialCard extends StatelessWidget {
                     children: [
                       if (config.effectiveSubtitle != null)
                         Expanded(child: PortraitMetadataRow(config: config)),
-                      if (config.progressText != null || config.progress != null)
+                      if (config.progressText != null ||
+                          config.progress != null)
                         Text(
                           config.progressText ??
                               '${(config.progress!.clamp(0.0, 1.0) * 100).toInt()}%',
@@ -136,80 +139,8 @@ class EditorialCard extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 4,
-                horizontal: 4,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (config.bottomLeftBadgeText != null ||
-                                config.badgeText != null)
-                              Text(
-                                (config.bottomLeftBadgeText ?? config.badgeText!)
-                                    .toUpperCase(),
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: cs.primary,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.8,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            Text(
-                              config.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: cs.onSurface,
-                                height: 1.15,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (config.topRightBadge != null) config.topRightBadge!,
-                    ],
-                  ),
-                  if (config.subtitle != null ||
-                      config.progress != null ||
-                      config.progressText != null) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (config.subtitle != null)
-                          Expanded(
-                            child: Text(
-                              config.subtitle!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: cs.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        if (config.progressText != null || config.progress != null)
-                          Text(
-                            config.progressText ??
-                                '${(config.progress!.clamp(0.0, 1.0) * 100).toInt()}%',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: cs.primary,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+              child: WideMetadataColumn(config: config),
             ),
           ),
         ],

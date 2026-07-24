@@ -91,7 +91,7 @@ class MediaCard extends ConsumerWidget {
           width: layout.width,
           height: layout.height,
           child: FittedBox(
-            fit: BoxFit.fill,
+            fit: BoxFit.contain,
             child: SizedBox(
               width: baseLayout.width,
               height: baseLayout.height,

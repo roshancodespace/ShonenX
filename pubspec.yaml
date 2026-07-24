@@ -81,6 +81,7 @@ dependencies:
   liquid_glass_easy: ^3.2.2
   flutter_markdown: ^0.7.7+1
   palette_generator: ^0.3.3+7
+  skeletonizer: ^2.1.3
 
 dependency_overrides:
   media_kit:

@@ -324,22 +324,28 @@ void showCardStyleSheet(
               ),
               const SizedBox(height: 8),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: MediaCardStyle.values.map((style) {
-                    final selected = current == style;
-                    return ChoiceChip(
-                      label: Text(style.displayName),
-                      selected: selected,
-                      avatar: Icon(
-                        selected ? Icons.check_rounded : Icons.style_outlined,
-                        size: 16,
-                      ),
-                      onSelected: (_) => notifier.updateCardStyle(style),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisExtent: 58,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: MediaCardStyle.values.length,
+                  itemBuilder: (context, index) {
+                    final style = MediaCardStyle.values[index];
+                    return _StyleGridCard(
+                      selected: current == style,
+                      icon: _cardStyleIcon(style),
+                      title: style.displayName,
+                      subtitle: _cardStyleDesc(style),
+                      selectedColor: cs.primary,
+                      onTap: () => notifier.updateCardStyle(style),
                     );
-                  }).toList(),
+                  },
                 ),
               ),
 
@@ -356,20 +362,20 @@ void showCardStyleSheet(
               ),
               const SizedBox(height: 8),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
                     FilterChip(
                       avatar: const Icon(Icons.star_rounded, size: 16),
-                      label: const Text('Ratings & Scores'),
+                      label: const Text('Ratings'),
                       selected: uiState.showCardRatings,
                       onSelected: (_) => notifier.toggleShowCardRatings(),
                     ),
                     FilterChip(
                       avatar: const Icon(Icons.category_rounded, size: 16),
-                      label: const Text('Genres & Tags'),
+                      label: const Text('Genres'),
                       selected: uiState.showCardGenres,
                       onSelected: (_) => notifier.toggleShowCardGenres(),
                     ),
@@ -1372,6 +1378,30 @@ class _EpisodeViewModePreview extends StatelessWidget {
   }
 }
 
+String _cardStyleDesc(MediaCardStyle s) => switch (s) {
+  MediaCardStyle.classic => 'Classic poster layout with metadata overlay',
+  MediaCardStyle.minimal => 'Clean border-free poster card',
+  MediaCardStyle.expressive => 'Spacious container with bold badges',
+  MediaCardStyle.material => 'Rounded Material card styling',
+  MediaCardStyle.cinematic => 'Full-bleed cinematic landscape view',
+  MediaCardStyle.neon => 'Glowing vibrant accent borders',
+  MediaCardStyle.compact => 'Dense compact layout for high density',
+  MediaCardStyle.editorial => 'High-whitespace magazine design',
+  MediaCardStyle.wideBanner => 'Wide horizontal banner card',
+};
+
+IconData _cardStyleIcon(MediaCardStyle s) => switch (s) {
+  MediaCardStyle.classic => Icons.grid_view_rounded,
+  MediaCardStyle.minimal => Icons.photo_size_select_actual_rounded,
+  MediaCardStyle.expressive => Icons.featured_play_list_rounded,
+  MediaCardStyle.material => Icons.crop_portrait_rounded,
+  MediaCardStyle.cinematic => Icons.movie_filter_rounded,
+  MediaCardStyle.neon => Icons.electric_bolt_rounded,
+  MediaCardStyle.compact => Icons.table_rows_rounded,
+  MediaCardStyle.editorial => Icons.newspaper_rounded,
+  MediaCardStyle.wideBanner => Icons.view_headline_rounded,
+};
+
 String _cwStyleDesc(ContinueWatchingStyle s) => switch (s) {
   ContinueWatchingStyle.classic => 'Classic grid square continue card',
   ContinueWatchingStyle.minimal => 'Border-free clean image card',
@@ -1464,25 +1494,10 @@ void showNavBarStyleSheet(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Live Preview container
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 24,
-                  horizontal: 16,
-                ),
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHigh.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: cs.outlineVariant.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Center(
+              const SizedBox(height: 4),
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Builder(
                     builder: (context) {
                       final double barHeight = 52.0;
@@ -1571,15 +1586,41 @@ void showNavBarStyleSheet(
                 ),
               ),
 
-              const SizedBox(height: 10),
-              ...NavBarStyle.values.map(
-                (style) => _SelectionTile(
-                  selected: current == style,
-                  icon: _navBarStyleIcon(style),
-                  title: style.displayName,
-                  subtitle: _navBarStyleDesc(style),
-                  selectedColor: cs.primary,
-                  onTap: () => notifier.updateNavBarStyle(style),
+              const SizedBox(height: 14),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Navigation Bar Preset',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisExtent: 58,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: NavBarStyle.values.length,
+                  itemBuilder: (context, index) {
+                    final style = NavBarStyle.values[index];
+                    return _StyleGridCard(
+                      selected: current == style,
+                      icon: _navBarStyleIcon(style),
+                      title: style.displayName,
+                      subtitle: _navBarStyleDesc(style),
+                      selectedColor: cs.primary,
+                      onTap: () => notifier.updateNavBarStyle(style),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 16),

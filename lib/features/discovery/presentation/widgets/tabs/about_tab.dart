@@ -1,16 +1,20 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/core/utils/formatting.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
 import 'package:shonenx/features/notifications/domain/models/notification_subscription.dart';
 import 'package:shonenx/features/notifications/presentation/widgets/notification_subscription_sheet.dart';
 import 'package:shonenx/features/notifications/providers/notification_subscriptions_provider.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/sheets/characters_sheet.dart';
+import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 
 class AboutTabWidget extends ConsumerWidget {
@@ -31,12 +35,19 @@ class AboutTabWidget extends ConsumerWidget {
     final textTheme = theme.textTheme;
 
     final hasTags = media.tags != null && media.tags!.isNotEmpty;
+    final hasGenres = media.genres != null && media.genres!.isNotEmpty;
     final hasRelations = media.relations != null && media.relations!.isNotEmpty;
     final hasRecommendations =
         media.recommendations != null && media.recommendations!.isNotEmpty;
+    final hasCharacters =
+        (media.characters != null && media.characters!.isNotEmpty) ||
+        media.id.isNotEmpty;
+    final hasLinks =
+        media.externalLinks != null && media.externalLinks!.isNotEmpty;
 
     final items = <Widget>[];
 
+    // Airing Banner
     if (media.airingAt != null) {
       items.add(
         Padding(
@@ -50,23 +61,95 @@ class AboutTabWidget extends ConsumerWidget {
       );
     }
 
+    // Modern Quick Stats Bar
+    items.add(
+      Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: _QuickStatsBar(media: media, uiRoundness: uiRoundness),
+      ),
+    );
+
+    // Synopsis Section
     items.add(Synopsis(description: media.description ?? ''));
 
-    if (hasTags) {
+    // Information & Details Key-Value List
+    items.add(
+      Padding(
+        padding: const EdgeInsets.only(top: 20),
+        child: _MediaDetailsSection(media: media, uiRoundness: uiRoundness),
+      ),
+    );
+
+    // Alternative Titles Tile
+    if (media.title.english != null ||
+        media.title.romaji != null ||
+        media.title.native != null ||
+        (media.synonyms != null && media.synonyms!.isNotEmpty)) {
       items.add(
         Padding(
           padding: const EdgeInsets.only(top: 16),
+          child: _AlternativeTitlesTile(
+            title: media.title,
+            synonyms: media.synonyms ?? [],
+            uiRoundness: uiRoundness,
+          ),
+        ),
+      );
+    }
+
+    // Genres & Tags Section
+    if (hasGenres || hasTags) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 20),
+          child: _GenresAndTagsSection(
+            genres: media.genres ?? [],
+            tags: media.tags ?? [],
+            textTheme: textTheme,
+          ),
+        ),
+      );
+    }
+
+    // Characters & Cast Section
+    if (hasCharacters) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Tags', style: textTheme.headlineSmall),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 4.0,
-                runSpacing: 4.0,
-                children: media.tags!
-                    .map((tag) => _TagChip(label: tag.name))
-                    .toList(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Characters & Cast',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                    onPressed: () {
+                      CharactersSheet.show(
+                        context,
+                        mediaId: media.id,
+                        mediaType: media.type,
+                        mediaTitle: media.title.availableTitle,
+                        initialCharacters: media.characters ?? [],
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _CharactersList(
+                mediaId: media.id,
+                mediaType: media.type,
+                mediaTitle: media.title.availableTitle,
+                characters: media.characters ?? [],
+                uiRoundness: uiRoundness,
               ),
             ],
           ),
@@ -74,14 +157,42 @@ class AboutTabWidget extends ConsumerWidget {
       );
     }
 
-    if (hasRelations) {
+    // External Streaming & Links Section
+    if (hasLinks) {
       items.add(
         Padding(
-          padding: const EdgeInsets.only(top: 16),
+          padding: const EdgeInsets.only(top: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Relations', style: textTheme.headlineSmall),
+              Text(
+                'External Links',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _ExternalLinksList(links: media.externalLinks!),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Relations Section
+    if (hasRelations) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Relations',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               const SizedBox(height: 12),
               _RelationsList(
                 relations: media.relations!,
@@ -93,14 +204,20 @@ class AboutTabWidget extends ConsumerWidget {
       );
     }
 
+    // Recommendations Section
     if (hasRecommendations) {
       items.add(
         Padding(
-          padding: const EdgeInsets.only(top: 16),
+          padding: const EdgeInsets.only(top: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Recommendations', style: textTheme.headlineSmall),
+              Text(
+                'Recommendations',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               const SizedBox(height: 12),
               _RecommendationsList(recommendations: media.recommendations!),
             ],
@@ -110,11 +227,656 @@ class AboutTabWidget extends ConsumerWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: items.length,
       itemBuilder: (context, index) {
         return StaggeredFadeIn(index: index, child: items[index]);
       },
+    );
+  }
+}
+
+class _QuickStatsBar extends StatelessWidget {
+  final UnifiedMedia media;
+  final double uiRoundness;
+
+  const _QuickStatsBar({required this.media, required this.uiRoundness});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final stats = <Widget>[];
+
+    if (media.score != null && media.score! > 0) {
+      stats.add(
+        _StatPill(
+          icon: Icons.star_rounded,
+          iconColor: const Color(0xFFFFB703),
+          label: media.score!.toStringAsFixed(1),
+        ),
+      );
+    }
+
+    if (media.format != null && media.format!.isNotEmpty) {
+      stats.add(_StatPill(icon: Icons.tv_rounded, label: media.format!));
+    }
+
+    if (media.status != null && media.status!.isNotEmpty) {
+      stats.add(
+        _StatPill(
+          icon: Icons.fiber_manual_record_rounded,
+          iconColor: media.status!.toLowerCase() == 'releasing'
+              ? Colors.greenAccent
+              : cs.primary,
+          label: media.status!.toUpperCase().replaceAll('_', ' '),
+        ),
+      );
+    }
+
+    if (media.episodes != null && media.episodes! > 0) {
+      stats.add(
+        _StatPill(
+          icon: Icons.video_library_rounded,
+          label: '${media.episodes} eps',
+        ),
+      );
+    }
+
+    if (media.chapters != null && media.chapters! > 0) {
+      stats.add(
+        _StatPill(
+          icon: Icons.menu_book_rounded,
+          label: '${media.chapters} chs',
+        ),
+      );
+    }
+
+    if (media.season != null && media.season!.isNotEmpty) {
+      stats.add(
+        _StatPill(icon: Icons.calendar_today_rounded, label: media.season!),
+      );
+    }
+
+    if (stats.isEmpty) return const SizedBox.shrink();
+
+    return Wrap(spacing: 6, runSpacing: 6, children: stats);
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  final IconData icon;
+  final Color? iconColor;
+  final String label;
+
+  const _StatPill({required this.icon, this.iconColor, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: iconColor ?? cs.primary),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: cs.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MediaDetailsSection extends StatelessWidget {
+  final UnifiedMedia media;
+  final double uiRoundness;
+
+  const _MediaDetailsSection({required this.media, required this.uiRoundness});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final details = <_DetailPair>[];
+
+    if (media.studios != null && media.studios!.isNotEmpty) {
+      details.add(_DetailPair('Studio', media.studios!.join(', ')));
+    }
+    if (media.source != null && media.source!.isNotEmpty) {
+      details.add(
+        _DetailPair('Source', media.source!.toUpperCase().replaceAll('_', ' ')),
+      );
+    }
+    if (media.duration != null && media.duration! > 0) {
+      details.add(_DetailPair('Duration', '${media.duration} mins'));
+    }
+    if (media.volumes != null && media.volumes! > 0) {
+      details.add(_DetailPair('Volumes', '${media.volumes}'));
+    }
+    if (media.favourites != null && media.favourites! > 0) {
+      details.add(
+        _DetailPair('Favorites', _formatCompactNumber(media.favourites!)),
+      );
+    }
+    if (media.popularity != null && media.popularity! > 0) {
+      details.add(_DetailPair('Popularity', '#${media.popularity}'));
+    }
+
+    if (details.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Information',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ...details.map((d) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 90,
+                  child: Text(
+                    d.label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    d.value,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  String _formatCompactNumber(int number) {
+    if (number >= 1000000) return '${(number / 1000000).toStringAsFixed(1)}M';
+    if (number >= 1000) return '${(number / 1000).toStringAsFixed(1)}k';
+    return number.toString();
+  }
+}
+
+class _DetailPair {
+  final String label;
+  final String value;
+  const _DetailPair(this.label, this.value);
+}
+
+class _AlternativeTitlesTile extends StatefulWidget {
+  final MediaTitle title;
+  final List<String> synonyms;
+  final double uiRoundness;
+
+  const _AlternativeTitlesTile({
+    required this.title,
+    required this.synonyms,
+    required this.uiRoundness,
+  });
+
+  @override
+  State<_AlternativeTitlesTile> createState() => _AlternativeTitlesTileState();
+}
+
+class _AlternativeTitlesTileState extends State<_AlternativeTitlesTile> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final rows = <Widget>[];
+
+    if (widget.title.english != null && widget.title.english!.isNotEmpty) {
+      rows.add(_buildTitleRow('English', widget.title.english!, cs, theme));
+    }
+    if (widget.title.romaji != null && widget.title.romaji!.isNotEmpty) {
+      rows.add(_buildTitleRow('Romaji', widget.title.romaji!, cs, theme));
+    }
+    if (widget.title.native != null && widget.title.native!.isNotEmpty) {
+      rows.add(_buildTitleRow('Native', widget.title.native!, cs, theme));
+    }
+
+    if (_expanded && widget.synonyms.isNotEmpty) {
+      rows.add(
+        _buildTitleRow('Synonyms', widget.synonyms.join(', '), cs, theme),
+      );
+    }
+
+    if (rows.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: widget.synonyms.isNotEmpty
+              ? () => setState(() => _expanded = !_expanded)
+              : null,
+          borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Alternative Titles',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (widget.synonyms.isNotEmpty)
+                  Icon(
+                    _expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    size: 20,
+                    color: cs.onSurfaceVariant,
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        ...rows,
+      ],
+    );
+  }
+
+  Widget _buildTitleRow(
+    String label,
+    String value,
+    ColorScheme cs,
+    ThemeData theme,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 90,
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GenresAndTagsSection extends StatelessWidget {
+  final List<String> genres;
+  final List<MediaTag> tags;
+  final TextTheme textTheme;
+
+  const _GenresAndTagsSection({
+    required this.genres,
+    required this.tags,
+    required this.textTheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (genres.isNotEmpty) ...[
+          Text(
+            'Genres',
+            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: genres.map((genre) {
+              return ActionChip(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                side: BorderSide.none,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                backgroundColor: cs.primaryContainer.withValues(alpha: 0.6),
+                label: Text(
+                  genre,
+                  style: TextStyle(
+                    color: cs.onPrimaryContainer,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11.5,
+                  ),
+                ),
+                onPressed: () {
+                  context.go('/discover?genres=${Uri.encodeComponent(genre)}');
+                },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 14),
+        ],
+        if (tags.isNotEmpty) ...[
+          Text(
+            'Tags',
+            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: tags.map((tag) => _TagChip(label: tag.name)).toList(),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _CharactersList extends ConsumerStatefulWidget {
+  final String mediaId;
+  final MediaType mediaType;
+  final String mediaTitle;
+  final List<MediaCharacter> characters;
+  final double uiRoundness;
+
+  const _CharactersList({
+    required this.mediaId,
+    required this.mediaType,
+    required this.mediaTitle,
+    required this.characters,
+    required this.uiRoundness,
+  });
+
+  @override
+  ConsumerState<_CharactersList> createState() => _CharactersListState();
+}
+
+class _CharactersListState extends ConsumerState<_CharactersList> {
+  List<MediaCharacter> _list = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _list = List.from(widget.characters);
+    if (_list.isEmpty && widget.mediaId.isNotEmpty) {
+      _fetchInitialCharacters();
+    }
+  }
+
+  Future<void> _fetchInitialCharacters() async {
+    setState(() => _isLoading = true);
+    try {
+      final tracker = ref.read(metadataSourceProvider);
+      final res = await tracker.getCharacters(
+        widget.mediaId,
+        page: 1,
+        perPage: 15,
+        type: widget.mediaType,
+      );
+      if (mounted) {
+        setState(() {
+          _list = res.items;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    if (_list.isEmpty && !_isLoading) {
+      return const SizedBox.shrink();
+    }
+
+    if (_isLoading) {
+      return SizedBox(
+        height: 102,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: 4,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (context, index) {
+            return Container(
+              width: 195,
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHigh.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(widget.uiRoundness),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(
+                        widget.uiRoundness * 0.7,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 12,
+                          color: cs.surfaceContainerHigh,
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: 50,
+                          height: 10,
+                          color: cs.surfaceContainerHigh,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 102,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _list.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final c = _list[index];
+          return InkWell(
+            onTap: () {
+              CharactersSheet.showDetails(context, c);
+            },
+            borderRadius: BorderRadius.circular(widget.uiRoundness),
+            child: Container(
+              width: 195,
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHigh.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(widget.uiRoundness),
+              ),
+              child: Row(
+                children: [
+                  if (c.image != null && c.image!.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                        widget.uiRoundness * 0.7,
+                      ),
+                      child: CachedNetworkImage(
+                        imageUrl: c.image!,
+                        width: 52,
+                        height: 90,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => Container(
+                          width: 52,
+                          height: 90,
+                          color: cs.surfaceContainerHigh,
+                          child: const Icon(Icons.person_rounded, size: 22),
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      width: 52,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        color: cs.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(
+                          widget.uiRoundness * 0.7,
+                        ),
+                      ),
+                      child: const Icon(Icons.person_rounded, size: 22),
+                    ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          c.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        if (c.role != null && c.role!.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            c.role!.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w800,
+                              color: cs.primary,
+                            ),
+                          ),
+                        ],
+                        if (c.voiceActorName != null &&
+                            c.voiceActorName!.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            c.voiceActorName!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              color: cs.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ExternalLinksList extends StatelessWidget {
+  final List<MediaExternalLink> links;
+
+  const _ExternalLinksList({required this.links});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: links.map((link) {
+        return ActionChip(
+          visualDensity: VisualDensity.compact,
+          avatar: const Icon(Icons.open_in_new_rounded, size: 13),
+          side: BorderSide.none,
+          backgroundColor: cs.surfaceContainerHigh.withValues(alpha: 0.5),
+          label: Text(
+            link.site,
+            style: TextStyle(
+              color: cs.onSurface,
+              fontWeight: FontWeight.w600,
+              fontSize: 11.5,
+            ),
+          ),
+          onPressed: () async {
+            final uri = Uri.tryParse(link.url);
+            if (uri != null && await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
+          },
+        );
+      }).toList(),
     );
   }
 }
@@ -303,6 +1065,7 @@ class _TagChip extends StatelessWidget {
       labelPadding: EdgeInsets.zero,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       backgroundColor: theme.colorScheme.surfaceContainerLow,
+      side: BorderSide.none,
       label: Text(
         label,
         style: theme.textTheme.bodySmall?.copyWith(
@@ -325,6 +1088,10 @@ class _RelationsList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
+    final isWide = ref.watch(
+      uiPrefsProvider.select((s) => s.isMediaCardWide(style.name)),
+    );
+    final cardHeight = style.getLayout(isWideMode: isWide).height;
 
     final Map<String, List<UnifiedMedia>> grouped = {};
     for (final relation in relations) {
@@ -363,7 +1130,7 @@ class _RelationsList extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               SizedBox(
-                height: style.layout.height,
+                height: cardHeight,
                 child: ListView.separated(
                   shrinkWrap: true,
                   scrollDirection: Axis.horizontal,
@@ -401,9 +1168,13 @@ class _RecommendationsList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
+    final isWide = ref.watch(
+      uiPrefsProvider.select((s) => s.isMediaCardWide(style.name)),
+    );
+    final cardHeight = style.getLayout(isWideMode: isWide).height;
 
     return SizedBox(
-      height: style.layout.height,
+      height: cardHeight,
       child: ListView.separated(
         shrinkWrap: true,
         scrollDirection: Axis.horizontal,
@@ -460,8 +1231,13 @@ class _SynopsisState extends State<Synopsis>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Synopsis', style: theme.textTheme.headlineSmall),
-        const SizedBox(height: 12),
+        Text(
+          'Synopsis',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 10),
         if (widget.isLoading)
           const _SynopsisSkeleton()
         else ...[

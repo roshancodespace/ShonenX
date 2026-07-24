@@ -222,7 +222,14 @@ class AnilistTrackerQueries {
           english
           native
         }
+        synonyms
         format
+        source
+        duration
+        chapters
+        volumes
+        popularity
+        favourites
         coverImage {
           large
         }
@@ -241,7 +248,41 @@ class AnilistTrackerQueries {
           name
           category
         }
-
+        studios(isMain: true) {
+          nodes {
+            id
+            name
+          }
+        }
+        externalLinks {
+          id
+          url
+          site
+          icon
+        }
+        characters(role: MAIN, sort: [ROLE, RELEVANCE]) {
+          edges {
+            role
+            node {
+              id
+              name {
+                full
+              }
+              image {
+                large
+              }
+            }
+            voiceActors(language: JAPANESE, sort: [RELEVANCE]) {
+              id
+              name {
+                full
+              }
+              image {
+                large
+              }
+            }
+          }
+        }
         relations {
           edges {
             relationType(version: 2)
@@ -286,17 +327,6 @@ class AnilistTrackerQueries {
             }
           }
         }
-
-        characters(role: MAIN, sort: [ROLE, RELEVANCE]) {
-          nodes {
-            name {
-              full
-            }
-            image {
-              large
-            }
-          }
-        }
       }
     }
   ''';
@@ -311,6 +341,59 @@ class AnilistTrackerQueries {
     query {
       MediaTagCollection {
         name
+      }
+    }
+  ''';
+
+  static const String characters = '''
+    query(\$id: Int, \$page: Int, \$perPage: Int) {
+      Media(id: \$id) {
+        characters(page: \$page, perPage: \$perPage, sort: [ROLE, RELEVANCE]) {
+          pageInfo {
+            hasNextPage
+            currentPage
+          }
+          edges {
+            role
+            node {
+              id
+              name {
+                full
+                native
+              }
+              image {
+                large
+              }
+              description
+            }
+            voiceActors(language: JAPANESE, sort: [RELEVANCE]) {
+              id
+              name {
+                full
+                native
+              }
+              image {
+                large
+              }
+            }
+          }
+        }
+      }
+    }
+  ''';
+
+  static const String characterDetails = '''
+    query(\$id: Int) {
+      Character(id: \$id) {
+        id
+        name {
+          full
+          native
+        }
+        image {
+          large
+        }
+        description
       }
     }
   ''';

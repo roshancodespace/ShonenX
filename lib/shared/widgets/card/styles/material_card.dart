@@ -167,59 +167,7 @@ class MaterialCard extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          config.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: cs.onSurface,
-                          ),
-                        ),
-                      ),
-                      if (config.topRightBadge != null) config.topRightBadge!,
-                    ],
-                  ),
-                  if (config.subtitle != null ||
-                      config.progress != null ||
-                      config.progressText != null) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (config.subtitle != null)
-                          Expanded(
-                            child: Text(
-                              config.subtitle!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: cs.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        if (config.progressText != null ||
-                            config.progress != null)
-                          Text(
-                            config.progressText ??
-                                '${(config.progress!.clamp(0.0, 1.0) * 100).toInt()}%',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: cs.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
+              child: WideMetadataColumn(config: config),
             ),
           ),
         ],

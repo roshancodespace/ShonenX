@@ -15,8 +15,10 @@ class CardBadgeOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final isHorizontalLayout =
+        config.isWideMode || (config.width > config.height * 1.2);
     final hasScore =
-        config.score != null && config.score! > 0 && !config.isWideMode;
+        config.score != null && config.score! > 0 && !isHorizontalLayout;
     final showBadgeText = config.badgeText != null;
 
     if (!showBadgeText && config.topRightBadge == null && !hasScore) {

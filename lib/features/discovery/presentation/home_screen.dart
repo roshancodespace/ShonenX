@@ -25,6 +25,7 @@ import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class HomeScreen extends ConsumerWidget {
   HomeScreen({super.key});
@@ -42,6 +43,7 @@ class HomeScreen extends ConsumerWidget {
           ref.invalidate(singleSourceFeedProvider);
           for (final section in sections) {
             if (section.type == HomeSectionType.libraryStatus &&
+                section.libraryStatus != null &&
                 section.targetTracker != TrackerType.local) {
               ref
                   .read(
@@ -374,6 +376,18 @@ class HomeScreen extends ConsumerWidget {
             '/category/${Uri.encodeComponent(section.title)}?type=${mediaType.id}',
           ),
           data: data,
+          skeletonItemBuilder: (context, index) {
+            return MediaCard(
+              tag: 'skeleton-${section.id}-$index',
+              title: 'Placeholder Media Title Name',
+              imageUrl: '',
+              style: style,
+              format: 'TV',
+              score: 8.5,
+              year: '2026',
+              onTap: () {},
+            );
+          },
           itemBuilder: (context, item) {
             return MediaCard(
               tag: '${section.id}-${item.id}',
@@ -447,10 +461,39 @@ class HomeScreen extends ConsumerWidget {
             '${info.name} (${mediaType == MediaType.ANIME ? "Anime" : "Manga"})';
         return _buildSingleSourceRow(context, ref, info, mediaType, title);
       },
-      loading: () => const SizedBox(
-        height: 150,
-        child: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () {
+        final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
+        final isWide = ref.watch(
+          uiPrefsProvider.select((p) => p.isMediaCardWide(style.name)),
+        );
+        final height = style.getLayout(isWideMode: isWide).height;
+
+        return Skeletonizer(
+          enabled: true,
+          child: Column(
+            children: List.generate(2, (sIndex) {
+              return HorizontalSection<UnifiedMedia>(
+                title: 'Loading Source Section',
+                height: height,
+                data: const AsyncValue.loading(),
+                itemBuilder: (_, __) => const SizedBox.shrink(),
+                skeletonItemBuilder: (context, index) {
+                  return MediaCard(
+                    tag: 'skeleton-src-$sIndex-$index',
+                    title: 'Placeholder Media Title Name',
+                    imageUrl: '',
+                    style: style,
+                    format: 'TV',
+                    score: 8.5,
+                    year: '2026',
+                    onTap: () {},
+                  );
+                },
+              );
+            }),
+          ),
+        );
+      },
       error: (_, __) => const SizedBox.shrink(),
     );
   }
@@ -475,6 +518,18 @@ class HomeScreen extends ConsumerWidget {
         '/category/${Uri.encodeComponent(title)}?type=${mediaType.id}',
       ),
       data: sourceData,
+      skeletonItemBuilder: (context, index) {
+        return MediaCard(
+          tag: 'skeleton-src-${info.id}-$index',
+          title: 'Placeholder Media Title Name',
+          imageUrl: '',
+          style: style,
+          format: 'TV',
+          score: 8.5,
+          year: '2026',
+          onTap: () {},
+        );
+      },
       itemBuilder: (context, item) {
         return MediaCard(
           tag: '$title-${item.id}',

@@ -458,16 +458,14 @@ class _BottomNavBar extends ConsumerWidget {
                             ),
                           ),
                   ),
-                  if (navBarStyle != NavBarStyle.minimal) ...[
-                    SizedBox(width: hPad + 4),
-                    _DownloadButton(
-                      colorScheme: cs,
-                      size: barHeight,
-                      iconSize: iconSize,
-                      padding: hPad,
-                      navBarStyle: navBarStyle,
-                    ),
-                  ],
+                  SizedBox(width: hPad + 4),
+                  _DownloadButton(
+                    colorScheme: cs,
+                    size: barHeight,
+                    iconSize: iconSize,
+                    padding: hPad,
+                    navBarStyle: navBarStyle,
+                  ),
                 ],
               ),
             ],
@@ -659,7 +657,21 @@ class _DownloadButton extends ConsumerWidget {
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
         border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.45)),
       ),
-      NavBarStyle.minimal => const BoxDecoration(color: Colors.transparent),
+      NavBarStyle.minimal => BoxDecoration(
+        color: cs.surface.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
+        border: Border.all(
+          color: cs.outlineVariant.withValues(alpha: 0.2),
+          width: 0.8,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            spreadRadius: 0.5,
+          ),
+        ],
+      ),
       NavBarStyle.frosted => BoxDecoration(
         color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
@@ -867,24 +879,22 @@ class _SideNavBar extends ConsumerWidget {
                 ),
               ),
             ),
-            if (navBarStyle != NavBarStyle.minimal) ...[
-              SizedBox(height: gapBetween),
-              Expanded(
-                flex: 1,
-                child: _SideBarContainer(
-                  width: barWidth,
-                  padding: hPad,
-                  navBarStyle: navBarStyle,
+            SizedBox(height: gapBetween),
+            Expanded(
+              flex: 1,
+              child: _SideBarContainer(
+                width: barWidth,
+                padding: hPad,
+                navBarStyle: navBarStyle,
+                cs: cs,
+                child: _TallDownloadPillContent(
                   cs: cs,
-                  child: _TallDownloadPillContent(
-                    cs: cs,
-                    heightTier: h,
-                    hideLabel: hideDownloadLabel,
-                    navBarStyle: navBarStyle,
-                  ),
+                  heightTier: h,
+                  hideLabel: hideDownloadLabel,
+                  navBarStyle: navBarStyle,
                 ),
               ),
-            ],
+            ),
           ],
         ),
       ),

@@ -355,9 +355,10 @@ class SliverGridDelegateWithMinCrossAxisExtent extends SliverGridDelegate {
 
   @override
   SliverGridLayout getLayout(SliverConstraints constraints) {
-    int crossAxisCount = ((constraints.crossAxisExtent + crossAxisSpacing) /
-            (minCrossAxisExtent + crossAxisSpacing))
-        .floor();
+    int crossAxisCount =
+        ((constraints.crossAxisExtent + crossAxisSpacing) /
+                (minCrossAxisExtent + crossAxisSpacing))
+            .ceil();
     if (crossAxisCount < 1) {
       crossAxisCount = 1;
     }
@@ -385,4 +386,3 @@ class SliverGridDelegateWithMinCrossAxisExtent extends SliverGridDelegate {
         oldDelegate.mainAxisExtent != mainAxisExtent;
   }
 }
-

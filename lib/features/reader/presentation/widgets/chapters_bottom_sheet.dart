@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
-import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/reader/providers/preferred_scanlator_provider.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
@@ -13,7 +13,7 @@ import 'package:shonenx/source_engine/models/source_info.dart';
 import 'grouped_chapter_tile.dart';
 
 class ChaptersBottomSheet extends ConsumerStatefulWidget {
-  final MatchArgs matchArgs;
+  final MediaArgs matchArgs;
   final UnifiedEpisode currentEpisode;
   final String mediaId;
   final SourceInfo sourceInfo;
@@ -108,7 +108,7 @@ class _ChaptersBottomSheetState extends ConsumerState<ChaptersBottomSheet> {
                 child: ScrollablePositionedList.builder(
                   initialScrollIndex: initialIndex.clamp(
                     0,
-                    sortedNumbers.length > 0 ? sortedNumbers.length - 1 : 0,
+                    sortedNumbers.isNotEmpty ? sortedNumbers.length - 1 : 0,
                   ),
                   itemCount: sortedNumbers.length,
                   itemBuilder: (context, index) {

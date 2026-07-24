@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/extensions.dart';
+import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
-import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
@@ -27,7 +27,7 @@ class ContinueWatchingResolver {
   Future<ContinueWatchingResult> resolve(WatchHistoryEntry entry) async {
     final prefState = await ref.read(
       mediaPreferenceProvider(
-        MatchArgs(mediaTitle: entry.animeTitle, type: MediaType.ANIME),
+        MediaArgs(mediaTitle: entry.animeTitle, type: MediaType.ANIME),
       ).future,
     );
 
@@ -65,7 +65,7 @@ class ContinueWatchingResolver {
     } else {
       final episodesState = await ref.read(
         episodesListProvider(
-          MatchArgs(mediaTitle: entry.animeTitle, type: MediaType.ANIME),
+          MediaArgs(mediaTitle: entry.animeTitle, type: MediaType.ANIME),
         ).future,
       );
 

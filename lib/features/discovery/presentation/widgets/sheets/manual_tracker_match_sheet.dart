@@ -3,7 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
+import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -105,7 +105,7 @@ class _ManualTrackerMatchSheetState
     ref
         .read(
           mediaPreferenceProvider(
-            MatchArgs(mediaTitle: widget.mediaTitle, type: widget.type),
+            MediaArgs(mediaTitle: widget.mediaTitle, type: widget.type),
           ).notifier,
         )
         .setTrackerMediaId(result.id);

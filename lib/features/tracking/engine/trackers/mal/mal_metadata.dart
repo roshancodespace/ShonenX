@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
 import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/core/utils/env.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -24,6 +25,84 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
       : Env.MAL_CLIENT_ID_LIST.first;
   static const String _fields =
       'id,title,main_picture,alternative_titles,start_date,end_date,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,status,genres,created_at,updated_at,media_type,nsfw,my_list_status,num_episodes,start_season,broadcast,source,average_episode_duration,rating,pictures,background,related_anime,related_manga,recommendations,studios,statistics';
+
+  @override
+  List<TrackerCategory> get supportedCategories => [
+    TrackerCategory.trending,
+    TrackerCategory.popular,
+    TrackerCategory.topRated,
+    TrackerCategory.upcoming,
+  ];
+
+  @override
+  Future<PaginatedResult<UnifiedMedia>> getCategoryItems(
+    TrackerCategory category, {
+    int page = 1,
+    MediaType type = MediaType.ANIME,
+    Duration? cacheDuration,
+    AdultContentMode adultMode = AdultContentMode.safe,
+  }) {
+    final String rankingType;
+    switch (category) {
+      case TrackerCategory.popular:
+      case TrackerCategory.popularThisSeason:
+        rankingType = 'bypopularity';
+        break;
+      case TrackerCategory.topRated:
+        rankingType = 'all';
+        break;
+      case TrackerCategory.upcoming:
+        rankingType = 'upcoming';
+        break;
+      case TrackerCategory.trending:
+      default:
+        rankingType = type == MediaType.ANIME ? 'airing' : 'bypopularity';
+        break;
+    }
+
+    final requestId = DateTime.now().microsecondsSinceEpoch;
+
+    return executeApi(
+      'CATEGORY_${category.name.toUpperCase()}',
+      () async {
+        final limit = 20;
+        final offset = (page - 1) * limit;
+        final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';
+
+        final response = await http.get(
+          '$_baseUrl/$endpoint/ranking',
+          queryParameters: {
+            'ranking_type': rankingType,
+            'limit': limit.toString(),
+            'offset': offset.toString(),
+            'fields': _fields,
+          },
+          headers: {'X-MAL-CLIENT-ID': clientId},
+          cacheDuration: cacheDuration ?? const Duration(hours: 1),
+        );
+
+        final data = _validateAndParseResponse(
+          response.json,
+          'getCategoryItems',
+        );
+        final rawList = data['data'] as List? ?? [];
+        final paging = data['paging'] as Map? ?? {};
+        final next = paging['next'] as String?;
+
+        final hasNextPage = next != null && next.isNotEmpty;
+
+        final items = rawList.whereType<Map>().map((item) {
+          final node = item['node'] as Map? ?? {};
+          return _mapToUnified(node, type, requestId);
+        }).toList();
+
+        return PaginatedResult(items: items, hasNextPage: hasNextPage);
+      },
+      fallback: (error, stackTrace) {
+        return PaginatedResult(items: [], hasNextPage: false);
+      },
+    );
+  }
 
   Map<String, dynamic> _validateAndParseResponse(
     dynamic body,

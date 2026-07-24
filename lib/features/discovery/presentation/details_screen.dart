@@ -193,42 +193,40 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                   ),
                   actions: [
                     const _DownloadAppBarButton(),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 2),
-                      child: IconButton.filledTonal(
-                        tooltip: 'Share',
-                        style: IconButton.styleFrom(
-                          backgroundColor: theme.colorScheme.secondaryContainer,
-                          foregroundColor:
-                              theme.colorScheme.onSecondaryContainer,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(uiRoundness),
-                          ),
+                    IconButton.filledTonal(
+                      tooltip: 'Share',
+                      style: IconButton.styleFrom(
+                        backgroundColor: theme.colorScheme.secondaryContainer,
+                        foregroundColor: theme.colorScheme.onSecondaryContainer,
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(36, 36),
+                        fixedSize: const Size(36, 36),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(uiRoundness),
                         ),
-                        icon: const Icon(Icons.share, size: 18),
-                        onPressed: () {
-                          final providerId =
-                              displayMedia.providerId ?? 'anilist';
-                          final id = displayMedia.id;
-                          final type = widget.mediaType == MediaType.ANIME
-                              ? 'anime'
-                              : 'manga';
-                          String url;
-                          if (providerId == 'myanimelist' ||
-                              providerId == 'mal') {
-                            url = 'https://myanimelist.net/$type/$id';
-                          } else if (providerId == 'kitsu') {
-                            url = 'https://kitsu.io/$type/$id';
-                          } else {
-                            url = 'https://anilist.co/$type/$id';
-                          }
-                          SharePlus.instance.share(
-                            ShareParams(uri: Uri.parse(url)),
-                          );
-                        },
                       ),
+                      icon: const Icon(Icons.share, size: 18),
+                      onPressed: () {
+                        final providerId = displayMedia.providerId ?? 'anilist';
+                        final id = displayMedia.id;
+                        final type = widget.mediaType == MediaType.ANIME
+                            ? 'anime'
+                            : 'manga';
+                        String url;
+                        if (providerId == 'myanimelist' ||
+                            providerId == 'mal') {
+                          url = 'https://myanimelist.net/$type/$id';
+                        } else if (providerId == 'kitsu') {
+                          url = 'https://kitsu.io/$type/$id';
+                        } else {
+                          url = 'https://anilist.co/$type/$id';
+                        }
+                        SharePlus.instance.share(
+                          ShareParams(uri: Uri.parse(url)),
+                        );
+                      },
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     _CommentsAppBarButton(
                       media: displayMedia,
                       uiRoundness: uiRoundness,
@@ -631,6 +629,7 @@ class _TrackerAppBarButton extends ConsumerWidget {
       style: TextButton.styleFrom(
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,
+        visualDensity: VisualDensity.compact,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.horizontal(
             left: Radius.circular(uiRoundness),
@@ -694,7 +693,7 @@ class _DownloadAppBarButton extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.only(right: 6),
       child: Badge(
         isLabelVisible: activeCount > 0,
         label: Text(activeCount.toString()),
@@ -704,16 +703,19 @@ class _DownloadAppBarButton extends ConsumerWidget {
           style: IconButton.styleFrom(
             backgroundColor: colorScheme.primaryContainer,
             foregroundColor: colorScheme.onPrimaryContainer,
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(36, 36),
+            fixedSize: const Size(36, 36),
           ),
           icon: Stack(
             alignment: Alignment.center,
             children: [
               SizedBox(
-                width: 26,
-                height: 26,
+                width: 22,
+                height: 22,
                 child: CircularProgressIndicator(
                   value: averageProgress,
-                  strokeWidth: 2.2,
+                  strokeWidth: 2.0,
                   strokeCap: StrokeCap.round,
                   backgroundColor: colorScheme.primaryContainer.withValues(
                     alpha: 0.12,
@@ -721,7 +723,7 @@ class _DownloadAppBarButton extends ConsumerWidget {
                   color: colorScheme.onPrimaryContainer,
                 ),
               ),
-              const Icon(Icons.download_rounded, size: 18),
+              const Icon(Icons.download_rounded, size: 16),
             ],
           ),
         ),
@@ -739,20 +741,20 @@ class _CommentsAppBarButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(right: 2),
-      child: IconButton.filledTonal(
-        tooltip: 'Discussion',
-        style: IconButton.styleFrom(
-          backgroundColor: theme.colorScheme.secondaryContainer,
-          foregroundColor: theme.colorScheme.onSecondaryContainer,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(uiRoundness),
-          ),
+    return IconButton.filledTonal(
+      tooltip: 'Discussion',
+      style: IconButton.styleFrom(
+        backgroundColor: theme.colorScheme.secondaryContainer,
+        foregroundColor: theme.colorScheme.onSecondaryContainer,
+        padding: EdgeInsets.zero,
+        minimumSize: const Size(36, 36),
+        fixedSize: const Size(36, 36),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(uiRoundness),
         ),
-        icon: const Icon(Icons.forum_rounded, size: 18),
-        onPressed: () => _showCommentsSheet(context, media),
       ),
+      icon: const Icon(Icons.forum_rounded, size: 18),
+      onPressed: () => _showCommentsSheet(context, media),
     );
   }
 }

@@ -171,9 +171,33 @@ class EpisodesTabWidget extends ConsumerWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (media.type == MediaType.ANIME) ...[
+                          ListTile(
+                            title: const Text('Discussion'),
+                            leading: const Icon(Icons.forum_rounded),
+                            onTap: () {
+                              episodeActionsContext.pop();
+                              AppBottomSheet.show(
+                                context: episodeActionsContext,
+                                title:
+                                    '${media.type == MediaType.MANGA ? 'Chapter' : 'Episode'} $epNum Discussion',
+                                contentPadding: EdgeInsets.zero,
+                                child: SizedBox(
+                                  height:
+                                      MediaQuery.of(
+                                        episodeActionsContext,
+                                      ).size.height *
+                                      0.78,
+                                  child: CommentsTabWidget(
+                                    media: media,
+                                    initialEpisodeNumber: epNum,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          if (media.type == MediaType.ANIME)
                             ListTile(
-                              title: const Text('Stream & Download Options'),
+                              title: const Text('Stream / Download'),
                               leading: const Icon(Icons.tune_rounded),
                               onTap: () {
                                 episodeActionsContext.pop();
@@ -199,32 +223,6 @@ class EpisodesTabWidget extends ConsumerWidget {
                                 );
                               },
                             ),
-                            const Divider(height: 1),
-                          ],
-                          ListTile(
-                            title: const Text('Discussion'),
-                            leading: const Icon(Icons.forum_rounded),
-                            onTap: () {
-                              episodeActionsContext.pop();
-                              AppBottomSheet.show(
-                                context: episodeActionsContext,
-                                title:
-                                    '${media.type == MediaType.MANGA ? 'Chapter' : 'Episode'} $epNum Discussion',
-                                contentPadding: EdgeInsets.zero,
-                                child: SizedBox(
-                                  height:
-                                      MediaQuery.of(
-                                        episodeActionsContext,
-                                      ).size.height *
-                                      0.78,
-                                  child: CommentsTabWidget(
-                                    media: media,
-                                    initialEpisodeNumber: epNum,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
                         ],
                       ),
                     );

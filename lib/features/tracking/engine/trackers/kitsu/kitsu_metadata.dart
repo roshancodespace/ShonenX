@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
 import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
@@ -15,6 +16,95 @@ class KitsuException implements Exception {
 
 mixin KitsuMetadata on BaseTracker implements RemoteTracker {
   HTTP get http;
+
+  @override
+  List<TrackerCategory> get supportedCategories => [
+    TrackerCategory.trending,
+    TrackerCategory.popular,
+    TrackerCategory.topRated,
+  ];
+
+  @override
+  Future<PaginatedResult<UnifiedMedia>> getCategoryItems(
+    TrackerCategory category, {
+    int page = 1,
+    MediaType type = MediaType.ANIME,
+    Duration? cacheDuration,
+    AdultContentMode adultMode = AdultContentMode.safe,
+  }) {
+    final String sortOption;
+    switch (category) {
+      case TrackerCategory.popular:
+      case TrackerCategory.popularThisSeason:
+        sortOption = '-userCount';
+        break;
+      case TrackerCategory.topRated:
+        sortOption = '-averageRating';
+        break;
+      case TrackerCategory.recentlyUpdated:
+        sortOption = '-updatedAt';
+        break;
+      case TrackerCategory.trending:
+      default:
+        sortOption = '-userCount';
+        break;
+    }
+
+    final requestId = DateTime.now().microsecondsSinceEpoch;
+
+    return executeApi(
+      'CATEGORY_${category.name.toUpperCase()}',
+      () async {
+        final limit = 20;
+        final offset = (page - 1) * limit;
+        final endpoint = type == MediaType.ANIME ? 'anime' : 'manga';
+
+        final response = await http.get(
+          'https://kitsu.io/api/edge/$endpoint',
+          queryParameters: {
+            'sort': sortOption,
+            'page[limit]': limit.toString(),
+            'page[offset]': offset.toString(),
+            'include': 'categories,genres',
+          },
+          cacheDuration: cacheDuration ?? const Duration(hours: 1),
+        );
+
+        final data = _validateAndParseResponse(
+          response.json,
+          'getCategoryItems',
+        );
+        final rawList = data['data'] as List? ?? [];
+        final includedMap = _buildIncludedMap(data['included']);
+        final links = data['links'] as Map? ?? {};
+        final next = links['next'] as String?;
+
+        final hasNextPage = next != null && next.isNotEmpty;
+
+        final items = rawList
+            .whereType<Map>()
+            .map((item) {
+              try {
+                return _mapToUnified(
+                  item,
+                  type,
+                  requestId,
+                  includedMap: includedMap,
+                );
+              } catch (_) {
+                return null;
+              }
+            })
+            .whereType<UnifiedMedia>()
+            .toList();
+
+        return PaginatedResult(items: items, hasNextPage: hasNextPage);
+      },
+      fallback: (error, stackTrace) {
+        return PaginatedResult(items: [], hasNextPage: false);
+      },
+    );
+  }
 
   Map<String, dynamic> _validateAndParseResponse(
     dynamic body,
@@ -90,13 +180,22 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
 
         final hasNextPage = next != null && next.isNotEmpty;
 
-        final items = rawList.whereType<Map>().map((item) {
-          try {
-            return _mapToUnified(item, type, requestId, includedMap: includedMap);
-          } catch (_) {
-            return null;
-          }
-        }).whereType<UnifiedMedia>().toList();
+        final items = rawList
+            .whereType<Map>()
+            .map((item) {
+              try {
+                return _mapToUnified(
+                  item,
+                  type,
+                  requestId,
+                  includedMap: includedMap,
+                );
+              } catch (_) {
+                return null;
+              }
+            })
+            .whereType<UnifiedMedia>()
+            .toList();
 
         return PaginatedResult(items: items, hasNextPage: hasNextPage);
       },
@@ -142,14 +241,12 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
           queryParams['sort'] = '-userCount';
         }
 
-        final categoryFilters = <String>[
-          if (genres != null) ...genres,
-          if (tags != null) ...tags,
-        ]
-            .map((g) => g.toLowerCase().trim().replaceAll(' ', '-'))
-            .where((g) => g.isNotEmpty)
-            .toSet()
-            .toList();
+        final categoryFilters =
+            <String>[if (genres != null) ...genres, if (tags != null) ...tags]
+                .map((g) => g.toLowerCase().trim().replaceAll(' ', '-'))
+                .where((g) => g.isNotEmpty)
+                .toSet()
+                .toList();
 
         if (categoryFilters.isNotEmpty) {
           queryParams['filter[categories]'] = categoryFilters.join(',');
@@ -169,13 +266,22 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
 
         final hasNextPage = next != null && next.isNotEmpty;
 
-        final items = rawList.whereType<Map>().map((item) {
-          try {
-            return _mapToUnified(item, type, requestId, includedMap: includedMap);
-          } catch (_) {
-            return null;
-          }
-        }).whereType<UnifiedMedia>().toList();
+        final items = rawList
+            .whereType<Map>()
+            .map((item) {
+              try {
+                return _mapToUnified(
+                  item,
+                  type,
+                  requestId,
+                  includedMap: includedMap,
+                );
+              } catch (_) {
+                return null;
+              }
+            })
+            .whereType<UnifiedMedia>()
+            .toList();
 
         return PaginatedResult(items: items, hasNextPage: hasNextPage);
       },
@@ -207,7 +313,8 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
       final response = await http.get(
         'https://kitsu.io/api/edge/$endpoint/$id',
         queryParameters: {
-          'include': 'categories,genres,mediaRelationships.destination,mappings',
+          'include':
+              'categories,genres,mediaRelationships.destination,mappings',
         },
         cacheDuration: const Duration(days: 1),
       );
@@ -301,7 +408,8 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
           coverImage['large']?.toString() ??
           coverImage['small']?.toString();
 
-      final synopsis = attr['synopsis']?.toString() ?? attr['description']?.toString();
+      final synopsis =
+          attr['synopsis']?.toString() ?? attr['description']?.toString();
       final format = attr['subtype']?.toString().toUpperCase();
 
       final avgRatingStr = attr['averageRating']?.toString();
@@ -359,10 +467,15 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
             if (cId == null) continue;
             final catNode = includedMap['categories:$cId'];
             if (catNode == null) continue;
-            final catTitle = (catNode['attributes'] as Map?)?['title']?.toString();
-            if (catTitle != null && catTitle.isNotEmpty && !genresList.contains(catTitle)) {
+            final catTitle = (catNode['attributes'] as Map?)?['title']
+                ?.toString();
+            if (catTitle != null &&
+                catTitle.isNotEmpty &&
+                !genresList.contains(catTitle)) {
               genresList.add(catTitle);
-              tagsList.add(MediaTag(id: cId, name: catTitle, category: 'Category'));
+              tagsList.add(
+                MediaTag(id: cId, name: catTitle, category: 'Category'),
+              );
             }
           }
         }
@@ -374,11 +487,16 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
             if (gId == null) continue;
             final genNode = includedMap['genres:$gId'];
             if (genNode == null) continue;
-            final genTitle = (genNode['attributes'] as Map?)?['name']?.toString() ??
-                             (genNode['attributes'] as Map?)?['title']?.toString();
-            if (genTitle != null && genTitle.isNotEmpty && !genresList.contains(genTitle)) {
+            final genTitle =
+                (genNode['attributes'] as Map?)?['name']?.toString() ??
+                (genNode['attributes'] as Map?)?['title']?.toString();
+            if (genTitle != null &&
+                genTitle.isNotEmpty &&
+                !genresList.contains(genTitle)) {
               genresList.add(genTitle);
-              tagsList.add(MediaTag(id: gId, name: genTitle, category: 'Genre'));
+              tagsList.add(
+                MediaTag(id: gId, name: genTitle, category: 'Genre'),
+              );
             }
           }
         }
@@ -394,7 +512,9 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
             final relAttr = relNode['attributes'] as Map? ?? {};
             final role = relAttr['role']?.toString();
 
-            final destData = (relNode['relationships'] as Map?)?['destination']?['data'] as Map?;
+            final destData =
+                (relNode['relationships'] as Map?)?['destination']?['data']
+                    as Map?;
             if (destData == null) continue;
             final destId = destData['id']?.toString();
             final destTypeStr = destData['type']?.toString();
@@ -402,9 +522,17 @@ mixin KitsuMetadata on BaseTracker implements RemoteTracker {
             final destNode = includedMap['$destTypeStr:$destId'];
             if (destNode == null) continue;
 
-            final destMediaType = destTypeStr == 'manga' ? MediaType.MANGA : MediaType.ANIME;
+            final destMediaType = destTypeStr == 'manga'
+                ? MediaType.MANGA
+                : MediaType.ANIME;
             relationsList.add(
-              _mapToUnified(destNode, destMediaType, requestId, relationType: role, includedMap: includedMap),
+              _mapToUnified(
+                destNode,
+                destMediaType,
+                requestId,
+                relationType: role,
+                includedMap: includedMap,
+              ),
             );
           }
         }

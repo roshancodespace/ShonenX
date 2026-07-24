@@ -445,114 +445,95 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
               index: staggerIndex++,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(10, 5, 4, 8),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minWidth: constraints.maxWidth,
-                        ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (uniqueSeasons.length > 1) ...[
-                                  buildFilterCapsule<int?>(
-                                    current: activeSeason,
-                                    items: uniqueSeasons,
-                                    labelBuilder: (s) =>
-                                        s == null ? 'Specials' : 'S$s',
-                                    icon: Icons.layers_rounded,
-                                    onSelected: (s) => setState(() {
-                                      _selectedSeason = s;
-                                      _chunkIndex = 0;
-                                    }),
-                                  ),
-                                  const SizedBox(width: 8),
-                                ],
-                                if (chunks.length > 1) ...[
-                                  buildFilterCapsule<int>(
-                                    current: safeIdx,
-                                    items: List.generate(
-                                      chunks.length,
-                                      (i) => i,
-                                    ),
-                                    labelBuilder: (i) => chunks[i].label,
-                                    icon: Icons.tag_rounded,
-                                    onSelected: (i) =>
-                                        setState(() => _chunkIndex = i),
-                                  ),
-                                  const SizedBox(width: 8),
-                                ],
-                                if (uniqueSeasons.length > 1 ||
-                                    chunks.length > 1)
-                                  Text(
-                                    ' •  ',
-                                    style: TextStyle(
-                                      color: cs.onSurfaceVariant,
-                                    ),
-                                  ),
-                                Text(
-                                  '${finalEpisodes.length} ${widget.media.type == MediaType.MANGA ? 'ch' : 'ep'}',
-                                  style: Theme.of(context).textTheme.labelLarge
-                                      ?.copyWith(color: cs.onSurfaceVariant),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const SizedBox(width: 16),
-                                if (widget.media.type == MediaType.ANIME &&
-                                    finalEpisodes.isNotEmpty)
-                                  IconButton(
-                                    onPressed: () => BatchDownloadSheet.show(
-                                      context,
-                                      finalEpisodes,
-                                      widget.watchedProgress,
-                                      state.source,
-                                      widget.media,
-                                    ),
-                                    icon: const Icon(
-                                      Icons.download_for_offline_outlined,
-                                    ),
-                                    iconSize: 20,
-                                    color: cs.primary,
-                                    tooltip: 'Batch Download',
-                                  ),
-                                _ViewModeToggle(
-                                  current: viewMode,
-                                  onChanged: (m) => ref
-                                      .read(uiPrefsProvider.notifier)
-                                      .updateEpisodeViewMode(m),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _descending = !_descending;
-                                      _chunkIndex = 0;
-                                    });
-                                  },
-                                  icon: Icon(
-                                    _descending
-                                        ? Icons.arrow_downward
-                                        : Icons.arrow_upward,
-                                  ),
-                                  iconSize: 18,
-                                  tooltip: _descending
-                                      ? 'Sorted Newest First'
-                                      : 'Sorted Oldest First',
-                                ),
-                              ],
+                            if (uniqueSeasons.length > 1) ...[
+                              buildFilterCapsule<int?>(
+                                current: activeSeason,
+                                items: uniqueSeasons,
+                                labelBuilder: (s) =>
+                                    s == null ? 'Specials' : 'S$s',
+                                icon: Icons.layers_rounded,
+                                onSelected: (s) => setState(() {
+                                  _selectedSeason = s;
+                                  _chunkIndex = 0;
+                                }),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            if (chunks.length > 1) ...[
+                              buildFilterCapsule<int>(
+                                current: safeIdx,
+                                items: List.generate(chunks.length, (i) => i),
+                                labelBuilder: (i) => chunks[i].label,
+                                icon: Icons.tag_rounded,
+                                onSelected: (i) =>
+                                    setState(() => _chunkIndex = i),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            Text(
+                              '${finalEpisodes.length} ${widget.media.type == MediaType.MANGA ? 'ch' : 'ep'}',
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(color: cs.onSurfaceVariant),
                             ),
                           ],
                         ),
                       ),
-                    );
-                  },
+                    ),
+                    const SizedBox(width: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.media.type == MediaType.ANIME &&
+                            finalEpisodes.isNotEmpty)
+                          IconButton(
+                            onPressed: () => BatchDownloadSheet.show(
+                              context,
+                              finalEpisodes,
+                              widget.watchedProgress,
+                              state.source,
+                              widget.media,
+                            ),
+                            icon: const Icon(
+                              Icons.download_for_offline_outlined,
+                            ),
+                            iconSize: 20,
+                            color: cs.primary,
+                            tooltip: 'Batch Download',
+                          ),
+                        _ViewModeToggle(
+                          current: viewMode,
+                          onChanged: (m) => ref
+                              .read(uiPrefsProvider.notifier)
+                              .updateEpisodeViewMode(m),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _descending = !_descending;
+                              _chunkIndex = 0;
+                            });
+                          },
+                          icon: Icon(
+                            _descending
+                                ? Icons.arrow_downward
+                                : Icons.arrow_upward,
+                          ),
+                          iconSize: 18,
+                          tooltip: _descending
+                              ? 'Sorted Newest First'
+                              : 'Sorted Oldest First',
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),

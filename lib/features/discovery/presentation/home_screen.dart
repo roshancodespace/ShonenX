@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/features/discovery/domain/models/home_section.dart';
@@ -13,18 +14,20 @@ import 'package:shonenx/features/discovery/presentation/widgets/sheets/discovery
 import 'package:shonenx/features/discovery/providers/home_feed_provider.dart';
 import 'package:shonenx/features/discovery/providers/home_layout_provider.dart';
 import 'package:shonenx/features/library/providers/cloud_library_provider.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/presentation/widgets/tracker_profile_sheet.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
+import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
 
 class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key});
+  HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -201,16 +204,44 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            ...sections
-                .where((s) => !s.disabled)
-                .map(
-                  (section) => SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 10.0),
-                      child: _buildSectionWidget(context, section, feedState),
+            ...() {
+              final discoveryIndexMap = <MediaType, int>{};
+              final totalDiscoveryCounts = <MediaType, int>{};
+              final activeSections = sections
+                  .where((s) => !s.disabled)
+                  .toList();
+              for (final s in activeSections) {
+                if (s.type == HomeSectionType.discovery) {
+                  final mt = s.targetMediaType ?? MediaType.ANIME;
+                  totalDiscoveryCounts[mt] =
+                      (totalDiscoveryCounts[mt] ?? 0) + 1;
+                }
+              }
+
+              return activeSections.map((section) {
+                int? dIndex;
+                int totalCount = 0;
+                if (section.type == HomeSectionType.discovery) {
+                  final mt = section.targetMediaType ?? MediaType.ANIME;
+                  dIndex = discoveryIndexMap[mt] ?? 0;
+                  discoveryIndexMap[mt] = dIndex + 1;
+                  totalCount = totalDiscoveryCounts[mt] ?? 1;
+                }
+
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 10.0),
+                    child: _buildSectionWidget(
+                      context,
+                      section,
+                      feedState,
+                      discoveryIndex: dIndex,
+                      totalDiscoverySections: totalCount,
                     ),
                   ),
-                ),
+                );
+              });
+            }(),
 
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
@@ -219,11 +250,55 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
+  final categorySectionFeedProvider =
+      FutureProvider.family<List<UnifiedMedia>, (TrackerCategory, MediaType)>((
+        ref,
+        arg,
+      ) async {
+        final category = arg.$1;
+        final mediaType = arg.$2;
+        final mode = ref.watch(discoveryPrefsProvider.select((p) => p.mode));
+
+        if (mode == MetadataMode.tracker) {
+          final tracker = ref.watch(metadataSourceProvider);
+          final adultMode = ref.watch(contentPrefsProvider).adultContentMode;
+          final result = await tracker.getCategoryItems(
+            category,
+            type: mediaType,
+            adultMode: adultMode,
+          );
+          return result.items;
+        } else {
+          final allSources = mediaType == MediaType.ANIME
+              ? await ref.watch(availableAnimeSourcesProvider.future)
+              : await ref.watch(availableMangaSourcesProvider.future);
+          final prefs = ref.watch(discoveryPrefsProvider);
+          final activeSources = allSources
+              .where((s) => prefs.activeSources.contains(s.id))
+              .toList();
+          final sourcesToUse = activeSources.isEmpty
+              ? allSources
+              : activeSources;
+          if (sourcesToUse.isEmpty) return const [];
+          final sourceInfo = sourcesToUse.first;
+          final source = mediaType == MediaType.ANIME
+              ? ref.read(animeSourceProvider(sourceInfo))
+              : ref.read(mangaSourceProvider(sourceInfo));
+          var items = await source.getTrending();
+          if (items.isEmpty) {
+            items = await source.search('', mediaType);
+          }
+          return items;
+        }
+      });
+
   Widget _buildSectionWidget(
     BuildContext context,
     HomeSection section,
-    AsyncValue<HomeFeedState> feedState,
-  ) {
+    AsyncValue<HomeFeedState> feedState, {
+    int? discoveryIndex,
+    int totalDiscoverySections = 1,
+  }) {
     final mediaType = section.targetMediaType ?? MediaType.ANIME;
 
     switch (section.type) {
@@ -250,47 +325,66 @@ class HomeScreen extends ConsumerWidget {
           },
         );
 
-      case HomeSectionType.trending:
-        return _buildFeedGroups(context, feedState, mediaType);
+      case HomeSectionType.discovery:
+        return _buildDiscoverySectionRow(
+          context,
+          section,
+          discoveryIndex: discoveryIndex,
+          totalDiscoverySections: totalDiscoverySections,
+        );
     }
   }
 
-  Widget _buildFeedGroups(
+  Widget _buildDiscoverySectionRow(
     BuildContext context,
-    AsyncValue<HomeFeedState> feedState,
-    MediaType mediaType,
-  ) {
+    HomeSection section, {
+    int? discoveryIndex,
+    int totalDiscoverySections = 1,
+  }) {
+    final mediaType = section.targetMediaType ?? MediaType.ANIME;
+    final category = section.trackerCategory ?? TrackerCategory.trending;
+
     return Consumer(
       builder: (context, ref, _) {
         final prefs = ref.watch(discoveryPrefsProvider);
         if (prefs.mode == MetadataMode.source) {
-          return _buildSourceSectionRows(context, ref, mediaType, prefs);
+          return _buildSourceSectionRows(
+            context,
+            ref,
+            mediaType,
+            prefs,
+            discoveryIndex ?? 0,
+            totalDiscoverySections,
+          );
         }
 
-        return feedState.when(
-          data: (feed) {
-            if (feed.groups.isEmpty) return const SizedBox.shrink();
+        final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
+        final isWide = ref.watch(
+          uiPrefsProvider.select((p) => p.isMediaCardWide(style.name)),
+        );
+        final data = ref.watch(
+          categorySectionFeedProvider((category, mediaType)),
+        );
 
-            final filteredGroups = feed.groups.where((g) {
-              if (g.items.isEmpty) return false;
-              return g.items.first.type == mediaType;
-            }).toList();
-
-            if (filteredGroups.isEmpty) return const SizedBox.shrink();
-
-            return Column(
-              children: filteredGroups
-                  .map(
-                    (group) => _buildFeedRow(context, group.title, group.items),
-                  )
-                  .toList(),
+        return HorizontalSection<UnifiedMedia>(
+          title: section.title,
+          height: style.getLayout(isWideMode: isWide).height,
+          onMoreTap: () =>
+              context.push('/category/${section.title}?type=${mediaType.id}'),
+          data: data,
+          itemBuilder: (context, item) {
+            return MediaCard(
+              tag: '${section.id}-${item.id}',
+              format: item.format,
+              title: item.title.availableTitle,
+              imageUrl: item.cover ?? '',
+              style: style,
+              onTap: () => context.push(
+                '/details/${item.type.id}?tag=${section.id}-${item.id}',
+                extra: item,
+              ),
             );
           },
-          loading: () => const SizedBox(
-            height: 200,
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (e, _) => const SizedBox.shrink(),
         );
       },
     );
@@ -301,6 +395,8 @@ class HomeScreen extends ConsumerWidget {
     WidgetRef ref,
     MediaType mediaType,
     DiscoveryPrefs prefs,
+    int discoveryIndex,
+    int totalDiscoverySections,
   ) {
     final allSourcesAsync = mediaType == MediaType.ANIME
         ? ref.watch(availableAnimeSourcesProvider)
@@ -308,19 +404,42 @@ class HomeScreen extends ConsumerWidget {
 
     return allSourcesAsync.when(
       data: (allSources) {
-        final activeSources = allSources
-            .where((s) => prefs.activeSources.contains(s.id))
-            .toList();
+        final activeSources = prefs.activeSources.isEmpty
+            ? allSources
+            : allSources
+                  .where((s) => prefs.activeSources.contains(s.id))
+                  .toList();
 
-        if (activeSources.isEmpty) return const SizedBox.shrink();
+        final effectiveSources = activeSources.isEmpty
+            ? allSources
+            : activeSources;
 
-        return Column(
-          children: activeSources.map((info) {
-            final title =
-                '${info.name} (${mediaType == MediaType.ANIME ? "Anime" : "Manga"})';
-            return _buildSingleSourceRow(context, ref, info, mediaType, title);
-          }).toList(),
-        );
+        if (effectiveSources.isEmpty) return const SizedBox.shrink();
+
+        if (totalDiscoverySections <= 1) {
+          return Column(
+            children: effectiveSources.map((info) {
+              final title =
+                  '${info.name} (${mediaType == MediaType.ANIME ? "Anime" : "Manga"})';
+              return _buildSingleSourceRow(
+                context,
+                ref,
+                info,
+                mediaType,
+                title,
+              );
+            }).toList(),
+          );
+        }
+
+        if (discoveryIndex >= effectiveSources.length) {
+          return const SizedBox.shrink();
+        }
+
+        final info = effectiveSources[discoveryIndex];
+        final title =
+            '${info.name} (${mediaType == MediaType.ANIME ? "Anime" : "Manga"})';
+        return _buildSingleSourceRow(context, ref, info, mediaType, title);
       },
       loading: () => const SizedBox(
         height: 150,
@@ -359,44 +478,6 @@ class HomeScreen extends ConsumerWidget {
             '/details/${item.type.id}?tag=$title-${item.id}',
             extra: item,
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildFeedRow(
-    BuildContext context,
-    String title,
-    List<UnifiedMedia> items,
-  ) {
-    if (items.isEmpty) return const SizedBox.shrink();
-
-    return Consumer(
-      builder: (context, ref, child) {
-        final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
-        final isWide = ref.watch(
-          uiPrefsProvider.select((p) => p.isMediaCardWide(style.name)),
-        );
-        final mediaType = items.isNotEmpty ? items.first.type : MediaType.ANIME;
-        return HorizontalSection(
-          title: title,
-          height: style.getLayout(isWideMode: isWide).height,
-          onMoreTap: () =>
-              context.push('/category/$title?type=${mediaType.id}'),
-          data: AsyncValue.data(items),
-          itemBuilder: (context, item) {
-            return MediaCard(
-              tag: '$title-${item.id}',
-              format: item.format,
-              title: item.title.availableTitle,
-              imageUrl: item.cover ?? '',
-              style: style,
-              onTap: () => context.push(
-                '/details/${item.type.id}?tag=$title-${item.id}',
-                extra: item,
-              ),
-            );
-          },
         );
       },
     );

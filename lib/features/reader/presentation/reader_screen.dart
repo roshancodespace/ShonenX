@@ -6,8 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
-import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/history/providers/read_history_provider.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
@@ -51,7 +51,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
   late final PageController _pageController;
-  late final MatchArgs _matchArgs;
+  late final MediaArgs _matchArgs;
 
   @override
   void initState() {
@@ -60,7 +60,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _focusNode.requestFocus();
     HardwareKeyboard.instance.addHandler(_onScreenKeyEvent);
     _itemPositionsListener.itemPositions.addListener(_onWebtoonScroll);
-    _matchArgs = MatchArgs(
+    _matchArgs = MediaArgs(
       mediaTitle: widget.mode.media.title.availableTitle,
       type: widget.mode.media.type,
     );

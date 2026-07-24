@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/extensions.dart';
+import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
-import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
 import 'package:shonenx/features/reader/domain/reader_mode.dart';
@@ -27,7 +27,7 @@ class ContinueReadingResolver {
   Future<ContinueReadingResult> resolve(ReadHistoryEntry entry) async {
     final prefState = await ref.read(
       mediaPreferenceProvider(
-        MatchArgs(mediaTitle: entry.mangaTitle, type: MediaType.MANGA),
+        MediaArgs(mediaTitle: entry.mangaTitle, type: MediaType.MANGA),
       ).future,
     );
 
@@ -65,7 +65,7 @@ class ContinueReadingResolver {
     } else {
       final episodesState = await ref.read(
         episodesListProvider(
-          MatchArgs(mediaTitle: entry.mangaTitle, type: MediaType.MANGA),
+          MediaArgs(mediaTitle: entry.mangaTitle, type: MediaType.MANGA),
         ).future,
       );
 

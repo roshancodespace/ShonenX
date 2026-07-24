@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shonenx/core/utils/responsive.dart';
+import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/batch_download_sheet.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
@@ -96,7 +97,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     super.dispose();
   }
 
-  void _triggerRetry(MatchArgs matchArgs) {
+  void _triggerRetry(MediaArgs matchArgs) {
     if (_isRetrying) return;
     setState(() {
       _isRetrying = true;
@@ -126,7 +127,7 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
     final viewMode = ref.watch(
       uiPrefsProvider.select((s) => s.episodeViewMode),
     );
-    final matchArgs = MatchArgs.fromMedia(widget.media);
+    final matchArgs = MediaArgs.fromMedia(widget.media);
     final episodesAsync = ref.watch(episodesListProvider(matchArgs));
     final isBusy =
         _isRetrying || episodesAsync.isRefreshing || episodesAsync.isLoading;

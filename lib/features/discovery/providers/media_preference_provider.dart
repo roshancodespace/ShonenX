@@ -4,10 +4,10 @@ import 'package:shonenx/core/utils/app_logger.dart';
 import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/domain/media_preference.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
-import 'package:shonenx/source_engine/source_registry.dart';
-import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
+import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+import 'package:shonenx/source_engine/source_registry.dart';
 
 const Object _sentinel = Object();
 
@@ -50,7 +50,6 @@ class MediaPreferenceState {
     );
   }
 
-  // Legacy field getters for backwards compatibility
   @Deprecated('Use matchedMediaId instead')
   String? get manualOverrideId => matchedMediaId;
 
@@ -65,7 +64,7 @@ class MediaPreferenceState {
 }
 
 class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
-  late final MatchArgs args;
+  late final MediaArgs args;
   late final _isar = ref.read(databaseProvider);
   late final _log = AppLogger.scope(
     MediaPreferenceNotifier,
@@ -355,5 +354,5 @@ final mediaPreferenceProvider =
     AsyncNotifierProvider.family<
       MediaPreferenceNotifier,
       MediaPreferenceState,
-      MatchArgs
+      MediaArgs
     >(MediaPreferenceNotifier.new, name: 'mediaPreferenceProvider');

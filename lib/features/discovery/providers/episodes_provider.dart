@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/app_logger.dart';
+import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
@@ -23,7 +24,7 @@ typedef SourceEpisodeArgs = ({
 });
 
 final episodesListProvider =
-    FutureProvider.family<EpisodesListState, MatchArgs>((ref, args) async {
+    FutureProvider.family<EpisodesListState, MediaArgs>((ref, args) async {
       final log = AppLogger.scope('EpisodesListProvider').child('fetch');
       final title = args.mediaTitle;
 

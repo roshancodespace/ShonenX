@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
@@ -37,51 +38,15 @@ class MatchedMediaState {
   }
 }
 
-class MatchArgs {
-  final String mediaTitle;
-  final MediaType type;
-  final String? sourceId;
-  final String? providerId;
-
-  const MatchArgs({
-    required this.mediaTitle,
-    required this.type,
-    this.sourceId,
-    this.providerId,
-  });
-
-  factory MatchArgs.fromMedia(UnifiedMedia media) {
-    return MatchArgs(
-      mediaTitle: media.title.availableTitle,
-      type: media.type,
-      sourceId: media.sourceId,
-      providerId:
-          media.providerId ?? (media.sourceId != null ? media.id : null),
-    );
-  }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is MatchArgs &&
-          mediaTitle == other.mediaTitle &&
-          type == other.type &&
-          sourceId == other.sourceId &&
-          providerId == other.providerId;
-
-  @override
-  int get hashCode => Object.hash(mediaTitle, type, sourceId, providerId);
-}
-
 final matchedMediaProvider =
     AsyncNotifierProvider.family<
       MediaMatchNotifier,
       MatchedMediaState,
-      MatchArgs
+      MediaArgs
     >(MediaMatchNotifier.new);
 
 class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
-  late final MatchArgs args;
+  late final MediaArgs args;
 
   MediaMatchNotifier(this.args);
 

@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
@@ -13,7 +14,7 @@ import 'package:shonenx/source_engine/source_engine_provider.dart';
 class ManualMatchSheet extends ConsumerStatefulWidget {
   final String mediaTitle;
   final MediaType type;
-  final MatchArgs? matchArgs;
+  final MediaArgs? matchArgs;
 
   const ManualMatchSheet({
     super.key,
@@ -33,9 +34,9 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
   List<UnifiedMedia>? _results;
   bool _isLoading = false;
 
-  MatchArgs get _effectiveArgs =>
+  MediaArgs get _effectiveArgs =>
       widget.matchArgs ??
-      MatchArgs(mediaTitle: widget.mediaTitle, type: widget.type);
+      MediaArgs(mediaTitle: widget.mediaTitle, type: widget.type);
 
   @override
   void initState() {

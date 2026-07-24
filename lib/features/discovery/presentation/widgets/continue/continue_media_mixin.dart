@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/manual_match_sheet.dart';
-import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -128,7 +128,7 @@ mixin ContinueMediaMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     ref
         .read(
           mediaPreferenceProvider(
-            MatchArgs(mediaTitle: mediaTitle, type: mediaType),
+            MediaArgs(mediaTitle: mediaTitle, type: mediaType),
           ).notifier,
         )
         .updateSource(selectedSource);
@@ -257,7 +257,7 @@ mixin ContinueMediaMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         await ref
             .read(
               mediaPreferenceProvider(
-                MatchArgs(mediaTitle: mediaTitle, type: mediaType),
+                MediaArgs(mediaTitle: mediaTitle, type: mediaType),
               ).notifier,
             )
             .clearPreference();

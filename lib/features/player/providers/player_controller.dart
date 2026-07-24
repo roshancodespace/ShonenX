@@ -11,8 +11,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/core/utils/http_x.dart';
+import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
-import 'package:shonenx/features/discovery/providers/matched_media_provider.dart';
 import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
@@ -321,7 +321,7 @@ class PlayerController extends Notifier<PlayerState> {
     if (_media == null || state.activeEpisode == null) return;
     final episodes = await ref.read(
       episodesListProvider(
-        MatchArgs.fromMedia(_media!),
+        MediaArgs.fromMedia(_media!),
       ).selectAsync((s) => s.episodes),
     );
 
@@ -339,7 +339,7 @@ class PlayerController extends Notifier<PlayerState> {
   bool get hasNextEpisode {
     if (_media == null || state.activeEpisode == null) return false;
     final episodesState = ref
-        .read(episodesListProvider(MatchArgs.fromMedia(_media!)))
+        .read(episodesListProvider(MediaArgs.fromMedia(_media!)))
         .value;
     if (episodesState != null) {
       final episodes = episodesState.episodes;

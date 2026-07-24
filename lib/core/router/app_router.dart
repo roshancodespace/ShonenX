@@ -155,10 +155,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             navigatorKey: _homeNavigatorKey,
             routes: [
-              GoRoute(
-                path: '/home',
-                builder: (context, state) => HomeScreen(),
-              ),
+              GoRoute(path: '/home', builder: (context, state) => HomeScreen()),
             ],
           ),
           StatefulShellBranch(
@@ -361,7 +358,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/category/:name',
         builder: (context, state) {
-          final category = state.pathParameters['name'];
+          final rawName = state.pathParameters['name'] ?? '';
+          final category = Uri.decodeComponent(rawName);
           final type = MediaType.values.firstWhere(
             (e) => e.id == state.uri.queryParameters['type'],
             orElse: () => MediaType.ANIME,
@@ -387,7 +385,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                 (e) => e.id == state.pathParameters['mediaType'],
                 orElse: () => MediaType.ANIME,
               );
-              final mediaId = state.pathParameters['mediaId']!;
+              final rawId = state.pathParameters['mediaId']!;
+              final mediaId = Uri.decodeComponent(rawId);
               return ContinueHistoryItemsScreen(
                 type: mediaType,
                 mediaId: mediaId,

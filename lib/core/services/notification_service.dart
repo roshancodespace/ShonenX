@@ -50,7 +50,7 @@ class NotificationService {
         tz.setLocalLocation(tz.getLocation('UTC'));
       }
 
-      const android = AndroidInitializationSettings('@mipmap/ic_launcher_monochrome');
+      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
       const windows = WindowsInitializationSettings(
         appName: 'ShonenX',
         appUserModelId: 'com.example.shonenx',

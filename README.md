@@ -12,6 +12,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![GitHub stars](https://img.shields.io/github/stars/roshancodespace/ShonenX?style=social)](https://github.com/roshancodespace/ShonenX/stargazers)
 [![Discord](https://img.shields.io/discord/1348756894034165800?color=7289da&label=Discord&logo=discord&logoColor=white)](https://discord.gg/uJyXZYSmH4)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/roshan.codespace)
 
 **[🌐 Visit the Official Website](https://shonenx.vercel.app)**
 
@@ -24,6 +25,14 @@ Started as a fun personal project. Now an open-source anime and manga companion.
 ---
 
 ## ☕ Supporters
+
+<p align="center">
+  <a href="https://www.buymeacoffee.com/roshan.codespace" target="_blank">
+    <img src="https://img.shields.io/badge/Support%20Development-Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee"/>
+  </a>
+</p>
+
+<br/>
 
 <table>
   <tr>
@@ -205,6 +214,7 @@ Thanks to everyone who has contributed to ShonenX!
 
 **Developer**: Roshan Kumar Sharma  
 **GitHub**: [@roshancodespace](https://github.com/roshancodespace)  
+**Buy Me a Coffee**: [roshan.codespace](https://www.buymeacoffee.com/roshan.codespace)  
 **Email**: roshan.codespace@gmail.com  
 **Discord**: [Join Community](https://discord.gg/uJyXZYSmH4)  
 **License**: GPL-3.0 (See [LICENSE](LICENSE) file)

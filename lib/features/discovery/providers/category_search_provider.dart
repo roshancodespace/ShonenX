@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
@@ -53,11 +54,29 @@ class CategorySearchNotifier
     if (prefs.mode == MetadataMode.tracker) {
       final engine = ref.read(metadataSourceProvider);
       final adultMode = ref.read(contentPrefsProvider).adultContentMode;
-      if (arg.category.toLowerCase().contains('trending')) {
-        return await engine.getTrending(
+
+      final catLower = arg.category.toLowerCase();
+      TrackerCategory? matchedCategory;
+      if (catLower.contains('upcoming')) {
+        matchedCategory = TrackerCategory.upcoming;
+      } else if (catLower.contains('popular')) {
+        matchedCategory = TrackerCategory.popular;
+      } else if (catLower.contains('top rated') ||
+          catLower.contains('top_rated')) {
+        matchedCategory = TrackerCategory.topRated;
+      } else if (catLower.contains('recently updated') ||
+          catLower.contains('updated')) {
+        matchedCategory = TrackerCategory.recentlyUpdated;
+      } else if (catLower.contains('trending')) {
+        matchedCategory = TrackerCategory.trending;
+      }
+
+      if (matchedCategory != null) {
+        return await engine.getCategoryItems(
+          matchedCategory,
           type: arg.type,
           page: page,
-          cacheDuration: const Duration(seconds: 30),
+          cacheDuration: const Duration(hours: 6),
           adultMode: adultMode,
         );
       } else {
@@ -67,6 +86,7 @@ class CategorySearchNotifier
           page: page,
           genres: [arg.category],
           adultMode: adultMode,
+          cacheDuration: const Duration(hours: 6),
         );
       }
     } else {

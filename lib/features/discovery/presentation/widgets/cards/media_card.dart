@@ -15,6 +15,11 @@ class MediaCard extends ConsumerWidget {
   final VoidCallback onTap;
   final MediaCardStyle style;
   final Map<String, dynamic>? config;
+  final double? score;
+  final String? subtitle;
+  final String? year;
+  final String? status;
+  final List<String>? genres;
 
   const MediaCard({
     super.key,
@@ -26,13 +31,17 @@ class MediaCard extends ConsumerWidget {
     required this.onTap,
     this.style = MediaCardStyle.classic,
     this.config,
+    this.score,
+    this.subtitle,
+    this.year,
+    this.status,
+    this.genres,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isWideMode = ref.watch(
-      uiPrefsProvider.select((s) => s.isMediaCardWide(style.name)),
-    );
+    final uiState = ref.watch(uiPrefsProvider);
+    final isWideMode = uiState.isMediaCardWide(style.name);
     final scale = ref.watch(themePrefsProvider).uiScaleFactor;
     final layout = style.getScaledLayout(scale, isWideMode: isWideMode);
 
@@ -60,6 +69,11 @@ class MediaCard extends ConsumerWidget {
           heroTag: tag,
           badgeText: format,
           topRightBadge: badge,
+          score: uiState.showCardRatings ? score : null,
+          subtitle: subtitle,
+          year: uiState.showCardYear ? year : null,
+          status: status,
+          genres: uiState.showCardGenres ? genres : null,
         );
 
         final currentTextScale = MediaQuery.of(context).textScaler.scale(1.0);

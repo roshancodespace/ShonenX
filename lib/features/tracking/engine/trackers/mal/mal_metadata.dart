@@ -456,6 +456,11 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
         }
       }
 
+      final scoreVal = (json['mean'] as num?)?.toDouble();
+      final seasonStr = (json['start_season'] is Map)
+          ? json['start_season']['year']?.toString()
+          : (json['start_date']?.toString().split('-').first);
+
       return UnifiedMedia(
         id: json['id']?.toString() ?? '',
         idMal: json['id']?.toString(),
@@ -463,6 +468,8 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
         providerId: json['id']?.toString() ?? '',
         title: title,
         format: format,
+        score: scoreVal,
+        season: seasonStr,
         cover: cover,
         banner: null,
         description: synopsis,

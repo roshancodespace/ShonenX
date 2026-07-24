@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
-import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_watching_card.dart';
-import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_reading_card.dart';
+
 import 'package:shonenx/features/discovery/presentation/widgets/cards/media_card.dart';
-import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
-import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_reading_card.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/continue/continue_watching_card.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/episodes_panel/episode_tiles.dart';
+import 'package:shonenx/features/history/domain/models/read_history_entry.dart';
+import 'package:shonenx/features/history/domain/models/watch_history_entry.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
+import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
+import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 
 final _previewHistoryEntry = WatchHistoryEntry()
@@ -275,14 +276,18 @@ void showCardStyleSheet(
     ],
     child: Consumer(
       builder: (_, r, _) {
-        final current = r.watch(uiPrefsProvider.select((s) => s.cardStyle));
-        final isWide = r.watch(
-          uiPrefsProvider.select((s) => s.isMediaCardWide(current.name)),
-        );
+        final uiState = r.watch(uiPrefsProvider);
+        final current = uiState.cardStyle;
+        final isWide = uiState.isMediaCardWide(current.name);
         final layout = current.getLayout(isWideMode: isWide);
+        final canToggleWide =
+            current != MediaCardStyle.compact &&
+            current != MediaCardStyle.cinematic &&
+            current != MediaCardStyle.wideBanner;
 
         return SingleChildScrollView(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 4),
@@ -294,6 +299,10 @@ void showCardStyleSheet(
                     title: 'Demon Slayer: Kimetsu No Yaiba',
                     tag: 'ui-card-preview',
                     format: 'TV',
+                    score: 8.7,
+                    year: '2024',
+                    status: 'Ongoing',
+                    genres: const ['Action', 'Fantasy'],
                     imageUrl:
                         'https://m.media-amazon.com/images/M/MV5BM2IyN2E0NjctYWU2ZC00ZDc4LThiOTQtODAyOGNkZWM0M2E1XkEyXkFqcGc@._V1_.jpg',
                     onTap: () {},
@@ -302,34 +311,94 @@ void showCardStyleSheet(
                 ),
               ),
 
-              const SizedBox(height: 14),
-
+              const SizedBox(height: 18),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisExtent: 54,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Card Style Preset',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
                   ),
-                  itemCount: MediaCardStyle.values.length,
-                  itemBuilder: (context, index) {
-                    final style = MediaCardStyle.values[index];
-                    return _StyleGridCard(
-                      selected: current == style,
-                      icon: Icons.style_outlined,
-                      title: style.displayName,
-                      subtitle: _cardStyleDesc(style),
-                      selectedColor: cs.primary,
-                      onTap: () => notifier.updateCardStyle(style),
-                    );
-                  },
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: MediaCardStyle.values.map((style) {
+                    final selected = current == style;
+                    return ChoiceChip(
+                      label: Text(style.displayName),
+                      selected: selected,
+                      avatar: Icon(
+                        selected ? Icons.check_rounded : Icons.style_outlined,
+                        size: 16,
+                      ),
+                      onSelected: (_) => notifier.updateCardStyle(style),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              const SizedBox(height: 18),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Display Options',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilterChip(
+                      avatar: const Icon(Icons.star_rounded, size: 16),
+                      label: const Text('Ratings & Scores'),
+                      selected: uiState.showCardRatings,
+                      onSelected: (_) => notifier.toggleShowCardRatings(),
+                    ),
+                    FilterChip(
+                      avatar: const Icon(Icons.category_rounded, size: 16),
+                      label: const Text('Genres & Tags'),
+                      selected: uiState.showCardGenres,
+                      onSelected: (_) => notifier.toggleShowCardGenres(),
+                    ),
+                    FilterChip(
+                      avatar: const Icon(
+                        Icons.calendar_today_rounded,
+                        size: 16,
+                      ),
+                      label: const Text('Release Year'),
+                      selected: uiState.showCardYear,
+                      onSelected: (_) => notifier.toggleShowCardYear(),
+                    ),
+                    if (canToggleWide)
+                      FilterChip(
+                        avatar: Icon(
+                          isWide
+                              ? Icons.table_rows_rounded
+                              : Icons.grid_view_rounded,
+                          size: 16,
+                        ),
+                        label: Text(isWide ? 'Wide Mode' : 'Portrait Mode'),
+                        selected: isWide,
+                        onSelected: (_) =>
+                            notifier.toggleMediaCardWide(current.name),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         );
@@ -1302,18 +1371,6 @@ class _EpisodeViewModePreview extends StatelessWidget {
     );
   }
 }
-
-String _cardStyleDesc(MediaCardStyle s) => switch (s) {
-  MediaCardStyle.classic => 'Standard poster with title below',
-  MediaCardStyle.minimal => 'Compact with subtle overlay',
-  MediaCardStyle.expressive => 'Tall card with bold typography',
-  MediaCardStyle.material => 'Material You elevated card',
-  MediaCardStyle.cinematic => 'Full-bleed image with cinematic gradient',
-  MediaCardStyle.neon => 'Neon-glowing borders with accent color',
-  MediaCardStyle.compact => 'Dense horizontal mini-card layout',
-  MediaCardStyle.editorial => 'Editorial pick with clear information structure',
-  MediaCardStyle.wideBanner => 'Wide horizontal spotlight card',
-};
 
 String _cwStyleDesc(ContinueWatchingStyle s) => switch (s) {
   ContinueWatchingStyle.classic => 'Classic grid square continue card',

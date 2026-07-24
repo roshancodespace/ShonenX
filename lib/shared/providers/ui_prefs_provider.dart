@@ -36,6 +36,9 @@ class UiPrefState {
   final NavBarStyle navBarStyle;
   final Map<String, dynamic> experimentalConfig;
   final Map<String, bool> cardStyleWideModes;
+  final bool showCardRatings;
+  final bool showCardGenres;
+  final bool showCardYear;
 
   const UiPrefState({
     this.cardStyle = MediaCardStyle.classic,
@@ -45,6 +48,9 @@ class UiPrefState {
     this.navBarStyle = NavBarStyle.classic,
     this.experimentalConfig = defaultExperimentalConfig,
     this.cardStyleWideModes = const {},
+    this.showCardRatings = true,
+    this.showCardGenres = true,
+    this.showCardYear = true,
   });
 
   bool isWideCardMode(String key) => cardStyleWideModes[key] ?? false;
@@ -65,6 +71,9 @@ class UiPrefState {
     NavBarStyle? navBarStyle,
     Map<String, dynamic>? experimentalConfig,
     Map<String, bool>? cardStyleWideModes,
+    bool? showCardRatings,
+    bool? showCardGenres,
+    bool? showCardYear,
   }) {
     return UiPrefState(
       cardStyle: cardStyle ?? this.cardStyle,
@@ -75,6 +84,9 @@ class UiPrefState {
       navBarStyle: navBarStyle ?? this.navBarStyle,
       experimentalConfig: experimentalConfig ?? this.experimentalConfig,
       cardStyleWideModes: cardStyleWideModes ?? this.cardStyleWideModes,
+      showCardRatings: showCardRatings ?? this.showCardRatings,
+      showCardGenres: showCardGenres ?? this.showCardGenres,
+      showCardYear: showCardYear ?? this.showCardYear,
     );
   }
 
@@ -86,6 +98,9 @@ class UiPrefState {
     'navBarStyle': navBarStyle.name,
     'experimentalConfig': experimentalConfig,
     'cardStyleWideModes': cardStyleWideModes,
+    'showCardRatings': showCardRatings,
+    'showCardGenres': showCardGenres,
+    'showCardYear': showCardYear,
   };
 
   factory UiPrefState.fromJson(Map<String, dynamic> json) {
@@ -119,12 +134,15 @@ class UiPrefState {
       cardStyleWideModes: (json['cardStyleWideModes'] is Map)
           ? Map<String, bool>.from(json['cardStyleWideModes'] as Map)
           : const {},
+      showCardRatings: json['showCardRatings'] ?? true,
+      showCardGenres: json['showCardGenres'] ?? true,
+      showCardYear: json['showCardYear'] ?? true,
     );
   }
 
   @override
   String toString() =>
-      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode, navBarStyle: $navBarStyle, experimentalConfig: $experimentalConfig, cardStyleWideModes: $cardStyleWideModes)';
+      'UiPrefState(cardStyle: $cardStyle, continueWatchingStyle: $continueWatchingStyle, continueReadingStyle: $continueReadingStyle, episodeViewMode: $episodeViewMode, navBarStyle: $navBarStyle, experimentalConfig: $experimentalConfig, cardStyleWideModes: $cardStyleWideModes, showCardRatings: $showCardRatings, showCardGenres: $showCardGenres, showCardYear: $showCardYear)';
 
   @override
   bool operator ==(Object other) {
@@ -135,6 +153,9 @@ class UiPrefState {
         other.continueReadingStyle == continueReadingStyle &&
         other.episodeViewMode == episodeViewMode &&
         other.navBarStyle == navBarStyle &&
+        other.showCardRatings == showCardRatings &&
+        other.showCardGenres == showCardGenres &&
+        other.showCardYear == showCardYear &&
         mapEquals(other.experimentalConfig, experimentalConfig) &&
         mapEquals(other.cardStyleWideModes, cardStyleWideModes);
   }
@@ -148,6 +169,9 @@ class UiPrefState {
     navBarStyle,
     experimentalConfig,
     cardStyleWideModes,
+    showCardRatings,
+    showCardGenres,
+    showCardYear,
   );
 }
 
@@ -193,6 +217,21 @@ class UiPrefsNotifier extends Notifier<UiPrefState> {
 
   void toggleContinueReadingWide(String styleName) =>
       _toggleWideCardMode('cr_$styleName');
+
+  void toggleShowCardRatings() {
+    state = state.copyWith(showCardRatings: !state.showCardRatings);
+    _saveDb();
+  }
+
+  void toggleShowCardGenres() {
+    state = state.copyWith(showCardGenres: !state.showCardGenres);
+    _saveDb();
+  }
+
+  void toggleShowCardYear() {
+    state = state.copyWith(showCardYear: !state.showCardYear);
+    _saveDb();
+  }
 
   void updateExperimentalConfig(Map<String, dynamic> newValues) {
     state = state.copyWith(

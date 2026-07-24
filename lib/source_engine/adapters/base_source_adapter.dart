@@ -209,7 +209,10 @@ abstract class BaseSourceAdapter implements MediaSource {
     final methodLog = log.child('getTrending');
     try {
       methodLog.i('page=$page');
-      final results = await source.methods.getPopular(page);
+      bridge.Pages results = await source.methods.getPopular(page);
+      if (results.list.isEmpty) {
+        results = await source.methods.getLatestUpdates(page);
+      }
       methodLog.d('results=${results.list.length}');
 
       final list = results.list

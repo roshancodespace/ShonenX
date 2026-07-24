@@ -411,7 +411,17 @@ class ContinueHistoryItemsScreen extends ConsumerWidget {
     final crStyle = ref.watch(
       uiPrefsProvider.select((s) => s.continueReadingStyle),
     );
-    final layout = isAnime ? cwStyle.layout : crStyle.layout;
+
+    final isCwWide = ref.watch(
+      uiPrefsProvider.select((s) => s.isContinueWatchingWide(cwStyle.name)),
+    );
+    final isCrWide = ref.watch(
+      uiPrefsProvider.select((s) => s.isContinueReadingWide(crStyle.name)),
+    );
+
+    final layout = isAnime
+        ? cwStyle.getLayout(isContinueWatching: true, isWideMode: isCwWide)
+        : crStyle.getLayout(isContinueReading: true, isWideMode: isCrWide);
 
     return AppScaffold(
       title: isAnime ? 'Episodes' : 'Chapters',

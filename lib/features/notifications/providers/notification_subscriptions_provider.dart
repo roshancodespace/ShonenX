@@ -57,7 +57,7 @@ class NotificationSubscriptionsNotifier
 
   Future<void> _syncSubscription(NotificationSubscription sub) async {
     final pref = await _isar.mediaPreferences.getByMediaTitle(sub.title);
-    final tracker = pref?.preferredAiringTracker ?? TrackerType.anilist.id;
+    final tracker = pref?.preferredTracker ?? TrackerType.anilist.id;
     final targetTrackerType =
         TrackerType.tryFromId(tracker) ?? TrackerType.anilist;
 
@@ -194,7 +194,7 @@ class NotificationSubscriptionsNotifier
       final pref = await _isar.mediaPreferences.getByMediaTitle(
         subscription.title,
       );
-      final tracker = pref?.preferredAiringTracker ?? TrackerType.anilist.id;
+      final tracker = pref?.preferredTracker ?? TrackerType.anilist.id;
       final targetTrackerType =
           TrackerType.tryFromId(tracker) ?? TrackerType.anilist;
 

@@ -13,42 +13,55 @@ const Object _sentinel = Object();
 
 class MediaPreferenceState {
   final SourceInfo sourceInfo;
-  final String? manualOverrideId;
-  final String? manualOverrideTitle;
-  final TrackerType? preferredAiringTracker;
-  final String? manualAiringTrackerId;
+  final String? matchedMediaId;
+  final String? matchedMediaTitle;
+  final TrackerType? preferredTracker;
+  final String? trackerMediaId;
 
   MediaPreferenceState({
     required this.sourceInfo,
-    this.manualOverrideId,
-    this.manualOverrideTitle,
-    this.preferredAiringTracker,
-    this.manualAiringTrackerId,
+    this.matchedMediaId,
+    this.matchedMediaTitle,
+    this.preferredTracker,
+    this.trackerMediaId,
   });
 
   MediaPreferenceState copyWith({
     SourceInfo? sourceInfo,
-    Object? manualOverrideId = _sentinel,
-    Object? manualOverrideTitle = _sentinel,
-    Object? preferredAiringTracker = _sentinel,
-    Object? manualAiringTrackerId = _sentinel,
+    Object? matchedMediaId = _sentinel,
+    Object? matchedMediaTitle = _sentinel,
+    Object? preferredTracker = _sentinel,
+    Object? trackerMediaId = _sentinel,
   }) {
     return MediaPreferenceState(
       sourceInfo: sourceInfo ?? this.sourceInfo,
-      manualOverrideId: manualOverrideId == _sentinel
-          ? this.manualOverrideId
-          : manualOverrideId as String?,
-      manualOverrideTitle: manualOverrideTitle == _sentinel
-          ? this.manualOverrideTitle
-          : manualOverrideTitle as String?,
-      preferredAiringTracker: preferredAiringTracker == _sentinel
-          ? this.preferredAiringTracker
-          : preferredAiringTracker as TrackerType?,
-      manualAiringTrackerId: manualAiringTrackerId == _sentinel
-          ? this.manualAiringTrackerId
-          : manualAiringTrackerId as String?,
+      matchedMediaId: matchedMediaId == _sentinel
+          ? this.matchedMediaId
+          : matchedMediaId as String?,
+      matchedMediaTitle: matchedMediaTitle == _sentinel
+          ? this.matchedMediaTitle
+          : matchedMediaTitle as String?,
+      preferredTracker: preferredTracker == _sentinel
+          ? this.preferredTracker
+          : preferredTracker as TrackerType?,
+      trackerMediaId: trackerMediaId == _sentinel
+          ? this.trackerMediaId
+          : trackerMediaId as String?,
     );
   }
+
+  // Legacy field getters for backwards compatibility
+  @Deprecated('Use matchedMediaId instead')
+  String? get manualOverrideId => matchedMediaId;
+
+  @Deprecated('Use matchedMediaTitle instead')
+  String? get manualOverrideTitle => matchedMediaTitle;
+
+  @Deprecated('Use preferredTracker instead')
+  TrackerType? get preferredAiringTracker => preferredTracker;
+
+  @Deprecated('Use trackerMediaId instead')
+  String? get manualAiringTrackerId => trackerMediaId;
 }
 
 class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
@@ -60,63 +73,109 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
 
   MediaPreferenceNotifier(this.args);
 
+  Future<MediaPreference> _migrateLegacyPreferences(
+    MediaPreference pref,
+  ) async {
+    bool needsSave = false;
+
+    if (pref.matchedMediaId == null && pref.manualOverrideId != null) {
+      pref.matchedMediaId = pref.manualOverrideId;
+      pref.manualOverrideId = null;
+      needsSave = true;
+    }
+
+    if (pref.matchedMediaTitle == null && pref.manualOverrideTitle != null) {
+      pref.matchedMediaTitle = pref.manualOverrideTitle;
+      pref.manualOverrideTitle = null;
+      needsSave = true;
+    }
+
+    if (pref.preferredTracker == null && pref.preferredAiringTracker != null) {
+      pref.preferredTracker = pref.preferredAiringTracker;
+      pref.preferredAiringTracker = null;
+      needsSave = true;
+    }
+
+    if (pref.trackerMediaId == null && pref.manualAiringTrackerId != null) {
+      pref.trackerMediaId = pref.manualAiringTrackerId;
+      pref.manualAiringTrackerId = null;
+      needsSave = true;
+    }
+
+    if (needsSave) {
+      await _isar.writeTxn(() async => await _isar.mediaPreferences.put(pref));
+      _log.i('Migrated legacy media preferences for "${pref.mediaTitle}"');
+    }
+
+    return pref;
+  }
+
   @override
   Future<MediaPreferenceState> build() async {
     final log = _log.child('build');
 
     try {
-      final savedPref = await _isar.mediaPreferences.getByMediaTitle(
+      final rawPref = await _isar.mediaPreferences.getByMediaTitle(
         args.mediaTitle,
       );
 
-      final availableSourcesInfo = args.type == MediaType.ANIME
+      final savedPreference = rawPref == null
+          ? null
+          : await _migrateLegacyPreferences(rawPref);
+
+      final availableSources = args.type == MediaType.ANIME
           ? await ref.watch(availableAnimeSourcesProvider.future)
           : await ref.watch(availableMangaSourcesProvider.future);
 
-      if (availableSourcesInfo.isEmpty) {
+      if (availableSources.isEmpty) {
         throw StateError('no-sources');
       }
 
-      final globalDefaultSourceInfo = availableSourcesInfo.first;
+      final defaultSource = availableSources.first;
 
-      final preferredName = savedPref?.preferredSourceName;
-      final preferredId = savedPref?.preferredSourceId;
-      final preferredType = savedPref?.preferredSourceType;
+      final preferredName = savedPreference?.preferredSourceName;
+      final preferredId = savedPreference?.preferredSourceId;
+      final preferredType = savedPreference?.preferredSourceType;
 
-      final type = preferredType == null
+      final sourceType = preferredType == null
           ? null
-          : SourceType.values.firstWhereOrNull((s) => s.name == preferredType);
+          : SourceType.values.firstWhereOrNull(
+              (type) => type.name == preferredType,
+            );
 
       final SourceInfo resolvedSource;
-      if (type != null && preferredId != null) {
+      if (sourceType != null && preferredId != null) {
         resolvedSource =
-            availableSourcesInfo.firstWhereOrNull(
-              (s) => s.id == preferredId && s.name == preferredName,
+            availableSources.firstWhereOrNull(
+              (source) =>
+                  source.id == preferredId && source.name == preferredName,
             ) ??
-            globalDefaultSourceInfo;
+            defaultSource;
       } else if (args.sourceId != null) {
         resolvedSource =
-            availableSourcesInfo.firstWhereOrNull(
-              (s) => s.id == args.sourceId,
+            availableSources.firstWhereOrNull(
+              (source) => source.id == args.sourceId,
             ) ??
-            globalDefaultSourceInfo;
+            defaultSource;
       } else {
-        resolvedSource = globalDefaultSourceInfo;
+        resolvedSource = defaultSource;
       }
 
       log.i('Resolved → ${resolvedSource.name} (${resolvedSource.id})');
 
-      TrackerType? tracker;
-      if (savedPref?.preferredAiringTracker != null) {
-        tracker = TrackerType.tryFromId(savedPref!.preferredAiringTracker!);
+      TrackerType? preferredTracker;
+      if (savedPreference?.preferredTracker != null) {
+        preferredTracker = TrackerType.tryFromId(
+          savedPreference!.preferredTracker!,
+        );
       }
 
       return MediaPreferenceState(
         sourceInfo: resolvedSource,
-        manualOverrideId: savedPref?.manualOverrideId,
-        manualOverrideTitle: savedPref?.manualOverrideTitle,
-        preferredAiringTracker: tracker,
-        manualAiringTrackerId: savedPref?.manualAiringTrackerId,
+        matchedMediaId: savedPreference?.matchedMediaId,
+        matchedMediaTitle: savedPreference?.matchedMediaTitle,
+        preferredTracker: preferredTracker,
+        trackerMediaId: savedPreference?.trackerMediaId,
       );
     } catch (e, st) {
       log.e('Build failed', e, st);
@@ -124,16 +183,16 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
     }
   }
 
-  void updateSource(SourceInfo newSourceInfo) async {
+  void updateSource(SourceInfo sourceInfo) async {
     final log = _log.child('updateSource');
 
-    log.i('Switch → ${newSourceInfo.name}');
+    log.i('Switch → ${sourceInfo.name}');
 
     state = AsyncData(
       state.value!.copyWith(
-        sourceInfo: newSourceInfo,
-        manualOverrideId: null,
-        manualOverrideTitle: null,
+        sourceInfo: sourceInfo,
+        matchedMediaId: null,
+        matchedMediaTitle: null,
       ),
     );
 
@@ -141,22 +200,30 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
     log.s('Updated');
   }
 
-  void setManualOverrides(String overrideId, String overrideTitle) {
-    final log = _log.child('setManualOverrides');
+  void setManualMatch(String matchedMediaId, String matchedMediaTitle) {
+    final log = _log.child('setManualMatch');
 
-    log.i('Override → $overrideTitle ($overrideId)');
+    log.i('Match → $matchedMediaTitle ($matchedMediaId)');
 
     state = AsyncData(
       state.value!.copyWith(
-        manualOverrideId: overrideId,
-        manualOverrideTitle: overrideTitle,
+        matchedMediaId: matchedMediaId,
+        matchedMediaTitle: matchedMediaTitle,
       ),
     );
 
     _saveToDb();
   }
 
-  Future<void> saveAutoMatch(String matchedId, String matchedTitle) async {
+  @Deprecated('Use setManualMatch instead')
+  void setManualOverrides(String matchedMediaId, String matchedMediaTitle) {
+    setManualMatch(matchedMediaId, matchedMediaTitle);
+  }
+
+  Future<void> saveAutoMatch(
+    String matchedMediaId,
+    String matchedMediaTitle,
+  ) async {
     final currentState = state.value;
     if (currentState == null) return;
 
@@ -170,15 +237,15 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
       pref.preferredSourceId = currentState.sourceInfo.id;
       pref.preferredSourceName = currentState.sourceInfo.name;
       pref.preferredSourceType = currentState.sourceInfo.type.name;
-      pref.manualOverrideId = matchedId;
-      pref.manualOverrideTitle = matchedTitle;
+      pref.matchedMediaId = matchedMediaId;
+      pref.matchedMediaTitle = matchedMediaTitle;
 
       await _isar.writeTxn(() async => await _isar.mediaPreferences.put(pref));
 
       state = AsyncData(
         currentState.copyWith(
-          manualOverrideId: matchedId,
-          manualOverrideTitle: matchedTitle,
+          matchedMediaId: matchedMediaId,
+          matchedMediaTitle: matchedMediaTitle,
         ),
       );
     } catch (e, st) {
@@ -186,21 +253,30 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
     }
   }
 
-  void setPreferredAiringTracker(TrackerType tracker) {
-    final log = _log.child('setPreferredAiringTracker');
-    log.i('Tracker → ${tracker.displayName}');
+  void setPreferredTracker(TrackerType trackerType) {
+    final log = _log.child('setPreferredTracker');
+    log.i('Tracker → ${trackerType.displayName}');
 
-    state = AsyncData(state.value!.copyWith(preferredAiringTracker: tracker));
+    state = AsyncData(state.value!.copyWith(preferredTracker: trackerType));
 
     _saveToDb();
   }
 
-  void updatePrefs(SourceInfo sourceInfo, String id, String title) {
+  @Deprecated('Use setPreferredTracker instead')
+  void setPreferredAiringTracker(TrackerType trackerType) {
+    setPreferredTracker(trackerType);
+  }
+
+  void updatePrefs(
+    SourceInfo sourceInfo,
+    String matchedMediaId,
+    String matchedMediaTitle,
+  ) {
     state = AsyncData(
       state.value!.copyWith(
         sourceInfo: sourceInfo,
-        manualOverrideId: id,
-        manualOverrideTitle: title,
+        matchedMediaId: matchedMediaId,
+        matchedMediaTitle: matchedMediaTitle,
       ),
     );
     _saveToDb();
@@ -218,10 +294,10 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
         ..preferredSourceId = currentState.sourceInfo.id
         ..preferredSourceName = currentState.sourceInfo.name
         ..preferredSourceType = currentState.sourceInfo.type.name
-        ..manualOverrideId = currentState.manualOverrideId
-        ..manualOverrideTitle = currentState.manualOverrideTitle
-        ..preferredAiringTracker = currentState.preferredAiringTracker?.id
-        ..manualAiringTrackerId = currentState.manualAiringTrackerId;
+        ..matchedMediaId = currentState.matchedMediaId
+        ..matchedMediaTitle = currentState.matchedMediaTitle
+        ..preferredTracker = currentState.preferredTracker?.id
+        ..trackerMediaId = currentState.trackerMediaId;
 
       await _isar.writeTxn(() async => await _isar.mediaPreferences.put(pref));
 
@@ -245,7 +321,7 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
     }
   }
 
-  Future<void> setManualAiringTrackerId(String id) async {
+  Future<void> setTrackerMediaId(String trackerMediaId) async {
     try {
       final existing = await _isar.mediaPreferences.getByMediaTitle(
         args.mediaTitle,
@@ -253,7 +329,7 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
       final newPref =
           existing ?? (MediaPreference()..mediaTitle = args.mediaTitle);
 
-      newPref.manualAiringTrackerId = id;
+      newPref.trackerMediaId = trackerMediaId;
       // Inherit source state
       newPref.preferredSourceId = state.value!.sourceInfo.id;
       newPref.preferredSourceName = state.value!.sourceInfo.name;
@@ -263,10 +339,15 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
         await _isar.mediaPreferences.put(newPref);
       });
 
-      state = AsyncData(state.value!.copyWith(manualAiringTrackerId: id));
+      state = AsyncData(state.value!.copyWith(trackerMediaId: trackerMediaId));
     } catch (e, st) {
-      _log.e('Failed to set manual airing tracker id', e, st);
+      _log.e('Failed to set tracker media id', e, st);
     }
+  }
+
+  @Deprecated('Use setTrackerMediaId instead')
+  Future<void> setManualAiringTrackerId(String trackerMediaId) async {
+    return setTrackerMediaId(trackerMediaId);
   }
 }
 

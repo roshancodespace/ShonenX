@@ -13,9 +13,22 @@ class MediaPreference {
   late String preferredSourceName;
   late String preferredSourceType;
   
+  String? matchedMediaTitle;
+  String? matchedMediaId;
+
+  String? preferredTracker; 
+  String? trackerMediaId;
+
+  // Legacy fields retained for migration
+  @Deprecated('Use matchedMediaTitle instead')
   String? manualOverrideTitle;
+
+  @Deprecated('Use matchedMediaId instead')
   String? manualOverrideId;
 
+  @Deprecated('Use preferredTracker instead')
   String? preferredAiringTracker; 
+
+  @Deprecated('Use trackerMediaId instead')
   String? manualAiringTrackerId;
 }

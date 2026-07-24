@@ -43,7 +43,7 @@ class ContinueWatchingResolver {
             : null) ??
         prefState.sourceInfo;
 
-    final rawOverride = prefState.manualOverrideId ?? entry.providerId;
+    final rawOverride = prefState.matchedMediaId ?? entry.providerId;
     final overrideId = (rawOverride != null && rawOverride != entry.animeId)
         ? rawOverride
         : null;

@@ -24,11 +24,11 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
 
   @override
   List<TrackerCategory> get supportedCategories => [
-        TrackerCategory.trending,
-        TrackerCategory.popular,
-        TrackerCategory.topRated,
-        TrackerCategory.upcoming,
-      ];
+    TrackerCategory.trending,
+    TrackerCategory.popular,
+    TrackerCategory.topRated,
+    TrackerCategory.upcoming,
+  ];
 
   @override
   Future<PaginatedResult<UnifiedMedia>> getCategoryItems(
@@ -198,7 +198,7 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
             'query': AnilistTrackerQueries.metadataSearch(adultMode),
             'variables': variables,
           },
-          cacheDuration: cacheDuration,
+          cacheDuration: cacheDuration ?? const Duration(hours: 12),
         );
 
         final data = _validateAndParseResponse(response.json, 'search');

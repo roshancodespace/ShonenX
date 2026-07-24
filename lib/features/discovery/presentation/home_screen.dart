@@ -266,6 +266,7 @@ class HomeScreen extends ConsumerWidget {
             category,
             type: mediaType,
             adultMode: adultMode,
+            cacheDuration: const Duration(hours: 12),
           );
           return result.items;
         } else {

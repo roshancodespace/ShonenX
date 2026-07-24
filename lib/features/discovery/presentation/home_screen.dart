@@ -370,8 +370,9 @@ class HomeScreen extends ConsumerWidget {
         return HorizontalSection<UnifiedMedia>(
           title: section.title,
           height: style.getLayout(isWideMode: isWide).height,
-          onMoreTap: () =>
-              context.push('/category/${section.title}?type=${mediaType.id}'),
+          onMoreTap: () => context.push(
+            '/category/${Uri.encodeComponent(section.title)}?type=${mediaType.id}',
+          ),
           data: data,
           itemBuilder: (context, item) {
             return MediaCard(
@@ -466,7 +467,9 @@ class HomeScreen extends ConsumerWidget {
     return HorizontalSection<UnifiedMedia>(
       title: title,
       height: style.getLayout(isWideMode: isWide).height,
-      onMoreTap: () => context.push('/category/$title?type=${mediaType.id}'),
+      onMoreTap: () => context.push(
+        '/category/${Uri.encodeComponent(title)}?type=${mediaType.id}',
+      ),
       data: sourceData,
       itemBuilder: (context, item) {
         return MediaCard(

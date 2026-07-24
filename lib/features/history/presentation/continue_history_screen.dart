@@ -87,7 +87,9 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                 title: Text(isAnime ? 'Continue Watching' : 'Continue Reading'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  context.push('/continue/${widget.type.id}/$id');
+                  context.push(
+                    '/continue/${widget.type.id}/${Uri.encodeComponent(id)}',
+                  );
                 },
               ),
               ListTile(
@@ -332,7 +334,7 @@ class _ContinueHistoryScreenState extends ConsumerState<ContinueHistoryScreen> {
                                       _toggleSelection(id);
                                     } else {
                                       context.push(
-                                        '/continue/${widget.type.id}/$id',
+                                        '/continue/${widget.type.id}/${Uri.encodeComponent(id)}',
                                       );
                                     }
                                   },

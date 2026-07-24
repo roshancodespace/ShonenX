@@ -56,6 +56,7 @@ abstract interface class RemoteTracker implements TrackingService {
     required MediaType type,
     List<String>? genres,
     List<String>? tags,
+    List<String>? statusIn,
     Duration? cacheDuration,
     AdultContentMode adultMode = AdultContentMode.safe,
   });

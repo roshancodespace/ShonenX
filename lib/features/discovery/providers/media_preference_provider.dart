@@ -143,17 +143,17 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
             );
 
       final SourceInfo resolvedSource;
-      if (sourceType != null && preferredId != null) {
+      if (args.sourceId != null) {
+        resolvedSource =
+            availableSources.firstWhereOrNull(
+              (source) => source.id == args.sourceId,
+            ) ??
+            defaultSource;
+      } else if (sourceType != null && preferredId != null) {
         resolvedSource =
             availableSources.firstWhereOrNull(
               (source) =>
                   source.id == preferredId && source.name == preferredName,
-            ) ??
-            defaultSource;
-      } else if (args.sourceId != null) {
-        resolvedSource =
-            availableSources.firstWhereOrNull(
-              (source) => source.id == args.sourceId,
             ) ??
             defaultSource;
       } else {

@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/matchmaker/match_service.dart';
+import 'package:shonenx/source_engine/source_registry.dart';
 
 class MatchedMedia {
   final String id;
@@ -55,22 +57,38 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
     state = const AsyncLoading();
     final prefs = await ref.watch(mediaPreferenceProvider(args).future);
 
+    if (args.sourceId != null && args.providerId != null) {
+      final availableSources = args.type == MediaType.ANIME
+          ? await ref.watch(availableAnimeSourcesProvider.future)
+          : await ref.watch(availableMangaSourcesProvider.future);
+
+      final sourceInfo =
+          availableSources.firstWhereOrNull((s) => s.id == args.sourceId) ??
+          prefs.sourceInfo;
+
+      if (prefs.sourceInfo.id != sourceInfo.id ||
+          prefs.matchedMediaId != args.providerId ||
+          prefs.matchedMediaTitle != args.mediaTitle) {
+        Future.microtask(() {
+          ref
+              .read(mediaPreferenceProvider(args).notifier)
+              .updatePrefs(sourceInfo, args.providerId!, args.mediaTitle);
+        });
+      }
+
+      return MatchedMediaState(
+        matchedMedia: MatchedMedia(
+          id: args.providerId!,
+          title: args.mediaTitle,
+        ),
+      );
+    }
+
     if (prefs.matchedMediaId != null && prefs.matchedMediaTitle != null) {
       return MatchedMediaState(
         matchedMedia: MatchedMedia(
           id: prefs.matchedMediaId!,
           title: prefs.matchedMediaTitle!,
-        ),
-      );
-    }
-
-    if (args.sourceId != null &&
-        args.providerId != null &&
-        prefs.sourceInfo.id == args.sourceId) {
-      return MatchedMediaState(
-        matchedMedia: MatchedMedia(
-          id: args.providerId!,
-          title: args.mediaTitle,
         ),
       );
     }

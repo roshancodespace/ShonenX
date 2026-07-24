@@ -20,6 +20,7 @@ import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/marquee_text.dart';
 import 'package:shonenx/shared/widgets/permission_sheet.dart';
 
 class DownloadSheet extends ConsumerStatefulWidget {
@@ -111,7 +112,7 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
       final httpClient = ref.read(httpClientProvider);
 
       for (final stream in streams) {
-        splitStreamsList.add(stream); // Keep default Auto/Master first
+        splitStreamsList.add(stream);
 
         try {
           final parsedQualities = await httpClient.splitM3U8(
@@ -129,9 +130,7 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
               ),
             );
           }
-        } catch (_) {
-          // Fall back gracefully if parsing fails
-        }
+        } catch (_) {}
       }
 
       if (mounted) {
@@ -335,75 +334,14 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
             ? '${stream.quality} ($size)'
             : stream.quality;
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: Row(
-            children: [
-              RawChip(
-                avatar: Icon(
-                  Icons.video_library_rounded,
-                  size: 14,
-                  color: cs.onSecondaryContainer,
-                ),
-                label: Text(
-                  labelText,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                backgroundColor: cs.secondaryContainer,
-                labelStyle: TextStyle(color: cs.onSecondaryContainer),
-                shape: const StadiumBorder(),
-                side: BorderSide.none,
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              ),
-              const Spacer(),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Copy Stream Link',
-                    icon: Icon(
-                      Icons.copy_rounded,
-                      size: 17,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    onPressed: () => _copyStreamUrl(stream),
-                  ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Play in External Player',
-                    icon: Icon(
-                      Icons.open_in_new_rounded,
-                      size: 17,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    onPressed: () => _launchExternalPlayer(stream),
-                  ),
-                  if (isOneDMInstalled && Platform.isAndroid)
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      tooltip: 'Download via 1DM',
-                      icon: Icon(
-                        Icons.cloud_download_outlined,
-                        size: 17,
-                        color: cs.primary,
-                      ),
-                      onPressed: () => _start1DMDownload(stream),
-                    ),
-                  const SizedBox(width: 4),
-                  IconButton.filled(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Download',
-                    icon: const Icon(Icons.download_rounded, size: 17),
-                    onPressed: () => _startDownload(stream, server),
-                  ),
-                ],
-              ),
-            ],
-          ),
+        return _StreamRowItem(
+          stream: stream,
+          labelText: labelText,
+          isOneDMInstalled: isOneDMInstalled,
+          onCopyUrl: () => _copyStreamUrl(stream),
+          onExternalPlayer: () => _launchExternalPlayer(stream),
+          on1DMDownload: () => _start1DMDownload(stream),
+          onDownload: () => _startDownload(stream, server),
         );
       }).toList(),
     );
@@ -558,7 +496,6 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
     bool launched = false;
 
     if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
-      // 1. Try mpv
       try {
         final List<String> args = [];
         if (stream.headers != null && stream.headers!.isNotEmpty) {
@@ -574,7 +511,6 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
         launched = true;
       } catch (_) {}
 
-      // 2. Try vlc
       if (!launched) {
         try {
           final List<String> args = [];
@@ -595,7 +531,6 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
       }
     }
 
-    // 3. Fallback to system default application / url_launcher
     if (!launched) {
       try {
         final uri = Uri.parse(stream.url);
@@ -622,6 +557,107 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
         );
       }
     }
+  }
+}
+
+class _StreamRowItem extends StatelessWidget {
+  final VideoStream stream;
+  final String labelText;
+  final bool isOneDMInstalled;
+  final VoidCallback onCopyUrl;
+  final VoidCallback onExternalPlayer;
+  final VoidCallback on1DMDownload;
+  final VoidCallback onDownload;
+
+  const _StreamRowItem({
+    required this.stream,
+    required this.labelText,
+    required this.isOneDMInstalled,
+    required this.onCopyUrl,
+    required this.onExternalPlayer,
+    required this.on1DMDownload,
+    required this.onDownload,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: RawChip(
+                avatar: Icon(
+                  Icons.video_library_rounded,
+                  size: 14,
+                  color: cs.onSecondaryContainer,
+                ),
+                label: MarqueeText(
+                  text: labelText,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSecondaryContainer,
+                  ),
+                ),
+                backgroundColor: cs.secondaryContainer,
+                shape: const StadiumBorder(),
+                side: BorderSide.none,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Copy Stream Link',
+                icon: Icon(
+                  Icons.copy_rounded,
+                  size: 17,
+                  color: cs.onSurfaceVariant,
+                ),
+                onPressed: onCopyUrl,
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Play in External Player',
+                icon: Icon(
+                  Icons.open_in_new_rounded,
+                  size: 17,
+                  color: cs.onSurfaceVariant,
+                ),
+                onPressed: onExternalPlayer,
+              ),
+              if (isOneDMInstalled && Platform.isAndroid)
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Download via 1DM',
+                  icon: Icon(
+                    Icons.cloud_download_outlined,
+                    size: 17,
+                    color: cs.primary,
+                  ),
+                  onPressed: on1DMDownload,
+                ),
+              const SizedBox(width: 2),
+              IconButton.filled(
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Download',
+                icon: const Icon(Icons.download_rounded, size: 17),
+                onPressed: onDownload,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -682,6 +718,8 @@ class _ServerTile extends StatelessWidget {
         ),
         title: Text(
           '${server.id.length <= 12 ? '[${server.id}] ' : ''}${server.name}',
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         ),
         subtitle: Text(
@@ -735,75 +773,14 @@ class _ServerTile extends StatelessWidget {
             ? '${stream.quality} ($size)'
             : stream.quality;
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: Row(
-            children: [
-              RawChip(
-                avatar: Icon(
-                  Icons.video_library_rounded,
-                  size: 14,
-                  color: cs.onSecondaryContainer,
-                ),
-                label: Text(
-                  labelText,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                backgroundColor: cs.secondaryContainer,
-                labelStyle: TextStyle(color: cs.onSecondaryContainer),
-                shape: const StadiumBorder(),
-                side: BorderSide.none,
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              ),
-              const Spacer(),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Copy Stream Link',
-                    icon: Icon(
-                      Icons.copy_rounded,
-                      size: 17,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    onPressed: () => onCopyUrl(stream),
-                  ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Play in External Player',
-                    icon: Icon(
-                      Icons.open_in_new_rounded,
-                      size: 17,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    onPressed: () => onExternalPlayer(stream),
-                  ),
-                  if (isOneDMInstalled && Platform.isAndroid)
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      tooltip: 'Download via 1DM',
-                      icon: Icon(
-                        Icons.cloud_download_outlined,
-                        size: 17,
-                        color: cs.primary,
-                      ),
-                      onPressed: () => on1DMDownload(stream),
-                    ),
-                  const SizedBox(width: 4),
-                  IconButton.filled(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Download',
-                    icon: const Icon(Icons.download_rounded, size: 17),
-                    onPressed: () => onDownload(stream),
-                  ),
-                ],
-              ),
-            ],
-          ),
+        return _StreamRowItem(
+          stream: stream,
+          labelText: labelText,
+          isOneDMInstalled: isOneDMInstalled,
+          onCopyUrl: () => onCopyUrl(stream),
+          onExternalPlayer: () => onExternalPlayer(stream),
+          on1DMDownload: () => on1DMDownload(stream),
+          onDownload: () => onDownload(stream),
         );
       }).toList(),
     );

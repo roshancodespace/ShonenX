@@ -4,13 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:shonenx/features/tracking/domain/models/tracker_profile.dart';
-import 'package:shonenx/features/tracking/engine/trackers/anilist/anilist_tracker.dart';
-import 'package:shonenx/features/tracking/engine/trackers/kitsu/kitsu_tracker.dart';
-import 'package:shonenx/features/tracking/engine/trackers/local/local_tracker.dart';
-import 'package:shonenx/features/tracking/engine/trackers/mal/mal_tracker.dart';
-import 'package:shonenx/features/tracking/engine/tracking_service.dart';
+import 'package:shonenx/features/tracking/engine/contracts/tracking_service.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
-import 'package:shonenx/shared/providers/database_provider.dart';
+import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 
 enum TrackerType {
   anilist('AniList'),
@@ -43,18 +39,8 @@ extension TrackerTypeX on TrackerType {
   TrackerProfile? getProfile(WidgetRef ref) =>
       ref.watch(trackerProfileProvider)[this];
 
-  TrackingService getTracker(Ref ref) {
-    switch (this) {
-      case TrackerType.anilist:
-        return AnilistTracker(ref);
-      case TrackerType.myanimelist:
-        return MalTracker(ref);
-      case TrackerType.kitsu:
-        return KitsuTracker(ref);
-      case TrackerType.local:
-        return LocalTracker(ref.watch(databaseProvider));
-    }
-  }
+  TrackingService getTracker(Ref ref) =>
+      TrackerRegistry.createTracker(this, ref);
 
   Widget getIconWidget({double size = 24, Color? color}) {
     if (this == TrackerType.local) {

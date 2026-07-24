@@ -1,9 +1,10 @@
 import 'dart:developer';
 
 import 'package:shonenx/core/network/http_client.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
 import 'package:shonenx/shared/providers/content_prefs_provider.dart';
-import 'package:shonenx/features/tracking/engine/base_tracker.dart';
-import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
+import 'package:shonenx/features/tracking/engine/contracts/base_tracker.dart';
+import 'package:shonenx/features/tracking/engine/contracts/remote_tracker.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
 
@@ -20,6 +21,59 @@ mixin AnilistMetadata on BaseTracker implements RemoteTracker {
   HTTP get http;
 
   final String _endpoint = 'https://graphql.anilist.co';
+
+  @override
+  List<TrackerCategory> get supportedCategories => [
+        TrackerCategory.trending,
+        TrackerCategory.popular,
+        TrackerCategory.topRated,
+        TrackerCategory.upcoming,
+      ];
+
+  @override
+  Future<PaginatedResult<UnifiedMedia>> getCategoryItems(
+    TrackerCategory category, {
+    int page = 1,
+    MediaType type = MediaType.ANIME,
+    Duration? cacheDuration,
+    AdultContentMode adultMode = AdultContentMode.safe,
+  }) {
+    if (category == TrackerCategory.trending) {
+      return getTrending(
+        page: page,
+        type: type,
+        cacheDuration: cacheDuration,
+        adultMode: adultMode,
+      );
+    }
+
+    final List<String> sortOptions;
+    switch (category) {
+      case TrackerCategory.popular:
+      case TrackerCategory.popularThisSeason:
+        sortOptions = ['POPULARITY_DESC'];
+        break;
+      case TrackerCategory.topRated:
+        sortOptions = ['SCORE_DESC'];
+        break;
+      case TrackerCategory.recentlyUpdated:
+        sortOptions = ['UPDATED_AT_DESC'];
+        break;
+      case TrackerCategory.upcoming:
+      default:
+        sortOptions = ['POPULARITY_DESC'];
+        break;
+    }
+
+    return search(
+      '',
+      page: page,
+      type: type,
+      cacheDuration: cacheDuration,
+      adultMode: adultMode,
+      sort: sortOptions,
+    );
+  }
 
   Map<String, dynamic> _validateAndParseResponse(
     dynamic body,

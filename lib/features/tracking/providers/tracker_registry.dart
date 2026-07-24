@@ -1,23 +1,36 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shonenx/shared/providers/database_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
-import 'package:shonenx/features/tracking/engine/trackers/local/local_tracker.dart';
-import 'package:shonenx/features/tracking/engine/trackers/mal/mal_tracker.dart';
-import 'package:shonenx/features/tracking/engine/tracking_service.dart';
-import 'package:shonenx/features/tracking/engine/trackers/anilist/anilist_tracker.dart';
-import 'package:shonenx/features/tracking/engine/trackers/kitsu/kitsu_tracker.dart';
-import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
-
+import 'package:shonenx/features/tracking/engine/contracts/tracking_service.dart';
+import 'package:shonenx/features/tracking/engine/trackers/index.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
+import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/shared/providers/database_provider.dart';
+
+/// Central registry for constructing and retrieving tracking service instances.
+class TrackerRegistry {
+  /// Instantiates a [TrackingService] for the given [TrackerType].
+  static TrackingService createTracker(TrackerType type, Ref ref) {
+    switch (type) {
+      case TrackerType.anilist:
+        return AnilistTracker(ref);
+      case TrackerType.myanimelist:
+        return MalTracker(ref);
+      case TrackerType.kitsu:
+        return KitsuTracker(ref);
+      case TrackerType.local:
+        return LocalTracker(ref.watch(databaseProvider));
+    }
+  }
+
+  /// Returns all registered tracker instances for the application.
+  static List<TrackingService> getAllTrackers(Ref ref) {
+    return TrackerType.values.map((type) => createTracker(type, ref)).toList();
+  }
+}
 
 final availableTrackersProvider = Provider<List<TrackingService>>(
-  (ref) => [
-    AnilistTracker(ref),
-    MalTracker(ref),
-    KitsuTracker(ref),
-    LocalTracker(ref.watch(databaseProvider)),
-  ],
+  (ref) => TrackerRegistry.getAllTrackers(ref),
 );
 
 final primaryTrackerProvider = Provider<TrackingService>((ref) {
@@ -26,12 +39,12 @@ final primaryTrackerProvider = Provider<TrackingService>((ref) {
   );
 
   if (preferredType == TrackerType.local) {
-    return preferredType.getTracker(ref);
+    return TrackerRegistry.createTracker(preferredType, ref);
   }
 
   final profiles = ref.watch(trackerProfileProvider);
   if (profiles.containsKey(preferredType)) {
-    return preferredType.getTracker(ref);
+    return TrackerRegistry.createTracker(preferredType, ref);
   }
 
   // Preferred is cloud but not logged in. Find next logged in cloud tracker.
@@ -39,11 +52,11 @@ final primaryTrackerProvider = Provider<TrackingService>((ref) {
       .where((t) => t != TrackerType.local)
       .toList();
   if (loggedInCloudTypes.isNotEmpty) {
-    return loggedInCloudTypes.first.getTracker(ref);
+    return TrackerRegistry.createTracker(loggedInCloudTypes.first, ref);
   }
 
   // Fallback to local
-  return TrackerType.local.getTracker(ref);
+  return TrackerRegistry.createTracker(TrackerType.local, ref);
 });
 
 final activeTrackersProvider =

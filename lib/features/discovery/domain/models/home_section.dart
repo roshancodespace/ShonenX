@@ -1,11 +1,12 @@
 import 'dart:convert';
 
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
 enum HomeSectionType {
-  trending,
+  discovery,
   continueMedia,
   libraryStatus,
 }
@@ -18,6 +19,7 @@ class HomeSection {
   final TrackedStatus? libraryStatus;
   final TrackerType? targetTracker;
   final MediaType? targetMediaType;
+  final TrackerCategory? trackerCategory;
 
   const HomeSection({
     required this.id,
@@ -27,6 +29,7 @@ class HomeSection {
     this.libraryStatus,
     this.targetTracker,
     this.targetMediaType,
+    this.trackerCategory,
   });
 
   HomeSection copyWith({
@@ -37,7 +40,9 @@ class HomeSection {
     TrackedStatus? libraryStatus,
     TrackerType? targetTracker,
     MediaType? targetMediaType,
+    TrackerCategory? trackerCategory,
     bool clearTargetTracker = false,
+    bool clearTrackerCategory = false,
   }) {
     return HomeSection(
       id: id ?? this.id,
@@ -49,6 +54,9 @@ class HomeSection {
           ? null
           : (targetTracker ?? this.targetTracker),
       targetMediaType: targetMediaType ?? this.targetMediaType,
+      trackerCategory: clearTrackerCategory
+          ? null
+          : (trackerCategory ?? this.trackerCategory),
     );
   }
 
@@ -61,16 +69,24 @@ class HomeSection {
       'libraryStatus': libraryStatus?.name,
       'targetTracker': targetTracker?.id,
       'targetMediaType': targetMediaType?.id,
+      'trackerCategory': trackerCategory?.id,
     };
   }
 
   factory HomeSection.fromMap(Map<String, dynamic> map) {
     final typeString = map['type'] as String;
-    var parsedType = HomeSectionType.trending;
-    
+    var parsedType = HomeSectionType.discovery;
+
     MediaType? parsedMediaType = map['targetMediaType'] != null
-          ? MediaType.values.firstWhere((e) => e.id == map['targetMediaType'], orElse: () => MediaType.ANIME)
-          : null;
+        ? MediaType.values.firstWhere(
+            (e) => e.id == map['targetMediaType'],
+            orElse: () => MediaType.ANIME,
+          )
+        : null;
+
+    TrackerCategory? parsedCategory = map['trackerCategory'] != null
+        ? TrackerCategory.tryFromId(map['trackerCategory'] as String)
+        : null;
 
     // Legacy Migration
     if (typeString == 'continueWatching') {
@@ -79,13 +95,21 @@ class HomeSection {
     } else if (typeString == 'continueReading') {
       parsedType = HomeSectionType.continueMedia;
       parsedMediaType ??= MediaType.MANGA;
-    } else if (typeString == 'cloudLibraryStatus' || typeString == 'localLibraryStatus') {
+    } else if (typeString == 'cloudLibraryStatus' ||
+        typeString == 'localLibraryStatus') {
       parsedType = HomeSectionType.libraryStatus;
+    } else if (typeString == 'trending') {
+      parsedType = HomeSectionType.discovery;
+      parsedCategory ??= TrackerCategory.trending;
     } else {
       parsedType = HomeSectionType.values.firstWhere(
         (e) => e.name == typeString,
-        orElse: () => HomeSectionType.trending,
+        orElse: () => HomeSectionType.discovery,
       );
+    }
+
+    if (parsedType == HomeSectionType.discovery) {
+      parsedCategory ??= TrackerCategory.trending;
     }
 
     return HomeSection(
@@ -103,6 +127,7 @@ class HomeSection {
           ? TrackerType.tryFromId(map['targetTracker'])
           : null,
       targetMediaType: parsedMediaType,
+      trackerCategory: parsedCategory,
     );
   }
 

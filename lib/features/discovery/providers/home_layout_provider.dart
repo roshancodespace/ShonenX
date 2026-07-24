@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_category.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/features/discovery/domain/models/home_section.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -20,14 +21,16 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
       HomeSection(
         id: '1',
         title: 'Trending Anime',
-        type: HomeSectionType.trending,
+        type: HomeSectionType.discovery,
         targetMediaType: MediaType.ANIME,
+        trackerCategory: TrackerCategory.trending,
       ),
       HomeSection(
         id: '2',
         title: 'Trending Manga',
-        type: HomeSectionType.trending,
+        type: HomeSectionType.discovery,
         targetMediaType: MediaType.MANGA,
+        trackerCategory: TrackerCategory.trending,
       ),
       HomeSection(
         id: '3',
@@ -92,8 +95,9 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
         HomeSection(
           id: '1',
           title: 'Trending Anime',
-          type: HomeSectionType.trending,
+          type: HomeSectionType.discovery,
           targetMediaType: MediaType.ANIME,
+          trackerCategory: TrackerCategory.trending,
         ),
         HomeSection(
           id: '3',
@@ -107,8 +111,9 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
         HomeSection(
           id: '2',
           title: 'Trending Manga',
-          type: HomeSectionType.trending,
+          type: HomeSectionType.discovery,
           targetMediaType: MediaType.MANGA,
+          trackerCategory: TrackerCategory.trending,
         ),
         HomeSection(
           id: '4',
@@ -122,14 +127,16 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
         HomeSection(
           id: '1',
           title: 'Trending Anime',
-          type: HomeSectionType.trending,
+          type: HomeSectionType.discovery,
           targetMediaType: MediaType.ANIME,
+          trackerCategory: TrackerCategory.trending,
         ),
         HomeSection(
           id: '2',
           title: 'Trending Manga',
-          type: HomeSectionType.trending,
+          type: HomeSectionType.discovery,
           targetMediaType: MediaType.MANGA,
+          trackerCategory: TrackerCategory.trending,
         ),
         HomeSection(
           id: '3',

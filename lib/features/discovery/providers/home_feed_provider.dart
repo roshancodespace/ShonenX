@@ -24,34 +24,35 @@ class HomeFeedState {
       groups.isNotEmpty ? groups.first.items : [];
 }
 
-final singleSourceFeedProvider = FutureProvider.family<
-  List<UnifiedMedia>,
-  (SourceInfo, MediaType)
->((ref, arg) async {
-  final info = arg.$1;
-  final mediaType = arg.$2;
+final singleSourceFeedProvider =
+    FutureProvider.family<List<UnifiedMedia>, (SourceInfo, MediaType)>((
+      ref,
+      arg,
+    ) async {
+      final info = arg.$1;
+      final mediaType = arg.$2;
 
-  try {
-    final source = mediaType == MediaType.ANIME
-        ? ref.read(animeSourceProvider(info))
-        : ref.read(mangaSourceProvider(info));
+      try {
+        final source = mediaType == MediaType.ANIME
+            ? ref.read(animeSourceProvider(info))
+            : ref.read(mangaSourceProvider(info));
 
-    var items = await source.getTrending();
-    if (items.isEmpty) {
-      items = await source.search('', mediaType);
-    }
-    return items;
-  } catch (e) {
-    try {
-      final source = mediaType == MediaType.ANIME
-          ? ref.read(animeSourceProvider(info))
-          : ref.read(mangaSourceProvider(info));
-      return await source.search('', mediaType);
-    } catch (_) {
-      return const [];
-    }
-  }
-});
+        var items = await source.getTrending();
+        if (items.isEmpty) {
+          items = await source.search('', mediaType);
+        }
+        return items;
+      } catch (e) {
+        try {
+          final source = mediaType == MediaType.ANIME
+              ? ref.read(animeSourceProvider(info))
+              : ref.read(mangaSourceProvider(info));
+          return await source.search('', mediaType);
+        } catch (_) {
+          return const [];
+        }
+      }
+    });
 
 final homeFeedProvider = AsyncNotifierProvider<HomeFeedNotifier, HomeFeedState>(
   () => HomeFeedNotifier(),
@@ -74,23 +75,44 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     final tracker = ref.watch(metadataSourceProvider);
     final adultMode = ref.watch(contentPrefsProvider).adultContentMode;
 
-    final animeResult = await tracker.getTrending(
-      type: MediaType.ANIME,
-      adultMode: adultMode,
-    );
-    final mangaResult = await tracker.getTrending(
-      type: MediaType.MANGA,
-      adultMode: adultMode,
-    );
+    final categories = tracker.supportedCategories;
+    final groups = <FeedGroup>[];
 
-    return HomeFeedState(
-      groups: [
-        if (animeResult.items.isNotEmpty)
-          FeedGroup(title: 'Trending Anime', items: animeResult.items),
-        if (mangaResult.items.isNotEmpty)
-          FeedGroup(title: 'Trending Manga', items: mangaResult.items),
-      ],
-    );
+    for (final category in categories) {
+      try {
+        final animeResult = await tracker.getCategoryItems(
+          category,
+          type: MediaType.ANIME,
+          adultMode: adultMode,
+        );
+        if (animeResult.items.isNotEmpty) {
+          groups.add(
+            FeedGroup(
+              title: '${category.label} (Anime)',
+              items: animeResult.items,
+            ),
+          );
+        }
+      } catch (_) {}
+
+      try {
+        final mangaResult = await tracker.getCategoryItems(
+          category,
+          type: MediaType.MANGA,
+          adultMode: adultMode,
+        );
+        if (mangaResult.items.isNotEmpty) {
+          groups.add(
+            FeedGroup(
+              title: '${category.label} (Manga)',
+              items: mangaResult.items,
+            ),
+          );
+        }
+      } catch (_) {}
+    }
+
+    return HomeFeedState(groups: groups);
   }
 
   Future<HomeFeedState> _buildSourceFeed(DiscoveryPrefs prefs) async {

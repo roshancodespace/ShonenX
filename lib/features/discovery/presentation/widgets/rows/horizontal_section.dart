@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class HorizontalSection<T> extends StatelessWidget {
   final String title;
@@ -9,6 +10,8 @@ class HorizontalSection<T> extends StatelessWidget {
   final String emptyText;
   final double? gap;
   final VoidCallback? onMoreTap;
+  final Widget Function(BuildContext context, int index)? skeletonItemBuilder;
+  final int skeletonCount;
 
   const HorizontalSection({
     super.key,
@@ -19,6 +22,8 @@ class HorizontalSection<T> extends StatelessWidget {
     this.gap,
     this.emptyText = 'No data found',
     this.onMoreTap,
+    this.skeletonItemBuilder,
+    this.skeletonCount = 25,
   });
 
   @override
@@ -45,7 +50,30 @@ class HorizontalSection<T> extends StatelessWidget {
         SizedBox(
           height: height,
           child: data.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => Skeletonizer(
+              enabled: true,
+              child: ListView.separated(
+                clipBehavior: Clip.none,
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemCount: skeletonCount,
+                itemBuilder: (context, index) {
+                  if (skeletonItemBuilder != null) {
+                    return skeletonItemBuilder!(context, index);
+                  }
+                  return Container(
+                    width: height * 0.7,
+                    height: height,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  );
+                },
+                separatorBuilder: (context, index) =>
+                    SizedBox(width: gap ?? 10.0),
+              ),
+            ),
             error: (e, _) => Center(child: Text('Error: $e')),
             data: (items) {
               if (items.isEmpty) {

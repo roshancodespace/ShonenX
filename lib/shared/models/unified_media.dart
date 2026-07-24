@@ -28,6 +28,42 @@ enum TitlePreference {
   const TitlePreference(this.displayName);
 }
 
+class MediaExternalLink {
+  final String id;
+  final String url;
+  final String site;
+  final String? icon;
+
+  const MediaExternalLink({
+    required this.id,
+    required this.url,
+    required this.site,
+    this.icon,
+  });
+}
+
+class MediaCharacter {
+  final String id;
+  final String name;
+  final String? nativeName;
+  final String? role;
+  final String? image;
+  final String? description;
+  final String? voiceActorName;
+  final String? voiceActorImage;
+
+  const MediaCharacter({
+    required this.id,
+    required this.name,
+    this.nativeName,
+    this.role,
+    this.image,
+    this.description,
+    this.voiceActorName,
+    this.voiceActorImage,
+  });
+}
+
 class UnifiedMedia {
   final String id;
   final MediaType type;
@@ -46,6 +82,16 @@ class UnifiedMedia {
   final bool? isAdult;
   final String? status;
   final int? episodes;
+  final int? chapters;
+  final int? volumes;
+  final int? duration;
+  final String? source;
+  final int? popularity;
+  final int? favourites;
+  final List<String>? studios;
+  final List<String>? synonyms;
+  final List<MediaExternalLink>? externalLinks;
+  final List<MediaCharacter>? characters;
   final String? season;
   final DateTime? airingAt;
   final int? nextEpisode;
@@ -71,6 +117,16 @@ class UnifiedMedia {
     this.isAdult,
     this.status,
     this.episodes,
+    this.chapters,
+    this.volumes,
+    this.duration,
+    this.source,
+    this.popularity,
+    this.favourites,
+    this.studios = const [],
+    this.synonyms = const [],
+    this.externalLinks = const [],
+    this.characters = const [],
     this.season,
     this.airingAt,
     this.nextEpisode,
@@ -146,6 +202,25 @@ extension UnifiedMediaX on UnifiedMedia {
       isAdult: other.isAdult ?? isAdult,
       status: other.status ?? status,
       episodes: other.episodes ?? episodes,
+      chapters: other.chapters ?? chapters,
+      volumes: other.volumes ?? volumes,
+      duration: other.duration ?? duration,
+      source: other.source ?? source,
+      popularity: other.popularity ?? popularity,
+      favourites: other.favourites ?? favourites,
+      studios: (other.studios != null && other.studios!.isNotEmpty)
+          ? other.studios
+          : studios,
+      synonyms: (other.synonyms != null && other.synonyms!.isNotEmpty)
+          ? other.synonyms
+          : synonyms,
+      externalLinks:
+          (other.externalLinks != null && other.externalLinks!.isNotEmpty)
+          ? other.externalLinks
+          : externalLinks,
+      characters: (other.characters != null && other.characters!.isNotEmpty)
+          ? other.characters
+          : characters,
       season: other.season ?? season,
       airingAt: other.airingAt ?? airingAt,
       nextEpisode: other.nextEpisode ?? nextEpisode,

@@ -156,63 +156,11 @@ class MinimalCard extends StatelessWidget {
             Positioned(
               left: 12,
               right: 12,
-              bottom: 10,
-              top: 10,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          config.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            height: 1.2,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      if (config.topRightBadge != null) config.topRightBadge!,
-                    ],
-                  ),
-                  if (config.subtitle != null ||
-                      config.progress != null ||
-                      config.progressText != null) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (config.subtitle != null)
-                          Expanded(
-                            child: Text(
-                              config.subtitle!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ),
-                        if (config.progressText != null ||
-                            config.progress != null)
-                          Text(
-                            config.progressText ??
-                                '${(config.progress!.clamp(0.0, 1.0) * 100).toInt()}%',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: cs.primaryContainer,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ],
+              bottom: 6,
+              top: 6,
+              child: WideMetadataColumn(
+                config: config,
+                textColor: Colors.white,
               ),
             ),
           ],

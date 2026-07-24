@@ -22,6 +22,7 @@ import 'package:shonenx/features/discovery/providers/discovery_feed_provider.dar
 import 'package:shonenx/features/discovery/providers/metadata_tags_provider.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/advanced_search_sheet.dart';
 import 'package:shonenx/core/utils/responsive.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class DiscoverScreen extends StatelessWidget {
   final String? query;
@@ -128,6 +129,18 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
     if (oldWidget.initialQuery != widget.initialQuery) {
       _query = widget.initialQuery?.trim() ?? '';
       _searchController.text = _query;
+    }
+
+    final oldGenresStr = oldWidget.initialGenres.join(',');
+    final newGenresStr = widget.initialGenres.join(',');
+    if (oldGenresStr != newGenresStr) {
+      _genres = List.from(widget.initialGenres);
+    }
+
+    final oldTagsStr = oldWidget.initialTags.join(',');
+    final newTagsStr = widget.initialTags.join(',');
+    if (oldTagsStr != newTagsStr) {
+      _tags = List.from(widget.initialTags);
     }
   }
 
@@ -744,7 +757,31 @@ class _PaginatedMediaGrid extends ConsumerWidget {
     final style = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
 
     return state.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => Skeletonizer(
+        enabled: true,
+        child: GridView.builder(
+          padding: const EdgeInsets.only(bottom: 200, top: 10),
+          gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
+            minCrossAxisExtent: style.layout.width,
+            childAspectRatio: style.layout.aspectRatio,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+          ),
+          itemCount: 10,
+          itemBuilder: (context, index) {
+            return MediaCard(
+              tag: 'skeleton-grid-$index',
+              title: 'Placeholder Media Title Name',
+              imageUrl: '',
+              style: style,
+              format: 'TV',
+              score: 8.5,
+              year: '2026',
+              onTap: () {},
+            );
+          },
+        ),
+      ),
       error: (e, _) => Center(child: Text(e.toString())),
       data: (result) {
         if (result == null || result.items.isEmpty) {
@@ -845,7 +882,41 @@ class _DynamicGenreFeed extends ConsumerWidget {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () {
+        final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
+        final isWide = ref.watch(
+          uiPrefsProvider.select((p) => p.isMediaCardWide(style.name)),
+        );
+        final height = style.getLayout(isWideMode: isWide).height;
+
+        return Skeletonizer(
+          enabled: true,
+          child: ListView.builder(
+            padding: const EdgeInsets.only(top: 10, bottom: 200),
+            itemCount: 3,
+            itemBuilder: (context, index) {
+              return HorizontalSection<UnifiedMedia>(
+                title: 'Loading Genre Category',
+                height: height,
+                data: const AsyncValue.loading(),
+                itemBuilder: (_, __) => const SizedBox.shrink(),
+                skeletonItemBuilder: (context, i) {
+                  return MediaCard(
+                    tag: 'skeleton-genre-$index-$i',
+                    title: 'Placeholder Media Title Name',
+                    imageUrl: '',
+                    style: style,
+                    format: 'TV',
+                    score: 8.5,
+                    year: '2026',
+                    onTap: () {},
+                  );
+                },
+              );
+            },
+          ),
+        );
+      },
       error: (e, _) => Center(child: Text('Failed to load feed: $e')),
     );
   }
@@ -905,18 +976,23 @@ class _GenreFeedRow extends ConsumerWidget {
           },
         );
       },
-      loading: () => SizedBox(
-        height: style.getLayout(isWideMode: isWide).height + 40,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              child: Text(genre, style: Theme.of(context).textTheme.titleLarge),
-            ),
-            const Expanded(child: Center(child: CircularProgressIndicator())),
-          ],
-        ),
+      loading: () => HorizontalSection<UnifiedMedia>(
+        title: genre,
+        height: style.getLayout(isWideMode: isWide).height,
+        data: const AsyncValue.loading(),
+        itemBuilder: (_, __) => const SizedBox.shrink(),
+        skeletonItemBuilder: (context, index) {
+          return MediaCard(
+            tag: 'skeleton-genre-row-$genre-$index',
+            title: 'Placeholder Media Title Name',
+            imageUrl: '',
+            style: style,
+            format: 'TV',
+            score: 8.5,
+            year: '2026',
+            onTap: () {},
+          );
+        },
       ),
       error: (e, _) => const SizedBox.shrink(),
     );
@@ -1010,7 +1086,41 @@ class _DynamicSourceFeed extends ConsumerWidget {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () {
+        final style = ref.watch(uiPrefsProvider.select((p) => p.cardStyle));
+        final isWide = ref.watch(
+          uiPrefsProvider.select((p) => p.isMediaCardWide(style.name)),
+        );
+        final height = style.getLayout(isWideMode: isWide).height;
+
+        return Skeletonizer(
+          enabled: true,
+          child: ListView.builder(
+            padding: const EdgeInsets.only(top: 10, bottom: 120),
+            itemCount: 3,
+            itemBuilder: (context, index) {
+              return HorizontalSection<UnifiedMedia>(
+                title: 'Loading Extension Source',
+                height: height,
+                data: const AsyncValue.loading(),
+                itemBuilder: (_, __) => const SizedBox.shrink(),
+                skeletonItemBuilder: (context, i) {
+                  return MediaCard(
+                    tag: 'skeleton-src-feed-$index-$i',
+                    title: 'Placeholder Media Title Name',
+                    imageUrl: '',
+                    style: style,
+                    format: 'TV',
+                    score: 8.5,
+                    year: '2026',
+                    onTap: () {},
+                  );
+                },
+              );
+            },
+          ),
+        );
+      },
       error: (e, _) => Center(child: Text('Failed to load sources: $e')),
     );
   }
@@ -1069,23 +1179,23 @@ class _SourceFeedRow extends ConsumerWidget {
           },
         );
       },
-      loading: () => SizedBox(
-        height: style.getLayout(isWideMode: isWide).height + 40,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              child: Text(
-                info.name,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
-            const Expanded(child: Center(child: CircularProgressIndicator())),
-          ],
-        ),
+      loading: () => HorizontalSection<UnifiedMedia>(
+        title: info.name,
+        height: style.getLayout(isWideMode: isWide).height,
+        data: const AsyncValue.loading(),
+        itemBuilder: (_, __) => const SizedBox.shrink(),
+        skeletonItemBuilder: (context, index) {
+          return MediaCard(
+            tag: 'skeleton-src-row-${info.id}-$index',
+            title: 'Placeholder Media Title Name',
+            imageUrl: '',
+            style: style,
+            format: 'TV',
+            score: 8.5,
+            year: '2026',
+            onTap: () {},
+          );
+        },
       ),
       error: (_, __) => const SizedBox.shrink(),
     );

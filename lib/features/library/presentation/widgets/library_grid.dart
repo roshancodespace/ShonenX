@@ -10,6 +10,7 @@ import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/core/utils/responsive.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class LibraryGridWidget extends ConsumerWidget {
   const LibraryGridWidget({super.key});
@@ -21,7 +22,35 @@ class LibraryGridWidget extends ConsumerWidget {
     final cardStyle = ref.watch(uiPrefsProvider.select((s) => s.cardStyle));
 
     return dynamicLibrary.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => Skeletonizer(
+        enabled: true,
+        child: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: GridView.builder(
+            padding: const EdgeInsets.only(bottom: 200),
+            gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
+              minCrossAxisExtent: cardStyle.layout.width,
+              childAspectRatio: cardStyle.layout.aspectRatio,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+            ),
+            itemCount: 12,
+            itemBuilder: (context, index) {
+              return MediaCard(
+                title: 'Placeholder Library Title',
+                tag: 'skeleton-lib-$index',
+                imageUrl: '',
+                style: cardStyle,
+                format: 'TV',
+                score: 8.5,
+                year: '2026',
+                onTap: () {},
+              );
+            },
+          ),
+        ),
+      ),
+
       error: (err, stack) => Center(child: Text('ERR: $err')),
       data: (entries) {
         if (entries.isEmpty) return const Center(child: Text('Empty List'));

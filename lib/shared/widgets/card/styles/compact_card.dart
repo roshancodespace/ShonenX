@@ -14,7 +14,7 @@ class CompactCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final thumbW = config.height * 1.4;
+    final thumbW = config.height * 1.0;
 
     return AnimatedContainer(
       duration: Durations.short4,
@@ -46,7 +46,9 @@ class CompactCard extends StatelessWidget {
             ],
           ),
           const SizedBox(width: 10),
-          Expanded(child: WideMetadataColumn(config: config)),
+          Expanded(
+            child: ClipRect(child: WideMetadataColumn(config: config)),
+          ),
         ],
       ),
     );

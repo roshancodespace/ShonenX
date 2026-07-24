@@ -462,6 +462,22 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
           ? json['start_season']['year']?.toString()
           : (json['start_date']?.toString().split('-').first);
 
+      final studios = (json['studios'] as List?)
+          ?.map((s) => (s as Map)['name']?.toString() ?? '')
+          .where((s) => s.isNotEmpty)
+          .toList();
+
+      final synonyms = (altTitles?['synonyms'] as List?)
+          ?.map((s) => s.toString())
+          .where((s) => s.isNotEmpty)
+          .toList();
+
+      final chapters = (json['num_chapters'] as num?)?.toInt();
+      final volumes = (json['num_volumes'] as num?)?.toInt();
+      final duration = (json['average_episode_duration'] as num?) != null
+          ? ((json['average_episode_duration'] as num) / 60).round()
+          : null;
+
       return UnifiedMedia(
         id: json['id']?.toString() ?? '',
         idMal: json['id']?.toString(),
@@ -476,6 +492,14 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
         description: synopsis,
         status: status,
         episodes: episodes,
+        chapters: chapters,
+        volumes: volumes,
+        duration: duration,
+        source: json['source']?.toString(),
+        popularity: (json['popularity'] as num?)?.toInt(),
+        favourites: (json['num_list_users'] as num?)?.toInt(),
+        studios: studios,
+        synonyms: synonyms,
         airingAt: airingAt,
         nextEpisode: nextEpisode,
         relationType: relationType,
@@ -494,5 +518,125 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
       );
       rethrow;
     }
+  }
+
+  @override
+  Future<PaginatedResult<MediaCharacter>> getCharacters(
+    String providerId, {
+    int page = 1,
+    int perPage = 25,
+    MediaType type = MediaType.ANIME,
+  }) async {
+    return executeApi(
+      'GET_MAL_CHARACTERS',
+      () async {
+        final endpointType = type == MediaType.ANIME ? 'anime' : 'manga';
+        final endpoint =
+            'https://api.jikan.moe/v4/$endpointType/$providerId/characters';
+        final response = await http.get(
+          endpoint,
+          cacheDuration: const Duration(days: 7),
+        );
+
+        final jsonMap = response.json as Map?;
+        final dataList = (jsonMap?['data'] as List?)?.whereType<Map>() ?? [];
+
+        final items = <MediaCharacter>[];
+        for (final item in dataList) {
+          final charObj = item['character'] as Map? ?? {};
+          final role = item['role']?.toString();
+          final voiceActors =
+              (item['voice_actors'] as List?)?.whereType<Map>() ?? [];
+          final jaVA = voiceActors.firstWhere(
+            (va) => va['language']?.toString().toLowerCase() == 'japanese',
+            orElse: () => voiceActors.firstOrNull ?? {},
+          );
+          final vaPerson = jaVA['person'] as Map? ?? {};
+
+          items.add(
+            MediaCharacter(
+              id: charObj['mal_id']?.toString() ?? '',
+              name: charObj['name']?.toString() ?? 'Unknown',
+              nativeName: charObj['name_kanji']?.toString(),
+              role: role,
+              image: (charObj['images'] as Map?)?['jpg']?['image_url']
+                  ?.toString(),
+              voiceActorName: vaPerson['name']?.toString(),
+              voiceActorImage:
+                  (vaPerson['images'] as Map?)?['jpg']?['image_url']
+                      ?.toString(),
+            ),
+          );
+        }
+
+        final startIndex = (page - 1) * perPage;
+        if (startIndex >= items.length) {
+          return PaginatedResult(items: [], hasNextPage: false);
+        }
+        final pagedItems = items.skip(startIndex).take(perPage).toList();
+        final hasNextPage = startIndex + perPage < items.length;
+
+        return PaginatedResult(items: pagedItems, hasNextPage: hasNextPage);
+      },
+      fallback: (error, stackTrace) {
+        log(
+          'Error fetching MAL characters',
+          name: 'MalTracker.getCharacters',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        return PaginatedResult(items: [], hasNextPage: false);
+      },
+    );
+  }
+
+  @override
+  Future<MediaCharacter?> getCharacterDetails(String characterId) async {
+    final numericId = int.tryParse(characterId);
+    if (numericId == null) return null;
+
+    return executeApi(
+      'GET_MAL_CHARACTER_DETAILS',
+      () async {
+        final endpoint = 'https://api.jikan.moe/v4/characters/$numericId';
+        final response = await http.get(
+          endpoint,
+          cacheDuration: const Duration(days: 7),
+        );
+
+        final jsonMap = response.json as Map?;
+        final charData = jsonMap?['data'] as Map?;
+        if (charData == null) return null;
+
+        final about = charData['about']?.toString();
+
+        return MediaCharacter(
+          id: charData['mal_id']?.toString() ?? characterId,
+          name: charData['name']?.toString() ?? 'Unknown',
+          nativeName: charData['name_kanji']?.toString(),
+          image: (charData['images'] as Map?)?['jpg']?['image_url']?.toString(),
+          description: _cleanBio(about),
+        );
+      },
+      fallback: (error, stackTrace) {
+        log(
+          'Error fetching MAL character details',
+          name: 'MalTracker.getCharacterDetails',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        return null;
+      },
+    );
+  }
+
+  String? _cleanBio(String? text) {
+    if (text == null || text.trim().isEmpty) return null;
+    var s = text;
+    s = s.replaceAll('~!', '').replaceAll('!~', '');
+    s = s.replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n');
+    s = s.replaceAll(RegExp(r'<[^>]*>'), '');
+    s = s.replaceAll(RegExp(r'\n+'), '\n\n');
+    return s.trim();
   }
 }

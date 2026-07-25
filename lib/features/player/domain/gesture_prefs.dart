@@ -7,6 +7,7 @@ class GesturePrefs {
   final double rightWidth;
   final double doubleTapWidth;
   final bool swapVolumeAndBrightness;
+  final bool enableGestures;
 
   const GesturePrefs({
     this.topMargin = 0.05,
@@ -17,6 +18,7 @@ class GesturePrefs {
     this.rightWidth = 0.35,
     this.doubleTapWidth = 0.35,
     this.swapVolumeAndBrightness = false,
+    this.enableGestures = true,
   });
 
   GesturePrefs copyWith({
@@ -28,6 +30,7 @@ class GesturePrefs {
     double? rightWidth,
     double? doubleTapWidth,
     bool? swapVolumeAndBrightness,
+    bool? enableGestures,
   }) {
     return GesturePrefs(
       topMargin: topMargin ?? this.topMargin,
@@ -39,6 +42,7 @@ class GesturePrefs {
       doubleTapWidth: doubleTapWidth ?? this.doubleTapWidth,
       swapVolumeAndBrightness:
           swapVolumeAndBrightness ?? this.swapVolumeAndBrightness,
+      enableGestures: enableGestures ?? this.enableGestures,
     );
   }
 
@@ -52,6 +56,7 @@ class GesturePrefs {
       'rightWidth': rightWidth,
       'doubleTapWidth': doubleTapWidth,
       'swapVolumeAndBrightness': swapVolumeAndBrightness,
+      'enableGestures': enableGestures,
     };
   }
 
@@ -65,6 +70,7 @@ class GesturePrefs {
       rightWidth: (map['rightWidth'] ?? 0.4).toDouble(),
       doubleTapWidth: (map['doubleTapWidth'] ?? 0.4).toDouble(),
       swapVolumeAndBrightness: map['swapVolumeAndBrightness'] ?? false,
+      enableGestures: map['enableGestures'] ?? true,
     );
   }
 }

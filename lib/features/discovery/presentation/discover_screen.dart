@@ -371,27 +371,8 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
         subtitle: pageSubtitle,
         showBackButton: showBackButton,
         body: SizedBox.expand(
-          child: Column(
+          child: Stack(
             children: [
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: UnifiedSearchBar(
-                  controller: _searchController,
-                  focusNode: _searchFocusNode,
-                  onBackPressed: _cancelSearch,
-                  onClearPressed: () => _searchController.clear(),
-                  onSubmitted: _submitSearch,
-                  hasFilters: hasFilters,
-                  onFilterPressed: () => _openAdvancedSearch(context),
-                  leading:
-                      _searchController.text.isEmpty &&
-                          !_searchFocusNode.hasFocus
-                      ? const Icon(Icons.search_rounded)
-                      : null,
-                ),
-              ),
-
               Consumer(
                 builder: (context, ref, child) {
                   ref.listen(metadataSourceProvider, (previous, next) {
@@ -528,6 +509,31 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 10,
+                left: 10,
+                right: 10,
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: UnifiedSearchBar(
+                      controller: _searchController,
+                      focusNode: _searchFocusNode,
+                      onBackPressed: _cancelSearch,
+                      onClearPressed: () => _searchController.clear(),
+                      onSubmitted: _submitSearch,
+                      hasFilters: hasFilters,
+                      onFilterPressed: () => _openAdvancedSearch(context),
+                      leading:
+                          _searchController.text.isEmpty &&
+                              !_searchFocusNode.hasFocus
+                          ? const Icon(Icons.search_rounded)
+                          : null,
+                    ),
                   ),
                 ),
               ),
@@ -774,7 +780,7 @@ class _PaginatedMediaGrid extends ConsumerWidget {
       loading: () => Skeletonizer(
         enabled: true,
         child: GridView.builder(
-          padding: const EdgeInsets.only(bottom: 200, top: 10),
+          padding: const EdgeInsets.only(bottom: 200, top: 80),
           gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
             minCrossAxisExtent: style.layout.width,
             childAspectRatio: style.layout.aspectRatio,
@@ -820,7 +826,7 @@ class _PaginatedMediaGrid extends ConsumerWidget {
           children: [
             GridView.builder(
               controller: scrollController,
-              padding: const EdgeInsets.only(bottom: 200, top: 10),
+              padding: const EdgeInsets.only(bottom: 200, top: 80),
               gridDelegate: SliverGridDelegateWithMinCrossAxisExtent(
                 minCrossAxisExtent: style.layout.width,
                 childAspectRatio: style.layout.aspectRatio,
@@ -882,7 +888,7 @@ class _DynamicGenreFeed extends ConsumerWidget {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.only(top: 10, bottom: 200),
+          padding: const EdgeInsets.only(top: 60, bottom: 200),
           itemCount: genres.length,
           itemBuilder: (context, index) {
             return Padding(

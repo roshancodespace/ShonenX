@@ -84,7 +84,7 @@ class _ManualTrackerMatchSheetState
                   (r) => UnifiedMedia(
                     id: r.id,
                     type: widget.type,
-                    title: MediaTitle(english: r.title),
+                    title: r.title,
                     cover: r.cover,
                   ),
                 )

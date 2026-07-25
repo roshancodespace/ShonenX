@@ -338,20 +338,13 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         const SizedBox(height: 10),
-                                        Text(
-                                          '${displayMedia.episodes ?? '?'} ${widget.mediaType == MediaType.MANGA ? 'CHPS' : 'EPS'} | ${displayMedia.status?.toUpperCase() ?? 'UNKNOWN'}',
-                                          style: textTheme.labelLarge?.copyWith(
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
                                         Wrap(
-                                          spacing: 3.0,
-                                          runSpacing: 3.0,
+                                          spacing: 4.0,
+                                          runSpacing: 4.0,
                                           alignment: WrapAlignment.start,
                                           children: [
-                                            for (final genre
-                                                in displayMedia.genres ?? [])
+                                            if (displayMedia.score != null &&
+                                                displayMedia.score! > 0)
                                               Chip(
                                                 materialTapTargetSize:
                                                     MaterialTapTargetSize
@@ -361,13 +354,141 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                                                   colorScheme
                                                       .surfaceContainerHighest,
                                                 ),
-                                                labelPadding: EdgeInsets.zero,
+                                                avatar: Icon(
+                                                  Icons.star_rounded,
+                                                  size: 14,
+                                                  color: colorScheme.primary,
+                                                ),
                                                 label: Text(
-                                                  genre,
+                                                  displayMedia.score!
+                                                      .toStringAsFixed(1),
                                                   style: textTheme.bodySmall
                                                       ?.copyWith(
                                                         color: colorScheme
                                                             .onSurfaceVariant,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                ),
+                                              ),
+                                            if (displayMedia.format != null &&
+                                                displayMedia.format!.isNotEmpty)
+                                              Chip(
+                                                materialTapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                                side: BorderSide.none,
+                                                color: WidgetStatePropertyAll(
+                                                  colorScheme
+                                                      .surfaceContainerHighest,
+                                                ),
+                                                avatar: Icon(
+                                                  Icons.tv_rounded,
+                                                  size: 14,
+                                                  color: colorScheme.primary,
+                                                ),
+                                                label: Text(
+                                                  displayMedia.format!,
+                                                  style: textTheme.bodySmall
+                                                      ?.copyWith(
+                                                        color: colorScheme
+                                                            .onSurfaceVariant,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                ),
+                                              ),
+                                            if (displayMedia.status != null &&
+                                                displayMedia.status!.isNotEmpty)
+                                              Chip(
+                                                materialTapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                                side: BorderSide.none,
+                                                color: WidgetStatePropertyAll(
+                                                  colorScheme
+                                                      .surfaceContainerHighest,
+                                                ),
+                                                avatar: Icon(
+                                                  Icons
+                                                      .fiber_manual_record_rounded,
+                                                  size: 14,
+                                                  color:
+                                                      displayMedia.status!
+                                                              .toLowerCase() ==
+                                                          'releasing'
+                                                      ? Colors.greenAccent
+                                                      : colorScheme.primary,
+                                                ),
+                                                label: Text(
+                                                  displayMedia.status!
+                                                      .toUpperCase()
+                                                      .replaceAll('_', ' '),
+                                                  style: textTheme.bodySmall
+                                                      ?.copyWith(
+                                                        color: colorScheme
+                                                            .onSurfaceVariant,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                ),
+                                              ),
+                                            Chip(
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                              side: BorderSide.none,
+                                              color: WidgetStatePropertyAll(
+                                                colorScheme
+                                                    .surfaceContainerHighest,
+                                              ),
+                                              avatar: Icon(
+                                                displayMedia.type ==
+                                                        MediaType.MANGA
+                                                    ? Icons.menu_book_rounded
+                                                    : Icons
+                                                          .video_library_rounded,
+                                                size: 14,
+                                                color: colorScheme.primary,
+                                              ),
+                                              label: Text(
+                                                displayMedia.type ==
+                                                        MediaType.MANGA
+                                                    ? '${displayMedia.chapters ?? '?'} chs'
+                                                    : '${displayMedia.episodes ?? '?'} eps',
+                                                style: textTheme.bodySmall
+                                                    ?.copyWith(
+                                                      color: colorScheme
+                                                          .onSurfaceVariant,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                              ),
+                                            ),
+                                            if (displayMedia.season != null &&
+                                                displayMedia.season!.isNotEmpty)
+                                              Chip(
+                                                materialTapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                                side: BorderSide.none,
+                                                color: WidgetStatePropertyAll(
+                                                  colorScheme
+                                                      .surfaceContainerHighest,
+                                                ),
+                                                avatar: Icon(
+                                                  Icons.calendar_today_rounded,
+                                                  size: 14,
+                                                  color: colorScheme.primary,
+                                                ),
+                                                label: Text(
+                                                  displayMedia.season!,
+                                                  style: textTheme.bodySmall
+                                                      ?.copyWith(
+                                                        color: colorScheme
+                                                            .onSurfaceVariant,
+                                                        fontWeight:
+                                                            FontWeight.w700,
                                                       ),
                                                 ),
                                               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shonenx/features/auth/providers/auth_provider.dart';
+import 'package:shonenx/features/library/providers/cloud_library_provider.dart';
 import 'package:shonenx/features/tracking/domain/isar_tracker_link.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
@@ -253,6 +254,8 @@ class _LinkedTrackerRow extends ConsumerWidget {
                                 ),
                               );
                             }
+
+                            ref.invalidate(cloudLibraryProvider);
 
                             if (context.mounted) {
                               context.pop();

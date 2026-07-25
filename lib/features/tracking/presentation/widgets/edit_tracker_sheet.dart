@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shonenx/features/library/providers/cloud_library_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_list_item.dart';
 import 'package:shonenx/features/tracking/domain/models/tracked_status.dart';
 import 'package:shonenx/features/tracking/engine/tracking_service.dart';
@@ -68,6 +69,8 @@ class _EditTrackerSheetState extends ConsumerState<EditTrackerSheet> {
           ),
         ),
       );
+
+      ref.invalidate(cloudLibraryProvider);
 
       if (mounted) context.pop();
     } catch (e) {

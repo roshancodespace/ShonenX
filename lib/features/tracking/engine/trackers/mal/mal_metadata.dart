@@ -58,7 +58,7 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
         rankingType = 'all';
         break;
       case TrackerCategory.upcoming:
-        rankingType = 'upcoming';
+        rankingType = type == MediaType.ANIME ? 'upcoming' : 'bypopularity';
         break;
       case TrackerCategory.trending:
       default:

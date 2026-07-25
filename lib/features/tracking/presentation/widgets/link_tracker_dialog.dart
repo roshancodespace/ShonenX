@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -86,7 +87,7 @@ class _LinkTrackerSheetState extends ConsumerState<LinkTrackerSheet> {
           TrackerMapping()
             ..trackingId = result.id
             ..trackerId = widget.tracker.type.id
-            ..trackingTitle = result.title,
+            ..trackingTitle = result.title.availableTitle,
         );
 
     context.pop();
@@ -94,6 +95,8 @@ class _LinkTrackerSheetState extends ConsumerState<LinkTrackerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(contentPrefsProvider);
+
     return AppBottomSheet(
       title: 'Link to ${widget.tracker.type.displayName}',
       child: Column(
@@ -158,7 +161,7 @@ class _LinkTrackerSheetState extends ConsumerState<LinkTrackerSheet> {
                             child: Icon(Icons.movie_creation_outlined),
                           ),
                     title: Text(
-                      result.title,
+                      result.title.availableTitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.w600),

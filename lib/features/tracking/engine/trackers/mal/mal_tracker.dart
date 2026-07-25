@@ -85,7 +85,7 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
         final node = item['node'];
         return TrackerSearchResult(
           id: node['id']?.toString() ?? '',
-          title: node['title'] ?? 'Unknown Title',
+          title: MediaTitle(romaji: node['title'], english: node['title']),
           cover:
               node['main_picture']?['large'] ?? node['main_picture']?['medium'],
         );

@@ -158,13 +158,20 @@ class MediaTitle {
   const MediaTitle({this.romaji, this.english, this.native});
 
   String get availableTitle {
+    String? getValid(String? val) =>
+        (val != null && val.trim().isNotEmpty) ? val.trim() : null;
+
+    final e = getValid(english);
+    final r = getValid(romaji);
+    final n = getValid(native);
+
     switch (preference) {
       case TitlePreference.english:
-        return english ?? romaji ?? native ?? 'Unknown';
+        return e ?? r ?? n ?? 'Unknown';
       case TitlePreference.romaji:
-        return romaji ?? english ?? native ?? 'Unknown';
+        return r ?? e ?? n ?? 'Unknown';
       case TitlePreference.native:
-        return native ?? romaji ?? english ?? 'Unknown';
+        return n ?? r ?? e ?? 'Unknown';
     }
   }
 

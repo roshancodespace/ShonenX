@@ -35,11 +35,10 @@ class HomeScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     final sections = ref.watch(userHomeLayoutProvider);
-    final feedState = ref.watch(homeFeedProvider);
+
     return AppScaffold(
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.read(homeFeedProvider.notifier).refresh();
           ref.invalidate(singleSourceFeedProvider);
           for (final section in sections) {
             if (section.type == HomeSectionType.libraryStatus &&
@@ -236,7 +235,6 @@ class HomeScreen extends ConsumerWidget {
                     child: _buildSectionWidget(
                       context,
                       section,
-                      feedState,
                       discoveryIndex: dIndex,
                       totalDiscoverySections: totalCount,
                     ),
@@ -297,8 +295,7 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildSectionWidget(
     BuildContext context,
-    HomeSection section,
-    AsyncValue<HomeFeedState> feedState, {
+    HomeSection section, {
     int? discoveryIndex,
     int totalDiscoverySections = 1,
   }) {

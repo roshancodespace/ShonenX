@@ -11,6 +11,7 @@ import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/shared/widgets/confirmation_bottom_sheet.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/source_engine/utils/source_invalidation.dart';
 
 final extensionsControllerProvider =
     NotifierProvider<ExtensionsController, Set<String>>(
@@ -31,10 +32,7 @@ class ExtensionsController extends Notifier<Set<String>> {
       try {
         final bridgeManager = Get.find<bridge.ExtensionManager>();
         await bridgeManager.refreshExtensions(refreshAvailableSource: true);
-        ref.invalidate(availableAnimeSourcesProvider);
-        ref.invalidate(availableMangaSourcesProvider);
-        ref.invalidate(availableNovelSourcesProvider);
-        ref.invalidate(allAvailableSourcesProvider);
+        ref.invalidateAllSources();
       } catch (_) {}
     });
   }
@@ -46,10 +44,7 @@ class ExtensionsController extends Notifier<Set<String>> {
       await bridge
           .getSourceManager(source.bridgeSource!)
           .installSource(source.bridgeSource!);
-      ref.invalidate(availableAnimeSourcesProvider);
-      ref.invalidate(availableMangaSourcesProvider);
-      ref.invalidate(availableNovelSourcesProvider);
-      ref.invalidate(allAvailableSourcesProvider);
+      ref.invalidateAllSources();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -103,10 +98,7 @@ class ExtensionsController extends Notifier<Set<String>> {
             variants.map((e) => bridge.getSourceManager(e).uninstallSource(e)),
           );
 
-          ref.invalidate(availableAnimeSourcesProvider);
-          ref.invalidate(availableMangaSourcesProvider);
-          ref.invalidate(availableNovelSourcesProvider);
-          ref.invalidate(allAvailableSourcesProvider);
+          ref.invalidateAllSources();
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -146,10 +138,7 @@ class ExtensionsController extends Notifier<Set<String>> {
           final extSource = installed.firstWhere((e) => e.id == source.id);
           await bridge.getSourceManager(extSource).uninstallSource(extSource);
 
-          ref.invalidate(availableAnimeSourcesProvider);
-          ref.invalidate(availableMangaSourcesProvider);
-          ref.invalidate(availableNovelSourcesProvider);
-          ref.invalidate(allAvailableSourcesProvider);
+          ref.invalidateAllSources();
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -188,10 +177,7 @@ class ExtensionsController extends Notifier<Set<String>> {
     state = {...state, source.id};
     try {
       await bridge.getSourceManager(extSource).updateSource(extSource);
-      ref.invalidate(availableAnimeSourcesProvider);
-      ref.invalidate(availableMangaSourcesProvider);
-      ref.invalidate(availableNovelSourcesProvider);
-      ref.invalidate(allAvailableSourcesProvider);
+      ref.invalidateAllSources();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -238,10 +224,7 @@ class ExtensionsController extends Notifier<Set<String>> {
         variants.map((e) => bridge.getSourceManager(e).updateSource(e)),
       );
 
-      ref.invalidate(availableAnimeSourcesProvider);
-      ref.invalidate(availableMangaSourcesProvider);
-      ref.invalidate(availableNovelSourcesProvider);
-      ref.invalidate(allAvailableSourcesProvider);
+      ref.invalidateAllSources();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/features/extensions/providers/runtime_update_provider.dart';
+import 'package:shonenx/source_engine/utils/source_invalidation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 Future<void> showRuntimeSetupSheet(
@@ -49,9 +50,8 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
       if (bridge.AnymeXRuntimeBridge.controller.isReady.value) {
         final extManager = Get.find<bridge.ExtensionManager>();
         await extManager.onRuntimeBridgeInitialization(force: false);
-        ref.invalidate(extensionManagerProvider);
-        ref.invalidate(availableAnimeSourcesProvider);
-        ref.invalidate(availableMangaSourcesProvider);
+        if (!mounted) return;
+        ref.invalidateAllSources();
         if (mounted) setState(() {});
         widget.onComplete?.call();
       }
@@ -74,9 +74,8 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
 
         final extManager = Get.find<bridge.ExtensionManager>();
         await extManager.onRuntimeBridgeInitialization(force: true);
-        ref.invalidate(extensionManagerProvider);
-        ref.invalidate(availableAnimeSourcesProvider);
-        ref.invalidate(availableMangaSourcesProvider);
+        if (!mounted) return;
+        ref.invalidateAllSources();
         ref.invalidate(runtimeUpdateProvider);
         ref.read(enabledExtensionManagersProvider.notifier).enableAll([
           'aniyomi',
@@ -118,9 +117,8 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
         if (success) {
           final extManager = Get.find<bridge.ExtensionManager>();
           await extManager.onRuntimeBridgeInitialization(force: true);
-          ref.invalidate(extensionManagerProvider);
-          ref.invalidate(availableAnimeSourcesProvider);
-          ref.invalidate(availableMangaSourcesProvider);
+          if (!mounted) return;
+          ref.invalidateAllSources();
           widget.onComplete?.call();
         } else {
           controller.setError("Failed to initialize from selected APK file.");

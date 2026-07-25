@@ -20,6 +20,8 @@ import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/providers/navbar_action_provider.dart';
 import 'package:shonenx/app_init.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/features/extensions/presentation/widgets/runtime_setup_sheet.dart';
+import 'package:shonenx/features/extensions/providers/runtime_update_provider.dart';
 
 final _navBreakpoints = ResponsiveBreakpoints.defaults.copyWith(
   heightNormal: 750,
@@ -217,8 +219,17 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
                 .read(updatePrefsProvider.notifier)
                 .setLastSeenReleaseId(release.id),
           );
-          return;
         }
+      }
+    } catch (_) {}
+
+    if (!mounted || !navContext.mounted) return;
+
+    // 1.5 Check Runtime Update
+    try {
+      final updateVersion = await ref.read(runtimeUpdateProvider.future);
+      if (updateVersion != null && navContext.mounted) {
+        await showRuntimeSetupSheet(navContext, ref);
       }
     } catch (_) {}
 

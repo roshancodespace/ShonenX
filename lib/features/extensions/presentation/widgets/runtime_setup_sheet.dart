@@ -58,14 +58,15 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
     }
   }
 
-  Future<void> _startSetup({bool force = false}) async {
+  Future<void> _startSetup({bool force = false, String? version}) async {
     final controller = bridge.AnymeXRuntimeBridge.controller;
     controller.error.value = '';
     try {
       await bridge.AnymeXRuntimeBridge.setupRuntime(force: force);
       if (controller.isReady.value) {
         try {
-          final latest = await ref.read(runtimeUpdateProvider.future);
+          final latest =
+              version ?? await ref.read(runtimeUpdateProvider.future);
           if (latest != null) {
             bridge.AnymeXRuntimeBridge.setInstalledRelease(latest, 'v$latest');
           }
@@ -301,7 +302,10 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: () => _startSetup(force: true),
+                                onPressed: () => _startSetup(
+                                  force: true,
+                                  version: updateVersion,
+                                ),
                                 icon: const Icon(
                                   Icons.system_update_alt_rounded,
                                 ),

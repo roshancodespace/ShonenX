@@ -14,12 +14,13 @@ final runtimeUpdateProvider = FutureProvider.autoDispose<String?>((ref) async {
       'https://api.github.com/repos/RyanYuuki/AnymeXExtensionRuntimeBridge/releases/latest',
     );
 
-    final latestVersion = (response.json['tag_name'] as String?)?.replaceAll(
-      'v',
-      '',
-    );
+    final latestVersion = (response.json['tag_name'] as String?)
+        ?.replaceAll('v', '')
+        .trim();
 
-    if (latestVersion != null && latestVersion != installedVersion) {
+    final currentVersion = installedVersion.replaceAll('v', '').trim();
+
+    if (latestVersion != null && latestVersion != currentVersion) {
       return latestVersion;
     }
   } catch (_) {}

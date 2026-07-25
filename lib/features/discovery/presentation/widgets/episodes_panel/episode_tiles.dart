@@ -180,46 +180,35 @@ class EpisodeClassicTile extends BaseEpisodeTile {
               if (imageUrl != null && imageUrl!.isNotEmpty)
                 Positioned.fill(
                   child: ClipRect(
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: ImageFiltered(
-                            imageFilter: ImageFilter.blur(
-                              sigmaX: imageBlurSigma,
-                              sigmaY: imageBlurSigma,
-                            ),
-                            child: Image(
-                              image: CachedNetworkImageProvider(
-                                imageUrl!,
-                                headers: imageHeaders.isEmpty
-                                    ? null
-                                    : imageHeaders,
-                              ),
-                              fit: BoxFit.cover,
-                              alignment: Alignment.center,
-                              opacity: AlwaysStoppedAnimation(resolvedOpacity),
-                            ),
-                          ),
+                    child: ShaderMask(
+                      shaderCallback: (bounds) {
+                        return LinearGradient(
+                          begin: _begin(),
+                          end: _end(),
+                          stops: imageFadeStops ?? const [0, 0.4, 1],
+                          colors: [
+                            theme.colorScheme.surface,
+                            theme.colorScheme.surface.withValues(alpha: 0.4),
+                            Colors.transparent,
+                          ],
+                        ).createShader(bounds);
+                      },
+                      blendMode: BlendMode.srcOver,
+                      child: ImageFiltered(
+                        imageFilter: ImageFilter.blur(
+                          sigmaX: imageBlurSigma,
+                          sigmaY: imageBlurSigma,
                         ),
-                        Positioned.fill(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: _begin(),
-                                end: _end(),
-                                stops: imageFadeStops ?? const [0, 0.4, 1],
-                                colors: [
-                                  theme.colorScheme.surface,
-                                  theme.colorScheme.surface.withValues(
-                                    alpha: 0.4,
-                                  ),
-                                  Colors.transparent,
-                                ],
-                              ),
-                            ),
+                        child: Image(
+                          image: CachedNetworkImageProvider(
+                            imageUrl!,
+                            headers: imageHeaders.isEmpty ? null : imageHeaders,
                           ),
+                          fit: BoxFit.cover,
+                          alignment: Alignment.center,
+                          opacity: AlwaysStoppedAnimation(resolvedOpacity),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),

@@ -384,7 +384,7 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
                   return const SizedBox.shrink();
                 },
               ),
-              Expanded(
+              Positioned.fill(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Column(
@@ -633,7 +633,11 @@ class _DiscoverTabFeedState extends ConsumerState<_DiscoverTabFeed> {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
     if (position.pixels >= position.maxScrollExtent - 200) {
-      _loadNextPage();
+      if (!_isLoadingMore) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _loadNextPage();
+        });
+      }
     }
   }
 
@@ -721,7 +725,11 @@ class _CategoryTabFeedState extends ConsumerState<_CategoryTabFeed> {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
     if (position.pixels >= position.maxScrollExtent - 200) {
-      _loadNextPage();
+      if (!_isLoadingMore) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _loadNextPage();
+        });
+      }
     }
   }
 

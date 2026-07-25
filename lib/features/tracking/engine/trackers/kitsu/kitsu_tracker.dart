@@ -225,7 +225,9 @@ class KitsuTracker extends BaseTracker
             ..status = _parseKitsuStatus(attr['status']?.toString()).id
             ..score = score
             ..episodesWatched = progress
-            ..episodes = totalCount;
+            ..episodes = totalCount
+            ..sourceType = 'tracker'
+            ..sourceId = 'kitsu';
         }).toList();
       },
     );

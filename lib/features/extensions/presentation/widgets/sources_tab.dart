@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:anymex_extension_runtime_bridge/Services/Aniyomi/Models/Source.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart'
     as bridge;
 import 'package:cached_network_image/cached_network_image.dart';
@@ -891,7 +893,14 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                     ),
                   )
                 : FilledButton.tonalIcon(
-                    onPressed: () => controller.installSource(context, source),
+                    onPressed: () {
+                      if (Platform.isAndroid &&
+                          source.bridgeSource is ASource) {
+                        _showInstallMethodSheet(context, source, controller);
+                      } else {
+                        controller.installSource(context, source);
+                      }
+                    },
                     icon: const Icon(Icons.download_rounded, size: 16),
                     label: const Text(
                       'Install',
@@ -939,6 +948,69 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showInstallMethodSheet(
+    BuildContext context,
+    UnifiedSource source,
+    ExtensionsController controller,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Install ${source.name}',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'How would you like to install this extension?',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ListTile(
+                leading: const Icon(Icons.apps_rounded),
+                title: const Text('App (Normal)'),
+                subtitle: const Text('Installs as a standard Android app.'),
+                onTap: () {
+                  Navigator.pop(context);
+                  (source.bridgeSource as ASource).isPrivate = false;
+                  controller.installSource(context, source);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.security_rounded),
+                title: const Text('Private / Internal'),
+                subtitle: const Text(
+                  'Installs internally. Does not show up in device settings or launcher.',
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  (source.bridgeSource as ASource).isPrivate = true;
+                  controller.installSource(context, source);
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         );
       },
     );

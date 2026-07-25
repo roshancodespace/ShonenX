@@ -7,7 +7,7 @@ import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
-import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 import 'package:shonenx/source_engine/providers/source_settings_provider.dart';
 
 class EpisodesListState {
@@ -66,9 +66,9 @@ final sourceEpisodesProvider =
       ref.watch(sourceSettingsProvider(args.sourceId));
 
       try {
-        final allSources = args.type == MediaType.ANIME
-            ? await ref.watch(availableAnimeSourcesProvider.future)
-            : await ref.watch(availableMangaSourcesProvider.future);
+        final allSources = await ref.watch(
+          args.type.availableSourcesProvider.future,
+        );
 
         final sourceInfo = allSources
             .where((s) => s.id == args.sourceId)
@@ -80,7 +80,7 @@ final sourceEpisodesProvider =
 
         List<UnifiedEpisode> episodes = [];
 
-        if (args.type == MediaType.ANIME) {
+        if (args.type.usesAnimeSources) {
           final animeSource = ref.watch(animeSourceProvider(sourceInfo));
           log.i('Fetching episodes directly from ${sourceInfo.name}');
           episodes = await animeSource.getEpisodes(args.providerId);

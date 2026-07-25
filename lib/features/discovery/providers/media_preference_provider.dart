@@ -5,9 +5,8 @@ import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/domain/media_preference.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
-import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
-import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 
 const Object _sentinel = Object();
 
@@ -122,9 +121,7 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
           ? null
           : await _migrateLegacyPreferences(rawPref);
 
-      final availableSources = args.type == MediaType.ANIME
-          ? await ref.watch(availableAnimeSourcesProvider.future)
-          : await ref.watch(availableMangaSourcesProvider.future);
+      final availableSources = await ref.watch(args.type.availableSourcesProvider.future);
 
       if (availableSources.isEmpty) {
         throw StateError('no-sources');

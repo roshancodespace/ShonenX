@@ -3,7 +3,7 @@ import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
-import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 import 'package:shonenx/source_engine/models/paginated_result.dart';
 
 class SearchArgs {
@@ -35,8 +35,9 @@ class SearchArgs {
     if (identical(this, other)) return true;
     if (other is! SearchArgs) return false;
 
-    if (query != other.query || type != other.type || source != other.source)
+    if (query != other.query || type != other.type || source != other.source) {
       return false;
+    }
 
     if (genres.length != other.genres.length) return false;
     for (int i = 0; i < genres.length; i++) {
@@ -72,8 +73,9 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
     if (arg.query.isEmpty &&
         arg.genres.isEmpty &&
         arg.tags.isEmpty &&
-        arg.source == null)
+        arg.source == null) {
       return null;
+    }
     return _fetchPage(1);
   }
 
@@ -93,9 +95,7 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
       );
     } else {
       final allSources = await ref.read(
-        arg.type == MediaType.ANIME
-            ? availableAnimeSourcesProvider.future
-            : availableMangaSourcesProvider.future,
+        arg.type.availableSourcesProvider.future,
       );
       final activeSources = allSources
           .where(
@@ -117,7 +117,10 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
           activeSources.length == 1) {
         final info = activeSources.first;
         try {
-          final source = arg.type == MediaType.ANIME
+          final source =
+              (arg.type == MediaType.ANIME ||
+                  arg.type == MediaType.MOVIE ||
+                  arg.type == MediaType.TV)
               ? ref.read(animeSourceProvider(info))
               : ref.read(mangaSourceProvider(info));
           List<UnifiedMedia> items = [];
@@ -138,7 +141,10 @@ class SearchNotifier extends AsyncNotifier<PaginatedResult<UnifiedMedia>?> {
 
       final futures = activeSources.map((info) async {
         try {
-          final source = arg.type == MediaType.ANIME
+          final source =
+              (arg.type == MediaType.ANIME ||
+                  arg.type == MediaType.MOVIE ||
+                  arg.type == MediaType.TV)
               ? ref.read(animeSourceProvider(info))
               : ref.read(mangaSourceProvider(info));
           return await source.search(

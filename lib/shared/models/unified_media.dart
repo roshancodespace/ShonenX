@@ -3,7 +3,9 @@
 enum MediaType {
   ANIME,
   MANGA,
-  NOVEL;
+  NOVEL,
+  TV,
+  MOVIE;
 
   String get displayName {
     switch (this) {
@@ -13,6 +15,10 @@ enum MediaType {
         return 'Manga';
       case MediaType.NOVEL:
         return 'Novel';
+      case MediaType.TV:
+        return 'TV Series';
+      case MediaType.MOVIE:
+        return 'Movie';
     }
   }
 
@@ -190,6 +196,7 @@ extension UnifiedMediaX on UnifiedMedia {
       title: title.merge(other.title),
 
       cover: other.cover ?? cover,
+      score: other.score ?? score,
       banner: other.banner ?? banner,
       description: other.description ?? description,
 

@@ -17,17 +17,22 @@ class MALAiringRepository implements AiringDataRepository {
       final response = await _http.get(
         'https://api.myanimelist.net/v2/anime/$id',
         queryParameters: {'fields': 'broadcast,start_date,status,num_episodes'},
-        headers: {'X-MAL-CLIENT-ID': MalMetadata.clientId},
+        headers: {'X-MAL-CLIENT-ID': MalMetadata.defaultClientId},
         cacheDuration: const Duration(hours: 1),
       );
 
       final json = response.json;
-      if (json['error'] != null || json['status'] != 'currently_airing' || json['broadcast'] is! Map) {
+      if (json['error'] != null ||
+          json['status'] != 'currently_airing' ||
+          json['broadcast'] is! Map) {
         return [];
       }
 
       final broadcast = json['broadcast'] as Map;
-      final dayString = broadcast['day_of_the_week']?.toString().toLowerCase().trim();
+      final dayString = broadcast['day_of_the_week']
+          ?.toString()
+          .toLowerCase()
+          .trim();
       final timeString = broadcast['start_time']?.toString().trim();
 
       final Map<String, int> weekdayMap = {
@@ -41,7 +46,9 @@ class MALAiringRepository implements AiringDataRepository {
       };
 
       final targetWeekday = weekdayMap[dayString];
-      if (targetWeekday != null && timeString != null && timeString.contains(':')) {
+      if (targetWeekday != null &&
+          timeString != null &&
+          timeString.contains(':')) {
         final parts = timeString.split(':');
         final hour = int.tryParse(parts[0]);
         final minute = int.tryParse(parts[1]);
@@ -57,14 +64,16 @@ class MALAiringRepository implements AiringDataRepository {
             hour,
             minute,
           );
-          
+
           var daysDiff = targetWeekday - nowJst.weekday;
           if (daysDiff < 0 || (daysDiff == 0 && nowJst.isAfter(candidateJst))) {
             daysDiff += 7;
           }
 
           final airingTimeJst = candidateJst.add(Duration(days: daysDiff));
-          final airingAt = airingTimeJst.subtract(const Duration(hours: 9)).toLocal();
+          final airingAt = airingTimeJst
+              .subtract(const Duration(hours: 9))
+              .toLocal();
 
           int? nextEpisode;
           final startDateStr = json['start_date'] as String?;
@@ -83,9 +92,7 @@ class MALAiringRepository implements AiringDataRepository {
           }
 
           if (nextEpisode != null) {
-            return [
-              AiringSchedule(episode: nextEpisode, airingAt: airingAt),
-            ];
+            return [AiringSchedule(episode: nextEpisode, airingAt: airingAt)];
           }
         }
       }

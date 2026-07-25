@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
+import 'package:shonenx/features/tracking/domain/models/tracker_credentials.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 
 class TrackingPrefsState {
@@ -12,6 +13,7 @@ class TrackingPrefsState {
   final bool autoTrackPrimary;
   final double syncThreshold;
   final TitlePreference titlePreference;
+  final Map<TrackerType, TrackerCredentials> customCredentials;
 
   TrackingPrefsState({
     this.isIncognito = false,
@@ -20,6 +22,7 @@ class TrackingPrefsState {
     this.autoTrackPrimary = false,
     this.syncThreshold = 0.8,
     this.titlePreference = TitlePreference.english,
+    this.customCredentials = const {},
   });
 
   TrackingPrefsState copyWith({
@@ -29,6 +32,7 @@ class TrackingPrefsState {
     bool? autoTrackPrimary,
     double? syncThreshold,
     TitlePreference? titlePreference,
+    Map<TrackerType, TrackerCredentials>? customCredentials,
   }) {
     return TrackingPrefsState(
       isIncognito: isIncognito ?? this.isIncognito,
@@ -37,6 +41,7 @@ class TrackingPrefsState {
       autoTrackPrimary: autoTrackPrimary ?? this.autoTrackPrimary,
       syncThreshold: syncThreshold ?? this.syncThreshold,
       titlePreference: titlePreference ?? this.titlePreference,
+      customCredentials: customCredentials ?? this.customCredentials,
     );
   }
 
@@ -55,6 +60,9 @@ class TrackingPrefsState {
       'autoTrackPrimary': autoTrackPrimary,
       'syncThreshold': syncThreshold,
       'titlePreference': titlePreference.name,
+      'customCredentials': customCredentials.map(
+        (key, value) => MapEntry(key.id, value.toMap()),
+      ),
     };
   }
 
@@ -82,6 +90,19 @@ class TrackingPrefsState {
         (e) => e.name == map['titlePreference'],
         orElse: () => TitlePreference.english,
       ),
+      customCredentials:
+          (map['customCredentials'] as Map?)?.map(
+            (key, value) => MapEntry(
+              TrackerType.values.firstWhere(
+                (e) => e.id == key,
+                orElse: () => TrackerType.anilist,
+              ),
+              TrackerCredentials.fromMap(
+                Map<String, dynamic>.from(value as Map),
+              ),
+            ),
+          ) ??
+          {},
     );
   }
 
@@ -168,6 +189,31 @@ class TrackingPrefsNotifier extends Notifier<TrackingPrefsState> {
     // Sync to MediaTitle static field
     MediaTitle.preference = preference;
 
+    _saveDb();
+  }
+
+  void setCustomCredentials(
+    TrackerType type,
+    String clientId,
+    String clientSecret,
+  ) {
+    final updatedMap = Map<TrackerType, TrackerCredentials>.from(
+      state.customCredentials,
+    );
+    updatedMap[type] = TrackerCredentials(
+      clientId: clientId,
+      clientSecret: clientSecret,
+    );
+    state = state.copyWith(customCredentials: updatedMap);
+    _saveDb();
+  }
+
+  void clearCustomCredentials(TrackerType type) {
+    final updatedMap = Map<TrackerType, TrackerCredentials>.from(
+      state.customCredentials,
+    );
+    updatedMap.remove(type);
+    state = state.copyWith(customCredentials: updatedMap);
     _saveDb();
   }
 

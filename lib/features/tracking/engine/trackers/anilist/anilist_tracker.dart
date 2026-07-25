@@ -13,6 +13,7 @@ import 'package:shonenx/features/tracking/engine/trackers/anilist/anilist_authen
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/models/tracker_search_result.dart';
 import 'package:shonenx/core/network/auth/authenticator.dart';
+import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'anilist_metadata.dart';
 
 class AnilistTracker extends BaseTracker
@@ -35,13 +36,22 @@ class AnilistTracker extends BaseTracker
   Future<bool> get isAuthenticated async => (await _getToken()) != null;
 
   @override
-  bool supportsMediaType(MediaType mediaType) => true;
+  List<MediaType> get supportedMediaTypes => [MediaType.ANIME, MediaType.MANGA];
+
+  @override
+  bool supportsMediaType(MediaType mediaType) =>
+      supportedMediaTypes.contains(mediaType);
 
   @override
   TrackerType get type => TrackerType.anilist;
 
   @override
-  Authenticator get authenticator => AnilistAuthenticator();
+  Authenticator get authenticator {
+    final credentials = ref
+        .read(trackingPrefsProvider)
+        .customCredentials[TrackerType.anilist];
+    return AnilistAuthenticator(customCredentials: credentials);
+  }
 
   @override
   Future<List<TrackerSearchResult>> searchMedia(

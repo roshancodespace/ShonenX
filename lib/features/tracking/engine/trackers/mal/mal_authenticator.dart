@@ -9,7 +9,13 @@ import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/env.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 
+import 'package:shonenx/features/tracking/domain/models/tracker_credentials.dart';
+
 class MalAuthenticator implements Authenticator {
+  final TrackerCredentials? customCredentials;
+
+  MalAuthenticator({this.customCredentials});
+
   static final HTTP _http = HTTP();
   static final _isDesktop = Platform.isWindows || Platform.isLinux;
   static final FlutterSecureStorage _secureStorage =
@@ -19,11 +25,14 @@ class MalAuthenticator implements Authenticator {
   static const String _authStateKey = 'mal_auth_state';
 
   String get _clientId =>
-      _isDesktop ? Env.MAL_CLIENT_ID_LIST.last : Env.MAL_CLIENT_ID_LIST.first;
+      customCredentials?.clientId ??
+      (_isDesktop ? Env.MAL_CLIENT_ID_LIST.last : Env.MAL_CLIENT_ID_LIST.first);
 
-  String get _clientSecret => _isDesktop
-      ? Env.MAL_CLIENT_SECRET_LIST.last
-      : Env.MAL_CLIENT_SECRET_LIST.first;
+  String get _clientSecret =>
+      customCredentials?.clientSecret ??
+      (_isDesktop
+          ? Env.MAL_CLIENT_SECRET_LIST.last
+          : Env.MAL_CLIENT_SECRET_LIST.first);
 
   @override
   String get redirectUri => _isDesktop

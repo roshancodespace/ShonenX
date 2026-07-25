@@ -93,6 +93,7 @@ class ExtensionsController extends Notifier<Set<String>> {
             MediaType.ANIME => bridgeManager.installedAnimeExtensions,
             MediaType.MANGA => bridgeManager.installedMangaExtensions,
             MediaType.NOVEL => bridgeManager.installedNovelExtensions,
+            _ => bridgeManager.installedAnimeExtensions,
           };
           final variants = installed
               .where((e) => (e.name ?? 'N/A') == name)
@@ -140,6 +141,7 @@ class ExtensionsController extends Notifier<Set<String>> {
             MediaType.ANIME => bridgeManager.installedAnimeExtensions,
             MediaType.MANGA => bridgeManager.installedMangaExtensions,
             MediaType.NOVEL => bridgeManager.installedNovelExtensions,
+            _ => bridgeManager.installedAnimeExtensions,
           };
           final extSource = installed.firstWhere((e) => e.id == source.id);
           await bridge.getSourceManager(extSource).uninstallSource(extSource);
@@ -177,6 +179,7 @@ class ExtensionsController extends Notifier<Set<String>> {
           MediaType.ANIME => bridgeManager.installedAnimeExtensions,
           MediaType.MANGA => bridgeManager.installedMangaExtensions,
           MediaType.NOVEL => bridgeManager.installedNovelExtensions,
+          _ => bridgeManager.installedAnimeExtensions,
         };
         extSource = installed.firstWhereOrNull((e) => e.id == source.id);
       } catch (_) {}
@@ -225,6 +228,7 @@ class ExtensionsController extends Notifier<Set<String>> {
         MediaType.ANIME => bridgeManager.installedAnimeExtensions,
         MediaType.MANGA => bridgeManager.installedMangaExtensions,
         MediaType.NOVEL => bridgeManager.installedNovelExtensions,
+        _ => bridgeManager.installedAnimeExtensions,
       };
       final variants = installed
           .where((e) => (e.name ?? 'N/A') == name && (e.hasUpdate ?? false))
@@ -393,11 +397,13 @@ class ExtensionsService {
         MediaType.ANIME => animeSources,
         MediaType.MANGA => mangaSources,
         MediaType.NOVEL => novelSources,
+        _ => animeSources,
       };
       final installedRx = switch (type) {
         MediaType.ANIME => bridgeManager.installedAnimeExtensions,
         MediaType.MANGA => bridgeManager.installedMangaExtensions,
         MediaType.NOVEL => bridgeManager.installedNovelExtensions,
+        _ => bridgeManager.installedAnimeExtensions,
       };
       final installedMap = {for (final e in installedRx) e.id ?? '': e};
       final validSources = sources
@@ -414,11 +420,13 @@ class ExtensionsService {
         MediaType.ANIME => bridgeManager.availableAnimeExtensions,
         MediaType.MANGA => bridgeManager.availableMangaExtensions,
         MediaType.NOVEL => bridgeManager.availableNovelExtensions,
+        _ => bridgeManager.availableAnimeExtensions,
       };
       final installed = switch (type) {
         MediaType.ANIME => bridgeManager.installedAnimeExtensions,
         MediaType.MANGA => bridgeManager.installedMangaExtensions,
         MediaType.NOVEL => bridgeManager.installedNovelExtensions,
+        _ => bridgeManager.installedAnimeExtensions,
       };
       final installedIds = installed.map((e) => e.id ?? '').toSet();
 

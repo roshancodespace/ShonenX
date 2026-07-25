@@ -11,14 +11,98 @@ import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart
 import 'package:shonenx/features/tracking/presentation/widgets/tracker_profile_sheet.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_dialog.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
+import 'package:shonenx/core/utils/env.dart';
 
-class TrackingSettingsScreen extends ConsumerWidget {
+class TrackingSettingsScreen extends ConsumerStatefulWidget {
   const TrackingSettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TrackingSettingsScreen> createState() =>
+      _TrackingSettingsScreenState();
+}
+
+class _TrackingSettingsScreenState
+    extends ConsumerState<TrackingSettingsScreen> {
+  bool _hasCredentials(TrackerType type) {
+    final prefs = ref.read(trackingPrefsProvider);
+    final custom = prefs.customCredentials[type];
+    if (custom != null && custom.clientId.isNotEmpty) {
+      return true;
+    }
+    switch (type) {
+      case TrackerType.anilist:
+        return Env.ANILIST_CLIENT_ID.isNotEmpty;
+      case TrackerType.myanimelist:
+        return Env.MAL_CLIENT_ID.isNotEmpty;
+      case TrackerType.simkl:
+        return Env.SIMKL_CLIENT_ID.isNotEmpty;
+      default:
+        return true;
+    }
+  }
+
+  void _showCredentialsDialog(TrackerType type) {
+    final prefs = ref.read(trackingPrefsProvider);
+    final custom = prefs.customCredentials[type];
+
+    final idController = TextEditingController(text: custom?.clientId);
+    final secretController = TextEditingController(text: custom?.clientSecret);
+
+    AppDialog.show(
+      context: context,
+      title: '${type.displayName} Credentials',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Provide your own API Client ID and Secret. This overrides the default bundled credentials.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: idController,
+            decoration: const InputDecoration(
+              labelText: 'Client ID',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: secretController,
+            decoration: const InputDecoration(
+              labelText: 'Client Secret',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            ref
+                .read(trackingPrefsProvider.notifier)
+                .setCustomCredentials(
+                  type,
+                  idController.text.trim(),
+                  secretController.text.trim(),
+                );
+            Navigator.pop(context);
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     final prefs = ref.watch(trackingPrefsProvider);
@@ -375,7 +459,9 @@ class TrackingSettingsScreen extends ConsumerWidget {
                       isRemote
                           ? (isLoggedIn
                                 ? 'Logged in as $profileName'
-                                : 'Not logged in')
+                                : (!_hasCredentials(tracker.type)
+                                      ? 'Missing API Credentials'
+                                      : 'Not logged in'))
                           : (localProfile != null
                                 ? 'Logged in as $profileName'
                                 : 'Offline tracking database'),
@@ -394,37 +480,71 @@ class TrackingSettingsScreen extends ConsumerWidget {
                           }
                         : null,
                     trailing: !isRemote || isLoggedIn
-                        ? FilledButton.icon(
-                            style: IconButton.styleFrom(
-                              backgroundColor:
-                                  theme.colorScheme.surfaceContainerHighest,
-                              foregroundColor: theme.colorScheme.onSurface,
-                            ),
-                            onPressed: () => showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              useSafeArea: true,
-                              builder: (_) => TrackerProfileSheet(
-                                trackerType: tracker.type,
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.key_rounded, size: 20),
+                                onPressed: () =>
+                                    _showCredentialsDialog(tracker.type),
+                                tooltip: 'Custom API Credentials',
                               ),
-                            ),
-                            icon: const Icon(Icons.edit_outlined, size: 18),
-                            label: const Text('Customize'),
+                              FilledButton.icon(
+                                style: IconButton.styleFrom(
+                                  backgroundColor:
+                                      theme.colorScheme.surfaceContainerHighest,
+                                  foregroundColor: theme.colorScheme.onSurface,
+                                ),
+                                onPressed: () => showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  useSafeArea: true,
+                                  builder: (_) => TrackerProfileSheet(
+                                    trackerType: tracker.type,
+                                  ),
+                                ),
+                                icon: const Icon(Icons.edit_outlined, size: 18),
+                                label: const Text('Customize'),
+                              ),
+                            ],
                           )
-                        : FilledButton.icon(
-                            style: IconButton.styleFrom(
-                              backgroundColor: theme.colorScheme.primary,
-                              foregroundColor: theme.colorScheme.onPrimary,
-                            ),
-                            onPressed: () {
-                              if (isRemote) {
-                                ref
-                                    .read(authTokensProvider.notifier)
-                                    .login(tracker);
-                              }
-                            },
-                            icon: const Icon(Icons.login),
-                            label: const Text('Login'),
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (!_hasCredentials(tracker.type))
+                                FilledButton.icon(
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: theme.colorScheme.error,
+                                    foregroundColor: theme.colorScheme.onError,
+                                  ),
+                                  onPressed: () =>
+                                      _showCredentialsDialog(tracker.type),
+                                  icon: const Icon(Icons.key_off),
+                                  label: const Text('Add Credentials'),
+                                )
+                              else ...[
+                                IconButton(
+                                  icon: const Icon(Icons.key_rounded, size: 20),
+                                  onPressed: () =>
+                                      _showCredentialsDialog(tracker.type),
+                                  tooltip: 'Custom API Credentials',
+                                ),
+                                FilledButton.icon(
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: theme.colorScheme.primary,
+                                    foregroundColor:
+                                        theme.colorScheme.onPrimary,
+                                  ),
+                                  onPressed: () {
+                                    ref
+                                        .read(authTokensProvider.notifier)
+                                        .login(tracker);
+                                  },
+                                  icon: const Icon(Icons.login),
+                                  label: const Text('Login'),
+                                ),
+                              ],
+                            ],
                           ),
                   ),
                 ),

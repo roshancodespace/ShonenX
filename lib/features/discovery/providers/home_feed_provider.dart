@@ -79,37 +79,23 @@ class HomeFeedNotifier extends AsyncNotifier<HomeFeedState> {
     final groups = <FeedGroup>[];
 
     for (final category in categories) {
-      try {
-        final animeResult = await tracker.getCategoryItems(
-          category,
-          type: MediaType.ANIME,
-          adultMode: adultMode,
-        );
-        if (animeResult.items.isNotEmpty) {
-          groups.add(
-            FeedGroup(
-              title: '${category.label} (Anime)',
-              items: animeResult.items,
-            ),
+      for (final mediaType in tracker.supportedMediaTypes) {
+        try {
+          final result = await tracker.getCategoryItems(
+            category,
+            type: mediaType,
+            adultMode: adultMode,
           );
-        }
-      } catch (_) {}
-
-      try {
-        final mangaResult = await tracker.getCategoryItems(
-          category,
-          type: MediaType.MANGA,
-          adultMode: adultMode,
-        );
-        if (mangaResult.items.isNotEmpty) {
-          groups.add(
-            FeedGroup(
-              title: '${category.label} (Manga)',
-              items: mangaResult.items,
-            ),
-          );
-        }
-      } catch (_) {}
+          if (result.items.isNotEmpty) {
+            groups.add(
+              FeedGroup(
+                title: '${category.label} (${mediaType.displayName})',
+                items: result.items,
+              ),
+            );
+          }
+        } catch (_) {}
+      }
     }
 
     return HomeFeedState(groups: groups);

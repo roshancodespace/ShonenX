@@ -12,10 +12,11 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![GitHub stars](https://img.shields.io/github/stars/roshancodespace/ShonenX?style=social)](https://github.com/roshancodespace/ShonenX/stargazers)
 [![Discord](https://img.shields.io/discord/1348756894034165800?color=7289da&label=Discord&logo=discord&logoColor=white)](https://discord.gg/uJyXZYSmH4)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/roshan.codespace)
 
 **[🌐 Visit the Official Website](https://shonenx.vercel.app)**
 
-Started as a fun personal project. Now an open-source anime and manga companion. No ads, no trackers, pure data sovereignty. Syncs cleanly with MAL and AniList.
+Started as a personal project, ShonenX is an open-source anime and manga client. Ad-free with no trackers. Tracks progress across AniList, MyAnimeList, and Kitsu.
 
 [Features](#-features) • [Screenshots](#-screenshots) • [Installation](#-installation) • [Extensions](#-extensions) • [Legal](#-legal--dmca-disclaimer)
 
@@ -23,7 +24,15 @@ Started as a fun personal project. Now an open-source anime and manga companion.
 
 ---
 
-## ☕ Supporters
+## Supporters
+
+<p align="center">
+  <a href="https://www.buymeacoffee.com/roshan.codespace" target="_blank">
+    <img src="https://img.shields.io/badge/Support%20Development-Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee"/>
+  </a>
+</p>
+
+<br/>
 
 <table>
   <tr>
@@ -42,17 +51,17 @@ Started as a fun personal project. Now an open-source anime and manga companion.
 
 ---
 
-## ✨ Features
+## Features
 
-- **Omni-Sync Tracking:** Native bidirectional integration with MyAnimeList and AniList.
+- **Parallel Progress Tracking:** Sync watch and read progress across your linked trackers (AniList, MyAnimeList, and Kitsu).
 - **Custom Reader & Player:** Low-latency media playback and reading with customizable flow controls and AMOLED dark mode support.
-- **Offline Availability:** Complete volume and season downloading for offline viewing and reading.
-- **External Extensions:** Utilizes the AnymeX Extension Runtime Bridge, enabling Aniyomi and Mangayomi extension support. The client ships bare-bones; all sources must be manually added by the user.
-- **Cross-Platform:** High-performance native builds for Android, Windows, and Linux.
+- **Offline Availability:** Volume and episode downloading for offline viewing and reading.
+- **External Extensions:** Utilizes the AnymeX Extension Runtime Bridge for Aniyomi and Mangayomi extension support. The client ships bare-bones; all sources are user-managed.
+- **Cross-Platform:** Native builds for Android, Windows, and Linux.
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 **Framework**: Flutter ≥3.8.1 | **Language**: Dart ≥3.8.1
 
@@ -73,7 +82,7 @@ dependencies:
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 <details>
 <summary><b>📱 Android Screenshots (Click to expand)</b></summary>
@@ -139,7 +148,7 @@ dependencies:
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### 📱 Android
 Download the latest `.apk` from the [GitHub Releases](https://github.com/roshancodespace/ShonenX/releases) page.
@@ -168,7 +177,7 @@ flutter run # Select your device/platform
 
 ---
 
-## ⚖️ Legal & DMCA Disclaimer
+## Legal & DMCA Disclaimer
 
 Please read this before complaining.
 
@@ -176,7 +185,7 @@ Please read this before complaining.
 Look, ShonenX does not host, upload, or own any of the media you see in the app. It's literally just a frontend client. It's a glorified web browser that makes stuff look pretty. We don't have servers full of anime.
 
 **02. APIs & Metadata**  
-The covers, synopses, and schedules you see? That's all pulled directly from public APIs like AniList and MyAnimeList. ShonenX just displays what they send back. Don't sue us for showing a picture of Goku.
+The covers, synopses, and schedules you see? That's all pulled directly from public APIs like AniList, MyAnimeList, and Kitsu. ShonenX just displays what they send back. Don't sue us for showing a picture of Goku.
 
 **03. User Extensions & Content**  
 Any "extensions" or third-party sources you decide to install are entirely on you. ShonenX doesn't distribute copyrighted material or endorse piracy. If you put in a weird URL and watch something you shouldn't, that's your problem, not ours. Make sure you follow your local laws, we are not your lawyers.
@@ -185,13 +194,13 @@ If you're a copyright holder looking to DMCA someone, you're barking up the wron
 
 ---
 
-## 🤝 Contributing & Documentation
+## Contributing & Documentation
 
 Contributions are welcome! Feel free to inspect the code, compile from source, open an issue, or contribute if you understand the architecture.
 
 ---
 
-## 👥 Contributors
+## Contributors
 
 Thanks to everyone who has contributed to ShonenX!
 
@@ -201,10 +210,11 @@ Thanks to everyone who has contributed to ShonenX!
 
 ---
 
-## 📞 Support
+## Support
 
 **Developer**: Roshan Kumar Sharma  
 **GitHub**: [@roshancodespace](https://github.com/roshancodespace)  
+**Buy Me a Coffee**: [roshan.codespace](https://www.buymeacoffee.com/roshan.codespace)  
 **Email**: roshan.codespace@gmail.com  
 **Discord**: [Join Community](https://discord.gg/uJyXZYSmH4)  
 **License**: GPL-3.0 (See [LICENSE](LICENSE) file)

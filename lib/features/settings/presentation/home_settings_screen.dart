@@ -12,6 +12,7 @@ import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/source_engine/source_engine_provider.dart';
 
 class HomeSettingsScreen extends ConsumerWidget {
   const HomeSettingsScreen({super.key});
@@ -93,9 +94,10 @@ class HomeSettingsScreen extends ConsumerWidget {
                 IconData getSectionIcon() {
                   switch (section.type) {
                     case HomeSectionType.continueMedia:
-                      return mediaType == MediaType.ANIME
-                          ? Icons.play_circle_outline_rounded
-                          : Icons.menu_book_rounded;
+                      return (mediaType == MediaType.MANGA ||
+                              mediaType == MediaType.NOVEL)
+                          ? Icons.menu_book_rounded
+                          : Icons.play_circle_outline_rounded;
                     case HomeSectionType.libraryStatus:
                       return Icons.collections_bookmark_outlined;
                     case HomeSectionType.discovery:
@@ -294,9 +296,11 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
         newTitle = '$categoryLabel ${_selectedMediaType.displayName}';
         break;
       case HomeSectionType.continueMedia:
-        newTitle = _selectedMediaType == MediaType.ANIME
-            ? 'Continue Watching'
-            : 'Continue Reading';
+        newTitle =
+            (_selectedMediaType == MediaType.MANGA ||
+                _selectedMediaType == MediaType.NOVEL)
+            ? 'Continue Reading'
+            : 'Continue Watching';
         break;
       case HomeSectionType.libraryStatus:
         newTitle = 'My ${_selectedStatus?.displayName ?? 'Library'}';
@@ -330,6 +334,13 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
     final isSourceMode = ref.watch(
       discoveryPrefsProvider.select((p) => p.mode == MetadataMode.source),
     );
+    final activeTracker = !isSourceMode ? ref.watch(metadataSourceProvider) : null;
+    final availableMediaTypes = isSourceMode 
+        ? [MediaType.ANIME, MediaType.MANGA] 
+        : (activeTracker?.supportedMediaTypes ?? MediaType.values);
+    final availableCategories = isSourceMode
+        ? [TrackerCategory.trending]
+        : (activeTracker?.supportedCategories ?? TrackerCategory.values);
 
     return AppBottomSheet(
       title: 'Edit Section',
@@ -345,10 +356,11 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            items: const [
-              DropdownMenuItem(value: MediaType.ANIME, child: Text('Anime')),
-              DropdownMenuItem(value: MediaType.MANGA, child: Text('Manga')),
-            ],
+            items: availableMediaTypes
+                .map(
+                  (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
+                )
+                .toList(),
             onChanged: (val) {
               if (val != null) {
                 setState(() {
@@ -375,10 +387,7 @@ class _EditSectionSheetState extends ConsumerState<_EditSectionSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              items:
-                  (isSourceMode
-                          ? [TrackerCategory.trending]
-                          : TrackerCategory.values)
+              items: availableCategories
                       .map(
                         (cat) => DropdownMenuItem(
                           value: cat,
@@ -513,6 +522,7 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
     final isSourceMode = ref.watch(
       discoveryPrefsProvider.select((p) => p.mode == MetadataMode.source),
     );
+    final activeTracker = !isSourceMode ? ref.watch(metadataSourceProvider) : null;
 
     if (isSourceMode) {
       final hasDiscoverySection = widget.existingSections.any(
@@ -524,7 +534,8 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
       return const [TrackerCategory.trending];
     }
 
-    return TrackerCategory.values.where((cat) {
+    final categories = activeTracker?.supportedCategories ?? TrackerCategory.values;
+    return categories.where((cat) {
       return !widget.existingSections.any(
         (s) =>
             s.type == HomeSectionType.discovery &&
@@ -558,6 +569,14 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
   void initState() {
     super.initState();
     _titleController = TextEditingController();
+    
+    final isSourceMode = ref.read(discoveryPrefsProvider).mode == MetadataMode.source;
+    final activeTracker = !isSourceMode ? ref.read(metadataSourceProvider) : null;
+    final availableMediaTypes = isSourceMode 
+        ? [MediaType.ANIME, MediaType.MANGA] 
+        : (activeTracker?.supportedMediaTypes ?? MediaType.values);
+        
+    _selectedMediaType = availableMediaTypes.isNotEmpty ? availableMediaTypes.first : MediaType.ANIME;
     _updateFormState();
   }
 
@@ -602,9 +621,11 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
         newTitle = '$catLabel ${_selectedMediaType.displayName}';
         break;
       case HomeSectionType.continueMedia:
-        newTitle = _selectedMediaType == MediaType.ANIME
-            ? 'Continue Watching'
-            : 'Continue Reading';
+        newTitle =
+            (_selectedMediaType == MediaType.MANGA ||
+                _selectedMediaType == MediaType.NOVEL)
+            ? 'Continue Reading'
+            : 'Continue Watching';
         break;
       case HomeSectionType.libraryStatus:
         newTitle = _selectedStatus != null
@@ -701,10 +722,18 @@ class _AddSectionSheetState extends ConsumerState<_AddSectionSheet> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            items: const [
-              DropdownMenuItem(value: MediaType.ANIME, child: Text('Anime')),
-              DropdownMenuItem(value: MediaType.MANGA, child: Text('Manga')),
-            ],
+            items: (() {
+              final isSourceMode = ref.watch(discoveryPrefsProvider).mode == MetadataMode.source;
+              final activeTracker = !isSourceMode ? ref.watch(metadataSourceProvider) : null;
+              final availableMediaTypes = isSourceMode 
+                  ? [MediaType.ANIME, MediaType.MANGA] 
+                  : (activeTracker?.supportedMediaTypes ?? MediaType.values);
+              return availableMediaTypes;
+            })()
+                .map(
+                  (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
+                )
+                .toList(),
             onChanged: (val) {
               if (val != null) {
                 setState(() {

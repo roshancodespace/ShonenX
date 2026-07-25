@@ -17,7 +17,10 @@ class AppDialog extends StatelessWidget {
     required this.child,
     this.actions,
     this.maxWidth = 600,
-    this.contentPadding = const EdgeInsets.all(24),
+    this.contentPadding = const EdgeInsets.symmetric(
+      horizontal: 24,
+      vertical: 16,
+    ),
     this.showCloseButton = true,
     this.wrapScrollable = true,
   });
@@ -29,7 +32,10 @@ class AppDialog extends StatelessWidget {
     required Widget child,
     List<Widget>? actions,
     double maxWidth = 600,
-    EdgeInsetsGeometry contentPadding = const EdgeInsets.all(24),
+    EdgeInsetsGeometry contentPadding = const EdgeInsets.symmetric(
+      horizontal: 24,
+      vertical: 16,
+    ),
     bool showCloseButton = true,
     bool barrierDismissible = true,
     bool wrapScrollable = true,
@@ -130,7 +136,7 @@ class AppDialog extends StatelessWidget {
             children: [
               if (title != null || icon != null || showCloseButton) ...[
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 20, 8),
+                  padding: const EdgeInsets.fromLTRB(24, 20, 20, 0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [

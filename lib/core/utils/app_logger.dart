@@ -40,12 +40,14 @@ class AppLogger {
   // ---------- Init ----------
   static Future<void> init() async {
     try {
-      final dir = await pp.getApplicationCacheDirectory();
+      final dir =
+          (await pp.getExternalStorageDirectory()) ??
+          await pp.getApplicationDocumentsDirectory();
       final path = p.join(dir.path, 'ShonenX', 'app_logs.txt');
 
       _logFile = File(path);
       await _logFile!.create(recursive: true);
-      
+
       await _logSink?.close();
       _logSink = _logFile!.openWrite(mode: FileMode.write);
 

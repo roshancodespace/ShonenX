@@ -24,80 +24,20 @@ class MediaSwitcherOverlay extends StatelessWidget {
         final colorScheme = theme.colorScheme;
         final hasSearch = onSearchTap != null && !isSearchActive;
 
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              height: 48,
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.92,
-                ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ...supportedTypes.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final type = entry.value;
-
-                    String label;
-                    IconData icon;
-
-                    switch (type) {
-                      case MediaType.ANIME:
-                        label = 'Anime';
-                        icon = Icons.movie_outlined;
-                        break;
-                      case MediaType.MANGA:
-                        label = 'Manga';
-                        icon = Icons.menu_book_outlined;
-                        break;
-                      case MediaType.NOVEL:
-                        label = 'Novel';
-                        icon = Icons.menu_book_rounded;
-                        break;
-                      case MediaType.TV:
-                        label = 'TV';
-                        icon = Icons.tv_outlined;
-                        break;
-                      case MediaType.MOVIE:
-                        label = 'Movie';
-                        icon = Icons.local_movies_outlined;
-                        break;
-                    }
-
-                    return _MediaTabPill(
-                      label: label,
-                      icon: icon,
-                      isSelected: controller.index == index,
-                      onTap: () => controller.animateTo(index),
-                    );
-                  }),
-                ],
-              ),
-            ),
-            if (hasSearch) ...[
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: onSearchTap,
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
                 child: Container(
-                  width: 48,
                   height: 48,
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainerHighest.withValues(
                       alpha: 0.92,
                     ),
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.15),
@@ -106,16 +46,84 @@ class MediaSwitcherOverlay extends StatelessWidget {
                       ),
                     ],
                   ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    Icons.search_rounded,
-                    color: colorScheme.onSurfaceVariant,
-                    size: 22,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ...supportedTypes.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final type = entry.value;
+
+                          String label;
+                          IconData icon;
+
+                          switch (type) {
+                            case MediaType.ANIME:
+                              label = 'Anime';
+                              icon = Icons.movie_outlined;
+                              break;
+                            case MediaType.MANGA:
+                              label = 'Manga';
+                              icon = Icons.menu_book_outlined;
+                              break;
+                            case MediaType.NOVEL:
+                              label = 'Novel';
+                              icon = Icons.menu_book_rounded;
+                              break;
+                            case MediaType.TV:
+                              label = 'TV';
+                              icon = Icons.tv_outlined;
+                              break;
+                            case MediaType.MOVIE:
+                              label = 'Movie';
+                              icon = Icons.local_movies_outlined;
+                              break;
+                          }
+
+                          return _MediaTabPill(
+                            label: label,
+                            icon: icon,
+                            isSelected: controller.index == index,
+                            onTap: () => controller.animateTo(index),
+                          );
+                        }),
+                      ],
+                    ),
                   ),
                 ),
               ),
+              if (hasSearch) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: onSearchTap,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.92,
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.search_rounded,
+                      color: colorScheme.onSurfaceVariant,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         );
       },
     );

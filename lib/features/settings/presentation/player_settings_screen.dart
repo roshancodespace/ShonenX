@@ -303,6 +303,20 @@ class PlayerSettingsScreen extends ConsumerWidget {
                   );
                 },
               ),
+              SettingsSwitchTile(
+                icon: Icons.swap_horiz_rounded,
+                title: 'Swap Volume & Brightness',
+                subtitle:
+                    'Place Volume on the left and Brightness on the right',
+                value: playerPrefs.gesturePrefs.swapVolumeAndBrightness,
+                onChanged: (val) {
+                  prefsNotifier.updateGesturePrefs(
+                    playerPrefs.gesturePrefs.copyWith(
+                      swapVolumeAndBrightness: val,
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ],

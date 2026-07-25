@@ -85,7 +85,7 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
         final node = item['node'];
         return TrackerSearchResult(
           id: node['id']?.toString() ?? '',
-          title: node['title'] ?? 'Unknown Title',
+          title: MediaTitle(romaji: node['title'], english: node['title']),
           cover:
               node['main_picture']?['large'] ?? node['main_picture']?['medium'],
         );
@@ -318,7 +318,9 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
             ..status = _parseMalStatus(listStatus?['status']).id
             ..score = rawScore > 0 ? rawScore.toDouble() : 0
             ..episodesWatched = (listStatus?[progressKey] as num?)?.toInt() ?? 0
-            ..episodes = node[totalCountKey];
+            ..episodes = node[totalCountKey]
+            ..sourceType = 'tracker'
+            ..sourceId = 'mal';
         }).toList();
       },
     );

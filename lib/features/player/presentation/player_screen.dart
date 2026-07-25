@@ -493,6 +493,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             child: Stack(
               children: [
                 _buildVideoLayer(engine, playerState),
+                if (playerState.activeSubtitle != null)
+                  const CustomSubtitleOverlay(),
                 Positioned.fill(
                   child: PlayerGestureOverlay(
                     onToggleControls: _toggleControls,
@@ -502,8 +504,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     onSetSpeed: engine.setSpeed,
                   ),
                 ),
-                if (playerState.activeSubtitle != null)
-                  const CustomSubtitleOverlay(),
                 if (_lockControls)
                   _buildLockedOverlay()
                 else

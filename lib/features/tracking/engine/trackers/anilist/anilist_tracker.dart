@@ -94,10 +94,11 @@ class AnilistTracker extends BaseTracker
       final media = body['data']?['Page']?['media'] as List? ?? [];
 
       return media.map((item) {
-        final title =
-            item['title']?['english'] ??
-            item['title']?['romaji'] ??
-            'Unknown Title';
+        final title = MediaTitle(
+          english: item['title']?['english'],
+          romaji: item['title']?['romaji'],
+          native: item['title']?['native'],
+        );
         final cover = item['coverImage']?['large'];
         return TrackerSearchResult(
           id: item['id']?.toString() ?? '',
@@ -234,31 +235,43 @@ class AnilistTracker extends BaseTracker
     final userId = (await fetchProfile()).id;
 
     return executeApi('FETCH_ENTRY', fallback: (_, __) => null, () async {
-      final res = await _http.post(
-        'https://graphql.anilist.co',
-        body: {
-          'query': AnilistTrackerQueries.mediaListItem,
-          'variables': {
-            'mediaId': int.parse(mediaId),
-            'userId': int.parse(userId),
+      try {
+        final res = await _http.post(
+          'https://graphql.anilist.co',
+          body: {
+            'query': AnilistTrackerQueries.mediaListItem,
+            'variables': {
+              'mediaId': int.parse(mediaId),
+              'userId': int.parse(userId),
+            },
           },
-        },
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
 
-      final data = res.json['data']['MediaList'];
+        final data = res.json['data']['MediaList'];
 
-      if (data == null) return null;
+        if (data == null) return null;
 
-      return TrackedListItem(
-        id: data['id']?.toString(),
-        status: _parseAnilistStatus(data['status']),
-        progress: data['progress']?.toDouble(),
-        score: data['score'] != null ? (data['score'] as num).toDouble() : null,
-      );
+        return TrackedListItem(
+          id: data['id']?.toString(),
+          status: _parseAnilistStatus(data['status']),
+          progress: data['progress']?.toDouble(),
+          score: data['score'] != null
+              ? (data['score'] as num).toDouble()
+              : null,
+        );
+      } catch (e) {
+        if (e.toString().contains('HTTP 404') ||
+            e.toString().contains('Not Found')) {
+          throw const TrackerItemNotFoundException(
+            'AniList returned 404 Not Found.',
+          );
+        }
+        rethrow;
+      }
     });
   }
 
@@ -324,7 +337,9 @@ class AnilistTracker extends BaseTracker
                 ..format = media['format']?.toString() ?? ''
                 ..cover = media['coverImage']?['large'] ?? ''
                 ..status = _parseAnilistStatus(media['status']).id
-                ..episodes = media['episodes'];
+                ..episodes = media['episodes']
+                ..sourceType = 'tracker'
+                ..sourceId = 'anilist';
             })
             .whereType<LibraryEntry>()
             .toList();

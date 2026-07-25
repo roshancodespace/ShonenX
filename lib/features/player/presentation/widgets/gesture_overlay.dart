@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -105,128 +104,166 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
     return Stack(
       children: [
         Positioned.fill(
-          child: Padding(
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).size.height * prefs.topMargin,
-              bottom: MediaQuery.of(context).size.height * prefs.bottomMargin,
-              left: MediaQuery.of(context).size.width * prefs.leftMargin,
-              right: MediaQuery.of(context).size.width * prefs.rightMargin,
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final activeWidth = constraints.maxWidth;
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final activeWidth = constraints.maxWidth;
 
-                return GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onSecondaryTapUp: (_) => widget.onRightClick?.call(),
-                  onTapUp: (details) {
-                    final now = DateTime.now().millisecondsSinceEpoch;
-                    final dx = details.localPosition.dx;
-                    final isLeft = dx < activeWidth * prefs.doubleTapWidth;
-                    final isRight =
-                        dx > activeWidth * (1.0 - prefs.doubleTapWidth);
+              return GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onSecondaryTapUp: (_) => widget.onRightClick?.call(),
+                onTapUp: (details) {
+                  final now = DateTime.now().millisecondsSinceEpoch;
 
-                    if (_accumulatedSeekSeconds != 0) {
-                      if (isLeft) {
-                        _triggerSeek(-10);
-                        return;
-                      } else if (isRight) {
-                        _triggerSeek(10);
-                        return;
-                      }
+                  if (!prefs.enableGestures) {
+                    widget.onToggleControls();
+                    return;
+                  }
+
+                  final dx = details.localPosition.dx;
+                  final isLeft = dx < activeWidth * prefs.doubleTapWidth;
+                  final isRight =
+                      dx > activeWidth * (1.0 - prefs.doubleTapWidth);
+
+                  if (_accumulatedSeekSeconds != 0) {
+                    if (isLeft) {
+                      _triggerSeek(-10);
+                      return;
+                    } else if (isRight) {
+                      _triggerSeek(10);
+                      return;
                     }
+                  }
 
-                    if (now - _lastTapTime < 300) {
-                      if (isLeft) {
-                        _triggerSeek(-10);
-                        widget.onHideControls?.call();
-                      } else if (isRight) {
-                        _triggerSeek(10);
-                        widget.onHideControls?.call();
-                      } else {
-                        widget.onToggleControls();
-                      }
-                      _lastTapTime = 0;
+                  if (now - _lastTapTime < 300) {
+                    if (isLeft) {
+                      _triggerSeek(-10);
+                      widget.onHideControls?.call();
+                    } else if (isRight) {
+                      _triggerSeek(10);
+                      widget.onHideControls?.call();
                     } else {
-                      _lastTapTime = now;
                       widget.onToggleControls();
                     }
-                  },
-                  onVerticalDragStart: (details) {
-                    widget.onHideControls?.call();
-                    final dx = details.localPosition.dx;
+                    _lastTapTime = 0;
+                  } else {
+                    _lastTapTime = now;
+                    widget.onToggleControls();
+                  }
+                },
+                onVerticalDragStart: !prefs.enableGestures
+                    ? null
+                    : (details) {
+                        final dx = details.localPosition.dx;
+                        final dy = details.localPosition.dy;
+                        final width = constraints.maxWidth;
+                        final height = constraints.maxHeight;
 
-                    bool isLeft = dx < activeWidth * prefs.leftWidth;
-                    bool isRight = dx > activeWidth * (1.0 - prefs.rightWidth);
+                        // Restrict dragging to within margins
+                        if (dy < height * prefs.topMargin ||
+                            dy > height * (1.0 - prefs.bottomMargin) ||
+                            dx < width * prefs.leftMargin ||
+                            dx > width * (1.0 - prefs.rightMargin)) {
+                          return;
+                        }
 
-                    if (isLeft || isRight) {
-                      setState(() {
-                        _isDragging = true;
-                        _isLeftSwipe = isLeft;
-                      });
-                    }
-                  },
-                  onVerticalDragUpdate: (details) {
-                    if (!_isDragging) return;
+                        widget.onHideControls?.call();
 
-                    setState(() {
-                      final sensitivity =
-                          MediaQuery.of(context).size.height / 1.5;
-                      final delta = -details.delta.dy / sensitivity;
+                        bool isLeft = dx < width * prefs.leftWidth;
+                        bool isRight = dx > width * (1.0 - prefs.rightWidth);
 
-                      if (_isLeftSwipe) {
-                        _brightness = (_brightness + delta).clamp(0.0, 1.0);
-                        ScreenBrightness.instance
-                            .setApplicationScreenBrightness(_brightness);
-                      } else {
-                        _volume = (_volume + delta).clamp(0.0, 1.0);
-                        VolumeController.instance.setVolume(_volume);
-                      }
-                    });
-                  },
-                  onVerticalDragEnd: (details) {
-                    if (!_isDragging) return;
-                    setState(() {
-                      _isDragging = false;
-                    });
-                  },
-                  onLongPressStart: (details) {
-                    final dx = details.localPosition.dx;
+                        if (isLeft || isRight) {
+                          setState(() {
+                            _isDragging = true;
+                            _isLeftSwipe = isLeft;
+                          });
+                        }
+                      },
+                onVerticalDragUpdate: !prefs.enableGestures
+                    ? null
+                    : (details) {
+                        if (!_isDragging) return;
 
-                    if (dx > activeWidth * (1.0 - prefs.rightWidth)) {
-                      widget.onHideControls?.call();
-                      setState(() {
-                        _isSpeedScrubbing = true;
-                        _currentSpeed = 2.0;
-                        _speedDragStartY = details.localPosition.dy;
-                      });
-                      widget.onSetSpeed(_currentSpeed);
-                    }
-                  },
-                  onLongPressMoveUpdate: (details) {
-                    if (_isSpeedScrubbing) {
-                      final delta = _speedDragStartY - details.localPosition.dy;
-                      double newSpeed = 2.0 + (delta / 120);
-                      newSpeed = (newSpeed * 4).round() / 4.0;
-                      newSpeed = newSpeed.clamp(0.25, 3.0);
-
-                      if (newSpeed != _currentSpeed) {
                         setState(() {
-                          _currentSpeed = newSpeed;
+                          final sensitivity =
+                              MediaQuery.of(context).size.height / 1.5;
+                          final delta = -details.delta.dy / sensitivity;
+
+                          final changeVolume = prefs.swapVolumeAndBrightness
+                              ? _isLeftSwipe
+                              : !_isLeftSwipe;
+
+                          if (changeVolume) {
+                            _volume = (_volume + delta).clamp(0.0, 1.0);
+                            VolumeController.instance.setVolume(_volume);
+                          } else {
+                            _brightness = (_brightness + delta).clamp(0.0, 1.0);
+                            ScreenBrightness.instance
+                                .setApplicationScreenBrightness(_brightness);
+                          }
                         });
-                        widget.onSetSpeed(_currentSpeed);
-                      }
-                    }
-                  },
-                  onLongPressEnd: (details) {
-                    setState(() {
-                      _isSpeedScrubbing = false;
-                    });
-                    widget.onSetSpeed(widget.baseSpeed);
-                  },
-                );
-              },
-            ),
+                      },
+                onVerticalDragEnd: !prefs.enableGestures
+                    ? null
+                    : (details) {
+                        if (!_isDragging) return;
+                        setState(() {
+                          _isDragging = false;
+                        });
+                      },
+                onLongPressStart: !prefs.enableGestures
+                    ? null
+                    : (details) {
+                        final dx = details.localPosition.dx;
+                        final dy = details.localPosition.dy;
+                        final width = constraints.maxWidth;
+                        final height = constraints.maxHeight;
+
+                        // Restrict long press to within margins
+                        if (dy < height * prefs.topMargin ||
+                            dy > height * (1.0 - prefs.bottomMargin) ||
+                            dx < width * prefs.leftMargin ||
+                            dx > width * (1.0 - prefs.rightMargin)) {
+                          return;
+                        }
+
+                        if (dx > width * (1.0 - prefs.rightWidth)) {
+                          widget.onHideControls?.call();
+                          setState(() {
+                            _isSpeedScrubbing = true;
+                            _currentSpeed = 2.0;
+                            _speedDragStartY = details.localPosition.dy;
+                          });
+                          widget.onSetSpeed(_currentSpeed);
+                        }
+                      },
+                onLongPressMoveUpdate: !prefs.enableGestures
+                    ? null
+                    : (details) {
+                        if (_isSpeedScrubbing) {
+                          final delta =
+                              _speedDragStartY - details.localPosition.dy;
+                          double newSpeed = 2.0 + (delta / 120);
+                          newSpeed = (newSpeed * 4).round() / 4.0;
+                          newSpeed = newSpeed.clamp(0.25, 3.0);
+
+                          if (newSpeed != _currentSpeed) {
+                            setState(() {
+                              _currentSpeed = newSpeed;
+                            });
+                            widget.onSetSpeed(_currentSpeed);
+                          }
+                        }
+                      },
+                onLongPressEnd: !prefs.enableGestures
+                    ? null
+                    : (details) {
+                        setState(() {
+                          _isSpeedScrubbing = false;
+                        });
+                        widget.onSetSpeed(widget.baseSpeed);
+                      },
+              );
+            },
           ),
         ),
 

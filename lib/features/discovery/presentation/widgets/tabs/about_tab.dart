@@ -61,14 +61,6 @@ class AboutTabWidget extends ConsumerWidget {
       );
     }
 
-    // Modern Quick Stats Bar
-    items.add(
-      Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: _QuickStatsBar(media: media, uiRoundness: uiRoundness),
-      ),
-    );
-
     // Synopsis Section
     items.add(Synopsis(description: media.description ?? ''));
 
@@ -202,142 +194,6 @@ class AboutTabWidget extends ConsumerWidget {
       itemBuilder: (context, index) {
         return StaggeredFadeIn(index: index, child: items[index]);
       },
-    );
-  }
-}
-
-class _QuickStatsBar extends StatelessWidget {
-  final UnifiedMedia media;
-  final double uiRoundness;
-
-  const _QuickStatsBar({required this.media, required this.uiRoundness});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    final stats = <Widget>[];
-
-    if (media.score != null && media.score! > 0) {
-      stats.add(
-        _StatPill(
-          icon: Icons.star_rounded,
-          iconColor: cs.primary,
-          label: media.score!.toStringAsFixed(1),
-          uiRoundness: uiRoundness,
-        ),
-      );
-    }
-
-    if (media.format != null && media.format!.isNotEmpty) {
-      stats.add(
-        _StatPill(
-          icon: Icons.tv_rounded,
-          label: media.format!,
-          uiRoundness: uiRoundness,
-        ),
-      );
-    }
-
-    if (media.status != null && media.status!.isNotEmpty) {
-      stats.add(
-        _StatPill(
-          icon: Icons.fiber_manual_record_rounded,
-          iconColor: media.status!.toLowerCase() == 'releasing'
-              ? Colors.greenAccent
-              : cs.primary,
-          label: media.status!.toUpperCase().replaceAll('_', ' '),
-          uiRoundness: uiRoundness,
-        ),
-      );
-    }
-
-    if (media.episodes != null && media.episodes! > 0) {
-      stats.add(
-        _StatPill(
-          icon: Icons.video_library_rounded,
-          label: '${media.episodes} eps',
-          uiRoundness: uiRoundness,
-        ),
-      );
-    }
-
-    if (media.chapters != null && media.chapters! > 0) {
-      stats.add(
-        _StatPill(
-          icon: Icons.menu_book_rounded,
-          label: '${media.chapters} chs',
-          uiRoundness: uiRoundness,
-        ),
-      );
-    }
-
-    if (media.season != null && media.season!.isNotEmpty) {
-      stats.add(
-        _StatPill(
-          icon: Icons.calendar_today_rounded,
-          label: media.season!,
-          uiRoundness: uiRoundness,
-        ),
-      );
-    }
-
-    if (stats.isEmpty) return const SizedBox.shrink();
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: [
-          for (int i = 0; i < stats.length; i++) ...[
-            stats[i],
-            if (i < stats.length - 1) const SizedBox(width: 8),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _StatPill extends StatelessWidget {
-  final IconData icon;
-  final Color? iconColor;
-  final String label;
-  final double uiRoundness;
-
-  const _StatPill({
-    required this.icon,
-    this.iconColor,
-    required this.label,
-    required this.uiRoundness,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHigh.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(uiRoundness * 0.7),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: iconColor ?? cs.primary),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: cs.onSurface,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -581,12 +437,10 @@ class _GenresAndTagsSection extends StatelessWidget {
             runSpacing: 6,
             children: genres.map((genre) {
               return ActionChip(
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                labelPadding: EdgeInsets.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
                 side: BorderSide.none,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
                 backgroundColor: cs.primaryContainer.withValues(alpha: 0.6),
                 label: Text(
                   genre,
@@ -889,7 +743,9 @@ class _ExternalLinksList extends StatelessWidget {
       runSpacing: 6,
       children: links.map((link) {
         return ActionChip(
-          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          labelPadding: EdgeInsets.zero,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           avatar: const Icon(Icons.open_in_new_rounded, size: 13),
           side: BorderSide.none,
           backgroundColor: cs.surfaceContainerHigh.withValues(alpha: 0.5),

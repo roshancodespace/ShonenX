@@ -303,6 +303,33 @@ class PlayerSettingsScreen extends ConsumerWidget {
                   );
                 },
               ),
+              SettingsSwitchTile(
+                icon: Icons.touch_app_rounded,
+                title: 'Enable Gestures',
+                subtitle:
+                    'Allow swiping to seek, change volume, and brightness',
+                value: playerPrefs.gesturePrefs.enableGestures,
+                onChanged: (val) {
+                  prefsNotifier.updateGesturePrefs(
+                    playerPrefs.gesturePrefs.copyWith(enableGestures: val),
+                  );
+                },
+              ),
+              if (playerPrefs.gesturePrefs.enableGestures)
+                SettingsSwitchTile(
+                  icon: Icons.swap_horiz_rounded,
+                  title: 'Swap Volume & Brightness',
+                  subtitle:
+                      'Place Volume on the left and Brightness on the right',
+                  value: playerPrefs.gesturePrefs.swapVolumeAndBrightness,
+                  onChanged: (val) {
+                    prefsNotifier.updateGesturePrefs(
+                      playerPrefs.gesturePrefs.copyWith(
+                        swapVolumeAndBrightness: val,
+                      ),
+                    );
+                  },
+                ),
             ],
           ),
         ],

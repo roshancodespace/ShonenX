@@ -21,10 +21,10 @@ class NavBarNotifier extends Notifier<NavBarState> {
   NavBarState build() => const NavBarState();
 
   void replace(Widget customBar) => state = NavBarState(
-        customBar: customBar,
-        globalTop: state.globalTop,
-        branchTops: state.branchTops,
-      );
+    customBar: customBar,
+    globalTop: state.globalTop,
+    branchTops: state.branchTops,
+  );
 
   void hide() => replace(const SizedBox.shrink());
 
@@ -48,8 +48,7 @@ class NavBarNotifier extends Notifier<NavBarState> {
 
   void clearTop({int? branchIndex}) {
     if (branchIndex != null) {
-      final next = Map<int, Widget>.from(state.branchTops)
-        ..remove(branchIndex);
+      final next = Map<int, Widget>.from(state.branchTops)..remove(branchIndex);
       state = NavBarState(
         customBar: state.customBar,
         globalTop: state.globalTop,
@@ -65,5 +64,6 @@ class NavBarNotifier extends Notifier<NavBarState> {
   }
 }
 
-final navBarProvider =
-    NotifierProvider<NavBarNotifier, NavBarState>(NavBarNotifier.new);
+final navBarProvider = NotifierProvider<NavBarNotifier, NavBarState>(
+  NavBarNotifier.new,
+);

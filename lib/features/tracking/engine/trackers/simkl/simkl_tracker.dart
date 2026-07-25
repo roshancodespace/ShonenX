@@ -71,13 +71,46 @@ class SimklTracker extends BaseTracker
     );
     return result.items
         .map(
-          (m) => TrackerSearchResult(
-            id: m.id,
-            title: m.title.english ?? m.title.romaji ?? 'Unknown',
-            cover: m.cover,
-          ),
+          (m) => TrackerSearchResult(id: m.id, title: m.title, cover: m.cover),
         )
         .toList();
+  }
+
+  final Map<String, DateTime> _lastFetchTime = {};
+  final Map<String, List> _cachedSimklItems = {};
+
+  void _invalidateCache() {
+    _lastFetchTime.clear();
+    _cachedSimklItems.clear();
+  }
+
+  Future<List> _getAllItemsCached(String simklType, String token) async {
+    final lastTime = _lastFetchTime[simklType];
+    if (lastTime != null &&
+        DateTime.now().difference(lastTime) < const Duration(minutes: 5)) {
+      return _cachedSimklItems[simklType] ?? [];
+    }
+
+    final res = await _http.get(
+      'https://api.simkl.com/sync/all-items/$simklType',
+      headers: {
+        'Authorization': 'Bearer $token',
+        'simkl-api-key': clientId,
+        'Content-Type': 'application/json',
+      },
+    );
+
+    final data = res.json;
+    List list = [];
+    if (data is List) {
+      list = data;
+    } else if (data is Map) {
+      list = data[simklType] as List? ?? data['items'] as List? ?? [];
+    }
+
+    _cachedSimklItems[simklType] = list;
+    _lastFetchTime[simklType] = DateTime.now();
+    return list;
   }
 
   @override
@@ -92,8 +125,12 @@ class SimklTracker extends BaseTracker
     if (token == null) throw Exception('Simkl is not authenticated');
 
     return executeApi('UPDATE_ENTRY', () async {
-      final simklType = media.type == MediaType.ANIME ? 'anime' : 'shows';
-      final id = int.parse(trackingId);
+      final simklType = media.type == MediaType.ANIME
+          ? 'anime'
+          : (media.type == MediaType.MOVIE ? 'movies' : 'shows');
+      final id = int.tryParse(trackingId);
+      if (id == null) throw Exception('Invalid tracking ID: $trackingId');
+
       final headers = {
         'Authorization': 'Bearer $token',
         'simkl-api-key': clientId,
@@ -105,7 +142,10 @@ class SimklTracker extends BaseTracker
           'https://api.simkl.com/sync/add-to-list',
           body: {
             simklType: [
-              {'id': id, 'to': _toSimklStatus(status)},
+              {
+                'to': _toSimklStatus(status),
+                'ids': {'simkl': id},
+              },
             ],
           },
           headers: headers,
@@ -117,26 +157,36 @@ class SimklTracker extends BaseTracker
           'https://api.simkl.com/sync/ratings',
           body: {
             simklType: [
-              {'id': id, 'rating': score.toInt()},
+              {
+                'rating': score.toInt(),
+                'ids': {'simkl': id},
+              },
             ],
           },
           headers: headers,
         );
       }
 
-      if (progress != null) {
-        // Simkl typically expects episode objects or bulk history additions.
-        // This is a best-effort fallback based on standard Simkl history endpoints.
+      if (progress != null && progress > 0) {
+        final episodesList = List.generate(
+          progress.toInt(),
+          (i) => {'number': i + 1},
+        );
         await _http.post(
           'https://api.simkl.com/sync/history',
           body: {
             simklType: [
-              {'id': id, 'watched_episodes': progress.toInt()},
+              {
+                'ids': {'simkl': id},
+                if (media.type != MediaType.MOVIE) 'episodes': episodesList,
+              },
             ],
           },
           headers: headers,
         );
       }
+
+      _invalidateCache();
     });
   }
 
@@ -172,9 +222,49 @@ class SimklTracker extends BaseTracker
     required String mediaId,
     required MediaType mediaType,
   }) async {
-    // Note: Simkl doesn't have a direct endpoint for a single list item status efficiently without full list sync.
-    // We would generally return null here unless we cache the full library locally.
-    return null;
+    final token = await _getToken();
+    if (token == null) return null;
+
+    return executeApi('FETCH_ENTRY', fallback: (_, __) => null, () async {
+      final simklType = mediaType == MediaType.ANIME
+          ? 'anime'
+          : (mediaType == MediaType.MOVIE ? 'movies' : 'shows');
+      final id = int.tryParse(mediaId);
+      if (id == null) return null;
+
+      final list = await _getAllItemsCached(simklType, token);
+
+      for (final item in list) {
+        if (item is! Map) continue;
+
+        final inner =
+            item['show'] as Map? ??
+            item['movie'] as Map? ??
+            item['anime'] as Map? ??
+            item[simklType] as Map? ??
+            item;
+
+        final itemId = (inner['ids']?['simkl'] ?? inner['id'])?.toString();
+        if (itemId == mediaId || itemId == id.toString()) {
+          final statusStr = item['status']?.toString();
+          final userRating =
+              (item['user_rating'] as num?)?.toDouble() ??
+              (item['rating'] as num?)?.toDouble();
+          final progress =
+              (item['watched_episodes_count'] as num?)?.toDouble() ??
+              ((item['episodes'] as List?)?.length.toDouble() ?? 0.0);
+
+          return TrackedListItem(
+            id: itemId,
+            status: _parseSimklStatus(statusStr),
+            progress: progress,
+            score: (userRating != null && userRating > 0) ? userRating : null,
+          );
+        }
+      }
+
+      return null;
+    });
   }
 
   @override
@@ -199,12 +289,22 @@ class SimklTracker extends BaseTracker
         },
       );
 
-      final list = res.json as List? ?? [];
+      final jsonResponse = res.json;
+      List list = [];
+      if (jsonResponse is Map) {
+        list = jsonResponse[simklType] as List? ?? [];
+      } else if (jsonResponse is List) {
+        list = jsonResponse;
+      }
 
       return list
           .whereType<Map>()
           .map((item) {
-            final inner = item[simklType] as Map?;
+            final inner =
+                item['show'] as Map? ??
+                item['movie'] as Map? ??
+                item['anime'] as Map? ??
+                item[simklType] as Map?;
             if (inner == null) return null;
 
             final id = inner['ids']?['simkl']?.toString();
@@ -212,7 +312,7 @@ class SimklTracker extends BaseTracker
 
             final poster = inner['poster']?.toString();
             final coverUrl = poster != null
-                ? 'https://simkl.in/posters/$poster\_m.webp'
+                ? 'https://simkl.in/posters/${poster}_m.webp'
                 : '';
 
             return LibraryEntry()
@@ -221,7 +321,9 @@ class SimklTracker extends BaseTracker
               ..title = inner['title'] ?? 'Unknown'
               ..cover = coverUrl
               ..status = status.id
-              ..episodes = inner['total_episodes'];
+              ..episodes = inner['total_episodes']
+              ..sourceType = 'tracker'
+              ..sourceId = 'simkl';
           })
           .whereType<LibraryEntry>()
           .toList();
@@ -237,9 +339,53 @@ class SimklTracker extends BaseTracker
     if (token == null) throw Exception('Simkl is not authenticated');
 
     return executeApi('DELETE', () async {
-      // Simkl removes item from list if status is 'not_interesting' or dropped sometimes.
-      // But they also have specific drop endpoints.
+      final simklType = mediaType == MediaType.ANIME
+          ? 'anime'
+          : (mediaType == MediaType.MOVIE ? 'movies' : 'shows');
+      final id = int.tryParse(trackingId);
+      if (id == null) return;
+
+      final headers = {
+        'Authorization': 'Bearer $token',
+        'simkl-api-key': clientId,
+        'Content-Type': 'application/json',
+      };
+
+      await _http.post(
+        'https://api.simkl.com/sync/history/remove',
+        body: {
+          simklType: [
+            {
+              'ids': {'simkl': id},
+            },
+          ],
+        },
+        headers: headers,
+      );
+
+      _invalidateCache();
     });
+  }
+
+  TrackedStatus _parseSimklStatus(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'watching':
+        return TrackedStatus.watching;
+      case 'plantowatch':
+      case 'plan_to_watch':
+      case 'plan to watch':
+        return TrackedStatus.planning;
+      case 'completed':
+        return TrackedStatus.completed;
+      case 'hold':
+      case 'on_hold':
+      case 'on hold':
+        return TrackedStatus.paused;
+      case 'dropped':
+        return TrackedStatus.dropped;
+      default:
+        return TrackedStatus.unknown;
+    }
   }
 
   String _toSimklStatus(TrackedStatus status) {

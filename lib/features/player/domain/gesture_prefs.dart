@@ -6,6 +6,8 @@ class GesturePrefs {
   final double leftWidth;
   final double rightWidth;
   final double doubleTapWidth;
+  final bool swapVolumeAndBrightness;
+  final bool enableGestures;
 
   const GesturePrefs({
     this.topMargin = 0.05,
@@ -15,6 +17,8 @@ class GesturePrefs {
     this.leftWidth = 0.35,
     this.rightWidth = 0.35,
     this.doubleTapWidth = 0.35,
+    this.swapVolumeAndBrightness = false,
+    this.enableGestures = true,
   });
 
   GesturePrefs copyWith({
@@ -25,6 +29,8 @@ class GesturePrefs {
     double? leftWidth,
     double? rightWidth,
     double? doubleTapWidth,
+    bool? swapVolumeAndBrightness,
+    bool? enableGestures,
   }) {
     return GesturePrefs(
       topMargin: topMargin ?? this.topMargin,
@@ -34,6 +40,9 @@ class GesturePrefs {
       leftWidth: leftWidth ?? this.leftWidth,
       rightWidth: rightWidth ?? this.rightWidth,
       doubleTapWidth: doubleTapWidth ?? this.doubleTapWidth,
+      swapVolumeAndBrightness:
+          swapVolumeAndBrightness ?? this.swapVolumeAndBrightness,
+      enableGestures: enableGestures ?? this.enableGestures,
     );
   }
 
@@ -46,6 +55,8 @@ class GesturePrefs {
       'leftWidth': leftWidth,
       'rightWidth': rightWidth,
       'doubleTapWidth': doubleTapWidth,
+      'swapVolumeAndBrightness': swapVolumeAndBrightness,
+      'enableGestures': enableGestures,
     };
   }
 
@@ -58,6 +69,8 @@ class GesturePrefs {
       leftWidth: (map['leftWidth'] ?? 0.4).toDouble(),
       rightWidth: (map['rightWidth'] ?? 0.4).toDouble(),
       doubleTapWidth: (map['doubleTapWidth'] ?? 0.4).toDouble(),
+      swapVolumeAndBrightness: map['swapVolumeAndBrightness'] ?? false,
+      enableGestures: map['enableGestures'] ?? true,
     );
   }
 }

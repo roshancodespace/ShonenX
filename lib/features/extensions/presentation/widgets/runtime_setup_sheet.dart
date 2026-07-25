@@ -7,14 +7,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/features/extensions/providers/runtime_update_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-void showRuntimeSetupSheet(
+Future<void> showRuntimeSetupSheet(
   BuildContext context,
   WidgetRef ref, {
   VoidCallback? onComplete,
 }) {
-  showModalBottomSheet(
+  return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -63,11 +64,19 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
     try {
       await bridge.AnymeXRuntimeBridge.setupRuntime(force: force);
       if (controller.isReady.value) {
+        try {
+          final latest = await ref.read(runtimeUpdateProvider.future);
+          if (latest != null) {
+            bridge.AnymeXRuntimeBridge.setInstalledRelease(latest, 'v$latest');
+          }
+        } catch (_) {}
+
         final extManager = Get.find<bridge.ExtensionManager>();
         await extManager.onRuntimeBridgeInitialization(force: true);
         ref.invalidate(extensionManagerProvider);
         ref.invalidate(availableAnimeSourcesProvider);
         ref.invalidate(availableMangaSourcesProvider);
+        ref.invalidate(runtimeUpdateProvider);
         ref.read(enabledExtensionManagersProvider.notifier).enableAll([
           'aniyomi',
           'cloudstream',
@@ -238,14 +247,26 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
                           size: 24,
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'Runtime Installed & Active',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
-                              fontSize: 15,
-                            ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Runtime Installed & Active',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              Text(
+                                'v${bridge.AnymeXRuntimeBridge.installedVersion}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         TextButton.icon(
@@ -271,29 +292,52 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _startSetup(force: true),
-                            icon: const Icon(Icons.system_update_alt_rounded),
-                            label: const Text('Force Update'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final updateAsync = ref.watch(runtimeUpdateProvider);
+                        final updateVersion = updateAsync.value;
+
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _startSetup(force: true),
+                                icon: const Icon(
+                                  Icons.system_update_alt_rounded,
+                                ),
+                                label: Text(
+                                  updateVersion != null
+                                      ? 'Update Available (v$updateVersion)'
+                                      : 'Force Update',
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  foregroundColor: updateVersion != null
+                                      ? cs.primary
+                                      : null,
+                                  side: updateVersion != null
+                                      ? BorderSide(color: cs.primary)
+                                      : null,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                ),
+                                child: const Text('Done'),
+                              ),
                             ),
-                            child: const Text('Done'),
-                          ),
-                        ),
-                      ],
+                          ],
+                        );
+                      },
                     ),
                   ],
                 );

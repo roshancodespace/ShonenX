@@ -85,12 +85,15 @@ class KitsuTracker extends BaseTracker
             try {
               final attr = item['attributes'] as Map? ?? {};
               final titles = attr['titles'] as Map? ?? {};
-              final title =
-                  attr['canonicalTitle']?.toString() ??
-                  titles['en_jp']?.toString() ??
-                  titles['en']?.toString() ??
-                  titles['ja_jp']?.toString() ??
-                  'Unknown Title';
+
+              final title = MediaTitle(
+                english:
+                    titles['en']?.toString() ??
+                    attr['canonicalTitle']?.toString(),
+                romaji: titles['en_jp']?.toString(),
+                native: titles['ja_jp']?.toString(),
+              );
+
               final posterImage = attr['posterImage'] as Map? ?? {};
               final cover =
                   posterImage['large']?.toString() ??
@@ -222,7 +225,9 @@ class KitsuTracker extends BaseTracker
             ..status = _parseKitsuStatus(attr['status']?.toString()).id
             ..score = score
             ..episodesWatched = progress
-            ..episodes = totalCount;
+            ..episodes = totalCount
+            ..sourceType = 'tracker'
+            ..sourceId = 'kitsu';
         }).toList();
       },
     );

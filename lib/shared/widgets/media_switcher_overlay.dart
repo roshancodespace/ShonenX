@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
 
 class MediaSwitcherOverlay extends StatelessWidget {
   final TabController controller;
   final VoidCallback? onSearchTap;
   final bool isSearchActive;
+  final List<MediaType> supportedTypes;
 
   const MediaSwitcherOverlay({
     super.key,
     required this.controller,
     this.onSearchTap,
     this.isSearchActive = false,
+    this.supportedTypes = const [MediaType.ANIME, MediaType.MANGA],
   });
 
   @override
@@ -43,18 +46,43 @@ class MediaSwitcherOverlay extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _MediaTabPill(
-                    label: 'Anime',
-                    icon: Icons.movie_outlined,
-                    isSelected: controller.index == 0,
-                    onTap: () => controller.animateTo(0),
-                  ),
-                  _MediaTabPill(
-                    label: 'Manga',
-                    icon: Icons.menu_book_outlined,
-                    isSelected: controller.index == 1,
-                    onTap: () => controller.animateTo(1),
-                  ),
+                  ...supportedTypes.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final type = entry.value;
+
+                    String label;
+                    IconData icon;
+
+                    switch (type) {
+                      case MediaType.ANIME:
+                        label = 'Anime';
+                        icon = Icons.movie_outlined;
+                        break;
+                      case MediaType.MANGA:
+                        label = 'Manga';
+                        icon = Icons.menu_book_outlined;
+                        break;
+                      case MediaType.NOVEL:
+                        label = 'Novel';
+                        icon = Icons.menu_book_rounded;
+                        break;
+                      case MediaType.TV:
+                        label = 'TV';
+                        icon = Icons.tv_outlined;
+                        break;
+                      case MediaType.MOVIE:
+                        label = 'Movie';
+                        icon = Icons.local_movies_outlined;
+                        break;
+                    }
+
+                    return _MediaTabPill(
+                      label: label,
+                      icon: icon,
+                      isSelected: controller.index == index,
+                      onTap: () => controller.animateTo(index),
+                    );
+                  }),
                 ],
               ),
             ),

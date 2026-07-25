@@ -94,7 +94,7 @@ mixin SimklMetadata on BaseTracker implements RemoteTracker {
       'TRENDING',
       () async {
         final endpoint = _getEndpoint(type);
-        final limit = 20;
+        final limit = 50;
 
         final url =
             'https://data.simkl.in/discover/trending/$endpoint/today_100.json';
@@ -165,13 +165,13 @@ mixin SimklMetadata on BaseTracker implements RemoteTracker {
 
         final response = await http.get(
           '$_baseUrl/search/$endpoint',
-          queryParameters: {'q': query, 'page': page.toString(), 'limit': '20'},
+          queryParameters: {'q': query, 'page': page.toString(), 'limit': '50'},
           headers: _headers,
           cacheDuration: cacheDuration,
         );
 
         final dataList = response.json as List? ?? [];
-        final hasNextPage = dataList.length == 20;
+        final hasNextPage = dataList.length == 50;
 
         final items = dataList.whereType<Map>().map((item) {
           return _mapToUnified(item, type, requestId);

@@ -27,6 +27,56 @@ import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
+class _HeaderButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final String tooltip;
+  final bool active;
+
+  const _HeaderButton({
+    required this.icon,
+    required this.onTap,
+    required this.tooltip,
+    this.active = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: active
+            ? theme.colorScheme.primaryContainer
+            : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: active
+                    ? theme.colorScheme.primary.withOpacity(0.5)
+                    : theme.colorScheme.outlineVariant.withOpacity(0.3),
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: active
+                  ? theme.colorScheme.onPrimaryContainer
+                  : theme.colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class HomeScreen extends ConsumerWidget {
   HomeScreen({super.key});
 
@@ -35,11 +85,10 @@ class HomeScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     final sections = ref.watch(userHomeLayoutProvider);
-    final feedState = ref.watch(homeFeedProvider);
+
     return AppScaffold(
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.read(homeFeedProvider.notifier).refresh();
           ref.invalidate(singleSourceFeedProvider);
           for (final section in sections) {
             if (section.type == HomeSectionType.libraryStatus &&
@@ -160,43 +209,27 @@ class HomeScreen extends ConsumerWidget {
 
                                 final isTracker = mode == MetadataMode.tracker;
 
-                                return IconButton.filledTonal(
-                                  visualDensity: VisualDensity.standard,
+                                return _HeaderButton(
                                   tooltip: 'Discovery Mode',
-                                  onPressed: () => showModalBottomSheet(
+                                  onTap: () => showModalBottomSheet(
                                     context: context,
                                     isScrollControlled: true,
                                     useSafeArea: true,
                                     useRootNavigator: true,
                                     builder: (_) => const DiscoveryModeSheet(),
                                   ),
-                                  iconSize: 20,
-                                  icon: Icon(
-                                    isTracker
-                                        ? Icons.cloud_outlined
-                                        : Icons.extension_outlined,
-                                  ),
-                                  style: IconButton.styleFrom(
-                                    backgroundColor:
-                                        theme.colorScheme.secondary,
-                                    foregroundColor:
-                                        theme.colorScheme.onSecondary,
-                                  ),
+                                  icon: isTracker
+                                      ? Icons.cloud_outlined
+                                      : Icons.extension_outlined,
+                                  active: isTracker,
                                 );
                               },
                             ),
                             const SizedBox(width: 8),
-                            IconButton.filledTonal(
-                              visualDensity: VisualDensity.standard,
+                            _HeaderButton(
                               tooltip: 'Settings',
-                              iconSize: 20,
-                              onPressed: () => context.push('/settings'),
-                              icon: const Icon(Icons.settings_outlined),
-                              style: IconButton.styleFrom(
-                                backgroundColor:
-                                    theme.colorScheme.surfaceContainerHighest,
-                                foregroundColor: theme.colorScheme.onSurface,
-                              ),
+                              onTap: () => context.push('/settings'),
+                              icon: Icons.settings_outlined,
                             ),
                           ],
                         ),
@@ -236,7 +269,6 @@ class HomeScreen extends ConsumerWidget {
                     child: _buildSectionWidget(
                       context,
                       section,
-                      feedState,
                       discoveryIndex: dIndex,
                       totalDiscoverySections: totalCount,
                     ),
@@ -297,8 +329,7 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildSectionWidget(
     BuildContext context,
-    HomeSection section,
-    AsyncValue<HomeFeedState> feedState, {
+    HomeSection section, {
     int? discoveryIndex,
     int totalDiscoverySections = 1,
   }) {

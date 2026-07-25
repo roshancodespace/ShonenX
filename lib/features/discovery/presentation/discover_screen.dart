@@ -23,7 +23,6 @@ import 'package:shonenx/features/discovery/providers/metadata_tags_provider.dart
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/advanced_search_sheet.dart';
 import 'package:shonenx/core/utils/responsive.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 
 class DiscoverScreen extends StatelessWidget {
   final String? query;
@@ -114,7 +113,7 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
       if (mounted) setState(() {});
     });
 
-    _supportedMediaTypes = ref.read(primaryTrackerProvider).supportedMediaTypes;
+    _supportedMediaTypes = ref.read(metadataSourceProvider).supportedMediaTypes;
     int initIndex = _supportedMediaTypes.indexOf(widget.type);
     if (initIndex == -1) initIndex = 0;
 
@@ -242,9 +241,11 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
   }
 
   void _openAdvancedSearch(BuildContext context) {
-    final currentType = _tabController.index == 0
-        ? MediaType.ANIME
-        : MediaType.MANGA;
+    final currentType =
+        (_tabController.index >= 0 &&
+            _tabController.index < _supportedMediaTypes.length)
+        ? _supportedMediaTypes[_tabController.index]
+        : MediaType.ANIME;
     final filtersState = ref.read(
       discoveryFiltersProvider((type: currentType, sourceId: widget.source)),
     );
@@ -263,7 +264,7 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
       builder: (context) {
         return AdvancedSearchSheet(
           initialQuery: _query,
-          type: _tabController.index == 0 ? MediaType.ANIME : MediaType.MANGA,
+          type: currentType,
           initialGenres: _genres,
           initialTags: _tags,
           sourceId: widget.source,
@@ -282,12 +283,12 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
 
   @override
   Widget build(BuildContext context) {
-    _attachOverlay();
-
     final theme = Theme.of(context);
-    final currentType = _tabController.index == 0
-        ? MediaType.ANIME
-        : MediaType.MANGA;
+    final currentType =
+        (_tabController.index >= 0 &&
+            _tabController.index < _supportedMediaTypes.length)
+        ? _supportedMediaTypes[_tabController.index]
+        : MediaType.ANIME;
 
     final filtersState = ref.watch(
       discoveryFiltersProvider((type: currentType, sourceId: widget.source)),
@@ -393,7 +394,7 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
 
               Consumer(
                 builder: (context, ref, child) {
-                  ref.listen(primaryTrackerProvider, (previous, next) {
+                  ref.listen(metadataSourceProvider, (previous, next) {
                     if (previous?.supportedMediaTypes !=
                         next.supportedMediaTypes) {
                       _rebuildTabController(next.supportedMediaTypes);

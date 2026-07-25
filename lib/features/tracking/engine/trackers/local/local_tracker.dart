@@ -33,7 +33,8 @@ class LocalTracker implements TrackingService {
   }) async {
     await _isar.writeTxn(() async {
       LibraryEntry? entry = await _isar.libraryEntrys.getByProviderIdType(
-        trackingId, media.type.id
+        trackingId,
+        media.type.id,
       );
 
       entry ??= LibraryEntry()
@@ -43,6 +44,8 @@ class LocalTracker implements TrackingService {
         ..cover = media.cover ?? ''
         ..type = media.type.id
         ..episodes = media.episodes
+        ..sourceType = 'tracker'
+        ..sourceId = 'local'
         ..updatedAt = DateTime.now();
 
       if (progress != null) {
@@ -83,7 +86,10 @@ class LocalTracker implements TrackingService {
     required String mediaId,
     required MediaType mediaType,
   }) async {
-    final entry = await _isar.libraryEntrys.getByProviderIdType(mediaId, mediaType.id);
+    final entry = await _isar.libraryEntrys.getByProviderIdType(
+      mediaId,
+      mediaType.id,
+    );
     if (entry == null) return null;
 
     return TrackedListItem(
@@ -103,7 +109,10 @@ class LocalTracker implements TrackingService {
     required MediaType mediaType,
   }) async {
     await _isar.writeTxn(() async {
-      await _isar.libraryEntrys.deleteByProviderIdType(trackingId, mediaType.id);
+      await _isar.libraryEntrys.deleteByProviderIdType(
+        trackingId,
+        mediaType.id,
+      );
     });
   }
 }

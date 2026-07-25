@@ -321,7 +321,9 @@ class SimklTracker extends BaseTracker
               ..title = inner['title'] ?? 'Unknown'
               ..cover = coverUrl
               ..status = status.id
-              ..episodes = inner['total_episodes'];
+              ..episodes = inner['total_episodes']
+              ..sourceType = 'tracker'
+              ..sourceId = 'simkl';
           })
           .whereType<LibraryEntry>()
           .toList();

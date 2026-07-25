@@ -337,7 +337,9 @@ class AnilistTracker extends BaseTracker
                 ..format = media['format']?.toString() ?? ''
                 ..cover = media['coverImage']?['large'] ?? ''
                 ..status = _parseAnilistStatus(media['status']).id
-                ..episodes = media['episodes'];
+                ..episodes = media['episodes']
+                ..sourceType = 'tracker'
+                ..sourceId = 'anilist';
             })
             .whereType<LibraryEntry>()
             .toList();

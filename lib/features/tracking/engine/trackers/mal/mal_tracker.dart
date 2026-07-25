@@ -318,7 +318,9 @@ class MalTracker extends BaseTracker with MalMetadata implements RemoteTracker {
             ..status = _parseMalStatus(listStatus?['status']).id
             ..score = rawScore > 0 ? rawScore.toDouble() : 0
             ..episodesWatched = (listStatus?[progressKey] as num?)?.toInt() ?? 0
-            ..episodes = node[totalCountKey];
+            ..episodes = node[totalCountKey]
+            ..sourceType = 'tracker'
+            ..sourceId = 'mal';
         }).toList();
       },
     );

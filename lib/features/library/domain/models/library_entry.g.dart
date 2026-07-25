@@ -36,11 +36,21 @@ const LibraryEntrySchema = CollectionSchema(
       type: IsarType.string,
     ),
     r'score': PropertySchema(id: 6, name: r'score', type: IsarType.double),
-    r'status': PropertySchema(id: 7, name: r'status', type: IsarType.string),
-    r'title': PropertySchema(id: 8, name: r'title', type: IsarType.string),
-    r'type': PropertySchema(id: 9, name: r'type', type: IsarType.string),
+    r'sourceId': PropertySchema(
+      id: 7,
+      name: r'sourceId',
+      type: IsarType.string,
+    ),
+    r'sourceType': PropertySchema(
+      id: 8,
+      name: r'sourceType',
+      type: IsarType.string,
+    ),
+    r'status': PropertySchema(id: 9, name: r'status', type: IsarType.string),
+    r'title': PropertySchema(id: 10, name: r'title', type: IsarType.string),
+    r'type': PropertySchema(id: 11, name: r'type', type: IsarType.string),
     r'updatedAt': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
@@ -108,6 +118,18 @@ int _libraryEntryEstimateSize(
   }
   bytesCount += 3 + object.providerId.length * 3;
   {
+    final value = object.sourceId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.sourceType;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.status;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -136,10 +158,12 @@ void _libraryEntrySerialize(
   writer.writeString(offsets[4], object.format);
   writer.writeString(offsets[5], object.providerId);
   writer.writeDouble(offsets[6], object.score);
-  writer.writeString(offsets[7], object.status);
-  writer.writeString(offsets[8], object.title);
-  writer.writeString(offsets[9], object.type);
-  writer.writeDateTime(offsets[10], object.updatedAt);
+  writer.writeString(offsets[7], object.sourceId);
+  writer.writeString(offsets[8], object.sourceType);
+  writer.writeString(offsets[9], object.status);
+  writer.writeString(offsets[10], object.title);
+  writer.writeString(offsets[11], object.type);
+  writer.writeDateTime(offsets[12], object.updatedAt);
 }
 
 LibraryEntry _libraryEntryDeserialize(
@@ -157,10 +181,12 @@ LibraryEntry _libraryEntryDeserialize(
   object.id = id;
   object.providerId = reader.readString(offsets[5]);
   object.score = reader.readDoubleOrNull(offsets[6]);
-  object.status = reader.readStringOrNull(offsets[7]);
-  object.title = reader.readString(offsets[8]);
-  object.type = reader.readStringOrNull(offsets[9]);
-  object.updatedAt = reader.readDateTime(offsets[10]);
+  object.sourceId = reader.readStringOrNull(offsets[7]);
+  object.sourceType = reader.readStringOrNull(offsets[8]);
+  object.status = reader.readStringOrNull(offsets[9]);
+  object.title = reader.readString(offsets[10]);
+  object.type = reader.readStringOrNull(offsets[11]);
+  object.updatedAt = reader.readDateTime(offsets[12]);
   return object;
 }
 
@@ -188,10 +214,14 @@ P _libraryEntryDeserializeProp<P>(
     case 7:
       return (reader.readStringOrNull(offset)) as P;
     case 8:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 9:
       return (reader.readStringOrNull(offset)) as P;
     case 10:
+      return (reader.readString(offset)) as P;
+    case 11:
+      return (reader.readStringOrNull(offset)) as P;
+    case 12:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1379,6 +1409,324 @@ extension LibraryEntryQueryFilter
   }
 
   QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'sourceId'),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'sourceId'),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceIdEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'sourceId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'sourceId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'sourceId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'sourceId',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceIdStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'sourceId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceIdEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'sourceId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'sourceId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'sourceId',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'sourceId', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'sourceId', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceTypeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'sourceType'),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceTypeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'sourceType'),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceTypeEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'sourceType',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceTypeGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'sourceType',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceTypeLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'sourceType',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceTypeBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'sourceType',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceTypeStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'sourceType',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceTypeEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'sourceType',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceTypeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'sourceType',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceTypeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'sourceType',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceTypeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'sourceType', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
+  sourceTypeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'sourceType', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterFilterCondition>
   statusIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -2002,6 +2350,31 @@ extension LibraryEntryQuerySortBy
     });
   }
 
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy> sortBySourceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy> sortBySourceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy> sortBySourceType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy>
+  sortBySourceTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceType', Sort.desc);
+    });
+  }
+
   QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy> sortByStatus() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'status', Sort.asc);
@@ -2152,6 +2525,31 @@ extension LibraryEntryQuerySortThenBy
     });
   }
 
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy> thenBySourceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy> thenBySourceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy> thenBySourceType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy>
+  thenBySourceTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceType', Sort.desc);
+    });
+  }
+
   QueryBuilder<LibraryEntry, LibraryEntry, QAfterSortBy> thenByStatus() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'status', Sort.asc);
@@ -2252,6 +2650,22 @@ extension LibraryEntryQueryWhereDistinct
     });
   }
 
+  QueryBuilder<LibraryEntry, LibraryEntry, QDistinct> distinctBySourceId({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'sourceId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<LibraryEntry, LibraryEntry, QDistinct> distinctBySourceType({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'sourceType', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<LibraryEntry, LibraryEntry, QDistinct> distinctByStatus({
     bool caseSensitive = true,
   }) {
@@ -2330,6 +2744,18 @@ extension LibraryEntryQueryProperty
   QueryBuilder<LibraryEntry, double?, QQueryOperations> scoreProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'score');
+    });
+  }
+
+  QueryBuilder<LibraryEntry, String?, QQueryOperations> sourceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sourceId');
+    });
+  }
+
+  QueryBuilder<LibraryEntry, String?, QQueryOperations> sourceTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sourceType');
     });
   }
 

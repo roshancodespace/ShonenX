@@ -23,6 +23,9 @@ class LibraryEntry {
   DateTime addedAt = DateTime.now();
   DateTime updatedAt = DateTime.now();
 
+  String? sourceType;
+  String? sourceId;
+
   UnifiedMedia toUnifiedMedia() {
     return UnifiedMedia(
       id: providerId,
@@ -48,6 +51,8 @@ class LibraryEntry {
     'episodesWatched': episodesWatched,
     'addedAt': addedAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
+    'sourceType': sourceType,
+    'sourceId': sourceId,
   };
 
   static LibraryEntry fromBackupMap(Map<String, dynamic> m) => LibraryEntry()
@@ -63,5 +68,7 @@ class LibraryEntry {
     ..addedAt =
         DateTime.tryParse(m['addedAt'] as String? ?? '') ?? DateTime.now()
     ..updatedAt =
-        DateTime.tryParse(m['updatedAt'] as String? ?? '') ?? DateTime.now();
+        DateTime.tryParse(m['updatedAt'] as String? ?? '') ?? DateTime.now()
+    ..sourceType = m['sourceType'] as String?
+    ..sourceId = m['sourceId'] as String?;
 }

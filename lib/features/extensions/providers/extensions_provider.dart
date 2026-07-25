@@ -508,15 +508,25 @@ class ExtensionsService {
     bool isInstalled,
     List<String> order,
   ) {
-    final Map<String, List<UnifiedSource>> groupedByName = {};
+    final Map<String, List<UnifiedSource>> inbuiltGroupedByName = {};
+    final Map<String, List<UnifiedSource>> extensionGroupedByName = {};
+
     for (final s in filteredSources) {
-      groupedByName.putIfAbsent(s.name, () => []).add(s);
+      if (s.isInbuilt) {
+        inbuiltGroupedByName.putIfAbsent(s.name, () => []).add(s);
+      } else {
+        extensionGroupedByName.putIfAbsent(s.name, () => []).add(s);
+      }
     }
 
     final Map<String, Map<String, List<UnifiedSource>>> groupedByLang = {};
 
-    for (final name in groupedByName.keys) {
-      final sources = groupedByName[name]!;
+    if (inbuiltGroupedByName.isNotEmpty) {
+      groupedByLang['Inbuilt'] = inbuiltGroupedByName;
+    }
+
+    for (final name in extensionGroupedByName.keys) {
+      final sources = extensionGroupedByName[name]!;
       String groupLang = 'All';
 
       if (sources.length > 1) {
@@ -551,6 +561,8 @@ class ExtensionsService {
 
     final sortedLangs = groupedByLang.keys.toList()
       ..sort((a, b) {
+        if (a == 'Inbuilt') return -1;
+        if (b == 'Inbuilt') return 1;
         if (a == 'All') return -1;
         if (b == 'All') return 1;
         return a.compareTo(b);

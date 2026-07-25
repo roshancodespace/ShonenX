@@ -121,7 +121,9 @@ class MediaPreferenceNotifier extends AsyncNotifier<MediaPreferenceState> {
           ? null
           : await _migrateLegacyPreferences(rawPref);
 
-      final availableSources = await ref.watch(args.type.availableSourcesProvider.future);
+      final availableSources = await ref.watch(
+        args.type.availableSourcesProvider.future,
+      );
 
       if (availableSources.isEmpty) {
         throw StateError('no-sources');

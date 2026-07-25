@@ -20,7 +20,6 @@ import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
-import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 import 'package:shonenx/source_engine/models/source_setting.dart';
@@ -67,13 +66,10 @@ class EpisodesTabWidget extends ConsumerWidget {
     return Column(
       children: [
         StaggeredFadeIn(index: 0, child: _EpisodesHeader(media: media)),
-        StaggeredFadeIn(
-          index: 1,
-          child: Container(
-            width: double.maxFinite,
-            height: 0.5,
-            color: cs.surfaceContainerHighest,
-          ),
+        Container(
+          width: double.maxFinite,
+          height: 1,
+          color: cs.surfaceContainerHighest,
         ),
         Expanded(
           child: EpisodeListPanel(
@@ -248,62 +244,8 @@ class _EpisodesHeader extends ConsumerWidget {
     final textTheme = theme.textTheme;
     final title = media.title.availableTitle;
 
-    if (media.sourceId != null) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: cs.primaryContainer,
-              ),
-              child: Icon(
-                Icons.hub_rounded,
-                size: 18,
-                color: cs.onPrimaryContainer,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'SOURCE',
-                    style: textTheme.labelMedium?.copyWith(
-                      color: cs.primary,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
     final availableSources =
-        ref
-            .watch(
-              media.type == MediaType.ANIME
-                  ? availableAnimeSourcesProvider
-                  : availableMangaSourcesProvider,
-            )
-            .value ??
-        [];
+        ref.watch(media.type.availableSourcesProvider).value ?? [];
 
     if (availableSources.isEmpty) {
       return const SizedBox.shrink();
@@ -334,7 +276,7 @@ class _EpisodesHeader extends ConsumerWidget {
     final sourceName = sourceState?.sourceInfo.name ?? 'Unknown';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -429,14 +371,7 @@ class _EpisodesHeader extends ConsumerWidget {
   ) {
     final title = media.title.availableTitle;
     final availableSources =
-        ref
-            .read(
-              media.type == MediaType.ANIME
-                  ? availableAnimeSourcesProvider
-                  : availableMangaSourcesProvider,
-            )
-            .value ??
-        [];
+        ref.read(media.type.availableSourcesProvider).value ?? [];
 
     showModalBottomSheet(
       context: context,
@@ -497,7 +432,7 @@ class _EpisodesHeader extends ConsumerWidget {
                           bool isSubItem,
                         ) {
                           final selected = currentSource == sourceInfo;
-                          final sourceImpl = media.type == MediaType.ANIME
+                          final sourceImpl = media.type.usesAnimeSources
                               ? ref.read(animeSourceProvider(sourceInfo))
                               : ref.read(mangaSourceProvider(sourceInfo));
 

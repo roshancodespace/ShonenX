@@ -12,11 +12,11 @@ import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
-import 'widgets/extension_beginner_sheet.dart';
 import 'widgets/extension_guide_sheet.dart';
 import 'widgets/manage_repos_sheet.dart';
 import 'widgets/runtime_setup_sheet.dart';
 import 'widgets/sources_tab.dart';
+import 'package:shonenx/shared/widgets/unified_search_bar.dart';
 
 class ExtensionsSettingsScreen extends ConsumerStatefulWidget {
   final String? autoAddUrl;
@@ -76,12 +76,11 @@ class _ExtensionsSettingsScreenState
     return DefaultTabController(
       length: 6,
       child: AppScaffold(
-        title: _isSearching ? null : 'Sources',
-        subtitle: _isSearching ? null : 'Extensions & Catalogs',
+        title: 'Sources',
+        subtitle: 'Extensions & Catalogs',
         floatingActionButtonLocation: MediaQuery.of(context).size.width < 600
             ? FloatingActionButtonLocation.centerFloat
             : FloatingActionButtonLocation.endFloat,
-        titleWidget: _isSearching ? _buildSearchField(theme) : null,
         barBottom: _buildBarBottom(),
         actions: _buildActions(context),
         body: TabBarView(
@@ -137,22 +136,6 @@ class _ExtensionsSettingsScreenState
     );
   }
 
-  Widget _buildSearchField(ThemeData theme) {
-    return TextField(
-      controller: _searchController,
-      autofocus: true,
-      decoration: InputDecoration(
-        hintText: 'Search extensions...',
-        border: InputBorder.none,
-        hintStyle: theme.textTheme.titleMedium?.copyWith(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-        ),
-      ),
-      style: theme.textTheme.titleMedium,
-      onChanged: (value) => setState(() => _searchQuery = value),
-    );
-  }
-
   PreferredSizeWidget _buildBarBottom() {
     return PreferredSize(
       preferredSize: const Size.fromHeight(88),
@@ -170,20 +153,25 @@ class _ExtensionsSettingsScreenState
       themePrefsProvider.select((s) => s.uiRoundness),
     );
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Row(
-        children: [
-          _buildEngineCapsule(cs, roundness),
-          const SizedBox(width: 8),
-          _buildLanguageCapsule(cs, roundness),
-          if (_selectedEngineFilter != 'All' ||
-              _selectedLangFilter != 'All') ...[
-            const SizedBox(width: 8),
-            _buildResetCapsule(cs, roundness),
-          ],
-        ],
+    return SizedBox(
+      height: 40,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildEngineCapsule(cs, roundness),
+              const SizedBox(width: 8),
+              _buildLanguageCapsule(cs, roundness),
+              if (_selectedEngineFilter != 'All' ||
+                  _selectedLangFilter != 'All') ...[
+                const SizedBox(width: 8),
+                _buildResetCapsule(cs, roundness),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -514,50 +502,7 @@ class _ExtensionsSettingsScreenState
   }
 
   List<Widget> _buildActions(BuildContext context) {
-    if (_isSearching) {
-      return [
-        if (_searchQuery.isNotEmpty)
-          IconButton(
-            icon: const Icon(Icons.clear_rounded),
-            tooltip: 'Clear',
-            onPressed: () {
-              setState(() {
-                _searchQuery = '';
-                _searchController.clear();
-              });
-            },
-          ),
-        IconButton(
-          icon: const Icon(Icons.close_rounded),
-          tooltip: 'Close Search',
-          onPressed: () {
-            setState(() {
-              _isSearching = false;
-              _searchQuery = '';
-              _searchController.clear();
-            });
-          },
-        ),
-        const SizedBox(width: 4),
-      ];
-    }
-
     return [
-      TextButton(
-        onPressed: () => ExtensionBeginnerSheet.show(context),
-        child: Text(
-          'Retarded?',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.error,
-          ),
-        ),
-      ),
-      IconButton(
-        icon: const Icon(Icons.search_rounded),
-        tooltip: 'Search Extensions',
-        onPressed: () => setState(() => _isSearching = true),
-      ),
       IconButton(
         icon: const Icon(Icons.speed_rounded),
         tooltip: 'Test Extensions',
@@ -574,34 +519,64 @@ class _ExtensionsSettingsScreenState
   }
 
   Widget _buildFab(BuildContext context, ThemeData theme) {
-    return Wrap(
-      spacing: 8.0,
-      runSpacing: 8.0,
-      alignment: WrapAlignment.end,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      verticalDirection: VerticalDirection.up,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        SizedBox(
-          height: 44,
-          child: FloatingActionButton.extended(
-            heroTag: 'manage_engines_fab',
-            backgroundColor: theme.colorScheme.secondaryContainer,
-            foregroundColor: theme.colorScheme.onSecondaryContainer,
-            icon: const Icon(Icons.extension_rounded, size: 18),
-            label: const Text('Manage Engines', style: TextStyle(fontSize: 13)),
-            onPressed: () => _showManageEnginesSheet(context),
-          ),
+        UnifiedSearchBar(
+          isExpanded: _isSearching,
+          expandedWidth: MediaQuery.of(context).size.width * 0.75,
+          height: 52,
+          controller: _searchController,
+          hintText: 'Search extensions...',
+          onExpand: () => setState(() => _isSearching = true),
+          onBackPressed: () => setState(() {
+            _isSearching = false;
+            _searchQuery = '';
+            _searchController.clear();
+          }),
+          onClearPressed: () => setState(() {
+            _searchQuery = '';
+            _searchController.clear();
+          }),
         ),
-        SizedBox(
-          height: 44,
-          child: FloatingActionButton.extended(
-            heroTag: 'add_repo_fab',
-            backgroundColor: theme.colorScheme.primary,
-            foregroundColor: theme.colorScheme.onPrimary,
-            icon: const Icon(Icons.storage_rounded, size: 18),
-            label: const Text('Manage Repos', style: TextStyle(fontSize: 13)),
-            onPressed: () => _showManageReposSheet(context),
-          ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8.0,
+          runSpacing: 8.0,
+          alignment: WrapAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          verticalDirection: VerticalDirection.up,
+          children: [
+            SizedBox(
+              height: 44,
+              child: FloatingActionButton.extended(
+                heroTag: 'manage_engines_fab',
+                backgroundColor: theme.colorScheme.secondaryContainer,
+                foregroundColor: theme.colorScheme.onSecondaryContainer,
+                icon: const Icon(Icons.extension_rounded, size: 18),
+                label: const Text(
+                  'Manage Engines',
+                  style: TextStyle(fontSize: 13),
+                ),
+                onPressed: () => _showManageEnginesSheet(context),
+              ),
+            ),
+            SizedBox(
+              height: 44,
+              child: FloatingActionButton.extended(
+                heroTag: 'add_repo_fab',
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+                icon: const Icon(Icons.storage_rounded, size: 18),
+                label: const Text(
+                  'Manage Repos',
+                  style: TextStyle(fontSize: 13),
+                ),
+                onPressed: () => _showManageReposSheet(context),
+              ),
+            ),
+          ],
         ),
       ],
     );

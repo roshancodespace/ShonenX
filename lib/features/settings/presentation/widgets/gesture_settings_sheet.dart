@@ -113,7 +113,9 @@ class _LivePreview extends StatelessWidget {
                           child: _gestureArea(
                             bgColor: cs.primaryContainer.withValues(alpha: 0.5),
                             fgColor: cs.onPrimaryContainer,
-                            icon: Icons.light_mode_rounded,
+                            icon: prefs.swapVolumeAndBrightness
+                                ? Icons.volume_up_rounded
+                                : Icons.light_mode_rounded,
                             percent: _pct(prefs.leftWidth),
                             isLeft: true,
                           ),
@@ -129,7 +131,9 @@ class _LivePreview extends StatelessWidget {
                               alpha: 0.5,
                             ),
                             fgColor: cs.onTertiaryContainer,
-                            icon: Icons.volume_up_rounded,
+                            icon: prefs.swapVolumeAndBrightness
+                                ? Icons.light_mode_rounded
+                                : Icons.volume_up_rounded,
                             percent: _pct(prefs.rightWidth),
                             isLeft: false,
                           ),

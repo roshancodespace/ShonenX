@@ -22,6 +22,7 @@ import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
+import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 import 'package:shonenx/source_engine/models/source_setting.dart';
 import 'package:shonenx/features/settings/presentation/source_settings_sheet.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
@@ -35,11 +36,7 @@ class EpisodesTabWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
 
-    final sourcesAsync = ref.watch(
-      media.type == MediaType.ANIME
-          ? availableAnimeSourcesProvider
-          : availableMangaSourcesProvider,
-    );
+    final sourcesAsync = ref.watch(media.type.availableSourcesProvider);
 
     if (sourcesAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -85,7 +82,8 @@ class EpisodesTabWidget extends ConsumerWidget {
             currentEpisodeNumber: currentEpisodeNumber,
             useScrollController: true,
             onEpisodeTap: (UnifiedEpisode episode, SourceInfo sourceInfo) {
-              if (media.type == MediaType.MANGA) {
+              if (media.type == MediaType.MANGA ||
+                  media.type == MediaType.NOVEL) {
                 final historyEntry = readHistoryEntries
                     .where((e) => e.chapterNumber == episode.number)
                     .firstOrNull;
@@ -146,7 +144,7 @@ class EpisodesTabWidget extends ConsumerWidget {
                     AppBottomSheet.show(
                       context: episodeActionsContext,
                       title:
-                          '${media.type == MediaType.MANGA ? 'Chapter' : 'Episode'} $epNum Discussion',
+                          '${(media.type == MediaType.MANGA || media.type == MediaType.NOVEL) ? 'Chapter' : 'Episode'} $epNum Discussion',
                       contentPadding: EdgeInsets.zero,
                       child: SizedBox(
                         height:
@@ -167,7 +165,7 @@ class EpisodesTabWidget extends ConsumerWidget {
                     AppBottomSheet.show(
                       context: episodeActionsContext,
                       title:
-                          '${media.type == MediaType.MANGA ? 'Chapter' : 'Episode'} ${episode.number.toString().contains('.0') ? episode.number.toInt() : episode.number}',
+                          '${(media.type == MediaType.MANGA || media.type == MediaType.NOVEL) ? 'Chapter' : 'Episode'} ${episode.number.toString().contains('.0') ? episode.number.toInt() : episode.number}',
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [

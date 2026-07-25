@@ -4,10 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/core/utils/extensions.dart';
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
-import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/matchmaker/match_service.dart';
-import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 
 class MatchedMedia {
   final String id;
@@ -58,9 +57,9 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
     final prefs = await ref.watch(mediaPreferenceProvider(args).future);
 
     if (args.sourceId != null && args.providerId != null) {
-      final availableSources = args.type == MediaType.ANIME
-          ? await ref.watch(availableAnimeSourcesProvider.future)
-          : await ref.watch(availableMangaSourcesProvider.future);
+      final availableSources = await ref.watch(
+        args.type.availableSourcesProvider.future,
+      );
 
       final sourceInfo =
           availableSources.firstWhereOrNull((s) => s.id == args.sourceId) ??
@@ -93,7 +92,7 @@ class MediaMatchNotifier extends AsyncNotifier<MatchedMediaState> {
       );
     }
 
-    final sourceImpl = args.type == MediaType.ANIME
+    final sourceImpl = args.type.usesAnimeSources
         ? ref.read(animeSourceProvider(prefs.sourceInfo))
         : ref.read(mangaSourceProvider(prefs.sourceInfo));
 

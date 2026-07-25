@@ -23,6 +23,7 @@ import 'package:shonenx/features/discovery/providers/metadata_tags_provider.dart
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/advanced_search_sheet.dart';
 import 'package:shonenx/core/utils/responsive.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 
 class DiscoverScreen extends StatelessWidget {
   final String? query;
@@ -82,7 +83,7 @@ class SearchDiscoverScreen extends ConsumerStatefulWidget {
 }
 
 class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final TextEditingController _searchController;
   late TabController _tabController;
   Timer? _debounceTimer;
@@ -94,6 +95,8 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
 
   late final FocusNode _searchFocusNode;
   late final FocusNode _keyboardFocusNode;
+
+  List<MediaType> _supportedMediaTypes = [];
 
   @override
   void initState() {
@@ -111,13 +114,33 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
       if (mounted) setState(() {});
     });
 
+    _supportedMediaTypes = ref.read(primaryTrackerProvider).supportedMediaTypes;
+    int initIndex = _supportedMediaTypes.indexOf(widget.type);
+    if (initIndex == -1) initIndex = 0;
+
     _tabController = TabController(
-      length: 2,
+      length: _supportedMediaTypes.length,
       vsync: this,
-      initialIndex: widget.type == MediaType.ANIME ? 0 : 1,
+      initialIndex: initIndex,
     );
 
-    _attachOverlay();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _attachOverlay();
+      }
+    });
+  }
+
+  void _rebuildTabController(List<MediaType> newTypes) {
+    if (!mounted) return;
+    _tabController.dispose();
+    setState(() {
+      _supportedMediaTypes = newTypes;
+      _tabController = TabController(length: newTypes.length, vsync: this);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _attachOverlay();
+    });
   }
 
   @override
@@ -144,27 +167,20 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
     }
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (ModalRoute.of(context)?.isCurrent == true) {
-      _attachOverlay();
-    }
-  }
-
   void _attachOverlay() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && (ModalRoute.of(context)?.isCurrent ?? true)) {
+    Future.microtask(() {
+      try {
         ref
             .read(navBarProvider.notifier)
             .attachTop(
               MediaSwitcherOverlay(
                 controller: _tabController,
                 onSearchTap: null,
+                supportedTypes: _supportedMediaTypes,
               ),
               branchIndex: 1,
             );
-      }
+      } catch (_) {}
     });
   }
 
@@ -172,9 +188,11 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
   void dispose() {
     _debounceTimer?.cancel();
     _searchController.removeListener(_onSearchTextChanged);
-    try {
-      ref.read(navBarProvider.notifier).clearTop(branchIndex: 1);
-    } catch (_) {}
+    Future.microtask(() {
+      try {
+        ref.read(navBarProvider.notifier).clearTop(branchIndex: 1);
+      } catch (_) {}
+    });
     _searchFocusNode.dispose();
     _keyboardFocusNode.dispose();
     _searchController.dispose();
@@ -372,6 +390,18 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
                       : null,
                 ),
               ),
+
+              Consumer(
+                builder: (context, ref, child) {
+                  ref.listen(primaryTrackerProvider, (previous, next) {
+                    if (previous?.supportedMediaTypes !=
+                        next.supportedMediaTypes) {
+                      _rebuildTabController(next.supportedMediaTypes);
+                    }
+                  });
+                  return const SizedBox.shrink();
+                },
+              ),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -475,9 +505,9 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
                       Expanded(
                         child: TabBarView(
                           controller: _tabController,
-                          children: [
-                            _DiscoverTabFeed(
-                              type: MediaType.ANIME,
+                          children: _supportedMediaTypes.map((type) {
+                            return _DiscoverTabFeed(
+                              type: type,
                               query: _query,
                               genres: _genres,
                               tags: _tags,
@@ -492,25 +522,8 @@ class _SearchDiscoverScreenState extends ConsumerState<SearchDiscoverScreen>
                                   _source = sId;
                                 });
                               },
-                            ),
-                            _DiscoverTabFeed(
-                              type: MediaType.MANGA,
-                              query: _query,
-                              genres: _genres,
-                              tags: _tags,
-                              source: _source,
-                              onGenreSelect: (g) {
-                                setState(() {
-                                  _genres = [g];
-                                });
-                              },
-                              onSourceSelect: (sId) {
-                                setState(() {
-                                  _source = sId;
-                                });
-                              },
-                            ),
-                          ],
+                            );
+                          }).toList(),
                         ),
                       ),
                     ],

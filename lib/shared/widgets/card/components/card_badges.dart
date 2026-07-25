@@ -28,9 +28,9 @@ class CardBadgeOverlay extends StatelessWidget {
     final formattedScore = config.formattedScore;
 
     return Positioned(
-      top: 5,
-      left: 5,
-      right: 5,
+      top: 8,
+      left: 8,
+      right: 8,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

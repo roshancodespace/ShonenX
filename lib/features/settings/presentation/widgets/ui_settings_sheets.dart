@@ -32,6 +32,75 @@ final _previewReadHistoryEntry = ReadHistoryEntry()
   ..cover =
       'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8--VpUm_3ewaKmioaFpTjAUA4z46Qbb-4GQ&s';
 
+class UiSettingsSheetLayout extends StatelessWidget {
+  final Widget preview;
+  final String optionsTitle;
+  final Widget options;
+  final String? togglesTitle;
+  final Widget? toggles;
+
+  const UiSettingsSheetLayout({
+    super.key,
+    required this.preview,
+    required this.optionsTitle,
+    required this.options,
+    this.togglesTitle,
+    this.toggles,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 4),
+          Center(child: preview),
+          const SizedBox(height: 18),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              optionsTitle,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: options,
+          ),
+          if (toggles != null) ...[
+            const SizedBox(height: 18),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                togglesTitle ?? 'Display Options',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: toggles!,
+            ),
+          ],
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+}
+
 void showAppearanceSheet(
   BuildContext context,
   WidgetRef ref,
@@ -274,141 +343,107 @@ void showCardStyleSheet(
         },
       ),
     ],
-    child: Consumer(
-      builder: (_, r, _) {
-        final uiState = r.watch(uiPrefsProvider);
-        final current = uiState.cardStyle;
-        final isWide = uiState.isMediaCardWide(current.name);
-        final layout = current.getLayout(isWideMode: isWide);
-        final canToggleWide =
-            current != MediaCardStyle.compact &&
-            current != MediaCardStyle.cinematic &&
-            current != MediaCardStyle.wideBanner;
+    child: UiSettingsSheetLayout(
+      preview: Consumer(
+        builder: (_, r, _) {
+          final uiState = r.watch(uiPrefsProvider);
+          final current = uiState.cardStyle;
+          final isWide = uiState.isMediaCardWide(current.name);
+          final layout = current.getLayout(isWideMode: isWide);
+          return SizedBox(
+            width: layout.width,
+            height: layout.height,
+            child: MediaCard(
+              title: 'Demon Slayer: Kimetsu No Yaiba',
+              tag: 'ui-card-preview',
+              format: 'TV',
+              score: 8.7,
+              year: '2024',
+              status: 'Ongoing',
+              genres: const ['Action', 'Fantasy'],
+              imageUrl:
+                  'https://m.media-amazon.com/images/M/MV5BM2IyN2E0NjctYWU2ZC00ZDc4LThiOTQtODAyOGNkZWM0M2E1XkEyXkFqcGc@._V1_.jpg',
+              onTap: () {},
+              style: current,
+            ),
+          );
+        },
+      ),
+      optionsTitle: 'Card Style Preset',
+      options: Consumer(
+        builder: (_, r, _) {
+          final current = r.watch(uiPrefsProvider.select((s) => s.cardStyle));
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisExtent: 58,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: MediaCardStyle.values.length,
+            itemBuilder: (context, index) {
+              final style = MediaCardStyle.values[index];
+              return _StyleGridCard(
+                selected: current == style,
+                icon: _cardStyleIcon(style),
+                title: style.displayName,
+                subtitle: _cardStyleDesc(style),
+                selectedColor: cs.primary,
+                onTap: () => notifier.updateCardStyle(style),
+              );
+            },
+          );
+        },
+      ),
+      togglesTitle: 'Display Options',
+      toggles: Consumer(
+        builder: (_, r, _) {
+          final uiState = r.watch(uiPrefsProvider);
+          final current = uiState.cardStyle;
+          final isWide = uiState.isMediaCardWide(current.name);
+          final canToggleWide =
+              current != MediaCardStyle.compact &&
+              current != MediaCardStyle.cinematic &&
+              current != MediaCardStyle.wideBanner;
 
-        return SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+          return Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              const SizedBox(height: 4),
-              Center(
-                child: SizedBox(
-                  width: layout.width,
-                  height: layout.height,
-                  child: MediaCard(
-                    title: 'Demon Slayer: Kimetsu No Yaiba',
-                    tag: 'ui-card-preview',
-                    format: 'TV',
-                    score: 8.7,
-                    year: '2024',
-                    status: 'Ongoing',
-                    genres: const ['Action', 'Fantasy'],
-                    imageUrl:
-                        'https://m.media-amazon.com/images/M/MV5BM2IyN2E0NjctYWU2ZC00ZDc4LThiOTQtODAyOGNkZWM0M2E1XkEyXkFqcGc@._V1_.jpg',
-                    onTap: () {},
-                    style: current,
+              FilterChip(
+                avatar: const Icon(Icons.star_rounded, size: 16),
+                label: const Text('Ratings'),
+                selected: uiState.showCardRatings,
+                onSelected: (_) => notifier.toggleShowCardRatings(),
+              ),
+              FilterChip(
+                avatar: const Icon(Icons.category_rounded, size: 16),
+                label: const Text('Genres'),
+                selected: uiState.showCardGenres,
+                onSelected: (_) => notifier.toggleShowCardGenres(),
+              ),
+              FilterChip(
+                avatar: const Icon(Icons.calendar_today_rounded, size: 16),
+                label: const Text('Release Year'),
+                selected: uiState.showCardYear,
+                onSelected: (_) => notifier.toggleShowCardYear(),
+              ),
+              if (canToggleWide)
+                FilterChip(
+                  avatar: Icon(
+                    isWide ? Icons.table_rows_rounded : Icons.grid_view_rounded,
+                    size: 16,
                   ),
+                  label: Text(isWide ? 'Wide Mode' : 'Portrait Mode'),
+                  selected: isWide,
+                  onSelected: (_) => notifier.toggleMediaCardWide(current.name),
                 ),
-              ),
-
-              const SizedBox(height: 18),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'Card Style Preset',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisExtent: 58,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: MediaCardStyle.values.length,
-                  itemBuilder: (context, index) {
-                    final style = MediaCardStyle.values[index];
-                    return _StyleGridCard(
-                      selected: current == style,
-                      icon: _cardStyleIcon(style),
-                      title: style.displayName,
-                      subtitle: _cardStyleDesc(style),
-                      selectedColor: cs.primary,
-                      onTap: () => notifier.updateCardStyle(style),
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 18),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'Display Options',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilterChip(
-                      avatar: const Icon(Icons.star_rounded, size: 16),
-                      label: const Text('Ratings'),
-                      selected: uiState.showCardRatings,
-                      onSelected: (_) => notifier.toggleShowCardRatings(),
-                    ),
-                    FilterChip(
-                      avatar: const Icon(Icons.category_rounded, size: 16),
-                      label: const Text('Genres'),
-                      selected: uiState.showCardGenres,
-                      onSelected: (_) => notifier.toggleShowCardGenres(),
-                    ),
-                    FilterChip(
-                      avatar: const Icon(
-                        Icons.calendar_today_rounded,
-                        size: 16,
-                      ),
-                      label: const Text('Release Year'),
-                      selected: uiState.showCardYear,
-                      onSelected: (_) => notifier.toggleShowCardYear(),
-                    ),
-                    if (canToggleWide)
-                      FilterChip(
-                        avatar: Icon(
-                          isWide
-                              ? Icons.table_rows_rounded
-                              : Icons.grid_view_rounded,
-                          size: 16,
-                        ),
-                        label: Text(isWide ? 'Wide Mode' : 'Portrait Mode'),
-                        selected: isWide,
-                        onSelected: (_) =>
-                            notifier.toggleMediaCardWide(current.name),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
             ],
-          ),
-        );
-      },
+          );
+        },
+      ),
     ),
   );
 }
@@ -498,58 +533,49 @@ void showContinueWatchingSheet(
         },
       ),
     ],
-    child: Consumer(
-      builder: (_, r, _) {
-        final current = r.watch(
-          uiPrefsProvider.select((s) => s.continueWatchingStyle),
-        );
-
-        return SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: ContinueWatchingItem(
-                  style: current,
-                  progress: 0.72,
-                  entry: _previewHistoryEntry,
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisExtent: 54,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: ContinueWatchingStyle.values.length,
-                  itemBuilder: (context, index) {
-                    final style = ContinueWatchingStyle.values[index];
-                    return _StyleGridCard(
-                      selected: current == style,
-                      icon: _cwStyleIcon(style),
-                      title: style.displayName,
-                      subtitle: _cwStyleDesc(style),
-                      selectedColor: cs.primary,
-                      onTap: () => notifier.updateContinueWatchingStyle(style),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-          ),
-        );
-      },
+    child: UiSettingsSheetLayout(
+      preview: Consumer(
+        builder: (_, r, _) {
+          final current = r.watch(
+            uiPrefsProvider.select((s) => s.continueWatchingStyle),
+          );
+          return ContinueWatchingItem(
+            style: current,
+            progress: 0.72,
+            entry: _previewHistoryEntry,
+          );
+        },
+      ),
+      optionsTitle: 'Continue Watching Style Preset',
+      options: Consumer(
+        builder: (_, r, _) {
+          final current = r.watch(
+            uiPrefsProvider.select((s) => s.continueWatchingStyle),
+          );
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisExtent: 54,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: ContinueWatchingStyle.values.length,
+            itemBuilder: (context, index) {
+              final style = ContinueWatchingStyle.values[index];
+              return _StyleGridCard(
+                selected: current == style,
+                icon: _cwStyleIcon(style),
+                title: style.displayName,
+                subtitle: _cwStyleDesc(style),
+                selectedColor: cs.primary,
+                onTap: () => notifier.updateContinueWatchingStyle(style),
+              );
+            },
+          );
+        },
+      ),
     ),
   );
 }
@@ -639,58 +665,49 @@ void showContinueReadingSheet(
         },
       ),
     ],
-    child: Consumer(
-      builder: (_, r, _) {
-        final current = r.watch(
-          uiPrefsProvider.select((s) => s.continueReadingStyle),
-        );
-
-        return SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: ContinueReadingItem(
-                  style: current,
-                  progress: 0.7,
-                  entry: _previewReadHistoryEntry,
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisExtent: 54,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: ContinueReadingStyle.values.length,
-                  itemBuilder: (context, index) {
-                    final style = ContinueReadingStyle.values[index];
-                    return _StyleGridCard(
-                      selected: current == style,
-                      icon: _crStyleIcon(style),
-                      title: style.displayName,
-                      subtitle: _crStyleDesc(style),
-                      selectedColor: cs.primary,
-                      onTap: () => notifier.updateContinueReadingStyle(style),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-          ),
-        );
-      },
+    child: UiSettingsSheetLayout(
+      preview: Consumer(
+        builder: (_, r, _) {
+          final current = r.watch(
+            uiPrefsProvider.select((s) => s.continueReadingStyle),
+          );
+          return ContinueReadingItem(
+            style: current,
+            progress: 0.7,
+            entry: _previewReadHistoryEntry,
+          );
+        },
+      ),
+      optionsTitle: 'Continue Reading Style Preset',
+      options: Consumer(
+        builder: (_, r, _) {
+          final current = r.watch(
+            uiPrefsProvider.select((s) => s.continueReadingStyle),
+          );
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisExtent: 54,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: ContinueReadingStyle.values.length,
+            itemBuilder: (context, index) {
+              final style = ContinueReadingStyle.values[index];
+              return _StyleGridCard(
+                selected: current == style,
+                icon: _crStyleIcon(style),
+                title: style.displayName,
+                subtitle: _crStyleDesc(style),
+                selectedColor: cs.primary,
+                onTap: () => notifier.updateContinueReadingStyle(style),
+              );
+            },
+          );
+        },
+      ),
     ),
   );
 }
@@ -706,120 +723,47 @@ void showEpisodeModeSheet(
   AppBottomSheet.show(
     context: context,
     title: 'Episode View Mode',
-    child: Consumer(
-      builder: (_, r, _) {
-        final current = r.watch(
-          uiPrefsProvider.select((s) => s.episodeViewMode),
-        );
-
-        return SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: _EpisodeViewModePreview(mode: current),
-              ),
-
-              const SizedBox(height: 10),
-
-              ...EpisodeViewMode.values.map(
-                (mode) => _SelectionTile(
-                  selected: current == mode,
-                  icon: _episodeModeIcon(mode),
-                  title: _episodeModeLabel(mode),
-                  subtitle: _episodeModeDesc(mode),
-                  selectedColor: cs.primary,
-                  onTap: () => notifier.updateEpisodeViewMode(mode),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+    child: UiSettingsSheetLayout(
+      preview: Consumer(
+        builder: (_, r, _) {
+          final current = r.watch(
+            uiPrefsProvider.select((s) => s.episodeViewMode),
+          );
+          return _EpisodeViewModePreview(mode: current);
+        },
+      ),
+      optionsTitle: 'Episode View Mode Preset',
+      options: Consumer(
+        builder: (_, r, _) {
+          final current = r.watch(
+            uiPrefsProvider.select((s) => s.episodeViewMode),
+          );
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisExtent: 54,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: EpisodeViewMode.values.length,
+            itemBuilder: (context, index) {
+              final mode = EpisodeViewMode.values[index];
+              return _StyleGridCard(
+                selected: current == mode,
+                icon: _episodeModeIcon(mode),
+                title: _episodeModeLabel(mode),
+                subtitle: _episodeModeDesc(mode),
+                selectedColor: cs.primary,
+                onTap: () => notifier.updateEpisodeViewMode(mode),
+              );
+            },
+          );
+        },
+      ),
     ),
   );
-}
-
-class _SelectionTile extends StatelessWidget {
-  final bool selected;
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color selectedColor;
-  final VoidCallback onTap;
-
-  const _SelectionTile({
-    required this.selected,
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.selectedColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
-          decoration: BoxDecoration(
-            color: selected
-                ? selectedColor.withValues(alpha: 0.12)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: selected ? selectedColor : cs.onSurfaceVariant,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: selected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                        color: selected ? cs.onSurface : cs.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (selected) ...[
-                const SizedBox(width: 8),
-                Icon(Icons.check_rounded, size: 18, color: selectedColor),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _StyleGridCard extends StatelessWidget {

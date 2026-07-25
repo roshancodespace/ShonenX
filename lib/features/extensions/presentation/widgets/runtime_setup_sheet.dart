@@ -64,11 +64,19 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
     try {
       await bridge.AnymeXRuntimeBridge.setupRuntime(force: force);
       if (controller.isReady.value) {
+        try {
+          final latest = await ref.read(runtimeUpdateProvider.future);
+          if (latest != null) {
+            bridge.AnymeXRuntimeBridge.setInstalledRelease(latest, 'v$latest');
+          }
+        } catch (_) {}
+
         final extManager = Get.find<bridge.ExtensionManager>();
         await extManager.onRuntimeBridgeInitialization(force: true);
         ref.invalidate(extensionManagerProvider);
         ref.invalidate(availableAnimeSourcesProvider);
         ref.invalidate(availableMangaSourcesProvider);
+        ref.invalidate(runtimeUpdateProvider);
         ref.read(enabledExtensionManagersProvider.notifier).enableAll([
           'aniyomi',
           'cloudstream',

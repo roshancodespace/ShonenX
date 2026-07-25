@@ -113,6 +113,12 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
                 onSecondaryTapUp: (_) => widget.onRightClick?.call(),
                 onTapUp: (details) {
                   final now = DateTime.now().millisecondsSinceEpoch;
+
+                  if (!prefs.enableGestures) {
+                    widget.onToggleControls();
+                    return;
+                  }
+
                   final dx = details.localPosition.dx;
                   final isLeft = dx < activeWidth * prefs.doubleTapWidth;
                   final isRight =
@@ -144,106 +150,118 @@ class _PlayerGestureOverlayState extends ConsumerState<PlayerGestureOverlay> {
                     widget.onToggleControls();
                   }
                 },
-                onVerticalDragStart: (details) {
-                  final dx = details.localPosition.dx;
-                  final dy = details.localPosition.dy;
-                  final width = constraints.maxWidth;
-                  final height = constraints.maxHeight;
+                onVerticalDragStart: !prefs.enableGestures
+                    ? null
+                    : (details) {
+                        final dx = details.localPosition.dx;
+                        final dy = details.localPosition.dy;
+                        final width = constraints.maxWidth;
+                        final height = constraints.maxHeight;
 
-                  // Restrict dragging to within margins
-                  if (dy < height * prefs.topMargin ||
-                      dy > height * (1.0 - prefs.bottomMargin) ||
-                      dx < width * prefs.leftMargin ||
-                      dx > width * (1.0 - prefs.rightMargin)) {
-                    return;
-                  }
+                        // Restrict dragging to within margins
+                        if (dy < height * prefs.topMargin ||
+                            dy > height * (1.0 - prefs.bottomMargin) ||
+                            dx < width * prefs.leftMargin ||
+                            dx > width * (1.0 - prefs.rightMargin)) {
+                          return;
+                        }
 
-                  widget.onHideControls?.call();
+                        widget.onHideControls?.call();
 
-                  bool isLeft = dx < width * prefs.leftWidth;
-                  bool isRight = dx > width * (1.0 - prefs.rightWidth);
+                        bool isLeft = dx < width * prefs.leftWidth;
+                        bool isRight = dx > width * (1.0 - prefs.rightWidth);
 
-                  if (isLeft || isRight) {
-                    setState(() {
-                      _isDragging = true;
-                      _isLeftSwipe = isLeft;
-                    });
-                  }
-                },
-                onVerticalDragUpdate: (details) {
-                  if (!_isDragging) return;
+                        if (isLeft || isRight) {
+                          setState(() {
+                            _isDragging = true;
+                            _isLeftSwipe = isLeft;
+                          });
+                        }
+                      },
+                onVerticalDragUpdate: !prefs.enableGestures
+                    ? null
+                    : (details) {
+                        if (!_isDragging) return;
 
-                  setState(() {
-                    final sensitivity =
-                        MediaQuery.of(context).size.height / 1.5;
-                    final delta = -details.delta.dy / sensitivity;
+                        setState(() {
+                          final sensitivity =
+                              MediaQuery.of(context).size.height / 1.5;
+                          final delta = -details.delta.dy / sensitivity;
 
-                    final changeVolume = prefs.swapVolumeAndBrightness
-                        ? _isLeftSwipe
-                        : !_isLeftSwipe;
+                          final changeVolume = prefs.swapVolumeAndBrightness
+                              ? _isLeftSwipe
+                              : !_isLeftSwipe;
 
-                    if (changeVolume) {
-                      _volume = (_volume + delta).clamp(0.0, 1.0);
-                      VolumeController.instance.setVolume(_volume);
-                    } else {
-                      _brightness = (_brightness + delta).clamp(0.0, 1.0);
-                      ScreenBrightness.instance.setApplicationScreenBrightness(
-                        _brightness,
-                      );
-                    }
-                  });
-                },
-                onVerticalDragEnd: (details) {
-                  if (!_isDragging) return;
-                  setState(() {
-                    _isDragging = false;
-                  });
-                },
-                onLongPressStart: (details) {
-                  final dx = details.localPosition.dx;
-                  final dy = details.localPosition.dy;
-                  final width = constraints.maxWidth;
-                  final height = constraints.maxHeight;
+                          if (changeVolume) {
+                            _volume = (_volume + delta).clamp(0.0, 1.0);
+                            VolumeController.instance.setVolume(_volume);
+                          } else {
+                            _brightness = (_brightness + delta).clamp(0.0, 1.0);
+                            ScreenBrightness.instance
+                                .setApplicationScreenBrightness(_brightness);
+                          }
+                        });
+                      },
+                onVerticalDragEnd: !prefs.enableGestures
+                    ? null
+                    : (details) {
+                        if (!_isDragging) return;
+                        setState(() {
+                          _isDragging = false;
+                        });
+                      },
+                onLongPressStart: !prefs.enableGestures
+                    ? null
+                    : (details) {
+                        final dx = details.localPosition.dx;
+                        final dy = details.localPosition.dy;
+                        final width = constraints.maxWidth;
+                        final height = constraints.maxHeight;
 
-                  // Restrict long press to within margins
-                  if (dy < height * prefs.topMargin ||
-                      dy > height * (1.0 - prefs.bottomMargin) ||
-                      dx < width * prefs.leftMargin ||
-                      dx > width * (1.0 - prefs.rightMargin)) {
-                    return;
-                  }
+                        // Restrict long press to within margins
+                        if (dy < height * prefs.topMargin ||
+                            dy > height * (1.0 - prefs.bottomMargin) ||
+                            dx < width * prefs.leftMargin ||
+                            dx > width * (1.0 - prefs.rightMargin)) {
+                          return;
+                        }
 
-                  if (dx > width * (1.0 - prefs.rightWidth)) {
-                    widget.onHideControls?.call();
-                    setState(() {
-                      _isSpeedScrubbing = true;
-                      _currentSpeed = 2.0;
-                      _speedDragStartY = details.localPosition.dy;
-                    });
-                    widget.onSetSpeed(_currentSpeed);
-                  }
-                },
-                onLongPressMoveUpdate: (details) {
-                  if (_isSpeedScrubbing) {
-                    final delta = _speedDragStartY - details.localPosition.dy;
-                    double newSpeed = 2.0 + (delta / 120);
-                    newSpeed = (newSpeed * 4).round() / 4.0;
-                    newSpeed = newSpeed.clamp(0.25, 3.0);
+                        if (dx > width * (1.0 - prefs.rightWidth)) {
+                          widget.onHideControls?.call();
+                          setState(() {
+                            _isSpeedScrubbing = true;
+                            _currentSpeed = 2.0;
+                            _speedDragStartY = details.localPosition.dy;
+                          });
+                          widget.onSetSpeed(_currentSpeed);
+                        }
+                      },
+                onLongPressMoveUpdate: !prefs.enableGestures
+                    ? null
+                    : (details) {
+                        if (_isSpeedScrubbing) {
+                          final delta =
+                              _speedDragStartY - details.localPosition.dy;
+                          double newSpeed = 2.0 + (delta / 120);
+                          newSpeed = (newSpeed * 4).round() / 4.0;
+                          newSpeed = newSpeed.clamp(0.25, 3.0);
 
-                    if (newSpeed != _currentSpeed) {
-                      setState(() {
-                        _currentSpeed = newSpeed;
-                      });
-                      widget.onSetSpeed(_currentSpeed);
-                    }
-                  }
-                },
-                onLongPressEnd: (details) {
-                  setState(() {
-                    _isSpeedScrubbing = false;
-                  });
-                  widget.onSetSpeed(widget.baseSpeed);
-                },
+                          if (newSpeed != _currentSpeed) {
+                            setState(() {
+                              _currentSpeed = newSpeed;
+                            });
+                            widget.onSetSpeed(_currentSpeed);
+                          }
+                        }
+                      },
+                onLongPressEnd: !prefs.enableGestures
+                    ? null
+                    : (details) {
+                        setState(() {
+                          _isSpeedScrubbing = false;
+                        });
+                        widget.onSetSpeed(widget.baseSpeed);
+                      },
               );
             },
           ),

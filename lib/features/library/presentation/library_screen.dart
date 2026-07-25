@@ -5,6 +5,7 @@ import 'package:shonenx/features/library/presentation/widgets/library_grid.dart'
 import 'package:shonenx/features/library/providers/library_view_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/providers/tracker_profile_provider.dart';
+import 'package:shonenx/features/tracking/providers/tracker_registry.dart';
 import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart';
 import 'package:shonenx/shared/providers/navbar_action_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
@@ -19,30 +20,65 @@ class LibraryScreen extends ConsumerStatefulWidget {
 }
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
+  List<MediaType> _supportedMediaTypes = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _supportedMediaTypes = ref.read(primaryTrackerProvider).supportedMediaTypes;
+    final initMediaType = ref.read(libraryViewStateProvider).mediaType;
+    int initIndex = _supportedMediaTypes.indexOf(initMediaType);
+    if (initIndex == -1) initIndex = 0;
+
+    _tabController = TabController(
+      length: _supportedMediaTypes.length,
+      vsync: this,
+      initialIndex: initIndex,
+    );
     _tabController.addListener(_handleTabChange);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        _attachOverlay();
+      }
+    });
+  }
+
+  void _attachOverlay() {
+    Future.microtask(() {
+      try {
         ref
             .read(navBarProvider.notifier)
             .attachTop(
-              MediaSwitcherOverlay(controller: _tabController),
+              MediaSwitcherOverlay(
+                controller: _tabController,
+                supportedTypes: _supportedMediaTypes,
+              ),
               branchIndex: 2,
             );
-      }
+      } catch (_) {}
+    });
+  }
+
+  void _rebuildTabController(List<MediaType> newTypes) {
+    if (!mounted) return;
+    _tabController.removeListener(_handleTabChange);
+    _tabController.dispose();
+    setState(() {
+      _supportedMediaTypes = newTypes;
+      _tabController = TabController(length: newTypes.length, vsync: this);
+      _tabController.addListener(_handleTabChange);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _attachOverlay();
     });
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    Future.microtask(() {
       try {
         ref.read(navBarProvider.notifier).clearTop(branchIndex: 2);
       } catch (_) {}
@@ -54,10 +90,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
   void _handleTabChange() {
     if (_tabController.indexIsChanging) return;
+    if (_tabController.index < 0 ||
+        _tabController.index >= _supportedMediaTypes.length)
+      return;
 
-    final mediaType = _tabController.index == 0
-        ? MediaType.ANIME
-        : MediaType.MANGA;
+    final mediaType = _supportedMediaTypes[_tabController.index];
     ref.read(libraryViewStateProvider.notifier).setMediaType(mediaType);
   }
 
@@ -65,11 +102,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   Widget build(BuildContext context) {
     final viewState = ref.watch(libraryViewStateProvider);
 
-    if (viewState.mediaType == MediaType.ANIME && _tabController.index != 0) {
-      _tabController.animateTo(0);
-    } else if (viewState.mediaType == MediaType.MANGA &&
-        _tabController.index != 1) {
-      _tabController.animateTo(1);
+    // Watch for tracker changes
+    ref.listen(primaryTrackerProvider, (previous, next) {
+      if (previous?.supportedMediaTypes != next.supportedMediaTypes) {
+        _rebuildTabController(next.supportedMediaTypes);
+      }
+    });
+
+    final targetIndex = _supportedMediaTypes.indexOf(viewState.mediaType);
+    if (targetIndex != -1 && _tabController.index != targetIndex) {
+      _tabController.animateTo(targetIndex);
     }
 
     return AppScaffold(

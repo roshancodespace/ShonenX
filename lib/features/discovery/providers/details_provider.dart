@@ -3,7 +3,7 @@ import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/engine/remote_tracker.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
-import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 
 class DetailsArgs {
   final String id;
@@ -44,15 +44,13 @@ final detailsProvider = FutureProvider.autoDispose
           args.sourceId != 'anilist' &&
           (args.sourceId != 'mal' || args.sourceId != 'myanimelist')) {
         final allSources = await ref.watch(
-          args.type == MediaType.ANIME
-              ? availableAnimeSourcesProvider.future
-              : availableMangaSourcesProvider.future,
+          args.type.availableSourcesProvider.future,
         );
         final sourceInfo = allSources
             .where((s) => s.id == args.sourceId)
             .firstOrNull;
         if (sourceInfo != null) {
-          final source = args.type == MediaType.ANIME
+          final source = args.type.usesAnimeSources
               ? ref.read(animeSourceProvider(sourceInfo))
               : ref.read(mangaSourceProvider(sourceInfo));
           return source.getDetails(args.id, args.type);

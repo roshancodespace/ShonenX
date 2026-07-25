@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 import 'package:shonenx/features/extensions/providers/runtime_update_provider.dart';
+import 'package:shonenx/source_engine/utils/source_invalidation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 Future<void> showRuntimeSetupSheet(
@@ -49,23 +50,23 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
       if (bridge.AnymeXRuntimeBridge.controller.isReady.value) {
         final extManager = Get.find<bridge.ExtensionManager>();
         await extManager.onRuntimeBridgeInitialization(force: false);
-        ref.invalidate(extensionManagerProvider);
-        ref.invalidate(availableAnimeSourcesProvider);
-        ref.invalidate(availableMangaSourcesProvider);
+        if (!mounted) return;
+        ref.invalidateAllSources();
         if (mounted) setState(() {});
         widget.onComplete?.call();
       }
     }
   }
 
-  Future<void> _startSetup({bool force = false}) async {
+  Future<void> _startSetup({bool force = false, String? version}) async {
     final controller = bridge.AnymeXRuntimeBridge.controller;
     controller.error.value = '';
     try {
       await bridge.AnymeXRuntimeBridge.setupRuntime(force: force);
       if (controller.isReady.value) {
         try {
-          final latest = await ref.read(runtimeUpdateProvider.future);
+          final latest =
+              version ?? await ref.read(runtimeUpdateProvider.future);
           if (latest != null) {
             bridge.AnymeXRuntimeBridge.setInstalledRelease(latest, 'v$latest');
           }
@@ -73,9 +74,8 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
 
         final extManager = Get.find<bridge.ExtensionManager>();
         await extManager.onRuntimeBridgeInitialization(force: true);
-        ref.invalidate(extensionManagerProvider);
-        ref.invalidate(availableAnimeSourcesProvider);
-        ref.invalidate(availableMangaSourcesProvider);
+        if (!mounted) return;
+        ref.invalidateAllSources();
         ref.invalidate(runtimeUpdateProvider);
         ref.read(enabledExtensionManagersProvider.notifier).enableAll([
           'aniyomi',
@@ -117,9 +117,8 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
         if (success) {
           final extManager = Get.find<bridge.ExtensionManager>();
           await extManager.onRuntimeBridgeInitialization(force: true);
-          ref.invalidate(extensionManagerProvider);
-          ref.invalidate(availableAnimeSourcesProvider);
-          ref.invalidate(availableMangaSourcesProvider);
+          if (!mounted) return;
+          ref.invalidateAllSources();
           widget.onComplete?.call();
         } else {
           controller.setError("Failed to initialize from selected APK file.");
@@ -301,7 +300,10 @@ class _RuntimeSetupSheetState extends ConsumerState<RuntimeSetupSheet> {
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: () => _startSetup(force: true),
+                                onPressed: () => _startSetup(
+                                  force: true,
+                                  version: updateVersion,
+                                ),
                                 icon: const Icon(
                                   Icons.system_update_alt_rounded,
                                 ),

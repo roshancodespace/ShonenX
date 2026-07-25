@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/features/discovery/providers/discovery_prefs_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
-import 'package:shonenx/source_engine/source_registry.dart';
+import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
 
 class MetadataTagsState {
   final List<String> genres;
@@ -30,9 +30,7 @@ final discoveryFiltersProvider = FutureProvider.autoDispose
 
       if (args.sourceId != null || prefs.mode == MetadataMode.source) {
         final allSources = await ref.watch(
-          args.type == MediaType.ANIME
-              ? availableAnimeSourcesProvider.future
-              : availableMangaSourcesProvider.future,
+          args.type.availableSourcesProvider.future,
         );
 
         final targetSourceIds = args.sourceId != null
@@ -48,7 +46,7 @@ final discoveryFiltersProvider = FutureProvider.autoDispose
 
         for (final info in activeSources) {
           try {
-            final source = args.type == MediaType.ANIME
+            final source = args.type.usesAnimeSources
                 ? ref.read(animeSourceProvider(info))
                 : ref.read(mangaSourceProvider(info));
 

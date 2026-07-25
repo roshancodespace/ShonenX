@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/content_prefs_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
+import 'package:shonenx/shared/models/unified_media.dart';
+import 'package:shonenx/features/discovery/providers/home_feed_provider.dart';
 
 class ContentSettingsScreen extends ConsumerWidget {
   const ContentSettingsScreen({super.key});
@@ -41,6 +43,27 @@ class ContentSettingsScreen extends ConsumerWidget {
                     ref
                         .read(contentPrefsProvider.notifier)
                         .setAdultContentMode(set.first);
+                  }
+                },
+              ),
+              SettingsDropdownTile<TitlePreference>(
+                icon: Icons.title_rounded,
+                title: 'Preferred Title Language',
+                value: prefs.titlePreference,
+                items: TitlePreference.values
+                    .map(
+                      (e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(e.displayName),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    ref
+                        .read(contentPrefsProvider.notifier)
+                        .setTitlePreference(val);
+                    ref.invalidate(homeFeedProvider);
                   }
                 },
               ),

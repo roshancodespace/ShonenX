@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 
+import 'package:shonenx/shared/models/unified_media.dart';
+
 enum AdultContentMode {
   safe('Safe'),
   mixed('Mixed'),
@@ -13,11 +15,18 @@ enum AdultContentMode {
 
 class ContentPrefs {
   final AdultContentMode adultContentMode;
+  final TitlePreference titlePreference;
 
-  const ContentPrefs({this.adultContentMode = AdultContentMode.safe});
+  const ContentPrefs({
+    this.adultContentMode = AdultContentMode.safe,
+    this.titlePreference = TitlePreference.english,
+  });
 
   Map<String, dynamic> toJson() {
-    return {'adultContentMode': adultContentMode.index};
+    return {
+      'adultContentMode': adultContentMode.index,
+      'titlePreference': titlePreference.name,
+    };
   }
 
   factory ContentPrefs.fromJson(Map<String, dynamic> json) {
@@ -27,12 +36,20 @@ class ContentPrefs {
             json['adultContentMode'] as int? ?? 0,
           ) ??
           AdultContentMode.safe,
+      titlePreference: TitlePreference.values.firstWhere(
+        (e) => e.name == json['titlePreference'],
+        orElse: () => TitlePreference.english,
+      ),
     );
   }
 
-  ContentPrefs copyWith({AdultContentMode? adultContentMode}) {
+  ContentPrefs copyWith({
+    AdultContentMode? adultContentMode,
+    TitlePreference? titlePreference,
+  }) {
     return ContentPrefs(
       adultContentMode: adultContentMode ?? this.adultContentMode,
+      titlePreference: titlePreference ?? this.titlePreference,
     );
   }
 }
@@ -44,12 +61,18 @@ class ContentPrefsNotifier extends Notifier<ContentPrefs> {
   ContentPrefs build() {
     final storage = ref.watch(sharedPreferencesProvider);
     final jsonStr = storage.getString(_keyPrefs);
+    ContentPrefs prefs = const ContentPrefs();
+    
     if (jsonStr != null) {
       try {
-        return ContentPrefs.fromJson(jsonDecode(jsonStr));
+        prefs = ContentPrefs.fromJson(jsonDecode(jsonStr));
       } catch (_) {}
     }
-    return const ContentPrefs();
+    
+    // Sync static title preference on MediaTitle
+    MediaTitle.preference = prefs.titlePreference;
+    
+    return prefs;
   }
 
   Future<void> _savePrefs(ContentPrefs prefs) async {
@@ -61,6 +84,11 @@ class ContentPrefsNotifier extends Notifier<ContentPrefs> {
 
   Future<void> setAdultContentMode(AdultContentMode mode) async {
     await _savePrefs(state.copyWith(adultContentMode: mode));
+  }
+
+  Future<void> setTitlePreference(TitlePreference preference) async {
+    await _savePrefs(state.copyWith(titlePreference: preference));
+    MediaTitle.preference = preference;
   }
 }
 

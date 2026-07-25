@@ -28,6 +28,12 @@ abstract class BaseTracker implements TrackingService {
       log.s('SUCCESS$meta');
 
       return result;
+    } on TrackerItemNotFoundException catch (e, st) {
+      log.i('NOT FOUND: ${e.message}');
+      if (fallback != null) {
+        return fallback(e, st);
+      }
+      rethrow;
     } catch (e, st) {
       log.e('FAILED', e, st);
 
@@ -37,4 +43,14 @@ abstract class BaseTracker implements TrackingService {
       rethrow;
     }
   }
+}
+
+class TrackerItemNotFoundException implements Exception {
+  final String message;
+  const TrackerItemNotFoundException([
+    this.message = 'Item not found in tracker.',
+  ]);
+
+  @override
+  String toString() => message;
 }

@@ -41,7 +41,9 @@ class AppLogger {
   static Future<void> init() async {
     try {
       final dir =
-          (await pp.getExternalStorageDirectory()) ??
+          ((Platform.isAndroid || Platform.isIOS)
+              ? await pp.getExternalStorageDirectory()
+              : null) ??
           await pp.getApplicationDocumentsDirectory();
       final path = p.join(dir.path, 'ShonenX', 'app_logs.txt');
 

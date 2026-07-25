@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shonenx/shared/providers/storage_provider.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_credentials.dart';
-import 'package:shonenx/shared/models/unified_media.dart';
 
 class TrackingPrefsState {
   final bool isIncognito;
@@ -12,7 +11,6 @@ class TrackingPrefsState {
   final TrackerType primaryTracker;
   final bool autoTrackPrimary;
   final double syncThreshold;
-  final TitlePreference titlePreference;
   final Map<TrackerType, TrackerCredentials> customCredentials;
 
   TrackingPrefsState({
@@ -21,7 +19,6 @@ class TrackingPrefsState {
     this.primaryTracker = TrackerType.local,
     this.autoTrackPrimary = false,
     this.syncThreshold = 0.8,
-    this.titlePreference = TitlePreference.english,
     this.customCredentials = const {},
   });
 
@@ -31,7 +28,6 @@ class TrackingPrefsState {
     TrackerType? primaryTracker,
     bool? autoTrackPrimary,
     double? syncThreshold,
-    TitlePreference? titlePreference,
     Map<TrackerType, TrackerCredentials>? customCredentials,
   }) {
     return TrackingPrefsState(
@@ -40,7 +36,6 @@ class TrackingPrefsState {
       primaryTracker: primaryTracker ?? this.primaryTracker,
       autoTrackPrimary: autoTrackPrimary ?? this.autoTrackPrimary,
       syncThreshold: syncThreshold ?? this.syncThreshold,
-      titlePreference: titlePreference ?? this.titlePreference,
       customCredentials: customCredentials ?? this.customCredentials,
     );
   }
@@ -59,7 +54,6 @@ class TrackingPrefsState {
       'primaryTracker': primaryTracker.id,
       'autoTrackPrimary': autoTrackPrimary,
       'syncThreshold': syncThreshold,
-      'titlePreference': titlePreference.name,
       'customCredentials': customCredentials.map(
         (key, value) => MapEntry(key.id, value.toMap()),
       ),
@@ -86,10 +80,6 @@ class TrackingPrefsState {
       ),
       autoTrackPrimary: map['autoTrackPrimary'] ?? false,
       syncThreshold: (map['syncThreshold'] as num?)?.toDouble() ?? 0.8,
-      titlePreference: TitlePreference.values.firstWhere(
-        (e) => e.name == map['titlePreference'],
-        orElse: () => TitlePreference.english,
-      ),
       customCredentials:
           (map['customCredentials'] as Map?)?.map(
             (key, value) => MapEntry(
@@ -143,9 +133,6 @@ class TrackingPrefsNotifier extends Notifier<TrackingPrefsState> {
       );
     }
 
-    // Sync static title preference on MediaTitle
-    MediaTitle.preference = stateVal.titlePreference;
-
     return stateVal;
   }
 
@@ -180,15 +167,6 @@ class TrackingPrefsNotifier extends Notifier<TrackingPrefsState> {
     }
 
     state = state.copyWith(enabledTrackers: updatedMap);
-    _saveDb();
-  }
-
-  void setTitlePreference(TitlePreference preference) {
-    state = state.copyWith(titlePreference: preference);
-
-    // Sync to MediaTitle static field
-    MediaTitle.preference = preference;
-
     _saveDb();
   }
 

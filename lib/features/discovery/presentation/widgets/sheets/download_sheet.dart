@@ -591,6 +591,7 @@ class _StreamRowItem extends StatelessWidget {
             child: Align(
               alignment: Alignment.centerLeft,
               child: RawChip(
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 avatar: Icon(
                   Icons.video_library_rounded,
                   size: 14,

@@ -107,10 +107,16 @@ class HTTP {
   }) async {
     final key = _buildKey(url, queryParameters, body);
 
+    final bool isCacheable =
+        method == 'GET' ||
+        (method == 'POST' &&
+            cacheDuration != null &&
+            cacheDuration > Duration.zero);
+
     if (_cache != null &&
         _cache.cacheConfig.enableCaching &&
         !_cache.cacheConfig.bypassCache &&
-        (method == 'GET' || method == 'POST')) {
+        isCacheable) {
       final cached = await _cache.get(key);
       if (cached != null) {
         return HttpResponse(200, utf8.decode(cached.bodyBytes));
@@ -150,7 +156,7 @@ class HTTP {
     if (effectiveTtl > Duration.zero &&
         _cache != null &&
         _cache.cacheConfig.enableCaching &&
-        (method == 'GET' || method == 'POST') &&
+        isCacheable &&
         res.statusCode >= 200 &&
         res.statusCode < 300 &&
         resBody.trim().isNotEmpty) {

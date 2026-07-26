@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +8,8 @@ import 'package:shonenx/features/discovery/providers/matched_media_provider.dart
 import 'package:shonenx/features/discovery/providers/media_preference_provider.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/manual_match_list.dart';
+import 'package:shonenx/shared/widgets/source_selector_list.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
@@ -149,23 +150,10 @@ class _FixSourceSheetState extends ConsumerState<FixSourceSheet> {
           return const SizedBox.shrink();
         }
 
-        return ListView.separated(
-          shrinkWrap: true,
-          itemCount: sources.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 4),
-          itemBuilder: (context, index) {
-            final source = sources[index];
-            return ListTile(
-              leading: const Icon(Icons.extension),
-              title: Text(
-                source.name,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: Text((source.lang ?? source.type.name).toUpperCase()),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => _onSourceSelected(source),
-            );
-          },
+        return SourceSelectorList(
+          availableSources: sources,
+          mediaType: widget.type,
+          onSourceSelected: (ctx, source) => _onSourceSelected(source),
         );
       },
     );
@@ -225,39 +213,10 @@ class _FixSourceSheetState extends ConsumerState<FixSourceSheet> {
           ),
         if (_results != null && _results!.isNotEmpty)
           Flexible(
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemCount: _results!.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final result = _results![index];
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: result.cover != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: CachedNetworkImage(
-                            imageUrl: result.cover!,
-                            width: 40,
-                            height: 60,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) =>
-                                const Icon(Icons.image),
-                          ),
-                        )
-                      : const SizedBox(
-                          width: 40,
-                          height: 60,
-                          child: Icon(Icons.image),
-                        ),
-                  title: Text(
-                    result.title.availableTitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  onTap: () => _onMatchSelected(result),
-                );
-              },
+            child: ManualMatchList(
+              results: _results,
+              isLoading: _isSearching,
+              onMatchSelected: (result) => _onMatchSelected(result),
             ),
           ),
       ],
@@ -273,7 +232,7 @@ class _FixSourceSheetState extends ConsumerState<FixSourceSheet> {
       actions: _currentStep == _FixStep.searchMatch
           ? [
               IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back_ios_new_outlined),
                 tooltip: 'Change Source',
                 onPressed: () =>
                     setState(() => _currentStep = _FixStep.selectSource),

@@ -13,11 +13,25 @@ import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
 import 'package:shonenx/source_engine/source_registry.dart';
 
-class DiscoveryModeSheet extends ConsumerWidget {
+class DiscoveryModeSheet extends ConsumerStatefulWidget {
   const DiscoveryModeSheet({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DiscoveryModeSheet> createState() => _DiscoveryModeSheetState();
+}
+
+class _DiscoveryModeSheetState extends ConsumerState<DiscoveryModeSheet> {
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final prefs = ref.watch(discoveryPrefsProvider);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
@@ -51,6 +65,46 @@ class DiscoveryModeSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
 
+            if (prefs.mode == MetadataMode.source)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search sources...',
+                    prefixIcon: Icon(Icons.search_rounded, color: cs.primary),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear_rounded, size: 18),
+                            onPressed: () => setState(() {
+                              _searchQuery = '';
+                              _searchController.clear();
+                            }),
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: cs.surfaceContainerHigh.withValues(alpha: 0.5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  onChanged: (val) => setState(() => _searchQuery = val.trim()),
+                ),
+              ),
+
             AnimatedSize(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeOutQuart,
@@ -64,6 +118,7 @@ class DiscoveryModeSheet extends ConsumerWidget {
                     : _SourceConfig(
                         key: const ValueKey('source'),
                         activeSources: prefs.activeSources,
+                        searchQuery: _searchQuery,
                       ),
               ),
             ),
@@ -272,9 +327,14 @@ class _TrackerConfig extends ConsumerWidget {
 }
 
 class _SourceConfig extends ConsumerWidget {
-  const _SourceConfig({super.key, required this.activeSources});
+  const _SourceConfig({
+    super.key,
+    required this.activeSources,
+    this.searchQuery = '',
+  });
 
   final List<String> activeSources;
+  final String searchQuery;
 
   Widget _buildSourceRow({
     required BuildContext context,
@@ -472,31 +532,69 @@ class _SourceConfig extends ConsumerWidget {
                   return const _EmptySourcesState();
                 }
 
-                final animeSources = sources
+                final filteredSources = sources
+                    .where(
+                      (s) =>
+                          searchQuery.isEmpty ||
+                          s.name.toLowerCase().contains(
+                            searchQuery.toLowerCase(),
+                          ),
+                    )
+                    .toList();
+
+                final animeSources = filteredSources
                     .where((s) => s.mediaType == MediaType.ANIME)
                     .toList();
-                final mangaSources = sources
+                final mangaSources = filteredSources
                     .where((s) => s.mediaType == MediaType.MANGA)
                     .toList();
+
+                if (animeSources.isEmpty &&
+                    mangaSources.isEmpty &&
+                    searchQuery.isNotEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 32.0),
+                    child: Center(
+                      child: Text(
+                        'No sources matching "$searchQuery"',
+                        style: TextStyle(color: cs.onSurfaceVariant),
+                      ),
+                    ),
+                  );
+                }
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (animeSources.isNotEmpty) ...[
-                      _buildSectionHeader(context, 'ANIME SOURCES'),
-                      _buildSourceGroup(
-                        context: context,
-                        sources: animeSources,
-                        ref: ref,
+                      _CollapsibleSourceGroup(
+                        title: 'ANIME SOURCES',
+                        forceExpand: searchQuery.isNotEmpty,
+                        activeCount: animeSources
+                            .where((s) => activeSources.contains(s.id))
+                            .length,
+                        totalCount: animeSources.length,
+                        child: _buildSourceGroup(
+                          context: context,
+                          sources: animeSources,
+                          ref: ref,
+                        ),
                       ),
                     ],
                     if (mangaSources.isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      _buildSectionHeader(context, 'MANGA SOURCES'),
-                      _buildSourceGroup(
-                        context: context,
-                        sources: mangaSources,
-                        ref: ref,
+                      const SizedBox(height: 16),
+                      _CollapsibleSourceGroup(
+                        title: 'MANGA SOURCES',
+                        forceExpand: searchQuery.isNotEmpty,
+                        activeCount: mangaSources
+                            .where((s) => activeSources.contains(s.id))
+                            .length,
+                        totalCount: mangaSources.length,
+                        child: _buildSourceGroup(
+                          context: context,
+                          sources: mangaSources,
+                          ref: ref,
+                        ),
                       ),
                     ],
                   ],
@@ -520,19 +618,100 @@ class _SourceConfig extends ConsumerWidget {
       ],
     );
   }
+}
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
+class _CollapsibleSourceGroup extends StatefulWidget {
+  final String title;
+  final Widget child;
+  final bool forceExpand;
+  final int activeCount;
+  final int totalCount;
+
+  const _CollapsibleSourceGroup({
+    required this.title,
+    required this.child,
+    this.forceExpand = false,
+    required this.activeCount,
+    required this.totalCount,
+  });
+
+  @override
+  State<_CollapsibleSourceGroup> createState() =>
+      _CollapsibleSourceGroupState();
+}
+
+class _CollapsibleSourceGroupState extends State<_CollapsibleSourceGroup> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        title,
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: theme.colorScheme.primary,
-          letterSpacing: 1.1,
-          fontWeight: FontWeight.w800,
+    final cs = theme.colorScheme;
+    final expanded = widget.forceExpand || _isExpanded;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () {
+            setState(() {
+              _isExpanded = !_isExpanded;
+            });
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: Row(
+              children: [
+                Text(
+                  widget.title,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: cs.primary,
+                    letterSpacing: 1.1,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: cs.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${widget.activeCount}/${widget.totalCount}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: cs.onPrimaryContainer,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  expanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: cs.primary,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutQuart,
+          child: expanded
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: widget.child,
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 }

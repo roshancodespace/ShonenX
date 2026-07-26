@@ -84,6 +84,7 @@ class ContinueWatchingResolver {
           id: entry.animeId,
           idMal: entry.animeIdMal,
           cover: entry.cover,
+          banner: entry.banner,
           sourceId: null,
           sourceName: null,
           providerId: overrideId,

@@ -13,6 +13,8 @@ class MediaCard extends ConsumerWidget {
   final Widget? badge;
   final String imageUrl;
   final VoidCallback onTap;
+  final VoidCallback? onSecondaryTap;
+  final VoidCallback? onLongPress;
   final MediaCardStyle style;
   final Map<String, dynamic>? config;
   final double? score;
@@ -29,6 +31,8 @@ class MediaCard extends ConsumerWidget {
     this.badge,
     required this.imageUrl,
     required this.onTap,
+    this.onSecondaryTap,
+    this.onLongPress,
     this.style = MediaCardStyle.classic,
     this.config,
     this.score,
@@ -47,6 +51,8 @@ class MediaCard extends ConsumerWidget {
 
     return FocusHoverDetector(
       onTap: onTap,
+      onSecondaryTap: onSecondaryTap,
+      onLongPress: onLongPress,
       actions: {
         ActivateIntent: CallbackAction<ActivateIntent>(
           onInvoke: (_) {

@@ -32,6 +32,23 @@ class CardRenderer extends StatelessWidget {
       MediaCardStyle.wideBanner => WideBannerCard(config: config),
     };
 
-    return RepaintBoundary(child: card);
+    return RepaintBoundary(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          card,
+          if (config.isLoading)
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  color: Colors.black54,
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

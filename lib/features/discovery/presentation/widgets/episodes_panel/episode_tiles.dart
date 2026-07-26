@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +35,8 @@ abstract class BaseEpisodeTile extends StatelessWidget {
   final bool isWatched;
   final bool isFiller;
   final VoidCallback onTap;
+  final VoidCallback? onSecondaryTap;
+  final VoidCallback? onLongPress;
   final List<Widget> actions;
   final String? fallbackThumbnailUrl;
   final EpisodeImageFadeDirection imageFadeDirection;
@@ -49,6 +52,8 @@ abstract class BaseEpisodeTile extends StatelessWidget {
     required this.isWatched,
     this.isFiller = false,
     required this.onTap,
+    this.onSecondaryTap,
+    this.onLongPress,
     this.actions = const [],
     this.fallbackThumbnailUrl,
     this.imageFadeDirection = EpisodeImageFadeDirection.left,
@@ -83,6 +88,37 @@ abstract class BaseEpisodeTile extends StatelessWidget {
         return;
       }
     }
+  }
+
+  Widget buildImage({
+    BoxFit fit = BoxFit.cover,
+    Widget Function(BuildContext, Object, StackTrace?)? errorBuilder,
+  }) {
+    if (imageUrl == null || imageUrl!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    if (imageUrl!.startsWith('data:image/')) {
+      try {
+        final base64String = imageUrl!.split(',').last;
+        return Image.memory(
+          base64Decode(base64String),
+          fit: fit,
+          errorBuilder: errorBuilder ?? (_, __, ___) => const SizedBox.shrink(),
+        );
+      } catch (e) {
+        return const SizedBox.shrink();
+      }
+    }
+
+    return Image(
+      image: CachedNetworkImageProvider(
+        imageUrl!,
+        headers: imageHeaders.isEmpty ? null : imageHeaders,
+      ),
+      fit: fit,
+      errorBuilder: errorBuilder ?? (_, __, ___) => const SizedBox.shrink(),
+    );
   }
 }
 
@@ -199,14 +235,9 @@ class EpisodeClassicTile extends BaseEpisodeTile {
                           sigmaX: imageBlurSigma,
                           sigmaY: imageBlurSigma,
                         ),
-                        child: Image(
-                          image: CachedNetworkImageProvider(
-                            imageUrl!,
-                            headers: imageHeaders.isEmpty ? null : imageHeaders,
-                          ),
-                          fit: BoxFit.cover,
-                          alignment: Alignment.center,
-                          opacity: AlwaysStoppedAnimation(resolvedOpacity),
+                        child: Opacity(
+                          opacity: resolvedOpacity,
+                          child: buildImage(fit: BoxFit.cover),
                         ),
                       ),
                     ),
@@ -408,6 +439,8 @@ class EpisodeGridTile extends BaseEpisodeTile {
     required super.isCurrent,
     required super.isWatched,
     required super.onTap,
+    super.onSecondaryTap,
+    super.onLongPress,
     super.isFiller = false,
     super.actions = const [],
     super.fallbackThumbnailUrl,
@@ -433,8 +466,8 @@ class EpisodeGridTile extends BaseEpisodeTile {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        onLongPress: triggerMenuAction,
-        onSecondaryTap: triggerMenuAction,
+        onLongPress: onLongPress ?? triggerMenuAction,
+        onSecondaryTap: onSecondaryTap ?? triggerMenuAction,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -444,13 +477,7 @@ class EpisodeGridTile extends BaseEpisodeTile {
                 fit: StackFit.expand,
                 children: [
                   if (imageUrl != null && imageUrl!.isNotEmpty)
-                    Image(
-                      image: CachedNetworkImageProvider(
-                        imageUrl!,
-                        headers: imageHeaders.isEmpty ? null : imageHeaders,
-                      ),
-                      fit: BoxFit.cover,
-                    )
+                    buildImage(fit: BoxFit.cover)
                   else
                     ColoredBox(
                       color: cs.surfaceContainerHighest,
@@ -934,11 +961,9 @@ class EpisodeCoverTile extends BaseEpisodeTile {
                 child:
                     resolvedThumbnailUrl != null &&
                         resolvedThumbnailUrl!.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: resolvedThumbnailUrl!,
+                    ? buildImage(
                         fit: BoxFit.cover,
-                        httpHeaders: imageHeaders.isEmpty ? null : imageHeaders,
-                        errorWidget: (_, __, ___) => Container(
+                        errorBuilder: (_, __, ___) => Container(
                           color: cs.surfaceContainerHighest,
                           alignment: Alignment.center,
                           child: Icon(

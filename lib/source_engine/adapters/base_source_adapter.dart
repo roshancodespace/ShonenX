@@ -310,6 +310,19 @@ abstract class BaseSourceAdapter implements MediaSource {
     }
   }
 
+  Future<bridge.DMedia> getRawDetail(String providerId) async {
+    final cacheKey = 'getRawDetail|$providerId';
+    final cached = _cache.get<bridge.DMedia>(cacheKey);
+    if (cached != null) return cached;
+
+    final parts = providerId.split('|');
+    final detail = await source.methods.getDetail(
+      bridge.DMedia(url: parts[0], title: parts.length > 1 ? parts[1] : ''),
+    );
+    _cache.set(cacheKey, detail);
+    return detail;
+  }
+
   @override
   Future<UnifiedMedia> getDetails(String providerId, MediaType type) async {
     final cacheKey = 'getDetails|$providerId|$type';
@@ -318,15 +331,11 @@ abstract class BaseSourceAdapter implements MediaSource {
 
     final methodLog = log.child('getDetails');
     try {
-      final parts = providerId.split('|');
-      methodLog.i('url=${parts[0]} title=${parts.length > 1 ? parts[1] : ''}');
-
-      final detail = await source.methods.getDetail(
-        bridge.DMedia(url: parts[0], title: parts.length > 1 ? parts[1] : ''),
-      );
+      final detail = await getRawDetail(providerId);
 
       final extraInfo = detail.toMediaInfo();
 
+      final parts = providerId.split('|');
       final parsed = UnifiedMedia(
         id: providerId,
         type: mediaType,

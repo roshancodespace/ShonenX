@@ -18,14 +18,7 @@ class AnimeSourceAdapter extends BaseSourceAdapter implements AnimeSource {
   Future<List<UnifiedEpisode>> getEpisodes(String animeId) async {
     final methodLog = log.child('getEpisodes');
     try {
-      final parts = animeId.split('|');
-      final url = parts[0];
-      final title = parts.length > 1 ? parts[1] : '';
-      methodLog.i('url=$url title=$title');
-
-      final detail = await source.methods.getDetail(
-        bridge.DMedia(url: url, title: title),
-      );
+      final detail = await getRawDetail(animeId);
 
       methodLog.d('episodes=${detail.episodes?.length ?? 0}');
 

@@ -16,14 +16,7 @@ class MangaSourceAdapter extends BaseSourceAdapter implements MangaSource {
   Future<List<UnifiedChapter>> getChapters(String mangaId) async {
     final methodLog = log.child('getChapters');
     try {
-      final parts = mangaId.split('|');
-      final url = parts[0];
-      final title = parts.length > 1 ? parts[1] : '';
-      methodLog.i('url=$url title=$title');
-
-      final detail = await source.methods.getDetail(
-        bridge.DMedia(url: url, title: title),
-      );
+      final detail = await getRawDetail(mangaId);
 
       methodLog.d('chapters=${detail.episodes?.length ?? 0}');
 

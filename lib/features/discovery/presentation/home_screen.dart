@@ -311,11 +311,8 @@ class HomeScreen extends ConsumerWidget {
           final activeSources = allSources
               .where((s) => prefs.activeSources.contains(s.id))
               .toList();
-          final sourcesToUse = activeSources.isEmpty
-              ? allSources
-              : activeSources;
-          if (sourcesToUse.isEmpty) return const [];
-          final sourceInfo = sourcesToUse.first;
+          if (activeSources.isEmpty) return const [];
+          final sourceInfo = activeSources.first;
           final source = mediaType == MediaType.ANIME
               ? ref.read(animeSourceProvider(sourceInfo))
               : ref.read(mangaSourceProvider(sourceInfo));
@@ -455,21 +452,17 @@ class HomeScreen extends ConsumerWidget {
 
     return allSourcesAsync.when(
       data: (allSources) {
-        final activeSources = prefs.activeSources.isEmpty
-            ? allSources
-            : allSources
-                  .where((s) => prefs.activeSources.contains(s.id))
-                  .toList();
+        final activeSources = allSources
+            .where((s) => prefs.activeSources.contains(s.id))
+            .toList();
 
-        final effectiveSources = activeSources.isEmpty
-            ? allSources
-            : activeSources;
-
-        if (effectiveSources.isEmpty) return const SizedBox.shrink();
+        if (activeSources.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
         if (totalDiscoverySections <= 1) {
           return Column(
-            children: effectiveSources.map((info) {
+            children: activeSources.map((info) {
               final title =
                   '${info.name} (${mediaType == MediaType.ANIME ? "Anime" : "Manga"})';
               return _buildSingleSourceRow(
@@ -483,11 +476,11 @@ class HomeScreen extends ConsumerWidget {
           );
         }
 
-        if (discoveryIndex >= effectiveSources.length) {
+        if (discoveryIndex >= activeSources.length) {
           return const SizedBox.shrink();
         }
 
-        final info = effectiveSources[discoveryIndex];
+        final info = activeSources[discoveryIndex];
         final title =
             '${info.name} (${mediaType == MediaType.ANIME ? "Anime" : "Manga"})';
         return _buildSingleSourceRow(context, ref, info, mediaType, title);

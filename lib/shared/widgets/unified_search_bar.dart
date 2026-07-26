@@ -8,6 +8,7 @@ class UnifiedSearchBar extends StatefulWidget {
   final VoidCallback onClearPressed;
   final VoidCallback? onFilterPressed;
   final ValueChanged<String>? onSubmitted;
+  final ValueChanged<String>? onChanged;
   final bool hasFilters;
   final String hintText;
   final bool autofocus;
@@ -26,6 +27,7 @@ class UnifiedSearchBar extends StatefulWidget {
     required this.onClearPressed,
     this.onFilterPressed,
     this.onSubmitted,
+    this.onChanged,
     this.hasFilters = false,
     this.hintText = 'Search anime or manga...',
     this.autofocus = true,
@@ -193,6 +195,7 @@ class _UnifiedSearchBarState extends State<UnifiedSearchBar> {
               ),
               textInputAction: TextInputAction.search,
               onSubmitted: widget.onSubmitted,
+              onChanged: widget.onChanged,
             ),
           ),
         ),

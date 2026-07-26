@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:shonenx/features/discovery/domain/media_args.dart';
 import 'package:shonenx/features/discovery/presentation/widgets/sheets/download_sheet.dart';
@@ -18,12 +17,10 @@ import 'package:shonenx/shared/models/unified_episode.dart';
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/features/discovery/providers/episodes_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/source_selector_list.dart';
 import 'package:shonenx/shared/widgets/staggered_fade_in.dart';
 import 'package:shonenx/source_engine/models/source_info.dart';
-import 'package:shonenx/source_engine/source_engine_provider.dart';
 import 'package:shonenx/source_engine/utils/media_type_extensions.dart';
-import 'package:shonenx/source_engine/models/source_setting.dart';
-import 'package:shonenx/features/settings/presentation/source_settings_sheet.dart';
 import 'package:shonenx/features/history/providers/watch_history_provider.dart';
 import 'package:shonenx/features/comments/presentation/widgets/comments_tab.dart';
 
@@ -378,440 +375,54 @@ class _EpisodesHeader extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        final theme = Theme.of(sheetContext);
-        final cs = theme.colorScheme;
-        final textTheme = theme.textTheme;
-
         return AppBottomSheet(
           title: 'Select Source',
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              if (availableSources.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 32),
-                  child: Center(
-                    child: Text(
-                      'No sources available',
-                      style: textTheme.bodyLarge?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                )
-              else ...[
-                Builder(
-                  builder: (context) {
-                    final Map<String, List<SourceInfo>> groupedSources = {};
-                    for (final source in availableSources) {
-                      groupedSources
-                          .putIfAbsent(source.name, () => [])
-                          .add(source);
-                    }
-
-                    for (final name in groupedSources.keys) {
-                      if (groupedSources[name]!.length > 1) {
-                        groupedSources[name]!.removeWhere(
-                          (s) => s.lang?.toLowerCase() == 'all',
-                        );
-                      }
-                    }
-
-                    final groupedNames = groupedSources.keys.toList();
-
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: groupedNames.length,
-                      itemBuilder: (context, index) {
-                        final sourceName = groupedNames[index];
-                        final sources = groupedSources[sourceName]!;
-
-                        Widget buildSourceItem(
-                          SourceInfo sourceInfo,
-                          bool isSubItem,
-                        ) {
-                          final selected = currentSource == sourceInfo;
-                          final sourceImpl = media.type.usesAnimeSources
-                              ? ref.read(animeSourceProvider(sourceInfo))
-                              : ref.read(mangaSourceProvider(sourceInfo));
-
-                          return InkWell(
-                            onTap: () {
-                              final matchArgs = MediaArgs(
-                                mediaTitle: title,
-                                type: media.type,
-                                sourceId: media.sourceId,
-                                providerId: media.id,
-                              );
-                              ref
-                                  .read(
-                                    mediaPreferenceProvider(matchArgs).notifier,
-                                  )
-                                  .updateSource(sourceInfo);
-                              ref.invalidate(matchedMediaProvider(matchArgs));
-                              ref.invalidate(episodesListProvider(matchArgs));
-                              if (media.sourceId != null) {
-                                ref.invalidate(
-                                  sourceEpisodesProvider((
-                                    providerId: media.id,
-                                    sourceId: media.sourceId!,
-                                    type: media.type,
-                                  )),
-                                );
-                              }
-                              Navigator.pop(sheetContext);
-                            },
-                            child: Padding(
-                              padding: EdgeInsets.fromLTRB(
-                                isSubItem ? 30 : 18,
-                                8,
-                                18,
-                                8,
-                              ),
-                              child: Row(
-                                children: [
-                                  if (isSubItem)
-                                    const SizedBox(width: 40)
-                                  else
-                                    (sourceInfo.iconUrl != null &&
-                                            sourceInfo.iconUrl!.isNotEmpty)
-                                        ? CachedNetworkImage(
-                                            imageUrl: sourceInfo.iconUrl!,
-                                            width: 40,
-                                            height: 40,
-                                            fit: BoxFit.cover,
-                                            errorWidget:
-                                                (context, url, error) =>
-                                                    const Icon(
-                                                      Icons.extension,
-                                                      size: 40,
-                                                    ),
-                                          )
-                                        : const Icon(Icons.extension, size: 40),
-                                  if (!isSubItem) const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          isSubItem
-                                              ? (sourceInfo.lang ??
-                                                        sourceInfo.type.name)
-                                                    .toUpperCase()
-                                              : sourceInfo.name,
-                                          style: textTheme.titleMedium
-                                              ?.copyWith(
-                                                fontWeight: selected
-                                                    ? FontWeight.w700
-                                                    : FontWeight.w500,
-                                                color: selected
-                                                    ? cs.primary
-                                                    : cs.onSurface,
-                                              ),
-                                        ),
-                                        if (!isSubItem) ...[
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            (sourceInfo.lang ??
-                                                    sourceInfo.type.name)
-                                                .toUpperCase(),
-                                            style: textTheme.labelSmall
-                                                ?.copyWith(
-                                                  color: cs.onSurfaceVariant
-                                                      .withValues(alpha: 0.7),
-                                                  letterSpacing: 0.5,
-                                                ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                  FutureBuilder<List<SourceSetting>>(
-                                    future: sourceImpl.getSettingsSchema(),
-                                    builder: (context, snapshot) {
-                                      final hasSettings =
-                                          snapshot.hasData &&
-                                          snapshot.data!.isNotEmpty;
-                                      if (!hasSettings) {
-                                        return const SizedBox.shrink();
-                                      }
-
-                                      return IconButton(
-                                        icon: const Icon(
-                                          Icons.settings_outlined,
-                                        ),
-                                        color: cs.onSurfaceVariant,
-                                        onPressed: () {
-                                          Navigator.pop(sheetContext);
-                                          showModalBottomSheet(
-                                            context: context,
-                                            isScrollControlled: true,
-                                            backgroundColor: Colors.transparent,
-                                            builder: (context) =>
-                                                SourceSettingsSheet(
-                                                  source: sourceInfo,
-                                                  schema: snapshot.data!,
-                                                ),
-                                          ).then((_) {
-                                            if (selected) {
-                                              final matchArgs = MediaArgs(
-                                                mediaTitle: title,
-                                                type: media.type,
-                                                sourceId: media.sourceId,
-                                                providerId: media.id,
-                                              );
-                                              ref.invalidate(
-                                                matchedMediaProvider(matchArgs),
-                                              );
-                                              ref.invalidate(
-                                                episodesListProvider(matchArgs),
-                                              );
-                                              if (media.sourceId != null) {
-                                                ref.invalidate(
-                                                  sourceEpisodesProvider((
-                                                    providerId: media.id,
-                                                    sourceId: media.sourceId!,
-                                                    type: media.type,
-                                                  )),
-                                                );
-                                              }
-                                            }
-                                          });
-                                        },
-                                      );
-                                    },
-                                  ),
-                                  if (selected) ...[
-                                    const SizedBox(width: 8),
-                                    Icon(
-                                      Icons.check_rounded,
-                                      color: cs.primary,
-                                      size: 24,
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          );
-                        }
-
-                        if (sources.length == 1) {
-                          return buildSourceItem(sources.first, false);
-                        }
-
-                        final hasSelectedVariant = sources.any(
-                          (s) => s == currentSource,
-                        );
-
-                        final defaultVariant = sources.firstWhere((s) {
-                          final l = s.lang?.toLowerCase();
-                          return l == 'en' || l == 'english';
-                        }, orElse: () => sources.first);
-
-                        final activeVariant = hasSelectedVariant
-                            ? currentSource!
-                            : defaultVariant;
-                        final activeSourceImpl = media.type == MediaType.ANIME
-                            ? ref.read(animeSourceProvider(activeVariant))
-                            : ref.read(mangaSourceProvider(activeVariant));
-
-                        bool isExpanded = false;
-
-                        return StatefulBuilder(
-                          builder: (context, setState) {
-                            return Column(
-                              children: [
-                                InkWell(
-                                  onTap: () {
-                                    final matchArgs = MediaArgs(
-                                      mediaTitle: title,
-                                      type: media.type,
-                                      sourceId: media.sourceId,
-                                      providerId: media.id,
-                                    );
-                                    ref
-                                        .read(
-                                          mediaPreferenceProvider(
-                                            matchArgs,
-                                          ).notifier,
-                                        )
-                                        .updateSource(defaultVariant);
-                                    ref.invalidate(
-                                      matchedMediaProvider(matchArgs),
-                                    );
-                                    ref.invalidate(
-                                      episodesListProvider(matchArgs),
-                                    );
-                                    if (media.sourceId != null) {
-                                      ref.invalidate(
-                                        sourceEpisodesProvider((
-                                          providerId: media.id,
-                                          sourceId: media.sourceId!,
-                                          type: media.type,
-                                        )),
-                                      );
-                                    }
-                                    Navigator.pop(sheetContext);
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 10,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        (activeVariant.iconUrl != null &&
-                                                activeVariant
-                                                    .iconUrl!
-                                                    .isNotEmpty)
-                                            ? CachedNetworkImage(
-                                                imageUrl:
-                                                    activeVariant.iconUrl!,
-                                                width: 40,
-                                                height: 40,
-                                                fit: BoxFit.cover,
-                                                errorWidget:
-                                                    (context, url, error) =>
-                                                        const Icon(
-                                                          Icons.extension,
-                                                          size: 40,
-                                                        ),
-                                              )
-                                            : const Icon(
-                                                Icons.extension,
-                                                size: 40,
-                                              ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                sourceName,
-                                                style: textTheme.titleMedium
-                                                    ?.copyWith(
-                                                      fontWeight:
-                                                          hasSelectedVariant
-                                                          ? FontWeight.w700
-                                                          : FontWeight.w500,
-                                                      color: hasSelectedVariant
-                                                          ? cs.primary
-                                                          : cs.onSurface,
-                                                    ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                '${sources.length} variants • ${(activeVariant.lang ?? activeVariant.type.name).toUpperCase()}',
-                                                style: textTheme.labelSmall
-                                                    ?.copyWith(
-                                                      color: cs.onSurfaceVariant
-                                                          .withValues(
-                                                            alpha: 0.7,
-                                                          ),
-                                                      letterSpacing: 0.5,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        FutureBuilder<List<SourceSetting>>(
-                                          future: activeSourceImpl
-                                              .getSettingsSchema(),
-                                          builder: (context, snapshot) {
-                                            final hasSettings =
-                                                snapshot.hasData &&
-                                                snapshot.data!.isNotEmpty;
-                                            if (!hasSettings) {
-                                              return const SizedBox.shrink();
-                                            }
-
-                                            return IconButton(
-                                              icon: const Icon(
-                                                Icons.settings_outlined,
-                                              ),
-                                              color: cs.onSurfaceVariant,
-                                              onPressed: () {
-                                                Navigator.pop(sheetContext);
-                                                showModalBottomSheet(
-                                                  context: context,
-                                                  isScrollControlled: true,
-                                                  backgroundColor:
-                                                      Colors.transparent,
-                                                  builder: (context) =>
-                                                      SourceSettingsSheet(
-                                                        source: activeVariant,
-                                                        schema: snapshot.data!,
-                                                      ),
-                                                ).then((_) {
-                                                  if (hasSelectedVariant) {
-                                                    final matchArgs = MediaArgs(
-                                                      mediaTitle: title,
-                                                      type: media.type,
-                                                      sourceId: media.sourceId,
-                                                      providerId: media.id,
-                                                    );
-                                                    ref.invalidate(
-                                                      matchedMediaProvider(
-                                                        matchArgs,
-                                                      ),
-                                                    );
-                                                    ref.invalidate(
-                                                      episodesListProvider(
-                                                        matchArgs,
-                                                      ),
-                                                    );
-                                                    if (media.sourceId !=
-                                                        null) {
-                                                      ref.invalidate(
-                                                        sourceEpisodesProvider((
-                                                          providerId: media.id,
-                                                          sourceId:
-                                                              media.sourceId!,
-                                                          type: media.type,
-                                                        )),
-                                                      );
-                                                    }
-                                                  }
-                                                });
-                                              },
-                                            );
-                                          },
-                                        ),
-                                        IconButton(
-                                          icon: Icon(
-                                            isExpanded
-                                                ? Icons.expand_less
-                                                : Icons.expand_more,
-                                            color: cs.onSurfaceVariant,
-                                          ),
-                                          onPressed: () {
-                                            setState(() {
-                                              isExpanded = !isExpanded;
-                                            });
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                if (isExpanded)
-                                  ...sources.map(
-                                    (s) => buildSourceItem(s, true),
-                                  ),
-                              ],
-                            );
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-              ],
-              const SizedBox(height: 16),
-            ],
+          child: SourceSelectorList(
+            availableSources: availableSources,
+            currentSource: currentSource,
+            mediaType: media.type,
+            onSourceSelected: (context, source) {
+              final matchArgs = MediaArgs(
+                mediaTitle: title,
+                type: media.type,
+                sourceId: media.sourceId,
+                providerId: media.id,
+              );
+              ref
+                  .read(mediaPreferenceProvider(matchArgs).notifier)
+                  .updateSource(source);
+              ref.invalidate(matchedMediaProvider(matchArgs));
+              ref.invalidate(episodesListProvider(matchArgs));
+              if (media.sourceId != null) {
+                ref.invalidate(
+                  sourceEpisodesProvider((
+                    providerId: media.id,
+                    sourceId: media.sourceId!,
+                    type: media.type,
+                  )),
+                );
+              }
+              Navigator.pop(sheetContext);
+            },
+            onSettingsClosed: () {
+              final matchArgs = MediaArgs(
+                mediaTitle: title,
+                type: media.type,
+                sourceId: media.sourceId,
+                providerId: media.id,
+              );
+              ref.invalidate(matchedMediaProvider(matchArgs));
+              ref.invalidate(episodesListProvider(matchArgs));
+              if (media.sourceId != null) {
+                ref.invalidate(
+                  sourceEpisodesProvider((
+                    providerId: media.id,
+                    sourceId: media.sourceId!,
+                    type: media.type,
+                  )),
+                );
+              }
+            },
           ),
         );
       },

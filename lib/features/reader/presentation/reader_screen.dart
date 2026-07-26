@@ -36,10 +36,12 @@ class ReaderScreen extends ConsumerStatefulWidget {
 }
 
 class _ReaderScreenState extends ConsumerState<ReaderScreen> {
-  bool _showOverlay = false;
-  int _currentPage = 0;
-  int _totalPages = 0;
-  bool _isAutoScrolling = false;
+  late final ValueNotifier<bool> _showOverlayNotifier;
+  late final ValueNotifier<int> _currentPageNotifier;
+  late final ValueNotifier<int> _totalPagesNotifier;
+  late final ValueNotifier<bool> _isAutoScrollingNotifier;
+  late final ValueNotifier<UnifiedEpisode> _currentEpisodeNotifier;
+
   Timer? _autoScrollTimer;
 
   Offset? _pointerDownPos;
@@ -57,17 +59,34 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   void initState() {
     super.initState();
     _enableImmersiveMode();
+    try {
+      if (ref.read(readerPrefsProvider).keepScreenOn) {
+        WakelockPlus.enable();
+      }
+    } catch (_) {}
     _focusNode.requestFocus();
     HardwareKeyboard.instance.addHandler(_onScreenKeyEvent);
-    _itemPositionsListener.itemPositions.addListener(_onWebtoonScroll);
+
+    _showOverlayNotifier = ValueNotifier(false);
+    _currentPageNotifier = ValueNotifier(
+      widget.mode.startPosition == -1
+          ? -1
+          : (widget.mode.startPosition > 0 ? widget.mode.startPosition - 1 : 0),
+    );
+    _totalPagesNotifier = ValueNotifier(0);
+    _isAutoScrollingNotifier = ValueNotifier(false);
+    _currentEpisodeNotifier = ValueNotifier(widget.mode.episode);
+
     _matchArgs = MediaArgs(
       mediaTitle: widget.mode.media.title.availableTitle,
       type: widget.mode.media.type,
     );
-    _currentPage = widget.mode.startPosition > 0
-        ? widget.mode.startPosition - 1
-        : 0;
-    _pageController = PageController(initialPage: _currentPage);
+
+    _pageController = PageController(
+      initialPage: _currentPageNotifier.value == -1
+          ? 0
+          : _currentPageNotifier.value,
+    );
   }
 
   @override
@@ -75,9 +94,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _autoScrollTimer?.cancel();
     HardwareKeyboard.instance.removeHandler(_onScreenKeyEvent);
     _focusNode.dispose();
-    _itemPositionsListener.itemPositions.removeListener(_onWebtoonScroll);
     _pageController.dispose();
     _disableImmersiveMode();
+
+    _showOverlayNotifier.dispose();
+    _currentPageNotifier.dispose();
+    _totalPagesNotifier.dispose();
+    _isAutoScrollingNotifier.dispose();
+    _currentEpisodeNotifier.dispose();
+
+    try {
+      WakelockPlus.disable();
+    } catch (_) {}
     super.dispose();
   }
 
@@ -87,14 +115,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final key = event.logicalKey;
 
     if (key == LogicalKeyboardKey.arrowLeft || key == LogicalKeyboardKey.keyA) {
-      if (_currentPage > 0) _jumpToPage(_currentPage - 1, prefs.direction);
+      if (_currentPageNotifier.value > 0) {
+        _jumpToPage(_currentPageNotifier.value - 1, prefs.direction);
+      }
       return true;
     }
     if (key == LogicalKeyboardKey.arrowRight ||
         key == LogicalKeyboardKey.keyD ||
         key == LogicalKeyboardKey.space) {
-      if (_currentPage < _totalPages - 1) {
-        _jumpToPage(_currentPage + 1, prefs.direction);
+      if (_currentPageNotifier.value < _totalPagesNotifier.value - 1) {
+        _jumpToPage(_currentPageNotifier.value + 1, prefs.direction);
       } else {
         final episodesState = ref.read(episodesListProvider(_matchArgs)).value;
         _skipToChapter(episodesState, next: true);
@@ -105,8 +135,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       _jumpToPage(0, prefs.direction);
       return true;
     }
-    if (key == LogicalKeyboardKey.end && _totalPages > 0) {
-      _jumpToPage(_totalPages - 1, prefs.direction);
+    if (key == LogicalKeyboardKey.end && _totalPagesNotifier.value > 0) {
+      _jumpToPage(_totalPagesNotifier.value - 1, prefs.direction);
       return true;
     }
     if (key == LogicalKeyboardKey.keyF || key == LogicalKeyboardKey.f11) {
@@ -134,11 +164,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final prefs = ref.read(readerPrefsProvider);
     if (prefs.direction != ReaderDirection.webtoon) return;
 
-    if (_isAutoScrolling) {
+    if (_isAutoScrollingNotifier.value) {
       _autoScrollTimer?.cancel();
-      setState(() => _isAutoScrolling = false);
+      _isAutoScrollingNotifier.value = false;
     } else {
-      setState(() => _isAutoScrolling = true);
+      _isAutoScrollingNotifier.value = true;
       _startAutoScroll();
     }
   }
@@ -153,7 +183,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         timer,
       ) {
         if (!mounted ||
-            !_isAutoScrolling ||
+            !_isAutoScrollingNotifier.value ||
             !_itemScrollController.isAttached) {
           timer.cancel();
           return;
@@ -171,12 +201,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       _autoScrollTimer = Timer.periodic(Duration(seconds: intervalSeconds), (
         timer,
       ) {
-        if (!mounted || !_isAutoScrolling) {
+        if (!mounted || !_isAutoScrollingNotifier.value) {
           timer.cancel();
           return;
         }
-        if (_currentPage < _totalPages - 1) {
-          _jumpToPage(_currentPage + 1, prefs.direction);
+        if (_currentPageNotifier.value < _totalPagesNotifier.value - 1) {
+          _jumpToPage(_currentPageNotifier.value + 1, prefs.direction);
         } else {
           _toggleAutoScroll();
           final episodesState = ref
@@ -199,7 +229,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         ? 3.0
         : 1.0;
     prefsNotifier.updateAutoScrollSpeed(nextSpeed);
-    if (_isAutoScrolling) {
+    if (_isAutoScrollingNotifier.value) {
       _startAutoScroll();
     }
   }
@@ -209,11 +239,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       SystemUiMode.immersiveSticky,
       overlays: [],
     );
-    try {
-      if (ref.read(readerPrefsProvider).keepScreenOn) {
-        WakelockPlus.enable();
-      }
-    } catch (_) {}
   }
 
   void _disableImmersiveMode() {
@@ -221,47 +246,25 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       SystemUiMode.manual,
       overlays: SystemUiOverlay.values,
     );
-    try {
-      WakelockPlus.disable();
-    } catch (_) {}
   }
 
   void _toggleOverlay() {
-    setState(() => _showOverlay = !_showOverlay);
-    _showOverlay ? _disableImmersiveMode() : _enableImmersiveMode();
-  }
-
-  void _onWebtoonScroll() {
-    final positions = _itemPositionsListener.itemPositions.value;
-    if (positions.isEmpty || _totalPages == 0) return;
-
-    var current = positions
-        .where((p) => p.itemTrailingEdge > 0)
-        .reduce((min, p) => p.itemLeadingEdge < min.itemLeadingEdge ? p : min)
-        .index;
-
-    for (final p in positions) {
-      if (p.index == _totalPages - 1 && p.itemTrailingEdge <= 1.01) {
-        current = _totalPages - 1;
-        break;
-      }
-    }
-
-    if (_currentPage != current) {
-      setState(() => _currentPage = current);
-      _saveHistory();
-    }
+    _showOverlayNotifier.value = !_showOverlayNotifier.value;
+    _showOverlayNotifier.value
+        ? _disableImmersiveMode()
+        : _enableImmersiveMode();
   }
 
   void _onPageChanged(int index) {
-    setState(() => _currentPage = index);
+    if (_currentPageNotifier.value == index) return;
+    _currentPageNotifier.value = index;
     _saveHistory();
   }
 
   void _saveHistory() {
-    if (_totalPages == 0) return;
+    if (_totalPagesNotifier.value == 0) return;
 
-    final savedPageNumber = _currentPage + 1;
+    final savedPageNumber = _currentPageNotifier.value + 1;
 
     final entry = ReadHistoryEntry()
       ..chapterNumber = widget.mode.episode.number
@@ -270,7 +273,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       ..cover = widget.mode.media.cover
       ..banner = widget.mode.media.banner
       ..positionPage = savedPageNumber
-      ..totalPages = _totalPages
+      ..totalPages = _totalPagesNotifier.value
       ..sourceId = widget.mode.sourceInfo.id
       ..sourceName = widget.mode.sourceInfo.name
       ..providerId = widget.mode.media.providerId != widget.mode.media.id
@@ -284,9 +287,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         .read(syncEngineProvider)
         .processReading(
           media: widget.mode.media,
-          chapterNumber: widget.mode.episode.number,
+          chapterNumber: _currentEpisodeNotifier.value.number,
           positionPage: savedPageNumber,
-          totalPages: _totalPages,
+          totalPages: _totalPagesNotifier.value,
         );
   }
 
@@ -301,10 +304,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     );
   }
 
-  void _skipToChapter(EpisodesListState? episodesState, {required bool next}) {
+  Future<void> _skipToChapter(
+    EpisodesListState? episodesState, {
+    required bool next,
+  }) async {
     if (episodesState == null) return;
 
-    final currentNum = widget.mode.episode.number;
+    final currentNum = _currentEpisodeNotifier.value.number;
     final adjacentEps = episodesState.episodes
         .where((e) => next ? e.number > currentNum : e.number < currentNum)
         .toList();
@@ -326,9 +332,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       orElse: () => candidates.first,
     );
 
-    if (target.id != widget.mode.episode.id) {
-      _navigateToEpisode(target, episodesState.source);
-    }
+    await ref
+        .read(readerProvider(widget.mode).notifier)
+        .loadAdjacentChapter(target, next: next);
   }
 
   void _showChaptersSheet(EpisodesListState? episodesState) {
@@ -339,7 +345,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       title: 'Chapters',
       child: ChaptersBottomSheet(
         matchArgs: _matchArgs,
-        currentEpisode: widget.mode.episode,
+        currentEpisode: _currentEpisodeNotifier.value,
         mediaId: widget.mode.media.id,
         sourceInfo: episodesState.source,
         onEpisodeSelected: (ep) => _navigateToEpisode(ep, episodesState.source),
@@ -348,10 +354,27 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   void _updateTotalPagesIfNeeded(int count) {
-    if (_totalPages != count) {
+    if (_totalPagesNotifier.value != count) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          setState(() => _totalPages = count);
+          _totalPagesNotifier.value = count;
+          if (_currentPageNotifier.value == -1) {
+            _currentPageNotifier.value = count - 1;
+            if (ref.read(readerPrefsProvider).direction !=
+                ReaderDirection.webtoon) {
+              final hasPrev =
+                  _getAdjacentChapterName(
+                    ref.read(episodesListProvider(_matchArgs)).value,
+                    next: false,
+                  ) !=
+                  null;
+              if (_pageController.hasClients) {
+                _pageController.jumpToPage(
+                  _currentPageNotifier.value + (hasPrev ? 1 : 0),
+                );
+              }
+            }
+          }
           _saveHistory();
         }
       });
@@ -366,15 +389,54 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     );
   }
 
+  String? _getAdjacentChapterName(
+    EpisodesListState? episodesState, {
+    required bool next,
+  }) {
+    if (episodesState == null) return null;
+
+    final currentNum = widget.mode.episode.number;
+    final adjacentEps = episodesState.episodes
+        .where((e) => next ? e.number > currentNum : e.number < currentNum)
+        .toList();
+
+    if (adjacentEps.isEmpty) return null;
+
+    final targetChapterNum = next
+        ? adjacentEps.first.number
+        : adjacentEps.last.number;
+    final candidates = adjacentEps
+        .where((e) => e.number == targetChapterNum)
+        .toList();
+
+    final prefScanlator = ref.read(
+      preferredScanlatorProvider(widget.mode.media.id),
+    );
+    final target = candidates.firstWhere(
+      (e) => e.scanlator == prefScanlator,
+      orElse: () => candidates.first,
+    );
+
+    return target.title != null && target.title!.isNotEmpty
+        ? target.title
+        : 'Chapter ${target.number}';
+  }
+
   void _jumpToPage(int newPage, ReaderDirection direction) {
+    final episodesState = ref.read(episodesListProvider(_matchArgs)).value;
+    final hasPrev = _getAdjacentChapterName(episodesState, next: false) != null;
+    final targetIndex = newPage + (hasPrev ? 1 : 0);
+
     if (direction == ReaderDirection.webtoon) {
       if (_itemScrollController.isAttached) {
-        _itemScrollController.jumpTo(index: newPage);
+        _itemScrollController.jumpTo(index: targetIndex);
       }
     } else {
-      _pageController.jumpToPage(newPage);
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(targetIndex);
+      }
     }
-    setState(() => _currentPage = newPage);
+    _currentPageNotifier.value = newPage;
     _saveHistory();
   }
 
@@ -407,11 +469,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final readerPrefs = ref.watch(readerPrefsProvider);
     final episodesState = ref.watch(episodesListProvider(_matchArgs)).value;
 
-    if (_isAutoScrolling && readerPrefs.direction != ReaderDirection.webtoon) {
+    if (_isAutoScrollingNotifier.value &&
+        readerPrefs.direction != ReaderDirection.webtoon) {
       _autoScrollTimer?.cancel();
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _isAutoScrolling) {
-          setState(() => _isAutoScrolling = false);
+        if (mounted && _isAutoScrollingNotifier.value) {
+          _isAutoScrollingNotifier.value = false;
         }
       });
     }
@@ -441,20 +504,22 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                         (event.position - _pointerDownPos!).distance;
                     if (distance < 10) {
                       final width = MediaQuery.of(context).size.width;
-                      if (readerPrefs.tapToTurnPage && !_showOverlay) {
+                      if (readerPrefs.tapToTurnPage &&
+                          !_showOverlayNotifier.value) {
                         if (event.position.dx < width * 0.3) {
-                          if (_currentPage > 0) {
+                          if (_currentPageNotifier.value > 0) {
                             _jumpToPage(
-                              _currentPage - 1,
+                              _currentPageNotifier.value - 1,
                               readerPrefs.direction,
                             );
                           } else {
                             _skipToChapter(episodesState, next: false);
                           }
                         } else if (event.position.dx > width * 0.7) {
-                          if (_currentPage < _totalPages - 1) {
+                          if (_currentPageNotifier.value <
+                              _totalPagesNotifier.value - 1) {
                             _jumpToPage(
-                              _currentPage + 1,
+                              _currentPageNotifier.value + 1,
                               readerPrefs.direction,
                             );
                           } else {
@@ -469,142 +534,323 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                     }
                   }
                 },
-                child: ReaderContent(
-                  stateAsync: readerStateAsync,
-                  prefs: readerPrefs,
-                  textColor: themeInfo.textColor,
-                  initialPage: _currentPage,
-                  itemScrollController: _itemScrollController,
-                  scrollOffsetController: _scrollOffsetController,
-                  itemPositionsListener: _itemPositionsListener,
-                  pageController: _pageController,
-                  onTotalPagesUpdated: _updateTotalPagesIfNeeded,
-                  onPageChanged: _onPageChanged,
-                  onRetry: () =>
-                      ref.read(readerProvider(widget.mode).notifier).retry(),
+                child: ValueListenableBuilder<UnifiedEpisode>(
+                  valueListenable: _currentEpisodeNotifier,
+                  builder: (context, currentEpisode, child) {
+                    return ReaderContent(
+                      stateAsync: readerStateAsync,
+                      prefs: readerPrefs,
+                      textColor: themeInfo.textColor,
+                      initialPage: _currentPageNotifier.value,
+                      itemScrollController: _itemScrollController,
+                      scrollOffsetController: _scrollOffsetController,
+                      itemPositionsListener: _itemPositionsListener,
+                      pageController: _pageController,
+                      onTotalPagesUpdated: _updateTotalPagesIfNeeded,
+                      onPageChanged: _onPageChanged,
+                      onRetry: () => ref
+                          .read(readerProvider(widget.mode).notifier)
+                          .retry(),
+                      mediaTitle: widget.mode.media.title.availableTitle,
+                      currentEpisode: currentEpisode,
+                      currentChapterName:
+                          currentEpisode.title != null &&
+                              currentEpisode.title!.isNotEmpty
+                          ? currentEpisode.title!
+                          : 'Chapter ${currentEpisode.number}',
+                      nextChapterName: _getAdjacentChapterName(
+                        episodesState,
+                        next: true,
+                      ),
+                      prevChapterName: _getAdjacentChapterName(
+                        episodesState,
+                        next: false,
+                      ),
+                      onChapterChanged: (ep) {
+                        if (mounted) {
+                          if (_currentEpisodeNotifier.value.id == ep.id) return;
+
+                          _currentEpisodeNotifier.value = ep;
+
+                          final readerState = ref
+                              .read(readerProvider(widget.mode))
+                              .value;
+                          if (readerState != null) {
+                            if (readerState.nextChapterData?.episode.id ==
+                                ep.id) {
+                              final oldCurrentLength =
+                                  readerState
+                                      .currentChapterData
+                                      ?.pages
+                                      .length ??
+                                  0;
+                              final jumpIndex =
+                                  oldCurrentLength +
+                                  2 +
+                                  _currentPageNotifier.value;
+
+                              ref
+                                  .read(readerProvider(widget.mode).notifier)
+                                  .shiftNext();
+
+                              if (readerPrefs.direction ==
+                                  ReaderDirection.webtoon) {
+                                if (_itemScrollController.isAttached) {
+                                  _itemScrollController.jumpTo(
+                                    index: jumpIndex,
+                                  );
+                                }
+                              } else {
+                                if (_pageController.hasClients) {
+                                  _pageController.jumpToPage(jumpIndex);
+                                }
+                              }
+
+                              _skipToChapter(episodesState, next: true);
+                            } else if (readerState
+                                    .prevChapterData
+                                    ?.episode
+                                    .id ==
+                                ep.id) {
+                              final currentNum = ep.number;
+                              final reallyHasPrev =
+                                  episodesState?.episodes.any(
+                                    (e) => e.number < currentNum,
+                                  ) ??
+                                  false;
+
+                              final jumpIndex =
+                                  (reallyHasPrev ? 1 : 0) +
+                                  _currentPageNotifier.value;
+
+                              ref
+                                  .read(readerProvider(widget.mode).notifier)
+                                  .shiftPrev();
+
+                              if (readerPrefs.direction ==
+                                  ReaderDirection.webtoon) {
+                                if (_itemScrollController.isAttached) {
+                                  _itemScrollController.jumpTo(
+                                    index: jumpIndex,
+                                  );
+                                }
+                              } else {
+                                if (_pageController.hasClients) {
+                                  _pageController.jumpToPage(jumpIndex);
+                                }
+                              }
+
+                              _skipToChapter(episodesState, next: false);
+                            }
+                          }
+                        }
+                      },
+                      onNextChapter: () =>
+                          _skipToChapter(episodesState, next: true),
+                      onPrevChapter: () =>
+                          _skipToChapter(episodesState, next: false),
+                    );
+                  },
                 ),
               ),
             ),
           ),
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOutCubic,
-            top: _showOverlay ? 0 : -100,
-            left: 0,
-            right: 0,
-            child: IgnorePointer(
-              ignoring: !_showOverlay,
-              child: AnimatedOpacity(
+          ValueListenableBuilder<bool>(
+            valueListenable: _showOverlayNotifier,
+            builder: (context, showOverlay, child) {
+              return AnimatedPositioned(
                 duration: const Duration(milliseconds: 250),
-                opacity: _showOverlay ? 1.0 : 0.0,
-                child: ReaderAppBar(
-                  mediaTitle: widget.mode.media.title.availableTitle,
-                  episodeNumber: widget.mode.episode.number,
-                  themeInfo: themeInfo,
-                  uiRoundness: GlobalUI.uiRoundness,
+                curve: Curves.easeOutCubic,
+                top: showOverlay ? 0 : -100,
+                left: 0,
+                right: 0,
+                child: IgnorePointer(
+                  ignoring: !showOverlay,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 250),
+                    opacity: showOverlay ? 1.0 : 0.0,
+                    child: ValueListenableBuilder<UnifiedEpisode>(
+                      valueListenable: _currentEpisodeNotifier,
+                      builder: (context, currentEpisode, child) {
+                        return ReaderAppBar(
+                          mediaTitle: widget.mode.media.title.availableTitle,
+                          episodeNumber: currentEpisode.number,
+                          themeInfo: themeInfo,
+                          uiRoundness: GlobalUI.uiRoundness,
+                        );
+                      },
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
-          if (_totalPages > 0)
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              bottom: _showOverlay ? 0 : -160,
-              left: 0,
-              right: 0,
-              child: IgnorePointer(
-                ignoring: !_showOverlay,
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 250),
-                  opacity: _showOverlay ? 1.0 : 0.0,
-                  child: ReaderBottomOverlay(
-                    currentPage: _currentPage,
-                    totalPages: _totalPages,
-                    hasPrevChapter: _hasChapter(episodesState, next: false),
-                    hasNextChapter: _hasChapter(episodesState, next: true),
-                    totalChaptersCount: episodesState != null
-                        ? episodesState.episodes
-                              .map((e) => e.number)
-                              .toSet()
-                              .length
-                        : 0,
-                    currentEpisode: widget.mode.episode,
-                    appBarBg: themeInfo.appBarBg,
-                    textColor: themeInfo.textColor,
-                    uiRoundness: GlobalUI.uiRoundness,
-                    isAutoScrolling:
-                        _isAutoScrolling &&
-                        readerPrefs.direction == ReaderDirection.webtoon,
-                    autoScrollSpeed: readerPrefs.autoScrollSpeed,
-                    onToggleAutoScroll:
-                        readerPrefs.direction == ReaderDirection.webtoon
-                        ? _toggleAutoScroll
-                        : null,
-                    onChangeAutoScrollSpeed:
-                        readerPrefs.direction == ReaderDirection.webtoon
-                        ? _changeAutoScrollSpeed
-                        : null,
-                    onPrevChapter: () =>
-                        _skipToChapter(episodesState, next: false),
-                    onNextChapter: () =>
-                        _skipToChapter(episodesState, next: true),
-                    onChaptersTap: () => _showChaptersSheet(episodesState),
-                    onPageChanged: (newPage) =>
-                        _jumpToPage(newPage, readerPrefs.direction),
-                  ),
-                ),
-              ),
-            ),
-          if (!_showOverlay && readerPrefs.showMiniStatus && _totalPages > 0)
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              bottom: 16,
-              right: 16,
-              child: IgnorePointer(
-                ignoring: true,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: themeInfo.appBarBg.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(GlobalUI.uiRoundness),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_isAutoScrolling &&
-                          readerPrefs.direction == ReaderDirection.webtoon) ...[
-                        Icon(
-                          Icons.play_circle_filled_rounded,
-                          size: 14,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 5),
-                      ],
-                      Text(
-                        'Ch. ${widget.mode.episode.number} • ${_currentPage + 1}/$_totalPages',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: themeInfo.textColor.withValues(alpha: 0.9),
+          ValueListenableBuilder<int>(
+            valueListenable: _totalPagesNotifier,
+            builder: (context, totalPages, child) {
+              if (totalPages == 0) return const SizedBox.shrink();
+
+              return ValueListenableBuilder<bool>(
+                valueListenable: _showOverlayNotifier,
+                builder: (context, showOverlay, child) {
+                  return AnimatedPositioned(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    bottom: showOverlay ? 0 : -160,
+                    left: 0,
+                    right: 0,
+                    child: IgnorePointer(
+                      ignoring: !showOverlay,
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 250),
+                        opacity: showOverlay ? 1.0 : 0.0,
+                        child: ValueListenableBuilder<int>(
+                          valueListenable: _currentPageNotifier,
+                          builder: (context, currentPage, child) {
+                            return ValueListenableBuilder<bool>(
+                              valueListenable: _isAutoScrollingNotifier,
+                              builder: (context, isAutoScrolling, child) {
+                                return ReaderBottomOverlay(
+                                  currentPage: currentPage,
+                                  totalPages: totalPages,
+                                  hasPrevChapter: _hasChapter(
+                                    episodesState,
+                                    next: false,
+                                  ),
+                                  hasNextChapter: _hasChapter(
+                                    episodesState,
+                                    next: true,
+                                  ),
+                                  totalChaptersCount: episodesState != null
+                                      ? episodesState.episodes
+                                            .map((e) => e.number)
+                                            .toSet()
+                                            .length
+                                      : 0,
+                                  currentEpisode: widget.mode.episode,
+                                  appBarBg: themeInfo.appBarBg,
+                                  textColor: themeInfo.textColor,
+                                  uiRoundness: GlobalUI.uiRoundness,
+                                  isAutoScrolling:
+                                      isAutoScrolling &&
+                                      readerPrefs.direction ==
+                                          ReaderDirection.webtoon,
+                                  autoScrollSpeed: readerPrefs.autoScrollSpeed,
+                                  onToggleAutoScroll:
+                                      readerPrefs.direction ==
+                                          ReaderDirection.webtoon
+                                      ? _toggleAutoScroll
+                                      : null,
+                                  onChangeAutoScrollSpeed:
+                                      readerPrefs.direction ==
+                                          ReaderDirection.webtoon
+                                      ? _changeAutoScrollSpeed
+                                      : null,
+                                  onPrevChapter: () => _skipToChapter(
+                                    episodesState,
+                                    next: false,
+                                  ),
+                                  onNextChapter: () =>
+                                      _skipToChapter(episodesState, next: true),
+                                  onChaptersTap: () =>
+                                      _showChaptersSheet(episodesState),
+                                  onPageChanged: (newPage) => _jumpToPage(
+                                    newPage,
+                                    readerPrefs.direction,
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+          ValueListenableBuilder<bool>(
+            valueListenable: _showOverlayNotifier,
+            builder: (context, showOverlay, child) {
+              if (showOverlay || !readerPrefs.showMiniStatus) {
+                return const SizedBox.shrink();
+              }
+
+              return ValueListenableBuilder<int>(
+                valueListenable: _totalPagesNotifier,
+                builder: (context, totalPages, child) {
+                  if (totalPages == 0) return const SizedBox.shrink();
+
+                  return AnimatedPositioned(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    bottom: 16,
+                    right: 16,
+                    child: IgnorePointer(
+                      ignoring: true,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: themeInfo.appBarBg.withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(
+                            GlobalUI.uiRoundness,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: _isAutoScrollingNotifier,
+                          builder: (context, isAutoScrolling, child) {
+                            return ValueListenableBuilder<int>(
+                              valueListenable: _currentPageNotifier,
+                              builder: (context, currentPage, child) {
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (isAutoScrolling &&
+                                        readerPrefs.direction ==
+                                            ReaderDirection.webtoon) ...[
+                                      Icon(
+                                        Icons.play_circle_filled_rounded,
+                                        size: 14,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
+                                      const SizedBox(width: 5),
+                                    ],
+                                    Text(
+                                      'Ch. ${widget.mode.episode.number} • ${currentPage + 1}/$totalPages',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: themeInfo.textColor.withValues(
+                                          alpha: 0.9,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ],
       ),
     );

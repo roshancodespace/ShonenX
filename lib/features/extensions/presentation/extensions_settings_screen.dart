@@ -96,9 +96,7 @@ class _ExtensionsSettingsScreenState
       child: AppScaffold(
         title: 'Sources',
         subtitle: 'Extensions & Catalogs',
-        floatingActionButtonLocation: MediaQuery.of(context).size.width < 600
-            ? FloatingActionButtonLocation.centerFloat
-            : FloatingActionButtonLocation.endFloat,
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         barBottom: _buildBarBottom(),
         actions: _buildActions(context),
         body: TabBarView(

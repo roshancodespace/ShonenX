@@ -83,45 +83,63 @@ class _UnifiedSearchBarState extends State<UnifiedSearchBar> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textColor = colorScheme.onSurface;
-    final iconColor = colorScheme.onSurfaceVariant;
-    final isFocused = _effectiveFocusNode.hasFocus;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        final textColor = colorScheme.onSurface;
+        final iconColor = colorScheme.onSurfaceVariant;
+        final isFocused = _effectiveFocusNode.hasFocus;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.5),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutCubic,
-          height: widget.height,
-          width: widget.isExpanded ? widget.expandedWidth : widget.height,
-          padding: widget.isExpanded
-              ? const EdgeInsets.symmetric(horizontal: 4)
-              : EdgeInsets.zero,
-          margin: widget.margin,
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerLow.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.3),
-            border: Border.all(
-              color: isFocused
-                  ? colorScheme.primary
-                  : colorScheme.primary.withValues(alpha: 0.5),
-              width: 2,
-              strokeAlign: BorderSide.strokeAlignOutside,
+        final double horizontalMargin = widget.margin.horizontal;
+        final double maxWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth - horizontalMargin
+            : MediaQuery.of(context).size.width * 0.75;
+
+        final double targetWidth = widget.isExpanded
+            ? (widget.expandedWidth ?? maxWidth)
+            : widget.height;
+
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.5),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              height: widget.height,
+              width: targetWidth,
+              padding: widget.isExpanded
+                  ? const EdgeInsets.symmetric(horizontal: 4)
+                  : EdgeInsets.zero,
+              margin: widget.margin,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerLow.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(GlobalUI.uiRoundness * 1.3),
+                border: Border.all(
+                  color: isFocused
+                      ? colorScheme.primary
+                      : colorScheme.primary.withValues(alpha: 0.5),
+                  width: 2,
+                  strokeAlign: BorderSide.strokeAlignOutside,
+                ),
+              ),
+              child: widget.isExpanded
+                  ? _buildExpandedContent(
+                      theme,
+                      textColor,
+                      iconColor,
+                      targetWidth,
+                    )
+                  : IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: Icon(Icons.search_rounded, color: iconColor),
+                      onPressed: widget.onExpand,
+                    ),
             ),
           ),
-          child: widget.isExpanded
-              ? _buildExpandedContent(theme, textColor, iconColor)
-              : IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: Icon(Icons.search_rounded, color: iconColor),
-                  onPressed: widget.onExpand,
-                ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -129,6 +147,7 @@ class _UnifiedSearchBarState extends State<UnifiedSearchBar> {
     ThemeData theme,
     Color textColor,
     Color iconColor,
+    double targetWidth,
   ) {
     Widget content = Row(
       children: [
@@ -211,7 +230,7 @@ class _UnifiedSearchBarState extends State<UnifiedSearchBar> {
       scrollDirection: Axis.horizontal,
       physics: const NeverScrollableScrollPhysics(),
       child: SizedBox(
-        width: widget.expandedWidth ?? MediaQuery.of(context).size.width * 0.75,
+        width: targetWidth - (widget.isExpanded ? 8 : 0),
         child: content,
       ),
     );

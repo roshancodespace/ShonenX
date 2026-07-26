@@ -8,6 +8,8 @@ class FocusHoverDetector extends StatefulWidget {
   builder;
 
   final VoidCallback? onTap;
+  final VoidCallback? onSecondaryTap;
+  final VoidCallback? onLongPress;
 
   final Map<Type, Action<Intent>>? actions;
 
@@ -17,6 +19,8 @@ class FocusHoverDetector extends StatefulWidget {
     super.key,
     required this.builder,
     this.onTap,
+    this.onSecondaryTap,
+    this.onLongPress,
     this.actions,
     this.cursor = SystemMouseCursors.click,
   });
@@ -59,6 +63,8 @@ class _FocusHoverDetectorState extends State<FocusHoverDetector> {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: widget.onTap,
+        onSecondaryTap: widget.onSecondaryTap,
+        onLongPress: widget.onLongPress,
         child: widget.builder(context, _isFocused, _isHovered),
       ),
     );

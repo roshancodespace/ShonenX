@@ -85,7 +85,7 @@ class DynamicSourceFeed extends ConsumerWidget {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.only(top: 10, bottom: 120),
+          padding: const EdgeInsets.only(top: 60, bottom: 120),
           itemCount: active.length,
           itemBuilder: (context, index) {
             return Padding(
@@ -109,7 +109,7 @@ class DynamicSourceFeed extends ConsumerWidget {
         return Skeletonizer(
           enabled: true,
           child: ListView.builder(
-            padding: const EdgeInsets.only(top: 10, bottom: 120),
+            padding: const EdgeInsets.only(top: 80, bottom: 120),
             itemCount: 3,
             itemBuilder: (context, index) {
               return HorizontalSection<UnifiedMedia>(

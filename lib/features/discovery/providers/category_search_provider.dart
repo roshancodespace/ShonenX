@@ -57,6 +57,7 @@ class CategorySearchNotifier
 
       final catLower = arg.category.toLowerCase();
       TrackerCategory? matchedCategory;
+      
       if (catLower.contains('upcoming')) {
         matchedCategory = TrackerCategory.upcoming;
       } else if (catLower.contains('popular')) {

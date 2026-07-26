@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -42,10 +43,25 @@ class _ExtensionsSettingsScreenState
   final TextEditingController _searchController = TextEditingController();
   String _selectedLangFilter = 'All';
   String _selectedEngineFilter = 'All';
+  Timer? _debounceTimer;
+
+  void _onSearchTextChanged() {
+    _debounceTimer?.cancel();
+    final text = _searchController.text.trim();
+    if (_searchQuery == text) return;
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        setState(() {
+          _searchQuery = text;
+        });
+      }
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_onSearchTextChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.autoAddUrl != null && widget.autoAddUrl!.isNotEmpty) {
         _showManageReposSheet(
@@ -65,6 +81,8 @@ class _ExtensionsSettingsScreenState
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
+    _searchController.removeListener(_onSearchTextChanged);
     _searchController.dispose();
     super.dispose();
   }

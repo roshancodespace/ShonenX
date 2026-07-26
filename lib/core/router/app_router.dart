@@ -241,7 +241,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/reader',
         builder: (context, state) {
           final mode = state.extra as ReaderModeOnline;
-          return ReaderScreen(mode: mode);
+          return ReaderScreen(key: ValueKey(mode.episode.id), mode: mode);
         },
       ),
       GoRoute(

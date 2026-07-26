@@ -651,23 +651,30 @@ class _EpisodeListPanelState extends ConsumerState<EpisodeListPanel> {
                 offset = boxPad + row * (boxSize + boxSpacing);
             }
 
-            final targetOffset = offset.clamp(0.0, maxExt);
-            final delta = (targetOffset - _scrollController.offset).abs();
+            final activeScrollController = widget.useScrollController
+                ? _scrollController
+                : PrimaryScrollController.of(context);
 
-            if (delta > 200) {
-              final preOffset = (targetOffset - 60.0).clamp(0.0, maxExt);
-              _scrollController.jumpTo(preOffset);
-              _scrollController.animateTo(
-                targetOffset,
-                duration: const Duration(milliseconds: 150),
-                curve: Curves.easeOut,
-              );
-            } else if (delta > 0) {
-              _scrollController.animateTo(
-                targetOffset,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-              );
+            if (activeScrollController.hasClients) {
+              final targetOffset = offset.clamp(0.0, maxExt);
+              final delta = (targetOffset - activeScrollController.offset)
+                  .abs();
+
+              if (delta > 200) {
+                final preOffset = (targetOffset - 60.0).clamp(0.0, maxExt);
+                activeScrollController.jumpTo(preOffset);
+                activeScrollController.animateTo(
+                  targetOffset,
+                  duration: const Duration(milliseconds: 150),
+                  curve: Curves.easeOut,
+                );
+              } else if (delta > 0) {
+                activeScrollController.animateTo(
+                  targetOffset,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                );
+              }
             }
           });
         }

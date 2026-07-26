@@ -73,7 +73,7 @@ class EpisodesTabWidget extends ConsumerWidget {
             media: media,
             watchedProgress: watchedProgress,
             currentEpisodeNumber: currentEpisodeNumber,
-            useScrollController: true,
+            useScrollController: false,
             onEpisodeTap: (UnifiedEpisode episode, SourceInfo sourceInfo) {
               if (media.type == MediaType.MANGA ||
                   media.type == MediaType.NOVEL) {

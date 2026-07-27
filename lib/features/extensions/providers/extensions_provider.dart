@@ -72,16 +72,18 @@ class ExtensionsController extends Notifier<Set<String>> {
   void uninstallVariantGroup(
     BuildContext context,
     String name,
+    List<UnifiedSource> groupSources,
     MediaType type,
   ) {
     ConfirmationBottomSheet.show(
       context,
       title: 'Uninstall Extension',
-      message: 'Are you sure you want to uninstall all variants of $name?',
+      message: 'Are you sure you want to uninstall $name?',
       confirmText: 'Uninstall',
       isDestructive: true,
       onConfirm: () async {
-        state = {...state, name};
+        final ids = groupSources.map((s) => s.id).toSet();
+        state = {...state, ...ids, name};
         try {
           final bridgeManager = Get.find<bridge.ExtensionManager>();
           final installed = switch (type) {
@@ -90,25 +92,30 @@ class ExtensionsController extends Notifier<Set<String>> {
             MediaType.NOVEL => bridgeManager.installedNovelExtensions,
             _ => bridgeManager.installedAnimeExtensions,
           };
-          final variants = installed
-              .where((e) => (e.name ?? 'N/A') == name)
+          final targetExts = installed
+              .where((e) => ids.contains(e.id) || (e.name ?? 'N/A') == name)
               .toList();
 
           await Future.wait(
-            variants.map((e) => bridge.getSourceManager(e).uninstallSource(e)),
+            targetExts.map(
+              (e) => bridge.getSourceManager(e).uninstallSource(e),
+            ),
           );
 
           ref.invalidateAllSources();
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Uninstalled all variants of $name'),
+                content: Text('Uninstalled $name'),
                 behavior: SnackBarBehavior.floating,
               ),
             );
           }
+        } catch (_) {
         } finally {
-          state = {...state}..remove(name);
+          state = {...state}
+            ..removeAll(ids)
+            ..remove(name);
         }
       },
     );
@@ -119,10 +126,14 @@ class ExtensionsController extends Notifier<Set<String>> {
     UnifiedSource source,
     MediaType type,
   ) {
+    final displayName = source.lang != null && source.lang != 'all'
+        ? '${source.name} (${source.lang!.toUpperCase()})'
+        : source.name;
+
     ConfirmationBottomSheet.show(
       context,
       title: 'Uninstall Extension',
-      message: 'Are you sure you want to uninstall ${source.name}?',
+      message: 'Are you sure you want to uninstall $displayName?',
       confirmText: 'Uninstall',
       isDestructive: true,
       onConfirm: () async {
@@ -142,7 +153,7 @@ class ExtensionsController extends Notifier<Set<String>> {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('${source.name} uninstalled'),
+                content: Text('$displayName uninstalled'),
                 behavior: SnackBarBehavior.floating,
               ),
             );

@@ -28,6 +28,7 @@ import 'package:shonenx/features/tracking/providers/tracking_prefs_provider.dart
 import 'package:shonenx/shared/models/unified_media.dart';
 import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
+import 'package:shonenx/shared/widgets/app_icon_button.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
 class DetailsScreen extends ConsumerStatefulWidget {
@@ -187,24 +188,17 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                   backgroundColor: Colors.transparent,
                   automaticallyImplyLeading: false,
                   expandedHeight: 350.0,
-                  leading: IconButton(
+                  leading: AppIconButton(
                     icon: const Icon(Icons.arrow_back_ios_new),
                     onPressed: () => context.pop(),
                   ),
                   actions: [
                     const _DownloadAppBarButton(),
-                    IconButton.filledTonal(
+                    AppIconButton(
                       tooltip: 'Share',
-                      style: IconButton.styleFrom(
-                        backgroundColor: theme.colorScheme.secondaryContainer,
-                        foregroundColor: theme.colorScheme.onSecondaryContainer,
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size(36, 36),
-                        fixedSize: const Size(36, 36),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(uiRoundness),
-                        ),
-                      ),
+                      backgroundColor: theme.colorScheme.secondaryContainer,
+                      foregroundColor: theme.colorScheme.onSecondaryContainer,
+                      radius: uiRoundness,
                       icon: const Icon(Icons.share, size: 18),
                       onPressed: () {
                         final providerId = displayMedia.providerId ?? 'anilist';
@@ -226,12 +220,12 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen>
                         );
                       },
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     _CommentsAppBarButton(
                       media: displayMedia,
                       uiRoundness: uiRoundness,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 5),
                     _TrackerAppBarButton(
                       media: displayMedia,
                       uiRoundness: uiRoundness,
@@ -819,15 +813,10 @@ class _DownloadAppBarButton extends ConsumerWidget {
         isLabelVisible: activeCount > 0,
         label: Text(activeCount.toString()),
         offset: const Offset(2, -2),
-        child: IconButton(
+        child: AppIconButton(
           onPressed: () => context.push('/downloads'),
-          style: IconButton.styleFrom(
-            backgroundColor: colorScheme.primaryContainer,
-            foregroundColor: colorScheme.onPrimaryContainer,
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(36, 36),
-            fixedSize: const Size(36, 36),
-          ),
+          backgroundColor: colorScheme.primaryContainer,
+          foregroundColor: colorScheme.onPrimaryContainer,
           icon: Stack(
             alignment: Alignment.center,
             children: [
@@ -862,18 +851,11 @@ class _CommentsAppBarButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return IconButton.filledTonal(
+    return AppIconButton(
       tooltip: 'Discussion',
-      style: IconButton.styleFrom(
-        backgroundColor: theme.colorScheme.secondaryContainer,
-        foregroundColor: theme.colorScheme.onSecondaryContainer,
-        padding: EdgeInsets.zero,
-        minimumSize: const Size(36, 36),
-        fixedSize: const Size(36, 36),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(uiRoundness),
-        ),
-      ),
+      backgroundColor: theme.colorScheme.secondaryContainer,
+      foregroundColor: theme.colorScheme.onSecondaryContainer,
+      radius: uiRoundness,
       icon: const Icon(Icons.forum_rounded, size: 18),
       onPressed: () => _showCommentsSheet(context, media),
     );
